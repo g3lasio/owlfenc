@@ -72,7 +72,8 @@ router.post('/send-estimate', async (req, res) => {
       contractorCompany: contractorCompany || contractorName,
       subject: `Estimado Profesional - ${estimateData.estimateNumber} - ${contractorCompany || contractorName}`,
       htmlContent: estimateHtml,
-      sendCopyToContractor: sendCopy
+      sendCopyToContractor: sendCopy,
+      pdfAttachment
     });
 
     console.log('📧 [CENTRALIZED-EMAIL] Resultado del envío:', result);

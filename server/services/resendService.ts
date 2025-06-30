@@ -58,6 +58,11 @@ export class ResendEmailService {
       content: Buffer;
       contentType: string;
     }>;
+    pdfAttachment?: {
+      filename: string;
+      content: string; // Base64 string
+      contentType: string;
+    } | null;
     sendCopyToContractor?: boolean;
   }): Promise<{
     success: boolean;
@@ -74,6 +79,17 @@ export class ResendEmailService {
       const contractorNoReplyEmail = this.generateContractorNoReplyEmail(params.contractorEmail, params.contractorCompany);
       console.log('📧 [CONTRACTOR-EMAIL] Email no-reply generado:', contractorNoReplyEmail);
 
+      // Preparar adjuntos incluyendo PDF si está presente
+      let emailAttachments = params.attachments || [];
+      if (params.pdfAttachment) {
+        console.log('📄 [PDF-ATTACHMENT] Agregando PDF adjunto:', params.pdfAttachment.filename);
+        emailAttachments.push({
+          filename: params.pdfAttachment.filename,
+          content: Buffer.from(params.pdfAttachment.content, 'base64'),
+          contentType: params.pdfAttachment.contentType
+        });
+      }
+
       // Intentar enviar email desde dominio del contratista
       let clientEmailResult = await this.sendEmail({
         to: params.toEmail,
@@ -81,7 +97,7 @@ export class ResendEmailService {
         subject: params.subject,
         html: params.htmlContent,
         replyTo: params.contractorEmail, // Respuestas van directamente al contratista
-        attachments: params.attachments
+        attachments: emailAttachments
       });
 
       console.log('📧 [CONTRACTOR-EMAIL] Resultado del envío:', clientEmailResult);
@@ -103,7 +119,7 @@ export class ResendEmailService {
           from: params.contractorEmail, // Email directo del contratista
           subject: params.subject,
           html: params.htmlContent,
-          attachments: params.attachments
+          attachments: emailAttachments
         });
 
         if (directEmailResult) {
@@ -147,7 +163,8 @@ export class ResendEmailService {
           to: params.contractorEmail,
           from: fromAddress,
           subject: `[COPIA] ${params.subject}`,
-          html: copyHtml
+          html: copyHtml,
+          attachments: emailAttachments
         });
 
         if (copyResult) {
@@ -177,7 +194,8 @@ export class ResendEmailService {
               to: 'gelasio@chyrris.com',
               from: this.defaultFromEmail,
               subject: `[DEMO-COPIA] ${params.subject} (Para: ${params.contractorEmail})`,
-              html: authorizedCopyHtml
+              html: authorizedCopyHtml,
+              attachments: emailAttachments
             });
 
             if (authorizedCopyResult) {
