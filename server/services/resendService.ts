@@ -22,13 +22,28 @@ export interface EmailData {
 }
 
 export class ResendEmailService {
-  private defaultFromEmail = 'onboarding@resend.dev'; // Dominio verificado de Resend
-  private supportEmail = 'onboarding@resend.dev';
+  private platformDomain = 'resend.dev'; // Dominio de la plataforma
+  private noReplyPrefix = 'noreply'; // Prefijo para emails no-reply
 
   /**
-   * Enviar email centralizado desde la plataforma con Reply-To del contratista
+   * Generar email no-reply específico para cada contratista
    */
-  async sendCentralizedEmail(params: {
+  private generateContractorNoReplyEmail(contractorEmail: string, contractorCompany: string): string {
+    // Extraer dominio del email del contratista o usar nombre de empresa
+    const emailDomain = contractorEmail.split('@')[1] || 'contractor';
+    const companySlug = contractorCompany.toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+    
+    // Formato: noreply-{company}@{platform-domain}
+    return `${this.noReplyPrefix}-${companySlug}@${this.platformDomain}`;
+  }
+
+  /**
+   * Enviar email desde dominio del contratista con forwarding apropiado
+   */
+  async sendContractorEmail(params: {
     toEmail: string;
     toName: string;
     contractorEmail: string;
@@ -48,72 +63,68 @@ export class ResendEmailService {
     emailId?: string;
   }> {
     try {
-      console.log('📧 [RESEND-CENTRALIZED] Iniciando envío centralizado...');
-      console.log('📧 [RESEND-CENTRALIZED] Cliente:', params.toName, params.toEmail);
-      console.log('📧 [RESEND-CENTRALIZED] Contratista:', params.contractorName, params.contractorEmail);
-      console.log('📧 [RESEND-CENTRALIZED] Empresa:', params.contractorCompany);
+      console.log('📧 [CONTRACTOR-EMAIL] Iniciando envío desde dominio del contratista...');
+      console.log('📧 [CONTRACTOR-EMAIL] Cliente:', params.toName, params.toEmail);
+      console.log('📧 [CONTRACTOR-EMAIL] Contratista:', params.contractorName, params.contractorEmail);
+      console.log('📧 [CONTRACTOR-EMAIL] Empresa:', params.contractorCompany);
 
-      // Intentar enviar email principal al cliente
+      // Generar email no-reply específico del contratista
+      const contractorNoReplyEmail = this.generateContractorNoReplyEmail(params.contractorEmail, params.contractorCompany);
+      console.log('📧 [CONTRACTOR-EMAIL] Email no-reply generado:', contractorNoReplyEmail);
+
+      // Intentar enviar email desde dominio del contratista
       let clientEmailResult = await this.sendEmail({
         to: params.toEmail,
-        from: this.defaultFromEmail,
+        from: contractorNoReplyEmail,
         subject: params.subject,
         html: params.htmlContent,
-        replyTo: params.contractorEmail,
+        replyTo: params.contractorEmail, // Respuestas van directamente al contratista
         attachments: params.attachments
       });
 
-      console.log('📧 [RESEND-CENTRALIZED] Resultado del primer intento:', clientEmailResult);
+      console.log('📧 [CONTRACTOR-EMAIL] Resultado del envío:', clientEmailResult);
 
-      // Si falla, verificar si es por restricciones del API en modo testing
+      // Si el envío falla, usar estrategia de recuperación específica del contratista
       if (!clientEmailResult) {
-        console.log('📧 [RESEND-CENTRALIZED] Primer intento falló, verificando si es por restricciones de testing...');
+        console.log('📧 [CONTRACTOR-EMAIL] Envío falló, intentando estrategia de recuperación...');
         
-        // Intentar con el email autorizado como demo
-        console.log('📧 [RESEND-DEMO] Activando modo demo con email autorizado...');
-        const demoEmailResult = await this.sendEmail({
-          to: 'gelasio@chyrris.com', // Email autorizado en modo testing
-          from: this.defaultFromEmail,
-          subject: `[DEMO MODE] ${params.subject} - Original recipient: ${params.toEmail}`,
-          html: `
-            <div style="background: #fef3c7; border: 2px solid #f59e0b; padding: 20px; margin: 20px 0; border-radius: 8px;">
-              <h3 style="color: #92400e; margin: 0 0 10px 0;">🔬 DEMO MODE ACTIVATED</h3>
-              <p style="color: #92400e; margin: 0;">
-                <strong>Original Recipient:</strong> ${params.toName} (${params.toEmail})<br>
-                <strong>Reason:</strong> Resend API is in testing mode and can only send to authorized emails<br>
-                <strong>Action Required:</strong> Verify domain at resend.com/domains for production use<br>
-                <strong>Contractor:</strong> ${params.contractorName} (${params.contractorEmail})
-              </p>
-            </div>
-            ${params.htmlContent}
-          `,
-          replyTo: params.contractorEmail,
+        // Estrategia 1: Intentar con email directo del contratista
+        console.log('📧 [CONTRACTOR-DIRECT] Intentando con email directo del contratista...');
+        const directEmailResult = await this.sendEmail({
+          to: params.toEmail,
+          from: params.contractorEmail, // Email directo del contratista
+          subject: params.subject,
+          html: params.htmlContent,
           attachments: params.attachments
         });
 
-        if (demoEmailResult) {
-          console.log('✅ [RESEND-DEMO] Email enviado exitosamente en modo demo');
+        if (directEmailResult) {
+          console.log('✅ [CONTRACTOR-DIRECT] Email enviado usando email directo del contratista');
           return {
             success: true,
-            message: `Email enviado en modo demo a gelasio@chyrris.com. Recipient original: ${params.toEmail}. Para producción, verificar dominio en resend.com/domains`,
-            emailId: 'demo-mode'
-          };
-        } else {
-          return {
-            success: false,
-            message: `No se pudo enviar email ni en modo normal ni en modo demo. Verificar configuración de Resend API.`
+            message: `Email enviado desde ${params.contractorEmail}. Respuestas irán directamente al contratista.`,
+            emailId: 'contractor-direct'
           };
         }
+
+        // Estrategia 2: Solo si falla todo y específicamente para este contratista (no centralizado)
+        console.log('📧 [CONTRACTOR-FALLBACK] Todas las estrategias del contratista fallaron...');
+        return {
+          success: false,
+          message: `Error: No se pudo enviar email desde ${contractorNoReplyEmail} ni desde ${params.contractorEmail}. Cada contratista debe configurar su propio dominio de email o usar un servicio verificado.`
+        };
       }
 
-      // Enviar copia al contratista si se solicita
-      if (params.sendCopyToContractor) {
+      // Enviar copia al contratista si se solicita y el envío fue exitoso
+      if (clientEmailResult && params.sendCopyToContractor) {
+        console.log('📧 [CONTRACTOR-EMAIL] Enviando copia al contratista...');
+        
         const copyHtml = `
-          <div style="background: #f0f9ff; padding: 20px; border-left: 4px solid #3b82f6; margin-bottom: 20px; border-radius: 8px;">
-            <h3 style="margin: 0 0 10px 0; color: #1e40af;">📧 Copia del email enviado a su cliente</h3>
-            <p style="margin: 0; color: #64748b;">
-              <strong>Enviado a:</strong> ${params.toName} (${params.toEmail})<br>
-              <strong>Desde:</strong> ${this.defaultFromEmail}<br>
+          <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #4caf50;">
+            <h4 style="color: #2e7d32; margin: 0 0 10px 0;">📧 Copia del Email Enviado a Cliente</h4>
+            <p style="color: #2e7d32; margin: 0;">
+              <strong>Cliente:</strong> ${params.toName} (${params.toEmail})<br>
+              <strong>Desde:</strong> ${contractorNoReplyEmail}<br>
               <strong>Reply-To:</strong> ${params.contractorEmail}<br>
               <strong>Fecha:</strong> ${new Date().toLocaleString('es-ES')}
             </p>
@@ -123,10 +134,9 @@ export class ResendEmailService {
 
         await this.sendEmail({
           to: params.contractorEmail,
-          from: this.defaultFromEmail,
+          from: contractorNoReplyEmail,
           subject: `[COPIA] ${params.subject}`,
-          html: copyHtml,
-          replyTo: this.supportEmail
+          html: copyHtml
         });
       }
 
