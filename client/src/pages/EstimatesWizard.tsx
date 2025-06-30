@@ -988,8 +988,8 @@ export default function EstimatesWizardFixed() {
                            data.estimateAmount ||
                            0;
             
-            // No conversion - keep original values as they are stored
-            const displayTotal = totalValue;
+            // Convert from cents to dollars if value is stored in cents (> 10000 indicates cents)
+            const displayTotal = totalValue > 10000 ? totalValue / 100 : totalValue;
             
             const projectTitle = data.projectDetails?.name ||
                                data.projectName ||
@@ -1057,8 +1057,8 @@ export default function EstimatesWizardFixed() {
                          data.estimateAmount ||
                          0;
           
-          // No conversion - keep original values as they are stored
-          const displayTotal = totalValue;
+          // Convert from cents to dollars if value is stored in cents (> 10000 indicates cents)
+          const displayTotal = totalValue > 10000 ? totalValue / 100 : totalValue;
           
           const projectTitle = data.projectDetails?.name ||
                              data.title ||
@@ -1350,9 +1350,9 @@ export default function EstimatesWizardFixed() {
               );
               const rawTotal = parseFloat(item.total || item.totalPrice || 0);
 
-              // Detectar si los valores están en centavos - si el precio es > 500, dividir por 100
-              const price = rawPrice > 500 ? rawPrice / 100 : rawPrice;
-              const total = rawTotal > 500 ? rawTotal / 100 : rawTotal;
+              // Detectar si los valores están en centavos - si el total es > 10000 indica centavos
+              const price = rawTotal > 10000 ? rawPrice / 100 : rawPrice;
+              const total = rawTotal > 10000 ? rawTotal / 100 : rawTotal;
 
               return {
                 id: item.id || `item-${index}`,
@@ -1378,9 +1378,9 @@ export default function EstimatesWizardFixed() {
             const rawPrice = parseFloat(item.unitPrice || item.price || 0);
             const rawTotal = parseFloat(item.totalPrice || item.total || 0);
 
-            // Detectar si los valores están en centavos - si el precio es > 500, dividir por 100
-            const price = rawPrice > 500 ? rawPrice / 100 : rawPrice;
-            const total = rawTotal > 500 ? rawTotal / 100 : rawTotal;
+            // Detectar si los valores están en centavos - si el total es > 10000 indica centavos
+            const price = rawTotal > 10000 ? rawPrice / 100 : rawPrice;
+            const total = rawTotal > 10000 ? rawTotal / 100 : rawTotal;
 
             return {
               id: item.id || `item-${index}`,
