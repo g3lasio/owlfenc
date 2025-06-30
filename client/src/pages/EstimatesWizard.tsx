@@ -5917,7 +5917,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50 min-h-0">
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50 min-h-0 email-preview-scroll">
             {/* Client Information */}
             {estimate.client && (
               <div className="bg-white rounded-lg border p-3 shadow-sm">
@@ -6037,7 +6037,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 <Eye className="h-4 w-4 text-blue-600" />
                 Email Preview
               </h4>
-              <div className="bg-gray-50 rounded-lg p-4 text-sm space-y-3 max-h-64 overflow-y-auto border border-gray-200">
+              <div className="bg-gray-50 rounded-lg p-4 text-sm space-y-3 border border-gray-200">
                 <div className="space-y-2">
                   <div className="flex flex-wrap gap-2">
                     <strong className="text-gray-700">To:</strong> 
@@ -6154,7 +6154,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 </h3>
               </div>
               
-              <div className="p-6 space-y-6 max-h-[50vh] overflow-y-auto email-preview-scroll">
+              <div className="p-6 space-y-6">
                 {/* Message Preview */}
                 <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
                   <h4 className="font-semibold text-gray-800 mb-3">Personal Message</h4>
