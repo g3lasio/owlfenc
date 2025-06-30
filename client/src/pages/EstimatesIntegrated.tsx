@@ -272,10 +272,30 @@ export default function EstimatesIntegrated() {
   const loadMaterials = async () => {
     try {
       setIsLoadingMaterials(true);
-      const response = await fetch('/api/materials');
+      
+      if (!currentUser) {
+        console.error("No authenticated user found");
+        return;
+      }
+
+      const token = await currentUser.getIdToken();
+      const response = await fetch('/api/materials', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       if (response.ok) {
         const data = await response.json();
         setMaterials(data);
+      } else {
+        console.error("Failed to load materials:", response.statusText);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los materiales del usuario",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Error loading materials:', error);

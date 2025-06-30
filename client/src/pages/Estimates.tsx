@@ -167,12 +167,12 @@ export default function Estimates() {
     try {
       setIsLoadingMaterials(true);
       
-      if (!user) {
+      if (!currentUser) {
         console.error("No authenticated user found");
         return;
       }
 
-      const token = await user.getIdToken();
+      const token = await currentUser.getIdToken();
       const response = await fetch("/api/materials", {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -487,12 +487,12 @@ export default function Estimates() {
     }
 
     try {
-      if (!user) {
+      if (!currentUser) {
         console.error("No authenticated user found");
         return;
       }
 
-      const token = await user.getIdToken();
+      const token = await currentUser.getIdToken();
       const response = await fetch("/api/materials", {
         method: "POST",
         headers: { 
