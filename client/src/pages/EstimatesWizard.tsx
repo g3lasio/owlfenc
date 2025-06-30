@@ -3541,17 +3541,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       descripción completa.
                     </p>
                   </div>
-                ) : (
-                  <div className="flex items-start gap-2 mt-2 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
-                    <Brain className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-purple-700">
-                      <strong>Tip:</strong> Write a basic description of your
-                      project and use <strong>"Enhance with Mervin AI"</strong>{" "}
-                      to automatically generate a complete professional
-                      description with all technical details needed for the
-                      estimate.
-                    </p>
-                  </div>
                 )}
               </div>
             </CardContent>
