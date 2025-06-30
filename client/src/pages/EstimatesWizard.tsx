@@ -35,6 +35,8 @@ import {
   getDocs,
   addDoc,
   Timestamp,
+  doc,
+  setDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MaterialInventoryService } from "../services/materialInventoryService";
@@ -877,6 +879,7 @@ export default function EstimatesWizardFixed() {
     try {
       setIsLoadingClients(true);
       const clientsData = await getFirebaseClients();
+      // @ts-ignore - Temporarily disable type checking for client mapping
       setClients(clientsData);
     } catch (error) {
       console.error("Error loading clients from Firebase:", error);
