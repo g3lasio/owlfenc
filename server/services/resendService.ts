@@ -86,6 +86,12 @@ export class ResendEmailService {
 
       console.log('📧 [CONTRACTOR-EMAIL] Resultado del envío:', clientEmailResult);
 
+      // Variable para rastrear si algún envío fue exitoso y qué método se usó
+      let finalSuccess = clientEmailResult;
+      let finalMessage = '';
+      let finalEmailId = '';
+      let fromAddress = contractorNoReplyEmail;
+
       // Si el envío falla, usar estrategia de recuperación específica del contratista
       if (!clientEmailResult) {
         console.log('📧 [CONTRACTOR-EMAIL] Envío falló, intentando estrategia de recuperación...');
@@ -102,31 +108,34 @@ export class ResendEmailService {
 
         if (directEmailResult) {
           console.log('✅ [CONTRACTOR-DIRECT] Email enviado usando email directo del contratista');
+          finalSuccess = true;
+          finalMessage = `Email enviado desde ${params.contractorEmail}. Respuestas irán directamente al contratista.`;
+          finalEmailId = 'contractor-direct';
+          fromAddress = params.contractorEmail;
+        } else {
+          // Estrategia 2: Solo si falla todo y específicamente para este contratista (no centralizado)
+          console.log('📧 [CONTRACTOR-FALLBACK] Todas las estrategias del contratista fallaron...');
           return {
-            success: true,
-            message: `Email enviado desde ${params.contractorEmail}. Respuestas irán directamente al contratista.`,
-            emailId: 'contractor-direct'
+            success: false,
+            message: `Error: No se pudo enviar email desde ${contractorNoReplyEmail} ni desde ${params.contractorEmail}. Cada contratista debe configurar su propio dominio de email o usar un servicio verificado.`
           };
         }
-
-        // Estrategia 2: Solo si falla todo y específicamente para este contratista (no centralizado)
-        console.log('📧 [CONTRACTOR-FALLBACK] Todas las estrategias del contratista fallaron...');
-        return {
-          success: false,
-          message: `Error: No se pudo enviar email desde ${contractorNoReplyEmail} ni desde ${params.contractorEmail}. Cada contratista debe configurar su propio dominio de email o usar un servicio verificado.`
-        };
+      } else {
+        finalSuccess = true;
+        finalMessage = `Email enviado exitosamente desde ${contractorNoReplyEmail} a ${params.toEmail}`;
+        finalEmailId = 'contractor-success';
       }
 
-      // Enviar copia al contratista si se solicita y el envío fue exitoso
-      if (clientEmailResult && params.sendCopyToContractor) {
-        console.log('📧 [CONTRACTOR-EMAIL] Enviando copia al contratista...');
+      // Enviar copia al contratista si se solicita y algún envío fue exitoso
+      if (finalSuccess && params.sendCopyToContractor) {
+        console.log('📧 [CONTRACTOR-COPY] Enviando copia al contratista desde:', fromAddress);
         
         const copyHtml = `
           <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #4caf50;">
             <h4 style="color: #2e7d32; margin: 0 0 10px 0;">📧 Copia del Email Enviado a Cliente</h4>
             <p style="color: #2e7d32; margin: 0;">
               <strong>Cliente:</strong> ${params.toName} (${params.toEmail})<br>
-              <strong>Desde:</strong> ${contractorNoReplyEmail}<br>
+              <strong>Desde:</strong> ${fromAddress}<br>
               <strong>Reply-To:</strong> ${params.contractorEmail}<br>
               <strong>Fecha:</strong> ${new Date().toLocaleString('es-ES')}
             </p>
@@ -134,18 +143,54 @@ export class ResendEmailService {
           ${params.htmlContent}
         `;
 
-        await this.sendEmail({
+        const copyResult = await this.sendEmail({
           to: params.contractorEmail,
-          from: contractorNoReplyEmail,
+          from: fromAddress,
           subject: `[COPIA] ${params.subject}`,
           html: copyHtml
         });
+
+        if (copyResult) {
+          console.log('✅ [CONTRACTOR-COPY] Copia enviada exitosamente al contratista');
+        } else {
+          console.log('❌ [CONTRACTOR-COPY] Error enviando copia al contratista, intentando con email autorizado...');
+          
+          // Fallback: Si falla la copia, intentar con email autorizado para demo
+          console.log(`🔄 [CONTRACTOR-COPY] Verificando fallback: email=${params.contractorEmail}, diferente de gelasio?`, params.contractorEmail !== 'gelasio@chyrris.com');
+          if (params.contractorEmail !== 'gelasio@chyrris.com') {
+            console.log('✅ [CONTRACTOR-COPY] Ejecutando fallback con email autorizado...');
+            const authorizedCopyHtml = `
+              <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
+                <h4 style="color: #856404; margin: 0 0 10px 0;">📧 Demo: Copia del Email Enviado a Cliente</h4>
+                <p style="color: #856404; margin: 0;">
+                  <strong>NOTA:</strong> Esta copia se envía a email autorizado debido a limitaciones de la API de prueba.<br>
+                  <strong>Contratista original:</strong> ${params.contractorEmail}<br>
+                  <strong>Cliente:</strong> ${params.toName} (${params.toEmail})<br>
+                  <strong>Desde:</strong> ${fromAddress}<br>
+                  <strong>Fecha:</strong> ${new Date().toLocaleString('es-ES')}
+                </p>
+              </div>
+              ${params.htmlContent}
+            `;
+
+            const authorizedCopyResult = await this.sendEmail({
+              to: 'gelasio@chyrris.com',
+              from: this.defaultFromEmail,
+              subject: `[DEMO-COPIA] ${params.subject} (Para: ${params.contractorEmail})`,
+              html: authorizedCopyHtml
+            });
+
+            if (authorizedCopyResult) {
+              console.log('✅ [CONTRACTOR-COPY] Copia demo enviada al email autorizado');
+            }
+          }
+        }
       }
 
       return {
         success: true,
-        message: `Email enviado exitosamente desde ${contractorNoReplyEmail} a ${params.toEmail}`,
-        emailId: 'contractor-success'
+        message: finalMessage,
+        emailId: finalEmailId
       };
 
     } catch (error) {
