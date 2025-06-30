@@ -71,12 +71,13 @@ import {
   Mail,
   Phone,
   MapPin,
-  X,
   Smartphone,
   Wrench,
   Combine,
   ArrowLeft,
   Send,
+  RotateCcw,
+  X,
 } from "lucide-react";
 import axios from "axios";
 
@@ -1607,6 +1608,11 @@ export default function EstimatesWizardFixed() {
   };
 
   const canProceedToNext = () => {
+    // No permitir navegación si todavía están cargando datos críticos
+    if (isLoadingClients || isLoadingMaterials || !currentUser) {
+      return false;
+    }
+
     switch (currentStep) {
       case 0:
         return estimate.client !== null;
@@ -4408,10 +4414,29 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 <CardContent className="text-center py-8">
                   <AlertCircle className="h-12 w-12 mx-auto mb-4 text-amber-500" />
                   <p className="text-lg font-medium">Estimado Incompleto</p>
-                  <p className="text-muted-foreground">
+                  <p className="text-muted-foreground mb-4">
                     Necesitas seleccionar un cliente y agregar materiales para
                     generar la vista previa
                   </p>
+                  {/* Botón de recuperación si hay backup disponible */}
+                  {localStorage.getItem('currentEstimate') && (
+                    <Button
+                      onClick={recoverEstimateData}
+                      variant="outline"
+                      className="mr-2"
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Recuperar Datos
+                    </Button>
+                  )}
+                  <Button
+                    onClick={resetEstimate}
+                    variant="ghost"
+                    className="text-sm"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Comenzar Nuevo
+                  </Button>
                 </CardContent>
               </Card>
             ) : (
