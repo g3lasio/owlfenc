@@ -3530,7 +3530,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 {/* Mensaje de ayuda dinámico */}
                 {estimate.projectDetails.trim().length >= 10 &&
                 !evaluateProjectDescription(estimate.projectDetails)
-                  .isDetailed ? (
+                  .isDetailed && (
                   <div className="flex items-start gap-2 mt-2 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
                     <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
                     <p className="text-xs text-yellow-700">
