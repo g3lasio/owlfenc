@@ -1388,8 +1388,7 @@ Output must be between 200-900 characters in English.`;
   // Registrar rutas del sistema de pagos para contratistas
   app.use("/api/contractor-payments", contractorPaymentRoutes);
 
-  // Registrar rutas del sistema de correos centralizado
-  app.use("/api/centralized-email", centralizedEmailRoutes);
+  // Rutas centralizadas ya registradas en server/index.ts para evitar conflictos de middleware
 
   // generate estimate pdf basic template
 

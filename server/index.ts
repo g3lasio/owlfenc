@@ -77,6 +77,9 @@ app.use('/api/legal-defense-legacy', legalDefenseRoutes); // Keep legacy for com
 console.log('🛡️ [LEGAL-DEFENSE] Sistema unificado de contratos registrado en /api/legal-defense/generate-contract');
 console.log('🤖 [ANTHROPIC] Sistema inteligente de contratos registrado en /api/anthropic/generate-contract');
 
+// 🔧 Registrar rutas centralizadas ANTES del middleware de logging
+app.use("/api/centralized-email", centralizedEmailRoutes);
+
 // Add logging middleware first
 app.use((req, res, next) => {
   const start = Date.now();
