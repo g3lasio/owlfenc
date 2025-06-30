@@ -58,12 +58,25 @@ router.post('/send-estimate', async (req, res) => {
       });
     }
 
-    // Usar el servicio completo de email de estimados con todos los datos
-    console.log('📧 [CENTRALIZED-EMAIL] Generando HTML del estimado...');
-    const estimateHtml = EstimateEmailService.generateEstimateHTML(estimateData);
-    console.log('📧 [CENTRALIZED-EMAIL] HTML generado, longitud:', estimateHtml?.length || 0);
+    // Respuesta de prueba simple
+    console.log('📧 [CENTRALIZED-EMAIL] Enviando respuesta de prueba...');
+    return res.json({
+      success: true,
+      message: 'Endpoint funcionando correctamente',
+      data: req.body
+    });
 
-    // Registrar estimado en el sistema de seguimiento para que funcionen los botones de aprobación
+  } catch (error) {
+    console.error('Error en endpoint de prueba:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno en endpoint de prueba',
+      error: error.message
+    });
+  }
+});
+
+/**
     try {
       const estimateForTracking = {
         estimateNumber: estimateData.estimateNumber,
