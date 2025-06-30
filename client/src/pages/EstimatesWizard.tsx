@@ -5488,7 +5488,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                             </div>
                             <div className="truncate">
                               <span className="font-medium">Total:</span> $
-                              {(estimate.total / 100).toFixed(2)}
+                              {estimate.total.toFixed(2)}
                             </div>
                           </div>
                           <div className="text-xs text-gray-500 mt-1">

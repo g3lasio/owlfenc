@@ -407,6 +407,11 @@ Changelog:
   * System properly isolates each contractor's email communications preventing cross-contamination
   * Verified functionality with successful email delivery (ID: f6fd7473-483a-409b-97bd-30b4f5a98bfb)
   * Addresses critical privacy concern ensuring contractors maintain professional independence
+- June 30, 2025. CRITICAL FIX: Restored estimate totals calculation system:
+  * Fixed critical bug where estimate totals were divided by 100 (showing $83.15 instead of $8,315)
+  * Removed erroneous division in EstimatesWizard.tsx line 5491 that was breaking display values
+  * System now correctly displays authentic estimate totals in saved estimates list
+  * Preserved all existing functionality while fixing only the specific calculation error
 - June 29, 2025. CRITICAL SUCCESS: Achieved cost accuracy target for DeepSearch Material system:
   * Fixed cost calculations from $84.78 to $61.78 per linear foot (within $58-70 target range)
   * Reduced material prices across all categories: posts $17.50→$10, boards $4.25→$3.50, cedar $5.50→$3.25
