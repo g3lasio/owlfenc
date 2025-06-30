@@ -29,8 +29,7 @@ router.post('/send-estimate', async (req, res) => {
       contractorCompany,
       estimateData,
       customMessage,
-      sendCopy = false,
-      pdfAttachment = null
+      sendCopy = false
     } = req.body;
 
     console.log('📧 [CENTRALIZED-EMAIL] Datos recibidos:', {
@@ -40,8 +39,7 @@ router.post('/send-estimate', async (req, res) => {
       contractorName,
       contractorCompany,
       sendCopy,
-      estimateNumber: estimateData?.estimateNumber,
-      hasPdfAttachment: !!pdfAttachment
+      estimateNumber: estimateData?.estimateNumber
     });
 
     // Validar campos requeridos
@@ -72,8 +70,7 @@ router.post('/send-estimate', async (req, res) => {
       contractorCompany: contractorCompany || contractorName,
       subject: `Estimado Profesional - ${estimateData.estimateNumber} - ${contractorCompany || contractorName}`,
       htmlContent: estimateHtml,
-      sendCopyToContractor: sendCopy,
-      pdfAttachment
+      sendCopyToContractor: sendCopy
     });
 
     console.log('📧 [CENTRALIZED-EMAIL] Resultado del envío:', result);
