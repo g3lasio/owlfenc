@@ -5906,8 +5906,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       {/* Enhanced Email Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-        <DialogContent className="w-[95vw] max-w-2xl mx-auto max-h-[95vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="px-4 py-3 border-b bg-white flex-shrink-0">
+        <DialogContent className="w-[95vw] max-w-2xl mx-auto max-h-[95vh] overflow-hidden">
+          <DialogHeader className="px-6 py-4 border-b bg-white">
             <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
               <Mail className="h-5 w-5 text-blue-600" />
               Send Professional Estimate
@@ -5917,7 +5917,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50 min-h-0 email-preview-scroll">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50 email-preview-scroll">
             {/* Client Information */}
             {estimate.client && (
               <div className="bg-white rounded-lg border p-3 shadow-sm">
@@ -6069,37 +6069,39 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </div>
           </div>
 
-          <div className="px-4 py-4 bg-white border-t flex gap-3 flex-shrink-0">
-            <Button
-              variant="outline"
-              onClick={() => setShowEmailDialog(false)}
-              className="flex-1 h-11"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={sendEstimateEmail}
-              disabled={
-                isSendingEmail ||
-                !emailData.toEmail.trim() ||
-                !emailData.subject.trim() ||
-                !emailData.message.trim()
-              }
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-11"
-            >
-              {isSendingEmail ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Send Email
-                </>
-              )}
-            </Button>
-          </div>
+          <DialogFooter className="px-6 py-4 bg-white border-t border-gray-200 flex-shrink-0">
+            <div className="flex gap-3 w-full">
+              <Button
+                variant="outline"
+                onClick={() => setShowEmailDialog(false)}
+                className="flex-1 h-11"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={sendEstimateEmail}
+                disabled={
+                  isSendingEmail ||
+                  !emailData.toEmail.trim() ||
+                  !emailData.subject.trim() ||
+                  !emailData.message.trim()
+                }
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-11"
+              >
+                {isSendingEmail ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Send Email
+                  </>
+                )}
+              </Button>
+            </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
