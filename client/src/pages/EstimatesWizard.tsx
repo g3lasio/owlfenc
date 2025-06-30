@@ -4857,8 +4857,15 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </Button>
 
                       <Button
-                        onClick={openEmailCompose}
-                        disabled={!estimate.client?.email}
+                        onClick={() => {
+                          // If client has no email, show dialog to add one
+                          if (!estimate.client?.email || estimate.client.email.trim() === '') {
+                            setShowEmailDialog(true);
+                          } else {
+                            openEmailCompose();
+                          }
+                        }}
+                        disabled={!estimate.client}
                         size="sm"
                         className="bg-purple-600 hover:bg-purple-700 text-white text-xs"
                       >
@@ -6075,9 +6082,56 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</label>
-                        <div className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg break-all">
-                          {estimate.client.email || "Not provided"}
-                        </div>
+                        {!estimate.client.email || estimate.client.email.trim() === '' ? (
+                          <div className="space-y-2">
+                            <Input
+                              type="email"
+                              placeholder="Enter client email..."
+                              className="text-sm"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const input = e.target as HTMLInputElement;
+                                  const newEmail = input.value.trim();
+                                  if (newEmail && /\S+@\S+\.\S+/.test(newEmail)) {
+                                    // Update client email
+                                    setEstimate(prev => ({
+                                      ...prev,
+                                      client: prev.client ? { ...prev.client, email: newEmail } : null
+                                    }));
+                                    // Update localStorage
+                                    if (estimate.client) {
+                                      const updatedClient = { ...estimate.client, email: newEmail };
+                                      localStorage.setItem('currentEstimateClient', JSON.stringify(updatedClient));
+                                      
+                                      // Update client in Firebase
+                                      try {
+                                        fetch('/api/clients', {
+                                          method: 'PUT',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({
+                                            id: estimate.client.id,
+                                            email: newEmail
+                                          })
+                                        });
+                                      } catch (error) {
+                                        console.log('Failed to update client in Firebase:', error);
+                                      }
+                                    }
+                                    toast({
+                                      title: "Email Updated",
+                                      description: `Client email set to ${newEmail}`,
+                                    });
+                                  }
+                                }
+                              }}
+                            />
+                            <p className="text-xs text-gray-500">Press Enter to save email</p>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg break-all">
+                            {estimate.client.email}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
