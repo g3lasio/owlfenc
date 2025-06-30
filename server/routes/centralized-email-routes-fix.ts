@@ -29,7 +29,8 @@ router.post('/send-estimate', async (req, res) => {
       contractorCompany,
       estimateData,
       customMessage,
-      sendCopy = false
+      sendCopy = false,
+      pdfAttachment = null
     } = req.body;
 
     console.log('📧 [CENTRALIZED-EMAIL] Datos recibidos:', {
@@ -39,7 +40,8 @@ router.post('/send-estimate', async (req, res) => {
       contractorName,
       contractorCompany,
       sendCopy,
-      estimateNumber: estimateData?.estimateNumber
+      estimateNumber: estimateData?.estimateNumber,
+      hasPdfAttachment: !!pdfAttachment
     });
 
     // Validar campos requeridos

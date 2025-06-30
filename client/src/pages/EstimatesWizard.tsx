@@ -2649,6 +2649,45 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         estimateData,
       );
 
+      // Generate PDF attachment if needed
+      let pdfBuffer = null;
+      try {
+        console.log("📄 Generando PDF para adjuntar al email...");
+        
+        // Create payload for PDF generation (same as handleDownload)
+        const pdfPayload = {
+          user: currentUser ? [{ uid: currentUser.uid, email: currentUser.email, displayName: currentUser.displayName }] : [],
+          client: estimate.client || {},
+          items: estimate.items || [],
+          projectTotalCosts: {
+            subtotal: estimate.subtotal || 0,
+            discount: estimate.discountAmount || 0,
+            taxRate: estimate.taxRate || 10,
+            tax: estimate.tax || 0,
+            total: estimate.total || 0
+          },
+          originalData: {
+            projectDescription: estimate.projectDetails || ""
+          }
+        };
+
+        // Generate PDF using Puppeteer service
+        const pdfResponse = await axios.post("/api/estimate-puppeteer-pdf", pdfPayload, {
+          responseType: 'arraybuffer' // Important for getting raw bytes
+        });
+
+        if (pdfResponse.data && pdfResponse.data.byteLength > 0) {
+          // Convert ArrayBuffer to Base64 for sending to backend
+          pdfBuffer = Buffer.from(pdfResponse.data).toString('base64');
+          console.log("✅ PDF generado exitosamente, tamaño:", pdfResponse.data.byteLength, "bytes");
+        } else {
+          console.log("⚠️ PDF generado pero está vacío, procediendo sin adjunto");
+        }
+      } catch (pdfError) {
+        console.warn("⚠️ Error generando PDF para adjunto, procediendo sin PDF:", pdfError);
+        // Continuamos sin el PDF adjunto si hay error
+      }
+
       // Send estimate using centralized email system
       const response = await fetch("/api/centralized-email/send-estimate", {
         method: "POST",
@@ -2661,7 +2700,12 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           contractorCompany: profile.company,
           estimateData: estimateData,
           customMessage: emailData.message,
-          sendCopy: emailData.sendCopy, // ← CORREGIDO: usar el valor real del checkbox
+          sendCopy: emailData.sendCopy,
+          pdfAttachment: pdfBuffer ? {
+            filename: `estimate-${estimate.client.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'client'}-${new Date().toISOString().slice(0, 10)}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf'
+          } : null
         }),
       });
 
