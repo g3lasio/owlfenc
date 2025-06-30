@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import multer from "multer";
 import pdfParse from "pdf-parse";
+import centralizedEmailRoutes from "./routes/centralized-email-routes";
 
 dotenv.config();
 
