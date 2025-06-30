@@ -860,6 +860,64 @@ export default function EstimatesWizardFixed() {
     }
   }, [contractor]);
 
+  // Auto-recovery system for client data - runs on component mount and when clients load
+  useEffect(() => {
+    const autoRecoverClientData = async () => {
+      // Only run if we have items but no client (the exact problem we're solving)
+      if (estimate.items.length > 0 && !estimate.client && clients.length > 0) {
+        try {
+          let clientToRestore = null;
+          
+          // Method 1: Try to restore from localStorage (most recent session)
+          const savedClient = localStorage.getItem('currentEstimateClient');
+          if (savedClient) {
+            try {
+              const parsedClient = JSON.parse(savedClient);
+              // Verify this client still exists in the database
+              clientToRestore = clients.find(c => c.id === parsedClient.id);
+              if (clientToRestore) {
+                console.log('✅ AUTO-RECOVERY: Restored client from localStorage');
+              }
+            } catch (parseError) {
+              console.warn('localStorage client data corrupted, trying alternatives');
+            }
+          }
+          
+          // Method 2: Try to find the most recent client used by ID
+          if (!clientToRestore) {
+            const lastUsedClientId = localStorage.getItem('lastUsedClientId');
+            if (lastUsedClientId) {
+              clientToRestore = clients.find(c => c.id === lastUsedClientId);
+            }
+          }
+          
+          // Method 3: Use the first available client as fallback
+          if (!clientToRestore && clients.length > 0) {
+            clientToRestore = clients[0];
+          }
+          
+          if (clientToRestore) {
+            // Auto-restore the client silently for seamless experience
+            setEstimate(prev => ({
+              ...prev,
+              client: clientToRestore
+            }));
+            
+            // Update localStorage for future sessions
+            localStorage.setItem('lastUsedClientId', clientToRestore.id);
+            localStorage.setItem('currentEstimateClient', JSON.stringify(clientToRestore));
+          }
+        } catch (error) {
+          console.error('AUTO-RECOVERY: Failed to restore client data:', error);
+        }
+      }
+    };
+
+    // Run auto-recovery after a short delay to ensure clients are loaded
+    const timeoutId = setTimeout(autoRecoverClientData, 300);
+    return () => clearTimeout(timeoutId);
+  }, [clients, estimate.items.length, estimate.client]);
+
   // Check email verification status on component load
   useEffect(() => {
     const checkEmailStatus = async () => {
@@ -1903,8 +1961,15 @@ export default function EstimatesWizardFixed() {
       })() : {})
     };
     
+    // Save to localStorage for persistence and auto-recovery
+    localStorage.setItem('lastUsedClientId', client.id);
+    localStorage.setItem('currentEstimateClient', JSON.stringify(enhancedClient));
+    
     setEstimate((prev) => ({ ...prev, client: enhancedClient }));
     setIsEditingClient(false); // Close editing mode when new client is selected
+    
+    console.log('✅ CLIENT PERSISTENCE: Client saved to localStorage and state');
+    
     toast({
       title: "Client Selected",
       description: `${client.name} has been added to the estimate`,
