@@ -2668,11 +2668,21 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       const result = await response.json();
 
       if (result.success) {
-        toast({
-          title: "Estimado Enviado con Éxito",
-          description: `Su estimado fue enviado desde noreply@owlfenc.com a ${emailData.toEmail}. El cliente puede responder directamente a su email.`,
-          duration: 5000,
-        });
+        // Handle demo mode specifically
+        if (result.demoMode) {
+          toast({
+            title: "Estimado Enviado en Modo Demo",
+            description: `Su estimado fue enviado a ${result.authorizedEmail} como demostración. Cliente original: ${result.originalClient}. ${result.warning || ""}`,
+            duration: 8000,
+            className: "bg-yellow-900 border-yellow-600",
+          });
+        } else {
+          toast({
+            title: "Estimado Enviado con Éxito",
+            description: `Su estimado fue enviado desde noreply@owlfenc.com a ${emailData.toEmail}. El cliente puede responder directamente a su email.`,
+            duration: 5000,
+          });
+        }
 
         // Save estimate to Firebase for tracking
         if (currentUser) {
@@ -2684,6 +2694,12 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               status: "sent",
               sentAt: new Date(),
               createdAt: new Date(),
+              // Store demo mode information if applicable
+              ...(result.demoMode && {
+                demoMode: true,
+                originalClientEmail: result.originalClient,
+                sentToEmail: result.authorizedEmail
+              })
             });
             console.log("✅ Estimado guardado en Firebase para seguimiento");
           } catch (saveError) {
@@ -2697,13 +2713,24 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         // Refresh estimates list
         loadSavedEstimates();
       } else {
-        toast({
-          title: "Error Enviando Estimado",
-          description:
-            result.message || "Error enviando el estimado por email.",
-          variant: "destructive",
-          duration: 5000,
-        });
+        // Handle specific error types
+        if (result.error === 'RESEND_TEST_MODE_LIMITATION') {
+          toast({
+            title: "Limitación del Servicio de Email",
+            description: `${result.message}. Email autorizado: ${result.details?.authorizedEmail}. Para enviar a cualquier dirección, se requiere verificar dominio en resend.com`,
+            variant: "destructive",
+            duration: 10000,
+            className: "bg-orange-900 border-orange-600",
+          });
+        } else {
+          toast({
+            title: "Error Enviando Estimado",
+            description:
+              result.message || "Error enviando el estimado por email.",
+            variant: "destructive",
+            duration: 5000,
+          });
+        }
       }
     } catch (error) {
       console.error("Error sending HTML estimate email:", error);

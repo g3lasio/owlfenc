@@ -74,6 +74,56 @@ router.post('/send-estimate', async (req, res) => {
     });
 
     console.log('📧 [CENTRALIZED-EMAIL] Resultado del envío:', result);
+
+    // Detectar limitaciones de Resend API en modo de prueba
+    if (!result.success && result.message && result.message.includes('You can only send testing emails')) {
+      console.log('🔒 [CENTRALIZED-EMAIL] Detectada limitación de Resend API - modo de prueba');
+      
+      // Email autorizado para pruebas
+      const authorizedTestEmail = 'gelasio@chyrris.com';
+      
+      // Reintento automático con email autorizado
+      console.log('🔄 [CENTRALIZED-EMAIL] Reintentando con email autorizado para demostración...');
+      const retryResult = await resendService.sendCentralizedEmail({
+        toEmail: authorizedTestEmail,
+        toName: `[DEMO] ${clientName}`,
+        contractorEmail: authorizedTestEmail,
+        contractorName,
+        contractorCompany: contractorCompany || contractorName,
+        subject: `[DEMO] Estimado Profesional - ${estimateData.estimateNumber} - ${contractorCompany || contractorName}`,
+        htmlContent: estimateHtml.replace(clientEmail, `${clientEmail} (Demo sent to ${authorizedTestEmail})`),
+        sendCopyToContractor: sendCopy
+      });
+      
+      if (retryResult.success) {
+        res.json({
+          success: true,
+          message: `Email de demostración enviado exitosamente a ${authorizedTestEmail}`,
+          emailId: 'centralized-email-demo',
+          demoMode: true,
+          originalClient: clientEmail,
+          authorizedEmail: authorizedTestEmail,
+          warning: 'Resend API en modo de prueba - email enviado a dirección autorizada'
+        });
+        return;
+      }
+      
+      // Si el reintento también falla, enviar información detallada
+      res.status(403).json({
+        success: false,
+        message: 'Limitación del servicio de email: Modo de prueba activo',
+        error: 'RESEND_TEST_MODE_LIMITATION',
+        details: {
+          authorizedEmail: authorizedTestEmail,
+          attemptedEmail: clientEmail,
+          solution: 'Para enviar emails a cualquier dirección, se requiere verificar un dominio en resend.com/domains',
+          supportUrl: 'https://resend.com/domains'
+        },
+        rawError: result.message
+      });
+      return;
+    }
+
     res.json(result);
 
   } catch (error) {

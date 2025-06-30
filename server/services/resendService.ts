@@ -112,7 +112,11 @@ export class ResendEmailService {
   /**
    * Enviar email usando Resend
    */
-  async sendEmail(emailData: EmailData): Promise<boolean> {
+  async sendEmail(emailData: EmailData): Promise<{
+    success: boolean;
+    message?: string;
+    errorDetails?: any;
+  }> {
     try {
       // Validaciones previas con logs detallados
       console.log('🔍 [RESEND] Iniciando envío de email...');
@@ -190,13 +194,17 @@ export class ResendEmailService {
         console.log('✅ [RESEND] Email enviado exitosamente');
         console.log('✅ [RESEND] ID del email:', result.data.id);
         console.log('✅ [RESEND] Destinatario confirmado:', emailData.to);
-        return true;
+        return { success: true };
       } else {
         console.error('❌ [RESEND] Respuesta sin ID:', result);
         if (result.error) {
           console.error('❌ [RESEND] Error detallado:', result.error);
         }
-        return false;
+        return { 
+          success: false, 
+          message: result.error?.message || 'Error enviando email',
+          errorDetails: result.error
+        };
       }
 
     } catch (error: any) {
