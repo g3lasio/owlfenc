@@ -4302,6 +4302,17 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         );
 
       case 3: // Preview
+        // Debug logging for preview step
+        console.log('🔍 PREVIEW DEBUG - Current estimate state:', {
+          client: estimate.client,
+          clientExists: !!estimate.client,
+          itemsCount: estimate.items.length,
+          items: estimate.items
+        });
+        
+        const hasClient = !!estimate.client;
+        const hasItems = estimate.items.length > 0;
+        
         return (
           <div className="space-y-4">
             {/* Header */}
@@ -4318,15 +4329,49 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               </CardHeader>
             </Card>
 
-            {!estimate.client || estimate.items.length === 0 ? (
+            {/* Debug info display */}
+            <Card className="border-yellow-500/30 bg-yellow-900/20">
+              <CardContent className="p-4">
+                <p className="text-xs text-yellow-300">
+                  DEBUG: Cliente: {hasClient ? '✅' : '❌'} | Materiales: {hasItems ? `✅ (${estimate.items.length})` : '❌'}
+                </p>
+              </CardContent>
+            </Card>
+
+            {!hasClient || !hasItems ? (
               <Card className="border-amber-500/30">
                 <CardContent className="text-center py-8">
                   <AlertCircle className="h-12 w-12 mx-auto mb-4 text-amber-500" />
                   <p className="text-lg font-medium">Estimado Incompleto</p>
-                  <p className="text-muted-foreground">
-                    Necesitas seleccionar un cliente y agregar materiales para
-                    generar la vista previa
-                  </p>
+                  <div className="text-muted-foreground space-y-2">
+                    {!hasClient && (
+                      <p>❌ Necesitas seleccionar un cliente (paso 1)</p>
+                    )}
+                    {!hasItems && (
+                      <p>❌ Necesitas agregar materiales (paso 3)</p>
+                    )}
+                    {hasClient && hasItems && (
+                      <p>✅ Todos los datos están completos - verificando estado...</p>
+                    )}
+                  </div>
+                  <div className="mt-4 flex gap-2 justify-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentStep(0)}
+                      disabled={hasClient}
+                    >
+                      Ir a Cliente
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentStep(2)}
+                      disabled={hasItems}
+                    >
+                      Ir a Materiales
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ) : (
