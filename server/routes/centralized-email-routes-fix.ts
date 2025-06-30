@@ -56,17 +56,19 @@ router.post('/send-estimate', async (req, res) => {
     }
 
     // Importar el servicio de emails de forma dinámica para evitar problemas de dependencias
-    const { default: EstimateEmailService } = await import('../services/estimateEmailService');
+    const { EstimateEmailService } = await import('../services/estimateEmailService');
     
     console.log('📧 [CENTRALIZED-EMAIL] Servicio de email cargado, generando HTML...');
+    console.log('📧 [CENTRALIZED-EMAIL] EstimateEmailService:', EstimateEmailService);
+    console.log('📧 [CENTRALIZED-EMAIL] generateEstimateHTML method:', EstimateEmailService?.generateEstimateHTML);
     const estimateHtml = EstimateEmailService.generateEstimateHTML(estimateData);
     console.log('📧 [CENTRALIZED-EMAIL] HTML generado, longitud:', estimateHtml?.length || 0);
 
     // Importar servicio Resend
-    const { default: ResendService } = await import('../services/resendService');
+    const { resendService } = await import('../services/resendService');
 
     console.log('📧 [CENTRALIZED-EMAIL] Enviando email usando Resend...');
-    const result = await ResendService.sendCentralizedEmail({
+    const result = await resendService.sendCentralizedEmail({
       toEmail: clientEmail,
       toName: clientName,
       contractorEmail,
