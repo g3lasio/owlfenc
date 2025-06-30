@@ -162,14 +162,34 @@ export default function Estimates() {
     }
   };
 
-  // Load materials from database
+  // Load materials from database (user-specific only)
   const loadMaterials = async () => {
     try {
       setIsLoadingMaterials(true);
-      const response = await fetch("/api/materials");
+      
+      if (!user) {
+        console.error("No authenticated user found");
+        return;
+      }
+
+      const token = await user.getIdToken();
+      const response = await fetch("/api/materials", {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       if (response.ok) {
         const data = await response.json();
         setMaterials(data);
+      } else {
+        console.error("Failed to load materials:", response.statusText);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los materiales del usuario",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error loading materials:", error);
@@ -467,9 +487,18 @@ export default function Estimates() {
     }
 
     try {
+      if (!user) {
+        console.error("No authenticated user found");
+        return;
+      }
+
+      const token = await user.getIdToken();
       const response = await fetch("/api/materials", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(newMaterial),
       });
 

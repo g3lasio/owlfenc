@@ -911,6 +911,105 @@ export class FirebaseStorage implements IStorage {
     }
   }
 
+  // Material methods
+  async getMaterialsByCategory(category: string): Promise<Material[]> {
+    try {
+      const materialsRef = collection(db, 'materials');
+      const q = query(
+        materialsRef, 
+        where('category', '==', category),
+        orderBy('name', 'asc')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        ...convertTimestampToDate(doc.data()),
+        id: parseInt(doc.id, 10)
+      })) as Material[];
+    } catch (error) {
+      console.error('Error fetching materials by category:', error);
+      return [];
+    }
+  }
+
+  async getUserMaterials(firebaseUid: string): Promise<Material[]> {
+    try {
+      // First get the user by Firebase UID
+      const user = await this.getUserByFirebaseUid(firebaseUid);
+      if (!user) {
+        return []; // No user found, return empty array
+      }
+
+      const materialsRef = collection(db, 'materials');
+      const q = query(
+        materialsRef, 
+        where('userId', '==', user.id),
+        orderBy('name', 'asc')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        ...convertTimestampToDate(doc.data()),
+        id: parseInt(doc.id, 10)
+      })) as Material[];
+    } catch (error) {
+      console.error('Error fetching user materials:', error);
+      return [];
+    }
+  }
+
+  async createMaterial(insertMaterial: InsertMaterial): Promise<Material> {
+    try {
+      const id = Date.now();
+      
+      const materialData = {
+        ...insertMaterial,
+        id,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      
+      const materialRef = doc(db, 'materials', id.toString());
+      await setDoc(materialRef, materialData);
+      
+      return {
+        ...materialData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      } as Material;
+    } catch (error) {
+      console.error('Error creating material:', error);
+      throw error;
+    }
+  }
+
+  async updateMaterial(id: number, materialData: Partial<Material>): Promise<Material> {
+    try {
+      const materialRef = doc(db, 'materials', id.toString());
+      const materialSnap = await getDoc(materialRef);
+      
+      if (!materialSnap.exists()) {
+        throw new Error(`Material with ID ${id} not found`);
+      }
+      
+      const updatedData = {
+        ...materialData,
+        updatedAt: serverTimestamp()
+      };
+      
+      await updateDoc(materialRef, updatedData);
+      
+      const updatedMaterialSnap = await getDoc(materialRef);
+      return {
+        ...convertTimestampToDate(updatedMaterialSnap.data()),
+        id
+      } as Material;
+    } catch (error) {
+      console.error('Error updating material:', error);
+      throw error;
+    }
+  }
+
   // User Subscription methods
   async getUserSubscription(id: number): Promise<UserSubscription | undefined> {
     try {
