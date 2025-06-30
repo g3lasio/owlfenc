@@ -19,6 +19,7 @@ type User = {
   photoURL: string | null;
   phoneNumber: string | null;
   emailVerified: boolean;
+  getIdToken: () => Promise<string>;
 };
 
 interface AuthContextType {
@@ -89,7 +90,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           displayName: user.displayName,
           photoURL: user.photoURL,
           phoneNumber: user.phoneNumber,
-          emailVerified: user.emailVerified
+          emailVerified: user.emailVerified,
+          getIdToken: () => user.getIdToken()
         };
         setCurrentUser(appUser);
       } else {
@@ -110,7 +112,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           displayName: user.displayName,
           photoURL: user.photoURL,
           phoneNumber: user.phoneNumber,
-          emailVerified: user.emailVerified
+          emailVerified: user.emailVerified,
+          getIdToken: () => user.getIdToken()
         };
         setCurrentUser(appUser);
       }
@@ -144,7 +147,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         displayName: user.displayName,
         photoURL: user.photoURL,
         phoneNumber: user.phoneNumber,
-        emailVerified: user.emailVerified
+        emailVerified: user.emailVerified,
+        getIdToken: () => user.getIdToken()
       };
 
       return appUser;
@@ -176,7 +180,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         displayName: displayName, // Usamos el displayName proporcionado
         photoURL: user.photoURL,
         phoneNumber: user.phoneNumber,
-        emailVerified: user.emailVerified
+        emailVerified: user.emailVerified,
+        getIdToken: () => user.getIdToken()
       };
 
       // Enviar correo de bienvenida
