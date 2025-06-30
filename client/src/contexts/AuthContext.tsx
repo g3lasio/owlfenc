@@ -257,7 +257,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         displayName: user.displayName,
         photoURL: user.photoURL,
         phoneNumber: user.phoneNumber,
-        emailVerified: user.emailVerified
+        emailVerified: user.emailVerified,
+        getIdToken: () => user.getIdToken()
       };
 
       return appUser;
