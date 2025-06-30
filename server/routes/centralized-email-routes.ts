@@ -16,7 +16,11 @@ const router = express.Router();
  * POST /api/centralized-email/send-estimate
  */
 router.post('/send-estimate', async (req, res) => {
+  console.log('📧 [CENTRALIZED-EMAIL] Ruta invocada - inicio');
+  
   try {
+    console.log('📧 [CENTRALIZED-EMAIL] Procesando request...');
+    
     const {
       clientEmail,
       clientName,
