@@ -486,6 +486,20 @@ export class DatabaseStorage implements IStorage {
       .where(eq(materials.category, category))
       .orderBy(asc(materials.name));
   }
+
+  async getUserMaterials(firebaseUid: string): Promise<Material[]> {
+    // First get the user by Firebase UID
+    const user = await this.getUserByFirebaseUid(firebaseUid);
+    if (!user) {
+      return []; // No user found, return empty array
+    }
+
+    // Return materials for this specific user only
+    return db.select()
+      .from(materials)
+      .where(eq(materials.userId, user.id))
+      .orderBy(asc(materials.name));
+  }
   
   async createMaterial(insertMaterial: InsertMaterial): Promise<Material> {
     const [material] = await db.insert(materials).values(insertMaterial).returning();

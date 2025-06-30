@@ -112,6 +112,7 @@ export interface IStorage {
   
   // Material methods
   getMaterialsByCategory(category: string): Promise<Material[]>;
+  getUserMaterials(firebaseUid: string): Promise<Material[]>;
   createMaterial(material: InsertMaterial): Promise<Material>;
   updateMaterial(id: number, material: Partial<Material>): Promise<Material>;
   
@@ -873,6 +874,16 @@ export class StorageManager implements IStorage {
       () => this.primaryStorage.getMaterialsByCategory(category),
       () => this.backupStorage!.getMaterialsByCategory(category),
       `materials_category_${category}`,
+      this.CACHE_TTL
+    );
+  }
+
+  async getUserMaterials(firebaseUid: string): Promise<Material[]> {
+    return this.executeWithFailover<Material[]>(
+      'getUserMaterials',
+      () => this.primaryStorage.getUserMaterials(firebaseUid),
+      () => this.backupStorage!.getUserMaterials(firebaseUid),
+      `materials_user_${firebaseUid}`,
       this.CACHE_TTL
     );
   }
