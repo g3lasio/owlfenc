@@ -19,43 +19,64 @@ async function testPDFEmailAttachment() {
       estimateNumber: 'EST-TEST-PDF-' + Date.now(),
       date: new Date().toISOString().split('T')[0],
       validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      clientName: 'Cliente Test PDF',
-      clientEmail: 'gelasio@chyrris.com',
-      clientPhone: '(555) 123-4567',
-      clientAddress: '123 Test Street',
-      clientCity: 'Test City',
-      clientState: 'CA',
-      clientZipCode: '90210',
+      client: {
+        name: 'Cliente Test PDF',
+        email: 'gelasio@chyrris.com',
+        phone: '(555) 123-4567',
+        address: '123 Test Street, Test City, CA 90210'
+      },
+      contractor: {
+        companyName: 'Test Fence Company LLC',
+        name: 'Test Contractor',
+        email: 'testcontractor@owlfence.com',
+        phone: '(555) 987-6543',
+        address: '456 Business Ave',
+        city: 'Business City',
+        state: 'CA',
+        zipCode: '90211',
+        license: 'LIC123456',
+        logo: null,
+        website: 'https://testfence.com'
+      },
+      project: {
+        type: 'Fence Installation',
+        description: 'Test fence project with PDF attachment verification',
+        location: '123 Test Street, Test City, CA 90210',
+        scopeOfWork: 'Cedar fence installation with posts and boards'
+      },
       items: [
         {
+          id: '1',
           name: 'Cedar Fence Post',
           description: 'Pressure-treated cedar post 6ft height',
           quantity: 10,
-          price: 15.00,
           unit: 'piece',
+          unitPrice: 15.00,
           total: 150.00
         },
         {
+          id: '2',
           name: 'Cedar Fence Boards',
           description: 'Premium cedar boards 6x6 inches',
           quantity: 50,
-          price: 8.50,
           unit: 'board',
+          unitPrice: 8.50,
           total: 425.00
         }
       ],
       subtotal: 575.00,
-      discountAmount: 25.00,
-      taxAmount: 55.00,
+      discount: 25.00,
+      tax: 55.00,
       total: 605.00,
-      projectDescription: 'Test fence project with PDF attachment verification'
+      taxRate: 8.5,
+      notes: 'Professional fence installation with warranty included'
     }
   };
 
   try {
     console.log('📧 [TEST] Enviando estimado con PDF adjunto...');
     
-    const response = await axios.post('http://localhost:5000/api/centralized-email/send-estimate', estimateData, {
+    const response = await axios.post('http://localhost:5000/api/centralized-email/send-estimate', requestData, {
       headers: {
         'Content-Type': 'application/json'
       },
