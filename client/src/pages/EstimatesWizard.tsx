@@ -5917,154 +5917,171 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50 email-preview-scroll">
-            {/* Client Information */}
-            {estimate.client && (
-              <div className="bg-white rounded-lg border p-3 shadow-sm">
-                <h4 className="font-medium text-gray-800 mb-3 flex items-center gap-2 text-sm">
-                  <User className="h-4 w-4 text-blue-600" />
-                  Client Information
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <span className="font-medium text-gray-600 block mb-1">Name:</span>
-                    <p className="text-gray-900 bg-gray-50 px-2 py-1 rounded">{estimate.client.name}</p>
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+              {/* Client Information Card */}
+              {estimate.client && (
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+                  <div className="p-4 border-b border-gray-100">
+                    <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                      <User className="h-4 w-4 text-blue-600" />
+                      Client Information
+                    </h4>
                   </div>
-                  <div>
-                    <span className="font-medium text-gray-600 block mb-1">Email:</span>
-                    <p className="text-gray-900 bg-gray-50 px-2 py-1 rounded break-all">
-                      {estimate.client.email || "Not provided"}
+                  <div className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Name</label>
+                        <div className="text-sm font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
+                          {estimate.client.name}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</label>
+                        <div className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg break-all">
+                          {estimate.client.email || "Not provided"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Email Configuration */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div className="p-4 border-b border-gray-100">
+                  <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-blue-600" />
+                    Email Configuration
+                  </h4>
+                </div>
+                <div className="p-4 space-y-4">
+                  {/* Email Recipient */}
+                  <div className="space-y-2">
+                    <Label htmlFor="toEmail" className="text-sm font-medium text-gray-700">
+                      Send to Email Address *
+                    </Label>
+                    <Input
+                      id="toEmail"
+                      type="email"
+                      value={emailData.toEmail}
+                      onChange={(e) => setEmailData((prev) => ({ ...prev, toEmail: e.target.value }))}
+                      placeholder="client@email.com"
+                      className="w-full h-11 text-sm"
+                    />
+                  </div>
+
+                  {/* Email Subject */}
+                  <div className="space-y-2">
+                    <Label htmlFor="subject" className="text-sm font-medium text-gray-700">
+                      Email Subject *
+                    </Label>
+                    <Input
+                      id="subject"
+                      value={emailData.subject}
+                      onChange={(e) => setEmailData((prev) => ({ ...prev, subject: e.target.value }))}
+                      placeholder="Professional Estimate - Your Project"
+                      className="w-full h-11 text-sm"
+                    />
+                  </div>
+
+                  {/* Personal Message */}
+                  <div className="space-y-2">
+                    <Label htmlFor="message" className="text-sm font-medium text-gray-700">
+                      Personal Message *
+                    </Label>
+                    <Textarea
+                      id="message"
+                      value={emailData.message}
+                      onChange={(e) => setEmailData((prev) => ({ ...prev, message: e.target.value }))}
+                      placeholder="Dear [Client Name], I hope this message finds you well. Please find attached our professional estimate for your project..."
+                      rows={5}
+                      className="w-full resize-none text-sm"
+                    />
+                    <p className="text-xs text-gray-500">
+                      This message will be included in the email body
                     </p>
                   </div>
+
+                  {/* Send Copy Option */}
+                  <div className="pt-2">
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="sendCopy"
+                        checked={emailData.sendCopy}
+                        onChange={(e) => setEmailData((prev) => ({ ...prev, sendCopy: e.target.checked }))}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor="sendCopy" className="text-sm font-medium text-gray-700 cursor-pointer">
+                          Send me a copy
+                        </Label>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Copy will be sent to: {profile?.email || "your email"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            )}
 
-            {/* Email Recipient */}
-            <div className="bg-white rounded-lg border p-4 shadow-sm">
-              <Label
-                htmlFor="toEmail"
-                className="text-sm font-medium text-gray-700 mb-3 block"
-              >
-                Send to Email Address *
-              </Label>
-              <Input
-                id="toEmail"
-                type="email"
-                value={emailData.toEmail}
-                onChange={(e) =>
-                  setEmailData((prev) => ({ ...prev, toEmail: e.target.value }))
-                }
-                placeholder="client@email.com"
-                className="w-full h-10"
-              />
-            </div>
-
-            {/* Email Subject */}
-            <div className="bg-white rounded-lg border p-4 shadow-sm">
-              <Label
-                htmlFor="subject"
-                className="text-sm font-medium text-gray-700 mb-3 block"
-              >
-                Email Subject *
-              </Label>
-              <Input
-                id="subject"
-                value={emailData.subject}
-                onChange={(e) =>
-                  setEmailData((prev) => ({ ...prev, subject: e.target.value }))
-                }
-                placeholder="Professional Estimate - Your Project"
-                className="w-full h-10"
-              />
-            </div>
-
-            {/* Personal Message */}
-            <div className="bg-white rounded-lg border p-4 shadow-sm">
-              <Label
-                htmlFor="message"
-                className="text-sm font-medium text-gray-700 mb-3 block"
-              >
-                Personal Message *
-              </Label>
-              <Textarea
-                id="message"
-                value={emailData.message}
-                onChange={(e) =>
-                  setEmailData((prev) => ({ ...prev, message: e.target.value }))
-                }
-                placeholder="Dear [Client Name], I hope this message finds you well. Please find attached our professional estimate for your project..."
-                rows={6}
-                className="w-full resize-none text-sm min-h-[140px]"
-              />
-              <p className="text-xs text-gray-500 mt-2">
-                This message will be included in the email body
-              </p>
-            </div>
-
-            {/* Send Copy Option */}
-            <div className="bg-white rounded-lg border p-4 shadow-sm">
-              <div className="flex items-start space-x-4">
-                <input
-                  type="checkbox"
-                  id="sendCopy"
-                  checked={emailData.sendCopy}
-                  onChange={(e) =>
-                    setEmailData((prev) => ({
-                      ...prev,
-                      sendCopy: e.target.checked,
-                    }))
-                  }
-                  className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 flex-shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <Label
-                    htmlFor="sendCopy"
-                    className="text-sm font-medium text-gray-700 cursor-pointer block leading-tight"
-                  >
-                    Send me a copy
-                  </Label>
-                  <p className="text-xs text-gray-500 mt-1 break-words">
-                    Copy will be sent to: {profile?.email || "your email"}
-                  </p>
+              {/* Email Preview */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div className="p-4 border-b border-gray-100">
+                  <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <Eye className="h-4 w-4 text-blue-600" />
+                    Email Preview
+                  </h4>
                 </div>
-              </div>
-            </div>
+                <div className="p-4">
+                  <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-4">
+                    {/* Email Headers */}
+                    <div className="space-y-2 text-sm">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                        <span className="font-medium text-gray-600 min-w-12">To:</span>
+                        <span className="text-gray-900 break-all font-mono text-xs bg-white px-2 py-1 rounded">
+                          {emailData.toEmail || "client@email.com"}
+                        </span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                        <span className="font-medium text-gray-600 min-w-12">From:</span>
+                        <span className="text-gray-900 break-all font-mono text-xs bg-white px-2 py-1 rounded">
+                          {profile?.email || "your@email.com"}
+                        </span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                        <span className="font-medium text-gray-600 min-w-12">Subject:</span>
+                        <span className="text-gray-900 break-words bg-white px-2 py-1 rounded flex-1">
+                          {emailData.subject || "Professional Estimate"}
+                        </span>
+                      </div>
+                    </div>
 
-            {/* Email Preview */}
-            <div className="bg-white rounded-lg border p-4 shadow-sm">
-              <h4 className="font-medium text-gray-800 mb-3 flex items-center gap-2 text-sm">
-                <Eye className="h-4 w-4 text-blue-600" />
-                Email Preview
-              </h4>
-              <div className="bg-gray-50 rounded-lg p-4 text-sm space-y-3 border border-gray-200">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2">
-                    <strong className="text-gray-700">To:</strong> 
-                    <span className="text-gray-900 break-all">{emailData.toEmail || "client@email.com"}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <strong className="text-gray-700">From:</strong> 
-                    <span className="text-gray-900 break-all">{profile?.email || "your@email.com"}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <strong className="text-gray-700">Subject:</strong>
-                    <span className="text-gray-900 break-words">{emailData.subject || "Professional Estimate"}</span>
+                    {/* Message Content */}
+                    <div className="border-t border-gray-300 pt-4">
+                      <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                          {emailData.message || "Your message will appear here..."}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Attachment Info */}
+                    <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                      <span>📎</span>
+                      <span className="font-medium">Professional estimate attached</span>
+                    </div>
+
+                    {/* Copy Notification */}
+                    {emailData.sendCopy && (
+                      <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+                        <span>✓</span>
+                        <span className="font-medium">Copy will be sent to you</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="pt-3 border-t border-gray-300">
-                  <div className="text-gray-700 whitespace-pre-wrap break-words leading-relaxed">
-                    {emailData.message || "Your message will appear here..."}
-                  </div>
-                </div>
-                <div className="text-blue-600 text-sm border-t border-gray-300 pt-3">
-                  📎 Professional estimate attached
-                </div>
-                {emailData.sendCopy && (
-                  <div className="text-green-600 text-sm bg-green-50 px-2 py-1 rounded">
-                    ✓ Copy will be sent to you
-                  </div>
-                )}
               </div>
             </div>
           </div>
