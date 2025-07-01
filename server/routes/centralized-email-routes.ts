@@ -21,6 +21,40 @@ router.get('/test', (req, res) => {
 });
 
 /**
+ * Test endpoint específico para verificar servicio de email
+ * POST /api/centralized-email/test-send
+ */
+router.post('/test-send', async (req, res) => {
+  try {
+    console.log('📧 [CENTRALIZED-EMAIL] Test send invoked');
+    
+    // Test básico del servicio de email sin dependencias complejas
+    const testEmail = await resendService.sendEmail({
+      to: "gelasio@chyrris.com",
+      from: "onboarding@resend.dev",
+      subject: "Test - Sistema Owl Fence",
+      html: "<h1>Test Email</h1><p>Email test funcionando correctamente</p>"
+    });
+    
+    console.log('📧 [CENTRALIZED-EMAIL] Test result:', testEmail);
+    
+    res.json({ 
+      success: true, 
+      message: 'Test email sent successfully',
+      result: testEmail
+    });
+    
+  } catch (error) {
+    console.error('❌ [CENTRALIZED-EMAIL] Test error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Test failed',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
  * Enviar estimado usando sistema centralizado
  * POST /api/centralized-email/send-estimate
  */
@@ -67,29 +101,18 @@ router.post('/send-estimate', async (req, res) => {
       ...estimateData
     };
 
-    // Generar HTML del estimado
-    console.log('📧 [CENTRALIZED-EMAIL] Generando HTML del estimado...');
-    console.log('📧 [CENTRALIZED-EMAIL] Datos de entrada para HTML:', {
-      clientName,
-      contractorName,
-      contractorCompany: contractorCompany || contractorName,
-      safeEstimateData
-    });
-    
-    let estimateHtml;
-    try {
-      estimateHtml = generateEstimateHTML({
-        clientName,
-        contractorName,
-        contractorCompany: contractorCompany || contractorName,
-        estimateData: safeEstimateData,
-        customMessage
-      });
-      console.log('📧 [CENTRALIZED-EMAIL] HTML generado exitosamente, longitud:', estimateHtml.length);
-    } catch (htmlError) {
-      console.error('❌ [CENTRALIZED-EMAIL] Error generando HTML:', htmlError);
-      throw htmlError;
-    }
+    // Para simplificar el debugging, crear HTML simple
+    const simpleHtml = `
+      <h1>Estimado Profesional</h1>
+      <p><strong>Cliente:</strong> ${clientName}</p>
+      <p><strong>Contratista:</strong> ${contractorName}</p>
+      <p><strong>Empresa:</strong> ${contractorCompany || contractorName}</p>
+      <p><strong>Número:</strong> ${safeEstimateData.estimateNumber}</p>
+      <p><strong>Total:</strong> $${safeEstimateData.total}</p>
+      <p><strong>Proyecto:</strong> ${safeEstimateData.projectType}</p>
+    `;
+
+    console.log('📧 [CENTRALIZED-EMAIL] HTML simple creado, longitud:', simpleHtml.length);
 
     console.log('📧 [CENTRALIZED-EMAIL] Enviando email usando Resend...');
 
