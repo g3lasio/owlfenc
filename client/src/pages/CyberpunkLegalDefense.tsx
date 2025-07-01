@@ -879,7 +879,7 @@ export default function CyberpunkLegalDefense() {
       if (result.success) {
         // Set the extracted data with all project information
         setExtractedData(result.extractedData);
-        setCurrentStep(3);
+        setCurrentStep(2);
         setCurrentPhase('defense-review');
 
         // Mark as selected project source
@@ -2270,8 +2270,8 @@ export default function CyberpunkLegalDefense() {
 
 
 
-          {/* Step 3: Defense Review & Correction with Live Preview */}
-          {extractedData && currentStep === 3 && currentPhase === 'defense-review' && (
+          {/* Step 2: Defense Review & Correction with Live Preview */}
+          {extractedData && currentStep === 2 && currentPhase === 'defense-review' && (
             <Card className="border-2 border-green-400 bg-black/80 relative  mt-6">
               <HUDCorners />
               
