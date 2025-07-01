@@ -94,71 +94,64 @@ export function DeepSearchEffect({ isVisible, onComplete }: DeepSearchEffectProp
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="relative flex flex-col items-center justify-center space-y-6 max-w-2xl mx-4">
-        {/* Logo Mervin con efecto futurista */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="relative flex flex-col items-center justify-center space-y-3 max-w-md mx-4">
+        {/* Logo Mervin compacto con efecto futurista */}
         <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 rounded-full blur-xl opacity-75 animate-pulse"></div>
-          <div className="relative bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 p-1 rounded-full">
-            <div className="bg-gray-900 rounded-full p-6">
-              <div className="animate-spin" style={{ animationDuration: '4s' }}>
-                <MervinLogo className="h-24 w-24 text-cyan-400" />
-              </div>
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full blur-lg opacity-50 animate-pulse"></div>
+          <div className="relative bg-gradient-to-r from-cyan-400/20 to-blue-500/20 border border-cyan-400/40 rounded-full p-3">
+            <div className="animate-spin" style={{ animationDuration: '3s' }}>
+              <MervinLogo className="h-12 w-12 text-cyan-400" />
             </div>
           </div>
-          {/* Anillos giratorios */}
-          <div className="absolute inset-0 border-2 border-cyan-400/30 rounded-full animate-spin"></div>
-          <div className="absolute inset-2 border-2 border-blue-500/30 rounded-full animate-spin" style={{ animationDirection: 'reverse' }}></div>
-          <div className="absolute inset-4 border-2 border-purple-600/30 rounded-full animate-spin"></div>
+          {/* Anillo giratorio minimalista */}
+          <div className="absolute inset-0 border border-cyan-400/20 rounded-full animate-spin" style={{ animationDuration: '2s' }}></div>
         </div>
 
-        {/* Texto futurista */}
-        <div className="text-center space-y-4">
-          <h2 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
+        {/* Texto futurista compacto */}
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
             MERVIN AI
           </h2>
-          <p className="text-xl text-gray-300 animate-pulse">
-            DeepSearch IA
+          <p className="text-base text-cyan-300/80 animate-pulse">
+            DeepSearch análisis
           </p>
           
-          {/* Frase técnica aleatoria */}
-          <div className="bg-slate-900/60 border border-cyan-400/30 rounded-lg p-4 backdrop-blur-sm">
-            <p className="text-sm text-cyan-100 leading-relaxed max-w-lg mx-auto font-mono">
-              {currentPhrase}{dots}
+          {/* Frase técnica compacta */}
+          <div className="bg-slate-900/40 border border-cyan-400/20 rounded-md p-3 backdrop-blur-sm max-w-xs">
+            <p className="text-xs text-cyan-100/90 leading-relaxed font-mono">
+              {currentPhrase.split('.')[0]}...{dots}
             </p>
           </div>
           
-          <div className="flex items-center justify-center space-x-2 mt-4">
-            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-            <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+          {/* Indicador de progreso minimalista */}
+          <div className="flex items-center justify-center space-x-1 mt-3">
+            <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce"></div>
+            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.15s'}}></div>
+            <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.3s'}}></div>
           </div>
         </div>
 
-        {/* Efecto de partículas */}
-        <div className="absolute inset-0  pointer-events-none">
-          {[...Array(30)].map((_, i) => (
+        {/* Partículas sutiles */}
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(12)].map((_, i) => (
             <div
               key={i}
-              className="absolute w-1 h-1 bg-white rounded-full opacity-20 animate-pulse"
+              className="absolute w-0.5 h-0.5 bg-cyan-400/30 rounded-full animate-pulse"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
-                animationDuration: `${2 + Math.random() * 3}s`
+                left: `${20 + Math.random() * 60}%`,
+                top: `${20 + Math.random() * 60}%`,
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${1.5 + Math.random() * 2}s`
               }}
             />
           ))}
         </div>
         
-        {/* Líneas de escaneo */}
-        <div className="absolute inset-0  pointer-events-none">
-          <div className="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse" 
-               style={{ top: '20%', animationDuration: '2s' }}></div>
-          <div className="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent animate-pulse" 
-               style={{ top: '50%', animationDuration: '2.5s', animationDelay: '0.5s' }}></div>
-          <div className="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-purple-400 to-transparent animate-pulse" 
-               style={{ top: '80%', animationDuration: '3s', animationDelay: '1s' }}></div>
+        {/* Línea de escaneo única */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute w-3/4 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent left-1/2 transform -translate-x-1/2 animate-pulse" 
+               style={{ top: '50%', animationDuration: '2s' }}></div>
         </div>
       </div>
     </div>
