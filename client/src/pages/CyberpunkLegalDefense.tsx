@@ -574,18 +574,8 @@ export default function CyberpunkLegalDefense() {
       estimatedTime: '30 sec'
     },
     {
-      id: 'arsenal-builder',
-      step: 2,
-      title: 'Contract Arsenal Builder',
-      description: 'Harness AI-driven legal intelligence. Instantly receive a customized contract proposal, with all critical clauses and shields selected for your project\'s location, type, and risk profile.',
-      status: contractAnalysis ? 'completed' : (currentStep === 2 ? 'processing' : 'pending'),
-      progress: contractAnalysis ? 100 : (currentStep === 2 ? 50 : 0),
-      icon: <Shield className="h-6 w-6" />,
-      estimatedTime: '45 sec'
-    },
-    {
       id: 'defense-review',
-      step: 3,
+      step: 2,
       title: 'Defense Review & Correction',
       description: 'Preview, correct, and strengthen. Every term, clause, and client detail is surfaced for your review—so you stay in command before anything is signed.',
       status: generatedContract ? 'completed' : (currentStep === 3 ? 'processing' : 'pending'),
@@ -595,7 +585,7 @@ export default function CyberpunkLegalDefense() {
     },
     {
       id: 'digital-execution',
-      step: 4,
+      step: 3,
       title: 'Digital Execution & Vault',
       description: 'E-sign securely. Both parties sign; final contracts are auto-delivered as certified PDFs and stored in your digital vault—irrefutable, retrievable, and always protected.',
       status: currentStep === 4 ? 'processing' : 'pending',
