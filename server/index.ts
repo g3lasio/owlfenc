@@ -39,7 +39,7 @@ import notificationsRoutes from './routes/notifications-routes';
 import integrationsRoutes from './routes/integrations-routes';
 
 // PDF generation now handled exclusively by premiumPdfService
-import pdfMonkeyEstimatesRoutes from './routes/pdfmonkey-estimates';
+// REMOVED: PDFMonkey estimates routes - using only Puppeteer PDF service
 
 // 🤖 SISTEMA INTELIGENTE DE CONTRATOS - Anthropic Claude
 import anthropicContractRoutes from './routes/anthropicContractRoutes';

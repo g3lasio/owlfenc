@@ -322,62 +322,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/estimates/:id/generate-pdf - Generar PDF con template premium
-router.post('/:id/generate-pdf', requireAuth, async (req, res) => {
-  try {
-    const userId = req.user!.id;
-    const estimateId = parseInt(req.params.id);
-    
-    if (isNaN(estimateId)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid estimate ID'
-      });
-    }
-    
-    // Verificar que el estimado existe y pertenece al usuario
-    const estimate = await storage.getEstimate(estimateId);
-    
-    if (!estimate) {
-      return res.status(404).json({
-        success: false,
-        error: 'Estimate not found'
-      });
-    }
-    
-    if (estimate.userId !== userId) {
-      return res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      });
-    }
-    
-    // Aquí se integraría con el servicio de generación de PDF usando el template premium
-    // Por ahora simulamos la generación
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const pdfUrl = `/generated-pdfs/estimate-${estimate.estimateNumber}.pdf`;
-    
-    // Actualizar el estimado con la URL del PDF
-    await storage.updateEstimate(estimateId, { pdfUrl });
-    
-    res.json({
-      success: true,
-      data: {
-        pdfUrl,
-        estimateNumber: estimate.estimateNumber
-      },
-      message: 'PDF generated successfully using premium template'
-    });
-    
-  } catch (error) {
-    console.error('Error generating PDF:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error'
-    });
-  }
-});
+// REMOVED: Duplicate PDF endpoint - using only /api/estimate-puppeteer-pdf
 
 // POST /api/estimates/:id/send - Enviar estimado por email
 router.post('/:id/send', requireAuth, async (req, res) => {
