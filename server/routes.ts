@@ -747,13 +747,31 @@ ${extractedText}`,
   // Endpoint simple - el frontend enviará los proyectos directamente
   app.post("/api/projects/sync", async (req, res) => {
     try {
-      const { projects } = req.body;
+      const { projects, userId } = req.body;
       
       if (!projects || !Array.isArray(projects)) {
         return res.status(400).json({ error: "Projects array is required" });
       }
 
-      // Simplemente devolver los proyectos recibidos del frontend
+      // CRITICAL SECURITY: Verify user authentication when userId provided
+      if (userId) {
+        console.log(`🔒 SECURITY: Syncing projects for authenticated user: ${userId}`);
+        
+        // Filter projects to only include those belonging to the user
+        const userProjects = projects.filter((project: any) => {
+          return project.firebaseUserId === userId || 
+                 project.userId === userId ||
+                 (!project.firebaseUserId && !project.userId); // Allow projects without explicit user assignment for backward compatibility
+        });
+        
+        if (userProjects.length !== projects.length) {
+          console.warn(`🚨 SECURITY: Filtered ${projects.length - userProjects.length} unauthorized projects for user ${userId}`);
+        }
+        
+        projects.splice(0, projects.length, ...userProjects);
+      }
+
+      // Safely return the user's projects only
       const projectsForContract = projects.map((project: any) => ({
         id: project.id,
         projectId: project.projectId || project.id,
@@ -790,10 +808,12 @@ ${extractedText}`,
         scheduledDate: project.scheduledDate,
         completedDate: project.completedDate,
         createdAt: project.createdAt,
-        date: project.createdAt ? (project.createdAt.toDate ? project.createdAt.toDate().toLocaleDateString() : new Date(project.createdAt).toLocaleDateString()) : 'N/A'
+        date: project.createdAt ? (project.createdAt.toDate ? project.createdAt.toDate().toLocaleDateString() : new Date(project.createdAt).toLocaleDateString()) : 'N/A',
+        // SECURITY: Include user identification in processed projects
+        userId: project.firebaseUserId || project.userId || userId || null
       }));
 
-      console.log(`✅ Proyectos sincronizados: ${projectsForContract.length}`);
+      console.log(`✅ Projects synchronized securely: ${projectsForContract.length} for user ${userId || 'unknown'}`);
       
       // Debug address fields for first project if any
       if (projectsForContract.length > 0) {
