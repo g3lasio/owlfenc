@@ -1360,6 +1360,9 @@ Output must be between 200-900 characters in English.`;
 
   // Registrar rutas de correo electrónico
   app.use("/api/email", emailRoutes);
+  
+  // Registrar rutas de email centralizado
+  app.use("/api/centralized-email", centralizedEmailRoutes);
 
   // Registrar rutas de importación inteligente
   app.use("/api/import", aiImportRoutes);

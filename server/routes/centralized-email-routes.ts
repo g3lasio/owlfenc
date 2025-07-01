@@ -58,20 +58,53 @@ router.post('/send-estimate', async (req, res) => {
       });
     }
 
-    // Respuesta de prueba simple
-    console.log('📧 [CENTRALIZED-EMAIL] Enviando respuesta de prueba...');
-    return res.json({
-      success: true,
-      message: 'Endpoint funcionando correctamente',
-      data: req.body
+    // Generar HTML del estimado
+    console.log('📧 [CENTRALIZED-EMAIL] Generando HTML del estimado...');
+    const estimateHtml = generateEstimateHTML({
+      clientName,
+      contractorName,
+      contractorCompany: contractorCompany || contractorName,
+      estimateData,
+      customMessage
     });
 
+    console.log('📧 [CENTRALIZED-EMAIL] HTML generado, longitud:', estimateHtml.length);
+
+    console.log('📧 [CENTRALIZED-EMAIL] Enviando email usando Resend...');
+
+    // Enviar email usando el servicio contractor-specific
+    const result = await resendService.sendContractorEmail({
+      toEmail: clientEmail,
+      toName: clientName,
+      contractorEmail,
+      contractorName,
+      contractorCompany: contractorCompany || contractorName,
+      subject: `Estimado Profesional - ${estimateData.estimateNumber} - ${contractorCompany || contractorName}`,
+      htmlContent: estimateHtml,
+      sendCopyToContractor: sendCopy
+    });
+
+    console.log('📧 [CENTRALIZED-EMAIL] Resultado del envío:', result);
+
+    if (result.success) {
+      return res.json({
+        success: true,
+        message: result.message,
+        emailId: result.emailId
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: result.message
+      });
+    }
+
   } catch (error) {
-    console.error('Error en endpoint de prueba:', error);
+    console.error('Error enviando estimado centralizado:', error);
     res.status(500).json({
       success: false,
-      message: 'Error interno en endpoint de prueba',
-      error: error.message
+      message: 'Error interno enviando estimado',
+      error: error instanceof Error ? error.message : 'Error desconocido'
     });
   }
 });

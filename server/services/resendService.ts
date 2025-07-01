@@ -160,6 +160,9 @@ export class ResendEmailService {
       if (clientEmailResult && params.sendCopyToContractor) {
         console.log('📧 [CONTRACTOR-EMAIL] Enviando copia al contratista...');
         
+        // Aplicar mismo proceso de detección de modo de prueba para la copia
+        const contractorRecipient = this.getAppropriateRecipient(params.contractorEmail);
+        
         const copyHtml = `
           <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #4caf50;">
             <h4 style="color: #2e7d32; margin: 0 0 10px 0;">📧 Copia del Email Enviado a Cliente</h4>
@@ -168,17 +171,24 @@ export class ResendEmailService {
               <strong>Desde:</strong> ${contractorNoReplyEmail}<br>
               <strong>Reply-To:</strong> ${params.contractorEmail}<br>
               <strong>Fecha:</strong> ${new Date().toLocaleString('es-ES')}
+              ${contractorRecipient !== params.contractorEmail ? `<br><strong>Nota:</strong> Copia redirigida a ${contractorRecipient} (modo prueba)` : ''}
             </p>
           </div>
           ${params.htmlContent}
         `;
 
-        await this.sendEmail({
-          to: params.contractorEmail,
+        const copyResult = await this.sendEmail({
+          to: contractorRecipient, // Usar el destinatario procesado
           from: contractorNoReplyEmail,
           subject: `[COPIA] ${params.subject}`,
           html: copyHtml
         });
+        
+        if (copyResult) {
+          console.log('✅ [CONTRACTOR-EMAIL] Copia enviada exitosamente al contratista');
+        } else {
+          console.log('⚠️ [CONTRACTOR-EMAIL] No se pudo enviar copia al contratista (no crítico)');
+        }
       }
 
       return {
