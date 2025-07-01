@@ -73,164 +73,79 @@ export const getClients = async (userId?: string, filters?: { tag?: string, sour
     // CRITICAL SECURITY: Use authenticated user's ID if none provided
     const targetUserId = userId || currentUser.uid;
     
-    console.log("=== DIAGNÓSTICO DETALLADO DE CARGA DE CLIENTES ===");
-    console.log("1. Parámetros recibidos:");
-    console.log("   - userId solicitado:", userId || "No proporcionado (usando actual)");
-    console.log("   - userId efectivo:", targetUserId);
-    console.log("   - filters:", filters || "No proporcionados");
-    
-    console.log("2. Estado de Firebase:");
-    console.log("   - App inicializada:", !!db);
-    console.log("   - Usuario actual:", `${currentUser.uid} (${currentUser.email})`);
-    
     // CRITICAL SECURITY: Verify user can only access their own data
     if (userId && userId !== currentUser.uid) {
       console.warn("🔒 SECURITY: User attempting to access another user's clients - access denied");
       throw new Error("Access denied - cannot access other users' data");
     }
     
-    console.log("3. Configuración de Firebase:");
-    console.log("   - Project ID:", db.app.options.projectId);
-    console.log("   - Auth Domain:", db.app.options.authDomain);
+    console.log(`🔒 SECURITY: Loading clients for user: ${targetUserId}`);
     
-    let q;
-    
-    // Verificar conexión básica primero
-    console.log("4. Verificando conexión básica a Firestore...");
-    try {
-      const testRef = collection(db, "clients");
-      console.log("   ✓ Referencia a colección 'clients' creada exitosamente");
-    } catch (connectionError) {
-      console.error("   ✗ Error creando referencia a colección:", connectionError);
-      throw new Error(`Error de conexión básica: ${connectionError.message}`);
-    }
-    
-    console.log("5. Construyendo consulta con filtros de seguridad...");
+    // Build query constraints with mandatory user filtering
     const queryConstraints = [];
 
     // CRITICAL SECURITY: Always filter by authenticated user
-    console.log("   - 🔒 SECURITY: Agregando filtro obligatorio por userId:", targetUserId);
     queryConstraints.push(where("userId", "==", targetUserId));
 
-    // Aplicar filtros adicionales si se proporcionan
+    // Apply additional filters if provided
     if (filters) {
-      console.log("   - Procesando filtros adicionales:", filters);
       if (filters.tag) {
-        console.log("     - Filtro por tag:", filters.tag);
         queryConstraints.push(where("tags", "array-contains", filters.tag));
       }
 
       if (filters.source) {
         if (filters.source === "no_source") {
-          console.log("     - Filtro por source vacío");
           queryConstraints.push(where("source", "==", ""));
         } else {
-          console.log("     - Filtro por source:", filters.source);
           queryConstraints.push(where("source", "==", filters.source));
         }
       }
     }
 
-    console.log("   - Total de constraints:", queryConstraints.length);
-    
+    // Build and execute query
+    let q;
     try {
       q = query(
         collection(db, "clients"),
         ...queryConstraints,
         orderBy("createdAt", "desc")
       );
-      console.log("   ✓ Consulta con filtros construida exitosamente");
     } catch (queryError) {
-      console.error("   ✗ Error construyendo consulta con filtros:", queryError);
-      
-      // Intentar sin orderBy si hay error de índice
-      console.log("   - Intentando consulta sin orderBy...");
+      // Fallback without orderBy if index doesn't exist
       q = query(
         collection(db, "clients"),
         ...queryConstraints
       );
-      console.log("   ✓ Consulta sin orderBy construida exitosamente");
     }
 
-    console.log("6. Ejecutando consulta...");
-    const startTime = Date.now();
+    // Execute query
+    const querySnapshot = await getDocs(q);
     
-    try {
-      const querySnapshot = await getDocs(q);
-      const executionTime = Date.now() - startTime;
+    const results = querySnapshot.docs.map(doc => {
+      const data = doc.data() as any;
+      // Handle Firestore Timestamps properly
+      const createdAt = data.createdAt && typeof data.createdAt.toDate === 'function' 
+        ? data.createdAt.toDate() 
+        : data.createdAt instanceof Date 
+          ? data.createdAt 
+          : new Date();
       
-      console.log("7. ✓ Consulta ejecutada exitosamente");
-      console.log("   - Tiempo de ejecución:", executionTime + "ms");
-      console.log("   - Documentos encontrados:", querySnapshot.size);
-      console.log("   - Metadata:", {
-        fromCache: querySnapshot.metadata.fromCache,
-        hasPendingWrites: querySnapshot.metadata.hasPendingWrites
-      });
-      
-      if (querySnapshot.size > 0) {
-        console.log("8. Procesando documentos...");
-        querySnapshot.docs.forEach((doc, index) => {
-          const data = doc.data();
-          console.log(`   Documento ${index + 1}:`, {
-            id: doc.id,
-            name: data.name || "Sin nombre",
-            email: data.email || "Sin email",
-            userId: data.userId || "Sin userId",
-            hasCreatedAt: !!data.createdAt
-          });
-        });
-      } else {
-        console.log("8. ⚠️ No se encontraron documentos");
-        if (userId) {
-          console.log("   - Verificando si existen clientes para este usuario...");
-          try {
-            const allClientsQuery = query(collection(db, "clients"));
-            const allClientsSnapshot = await getDocs(allClientsQuery);
-            console.log("   - Total de clientes en la base de datos:", allClientsSnapshot.size);
-            
-            if (allClientsSnapshot.size > 0) {
-              console.log("   - Primeros 3 documentos encontrados:");
-              allClientsSnapshot.docs.slice(0, 3).forEach((doc, index) => {
-                const data = doc.data();
-                console.log(`     ${index + 1}. ID: ${doc.id}, userId: ${data.userId}, name: ${data.name}`);
-              });
-            }
-          } catch (verificationError) {
-            console.error("   - Error verificando documentos:", verificationError);
-          }
-        }
-      }
-      
-      const results = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        // Verificar si createdAt/updatedAt son Timestamps válidos antes de llamar a toDate()
-        const createdAt = data.createdAt && typeof data.createdAt.toDate === 'function' 
-          ? data.createdAt.toDate() 
-          : data.createdAt instanceof Date 
-            ? data.createdAt 
-            : new Date();
-        
-        const updatedAt = data.updatedAt && typeof data.updatedAt.toDate === 'function'
-          ? data.updatedAt.toDate()
-          : data.updatedAt instanceof Date
-            ? data.updatedAt
-            : new Date();
-            
-        return {
-          id: doc.id,
-          ...data,
-          createdAt,
-          updatedAt
-        };
-      }) as Client[];
-      
-      console.log("9. ✓ Procesamiento completado:", results.length, "clientes");
-      return results;
-      
-    } catch (executeError) {
-      console.error("7. ✗ Error ejecutando consulta:", executeError);
-      throw executeError;
-    }
+      const updatedAt = data.updatedAt && typeof data.updatedAt.toDate === 'function'
+        ? data.updatedAt.toDate()
+        : data.updatedAt instanceof Date
+          ? data.updatedAt
+          : new Date();
+          
+      return {
+        id: doc.id,
+        ...data,
+        createdAt,
+        updatedAt
+      } as Client;
+    });
+    
+    console.log(`🔒 SECURITY: Successfully loaded ${results.length} clients for user ${targetUserId}`);
+    return results;
     
   } catch (error: any) {
     console.error("=== ERROR CRÍTICO EN CARGA DE CLIENTES ===");
@@ -254,13 +169,26 @@ export const getClients = async (userId?: string, filters?: { tag?: string, sour
 // Obtener un cliente específico por ID
 export const getClientById = async (id: string) => {
   try {
+    // CRITICAL SECURITY: Get current authenticated user
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      console.warn("🔒 SECURITY: No authenticated user - access denied");
+      throw new Error("Authentication required");
+    }
+
     const docRef = doc(db, "clients", id);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-      const data = docSnap.data();
+      const data = docSnap.data() as any;
       
-      // Verificar si createdAt/updatedAt son Timestamps válidos antes de llamar a toDate()
+      // CRITICAL SECURITY: Verify client belongs to current user
+      if (data.userId !== currentUser.uid) {
+        console.warn("🔒 SECURITY: Client access denied - belongs to different user");
+        throw new Error("Access denied - client belongs to different user");
+      }
+      
+      // Handle Firestore Timestamps properly
       const createdAt = data.createdAt && typeof data.createdAt.toDate === 'function' 
         ? data.createdAt.toDate() 
         : data.createdAt instanceof Date 
@@ -273,6 +201,7 @@ export const getClientById = async (id: string) => {
           ? data.updatedAt
           : new Date();
           
+      console.log(`🔒 SECURITY: Client access granted for user: ${currentUser.uid}`);
       return {
         id: docSnap.id,
         ...data,
