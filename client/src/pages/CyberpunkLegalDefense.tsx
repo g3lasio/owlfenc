@@ -2401,6 +2401,26 @@ export default function CyberpunkLegalDefense() {
                       setIntelligentClauses([]);
                       setSelectedClauses(new Set());
                       setShowPreview(false);
+                      setApprovedClauses([]);
+                      setClauseCustomizations({});
+                      setSelectedProject(null);
+                      setDataInputMethod('select');
+                      
+                      // Resetear términos de pago al estado inicial
+                      setPaymentTerms([
+                        {
+                          id: '1',
+                          label: 'Initial Payment (50%)',
+                          percentage: 50,
+                          description: '50% after contract signed'
+                        },
+                        {
+                          id: '2',
+                          label: 'Final Payment (50%)',
+                          percentage: 50,
+                          description: 'Upon project completion'
+                        }
+                      ]);
                       
                       // Scroll al principio de la página
                       window.scrollTo({ top: 0, behavior: 'smooth' });

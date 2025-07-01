@@ -460,6 +460,14 @@ Changelog:
   * Fixed method name inconsistencies (sendContractorEmail vs sendCentralizedEmail)
   * System now successfully sends estimate emails to gelasio@chyrris.com in test mode with proper redirection
   * Email service maintains professional contractor branding while handling Resend API test limitations
+- July 1, 2025. Fixed Legal Defense "BACK TO UPLOAD" button navigation issue:
+  * Identified root cause: Button was only resetting currentStep and currentPhase without clearing all form states
+  * Enhanced reset function to clear all component states: extractedData, selectedFile, validationResult, contractAnalysis
+  * Added comprehensive state cleanup: intelligentClauses, selectedClauses, approvedClauses, clauseCustomizations
+  * Reset selectedProject and dataInputMethod to prevent stale data persistence
+  * Restored payment terms to initial 50/50 split configuration
+  * Added smooth scroll to top and user feedback notification
+  * Button now properly returns to upload interface without blank screen or missing options
 - June 29, 2025. CRITICAL SUCCESS: Achieved cost accuracy target for DeepSearch Material system:
   * Fixed cost calculations from $84.78 to $61.78 per linear foot (within $58-70 target range)
   * Reduced material prices across all categories: posts $17.50→$10, boards $4.25→$3.50, cedar $5.50→$3.25
