@@ -95,63 +95,33 @@ export function DeepSearchEffect({ isVisible, onComplete }: DeepSearchEffectProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="relative flex flex-col items-center justify-center space-y-3 max-w-md mx-4">
-        {/* Logo Mervin compacto con efecto futurista */}
+      <div className="relative flex flex-col items-center justify-center space-y-4 max-w-sm mx-4">
+        {/* Logo Mervin estático con pulsación */}
         <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full blur-lg opacity-50 animate-pulse"></div>
-          <div className="relative bg-gradient-to-r from-cyan-400/20 to-blue-500/20 border border-cyan-400/40 rounded-full p-3">
-            <div className="animate-spin" style={{ animationDuration: '3s' }}>
-              <MervinLogo className="h-12 w-12 text-cyan-400" />
-            </div>
+          <div className="animate-pulse" style={{ animationDuration: '2s' }}>
+            <MervinLogo className="h-16 w-16 text-cyan-400" />
           </div>
-          {/* Anillo giratorio minimalista */}
-          <div className="absolute inset-0 border border-cyan-400/20 rounded-full animate-spin" style={{ animationDuration: '2s' }}></div>
         </div>
 
-        {/* Texto futurista compacto */}
-        <div className="text-center space-y-2">
+        {/* Texto y estado */}
+        <div className="text-center space-y-3">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
             MERVIN AI
           </h2>
-          <p className="text-base text-cyan-300/80 animate-pulse">
-            DeepSearch análisis
+          <p className="text-base text-cyan-300/90">
+            Analizando proyecto{dots}
           </p>
           
-          {/* Frase técnica compacta */}
-          <div className="bg-slate-900/40 border border-cyan-400/20 rounded-md p-3 backdrop-blur-sm max-w-xs">
-            <p className="text-xs text-cyan-100/90 leading-relaxed font-mono">
-              {currentPhrase.split('.')[0]}...{dots}
-            </p>
+          {/* Indicador de progreso de trabajo */}
+          <div className="flex items-center justify-center space-x-2 mt-4">
+            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
+            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
           </div>
           
-          {/* Indicador de progreso minimalista */}
-          <div className="flex items-center justify-center space-x-1 mt-3">
-            <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce"></div>
-            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.15s'}}></div>
-            <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.3s'}}></div>
-          </div>
-        </div>
-
-        {/* Partículas sutiles */}
-        <div className="absolute inset-0 pointer-events-none">
-          {[...Array(12)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-0.5 h-0.5 bg-cyan-400/30 rounded-full animate-pulse"
-              style={{
-                left: `${20 + Math.random() * 60}%`,
-                top: `${20 + Math.random() * 60}%`,
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${1.5 + Math.random() * 2}s`
-              }}
-            />
-          ))}
-        </div>
-        
-        {/* Línea de escaneo única */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute w-3/4 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent left-1/2 transform -translate-x-1/2 animate-pulse" 
-               style={{ top: '50%', animationDuration: '2s' }}></div>
+          <p className="text-xs text-cyan-200/70 mt-2">
+            Procesando datos con IA
+          </p>
         </div>
       </div>
     </div>

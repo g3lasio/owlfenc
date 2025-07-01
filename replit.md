@@ -433,6 +433,14 @@ Changelog:
   * Minimized particle effects from 30 to 12 elements for cleaner appearance
   * Consolidated scanning lines to single horizontal line for subtlety
   * Maintained cyberpunk aesthetic while improving user experience and reducing visual overwhelm
+- July 1, 2025. Simplified DeepSearch to minimalist static design:
+  * Removed all circular spinning effects and complex animations
+  * Implemented static logo with simple pulsing animation (2-second duration)
+  * Eliminated particle effects and scanning lines for clean presentation
+  * Simplified progress indicator to three pulsing dots with staggered timing
+  * Reduced text to essential "Analizando proyecto..." message
+  * Maintained brand colors (cyan-blue gradient) while achieving minimal, focused design
+  * Enhanced user experience with less visual distraction during AI processing
 - June 29, 2025. CRITICAL SUCCESS: Achieved cost accuracy target for DeepSearch Material system:
   * Fixed cost calculations from $84.78 to $61.78 per linear foot (within $58-70 target range)
   * Reduced material prices across all categories: posts $17.50→$10, boards $4.25→$3.50, cedar $5.50→$3.25
