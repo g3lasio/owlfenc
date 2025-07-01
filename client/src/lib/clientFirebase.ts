@@ -63,14 +63,31 @@ export const saveClient = async (clientData: Omit<Client, 'id' | 'createdAt' | '
 // Obtener todos los clientes
 export const getClients = async (userId?: string, filters?: { tag?: string, source?: string }) => {
   try {
+    // CRITICAL SECURITY: Get current authenticated user
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      console.warn("🔒 SECURITY: No authenticated user - returning empty array");
+      return [];
+    }
+
+    // CRITICAL SECURITY: Use authenticated user's ID if none provided
+    const targetUserId = userId || currentUser.uid;
+    
     console.log("=== DIAGNÓSTICO DETALLADO DE CARGA DE CLIENTES ===");
     console.log("1. Parámetros recibidos:");
-    console.log("   - userId:", userId || "No proporcionado");
+    console.log("   - userId solicitado:", userId || "No proporcionado (usando actual)");
+    console.log("   - userId efectivo:", targetUserId);
     console.log("   - filters:", filters || "No proporcionados");
     
     console.log("2. Estado de Firebase:");
     console.log("   - App inicializada:", !!db);
-    console.log("   - Usuario actual:", auth.currentUser ? `${auth.currentUser.uid} (${auth.currentUser.email})` : "No autenticado");
+    console.log("   - Usuario actual:", `${currentUser.uid} (${currentUser.email})`);
+    
+    // CRITICAL SECURITY: Verify user can only access their own data
+    if (userId && userId !== currentUser.uid) {
+      console.warn("🔒 SECURITY: User attempting to access another user's clients - access denied");
+      throw new Error("Access denied - cannot access other users' data");
+    }
     
     console.log("3. Configuración de Firebase:");
     console.log("   - Project ID:", db.app.options.projectId);
@@ -88,68 +105,51 @@ export const getClients = async (userId?: string, filters?: { tag?: string, sour
       throw new Error(`Error de conexión básica: ${connectionError.message}`);
     }
     
-    if (userId || (filters && Object.keys(filters).length > 0)) {
-      console.log("5. Construyendo consulta con filtros...");
-      const queryConstraints = [];
+    console.log("5. Construyendo consulta con filtros de seguridad...");
+    const queryConstraints = [];
 
-      // Filtrar por userId si se proporciona
-      if (userId) {
-        console.log("   - Agregando filtro por userId:", userId);
-        queryConstraints.push(where("userId", "==", userId));
+    // CRITICAL SECURITY: Always filter by authenticated user
+    console.log("   - 🔒 SECURITY: Agregando filtro obligatorio por userId:", targetUserId);
+    queryConstraints.push(where("userId", "==", targetUserId));
+
+    // Aplicar filtros adicionales si se proporcionan
+    if (filters) {
+      console.log("   - Procesando filtros adicionales:", filters);
+      if (filters.tag) {
+        console.log("     - Filtro por tag:", filters.tag);
+        queryConstraints.push(where("tags", "array-contains", filters.tag));
       }
 
-      // Aplicar filtros adicionales si se proporcionan
-      if (filters) {
-        console.log("   - Procesando filtros adicionales:", filters);
-        if (filters.tag) {
-          console.log("     - Filtro por tag:", filters.tag);
-          queryConstraints.push(where("tags", "array-contains", filters.tag));
-        }
-
-        if (filters.source) {
-          if (filters.source === "no_source") {
-            console.log("     - Filtro por source vacío");
-            queryConstraints.push(where("source", "==", ""));
-          } else {
-            console.log("     - Filtro por source:", filters.source);
-            queryConstraints.push(where("source", "==", filters.source));
-          }
+      if (filters.source) {
+        if (filters.source === "no_source") {
+          console.log("     - Filtro por source vacío");
+          queryConstraints.push(where("source", "==", ""));
+        } else {
+          console.log("     - Filtro por source:", filters.source);
+          queryConstraints.push(where("source", "==", filters.source));
         }
       }
+    }
 
-      console.log("   - Total de constraints:", queryConstraints.length);
+    console.log("   - Total de constraints:", queryConstraints.length);
+    
+    try {
+      q = query(
+        collection(db, "clients"),
+        ...queryConstraints,
+        orderBy("createdAt", "desc")
+      );
+      console.log("   ✓ Consulta con filtros construida exitosamente");
+    } catch (queryError) {
+      console.error("   ✗ Error construyendo consulta con filtros:", queryError);
       
-      try {
-        q = query(
-          collection(db, "clients"),
-          ...queryConstraints,
-          orderBy("createdAt", "desc")
-        );
-        console.log("   ✓ Consulta con filtros construida exitosamente");
-      } catch (queryError) {
-        console.error("   ✗ Error construyendo consulta con filtros:", queryError);
-        
-        // Intentar sin orderBy si hay error de índice
-        console.log("   - Intentando consulta sin orderBy...");
-        q = query(
-          collection(db, "clients"),
-          ...queryConstraints
-        );
-        console.log("   ✓ Consulta sin orderBy construida exitosamente");
-      }
-    } else {
-      console.log("5. Construyendo consulta sin filtros...");
-      try {
-        q = query(
-          collection(db, "clients"),
-          orderBy("createdAt", "desc")
-        );
-        console.log("   ✓ Consulta sin filtros construida exitosamente");
-      } catch (queryError) {
-        console.error("   ✗ Error con orderBy, usando consulta simple:", queryError);
-        q = query(collection(db, "clients"));
-        console.log("   ✓ Consulta simple construida exitosamente");
-      }
+      // Intentar sin orderBy si hay error de índice
+      console.log("   - Intentando consulta sin orderBy...");
+      q = query(
+        collection(db, "clients"),
+        ...queryConstraints
+      );
+      console.log("   ✓ Consulta sin orderBy construida exitosamente");
     }
 
     console.log("6. Ejecutando consulta...");

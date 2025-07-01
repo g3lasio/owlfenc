@@ -199,9 +199,16 @@ export const saveProject = async (projectData: any) => {
 
 export const getProjects = async (filters?: { status?: string, fenceType?: string }) => {
   try {
+    // CRITICAL SECURITY: Get current authenticated user
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      console.warn("🔒 SECURITY: No authenticated user - returning empty array");
+      return [];
+    }
+
     // Verifica si estamos en modo de desarrollo
     if (devMode) {
-      console.log("Cargando proyectos almacenados localmente");
+      console.log("Cargando proyectos almacenados localmente para usuario:", currentUser.uid);
       
       // Intentamos recuperar primero del localStorage para persistencia entre refreshes
       const savedProjects = localStorage.getItem('owlFenceProjects');
@@ -209,7 +216,13 @@ export const getProjects = async (filters?: { status?: string, fenceType?: strin
       // Si hay proyectos guardados en localStorage, los usamos
       let filteredProjects = savedProjects ? JSON.parse(savedProjects) : [];
       
-      // Aplicar filtros si se proporcionan
+      // CRITICAL SECURITY: Filter by current user first
+      filteredProjects = filteredProjects.filter((project: any) => 
+        project.firebaseUserId === currentUser.uid || 
+        project.userId === currentUser.uid
+      );
+      
+      // Aplicar filtros adicionales si se proporcionan
       if (filters) {
         if (filters.status) {
           filteredProjects = filteredProjects.filter((project: any) => project.status === filters.status);
@@ -227,42 +240,40 @@ export const getProjects = async (filters?: { status?: string, fenceType?: strin
         return dateB.getTime() - dateA.getTime();
       });
       
+      console.log(`🔒 SECURITY: Filtered ${filteredProjects.length} projects for user ${currentUser.uid}`);
       return filteredProjects;
     } else {
-      // Código para Firebase en producción
-      let q = query(
-        collection(db, "projects"), 
+      // CRITICAL SECURITY: Always filter by authenticated user first
+      console.log(`🔒 SECURITY: Loading projects for authenticated user: ${currentUser.uid}`);
+      
+      const queryConstraints = [
+        where("firebaseUserId", "==", currentUser.uid),
         orderBy("createdAt", "desc")
-      );
+      ];
 
-      // Apply filters if provided
+      // Apply additional filters if provided
       if (filters) {
-        const queryConstraints = [];
-
         if (filters.status) {
-          queryConstraints.push(where("status", "==", filters.status));
+          queryConstraints.splice(-1, 0, where("status", "==", filters.status));
         }
 
         if (filters.fenceType) {
-          queryConstraints.push(where("fenceType", "==", filters.fenceType));
-        }
-
-        if (queryConstraints.length > 0) {
-          q = query(
-            collection(db, "projects"),
-            ...queryConstraints,
-            orderBy("createdAt", "desc")
-          );
+          queryConstraints.splice(-1, 0, where("fenceType", "==", filters.fenceType));
         }
       }
 
+      const q = query(collection(db, "projects"), ...queryConstraints);
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
+      
+      const userProjects = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         // Ensure status is set, default to "draft" if missing
         status: doc.data().status || "draft"
       }));
+
+      console.log(`🔒 SECURITY: Successfully loaded ${userProjects.length} projects for user ${currentUser.uid}`);
+      return userProjects;
     }
   } catch (error) {
     console.error("Error getting projects:", error);
@@ -272,8 +283,15 @@ export const getProjects = async (filters?: { status?: string, fenceType?: strin
 
 export const getProjectById = async (id: string) => {
   try {
+    // CRITICAL SECURITY: Get current authenticated user
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      console.warn("🔒 SECURITY: No authenticated user - access denied");
+      throw new Error("Authentication required");
+    }
+
     if (devMode) {
-      console.log("Buscando proyecto con ID:", id);
+      console.log("🔒 SECURITY: Buscando proyecto con ID para usuario:", id, currentUser.uid);
       
       // Intentamos recuperar del localStorage
       const savedProjects = localStorage.getItem('owlFenceProjects');
@@ -282,21 +300,41 @@ export const getProjectById = async (id: string) => {
       if (savedProjects) {
         const projects = JSON.parse(savedProjects);
         const project = projects.find((p: any) => p.id === id);
-        if (project) {
+        
+        // CRITICAL SECURITY: Verify project belongs to current user
+        if (project && (project.firebaseUserId === currentUser.uid || project.userId === currentUser.uid)) {
+          console.log("🔒 SECURITY: Project access granted for user:", currentUser.uid);
           return project;
+        }
+        
+        if (project) {
+          console.warn("🔒 SECURITY: Project access denied - belongs to different user");
+          throw new Error("Access denied - project belongs to different user");
         }
       }
       
       // Si no encontramos el proyecto
       throw new Error("Project not found");
     } else {
-      // Código para Firebase en producción
+      // CRITICAL SECURITY: Código para Firebase en producción con verificación de usuario
+      console.log(`🔒 SECURITY: Loading project ${id} for user ${currentUser.uid}`);
+      
       const docRef = doc(db, "projects", id);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() };
+        const projectData = docSnap.data();
+        
+        // CRITICAL SECURITY: Verify project belongs to current user
+        if (projectData.firebaseUserId === currentUser.uid || projectData.userId === currentUser.uid) {
+          console.log("🔒 SECURITY: Project access granted for user:", currentUser.uid);
+          return { id: docSnap.id, ...projectData };
+        } else {
+          console.warn("🔒 SECURITY: Project access denied - belongs to different user");
+          throw new Error("Access denied - project belongs to different user");
+        }
       } else {
+        console.warn("🔒 SECURITY: Project not found:", id);
         throw new Error("Project not found");
       }
     }
