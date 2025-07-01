@@ -58,17 +58,38 @@ router.post('/send-estimate', async (req, res) => {
       });
     }
 
+    // Asegurar que estimateData tenga valores por defecto para evitar errores de undefined
+    const safeEstimateData = {
+      estimateNumber: 'EST-DEFAULT',
+      total: 0,
+      projectType: 'Proyecto',
+      items: [],
+      ...estimateData
+    };
+
     // Generar HTML del estimado
     console.log('📧 [CENTRALIZED-EMAIL] Generando HTML del estimado...');
-    const estimateHtml = generateEstimateHTML({
+    console.log('📧 [CENTRALIZED-EMAIL] Datos de entrada para HTML:', {
       clientName,
       contractorName,
       contractorCompany: contractorCompany || contractorName,
-      estimateData,
-      customMessage
+      safeEstimateData
     });
-
-    console.log('📧 [CENTRALIZED-EMAIL] HTML generado, longitud:', estimateHtml.length);
+    
+    let estimateHtml;
+    try {
+      estimateHtml = generateEstimateHTML({
+        clientName,
+        contractorName,
+        contractorCompany: contractorCompany || contractorName,
+        estimateData: safeEstimateData,
+        customMessage
+      });
+      console.log('📧 [CENTRALIZED-EMAIL] HTML generado exitosamente, longitud:', estimateHtml.length);
+    } catch (htmlError) {
+      console.error('❌ [CENTRALIZED-EMAIL] Error generando HTML:', htmlError);
+      throw htmlError;
+    }
 
     console.log('📧 [CENTRALIZED-EMAIL] Enviando email usando Resend...');
 
@@ -79,7 +100,7 @@ router.post('/send-estimate', async (req, res) => {
       contractorEmail,
       contractorName,
       contractorCompany: contractorCompany || contractorName,
-      subject: `Estimado Profesional - ${estimateData.estimateNumber} - ${contractorCompany || contractorName}`,
+      subject: `Estimado Profesional - ${safeEstimateData.estimateNumber} - ${contractorCompany || contractorName}`,
       htmlContent: estimateHtml,
       sendCopyToContractor: sendCopy
     });
