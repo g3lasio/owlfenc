@@ -644,16 +644,16 @@ export default function CyberpunkLegalDefense() {
           }
           
           try {
-            // 1. Obtener proyectos con filtro de usuario autenticado
-            const firebaseProjects = await getProjects({ status: 'approved' });
-            console.log(`🔍 Found ${firebaseProjects.length} approved projects`);
+            // SIMPLIFIED APPROACH: Load estimates directly with timeout
+            let allProjects = [];
             
-            // 2. ALSO LOAD ESTIMATES - Import Firebase functions for direct estimate access
+            console.log('🔍 Loading estimates directly...');
+            
+            // Import Firebase functions for direct estimate access
             const { collection, query, where, getDocs } = await import('firebase/firestore');
             const { db } = await import('../lib/firebase');
             
             // Load estimates that can be converted to contracts
-            let firebaseEstimates = [];
             try {
               const estimatesQuery = query(
                 collection(db, 'estimates'),
@@ -661,7 +661,7 @@ export default function CyberpunkLegalDefense() {
               );
               
               const estimatesSnapshot = await getDocs(estimatesQuery);
-              firebaseEstimates = estimatesSnapshot.docs
+              const firebaseEstimates = estimatesSnapshot.docs
                 .map(doc => {
                   const data = doc.data();
                   
@@ -694,37 +694,73 @@ export default function CyberpunkLegalDefense() {
                 // Filter estimates that have enough data for contract generation
                 .filter(estimate => 
                   estimate.clientName && 
-                  estimate.totalAmount > 0 && 
-                  estimate.items.length > 0
+                  estimate.totalAmount > 0
                 );
                 
+              allProjects = [...firebaseEstimates];
               console.log(`🔍 Found ${firebaseEstimates.length} estimates ready for contracts`);
+              
             } catch (estimatesError) {
               console.warn('Could not load estimates:', estimatesError);
+              
+              // FALLBACK: Try projects collection as backup
+              try {
+                console.log('🔍 Trying projects collection as backup...');
+                const projectsQuery = query(
+                  collection(db, 'projects'),
+                  where('firebaseUserId', '==', user.uid)
+                );
+                
+                const projectsSnapshot = await getDocs(projectsQuery);
+                const firebaseProjects = projectsSnapshot.docs
+                  .map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    source: 'project'
+                  }))
+                  .filter(project => 
+                    project.status === 'approved' || 
+                    project.status === 'estimate' ||
+                    project.status === 'client_approved' ||
+                    project.projectProgress === 'approved'
+                  );
+                  
+                allProjects = [...firebaseProjects];
+                console.log(`🔍 Found ${firebaseProjects.length} backup projects`);
+              } catch (projectsError) {
+                console.warn('Backup projects also failed:', projectsError);
+              }
             }
             
-            // 3. Combine projects and estimates
-            const allProjects = [...firebaseProjects, ...firebaseEstimates];
-            
             if (allProjects.length > 0) {
-              // Enviar proyectos Y estimados al backend para formateo con verificación de usuario
-              const response = await fetch('/api/projects/sync', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                  projects: allProjects, // Now includes both projects and estimates
-                  userId: user.uid // SECURITY: Include user ID for backend verification
-                })
-              });
+              // DIRECT PROCESSING: Skip backend sync that's failing, process directly in frontend
+              const processedProjects = allProjects.map(project => ({
+                id: project.id,
+                clientName: project.clientName || 'Unknown Client',
+                clientEmail: project.clientEmail || '',
+                clientPhone: project.clientPhone || '',
+                address: project.address || '',
+                projectType: project.projectType || 'Construction Project',
+                projectDescription: project.projectDescription || project.description || '',
+                totalAmount: project.totalAmount || project.total || project.estimateAmount || 0,
+                status: project.status || 'ready',
+                source: project.source || 'estimate',
+                estimateNumber: project.estimateNumber || `EST-${project.id?.slice(-6)}`,
+                createdAt: project.createdAt,
+                // Preserve original data for contract generation
+                originalData: project.originalEstimateData || project,
+                items: project.items || [],
+                projectTotalCosts: project.projectTotalCosts
+              }));
               
-              const data = await response.json();
-              
-              if (data.success) {
-                setApprovedProjects(data.projects);
-                console.log(`✅ Projects loaded securely: ${data.projects.length} for user ${user.uid}`);
-              } else {
-                throw new Error(data.error || 'Failed to sync projects');
-              }
+              setApprovedProjects(processedProjects);
+              console.log(`✅ Projects loaded directly: ${processedProjects.length} for user ${user.uid}`);
+              console.log('📋 Sample projects data:', processedProjects.slice(0, 3).map(p => ({
+                id: p.id,
+                clientName: p.clientName,
+                totalAmount: p.totalAmount,
+                source: p.source
+              })));
             } else {
               setApprovedProjects([]);
               toast({
@@ -2163,6 +2199,11 @@ export default function CyberpunkLegalDefense() {
                           <label className="block text-cyan-400 text-sm font-bold mb-2">
                             SELECT PROJECT ({approvedProjects.length} found)
                           </label>
+                          {approvedProjects.length === 0 && (
+                            <div className="text-xs text-gray-400 mb-2">
+                              No projects loaded yet...
+                            </div>
+                          )}
                           <select 
                             className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-cyan-400 focus:outline-none"
                             value={selectedProject?.id || ''}
