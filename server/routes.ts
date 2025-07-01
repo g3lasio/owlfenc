@@ -2942,6 +2942,7 @@ Output must be between 200-900 characters in English.`;
           totalCost: req.body.totalCost || req.body.financials?.total || 0,
           timeline: req.body.timeline || {},
           permits: req.body.permits || {},
+          permitInfo: req.body.permitInfo || {},
           warranties: req.body.warranties || {},
           extraClauses: req.body.extraClauses || [],
           consents: req.body.consents || {},
