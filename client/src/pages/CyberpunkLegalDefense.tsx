@@ -889,11 +889,15 @@ export default function CyberpunkLegalDefense() {
       if (result.success) {
         // Set the extracted data with all project information
         setExtractedData(result.extractedData);
-        setCurrentStep(2);
-        setCurrentPhase('arsenal-builder');
+        setCurrentStep(3);
+        setCurrentPhase('defense-review');
 
         // Mark as selected project source
         setSelectedFile(null); // Clear any uploaded file
+        
+        // Generate intelligent clauses for the project
+        console.log('Advancing to step 3 with data:', result.extractedData);
+        processExtractedDataWorkflow(result.extractedData);
         
         toast({
           title: "✅ PROJECT DATA LOADED",
@@ -2274,182 +2278,7 @@ export default function CyberpunkLegalDefense() {
             </Card>
           )}
 
-          {/* OCR Data Review Step */}
-          {extractedData && currentStep === 2 && (
-            <Card className="border-2 border-purple-400 bg-black/80 relative  mt-6">
-              <HUDCorners />
-              
-              <CardHeader className="text-center px-4 md:px-6">
-                <div className="flex items-center justify-center mb-4">
-                  <div className="p-3 md:p-4 rounded-full border-2 border-purple-400">
-                    <Shield className="h-6 w-6 md:h-8 md:w-8 text-purple-400" />
-                  </div>
-                </div>
-                <CardTitle className="text-xl md:text-2xl font-bold text-purple-400 mb-2">
-                  Contract Arsenal Builder
-                </CardTitle>
-                <p className="text-gray-300 text-xs md:text-sm leading-relaxed">
-                  Review extracted data and generate defensive contract with AI-powered legal protection.
-                </p>
-              </CardHeader>
-              
-              <CardContent className="px-2 sm:px-4 md:px-8 pb-6 md:pb-8">
-                {/* Extracted Data Display */}
-                <div className="space-y-4 sm:space-y-6 max-w-full overflow-x-hidden">
-                  {/* Client Information */}
-                  <div className="bg-gray-900/50 border border-purple-400/30 rounded-lg p-4">
-                    <h3 className="text-purple-400 font-bold mb-3 flex items-center">
-                      <User className="h-4 w-4 mr-2" />
-                      CLIENT DATA ACQUIRED
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <span className="text-gray-400">Name:</span>
-                        <span className="text-white ml-2">{extractedData.clientInfo?.name || 'Not specified'}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Location:</span>
-                        <span className="text-white ml-2">{extractedData.clientInfo?.address || extractedData.projectDetails?.location || 'Not specified'}</span>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Project Information */}
-                  <div className="bg-gray-900/50 border border-purple-400/30 rounded-lg p-4">
-                    <h3 className="text-purple-400 font-bold mb-3 flex items-center">
-                      <FileText className="h-4 w-4 mr-2" />
-                      PROJECT SPECIFICATIONS
-                    </h3>
-                    <div className="space-y-2 text-sm">
-                      <div>
-                        <span className="text-gray-400">Type:</span>
-                        <span className="text-white ml-2">{extractedData.projectDetails?.type || 'Not specified'}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Description:</span>
-                        <span className="text-white ml-2">{extractedData.projectDetails?.description || extractedData.specifications || 'Not specified'}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Financial Information */}
-                  <div className="bg-gray-900/50 border border-purple-400/30 rounded-lg p-4">
-                    <h3 className="text-purple-400 font-bold mb-3 flex items-center">
-                      <DollarSign className="h-4 w-4 mr-2" />
-                      FINANCIAL PARAMETERS
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-400">Subtotal:</span>
-                        <span className="text-green-400 ml-2 font-mono">${extractedData.financials?.subtotal?.toFixed(2) || '0.00'}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Total:</span>
-                        <span className="text-green-400 ml-2 font-mono font-bold">${extractedData.financials?.total?.toFixed(2) || '0.00'}</span>
-                      </div>
-                    </div>
-                  </div>
-
-
-
-                  {/* AI Analysis & Clause Generation */}
-                  <div className="bg-gray-900/50 border border-cyan-400/30 rounded-lg p-4">
-                    <h3 className="text-cyan-400 font-bold mb-4 flex items-center">
-                      <Zap className="h-4 w-4 mr-2" />
-                      MERVIN AI ANALYSIS
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-gray-800/50 rounded p-3 text-center">
-                          <div className="text-cyan-400 text-xs mb-1">PROJECT TYPE</div>
-                          <div className="text-white font-mono text-sm">{extractedData.projectDetails?.type || 'General Construction'}</div>
-                        </div>
-                        <div className="bg-gray-800/50 rounded p-3 text-center">
-                          <div className="text-cyan-400 text-xs mb-1">LOCATION</div>
-                          <div className="text-white font-mono text-sm">{extractedData.projectDetails?.location || 'California'}</div>
-                        </div>
-                        <div className="bg-gray-800/50 rounded p-3 text-center">
-                          <div className="text-cyan-400 text-xs mb-1">RISK LEVEL</div>
-                          <div className="text-yellow-400 font-mono text-sm">MEDIUM</div>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-cyan-400/10 border border-cyan-400/30 rounded p-3">
-                        <div className="text-cyan-400 text-sm font-bold mb-2">AI RECOMMENDATIONS:</div>
-                        <div className="text-gray-300 text-xs leading-relaxed">
-                          Based on the {extractedData.projectDetails?.type?.toLowerCase() || 'construction'} project in {extractedData.projectDetails?.location || 'California'} worth ${extractedData.financials?.total?.toFixed(0) || '31,920'}, 
-                          Mervin AI suggests including payment protection, scope definition, and California-specific lien notices for maximum contractor protection.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button 
-                    onClick={() => {
-                      // Resetear completamente al estado inicial
-                      setCurrentStep(1);
-                      setCurrentPhase('data-command');
-                      setExtractedData(null);
-                      setSelectedFile(null);
-                      setValidationResult(null);
-                      setContractAnalysis(null);
-                      setGeneratedContract('');
-                      setIsProcessing(false);
-                      setIntelligentClauses([]);
-                      setSelectedClauses(new Set());
-                      setShowPreview(false);
-                      setApprovedClauses([]);
-                      setClauseCustomizations({});
-                      setSelectedProject(null);
-                      setDataInputMethod('select');
-                      
-                      // Resetear términos de pago al estado inicial
-                      setPaymentTerms([
-                        {
-                          id: '1',
-                          label: 'Initial Payment (50%)',
-                          percentage: 50,
-                          description: '50% after contract signed'
-                        },
-                        {
-                          id: '2',
-                          label: 'Final Payment (50%)',
-                          percentage: 50,
-                          description: 'Upon project completion'
-                        }
-                      ]);
-                      
-                      // Scroll al principio de la página
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                      
-                      toast({
-                        title: "Regresando al inicio",
-                        description: "Volviendo a la sección de carga de archivos"
-                      });
-                    }}
-                    variant="outline"
-                    className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
-                  >
-                    BACK TO UPLOAD
-                  </Button>
-                  <Button 
-                    onClick={() => {
-                      console.log('Advancing to step 3 with data:', extractedData);
-                      setCurrentStep(3);
-                      setCurrentPhase('defense-review');
-                      processExtractedDataWorkflow(extractedData);
-                    }}
-                    className="bg-purple-600 hover:bg-purple-500 text-black font-bold py-3 px-8 rounded border-0 shadow-none text-base"
-                  >
-                    NEXT TO PREVIEW CONTRACT
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Step 3: Defense Review & Correction with Live Preview */}
           {extractedData && currentStep === 3 && currentPhase === 'defense-review' && (

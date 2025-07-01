@@ -468,6 +468,13 @@ Changelog:
   * Restored payment terms to initial 50/50 split configuration
   * Added smooth scroll to top and user feedback notification
   * Button now properly returns to upload interface without blank screen or missing options
+- July 1, 2025. Streamlined Legal Defense workflow by eliminating redundant step 2:
+  * Removed redundant client data preview step that duplicated information shown in step 3
+  * Modified handleProjectSelection to go directly from step 1 to step 3 (setCurrentStep(3))
+  * Preserved all backend logic and functionality - only streamlined frontend workflow
+  * Users now proceed directly from project selection to contract configuration interface
+  * Eliminated unnecessary intermediate preview that repeated client information display
+  * Enhanced user experience with faster, more direct workflow without losing functionality
 - June 29, 2025. CRITICAL SUCCESS: Achieved cost accuracy target for DeepSearch Material system:
   * Fixed cost calculations from $84.78 to $61.78 per linear foot (within $58-70 target range)
   * Reduced material prices across all categories: posts $17.50→$10, boards $4.25→$3.50, cedar $5.50→$3.25
