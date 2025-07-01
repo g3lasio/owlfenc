@@ -205,6 +205,16 @@ export class PuppeteerPdfService {
       html = html.replace(/\{\{company\.website\}\}/g, data.company.website || '');
       html = html.replace(/\{\{company\.logo\}\}/g, data.company.logo || '');
       
+      // Handle logo conditional using the same approach as invoice template
+      if (data.company?.logo && data.company.logo.trim() !== '') {
+        // Show logo section
+        html = html.replace(/\{\{LOGO_CONDITIONAL_START\}\}/g, '');
+        html = html.replace(/\{\{LOGO_CONDITIONAL_END\}\}/g, '');
+      } else {
+        // Remove entire logo section including the img tag
+        html = html.replace(/\{\{LOGO_CONDITIONAL_START\}\}[\s\S]*?\{\{LOGO_CONDITIONAL_END\}\}/g, '');
+      }
+      
       // Replace estimate data
       html = html.replace(/\{\{estimate\.number\}\}/g, data.estimate.number || `EST-${Date.now().toString().slice(-6)}`);
       html = html.replace(/\{\{estimate\.date\}\}/g, data.estimate.date || new Date().toLocaleDateString('en-US'));
@@ -222,8 +232,7 @@ export class PuppeteerPdfService {
       html = html.replace(/\{\{client\.phone\}\}/g, data.client.phone || '');
       html = html.replace(/\{\{client\.address\}\}/g, data.client.address || '');
       
-      // Handle conditional blocks
-      html = this.handleConditionals(html, data);
+      // Note: Simple logo conditional is already handled above
       
       // Handle items loop
       html = this.handleItemsLoop(html, data.estimate.items);
