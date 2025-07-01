@@ -206,13 +206,21 @@ export class PuppeteerPdfService {
       html = html.replace(/\{\{company\.logo\}\}/g, data.company.logo || '');
       
       // Handle logo conditional using the same approach as invoice template
+      console.log('🔍 LOGO DEBUG - Processing logo in PDF service:', {
+        hasLogo: !!(data.company?.logo && data.company.logo.trim() !== ''),
+        logoLength: data.company?.logo ? data.company.logo.length : 0,
+        logoType: data.company?.logo ? (data.company.logo.startsWith('data:') ? 'Base64' : 'Other') : 'None'
+      });
+      
       if (data.company?.logo && data.company.logo.trim() !== '') {
         // Show logo section
         html = html.replace(/\{\{LOGO_CONDITIONAL_START\}\}/g, '');
         html = html.replace(/\{\{LOGO_CONDITIONAL_END\}\}/g, '');
+        console.log('✅ LOGO DEBUG - Logo section kept in PDF');
       } else {
         // Remove entire logo section including the img tag
         html = html.replace(/\{\{LOGO_CONDITIONAL_START\}\}[\s\S]*?\{\{LOGO_CONDITIONAL_END\}\}/g, '');
+        console.log('❌ LOGO DEBUG - Logo section removed from PDF (no logo data)');
       }
       
       // Replace estimate data

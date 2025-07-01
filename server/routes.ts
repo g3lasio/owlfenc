@@ -1663,15 +1663,29 @@ Output must be between 200-900 characters in English.`;
       try {
         if (user?.[0]?.uid) {
           const profile = await storage.getUserByFirebaseUid(user[0].uid);
+          console.log('🔍 LOGO DEBUG - Profile fetched:', {
+            profileExists: !!profile,
+            userId: user[0].uid,
+            hasLogo: profile ? !!profile.logo : false,
+            logoLength: profile?.logo ? profile.logo.length : 0,
+            logoType: profile?.logo ? (profile.logo.startsWith('data:') ? 'Base64' : 'Other') : 'None'
+          });
+          
           if (profile) {
             contractorData = {
-              name: profile.company || profile.displayName || 'OWL FENC',
+              name: profile.company || profile.ownerName || 'OWL FENC',
               address: profile.address || '2901 Owens Court, Fairfield, California 94534',
               phone: profile.phone || '(555) 123-4567',
               email: profile.email || 'truthbackpack@gmail.com',
               website: profile.website || 'https://owlfenc.com/',
-              logo: profile.logoBase64 || ''
+              logo: profile.logo || ''
             };
+            
+            console.log('🔍 LOGO DEBUG - Final contractor data:', {
+              companyName: contractorData.name,
+              hasLogo: !!contractorData.logo,
+              logoPreview: contractorData.logo ? contractorData.logo.substring(0, 50) + '...' : 'No logo'
+            });
           }
         }
       } catch (profileError) {
