@@ -2190,7 +2190,10 @@ export default function CyberpunkLegalDefense() {
                   <Button 
                     onClick={() => {
                       setCurrentStep(1);
-                      setCurrentPhase('data-extraction');
+                      setCurrentPhase('data-command');
+                      setExtractedData(null);
+                      setSelectedFile(null);
+                      setValidationResult(null);
                     }}
                     variant="outline"
                     className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"

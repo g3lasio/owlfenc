@@ -425,23 +425,49 @@ function extractTotalAmount(text: string): string {
   const totalsSection = sections.totals;
   
   console.log('🔍 [TOTAL-AMOUNT] Analyzing totals section...');
-  console.log('💰 [TOTAL-AMOUNT] Totals section:', totalsSection.substring(0, 200));
+  console.log('💰 [TOTAL-AMOUNT] Totals section:', totalsSection);
   
+  // Priority patterns for actual total line (avoid project description amounts)
   const patterns = [
-    /TOTAL ESTIMATE:\s*\$([0-9,]+\.?\d*)/i,
-    /Total:\s*\$([0-9,]+\.?\d*)/i,
-    /investment:\s*\$([0-9,]+\.?\d*)/i,
-    /\$([0-9,]+\.\d{2})\s*$/m
+    /TOTAL\s*ESTIMATE:\s*\$?([\d,]+\.?\d*)/i,
+    /^.*TOTAL\s*ESTIMATE:\s*\$?([\d,]+\.?\d*).*$/im,
+    /Total:\s*\$?([\d,]+\.?\d*)\s*$/im,
+    /Grand\s*Total:\s*\$?([\d,]+\.?\d*)/i,
+    /Final\s*Total:\s*\$?([\d,]+\.?\d*)/i
   ];
   
+  // First search the totals section
   for (const pattern of patterns) {
-    const result = extractField(totalsSection || text, pattern);
-    if (result && /^[0-9,]+\.?\d*$/.test(result)) {
-      console.log(`✅ [TOTAL-AMOUNT] Found: "$${result}"`);
-      return result;
+    const match = totalsSection.match(pattern);
+    if (match && match[1]) {
+      const amount = match[1].replace(/,/g, '');
+      console.log(`✅ [TOTAL-AMOUNT] Found: "$${amount}"`);
+      return amount;
     }
   }
   
+  // If not found in totals, search entire document but skip project description
+  const lines = text.split('\n');
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i].trim();
+    
+    // Skip lines that contain project description amounts
+    if (line.includes('investment:') || line.includes('Total investment:') || 
+        line.includes('Project Details') || line.includes('Dear ')) {
+      continue;
+    }
+    
+    for (const pattern of patterns) {
+      const match = line.match(pattern);
+      if (match && match[1]) {
+        const amount = match[1].replace(/,/g, '');
+        console.log(`✅ [TOTAL-AMOUNT] Found: "$${amount}"`);
+        return amount;
+      }
+    }
+  }
+  
+  console.log('❌ [TOTAL-AMOUNT] No total found');
   return '';
 }
 
