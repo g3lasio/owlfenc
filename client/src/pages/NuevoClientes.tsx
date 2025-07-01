@@ -171,6 +171,16 @@ export default function NuevoClientes() {
     }
   });
 
+  // Handler para crear cliente
+  const handleCreateClient = (data: z.infer<typeof clientFormSchema>) => {
+    const newClient = {
+      ...data,
+      clientId: `client_${Date.now()}`,
+      userId: userId
+    };
+    createClientMutation.mutate(newClient);
+  };
+
   // Mutation para actualizar un cliente usando Firebase
   const updateClientMutation = useMutation({
     mutationFn: ({ id, data }: { id: string, data: any }) => 
