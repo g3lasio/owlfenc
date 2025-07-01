@@ -3005,6 +3005,75 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
   };
 
   console.log(estimate);
+  // Direct Invoice Generation without popup
+  const handleDirectInvoiceGeneration = async () => {
+    if (!profile?.company) {
+      toast({
+        title: "Profile Incomplete",
+        description: "Complete your company name in your profile before generating invoices.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Use default values for direct generation
+      const defaultInvoiceConfig = {
+        projectCompleted: true,
+        downPaymentAmount: "",
+        totalAmountPaid: true,
+      };
+
+      const invoicePayload = {
+        profile: {
+          company: profile.company,
+          address: profile.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : "",
+          phone: profile.phone || "",
+          email: profile.email || currentUser?.email || "",
+          website: profile.website || "",
+          logo: profile.logo || ""
+        },
+        estimate: {
+          client: estimate.client,
+          items: estimate.items,
+          subtotal: estimate.subtotal,
+          discountAmount: estimate.discountAmount,
+          taxRate: estimate.taxRate,
+          tax: estimate.tax,
+          total: estimate.total
+        },
+        invoiceConfig: defaultInvoiceConfig
+      };
+
+      const response = await axios.post("/api/invoice-pdf", invoicePayload, {
+        responseType: 'blob'
+      });
+
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice-${Date.now()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Invoice Generated",
+        description: "Your professional invoice has been generated and downloaded successfully.",
+      });
+
+    } catch (error) {
+      console.error("Error generating invoice:", error);
+      toast({
+        title: "Generation Failed",
+        description: "Could not generate invoice. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDownload = async () => {
     try {
       // Validar que el perfil del contractor esté completo
@@ -4394,14 +4463,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               </CardHeader>
             </Card>
 
-            {/* Debug info display */}
-            <Card className="border-yellow-500/30 bg-yellow-900/20">
-              <CardContent className="p-4">
-                <p className="text-xs text-yellow-300">
-                  DEBUG: Cliente: {hasClient ? '✅' : '❌'} | Materiales: {hasItems ? `✅ (${estimate.items.length})` : '❌'}
-                </p>
-              </CardContent>
-            </Card>
+
 
             {!hasClient || !hasItems ? (
               <Card className="border-amber-500/30">
@@ -4804,9 +4866,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   <CardContent className="pt-6">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <Button
-                        onClick={() => {
-                          setShowInvoiceDialog(true);
-                        }}
+                        onClick={handleDirectInvoiceGeneration}
                         disabled={!estimate.client || estimate.items.length === 0}
                         size="sm"
                         className="border-orange-500/50 text-orange-300 hover:bg-orange-500/10 text-xs"
