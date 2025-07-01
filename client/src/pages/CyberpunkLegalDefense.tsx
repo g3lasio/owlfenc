@@ -644,16 +644,75 @@ export default function CyberpunkLegalDefense() {
           }
           
           try {
-            // Obtener proyectos con filtro de usuario autenticado
+            // 1. Obtener proyectos con filtro de usuario autenticado
             const firebaseProjects = await getProjects({ status: 'approved' });
+            console.log(`🔍 Found ${firebaseProjects.length} approved projects`);
             
-            if (firebaseProjects.length > 0) {
-              // Enviar proyectos al backend para formateo con verificación de usuario
+            // 2. ALSO LOAD ESTIMATES - Import Firebase functions for direct estimate access
+            const { collection, query, where, getDocs } = await import('firebase/firestore');
+            const { db } = await import('../lib/firebase');
+            
+            // Load estimates that can be converted to contracts
+            let firebaseEstimates = [];
+            try {
+              const estimatesQuery = query(
+                collection(db, 'estimates'),
+                where('firebaseUserId', '==', user.uid)
+              );
+              
+              const estimatesSnapshot = await getDocs(estimatesQuery);
+              firebaseEstimates = estimatesSnapshot.docs
+                .map(doc => {
+                  const data = doc.data();
+                  
+                  // Convert estimate to project format for contract generation
+                  return {
+                    id: doc.id,
+                    firebaseUserId: data.firebaseUserId,
+                    clientName: data.clientInformation?.name || data.clientName || 'Unknown Client',
+                    clientEmail: data.clientInformation?.email || data.clientEmail || '',
+                    clientPhone: data.clientInformation?.phone || data.clientPhone || '',
+                    address: data.clientInformation?.fullAddress || 
+                            data.clientInformation?.address || 
+                            `${data.clientInformation?.city || ''}, ${data.clientInformation?.state || ''}`,
+                    projectType: data.projectDetails?.type || data.projectType || 'Fence Project',
+                    projectDescription: data.projectDetails?.description || data.projectDescription || 'Estimate ready for contract',
+                    totalAmount: data.projectTotalCosts?.totalSummary?.finalTotal || 
+                                data.total || 
+                                data.estimateAmount || 0,
+                    status: 'estimate_ready', // Mark as ready for contract
+                    createdAt: data.createdAt,
+                    source: 'estimate',
+                    estimateNumber: data.estimateNumber,
+                    originalEstimateData: data, // Preserve original estimate data
+                    // Include all project details and materials for contract generation
+                    projectTotalCosts: data.projectTotalCosts,
+                    contractInformation: data.contractInformation,
+                    items: data.projectTotalCosts?.materialCosts?.items || data.items || []
+                  };
+                })
+                // Filter estimates that have enough data for contract generation
+                .filter(estimate => 
+                  estimate.clientName && 
+                  estimate.totalAmount > 0 && 
+                  estimate.items.length > 0
+                );
+                
+              console.log(`🔍 Found ${firebaseEstimates.length} estimates ready for contracts`);
+            } catch (estimatesError) {
+              console.warn('Could not load estimates:', estimatesError);
+            }
+            
+            // 3. Combine projects and estimates
+            const allProjects = [...firebaseProjects, ...firebaseEstimates];
+            
+            if (allProjects.length > 0) {
+              // Enviar proyectos Y estimados al backend para formateo con verificación de usuario
               const response = await fetch('/api/projects/sync', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                  projects: firebaseProjects,
+                  projects: allProjects, // Now includes both projects and estimates
                   userId: user.uid // SECURITY: Include user ID for backend verification
                 })
               });
@@ -669,8 +728,8 @@ export default function CyberpunkLegalDefense() {
             } else {
               setApprovedProjects([]);
               toast({
-                title: "⚡ NO SAVED PROJECTS",
-                description: "No approved projects found. Create and approve projects first.",
+                title: "⚡ NO SAVED PROJECTS OR ESTIMATES",
+                description: "No approved projects or saved estimates found. Create estimates or approve projects first to generate contracts.",
               });
             }
           } catch (error: any) {
