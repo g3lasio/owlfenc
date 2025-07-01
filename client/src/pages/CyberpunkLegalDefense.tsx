@@ -588,8 +588,8 @@ export default function CyberpunkLegalDefense() {
       step: 3,
       title: 'Digital Execution & Vault',
       description: 'E-sign securely. Both parties sign; final contracts are auto-delivered as certified PDFs and stored in your digital vault—irrefutable, retrievable, and always protected.',
-      status: currentStep === 4 ? 'processing' : 'pending',
-      progress: currentStep === 4 ? 50 : 0,
+      status: currentStep === 3 ? 'processing' : 'pending',
+      progress: currentStep === 3 ? 50 : 0,
       icon: <Lock className="h-6 w-6" />,
       estimatedTime: '1 min'
     }
@@ -1038,7 +1038,7 @@ export default function CyberpunkLegalDefense() {
 
     setContractAnalysis(updatedAnalysis);
     setCurrentPhase('digital-execution');
-    setCurrentStep(4);
+    setCurrentStep(3);
 
     toast({
       title: "DEFENSE SYSTEM ACTIVATED",
@@ -1701,7 +1701,7 @@ export default function CyberpunkLegalDefense() {
     };
 
     setContractAnalysis(analysis);
-    setCurrentStep(3);
+    setCurrentStep(2);
 
     toast({
       title: "🛡️ CONTRACT ARSENAL READY",
@@ -1734,7 +1734,7 @@ export default function CyberpunkLegalDefense() {
     };
 
     setContractAnalysis(analysis);
-    setCurrentStep(3);
+    setCurrentStep(2);
 
     toast({
       title: "🛡️ CONTRACT ARSENAL READY",
@@ -1762,11 +1762,11 @@ export default function CyberpunkLegalDefense() {
       setContractAnalysis(analysis);
       
       // Paso 3: Generación de contrato
-      setCurrentStep(3);
+      setCurrentStep(2);
       await generateDefensiveContract(data);
       
       // Paso 4: Preparación para firma
-      setCurrentStep(4);
+      setCurrentStep(3);
       setCurrentPhase('digital-execution');
       
       toast({
@@ -1852,7 +1852,7 @@ export default function CyberpunkLegalDefense() {
       if (response.ok) {
         const result = await response.json();
         setGeneratedContract(result.data.contractHtml || '<p>Contrato básico generado</p>');
-        setCurrentStep(3);
+        setCurrentStep(2);
         
         toast({
           title: "⚡ BACKUP SUCCESSFUL",
@@ -2964,7 +2964,7 @@ export default function CyberpunkLegalDefense() {
                       console.log('Advancing to contract generation with complete data:', completeData);
                       console.log('Selected clauses:', selectedClausesData);
                       
-                      setCurrentStep(4);
+                      setCurrentStep(3);
                       setCurrentPhase('digital-execution');
                       processExtractedDataWorkflow(completeData);
                     }}
@@ -3058,7 +3058,7 @@ export default function CyberpunkLegalDefense() {
                   <Button 
                     onClick={() => {
                       setCurrentPhase('defense-review');
-                      setCurrentStep(3);
+                      setCurrentStep(2);
                     }}
                     variant="outline"
                     className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
