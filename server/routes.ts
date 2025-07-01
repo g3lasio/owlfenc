@@ -1792,6 +1792,15 @@ Output must be between 200-900 characters in English.`;
         }
       }, null, 2));
 
+      // Add detailed logo debugging before sending to PDF service
+      console.log('🔍 LOGO DEBUG - Data being sent to PDF service:', {
+        hasContractorData: !!contractorData,
+        contractorLogo: contractorData.logo || 'No logo',
+        contractorLogoLength: contractorData.logo ? contractorData.logo.length : 0,
+        estimateDataCompanyLogo: estimateData.company.logo || 'No logo',
+        estimateDataCompanyLogoLength: estimateData.company.logo ? estimateData.company.logo.length : 0
+      });
+
       // Generate PDF using Puppeteer service
       const pdfBuffer = await puppeteerPdfService.generatePdf(estimateData);
       
