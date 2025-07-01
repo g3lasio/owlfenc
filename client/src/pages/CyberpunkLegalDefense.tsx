@@ -531,7 +531,7 @@ export default function CyberpunkLegalDefense() {
     
     // Load complete contract data into the form for editing
     setExtractedData(mappedData);
-    setCurrentPhase('arsenal-builder');
+    setCurrentPhase('defense-review');
     setCurrentStep(2);
     
     // Restore all form states if they exist
@@ -548,6 +548,12 @@ export default function CyberpunkLegalDefense() {
       setPaymentTerms(contract.contractData.paymentTerms);
     }
     
+    // Restore selected clauses for preview generation
+    if (contract.contractData?.protections) {
+      const clauseIds = new Set(contract.contractData.protections.map((p: any) => p.id));
+      setSelectedClauses(clauseIds);
+    }
+    
     // Restore form field states
     if (contract.contractData?.formFields) {
       const fields = contract.contractData.formFields;
@@ -557,6 +563,11 @@ export default function CyberpunkLegalDefense() {
     
     // Store the contract ID for updating
     setCurrentContractId(contract.id);
+    
+    // Generate contract preview after setting the data
+    setTimeout(() => {
+      generateRealContractPreview();
+    }, 100);
     
     console.log('🔧 Complete contract editing state prepared with full data preservation');
   }, [profile]);
