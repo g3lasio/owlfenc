@@ -55,6 +55,59 @@ router.post('/test-send', async (req, res) => {
 });
 
 /**
+ * Test de envío de estimado simple
+ * POST /api/centralized-email/test-estimate
+ */
+router.post('/test-estimate', async (req, res) => {
+  try {
+    console.log('📧 [TEST-ESTIMATE] Test de estimado iniciado');
+    
+    const testHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #00bcd4;">Estimado Profesional</h1>
+        <div style="border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
+          <h2>Información del Cliente</h2>
+          <p><strong>Nombre:</strong> Cliente Test</p>
+          <p><strong>Email:</strong> gelasio@chyrris.com</p>
+          
+          <h2>Información del Contratista</h2>
+          <p><strong>Nombre:</strong> Contratista Test</p>
+          <p><strong>Empresa:</strong> Test Company LLC</p>
+          
+          <h2>Detalles del Estimado</h2>
+          <p><strong>Número:</strong> EST-TEST-001</p>
+          <p><strong>Total:</strong> $5,000</p>
+          <p><strong>Tipo de Proyecto:</strong> Cerca de Madera</p>
+        </div>
+      </div>
+    `;
+    
+    const result = await resendService.sendEmail({
+      to: "gelasio@chyrris.com",
+      from: "onboarding@resend.dev",
+      subject: "Test Estimado - EST-001",
+      html: testHtml
+    });
+    
+    console.log('📧 [TEST-ESTIMATE] Resultado:', result);
+    
+    res.json({
+      success: true,
+      message: 'Test estimado enviado exitosamente',
+      result
+    });
+    
+  } catch (error) {
+    console.error('❌ [TEST-ESTIMATE] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en test de estimado',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
  * Enviar estimado usando sistema centralizado
  * POST /api/centralized-email/send-estimate
  */
@@ -116,30 +169,29 @@ router.post('/send-estimate', async (req, res) => {
 
     console.log('📧 [CENTRALIZED-EMAIL] Enviando email usando Resend...');
 
-    // Enviar email usando el servicio contractor-specific
-    const result = await resendService.sendContractorEmail({
-      toEmail: clientEmail,
-      toName: clientName,
-      contractorEmail,
-      contractorName,
-      contractorCompany: contractorCompany || contractorName,
-      subject: `Estimado Profesional - ${safeEstimateData.estimateNumber} - ${contractorCompany || contractorName}`,
-      htmlContent: estimateHtml,
-      sendCopyToContractor: sendCopy
-    });
-
-    console.log('📧 [CENTRALIZED-EMAIL] Resultado del envío:', result);
-
-    if (result.success) {
-      return res.json({
-        success: true,
-        message: result.message,
-        emailId: result.emailId
+    // Enviar con servicio básico de Resend
+    try {
+      const result = await resendService.sendEmail({
+        to: clientEmail,
+        from: "onboarding@resend.dev",
+        subject: `Estimado Profesional - ${safeEstimateData.estimateNumber}`,
+        html: simpleHtml
       });
-    } else {
-      return res.status(500).json({
+
+      console.log('📧 [CENTRALIZED-EMAIL] Email enviado exitosamente:', result);
+      
+      res.json({
+        success: true,
+        message: 'Estimado enviado exitosamente',
+        result
+      });
+      
+    } catch (emailError) {
+      console.error('❌ [CENTRALIZED-EMAIL] Error enviando email:', emailError);
+      res.status(500).json({
         success: false,
-        message: result.message
+        message: 'Error enviando email',
+        error: emailError instanceof Error ? emailError.message : 'Unknown email error'
       });
     }
 
