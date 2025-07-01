@@ -1708,7 +1708,14 @@ Output must be between 200-900 characters in English.`;
 
       // Structure data for Puppeteer service
       const estimateData = {
-        company: contractorData,
+        company: {
+          name: contractorData.name || 'Your Company',
+          address: contractorData.address || '',
+          phone: contractorData.phone || '',
+          email: contractorData.email || '',
+          website: contractorData.website || '',
+          logo: contractorData.logo || ''
+        },
         estimate: {
           number: `EST-${Date.now()}`,
           date: new Date().toLocaleDateString(),
