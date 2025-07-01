@@ -2389,11 +2389,26 @@ export default function CyberpunkLegalDefense() {
                 <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
                   <Button 
                     onClick={() => {
+                      // Resetear completamente al estado inicial
                       setCurrentStep(1);
                       setCurrentPhase('data-command');
                       setExtractedData(null);
                       setSelectedFile(null);
                       setValidationResult(null);
+                      setContractAnalysis(null);
+                      setGeneratedContract('');
+                      setIsProcessing(false);
+                      setIntelligentClauses([]);
+                      setSelectedClauses(new Set());
+                      setShowPreview(false);
+                      
+                      // Scroll al principio de la página
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      
+                      toast({
+                        title: "Regresando al inicio",
+                        description: "Volviendo a la sección de carga de archivos"
+                      });
                     }}
                     variant="outline"
                     className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
