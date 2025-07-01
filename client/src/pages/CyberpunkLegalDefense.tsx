@@ -609,48 +609,105 @@ export default function CyberpunkLegalDefense() {
   const loadApprovedProjects = useCallback(async () => {
     setLoadingProjects(true);
     try {
-      // Importar función de Firebase
-      const { getProjects } = await import('@/lib/firebase');
-      
-      // Obtener proyectos directamente desde Firebase
-      const firebaseProjects = await getProjects();
-      
-      if (firebaseProjects.length > 0) {
-        // Enviar proyectos al backend para formateo
-        const response = await fetch('/api/projects/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ projects: firebaseProjects })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-          setApprovedProjects(data.projects);
-          console.log(`✅ Proyectos cargados: ${data.projects.length}`);
-        } else {
-          throw new Error(data.error);
-        }
-      } else {
-        setApprovedProjects([]);
+      // SECURITY FIX: Verificar autenticación primero
+      if (!user?.uid) {
         toast({
-          title: "⚡ NO SAVED PROJECTS",
-          description: "No saved projects found. Upload a PDF estimate or create a project first.",
+          title: "⚡ AUTHENTICATION REQUIRED",
+          description: "Please login to access your saved projects",
+          variant: "destructive"
         });
+        setApprovedProjects([]);
+        return;
       }
-    } catch (error) {
-      console.error('Error loading projects:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast({
-        title: "⚡ CONNECTION ERROR",
-        description: "Cannot connect to project database",
-        variant: "destructive"
+
+      console.log(`🔒 SECURITY: Loading projects for authenticated user: ${user.uid}`);
+      
+      // Importar función de Firebase
+      const { getProjects, auth } = await import('@/lib/firebase');
+      const { onAuthStateChanged } = await import('firebase/auth');
+      
+      // Asegurar que el estado de autenticación esté listo
+      return new Promise((resolve) => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+          unsubscribe(); // Limpiar listener
+          
+          if (!currentUser || currentUser.uid !== user.uid) {
+            console.error('🔒 SECURITY: User authentication mismatch');
+            setApprovedProjects([]);
+            toast({
+              title: "⚡ AUTHENTICATION ERROR",
+              description: "User authentication failed. Please login again.",
+              variant: "destructive"
+            });
+            resolve();
+            return;
+          }
+          
+          try {
+            // Obtener proyectos con filtro de usuario autenticado
+            const firebaseProjects = await getProjects({ status: 'approved' });
+            
+            if (firebaseProjects.length > 0) {
+              // Enviar proyectos al backend para formateo con verificación de usuario
+              const response = await fetch('/api/projects/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  projects: firebaseProjects,
+                  userId: user.uid // SECURITY: Include user ID for backend verification
+                })
+              });
+              
+              const data = await response.json();
+              
+              if (data.success) {
+                setApprovedProjects(data.projects);
+                console.log(`✅ Projects loaded securely: ${data.projects.length} for user ${user.uid}`);
+              } else {
+                throw new Error(data.error || 'Failed to sync projects');
+              }
+            } else {
+              setApprovedProjects([]);
+              toast({
+                title: "⚡ NO SAVED PROJECTS",
+                description: "No approved projects found. Create and approve projects first.",
+              });
+            }
+          } catch (error: any) {
+            console.error('Error loading projects:', error);
+            
+            // Handle specific Firebase errors
+            if (error.code === 'failed-precondition') {
+              toast({
+                title: "⚡ DATABASE CONFIGURATION",
+                description: "Database rules need updating. Please contact support.",
+                variant: "destructive"
+              });
+            } else if (error.code === 'permission-denied') {
+              toast({
+                title: "⚡ ACCESS DENIED",
+                description: "You don't have permission to access this data.",
+                variant: "destructive"
+              });
+            } else {
+              toast({
+                title: "⚡ CONNECTION ERROR",
+                description: "Cannot connect to project database. Try again later.",
+                variant: "destructive"
+              });
+            }
+            setApprovedProjects([]);
+          }
+          resolve();
+        });
       });
+    } catch (error) {
+      console.error('Error setting up project loading:', error);
       setApprovedProjects([]);
     } finally {
       setLoadingProjects(false);
     }
-  }, [toast]);
+  }, [toast, user]);
 
   // Cargar proyectos cuando se selecciona el método 'select'
   useEffect(() => {
