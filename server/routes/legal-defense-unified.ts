@@ -103,7 +103,53 @@ router.post('/generate-contract', async (req, res) => {
 });
 
 /**
- * UNIFIED PDF EXTRACTION AND VALIDATION
+ * EXTRACT PDF ENDPOINT (for Legal Defense frontend compatibility)
+ */
+router.post('/extract-pdf', upload.single('pdf'), async (req, res) => {
+  console.log('🔍 [LEGAL-DEFENSE] Starting PDF extraction for Legal Defense...');
+  
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'PDF file is required'
+      });
+    }
+
+    // Extract data using optimized pipeline
+    const extractionResult = await extractPdfDataOptimized(req.file.buffer);
+    
+    if (!extractionResult.success) {
+      throw new Error(extractionResult.error);
+    }
+
+    // Validate extracted data
+    const validation = validateExtractedData(extractionResult.data);
+    
+    // Format response to match Legal Defense frontend expectations
+    res.json({
+      success: true,
+      data: extractionResult.data,
+      hasCriticalMissing: validation.completeness < 70,
+      missingCritical: validation.warnings.map(w => w.replace('Missing ', '')),
+      canProceed: validation.completeness >= 50,
+      extractionQuality: {
+        confidence: extractionResult.confidence
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ [LEGAL-DEFENSE] PDF extraction error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to extract PDF data',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * UNIFIED PDF EXTRACTION AND VALIDATION (legacy endpoint)
  */
 router.post('/extract-and-process', upload.single('pdf'), async (req, res) => {
   console.log('🔍 [UNIFIED] Starting PDF extraction and processing...');
