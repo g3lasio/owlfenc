@@ -243,12 +243,9 @@ export default function NuevoClientes() {
   // Filtrar clientes cuando cambian los filtros
   useEffect(() => {
     // Verificar que clients sea un array válido para evitar errores
-    if (!Array.isArray(clients)) {
-      setFilteredClients([]);
-      return;
-    }
+    const clientsArray = Array.isArray(clients) ? clients : [];
     
-    let result = [...clients];
+    let result = [...clientsArray];
 
     // Filtrar por texto de búsqueda
     if (searchTerm) {
@@ -718,14 +715,143 @@ export default function NuevoClientes() {
   if (isError) {
     return (
       <div className="flex-1 p-6 page-scroll-container" style={{WebkitOverflowScrolling: 'touch', height: '100%'}}>
-        <h1 className="text-2xl font-bold mb-6">Clientes</h1>
-        <div className="bg-red-50 p-4 rounded-md text-red-700 mb-6">
-          <p className="font-bold">Error al cargar los clientes</p>
-          <p>{String(error)}</p>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Clientes</h1>
+          <div className="flex gap-2">
+            <Dialog open={showAddClientDialog} onOpenChange={setShowAddClientDialog}>
+              <DialogTrigger asChild>
+                <Button className="bg-cyan-500 hover:bg-cyan-600">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Nuevo Cliente
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Crear nuevo cliente</DialogTitle>
+                  <DialogDescription>
+                    Añade la información del nuevo cliente.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <Form {...clientForm}>
+                  <form onSubmit={clientForm.handleSubmit(handleCreateClient)} className="space-y-4">
+                    <FormField
+                      control={clientForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nombre completo *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Juan Pérez" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={clientForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input placeholder="juan@email.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={clientForm.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Teléfono</FormLabel>
+                            <FormControl>
+                              <Input placeholder="+1 (555) 123-4567" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={clientForm.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Dirección</FormLabel>
+                          <FormControl>
+                            <Input placeholder="123 Calle Principal" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <DialogFooter>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => setShowAddClientDialog(false)}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button 
+                        type="submit" 
+                        disabled={createClientMutation.isPending}
+                        className="bg-cyan-500 hover:bg-cyan-600"
+                      >
+                        {createClientMutation.isPending ? "Guardando..." : "Guardar"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
-        <Button onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/clients'] })}>
-          Reintentar
-        </Button>
+
+        <Alert className="mb-6 border-orange-200 bg-orange-50">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-800">
+            <p className="font-medium mb-2">No se pudieron cargar los clientes existentes</p>
+            <p className="text-sm mb-3">Esto puede deberse a problemas de conectividad o configuración de la base de datos. Puedes crear nuevos clientes que se guardarán una vez que se resuelva la conexión.</p>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/clients'] })}
+                className="border-orange-300 text-orange-700 hover:bg-orange-100"
+              >
+                Reintentar
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center">
+              <UserPlus className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium mb-1">Comenzar agregando clientes</h3>
+              <p className="text-gray-500 mb-4">
+                Crea tu primer cliente para comenzar a generar estimados.
+              </p>
+              <Button 
+                onClick={() => setShowAddClientDialog(true)}
+                className="bg-cyan-500 hover:bg-cyan-600"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Crear mi primer cliente
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

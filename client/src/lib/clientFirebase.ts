@@ -102,24 +102,36 @@ export const getClients = async (userId?: string, filters?: { tag?: string, sour
       }
     }
 
-    // Build and execute query
-    let q;
+    // Build and execute query with intelligent fallback
+    let querySnapshot;
+    
     try {
-      q = query(
+      // First try with orderBy (requires composite index)
+      const qWithOrder = query(
         collection(db, "clients"),
         ...queryConstraints,
         orderBy("createdAt", "desc")
       );
-    } catch (queryError) {
-      // Fallback without orderBy if index doesn't exist
-      q = query(
-        collection(db, "clients"),
-        ...queryConstraints
-      );
+      querySnapshot = await getDocs(qWithOrder);
+    } catch (indexError) {
+      console.log("🔄 Index not available, falling back to query without orderBy");
+      try {
+        // Fallback: query without orderBy
+        const qBasic = query(
+          collection(db, "clients"),
+          ...queryConstraints
+        );
+        querySnapshot = await getDocs(qBasic);
+      } catch (basicError) {
+        console.error("❌ Basic query also failed, trying minimal approach");
+        // Last resort: get all clients for user without filters
+        const qMinimal = query(
+          collection(db, "clients"),
+          where("userId", "==", targetUserId)
+        );
+        querySnapshot = await getDocs(qMinimal);
+      }
     }
-
-    // Execute query
-    const querySnapshot = await getDocs(q);
     
     const results = querySnapshot.docs.map(doc => {
       const data = doc.data() as any;
