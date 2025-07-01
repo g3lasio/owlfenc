@@ -299,111 +299,149 @@ async function extractPdfDataOptimized(buffer: Buffer) {
   }
 }
 
+// Intelligent document structure parser for estimates
+function parseEstimateStructure(text: string) {
+  console.log('🎯 [STRUCTURE] Analyzing document structure...');
+  
+  // Split text into logical sections
+  const sections = {
+    header: extractSection(text, /ESTIMATE[\s\S]*?(?=Client Information|$)/i),
+    clientInfo: extractSection(text, /Client Information[\s\S]*?(?=Project Details|$)/i),
+    projectDetails: extractSection(text, /Project Details[\s\S]*?(?=Items & Services|$)/i),
+    itemsServices: extractSection(text, /Items & Services[\s\S]*?(?=Subtotal:|$)/i),
+    totals: extractSection(text, /Subtotal:[\s\S]*?(?=Thank you|Terms|$)/i),
+    footer: extractSection(text, /Terms[\s\S]*$/i)
+  };
+
+  console.log('📋 [STRUCTURE] Sections found:', Object.keys(sections).filter(key => sections[key]));
+  
+  return sections;
+}
+
+function extractSection(text: string, regex: RegExp): string {
+  const match = text.match(regex);
+  return match ? match[0].trim() : '';
+}
+
 // Specialized extraction functions for estimate documents
 function extractClientName(text: string): string {
+  const sections = parseEstimateStructure(text);
+  const clientSection = sections.clientInfo;
+  
+  console.log('🔍 [CLIENT-NAME] Analyzing client section...');
+  
+  // Extract name from client information section
   const patterns = [
-    /(?:client|customer|bill\s+to|to)[\s:]*([A-Za-z]+(?:\s+[A-Za-z]+)*)/i,
-    /([A-Z][a-z]+\s+[A-Z][a-z]+)(?=.*@)/,
-    /name[\s:]*([A-Za-z]+(?:\s+[A-Za-z]+)*)/i,
-    /^([A-Z][a-z]+\s+[A-Z][a-z]+)/m
+    /Client Information[\s\S]*?^\s*([A-Z][a-zA-Z]+\s+[A-Z][a-zA-Z]+)[\s\n]/m,
+    /([A-Z][a-zA-Z]+\s+[A-Z][a-zA-Z]+)[\s\n]*Phone:/,
+    /^\s*([A-Z][a-zA-Z]+\s+[A-Z][a-zA-Z]+)[\s]*$/m
   ];
   
   for (const pattern of patterns) {
-    const result = extractField(text, pattern);
-    if (result && result.length > 2) {
-      console.log(`🔍 [CLIENT-NAME] Found: "${result}" with pattern: ${pattern}`);
+    const result = extractField(clientSection || text, pattern);
+    if (result && result.length > 2 && !result.includes('Information') && !result.includes('Phone')) {
+      console.log(`✅ [CLIENT-NAME] Found: "${result}"`);
       return result;
     }
   }
+  
   return '';
 }
 
 function extractAddress(text: string): string {
+  const sections = parseEstimateStructure(text);
+  const clientSection = sections.clientInfo;
+  
+  console.log('🔍 [ADDRESS] Analyzing address from client section...');
+  
   const patterns = [
-    /address[\s:]*([^\n]+(?:\n[^\n]*(?:street|st|ave|avenue|rd|road|blvd|boulevard|way|drive|dr|lane|ln|court|ct|place|pl).*)?)/i,
-    /(?:address|location|site)[\s:]*([^\n]+)/i,
-    /([A-Za-z\s]+,\s*[A-Z]{2}(?:\s+\d{5})?)/,
-    /(Oakland,\s*CA)/i
+    /Address:\s*([^\n]+)/i,
+    /Address[\s:]*([^\n]+)/i,
+    /(\d+\s+[A-Z][a-zA-Z\s]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Court|Ct|Hill|Way)[^\n]*)/i
   ];
   
   for (const pattern of patterns) {
-    const result = extractField(text, pattern);
-    if (result && result.length > 5) {
-      console.log(`🔍 [ADDRESS] Found: "${result}" with pattern: ${pattern}`);
+    const result = extractField(clientSection || text, pattern);
+    if (result && result.length > 5 && !result.includes('Project') && !result.includes('Details')) {
+      console.log(`✅ [ADDRESS] Found: "${result}"`);
       return result;
     }
   }
+  
   return '';
 }
 
 function extractProjectType(text: string): string {
-  const patterns = [
-    /(?:project|work|job)[\s:]*type[\s:]*([^\n]+)/i,
-    /(?:description|project)[\s:]*([^\n]*(?:fence|deck|roof|floor|paint|electrical|plumbing|concrete|construction)[^\n]*)/i,
-    /(fence|fencing|deck|decking|roofing|flooring|painting|electrical|plumbing|concrete|construction|renovation|remodel)/i,
-    /(?:scope|work)[\s:]*([^\n]+)/i
-  ];
+  const sections = parseEstimateStructure(text);
+  const projectSection = sections.projectDetails;
   
-  for (const pattern of patterns) {
-    const result = extractField(text, pattern);
-    if (result && result.length > 2) {
-      console.log(`🔍 [PROJECT-TYPE] Found: "${result}" with pattern: ${pattern}`);
-      return result;
+  console.log('🔍 [PROJECT-TYPE] Analyzing project section...');
+  
+  // Look for specific project keywords in project description
+  const keywords = ['deck', 'remodel', 'renovation', 'construction', 'fence', 'roofing', 'flooring', 'painting'];
+  
+  for (const keyword of keywords) {
+    const regex = new RegExp(`\\b${keyword}\\w*\\b`, 'i');
+    if (regex.test(projectSection)) {
+      console.log(`✅ [PROJECT-TYPE] Found: "${keyword}"`);
+      return keyword;
     }
   }
+  
   return '';
 }
 
 function extractProjectDescription(text: string): string {
+  const sections = parseEstimateStructure(text);
+  const projectSection = sections.projectDetails;
+  
+  console.log('🔍 [PROJECT-DESC] Extracting project description...');
+  
+  // Extract the main project description from project details
   const patterns = [
-    /(?:description|scope|work|project)[\s:]*([^\n]+(?:\n(?!\s*\$|\s*total|\s*subtotal|\s*tax)[^\n]+)*)/i,
-    /(?:complete|removal|installation|repair)[\s]*([^\n]+)/i,
-    /(\d+\s*(?:sq\s*ft|linear\s*ft|feet|square\s*feet)[^\n]*)/i
+    /This project involves[\s\S]*?(?=\.\s*[✨💪📋🎯])/i,
+    /comprehensive\s+\w+\s+of[\s\S]*?(?=\.\s*Construction)/i,
+    /scope of work includes[\s\S]*?(?=\.\s*[A-Z])/i
   ];
   
   for (const pattern of patterns) {
-    const result = extractField(text, pattern);
-    if (result && result.length > 10) {
-      console.log(`🔍 [PROJECT-DESC] Found: "${result}" with pattern: ${pattern}`);
-      return result;
+    const result = extractField(projectSection, pattern);
+    if (result && result.length > 50) {
+      console.log(`✅ [PROJECT-DESC] Found description (${result.length} chars)`);
+      return result.substring(0, 200) + '...'; // Limit length
     }
   }
+  
   return '';
 }
 
 function extractLocation(text: string): string {
-  const patterns = [
-    /(?:location|site|property)[\s:]*([^\n]+)/i,
-    /(?:at|@)[\s]*([A-Za-z0-9\s,]+(?:street|st|ave|avenue|rd|road|blvd|boulevard|way|drive|dr|lane|ln|court|ct|place|pl)[^\n]*)/i,
-    /([A-Za-z\s]+,\s*[A-Z]{2}(?:\s+\d{5})?)/
-  ];
-  
-  for (const pattern of patterns) {
-    const result = extractField(text, pattern);
-    if (result && result.length > 5) {
-      console.log(`🔍 [LOCATION] Found: "${result}" with pattern: ${pattern}`);
-      return result;
-    }
-  }
-  return '';
+  // Location is typically the same as address for construction estimates
+  return extractAddress(text);
 }
 
 function extractTotalAmount(text: string): string {
+  const sections = parseEstimateStructure(text);
+  const totalsSection = sections.totals;
+  
+  console.log('🔍 [TOTAL-AMOUNT] Analyzing totals section...');
+  console.log('💰 [TOTAL-AMOUNT] Totals section:', totalsSection.substring(0, 200));
+  
   const patterns = [
-    /(?:total|grand\s*total|final\s*total)[\s:]*\$?\s*([0-9,]+\.?\d*)/i,
-    /\$\s*([0-9,]+\.?\d*)\s*(?:total|final|grand)/i,
-    /(?:amount|cost|price)[\s:]*\$?\s*([0-9,]+\.?\d*)/i,
-    /\$\s*([0-9,]+\.?\d*)\s*$/m,
-    /([0-9,]+\.\d{2})\s*(?:\n|$)/
+    /TOTAL ESTIMATE:\s*\$([0-9,]+\.?\d*)/i,
+    /Total:\s*\$([0-9,]+\.?\d*)/i,
+    /investment:\s*\$([0-9,]+\.?\d*)/i,
+    /\$([0-9,]+\.\d{2})\s*$/m
   ];
   
   for (const pattern of patterns) {
-    const result = extractField(text, pattern);
+    const result = extractField(totalsSection || text, pattern);
     if (result && /^[0-9,]+\.?\d*$/.test(result)) {
-      console.log(`🔍 [TOTAL-AMOUNT] Found: "${result}" with pattern: ${pattern}`);
+      console.log(`✅ [TOTAL-AMOUNT] Found: "$${result}"`);
       return result;
     }
   }
+  
   return '';
 }
 
@@ -423,21 +461,21 @@ async function parseTextWithAI(text: string) {
 
   // Enhanced parsing with multiple patterns for each field
   const clientInfo = {
-    name: extractClientName(text),
-    email: extractField(text, /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/),
-    phone: extractField(text, /(?:phone|tel|mobile|cell).*?:?\s*([0-9\(\)\-\s\.]{10,})/i) || 
-           extractField(text, /(\([0-9]{3}\)\s*[0-9]{3}[-\s]*[0-9]{4})/),
-    address: extractAddress(text)
+    name: cleanExtractedText(extractClientName(text)),
+    email: cleanExtractedText(extractField(text, /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/)),
+    phone: cleanExtractedText(extractField(text, /(?:phone|tel|mobile|cell).*?:?\s*([0-9\(\)\-\s\.]{10,})/i) || 
+           extractField(text, /(\([0-9]{3}\)\s*[0-9]{3}[-\s]*[0-9]{4})/)),
+    address: cleanExtractedText(extractAddress(text))
   };
 
   const projectInfo = {
-    type: extractProjectType(text),
-    description: extractProjectDescription(text),
-    location: extractLocation(text)
+    type: cleanExtractedText(extractProjectType(text)),
+    description: cleanExtractedText(extractProjectDescription(text)),
+    location: cleanExtractedText(extractLocation(text))
   };
 
   const financialInfo = {
-    totalAmount: extractTotalAmount(text)
+    totalAmount: cleanExtractedText(extractTotalAmount(text))
   };
 
   console.log('✅ [AI-PARSE] Extracted data:', { clientInfo, projectInfo, financialInfo });
@@ -452,6 +490,32 @@ async function parseTextWithAI(text: string) {
 function extractField(text: string, regex: RegExp): string {
   const match = text.match(regex);
   return match && match[1] ? match[1].trim() : '';
+}
+
+// Function to clean extracted text from common OCR artifacts
+function cleanExtractedText(text: string): string {
+  if (!text) return '';
+  
+  return text
+    // Remove common OCR noise words at the beginning
+    .replace(/^(Information|Details|Phone|Email|Address|Project|Client|Name|Location)\s*/gi, '')
+    // Remove multiple whitespaces and newlines
+    .replace(/\s+/g, ' ')
+    // Remove leading/trailing whitespace
+    .trim()
+    // Remove empty parentheses
+    .replace(/\(\s*\)/g, '')
+    // Clean up phone number prefixes
+    .replace(/^Phone:\s*/gi, '')
+    // Clean email prefixes
+    .replace(/^Email:\s*/gi, '')
+    // Remove standalone numbers at start (like line numbers)
+    .replace(/^\d+\s+/, '')
+    // Remove special characters that aren't needed
+    .replace(/[^\w\s@.\-()$,]/g, ' ')
+    // Consolidate multiple spaces again
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function validateExtractedData(data: any) {
