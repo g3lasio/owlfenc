@@ -676,27 +676,70 @@ export default function CyberpunkLegalDefense() {
           } catch (error: any) {
             console.error('Error loading projects:', error);
             
-            // Handle specific Firebase errors
-            if (error.code === 'failed-precondition') {
-              toast({
-                title: "⚡ DATABASE CONFIGURATION",
-                description: "Database rules need updating. Please contact support.",
-                variant: "destructive"
-              });
-            } else if (error.code === 'permission-denied') {
-              toast({
-                title: "⚡ ACCESS DENIED",
-                description: "You don't have permission to access this data.",
-                variant: "destructive"
-              });
+            // BACKUP SYSTEM: Try PostgreSQL when Firebase fails
+            if (error.code === 'failed-precondition' || error.code === 'permission-denied') {
+              console.log('🔄 BACKUP: Attempting to load projects from PostgreSQL...');
+              
+              try {
+                const backupResponse = await fetch('/api/projects', {
+                  method: 'GET',
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Firebase-UID': user.uid // Pass user ID for security
+                  }
+                });
+                
+                if (backupResponse.ok) {
+                  const backupProjects = await backupResponse.json();
+                  
+                  // Filter only approved projects and format for contract system
+                  const approvedBackupProjects = backupProjects
+                    .filter((project: any) => project.status === 'approved')
+                    .map((project: any) => ({
+                      id: project.id,
+                      clientName: project.clientName || 'Unknown Client',
+                      clientEmail: project.clientEmail || '',
+                      clientPhone: project.clientPhone || '',
+                      address: project.address || '',
+                      projectType: project.projectType || 'Fence Project',
+                      projectDescription: project.description || '',
+                      totalAmount: project.totalPrice || 0,
+                      status: project.status,
+                      createdAt: project.createdAt || new Date().toLocaleDateString(),
+                      userId: user.uid // Ensure user ID is attached
+                    }));
+                  
+                  setApprovedProjects(approvedBackupProjects);
+                  
+                  toast({
+                    title: "🔄 BACKUP SYSTEM ACTIVATED",
+                    description: `Loaded ${approvedBackupProjects.length} projects from backup database.`,
+                  });
+                  
+                  console.log(`✅ BACKUP: Successfully loaded ${approvedBackupProjects.length} projects from PostgreSQL`);
+                } else {
+                  throw new Error('Backup system also failed');
+                }
+              } catch (backupError) {
+                console.error('Backup system failed:', backupError);
+                
+                // Final fallback with helpful message
+                toast({
+                  title: "⚡ DATABASE CONNECTION ISSUE",
+                  description: "Both Firebase and backup systems are temporarily unavailable. Please try again in a few minutes.",
+                  variant: "destructive"
+                });
+                setApprovedProjects([]);
+              }
             } else {
+              // Handle other types of errors
               toast({
                 title: "⚡ CONNECTION ERROR",
                 description: "Cannot connect to project database. Try again later.",
                 variant: "destructive"
               });
+              setApprovedProjects([]);
             }
-            setApprovedProjects([]);
           }
           resolve();
         });

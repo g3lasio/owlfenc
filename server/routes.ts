@@ -2051,10 +2051,27 @@ Output must be between 200-900 characters in English.`;
   // Add API routes
   app.get("/api/projects", async (req: Request, res: Response) => {
     try {
-      console.log("🔍 Obteniendo proyectos para contratos...");
+      console.log("🔍 Getting projects for contracts...");
 
-      // Obtener todos los proyectos del sistema (usando userId por defecto)
-      const allProjects = await storage.getProjectsByUserId(1);
+      // SECURITY: Check for Firebase UID in headers (backup system)
+      const firebaseUid = req.headers['x-firebase-uid'] as string;
+      let userId = 1; // Default user ID
+      
+      if (firebaseUid) {
+        console.log(`🔄 BACKUP SYSTEM: Loading projects for Firebase user: ${firebaseUid}`);
+        
+        // Try to find user by Firebase UID first
+        const user = await storage.getUserByFirebaseUid(firebaseUid);
+        
+        if (user) {
+          console.log(`✅ Found user in PostgreSQL: ${user.id} for Firebase UID: ${firebaseUid}`);
+          userId = user.id;
+        } else {
+          console.log(`⚠️ No user found for Firebase UID: ${firebaseUid}, using default user ID`);
+        }
+      }
+
+      const allProjects = await storage.getProjectsByUserId(userId);
       console.log(`📋 Total de proyectos encontrados: ${allProjects.length}`);
 
       // Filtrar proyectos existentes que pueden convertirse en contratos
