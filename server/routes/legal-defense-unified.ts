@@ -248,15 +248,41 @@ async function fetchContractorBranding(userId?: string) {
 }
 
 async function extractPdfDataOptimized(buffer: Buffer) {
-  // Optimized PDF extraction using the best available service
-  const pdf = await import('pdf-parse');
+  console.log('🔍 [PDF-EXTRACT] Starting PDF data extraction...');
+  
+  // Validate input buffer
+  if (!buffer || buffer.length === 0) {
+    console.error('❌ [PDF-EXTRACT] Invalid or empty buffer provided');
+    return {
+      success: false,
+      error: 'Invalid PDF buffer provided'
+    };
+  }
+
+  console.log(`📄 [PDF-EXTRACT] Processing PDF buffer of ${buffer.length} bytes`);
   
   try {
+    // Optimized PDF extraction using the best available service
+    const pdf = await import('pdf-parse');
+    
     const pdfData = await pdf.default(buffer);
     const extractedText = pdfData.text;
     
+    console.log(`📝 [PDF-EXTRACT] Extracted ${extractedText?.length || 0} characters from PDF`);
+    
+    if (!extractedText || extractedText.length === 0) {
+      console.warn('⚠️ [PDF-EXTRACT] No text extracted from PDF');
+      return {
+        success: false,
+        error: 'No text could be extracted from the PDF. The document may be image-based or corrupted.'
+      };
+    }
+    
     // Use AI to structure the data
+    console.log('🤖 [PDF-EXTRACT] Parsing text with AI...');
     const structuredData = await parseTextWithAI(extractedText);
+    
+    console.log('✅ [PDF-EXTRACT] Data extraction completed successfully');
     
     return {
       success: true,
@@ -265,6 +291,7 @@ async function extractPdfDataOptimized(buffer: Buffer) {
       processingTime: Date.now()
     };
   } catch (error) {
+    console.error('❌ [PDF-EXTRACT] Extraction failed:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'PDF extraction failed'
@@ -273,6 +300,16 @@ async function extractPdfDataOptimized(buffer: Buffer) {
 }
 
 async function parseTextWithAI(text: string) {
+  // Validate input text
+  if (!text || typeof text !== 'string') {
+    console.warn('Invalid text provided to parseTextWithAI:', typeof text);
+    return {
+      clientInfo: { name: '', email: '', phone: '', address: '' },
+      projectInfo: { type: '', description: '', location: '' },
+      financialInfo: { totalAmount: '' }
+    };
+  }
+
   // AI-powered text parsing - simplified for optimization
   return {
     clientInfo: {
@@ -294,7 +331,7 @@ async function parseTextWithAI(text: string) {
 
 function extractField(text: string, regex: RegExp): string {
   const match = text.match(regex);
-  return match ? match[1].trim() : '';
+  return match && match[1] ? match[1].trim() : '';
 }
 
 function validateExtractedData(data: any) {
