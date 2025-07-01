@@ -299,6 +299,114 @@ async function extractPdfDataOptimized(buffer: Buffer) {
   }
 }
 
+// Specialized extraction functions for estimate documents
+function extractClientName(text: string): string {
+  const patterns = [
+    /(?:client|customer|bill\s+to|to)[\s:]*([A-Za-z]+(?:\s+[A-Za-z]+)*)/i,
+    /([A-Z][a-z]+\s+[A-Z][a-z]+)(?=.*@)/,
+    /name[\s:]*([A-Za-z]+(?:\s+[A-Za-z]+)*)/i,
+    /^([A-Z][a-z]+\s+[A-Z][a-z]+)/m
+  ];
+  
+  for (const pattern of patterns) {
+    const result = extractField(text, pattern);
+    if (result && result.length > 2) {
+      console.log(`🔍 [CLIENT-NAME] Found: "${result}" with pattern: ${pattern}`);
+      return result;
+    }
+  }
+  return '';
+}
+
+function extractAddress(text: string): string {
+  const patterns = [
+    /address[\s:]*([^\n]+(?:\n[^\n]*(?:street|st|ave|avenue|rd|road|blvd|boulevard|way|drive|dr|lane|ln|court|ct|place|pl).*)?)/i,
+    /(?:address|location|site)[\s:]*([^\n]+)/i,
+    /([A-Za-z\s]+,\s*[A-Z]{2}(?:\s+\d{5})?)/,
+    /(Oakland,\s*CA)/i
+  ];
+  
+  for (const pattern of patterns) {
+    const result = extractField(text, pattern);
+    if (result && result.length > 5) {
+      console.log(`🔍 [ADDRESS] Found: "${result}" with pattern: ${pattern}`);
+      return result;
+    }
+  }
+  return '';
+}
+
+function extractProjectType(text: string): string {
+  const patterns = [
+    /(?:project|work|job)[\s:]*type[\s:]*([^\n]+)/i,
+    /(?:description|project)[\s:]*([^\n]*(?:fence|deck|roof|floor|paint|electrical|plumbing|concrete|construction)[^\n]*)/i,
+    /(fence|fencing|deck|decking|roofing|flooring|painting|electrical|plumbing|concrete|construction|renovation|remodel)/i,
+    /(?:scope|work)[\s:]*([^\n]+)/i
+  ];
+  
+  for (const pattern of patterns) {
+    const result = extractField(text, pattern);
+    if (result && result.length > 2) {
+      console.log(`🔍 [PROJECT-TYPE] Found: "${result}" with pattern: ${pattern}`);
+      return result;
+    }
+  }
+  return '';
+}
+
+function extractProjectDescription(text: string): string {
+  const patterns = [
+    /(?:description|scope|work|project)[\s:]*([^\n]+(?:\n(?!\s*\$|\s*total|\s*subtotal|\s*tax)[^\n]+)*)/i,
+    /(?:complete|removal|installation|repair)[\s]*([^\n]+)/i,
+    /(\d+\s*(?:sq\s*ft|linear\s*ft|feet|square\s*feet)[^\n]*)/i
+  ];
+  
+  for (const pattern of patterns) {
+    const result = extractField(text, pattern);
+    if (result && result.length > 10) {
+      console.log(`🔍 [PROJECT-DESC] Found: "${result}" with pattern: ${pattern}`);
+      return result;
+    }
+  }
+  return '';
+}
+
+function extractLocation(text: string): string {
+  const patterns = [
+    /(?:location|site|property)[\s:]*([^\n]+)/i,
+    /(?:at|@)[\s]*([A-Za-z0-9\s,]+(?:street|st|ave|avenue|rd|road|blvd|boulevard|way|drive|dr|lane|ln|court|ct|place|pl)[^\n]*)/i,
+    /([A-Za-z\s]+,\s*[A-Z]{2}(?:\s+\d{5})?)/
+  ];
+  
+  for (const pattern of patterns) {
+    const result = extractField(text, pattern);
+    if (result && result.length > 5) {
+      console.log(`🔍 [LOCATION] Found: "${result}" with pattern: ${pattern}`);
+      return result;
+    }
+  }
+  return '';
+}
+
+function extractTotalAmount(text: string): string {
+  const patterns = [
+    /(?:total|grand\s*total|final\s*total)[\s:]*\$?\s*([0-9,]+\.?\d*)/i,
+    /\$\s*([0-9,]+\.?\d*)\s*(?:total|final|grand)/i,
+    /(?:amount|cost|price)[\s:]*\$?\s*([0-9,]+\.?\d*)/i,
+    /\$\s*([0-9,]+\.?\d*)\s*$/m,
+    /([0-9,]+\.\d{2})\s*(?:\n|$)/
+  ];
+  
+  for (const pattern of patterns) {
+    const result = extractField(text, pattern);
+    if (result && /^[0-9,]+\.?\d*$/.test(result)) {
+      console.log(`🔍 [TOTAL-AMOUNT] Found: "${result}" with pattern: ${pattern}`);
+      return result;
+    }
+  }
+  return '';
+}
+
 async function parseTextWithAI(text: string) {
   // Validate input text
   if (!text || typeof text !== 'string') {
@@ -310,22 +418,34 @@ async function parseTextWithAI(text: string) {
     };
   }
 
-  // AI-powered text parsing - simplified for optimization
+  console.log('🔍 [AI-PARSE] Starting enhanced text parsing...');
+  console.log('📝 [AI-PARSE] Text preview:', text.substring(0, 500) + '...');
+
+  // Enhanced parsing with multiple patterns for each field
+  const clientInfo = {
+    name: extractClientName(text),
+    email: extractField(text, /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/),
+    phone: extractField(text, /(?:phone|tel|mobile|cell).*?:?\s*([0-9\(\)\-\s\.]{10,})/i) || 
+           extractField(text, /(\([0-9]{3}\)\s*[0-9]{3}[-\s]*[0-9]{4})/),
+    address: extractAddress(text)
+  };
+
+  const projectInfo = {
+    type: extractProjectType(text),
+    description: extractProjectDescription(text),
+    location: extractLocation(text)
+  };
+
+  const financialInfo = {
+    totalAmount: extractTotalAmount(text)
+  };
+
+  console.log('✅ [AI-PARSE] Extracted data:', { clientInfo, projectInfo, financialInfo });
+
   return {
-    clientInfo: {
-      name: extractField(text, /client|customer.*?name.*?:?\s*([^\n]+)/i),
-      email: extractField(text, /email.*?:?\s*([^\s\n]+@[^\s\n]+)/i),
-      phone: extractField(text, /phone|tel.*?:?\s*([0-9\-\(\)\s]+)/i),
-      address: extractField(text, /address.*?:?\s*([^\n]+)/i)
-    },
-    projectInfo: {
-      type: extractField(text, /project.*?type.*?:?\s*([^\n]+)/i),
-      description: extractField(text, /description.*?:?\s*([^\n]+)/i),
-      location: extractField(text, /location.*?:?\s*([^\n]+)/i)
-    },
-    financialInfo: {
-      totalAmount: extractField(text, /total.*?:?\s*\$?([0-9,\.]+)/i)
-    }
+    clientInfo,
+    projectInfo,
+    financialInfo
   };
 }
 
