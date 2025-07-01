@@ -481,6 +481,16 @@ Changelog:
   * Maintained all backend functionality while simplifying user interface visualization
   * Users no longer see redundant intermediate step that caused confusion
   * Workflow now displays clean 3-step process matching actual user experience
+- July 1, 2025. CRITICAL FIX: Complete Permit Card Backend Integration:
+  * Identified root cause: Frontend sent permitInfo but backend only captured permits
+  * Added permitInfo capture to server/routes.ts /api/generate-pdf endpoint (line 2945)
+  * Enhanced PremiumPdfService with generatePermitSection() function for dynamic permit content
+  * Updated ContractPdfData interface to include permitInfo structure
+  * Created comprehensive permit content logic: contractor/client/shared responsibility options
+  * Tested all permit configurations: required permits, no permits, contractor/client responsibility
+  * PDF generation now dynamically includes permit numbers, responsibility assignments, and compliance text
+  * Frontend permit card selections now properly flow through to generated contract PDFs
+  * Verified complete data flow: User selections → API capture → PDF generation with real permit data
 - June 29, 2025. CRITICAL SUCCESS: Achieved cost accuracy target for DeepSearch Material system:
   * Fixed cost calculations from $84.78 to $61.78 per linear foot (within $58-70 target range)
   * Reduced material prices across all categories: posts $17.50→$10, boards $4.25→$3.50, cedar $5.50→$3.25

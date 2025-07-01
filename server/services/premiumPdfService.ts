@@ -25,6 +25,11 @@ export interface ContractPdfData {
     title: string;
     content: string;
   }>;
+  permitInfo?: {
+    permitsRequired: boolean;
+    responsibility: string;
+    numbers: string;
+  };
 }
 
 class PremiumPdfService {
@@ -323,7 +328,7 @@ class PremiumPdfService {
             <div class="numbered-section">
                 <p><span class="section-number">8. PERMITS, LICENSES, AND CODE COMPLIANCE</span></p>
                 <p class="legal-text">
-                    The Contractor shall obtain and pay for all permits, licenses, and approvals required by federal, state, and local authorities for the performance of the work, unless specifically agreed otherwise in writing. All work shall be performed in strict compliance with applicable building codes, zoning ordinances, environmental regulations, safety requirements, and industry standards. The Contractor shall schedule and coordinate all required inspections. Upon completion, all permits shall be properly closed out and documentation provided to the Client.
+                    ${this.generatePermitSection(data.permitInfo)}
                 </p>
             </div>
 
@@ -436,6 +441,35 @@ class PremiumPdfService {
 </body>
 </html>
     `;
+  }
+
+  private generatePermitSection(permitInfo?: { permitsRequired: boolean; responsibility: string; numbers: string }): string {
+    if (!permitInfo) {
+      // Default permit section when no permitInfo is provided
+      return `The Contractor shall obtain and pay for all permits, licenses, and approvals required by federal, state, and local authorities for the performance of the work, unless specifically agreed otherwise in writing. All work shall be performed in strict compliance with applicable building codes, zoning ordinances, environmental regulations, safety requirements, and industry standards. The Contractor shall schedule and coordinate all required inspections. Upon completion, all permits shall be properly closed out and documentation provided to the Client.`;
+    }
+
+    let permitText = '';
+    
+    if (permitInfo.permitsRequired) {
+      if (permitInfo.responsibility === 'contractor') {
+        permitText = `<strong>Contractor Responsibility:</strong> The Contractor shall obtain and pay for all permits, licenses, and approvals required by federal, state, and local authorities for the performance of the work. `;
+      } else if (permitInfo.responsibility === 'client') {
+        permitText = `<strong>Client Responsibility:</strong> The Client is responsible for obtaining and paying for all permits, licenses, and approvals required by federal, state, and local authorities for the performance of the work. The Contractor shall provide all necessary documentation and specifications required for permit applications. `;
+      } else {
+        permitText = `<strong>Shared Responsibility:</strong> Both parties agree to cooperate in obtaining all permits, licenses, and approvals required by federal, state, and local authorities for the performance of the work. Specific responsibilities shall be determined by mutual agreement in writing. `;
+      }
+      
+      if (permitInfo.numbers && permitInfo.numbers.trim()) {
+        permitText += `<strong>Permit Numbers:</strong> ${permitInfo.numbers}. `;
+      }
+    } else {
+      permitText = `<strong>No Permits Required:</strong> Based on the scope of work, no permits are anticipated to be required for this project. However, if permits become necessary during the course of work, the parties agree to address permit requirements through a written change order. `;
+    }
+    
+    permitText += `All work shall be performed in strict compliance with applicable building codes, zoning ordinances, environmental regulations, safety requirements, and industry standards. The responsible party shall schedule and coordinate all required inspections. Upon completion, all permits shall be properly closed out and documentation provided as appropriate.`;
+    
+    return permitText;
   }
 
   async generateProfessionalPDF(data: ContractPdfData): Promise<Buffer> {
