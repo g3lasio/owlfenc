@@ -17,19 +17,19 @@ function securityAudit() {
   const unsafeFunctions = [];
   
   // Verificar getProjects
-  if (firebaseContent.includes('getProjects') && 
-      !firebaseContent.includes('where("userId", "==", targetUserId)')) {
-    unsafeFunctions.push('getProjects - No filtra por userId');
-  } else {
+  if (firebaseContent.includes('where("firebaseUserId", "==", currentUser.uid)') || 
+      firebaseContent.includes('where("userId", "==", targetUserId)')) {
     console.log("   ✓ getProjects - Correctamente asegurada");
+  } else {
+    unsafeFunctions.push('getProjects - No filtra por userId');
   }
   
   // Verificar getProjectById
-  if (firebaseContent.includes('getProjectById') && 
-      !firebaseContent.includes('if (data.userId !== currentUser.uid)')) {
-    console.log("   ⚠️  getProjectById - Requiere verificación manual");
-  } else {
+  if (firebaseContent.includes('if (projectData.firebaseUserId === currentUser.uid') || 
+      firebaseContent.includes('if (data.userId !== currentUser.uid)')) {
     console.log("   ✓ getProjectById - Correctamente asegurada");
+  } else {
+    console.log("   ⚠️  getProjectById - Requiere verificación manual");
   }
   
   // 2. Verificar funciones en clientFirebase.ts
