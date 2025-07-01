@@ -196,8 +196,8 @@ router.post('/send-contract', async (req, res) => {
       customMessage
     });
 
-    // Enviar email usando sistema centralizado
-    const result = await resendService.sendCentralizedEmail({
+    // Enviar email usando sistema de contratista
+    const result = await resendService.sendContractorEmail({
       toEmail: clientEmail,
       toName: clientName,
       contractorEmail,

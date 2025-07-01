@@ -441,6 +441,14 @@ Changelog:
   * Reduced text to essential "Analizando proyecto..." message
   * Maintained brand colors (cyan-blue gradient) while achieving minimal, focused design
   * Enhanced user experience with less visual distraction during AI processing
+- July 1, 2025. CRITICAL FIX: Resolved email delivery service failures:
+  * Fixed centralized-email-routes.ts endpoint that was returning mock responses instead of processing emails
+  * Corrected contractor email copy functionality to apply test mode detection for contractor recipients
+  * Enhanced resendService.ts to handle both client and contractor emails in test mode consistently
+  * Registered centralized email routes properly in main routes.ts file
+  * Fixed method name inconsistencies (sendContractorEmail vs sendCentralizedEmail)
+  * System now successfully sends estimate emails to gelasio@chyrris.com in test mode with proper redirection
+  * Email service maintains professional contractor branding while handling Resend API test limitations
 - June 29, 2025. CRITICAL SUCCESS: Achieved cost accuracy target for DeepSearch Material system:
   * Fixed cost calculations from $84.78 to $61.78 per linear foot (within $58-70 target range)
   * Reduced material prices across all categories: posts $17.50→$10, boards $4.25→$3.50, cedar $5.50→$3.25
