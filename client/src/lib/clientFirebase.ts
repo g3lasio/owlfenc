@@ -220,20 +220,41 @@ export const getClientById = async (id: string) => {
 // Actualizar un cliente existente
 export const updateClient = async (id: string, clientData: Partial<Client>) => {
   try {
+    // CRITICAL SECURITY: Get current authenticated user
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      console.warn("🔒 SECURITY: No authenticated user - access denied");
+      throw new Error("Authentication required");
+    }
+
     const docRef = doc(db, "clients", id);
+    
+    // CRITICAL SECURITY: Verify client belongs to current user before updating
+    const existingDoc = await getDoc(docRef);
+    if (!existingDoc.exists()) {
+      throw new Error("Cliente no encontrado");
+    }
+    
+    const existingData = existingDoc.data() as any;
+    if (existingData.userId !== currentUser.uid) {
+      console.warn("🔒 SECURITY: Client update denied - belongs to different user");
+      throw new Error("Access denied - client belongs to different user");
+    }
+
     await updateDoc(docRef, {
       ...clientData,
       updatedAt: Timestamp.now()
     });
     
-    // Obtener el cliente actualizado
+    // Get updated client
     const updatedDoc = await getDoc(docRef);
     if (updatedDoc.exists()) {
-      const data = updatedDoc.data();
+      const data = updatedDoc.data() as any;
+      
+      console.log(`🔒 SECURITY: Client updated successfully for user: ${currentUser.uid}`);
       return {
         id: updatedDoc.id,
         ...data,
-        // Convertir Firestore Timestamp a Date
         createdAt: data.createdAt?.toDate(),
         updatedAt: data.updatedAt?.toDate(),
       } as Client;
@@ -249,8 +270,29 @@ export const updateClient = async (id: string, clientData: Partial<Client>) => {
 // Eliminar un cliente
 export const deleteClient = async (id: string) => {
   try {
+    // CRITICAL SECURITY: Get current authenticated user
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      console.warn("🔒 SECURITY: No authenticated user - access denied");
+      throw new Error("Authentication required");
+    }
+
     const docRef = doc(db, "clients", id);
+    
+    // CRITICAL SECURITY: Verify client belongs to current user before deleting
+    const existingDoc = await getDoc(docRef);
+    if (!existingDoc.exists()) {
+      throw new Error("Cliente no encontrado");
+    }
+    
+    const existingData = existingDoc.data() as any;
+    if (existingData.userId !== currentUser.uid) {
+      console.warn("🔒 SECURITY: Client deletion denied - belongs to different user");
+      throw new Error("Access denied - client belongs to different user");
+    }
+
     await deleteDoc(docRef);
+    console.log(`🔒 SECURITY: Client deleted successfully for user: ${currentUser.uid}`);
     return true;
   } catch (error) {
     console.error("Error al eliminar cliente:", error);
