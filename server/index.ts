@@ -64,11 +64,7 @@ app.use('/api/security', securityRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api', integrationsRoutes);
 
-// 📄 Registrar sistema PDFMonkey único
-// PDF routes removed - using only premiumPdfService
-app.use('/api/pdfmonkey-estimates', pdfMonkeyEstimatesRoutes);
-console.log('🐒 [PDFMONKEY] Sistema profesional de PDFs registrado en /api/pdf/generate');
-console.log('🐒 [PDFMONKEY] Template específico de estimados registrado en /api/pdfmonkey-estimates/generate');
+// REMOVED: All PDFMonkey routes - using only Puppeteer PDF service
 
 // 🤖 Registrar sistema inteligente de contratos
 app.use('/api/anthropic', anthropicContractRoutes);
