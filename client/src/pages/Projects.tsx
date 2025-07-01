@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { getProjects, getProjectById, updateProject } from "@/lib/firebase";
+import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -96,23 +97,112 @@ function Projects() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [dashboardTab, setDashboardTab] = useState('details');
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
-    loadProjects();
-  }, []);
+    if (user?.uid) {
+      loadProjects();
+    }
+  }, [user?.uid]);
 
   const loadProjects = async () => {
     try {
       setIsLoading(true);
-      const projectsData = await getProjects();
-      setProjects(projectsData);
+      
+      // SECURITY: Verificar autenticación
+      if (!user?.uid) {
+        toast({
+          title: "Autenticación requerida",
+          description: "Por favor inicia sesión para ver tus proyectos",
+          variant: "destructive"
+        });
+        setProjects([]);
+        return;
+      }
+
+      console.log(`🔒 SECURITY: Loading projects for authenticated user: ${user.uid}`);
+      
+      // Importar Firebase directamente para evitar errores de backend
+      const { collection, getDocs, query, where } = await import('firebase/firestore');
+      const { db } = await import('@/lib/firebase');
+      
+      console.log('🔍 Loading estimates directly...');
+      
+      // Cargar estimados de la colección "estimates"
+      const estimatesRef = collection(db, 'estimates');
+      const estimatesQuery = query(estimatesRef, where('userId', '==', user.uid));
+      const estimatesSnapshot = await getDocs(estimatesQuery);
+      
+      // Cargar proyectos de la colección "projects" con status="estimate"
+      const projectsRef = collection(db, 'projects');
+      const projectsQuery = query(projectsRef, where('userId', '==', user.uid));
+      const projectsSnapshot = await getDocs(projectsQuery);
+      
+      // Procesar todos los datos
+      const allProjects: any[] = [];
+      
+      // Procesar estimados
+      estimatesSnapshot.forEach((doc) => {
+        const data = doc.data();
+        allProjects.push({
+          id: doc.id,
+          clientName: data.clientName || 'Cliente no especificado',
+          address: data.address || data.clientAddress || data.projectAddress || 'Dirección no especificada',
+          projectType: data.projectType || 'Cerca',
+          projectDescription: data.projectDescription || data.description || '',
+          status: data.status || 'estimate',
+          createdAt: data.createdAt || new Date(),
+          totalPrice: data.totalAmount || data.totalPrice || data.totalCost || 0,
+          source: 'estimates-wizard',
+          // Datos completos del estimado
+          items: data.items || [],
+          projectTotalCosts: data.projectTotalCosts,
+          clientEmail: data.clientEmail,
+          clientPhone: data.clientPhone,
+          // Preservar todos los datos adicionales
+          ...data
+        });
+      });
+      
+      // Procesar proyectos tradicionales
+      projectsSnapshot.forEach((doc) => {
+        const data = doc.data();
+        allProjects.push({
+          id: doc.id,
+          clientName: data.clientName || 'Cliente no especificado',
+          address: data.address || data.clientAddress || data.projectAddress || 'Dirección no especificada',
+          projectType: data.projectType || 'General',
+          projectDescription: data.projectDescription || data.description || '',
+          status: data.status || 'active',
+          createdAt: data.createdAt || new Date(),
+          totalPrice: data.totalPrice || data.totalAmount || 0,
+          source: 'project',
+          // Preservar todos los datos del proyecto
+          ...data
+        });
+      });
+      
+      console.log(`✅ Projects loaded directly: ${allProjects.length} for user ${user.uid}`);
+      console.log('📋 Sample projects data:', allProjects.slice(0, 3).map(p => ({
+        id: p.id,
+        clientName: p.clientName,
+        totalPrice: p.totalPrice,
+        source: p.source,
+        rawTotalAmount: p.totalAmount,
+        rawTotalPrice: p.totalPrice,
+        rawTotalCost: p.totalCost
+      })));
+      
+      setProjects(allProjects);
+      
     } catch (error) {
       console.error("Error loading projects:", error);
       toast({
-        variant: "destructive",
+        variant: "destructive", 
         title: "Error",
         description: "No se pudieron cargar los proyectos."
       });
+      setProjects([]);
     } finally {
       setIsLoading(false);
     }
