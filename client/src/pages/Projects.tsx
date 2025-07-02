@@ -2,31 +2,42 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { getProjects, getProjectById, updateProject } from "@/lib/firebase";
 import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import FuturisticTimeline from "@/components/projects/FuturisticTimeline";
-import { 
-  FullHeightContainer, 
-  FixedHeader, 
-  ScrollableContent, 
+import {
+  FullHeightContainer,
+  FixedHeader,
+  ScrollableContent,
   DialogContainer,
   TabContainer,
   TabNavigation,
   TabContent,
-  CardGrid
+  CardGrid,
 } from "@/components/layout/StandardLayoutContainers";
 
 interface Project {
@@ -66,23 +77,23 @@ const projectCategories = {
   fences: {
     name: "Cercas",
     icon: "fence",
-    types: ["Madera", "Vinilo", "Metal", "Chain Link", "Compuesta"]
+    types: ["Madera", "Vinilo", "Metal", "Chain Link", "Compuesta"],
   },
   decks: {
     name: "Terrazas",
     icon: "building",
-    types: ["Madera", "Compuesta", "Vinilo", "Metal"]
+    types: ["Madera", "Compuesta", "Vinilo", "Metal"],
   },
   roofing: {
-    name: "Techos", 
+    name: "Techos",
     icon: "home",
-    types: ["Asfalto", "Metal", "Teja", "Slate"]
+    types: ["Asfalto", "Metal", "Teja", "Slate"],
   },
   general: {
     name: "General",
     icon: "tools",
-    types: ["Reparación", "Instalación", "Mantenimiento"]
-  }
+    types: ["Reparación", "Instalación", "Mantenimiento"],
+  },
 };
 
 function Projects() {
@@ -95,7 +106,7 @@ function Projects() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [dashboardTab, setDashboardTab] = useState('details');
+  const [dashboardTab, setDashboardTab] = useState("details");
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -108,99 +119,119 @@ function Projects() {
   const loadProjects = async () => {
     try {
       setIsLoading(true);
-      
+
       // SECURITY: Verificar autenticación
       if (!user?.uid) {
         toast({
           title: "Autenticación requerida",
           description: "Por favor inicia sesión para ver tus proyectos",
-          variant: "destructive"
+          variant: "destructive",
         });
         setProjects([]);
         return;
       }
 
-      console.log(`🔒 SECURITY: Loading projects for authenticated user: ${user.uid}`);
-      
+      console.log(
+        `🔒 SECURITY: Loading projects for authenticated user: ${user.uid}`,
+      );
+
       // Importar Firebase directamente para evitar errores de backend
-      const { collection, getDocs, query, where } = await import('firebase/firestore');
-      const { db } = await import('@/lib/firebase');
-      
-      console.log('🔍 Loading estimates directly...');
-      
+      const { collection, getDocs, query, where } = await import(
+        "firebase/firestore"
+      );
+      const { db } = await import("@/lib/firebase");
+
+      console.log("🔍 Loading estimates directly...");
+
       // Cargar estimados de la colección "estimates"
-      const estimatesRef = collection(db, 'estimates');
-      const estimatesQuery = query(estimatesRef, where('userId', '==', user.uid));
+      const estimatesRef = collection(db, "estimates");
+      const estimatesQuery = query(
+        estimatesRef,
+        where("userId", "==", user.uid),
+      );
       const estimatesSnapshot = await getDocs(estimatesQuery);
-      
+
       // Cargar proyectos de la colección "projects" con status="estimate"
-      const projectsRef = collection(db, 'projects');
-      const projectsQuery = query(projectsRef, where('userId', '==', user.uid));
+      const projectsRef = collection(db, "projects");
+      const projectsQuery = query(projectsRef, where("userId", "==", user.uid));
       const projectsSnapshot = await getDocs(projectsQuery);
-      
+
       // Procesar todos los datos
       const allProjects: any[] = [];
-      
+
       // Procesar estimados
       estimatesSnapshot.forEach((doc) => {
         const data = doc.data();
         allProjects.push({
           id: doc.id,
-          clientName: data.clientName || 'Cliente no especificado',
-          address: data.address || data.clientAddress || data.projectAddress || 'Dirección no especificada',
-          projectType: data.projectType || 'Cerca',
-          projectDescription: data.projectDescription || data.description || '',
-          status: data.status || 'estimate',
+          clientName: data.clientName || "Cliente no especificado",
+          address:
+            data.address ||
+            data.clientAddress ||
+            data.projectAddress ||
+            "Dirección no especificada",
+          projectType: data.projectType || "Cerca",
+          projectDescription: data.projectDescription || data.description || "",
+          status: data.status || "estimate",
           createdAt: data.createdAt || new Date(),
-          totalPrice: data.totalAmount || data.totalPrice || data.totalCost || 0,
-          source: 'estimates-wizard',
+          totalPrice:
+            data.totalAmount || data.totalPrice || data.totalCost || 0,
+          source: "estimates-wizard",
           // Datos completos del estimado
           items: data.items || [],
           projectTotalCosts: data.projectTotalCosts,
           clientEmail: data.clientEmail,
           clientPhone: data.clientPhone,
           // Preservar todos los datos adicionales
-          ...data
+          ...data,
         });
       });
-      
+
       // Procesar proyectos tradicionales
       projectsSnapshot.forEach((doc) => {
         const data = doc.data();
         allProjects.push({
           id: doc.id,
-          clientName: data.clientName || 'Cliente no especificado',
-          address: data.address || data.clientAddress || data.projectAddress || 'Dirección no especificada',
-          projectType: data.projectType || 'General',
-          projectDescription: data.projectDescription || data.description || '',
-          status: data.status || 'active',
+          clientName: data.clientName || "Cliente no especificado",
+          address:
+            data.address ||
+            data.clientAddress ||
+            data.projectAddress ||
+            "Dirección no especificada",
+          projectType: data.projectType || "General",
+          projectDescription: data.projectDescription || data.description || "",
+          status: data.status || "active",
           createdAt: data.createdAt || new Date(),
           totalPrice: data.totalPrice || data.totalAmount || 0,
-          source: 'project',
+          source: "project",
           // Preservar todos los datos del proyecto
-          ...data
+          ...data,
         });
       });
-      
-      console.log(`✅ Projects loaded directly: ${allProjects.length} for user ${user.uid}`);
-      console.log('📋 Sample projects data:', allProjects.slice(0, 3).map(p => ({
-        id: p.id,
-        clientName: p.clientName,
-        totalPrice: p.totalPrice,
-        source: p.source,
-        rawTotalAmount: p.totalAmount,
-        rawTotalPrice: p.totalPrice,
-        rawTotalCost: p.totalCost
-      })));
-      
+
+      console.log(
+        `✅ Projects loaded directly: ${allProjects.length} for user ${user.uid}`,
+      );
+      console.log(
+        "📋 Sample projects data:",
+        allProjects.slice(0, 3).map((p) => ({
+          id: p.id,
+          clientName: p.clientName,
+          totalPrice: p.totalPrice,
+          source: p.source,
+          rawTotalAmount: p.totalAmount,
+          rawTotalPrice: p.totalPrice,
+          rawTotalCost: p.totalCost,
+        })),
+      );
+
       setProjects(allProjects);
-      
     } catch (error) {
       console.error("Error loading projects:", error);
       toast({
-        variant: "destructive", 
+        variant: "destructive",
         title: "Error",
-        description: "No se pudieron cargar los proyectos."
+        description: "No se pudieron cargar los proyectos.",
       });
       setProjects([]);
     } finally {
@@ -208,32 +239,46 @@ function Projects() {
     }
   };
 
-  const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.address.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = selectedProjectCategory === "all" || 
-                           project.projectCategory === selectedProjectCategory ||
-                           (selectedProjectCategory === "fences" && project.projectType === "fence") ||
-                           (selectedProjectCategory === "decks" && project.projectType === "deck") ||
-                           (selectedProjectCategory === "roofing" && project.projectType === "roofing");
-    
-    const matchesType = selectedProjectType === "all" || 
-                       project.projectSubtype === selectedProjectType ||
-                       project.fenceType === selectedProjectType;
-    
-    const matchesProgress = progressFilter === "all" || 
-                           project.projectProgress === progressFilter;
-    
+  const filteredProjects = projects.filter((project) => {
+    const matchesSearch =
+      project.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      project.address.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesCategory =
+      selectedProjectCategory === "all" ||
+      project.projectCategory === selectedProjectCategory ||
+      (selectedProjectCategory === "fences" &&
+        project.projectType === "fence") ||
+      (selectedProjectCategory === "decks" && project.projectType === "deck") ||
+      (selectedProjectCategory === "roofing" &&
+        project.projectType === "roofing");
+
+    const matchesType =
+      selectedProjectType === "all" ||
+      project.projectSubtype === selectedProjectType ||
+      project.fenceType === selectedProjectType;
+
+    const matchesProgress =
+      progressFilter === "all" || project.projectProgress === progressFilter;
+
     return matchesSearch && matchesCategory && matchesType && matchesProgress;
   });
 
   const getProjectCategoryInfo = (project: Project) => {
-    if (project.projectType === "fence" || project.projectCategory === "fences") {
+    if (
+      project.projectType === "fence" ||
+      project.projectCategory === "fences"
+    ) {
       return { name: "Cercas", icon: "fence" };
-    } else if (project.projectType === "deck" || project.projectCategory === "decks") {
+    } else if (
+      project.projectType === "deck" ||
+      project.projectCategory === "decks"
+    ) {
       return { name: "Terrazas", icon: "building" };
-    } else if (project.projectType === "roofing" || project.projectCategory === "roofing") {
+    } else if (
+      project.projectType === "roofing" ||
+      project.projectCategory === "roofing"
+    ) {
       return { name: "Techos", icon: "home" };
     } else {
       return { name: "General", icon: "tools" };
@@ -245,60 +290,88 @@ function Projects() {
     return {
       categoryName: categoryInfo.name,
       categoryIcon: categoryInfo.icon,
-      subtype: project.projectSubtype || project.fenceType || 'N/A'
+      subtype: project.projectSubtype || project.fenceType || "N/A",
     };
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "approved": return "bg-green-500";
-      case "rejected": return "bg-red-500";
-      case "pending": return "bg-yellow-500";
-      case "in_progress": return "bg-blue-500";
-      case "completed": return "bg-purple-500";
-      default: return "bg-gray-500";
+      case "approved":
+        return "bg-green-500";
+      case "rejected":
+        return "bg-red-500";
+      case "pending":
+        return "bg-yellow-500";
+      case "in_progress":
+        return "bg-blue-500";
+      case "completed":
+        return "bg-purple-500";
+      default:
+        return "bg-gray-500";
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "approved": return "Aprobado";
-      case "rejected": return "Rechazado";
-      case "pending": return "Pendiente";
-      case "in_progress": return "En Progreso";
-      case "completed": return "Completado";
-      default: return "Desconocido";
+      case "approved":
+        return "Aprobado";
+      case "rejected":
+        return "Rechazado";
+      case "pending":
+        return "Pendiente";
+      case "in_progress":
+        return "En Progreso";
+      case "completed":
+        return "Completado";
+      default:
+        return "Desconocido";
     }
   };
 
   const getProgressColor = (progress: string) => {
     switch (progress) {
-      case "estimate_created": return "border-blue-400 text-blue-400";
-      case "rejected": return "border-red-400 text-red-400";
-      case "in_contract": return "border-yellow-400 text-yellow-400";
-      case "scheduled": return "border-purple-400 text-purple-400";
-      case "in_progress": return "border-orange-400 text-orange-400";
-      case "paid": return "border-green-400 text-green-400";
-      case "completed": return "border-gray-400 text-gray-400";
-      default: return "border-gray-400 text-gray-400";
+      case "estimate_created":
+        return "border-blue-400 text-blue-400";
+      case "rejected":
+        return "border-red-400 text-red-400";
+      case "in_contract":
+        return "border-yellow-400 text-yellow-400";
+      case "scheduled":
+        return "border-purple-400 text-purple-400";
+      case "in_progress":
+        return "border-orange-400 text-orange-400";
+      case "paid":
+        return "border-green-400 text-green-400";
+      case "completed":
+        return "border-gray-400 text-gray-400";
+      default:
+        return "border-gray-400 text-gray-400";
     }
   };
 
   const getProgressLabel = (progress: string) => {
     switch (progress) {
-      case "estimate_created": return "Estimado";
-      case "rejected": return "Rechazado";
-      case "in_contract": return "Contrato";
-      case "scheduled": return "Programado";
-      case "in_progress": return "En Progreso";
-      case "paid": return "Pagado";
-      case "completed": return "Completado";
-      default: return "Desconocido";
+      case "estimate_created":
+        return "Estimado";
+      case "rejected":
+        return "Rechazado";
+      case "in_contract":
+        return "Contrato";
+      case "scheduled":
+        return "Programado";
+      case "in_progress":
+        return "En Progreso";
+      case "paid":
+        return "Pagado";
+      case "completed":
+        return "Completado";
+      default:
+        return "Desconocido";
     }
   };
 
   const formatDate = (timestamp: any) => {
-    if (!timestamp || !timestamp.toDate) return 'N/A';
+    if (!timestamp || !timestamp.toDate) return "N/A";
     return timestamp.toDate().toLocaleDateString();
   };
 
@@ -316,18 +389,24 @@ function Projects() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudieron cargar los detalles del proyecto."
+        description: "No se pudieron cargar los detalles del proyecto.",
       });
     }
   };
 
-  const handleProgressUpdate = async (projectId: string, newProgress: string) => {
+  const handleProgressUpdate = async (
+    projectId: string,
+    newProgress: string,
+  ) => {
     try {
       await updateProject(projectId, { projectProgress: newProgress });
-      setSelectedProject(prev => prev ? { ...prev, projectProgress: newProgress } : null);
+      setSelectedProject((prev) =>
+        prev ? { ...prev, projectProgress: newProgress } : null,
+      );
       toast({
         title: "Progreso actualizado",
-        description: "El progreso del proyecto ha sido actualizado exitosamente."
+        description:
+          "El progreso del proyecto ha sido actualizado exitosamente.",
       });
       loadProjects();
     } catch (error) {
@@ -335,7 +414,7 @@ function Projects() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo actualizar el progreso del proyecto."
+        description: "No se pudo actualizar el progreso del proyecto.",
       });
     }
   };
@@ -350,7 +429,7 @@ function Projects() {
           </div>
         </FixedHeader>
         <ScrollableContent>
-          <CardGrid cols={{ default: 1, md: 2, lg: 3 }} className="gap-6">
+          <CardGrid cols={{ default: 1, md: 2, lg: 3 }} className="gap-6 pb-40">
             {[...Array(6)].map((_, i) => (
               <Card key={i}>
                 <CardContent className="p-6">
@@ -372,15 +451,23 @@ function Projects() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Proyectos</h1>
           <div className="flex space-x-2">
-            <Button variant="outline" onClick={() => setViewMode("grid")} className={viewMode === "grid" ? "bg-muted" : ""}>
+            <Button
+              variant="outline"
+              onClick={() => setViewMode("grid")}
+              className={viewMode === "grid" ? "bg-muted" : ""}
+            >
               <i className="ri-grid-line"></i>
             </Button>
-            <Button variant="outline" onClick={() => setViewMode("list")} className={viewMode === "list" ? "bg-muted" : ""}>
+            <Button
+              variant="outline"
+              onClick={() => setViewMode("list")}
+              className={viewMode === "list" ? "bg-muted" : ""}
+            >
               <i className="ri-list-check"></i>
             </Button>
           </div>
         </div>
-        
+
         <div className="mb-4 space-y-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
@@ -392,10 +479,13 @@ function Projects() {
               />
             </div>
             <div className="w-full md:w-64">
-              <Select value={selectedProjectCategory} onValueChange={(value) => {
-                setSelectedProjectCategory(value);
-                setSelectedProjectType("");
-              }}>
+              <Select
+                value={selectedProjectCategory}
+                onValueChange={(value) => {
+                  setSelectedProjectCategory(value);
+                  setSelectedProjectType("");
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Filtrar por categoría" />
                 </SelectTrigger>
@@ -413,88 +503,127 @@ function Projects() {
               </Select>
             </div>
           </div>
-          
-          <Tabs value={progressFilter} onValueChange={setProgressFilter} className="w-full">
+
+          <Tabs
+            value={progressFilter}
+            onValueChange={setProgressFilter}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-8">
-              <TabsTrigger value="all" className="text-xs">Todos</TabsTrigger>
-              <TabsTrigger value="estimate_created" className="text-xs">Estimado</TabsTrigger>
-              <TabsTrigger value="rejected" className="text-xs">Rechazado</TabsTrigger>
-              <TabsTrigger value="in_contract" className="text-xs">Contrato</TabsTrigger>
-              <TabsTrigger value="scheduled" className="text-xs">Programado</TabsTrigger>
-              <TabsTrigger value="in_progress" className="text-xs">Proyecto</TabsTrigger>
-              <TabsTrigger value="paid" className="text-xs">Pagado</TabsTrigger>
-              <TabsTrigger value="completed" className="text-xs">Completado</TabsTrigger>
+              <TabsTrigger value="all" className="text-xs">
+                Todos
+              </TabsTrigger>
+              <TabsTrigger value="estimate_created" className="text-xs">
+                Estimado
+              </TabsTrigger>
+              <TabsTrigger value="rejected" className="text-xs">
+                Rechazado
+              </TabsTrigger>
+              <TabsTrigger value="in_contract" className="text-xs">
+                Contrato
+              </TabsTrigger>
+              <TabsTrigger value="scheduled" className="text-xs">
+                Programado
+              </TabsTrigger>
+              <TabsTrigger value="in_progress" className="text-xs">
+                Proyecto
+              </TabsTrigger>
+              <TabsTrigger value="paid" className="text-xs">
+                Pagado
+              </TabsTrigger>
+              <TabsTrigger value="completed" className="text-xs">
+                Completado
+              </TabsTrigger>
             </TabsList>
           </Tabs>
-          
+
           <div className="text-sm text-muted-foreground">
-            {filteredProjects.length} {filteredProjects.length === 1 ? 'proyecto encontrado' : 'proyectos encontrados'}
+            {filteredProjects.length}{" "}
+            {filteredProjects.length === 1
+              ? "proyecto encontrado"
+              : "proyectos encontrados"}
           </div>
         </div>
       </div>
 
-      <div className="controlled-scroll p-6">
+      <div className="controlled-scroll p-6 ">
         {filteredProjects.length === 0 ? (
           <div className="text-center py-12 bg-muted/20 rounded-lg">
             <i className="ri-search-line text-3xl mb-2 text-muted-foreground"></i>
-            <p className="text-muted-foreground">No se encontraron proyectos con los filtros actuales</p>
+            <p className="text-muted-foreground">
+              No se encontraron proyectos con los filtros actuales
+            </p>
           </div>
         ) : viewMode === "grid" ? (
           <CardGrid cols={{ default: 1, md: 2, lg: 3 }} className="gap-6">
             {filteredProjects.map((project) => {
               const displayInfo = getProjectDisplayInfo(project);
               return (
-                <Card key={project.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
+                <Card
+                  key={project.id}
+                  className="hover:shadow-lg transition-shadow cursor-pointer group"
+                >
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-lg truncate group-hover:text-primary transition-colors">
                           {project.clientName}
                         </h3>
-                        <p className="text-sm text-muted-foreground truncate" title={project.address}>
+                        <p
+                          className="text-sm text-muted-foreground truncate"
+                          title={project.address}
+                        >
                           {project.address}
                         </p>
                       </div>
-                      <Badge 
-                        variant="secondary" 
+                      <Badge
+                        variant="secondary"
                         className={`ml-2 ${getStatusColor(project.status)} text-xs shrink-0`}
                       >
                         {getStatusLabel(project.status)}
                       </Badge>
                     </div>
-                    
+
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 text-sm">
-                        <i className={`ri-${displayInfo.categoryIcon}-line text-primary`}></i>
-                        <span className="font-medium">{displayInfo.categoryName}</span>
+                        <i
+                          className={`ri-${displayInfo.categoryIcon}-line text-primary`}
+                        ></i>
+                        <span className="font-medium">
+                          {displayInfo.categoryName}
+                        </span>
                         {project.projectSubtype && (
                           <>
                             <span className="text-muted-foreground">•</span>
-                            <span className="text-muted-foreground">{displayInfo.subtype}</span>
+                            <span className="text-muted-foreground">
+                              {displayInfo.subtype}
+                            </span>
                           </>
                         )}
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
-                        <Badge 
-                          variant="outline" 
+                        <Badge
+                          variant="outline"
                           className={`${getProgressColor(project.projectProgress || "estimate_created")} text-xs`}
                         >
-                          {getProgressLabel(project.projectProgress || "estimate_created")}
+                          {getProgressLabel(
+                            project.projectProgress || "estimate_created",
+                          )}
                         </Badge>
                       </div>
-                      
+
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <i className="ri-calendar-line"></i>
                         <span>{formatDate(project.createdAt)}</span>
                       </div>
-                      
+
                       {project.projectDescription && (
                         <div className="text-xs text-muted-foreground line-clamp-2 bg-muted/30 p-2 rounded">
                           {project.projectDescription}
                         </div>
                       )}
-                      
+
                       {project.totalPrice && (
                         <div className="flex items-center gap-2 text-sm font-medium text-green-600">
                           <i className="ri-money-dollar-circle-line"></i>
@@ -502,10 +631,10 @@ function Projects() {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="flex gap-2 mt-4 pt-3 border-t">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => handleEditEstimate(project.id)}
                         className="flex-1 text-xs"
@@ -513,8 +642,8 @@ function Projects() {
                         <i className="ri-edit-line mr-1"></i>
                         Editar
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => handleViewProject(project.id)}
                         className="flex-1 text-xs"
@@ -535,11 +664,19 @@ function Projects() {
                 <thead className="bg-muted/50">
                   <tr className="border-b">
                     <th className="text-left p-3 font-medium">Cliente</th>
-                    <th className="text-left p-3 font-medium hidden md:table-cell">Dirección</th>
-                    <th className="text-left p-3 font-medium hidden sm:table-cell">Categoría</th>
-                    <th className="text-left p-3 font-medium hidden lg:table-cell">Progreso</th>
+                    <th className="text-left p-3 font-medium hidden md:table-cell">
+                      Dirección
+                    </th>
+                    <th className="text-left p-3 font-medium hidden sm:table-cell">
+                      Categoría
+                    </th>
+                    <th className="text-left p-3 font-medium hidden lg:table-cell">
+                      Progreso
+                    </th>
                     <th className="text-left p-3 font-medium">Estado</th>
-                    <th className="text-left p-3 font-medium hidden sm:table-cell">Fecha</th>
+                    <th className="text-left p-3 font-medium hidden sm:table-cell">
+                      Fecha
+                    </th>
                     <th className="text-left p-3 font-medium">Acciones</th>
                   </tr>
                 </thead>
@@ -547,20 +684,34 @@ function Projects() {
                   {filteredProjects.map((project) => {
                     const displayInfo = getProjectDisplayInfo(project);
                     return (
-                      <tr key={project.id} className="border-b hover:bg-muted/30 transition-colors">
+                      <tr
+                        key={project.id}
+                        className="border-b hover:bg-muted/30 transition-colors"
+                      >
                         <td className="p-3">
-                          <div className="font-medium">{project.clientName}</div>
-                          <div className="text-sm text-muted-foreground md:hidden">{project.address}</div>
+                          <div className="font-medium">
+                            {project.clientName}
+                          </div>
+                          <div className="text-sm text-muted-foreground md:hidden">
+                            {project.address}
+                          </div>
                         </td>
                         <td className="p-3 hidden md:table-cell">
-                          <div className="text-sm max-w-xs truncate" title={project.address}>
+                          <div
+                            className="text-sm max-w-xs truncate"
+                            title={project.address}
+                          >
                             {project.address}
                           </div>
                         </td>
                         <td className="p-3 hidden sm:table-cell">
                           <div className="flex items-center gap-2">
-                            <i className={`ri-${displayInfo.categoryIcon}-line text-primary text-sm`}></i>
-                            <span className="text-sm">{displayInfo.categoryName}</span>
+                            <i
+                              className={`ri-${displayInfo.categoryIcon}-line text-primary text-sm`}
+                            ></i>
+                            <span className="text-sm">
+                              {displayInfo.categoryName}
+                            </span>
                           </div>
                           {project.projectSubtype && (
                             <div className="text-xs text-muted-foreground mt-1">
@@ -569,16 +720,18 @@ function Projects() {
                           )}
                         </td>
                         <td className="p-3 hidden lg:table-cell">
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className={`${getProgressColor(project.projectProgress || "estimate_created")} text-xs`}
                           >
-                            {getProgressLabel(project.projectProgress || "estimate_created")}
+                            {getProgressLabel(
+                              project.projectProgress || "estimate_created",
+                            )}
                           </Badge>
                         </td>
                         <td className="p-3">
-                          <Badge 
-                            variant="secondary" 
+                          <Badge
+                            variant="secondary"
                             className={`${getStatusColor(project.status)} text-xs`}
                           >
                             {getStatusLabel(project.status)}
@@ -591,8 +744,8 @@ function Projects() {
                         </td>
                         <td className="p-3">
                           <div className="flex gap-2">
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="outline"
                               onClick={() => handleEditEstimate(project.id)}
                               className="text-xs"
@@ -600,8 +753,8 @@ function Projects() {
                               <i className="ri-edit-line mr-1"></i>
                               Editar
                             </Button>
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="outline"
                               onClick={() => handleViewProject(project.id)}
                               className="text-xs"
@@ -629,7 +782,7 @@ function Projects() {
               <div className="absolute top-0 right-0 w-3 h-3 border-r border-t border-cyan-400"></div>
               <div className="absolute bottom-0 left-0 w-3 h-3 border-l border-b border-cyan-400"></div>
               <div className="absolute bottom-0 right-0 w-3 h-3 border-r border-b border-cyan-400"></div>
-              
+
               <DialogTitle className="flex items-center gap-2 relative z-10">
                 <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
                 <span className="text-sm font-bold text-cyan-300 tracking-wide font-mono">
@@ -637,125 +790,167 @@ function Projects() {
                 </span>
               </DialogTitle>
             </div>
-              
-              <div className="dialog-body bg-gray-900">
-                <div className="fixed-header p-4 pb-4 bg-gray-900 border-b-2 border-cyan-400/20 shadow-lg">
-                  <FuturisticTimeline 
-                    projectId={selectedProject.id} 
-                    currentProgress={selectedProject.projectProgress || "estimate_created"} 
-                    onProgressUpdate={handleProgressUpdate} 
-                  />
+
+            <div className="dialog-body bg-gray-900">
+              <div className="fixed-header p-4 pb-4 bg-gray-900 border-b-2 border-cyan-400/20 shadow-lg">
+                <FuturisticTimeline
+                  projectId={selectedProject.id}
+                  currentProgress={
+                    selectedProject.projectProgress || "estimate_created"
+                  }
+                  onProgressUpdate={handleProgressUpdate}
+                />
+              </div>
+
+              <div className="h-8 bg-gray-900 border-b border-gray-700/30"></div>
+
+              <div className="flex-1 px-4 pb-4 bg-gray-900 pt-4  flex flex-col">
+                <div className="flex-shrink-0">
+                  <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-lg border border-cyan-400/30 shadow-xl backdrop-blur-sm">
+                    <button
+                      onClick={() => setDashboardTab("details")}
+                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
+                        dashboardTab === "details"
+                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/30"
+                          : "text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30"
+                      }`}
+                    >
+                      <i className="ri-settings-4-line mr-1"></i>
+                      Details
+                    </button>
+                    <button
+                      onClick={() => setDashboardTab("client")}
+                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
+                        dashboardTab === "client"
+                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/30"
+                          : "text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30"
+                      }`}
+                    >
+                      <i className="ri-user-3-line mr-1"></i>
+                      Client
+                    </button>
+                    <button
+                      onClick={() => setDashboardTab("documents")}
+                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
+                        dashboardTab === "documents"
+                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/30"
+                          : "text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30"
+                      }`}
+                    >
+                      <i className="ri-folder-3-line mr-1"></i>
+                      Docs
+                    </button>
+                  </div>
                 </div>
 
-                <div className="h-8 bg-gray-900 border-b border-gray-700/30"></div>
-
-                <div className="flex-1 px-4 pb-4 bg-gray-900 pt-4  flex flex-col">
-                  <div className="flex-shrink-0">
-                    <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-lg border border-cyan-400/30 shadow-xl backdrop-blur-sm">
-                      <button
-                        onClick={() => setDashboardTab('details')}
-                        className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
-                          dashboardTab === 'details'
-                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30'
-                            : 'text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30'
-                        }`}
-                      >
-                        <i className="ri-settings-4-line mr-1"></i>
-                        Details
-                      </button>
-                      <button
-                        onClick={() => setDashboardTab('client')}
-                        className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
-                          dashboardTab === 'client'
-                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30'
-                            : 'text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30'
-                        }`}
-                      >
-                        <i className="ri-user-3-line mr-1"></i>
-                        Client
-                      </button>
-                      <button
-                        onClick={() => setDashboardTab('documents')}
-                        className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
-                          dashboardTab === 'documents'
-                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30'
-                            : 'text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30'
-                        }`}
-                      >
-                        <i className="ri-folder-3-line mr-1"></i>
-                        Docs
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm shadow-2xl ">
-                    <div className="h-full  p-4">
-                      {dashboardTab === 'details' && (
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
-                              <span className="text-gray-400 block mb-1">Type:</span>
-                              <span className="text-cyan-200 font-medium">{selectedProject.projectType || 'General'}</span>
-                            </div>
-                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
-                              <span className="text-gray-400 block mb-1">Subtype:</span>
-                              <span className="text-cyan-200 font-medium">{selectedProject.projectSubtype || selectedProject.fenceType || 'N/A'}</span>
-                            </div>
-                          </div>
-                          
-                          {selectedProject.projectDescription && (
-                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
-                              <span className="text-gray-400 text-sm block mb-2">Description:</span>
-                              <p className="text-gray-200 text-sm">{selectedProject.projectDescription}</p>
-                            </div>
-                          )}
-
-                          {selectedProject.projectScope && (
-                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
-                              <span className="text-gray-400 text-sm block mb-2">Scope:</span>
-                              <p className="text-gray-200 text-sm">{selectedProject.projectScope}</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {dashboardTab === 'client' && (
-                        <div className="space-y-4">
+                <div className="flex-1 bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm shadow-2xl ">
+                  <div className="h-full  p-4">
+                    {dashboardTab === "details" && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
                           <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
-                            <span className="text-gray-400 text-sm block mb-2">Client Name:</span>
-                            <p className="text-cyan-200 font-medium">{selectedProject.clientName}</p>
+                            <span className="text-gray-400 block mb-1">
+                              Type:
+                            </span>
+                            <span className="text-cyan-200 font-medium">
+                              {selectedProject.projectType || "General"}
+                            </span>
                           </div>
                           <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
-                            <span className="text-gray-400 text-sm block mb-2">Address:</span>
-                            <p className="text-gray-200 text-sm">{selectedProject.address}</p>
+                            <span className="text-gray-400 block mb-1">
+                              Subtype:
+                            </span>
+                            <span className="text-cyan-200 font-medium">
+                              {selectedProject.projectSubtype ||
+                                selectedProject.fenceType ||
+                                "N/A"}
+                            </span>
                           </div>
                         </div>
-                      )}
 
-                      {dashboardTab === 'documents' && (
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="text-center p-4 bg-gray-700/20 rounded border border-cyan-400/20">
-                              <i className="ri-file-text-line text-2xl text-cyan-400 mb-2 block"></i>
-                              <p className="text-sm text-gray-300 mb-2">Estimate</p>
-                              <Button size="sm" className="w-full bg-cyan-500/20 text-cyan-300 border-cyan-400/30">
-                                {selectedProject.estimateHtml ? 'View' : 'Generate'}
-                              </Button>
-                            </div>
-                            <div className="text-center p-4 bg-gray-700/20 rounded border border-cyan-400/20">
-                              <i className="ri-file-shield-line text-2xl text-cyan-400 mb-2 block"></i>
-                              <p className="text-sm text-gray-300 mb-2">Contract</p>
-                              <Button size="sm" className="w-full bg-cyan-500/20 text-cyan-300 border-cyan-400/30">
-                                {selectedProject.contractHtml ? 'View' : 'Generate'}
-                              </Button>
-                            </div>
+                        {selectedProject.projectDescription && (
+                          <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                            <span className="text-gray-400 text-sm block mb-2">
+                              Description:
+                            </span>
+                            <p className="text-gray-200 text-sm">
+                              {selectedProject.projectDescription}
+                            </p>
+                          </div>
+                        )}
+
+                        {selectedProject.projectScope && (
+                          <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                            <span className="text-gray-400 text-sm block mb-2">
+                              Scope:
+                            </span>
+                            <p className="text-gray-200 text-sm">
+                              {selectedProject.projectScope}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {dashboardTab === "client" && (
+                      <div className="space-y-4">
+                        <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                          <span className="text-gray-400 text-sm block mb-2">
+                            Client Name:
+                          </span>
+                          <p className="text-cyan-200 font-medium">
+                            {selectedProject.clientName}
+                          </p>
+                        </div>
+                        <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                          <span className="text-gray-400 text-sm block mb-2">
+                            Address:
+                          </span>
+                          <p className="text-gray-200 text-sm">
+                            {selectedProject.address}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {dashboardTab === "documents" && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="text-center p-4 bg-gray-700/20 rounded border border-cyan-400/20">
+                            <i className="ri-file-text-line text-2xl text-cyan-400 mb-2 block"></i>
+                            <p className="text-sm text-gray-300 mb-2">
+                              Estimate
+                            </p>
+                            <Button
+                              size="sm"
+                              className="w-full bg-cyan-500/20 text-cyan-300 border-cyan-400/30"
+                            >
+                              {selectedProject.estimateHtml
+                                ? "View"
+                                : "Generate"}
+                            </Button>
+                          </div>
+                          <div className="text-center p-4 bg-gray-700/20 rounded border border-cyan-400/20">
+                            <i className="ri-file-shield-line text-2xl text-cyan-400 mb-2 block"></i>
+                            <p className="text-sm text-gray-300 mb-2">
+                              Contract
+                            </p>
+                            <Button
+                              size="sm"
+                              className="w-full bg-cyan-500/20 text-cyan-300 border-cyan-400/30"
+                            >
+                              {selectedProject.contractHtml
+                                ? "View"
+                                : "Generate"}
+                            </Button>
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
+            </div>
           </DialogContent>
         </Dialog>
       )}

@@ -24,7 +24,11 @@ export default function Subscription() {
   const queryClient = useQueryClient();
 
   // Obtenemos los planes disponibles
-  const { data: plans, isLoading: isLoadingPlans, error: plansError } = useQuery<SubscriptionPlan[]>({
+  const {
+    data: plans,
+    isLoading: isLoadingPlans,
+    error: plansError,
+  } = useQuery<SubscriptionPlan[]>({
     queryKey: ["/api/subscription/plans"],
     throwOnError: false,
     staleTime: 1000 * 60 * 5, // Cache por 5 minutos
@@ -35,8 +39,9 @@ export default function Subscription() {
         console.warn("No se encontraron planes disponibles");
         toast({
           title: "Planes no disponibles",
-          description: "No hay planes de suscripción disponibles en este momento.",
-          variant: "destructive"
+          description:
+            "No hay planes de suscripción disponibles en este momento.",
+          variant: "destructive",
         });
       }
     },
@@ -44,17 +49,19 @@ export default function Subscription() {
       console.error("Error cargando planes:", error);
       toast({
         title: "Error al cargar planes",
-        description: "Por favor, actualice la página o contacte a soporte si el problema persiste.",
-        variant: "destructive"
+        description:
+          "Por favor, actualice la página o contacte a soporte si el problema persiste.",
+        variant: "destructive",
       });
-    }
+    },
   });
 
   // Obtenemos la información de la suscripción actual del usuario
-  const { data: userSubscription, isLoading: isLoadingUserSubscription } = useQuery({
-    queryKey: ["/api/subscription/user-subscription"],
-    throwOnError: false,
-  });
+  const { data: userSubscription, isLoading: isLoadingUserSubscription } =
+    useQuery({
+      queryKey: ["/api/subscription/user-subscription"],
+      throwOnError: false,
+    });
 
   // Crea sesión de checkout para un plan seleccionado
   const createCheckoutSession = async (planId: number) => {
@@ -69,43 +76,51 @@ export default function Subscription() {
         successUrl: window.location.origin + "/subscription?success=true",
         cancelUrl: window.location.origin + "/subscription?canceled=true",
       };
-      
-      console.log("Enviando solicitud a Stripe con parámetros:", JSON.stringify(params));
-      
+
+      console.log(
+        "Enviando solicitud a Stripe con parámetros:",
+        JSON.stringify(params),
+      );
+
       const response = await fetch("/api/subscription/create-checkout", {
         method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(params),
       });
-      
+
       // Verificar si la respuesta es exitosa
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(`Error del servidor: ${errorData.message || response.statusText}`);
+        throw new Error(
+          `Error del servidor: ${errorData.message || response.statusText}`,
+        );
       }
-      
+
       const data = await response.json();
       console.log("Respuesta recibida del servidor:", data);
-      
+
       // Redireccionar al checkout de Stripe
       if (data && data.url) {
         console.log("Redirigiendo a URL de Stripe:", data.url);
-        
+
         // Abrir en una nueva pestaña para evitar problemas de redirección
-        const stripeWindow = window.open(data.url, '_blank');
-        
+        const stripeWindow = window.open(data.url, "_blank");
+
         // Verificar si se pudo abrir la ventana
         if (!stripeWindow) {
-          console.error("No se pudo abrir la ventana de Stripe. Es posible que esté bloqueado por el navegador.");
+          console.error(
+            "No se pudo abrir la ventana de Stripe. Es posible que esté bloqueado por el navegador.",
+          );
           toast({
             title: "Error en la redirección",
-            description: "No se pudo abrir la página de pago. Por favor, permita ventanas emergentes para este sitio y vuelva a intentarlo.",
+            description:
+              "No se pudo abrir la página de pago. Por favor, permita ventanas emergentes para este sitio y vuelva a intentarlo.",
             variant: "destructive",
           });
         }
-        
+
         // Siempre restablecer el estado de carga
         setIsLoading(false);
       } else {
@@ -115,7 +130,8 @@ export default function Subscription() {
       console.error("Error detallado al crear sesión de checkout:", error);
       toast({
         title: "Error en la redirección",
-        description: "No se pudo procesar la solicitud de suscripción. Por favor, intente de nuevo o contacte a soporte.",
+        description:
+          "No se pudo procesar la solicitud de suscripción. Por favor, intente de nuevo o contacte a soporte.",
         variant: "destructive",
       });
     } finally {
@@ -133,43 +149,48 @@ export default function Subscription() {
       const params = {
         successUrl: window.location.origin + "/subscription",
       };
-      
+
       console.log("Enviando solicitud para crear portal de cliente");
-      
+
       const response = await fetch("/api/subscription/create-portal", {
         method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(params),
       });
-      
+
       // Verificar si la respuesta es exitosa
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(`Error del servidor: ${errorData.message || response.statusText}`);
+        throw new Error(
+          `Error del servidor: ${errorData.message || response.statusText}`,
+        );
       }
-      
+
       const data = await response.json();
       console.log("Respuesta recibida para portal de cliente:", data);
-      
+
       // Redireccionar al portal de cliente de Stripe
       if (data && data.url) {
         console.log("Redirigiendo a URL del portal de cliente:", data.url);
-        
+
         // Abrir en una nueva pestaña para evitar problemas de redirección
-        const stripeWindow = window.open(data.url, '_blank');
-        
+        const stripeWindow = window.open(data.url, "_blank");
+
         // Verificar si se pudo abrir la ventana
         if (!stripeWindow) {
-          console.error("No se pudo abrir la ventana del portal de cliente. Es posible que esté bloqueado por el navegador.");
+          console.error(
+            "No se pudo abrir la ventana del portal de cliente. Es posible que esté bloqueado por el navegador.",
+          );
           toast({
             title: "Error en la redirección",
-            description: "No se pudo abrir el portal de cliente. Por favor, permita ventanas emergentes para este sitio y vuelva a intentarlo.",
+            description:
+              "No se pudo abrir el portal de cliente. Por favor, permita ventanas emergentes para este sitio y vuelva a intentarlo.",
             variant: "destructive",
           });
         }
-        
+
         // Siempre restablecer el estado de carga
         setIsLoading(false);
       } else {
@@ -179,7 +200,8 @@ export default function Subscription() {
       console.error("Error detallado al crear portal de cliente:", error);
       toast({
         title: "Error en la redirección",
-        description: "No se pudo acceder al portal de cliente. Por favor, intente de nuevo o contacte a soporte.",
+        description:
+          "No se pudo acceder al portal de cliente. Por favor, intente de nuevo o contacte a soporte.",
         variant: "destructive",
       });
     } finally {
@@ -193,11 +215,14 @@ export default function Subscription() {
     const urlParams = new URLSearchParams(window.location.search);
     const isSuccess = urlParams.get("success") === "true";
     const isCanceled = urlParams.get("canceled") === "true";
-    
+
     // Solo procesar si hay parámetros de éxito o cancelación
     if (isSuccess || isCanceled) {
-      console.log("Detectados parámetros de redirección:", { isSuccess, isCanceled });
-      
+      console.log("Detectados parámetros de redirección:", {
+        isSuccess,
+        isCanceled,
+      });
+
       // Limpiar parámetros de URL inmediatamente
       try {
         const newUrl = window.location.pathname;
@@ -206,7 +231,7 @@ export default function Subscription() {
       } catch (error) {
         console.error("Error al limpiar parámetros de URL:", error);
       }
-      
+
       // Procesar resultado después de un breve retraso para permitir que la interfaz se renderice
       setTimeout(() => {
         if (isSuccess) {
@@ -215,9 +240,11 @@ export default function Subscription() {
             title: "¡Suscripción exitosa!",
             description: "Tu suscripción ha sido procesada correctamente.",
           });
-          
+
           // Actualizar los datos de la suscripción
-          queryClient.invalidateQueries({ queryKey: ["/api/subscription/user-subscription"] });
+          queryClient.invalidateQueries({
+            queryKey: ["/api/subscription/user-subscription"],
+          });
           console.log("Datos de suscripción actualizados");
         } else if (isCanceled) {
           console.log("Procesando redirección cancelada");
@@ -235,14 +262,17 @@ export default function Subscription() {
   const getIsMostPopular = (planCode: string) => planCode === "mero_patron";
 
   const isLoadingData = isLoadingPlans || isLoadingUserSubscription;
-  const hasError = plansError || (!isLoadingPlans && (!plans || plans.length === 0));
+  const hasError =
+    plansError || (!isLoadingPlans && (!plans || plans.length === 0));
 
   if (isLoadingData) {
     return (
       <div className="container max-w-6xl py-12">
         <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-          <p className="text-muted-foreground">Cargando planes de suscripción...</p>
+          <p className="text-muted-foreground">
+            Cargando planes de suscripción...
+          </p>
         </div>
       </div>
     );
@@ -255,27 +285,33 @@ export default function Subscription() {
           <div className="text-red-500 mb-4">
             <i className="ri-error-warning-line text-4xl"></i>
           </div>
-          <h2 className="text-xl font-semibold mb-2">Error al cargar los planes</h2>
-          <p className="text-muted-foreground">No se pudieron cargar los planes de suscripción.</p>
+          <h2 className="text-xl font-semibold mb-2">
+            Error al cargar los planes
+          </h2>
+          <p className="text-muted-foreground">
+            No se pudieron cargar los planes de suscripción.
+          </p>
         </div>
       </div>
     );
   }
 
   // Comprobar si el usuario ya tiene una suscripción activa
-  const hasActiveSubscription = userSubscription && 
-    userSubscription.status && 
+  const hasActiveSubscription =
+    userSubscription &&
+    userSubscription.status &&
     ["active", "trialing"].includes(userSubscription.status) &&
     userSubscription.planId;
 
   return (
-    <div className="container max-w-6xl py-12">
+    <div className="container max-w-6xl mx-auto py-12">
       <div className="text-center mb-10">
         <h1 className="text-3xl font-bold tracking-tight mb-3">
           Planes de Suscripción
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Elige el plan perfecto para tu negocio. Todos los planes incluyen acceso completo a Mervin, tu asistente personal para contratistas.
+          Elige el plan perfecto para tu negocio. Todos los planes incluyen
+          acceso completo a Mervin, tu asistente personal para contratistas.
         </p>
       </div>
 
@@ -295,7 +331,8 @@ export default function Subscription() {
           <p className="mb-4">
             Actualmente tienes el plan{" "}
             <span className="font-bold">
-              {plans?.find(p => p.id === userSubscription.planId)?.name || "Desconocido"}
+              {plans?.find((p) => p.id === userSubscription.planId)?.name ||
+                "Desconocido"}
             </span>{" "}
             con renovación{" "}
             {userSubscription.billingCycle === "yearly" ? "anual" : "mensual"}.
@@ -315,30 +352,35 @@ export default function Subscription() {
 
       {/* Mostrar las tarjetas de planes */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-10">
-        {plans?.filter(plan => plan.isActive).map((plan) => (
-          <PricingCard
-            key={plan.id}
-            name={plan.name}
-            description={plan.description}
-            price={plan.price}
-            yearlyPrice={plan.yearlyPrice}
-            features={plan.features as string[]}
-            isYearly={isYearly}
-            motto={plan.motto}
-            isMostPopular={getIsMostPopular(plan.code)}
-            onSelectPlan={createCheckoutSession}
-            planId={plan.id}
-            isLoading={isLoading}
-            code={plan.code}
-          />
-        ))}
+        {plans
+          ?.filter((plan) => plan.isActive)
+          .map((plan) => (
+            <PricingCard
+              key={plan.id}
+              name={plan.name}
+              description={plan.description}
+              price={plan.price}
+              yearlyPrice={plan.yearlyPrice}
+              features={plan.features as string[]}
+              isYearly={isYearly}
+              motto={plan.motto}
+              isMostPopular={getIsMostPopular(plan.code)}
+              onSelectPlan={createCheckoutSession}
+              planId={plan.id}
+              isLoading={isLoading}
+              code={plan.code}
+            />
+          ))}
       </div>
 
       {/* Información adicional */}
       <div className="mt-16 text-center">
-        <h3 className="text-xl font-bold mb-3">¿Necesitas ayuda para elegir?</h3>
+        <h3 className="text-xl font-bold mb-3">
+          ¿Necesitas ayuda para elegir?
+        </h3>
         <p className="text-muted-foreground">
-          Contacta con nuestro equipo de ventas para obtener más información sobre qué plan se ajusta mejor a tus necesidades.
+          Contacta con nuestro equipo de ventas para obtener más información
+          sobre qué plan se ajusta mejor a tus necesidades.
         </p>
         <div className="mt-4">
           <a

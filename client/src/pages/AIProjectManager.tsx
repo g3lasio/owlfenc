@@ -1,10 +1,16 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { BrainIcon } from "lucide-react";
 
 export default function AIProjectManager() {
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto mb-40 p-6">
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
           <BrainIcon className="w-6 h-6 text-primary" />
@@ -12,14 +18,17 @@ export default function AIProjectManager() {
         <div>
           <h1 className="text-3xl font-bold">AI Project Manager</h1>
           <p className="text-muted-foreground">
-            Coming Soon: Your intelligent assistant for managing fence projects and business tasks
+            Coming Soon: Your intelligent assistant for managing fence projects
+            and business tasks
           </p>
         </div>
       </div>
 
       <Card className="w-full ">
         <CardHeader className="bg-primary/10">
-          <CardTitle className="text-center text-xl">🚧 Coming Soon 🚧</CardTitle>
+          <CardTitle className="text-center text-xl">
+            🚧 Coming Soon 🚧
+          </CardTitle>
           <CardDescription className="text-center">
             This feature is currently in development
           </CardDescription>
@@ -31,16 +40,22 @@ export default function AIProjectManager() {
             </div>
             <h3 className="text-xl font-semibold mb-2">AI Project Manager</h3>
             <p className="text-muted-foreground mb-4">
-              Our team is working hard to bring you this exciting new feature. With AI Project Manager, you'll be able to:
+              Our team is working hard to bring you this exciting new feature.
+              With AI Project Manager, you'll be able to:
             </p>
             <ul className="text-left space-y-2 mb-6 max-w-md mx-auto">
               <li className="flex items-start">
                 <span className="mr-2 text-primary">✓</span>
-                <span>Organize your projects in progress with intelligent prioritization</span>
+                <span>
+                  Organize your projects in progress with intelligent
+                  prioritization
+                </span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2 text-primary">✓</span>
-                <span>Receive reminders for tasks, deadlines, and pending payments</span>
+                <span>
+                  Receive reminders for tasks, deadlines, and pending payments
+                </span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2 text-primary">✓</span>
@@ -56,7 +71,7 @@ export default function AIProjectManager() {
               </li>
             </ul>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <Card className="border bg-card/50">
               <CardContent className="p-4">
@@ -71,7 +86,7 @@ export default function AIProjectManager() {
                 </p>
               </CardContent>
             </Card>
-            
+
             <Card className="border bg-card/50">
               <CardContent className="p-4">
                 <div className="flex items-center justify-center space-x-3 mb-2">
@@ -85,7 +100,7 @@ export default function AIProjectManager() {
                 </p>
               </CardContent>
             </Card>
-            
+
             <Card className="border bg-card/50">
               <CardContent className="p-4">
                 <div className="flex items-center justify-center space-x-3 mb-2">
@@ -99,7 +114,7 @@ export default function AIProjectManager() {
                 </p>
               </CardContent>
             </Card>
-            
+
             <Card className="border bg-card/50">
               <CardContent className="p-4">
                 <div className="flex items-center justify-center space-x-3 mb-2">
@@ -114,8 +129,10 @@ export default function AIProjectManager() {
               </CardContent>
             </Card>
           </div>
-          
-          <Button disabled className="mb-2">Get Notified When Available</Button>
+
+          <Button disabled className="mb-2">
+            Get Notified When Available
+          </Button>
           <p className="text-sm text-muted-foreground">
             Expected launch: Fall 2023
           </p>

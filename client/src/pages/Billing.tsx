@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -50,11 +57,15 @@ interface SubscriptionPlan {
 export default function Billing() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activePaymentMethodId, setActivePaymentMethodId] = useState<string | null>(null);
+  const [activePaymentMethodId, setActivePaymentMethodId] = useState<
+    string | null
+  >(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Obtener métodos de pago
-  const { data: paymentMethods, isLoading: isLoadingPaymentMethods } = useQuery<PaymentMethod[]>({
+  const { data: paymentMethods, isLoading: isLoadingPaymentMethods } = useQuery<
+    PaymentMethod[]
+  >({
     queryKey: ["/api/subscription/payment-methods"],
     throwOnError: false,
   });
@@ -66,10 +77,11 @@ export default function Billing() {
   });
 
   // Obtener información de suscripción
-  const { data: userSubscription, isLoading: isLoadingSubscription } = useQuery<UserSubscription>({
-    queryKey: ["/api/subscription/user-subscription"],
-    throwOnError: false,
-  });
+  const { data: userSubscription, isLoading: isLoadingSubscription } =
+    useQuery<UserSubscription>({
+      queryKey: ["/api/subscription/user-subscription"],
+      throwOnError: false,
+    });
 
   // Obtener planes disponibles
   const { data: plans } = useQuery<SubscriptionPlan[]>({
@@ -80,7 +92,11 @@ export default function Billing() {
   // Mutación para crear sesión de actualización de pago
   const createPaymentUpdateSessionMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/subscription/update-payment-method', {});
+      const response = await apiRequest(
+        "POST",
+        "/api/subscription/update-payment-method",
+        {},
+      );
       return response.json();
     },
     onSuccess: (data) => {
@@ -92,17 +108,21 @@ export default function Billing() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo iniciar la sesión de actualización de pago."
+        description: "No se pudo iniciar la sesión de actualización de pago.",
       });
-    }
+    },
   });
 
   // Mutación para crear portal de cliente
   const createCustomerPortalMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/subscription/create-portal', {
-        successUrl: window.location.origin + '/billing?success=true'
-      });
+      const response = await apiRequest(
+        "POST",
+        "/api/subscription/create-portal",
+        {
+          successUrl: window.location.origin + "/billing?success=true",
+        },
+      );
       return response.json();
     },
     onSuccess: (data) => {
@@ -114,26 +134,26 @@ export default function Billing() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo crear el portal de gestión de suscripción."
+        description: "No se pudo crear el portal de gestión de suscripción.",
       });
-    }
+    },
   });
 
   // Función para formatear fecha de un timestamp
   const formatDate = (timestamp: number): string => {
     const date = new Date(timestamp * 1000);
-    return new Intl.DateTimeFormat('es-MX', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return new Intl.DateTimeFormat("es-MX", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     }).format(date);
   };
 
   // Función para formatear precio
   const formatAmount = (amount: number): string => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
+    return new Intl.NumberFormat("es-MX", {
+      style: "currency",
+      currency: "MXN",
     }).format(amount / 100);
   };
 
@@ -144,7 +164,9 @@ export default function Billing() {
     }
 
     if (userSubscription.status === "active" && userSubscription.planId) {
-      const currentPlan = plans.find(plan => plan.id === userSubscription.planId);
+      const currentPlan = plans.find(
+        (plan) => plan.id === userSubscription.planId,
+      );
       return currentPlan ? currentPlan.name : "Plan Básico";
     }
 
@@ -158,10 +180,10 @@ export default function Billing() {
     }
 
     const date = new Date(userSubscription.nextBillingDate);
-    return new Intl.DateTimeFormat('es-MX', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return new Intl.DateTimeFormat("es-MX", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     }).format(date);
   };
 
@@ -185,13 +207,20 @@ export default function Billing() {
       window.history.replaceState({}, document.title, window.location.pathname);
 
       // Invalidar consultas para refrescar datos
-      queryClient.invalidateQueries({ queryKey: ["/api/subscription/payment-methods"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/subscription/payment-history"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/subscription/user-subscription"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/subscription/payment-methods"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/subscription/payment-history"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/subscription/user-subscription"],
+      });
 
       toast({
         title: "Actualización exitosa",
-        description: "Tu información de pago ha sido actualizada correctamente."
+        description:
+          "Tu información de pago ha sido actualizada correctamente.",
       });
     }
   }, []);
@@ -204,16 +233,20 @@ export default function Billing() {
   }, [paymentMethods]);
 
   return (
-    <div className="container max-w-5xl py-6 space-y-6">
+    <div className="container max-w-5xl mx-auto py-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Facturación y Pagos</h1>
-        <p className="text-muted-foreground">Administra tu información de pago y revisa tu historial de facturación</p>
+        <p className="text-muted-foreground">
+          Administra tu información de pago y revisa tu historial de facturación
+        </p>
       </div>
 
       <Tabs defaultValue="payment-methods" className="space-y-4">
         <TabsList>
           <TabsTrigger value="payment-methods">Métodos de Pago</TabsTrigger>
-          <TabsTrigger value="billing-history">Historial de Facturación</TabsTrigger>
+          <TabsTrigger value="billing-history">
+            Historial de Facturación
+          </TabsTrigger>
           <TabsTrigger value="subscription">Suscripción</TabsTrigger>
         </TabsList>
 
@@ -223,7 +256,8 @@ export default function Billing() {
             <CardHeader>
               <CardTitle>Métodos de Pago</CardTitle>
               <CardDescription>
-                Administra tus tarjetas y métodos de pago para facturación automática
+                Administra tus tarjetas y métodos de pago para facturación
+                automática
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -234,7 +268,7 @@ export default function Billing() {
               ) : paymentMethods && paymentMethods.length > 0 ? (
                 <div className="space-y-4">
                   {paymentMethods.map((method) => (
-                    <div 
+                    <div
                       key={method.id}
                       className="flex items-center p-4 border rounded-lg"
                     >
@@ -254,7 +288,8 @@ export default function Billing() {
                           •••• •••• •••• {method.card?.last4 || "****"}
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground">
-                          Expira: {method.card?.exp_month}/{method.card?.exp_year}
+                          Expira: {method.card?.exp_month}/
+                          {method.card?.exp_year}
                         </div>
                       </div>
                     </div>
@@ -270,12 +305,16 @@ export default function Billing() {
                   </p>
 
                   <div className="mx-auto max-w-md px-4">
-                    <h3 className="text-lg font-semibold mb-2">Agregar tarjeta de crédito o débito</h3>
+                    <h3 className="text-lg font-semibold mb-2">
+                      Agregar tarjeta de crédito o débito
+                    </h3>
                     <div className="mt-4">
                       <div id="payment-form">
-                        <CardForm 
+                        <CardForm
                           onSuccess={() => {
-                            queryClient.invalidateQueries({ queryKey: ["/api/subscription/payment-methods"] });
+                            queryClient.invalidateQueries({
+                              queryKey: ["/api/subscription/payment-methods"],
+                            });
                           }}
                         />
                       </div>
@@ -285,7 +324,7 @@ export default function Billing() {
               )}
             </CardContent>
             <CardFooter className="flex justify-end">
-              <Button 
+              <Button
                 onClick={handleUpdatePaymentMethod}
                 disabled={createPaymentUpdateSessionMutation.isPending}
               >
@@ -307,9 +346,7 @@ export default function Billing() {
           <Card>
             <CardHeader>
               <CardTitle>Historial de Facturación</CardTitle>
-              <CardDescription>
-                Tus facturas y pagos recientes
-              </CardDescription>
+              <CardDescription>Tus facturas y pagos recientes</CardDescription>
             </CardHeader>
             <CardContent>
               {isLoadingInvoices ? (
@@ -326,17 +363,22 @@ export default function Billing() {
                     <div className="text-right">Acciones</div>
                   </div>
                   {invoices.map((invoice) => (
-                    <div key={invoice.id} className="grid grid-cols-5 p-3 text-sm">
+                    <div
+                      key={invoice.id}
+                      className="grid grid-cols-5 p-3 text-sm"
+                    >
                       <div>{invoice.number}</div>
                       <div>{formatDate(invoice.created)}</div>
                       <div>{formatAmount(invoice.amount_paid)}</div>
                       <div>
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          invoice.status === 'paid' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {invoice.status === 'paid' ? 'Pagado' : 'Pendiente'}
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs ${
+                            invoice.status === "paid"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {invoice.status === "paid" ? "Pagado" : "Pendiente"}
                         </span>
                       </div>
                       <div className="text-right">
@@ -385,19 +427,26 @@ export default function Billing() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
                     <div>
                       <h3 className="text-lg font-medium">Plan Actual</h3>
-                      <p className="text-2xl font-bold mt-1">{getCurrentPlanName()}</p>
+                      <p className="text-2xl font-bold mt-1">
+                        {getCurrentPlanName()}
+                      </p>
                       <p className="text-sm text-muted-foreground mt-2">
-                        {userSubscription?.status === "active" 
-                          ? "Suscripción activa" 
+                        {userSubscription?.status === "active"
+                          ? "Suscripción activa"
                           : "Suscripción inactiva"}
                       </p>
                     </div>
                     <div>
-                      <h3 className="text-lg font-medium">Próxima Renovación</h3>
-                      <p className="text-2xl font-bold mt-1">{getNextBillingDate()}</p>
+                      <h3 className="text-lg font-medium">
+                        Próxima Renovación
+                      </h3>
+                      <p className="text-2xl font-bold mt-1">
+                        {getNextBillingDate()}
+                      </p>
                       <p className="text-sm text-muted-foreground mt-2">
-                        Ciclo de facturación: {userSubscription?.billingCycle === "yearly" 
-                          ? "Anual" 
+                        Ciclo de facturación:{" "}
+                        {userSubscription?.billingCycle === "yearly"
+                          ? "Anual"
                           : "Mensual"}
                       </p>
                     </div>
@@ -408,7 +457,7 @@ export default function Billing() {
                     {plans && userSubscription?.planId && (
                       <ul className="space-y-2">
                         {plans
-                          .find(plan => plan.id === userSubscription.planId)
+                          .find((plan) => plan.id === userSubscription.planId)
                           ?.features.map((feature, index) => (
                             <li key={index} className="flex items-start">
                               <span className="text-green-600 mr-2">✓</span>
@@ -423,10 +472,13 @@ export default function Billing() {
             </CardContent>
             <CardFooter className="flex flex-col md:flex-row gap-4 md:justify-between">
               <div className="text-sm text-muted-foreground">
-                <p>Puedes cambiar de plan o cancelar tu suscripción en cualquier momento.</p>
+                <p>
+                  Puedes cambiar de plan o cancelar tu suscripción en cualquier
+                  momento.
+                </p>
               </div>
               <div className="flex gap-4">
-                <Button 
+                <Button
                   variant="outline"
                   onClick={handleOpenStripePortal}
                   disabled={createCustomerPortalMutation.isPending}

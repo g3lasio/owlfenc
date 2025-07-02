@@ -1,17 +1,31 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,23 +33,52 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
-import { Trash2, FileSymlink, Phone, Mail, MapPin, Star, Edit, UserPlus, Upload, Download, Search, X, Tag, Filter, List, Grid, Sliders, AlertTriangle, CheckCircle, CircleAlert } from "lucide-react";
+import {
+  Trash2,
+  FileSymlink,
+  Phone,
+  Mail,
+  MapPin,
+  Star,
+  Edit,
+  UserPlus,
+  Upload,
+  Download,
+  Search,
+  X,
+  Tag,
+  Filter,
+  List,
+  Grid,
+  Sliders,
+  AlertTriangle,
+  CheckCircle,
+  CircleAlert,
+} from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProfile } from "@/hooks/use-profile";
 import { apiRequest } from "@/lib/queryClient";
 import { ScrollArea } from "@/components/ui/scroll-area";
 // Importaciones de Firebase
-import { 
-  getClients, 
-  saveClient, 
-  updateClient, 
+import {
+  getClients,
+  saveClient,
+  updateClient,
   deleteClient,
   importClientsFromCsv,
-  importClientsFromVcf
+  importClientsFromVcf,
 } from "../lib/clientFirebase";
 // Importación del componente de importación inteligente
 import { ImportWizard } from "@/components/ImportWizard";
@@ -43,9 +86,9 @@ import { ContactImportWizard } from "@/components/ContactImportWizard";
 
 // Interfaces
 interface Client {
-  id: string;         // En Firebase, el ID es un string
-  userId?: string;    // Usuario propietario del cliente
-  clientId: string;   // Identificador único del cliente
+  id: string; // En Firebase, el ID es un string
+  userId?: string; // Usuario propietario del cliente
+  clientId: string; // Identificador único del cliente
   name: string;
   email?: string | null;
   phone?: string | null;
@@ -64,16 +107,20 @@ interface Client {
 }
 
 // Simple Address Input Component (sin Google Maps)
-const AddressInput = ({ value, onChange, placeholder }: {
+const AddressInput = ({
+  value,
+  onChange,
+  placeholder,
+}: {
   value: string | undefined;
   onChange: (value: string) => void;
   placeholder: string;
 }) => {
   return (
-    <Input 
-      placeholder={placeholder} 
-      value={value || ""} 
-      onChange={e => onChange(e.target.value)} 
+    <Input
+      placeholder={placeholder}
+      value={value || ""}
+      onChange={(e) => onChange(e.target.value)}
       className="h-11"
     />
   );
@@ -83,8 +130,14 @@ const AddressInput = ({ value, onChange, placeholder }: {
 const clientFormSchema = z.object({
   userId: z.string().optional(),
   clientId: z.string().optional(),
-  name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres" }),
-  email: z.string().email({ message: "Correo electrónico inválido" }).optional().or(z.literal("")),
+  name: z
+    .string()
+    .min(2, { message: "El nombre debe tener al menos 2 caracteres" }),
+  email: z
+    .string()
+    .email({ message: "Correo electrónico inválido" })
+    .optional()
+    .or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   mobilePhone: z.string().optional().or(z.literal("")),
   address: z.string().optional().or(z.literal("")),
@@ -97,7 +150,9 @@ const clientFormSchema = z.object({
 });
 
 const csvImportSchema = z.object({
-  csvData: z.string().min(1, { message: "Por favor selecciona un archivo CSV" }),
+  csvData: z
+    .string()
+    .min(1, { message: "Por favor selecciona un archivo CSV" }),
 });
 
 export default function NuevoClientes() {
@@ -106,7 +161,7 @@ export default function NuevoClientes() {
   const userId = profile?.id?.toString() || "1";
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   // Estados
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -130,13 +185,13 @@ export default function NuevoClientes() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   // Consulta para obtener clientes desde Firebase
-  const { 
-    data: clients = [], 
+  const {
+    data: clients = [],
     isLoading,
     isError,
-    error 
+    error,
   } = useQuery({
-    queryKey: ['firebaseClients'],
+    queryKey: ["firebaseClients"],
     queryFn: async () => {
       try {
         console.log("Obteniendo clientes desde Firebase...");
@@ -156,9 +211,9 @@ export default function NuevoClientes() {
     onSuccess: () => {
       toast({
         title: "Cliente añadido",
-        description: "El cliente ha sido añadido correctamente."
+        description: "El cliente ha sido añadido correctamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ['firebaseClients'] });
+      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
       setShowAddClientDialog(false);
       clientForm.reset();
     },
@@ -166,9 +221,11 @@ export default function NuevoClientes() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo añadir el cliente: " + (error.message || "Error desconocido")
+        description:
+          "No se pudo añadir el cliente: " +
+          (error.message || "Error desconocido"),
       });
-    }
+    },
   });
 
   // Handler para crear cliente
@@ -176,21 +233,21 @@ export default function NuevoClientes() {
     const newClient = {
       ...data,
       clientId: `client_${Date.now()}`,
-      userId: userId
+      userId: userId,
     };
     createClientMutation.mutate(newClient);
   };
 
   // Mutation para actualizar un cliente usando Firebase
   const updateClientMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: any }) => 
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
       updateClient(id, data),
     onSuccess: () => {
       toast({
         title: "Cliente actualizado",
-        description: "El cliente ha sido actualizado correctamente."
+        description: "El cliente ha sido actualizado correctamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ['firebaseClients'] });
+      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
       setShowEditClientDialog(false);
       setCurrentClient(null);
     },
@@ -198,9 +255,11 @@ export default function NuevoClientes() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo actualizar el cliente: " + (error.message || "Error desconocido")
+        description:
+          "No se pudo actualizar el cliente: " +
+          (error.message || "Error desconocido"),
       });
-    }
+    },
   });
 
   // Mutation para eliminar un cliente usando Firebase
@@ -209,9 +268,9 @@ export default function NuevoClientes() {
     onSuccess: () => {
       toast({
         title: "Cliente eliminado",
-        description: "El cliente ha sido eliminado correctamente."
+        description: "El cliente ha sido eliminado correctamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ['firebaseClients'] });
+      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
       setShowDeleteDialog(false);
       setCurrentClient(null);
     },
@@ -219,9 +278,11 @@ export default function NuevoClientes() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo eliminar el cliente: " + (error.message || "Error desconocido")
+        description:
+          "No se pudo eliminar el cliente: " +
+          (error.message || "Error desconocido"),
       });
-    }
+    },
   });
 
   // Formulario para añadir/editar cliente
@@ -254,33 +315,36 @@ export default function NuevoClientes() {
   useEffect(() => {
     // Verificar que clients sea un array válido para evitar errores
     const clientsArray = Array.isArray(clients) ? clients : [];
-    
+
     let result = [...clientsArray];
 
     // Filtrar por texto de búsqueda
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      result = result.filter(client => 
-        (client.name && client.name.toLowerCase().includes(term)) || 
-        (client.email && client.email.toLowerCase().includes(term)) ||
-        (client.phone && client.phone.includes(term)) ||
-        (client.address && client.address.toLowerCase().includes(term))
+      result = result.filter(
+        (client) =>
+          (client.name && client.name.toLowerCase().includes(term)) ||
+          (client.email && client.email.toLowerCase().includes(term)) ||
+          (client.phone && client.phone.includes(term)) ||
+          (client.address && client.address.toLowerCase().includes(term)),
       );
     }
 
     // Filtrar por etiquetas seleccionadas
     if (selectedTags.length > 0) {
-      result = result.filter(client => 
-        client.tags && selectedTags.every(tag => client.tags?.includes(tag))
+      result = result.filter(
+        (client) =>
+          client.tags &&
+          selectedTags.every((tag) => client.tags?.includes(tag)),
       );
     }
 
     // Filtrar por fuente
     if (activeTab !== "all") {
       if (activeTab === "no_source") {
-        result = result.filter(client => !client.source);
+        result = result.filter((client) => !client.source);
       } else {
-        result = result.filter(client => client.source === activeTab);
+        result = result.filter((client) => client.source === activeTab);
       }
     }
 
@@ -288,38 +352,46 @@ export default function NuevoClientes() {
   }, [searchTerm, selectedTags, activeTab, clients]);
 
   // Obtener todas las etiquetas únicas
-  const allTags = clients && Array.isArray(clients) ? clients.reduce((tags: string[], client) => {
-    if (client.tags) {
-      client.tags.forEach((tag: string) => {
-        if (!tags.includes(tag)) {
-          tags.push(tag);
-        }
-      });
-    }
-    return tags;
-  }, []) : [];
+  const allTags =
+    clients && Array.isArray(clients)
+      ? clients.reduce((tags: string[], client) => {
+          if (client.tags) {
+            client.tags.forEach((tag: string) => {
+              if (!tags.includes(tag)) {
+                tags.push(tag);
+              }
+            });
+          }
+          return tags;
+        }, [])
+      : [];
 
   // Obtener todas las fuentes únicas
-  const allSources = clients && Array.isArray(clients) ? clients.reduce((sources: string[], client) => {
-    if (client.source && !sources.includes(client.source)) {
-      sources.push(client.source);
-    }
-    return sources;
-  }, []) : [];
+  const allSources =
+    clients && Array.isArray(clients)
+      ? clients.reduce((sources: string[], client) => {
+          if (client.source && !sources.includes(client.source)) {
+            sources.push(client.source);
+          }
+          return sources;
+        }, [])
+      : [];
 
   // Función para formatear la fecha
   const formatDate = (date: Date | string) => {
     if (!date) return "";
     const dateObj = date instanceof Date ? date : new Date(date);
-    return dateObj.toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+    return dateObj.toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   // Manejar envío del formulario de cliente
-  const handleClientFormSubmit = async (values: z.infer<typeof clientFormSchema>) => {
+  const handleClientFormSubmit = async (
+    values: z.infer<typeof clientFormSchema>,
+  ) => {
     // Preparar datos del cliente para Firebase
     // Convertimos el userId a string para mantener consistencia
     const clientData = {
@@ -329,18 +401,18 @@ export default function NuevoClientes() {
 
     if (currentClient) {
       // Actualizar cliente existente
-      updateClientMutation.mutate({ 
-        id: currentClient.id, 
-        data: clientData 
+      updateClientMutation.mutate({
+        id: currentClient.id,
+        data: clientData,
       });
     } else {
       // Generar un ID único para el cliente
       const clientId = `client_${Date.now()}`;
-      
+
       // Crear nuevo cliente
       createClientMutation.mutate({
         ...clientData,
-        clientId
+        clientId,
       });
     }
   };
@@ -354,58 +426,63 @@ export default function NuevoClientes() {
   // Manejar importación CSV
   const handleCsvImport = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       if (!csvFile) {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Por favor selecciona un archivo CSV"
+          description: "Por favor selecciona un archivo CSV",
         });
         return;
       }
 
       const reader = new FileReader();
       reader.onload = async (e) => {
-        if (!e.target || typeof e.target.result !== 'string') return;
+        if (!e.target || typeof e.target.result !== "string") return;
 
         try {
           const csvData = e.target.result;
-          
+
           // Usar la función de Firebase para importar clientes desde CSV
           console.log("Iniciando importación de clientes desde CSV...");
           const importedClients = await importClientsFromCsv(csvData);
-          console.log(`Importados ${importedClients.length} clientes desde CSV`);
+          console.log(
+            `Importados ${importedClients.length} clientes desde CSV`,
+          );
 
           // Actualizar lista de clientes
-          queryClient.invalidateQueries({ queryKey: ['firebaseClients'] });
-          
+          queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
+
           toast({
             title: "Importación exitosa",
-            description: `Se han importado ${importedClients.length} clientes desde CSV.`
+            description: `Se han importado ${importedClients.length} clientes desde CSV.`,
           });
 
           setShowImportDialog(false);
           csvImportForm.reset();
           setCsvFile(null);
-          
         } catch (error: any) {
-          console.error('Error processing CSV:', error);
+          console.error("Error processing CSV:", error);
           toast({
             variant: "destructive",
             title: "Error",
-            description: "Error al procesar el archivo CSV: " + (error.message || "Error desconocido")
+            description:
+              "Error al procesar el archivo CSV: " +
+              (error.message || "Error desconocido"),
           });
         }
       };
 
       reader.readAsText(csvFile);
     } catch (error: any) {
-      console.error('Error importing clients:', error);
+      console.error("Error importing clients:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudieron importar los clientes: " + (error.message || "Error desconocido")
+        description:
+          "No se pudieron importar los clientes: " +
+          (error.message || "Error desconocido"),
       });
     }
   };
@@ -413,32 +490,33 @@ export default function NuevoClientes() {
   // Manejar importación de contactos vCard
   const handleVcfImport = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       if (!vcfFile) {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Por favor selecciona un archivo vCard (.vcf)"
+          description: "Por favor selecciona un archivo vCard (.vcf)",
         });
         return;
       }
 
       const reader = new FileReader();
       reader.onload = async (e) => {
-        if (!e.target || typeof e.target.result !== 'string') return;
+        if (!e.target || typeof e.target.result !== "string") return;
 
         try {
           const vcfData = e.target.result;
-          
+
           // Procesar datos vCard (formato .vcf)
-          const vCards = vcfData.split('END:VCARD')
-            .filter(card => card.trim().length > 0)
-            .map(card => card + 'END:VCARD');
-          
+          const vCards = vcfData
+            .split("END:VCARD")
+            .filter((card) => card.trim().length > 0)
+            .map((card) => card + "END:VCARD");
+
           // Contador para clientes importados
           let importedCount = 0;
-          
+
           for (const vCard of vCards) {
             try {
               // Extraer datos básicos del vCard
@@ -448,16 +526,19 @@ export default function NuevoClientes() {
               const addressMatch = vCard.match(/ADR.*?:(.*?)(?:\r\n|\n)/);
 
               const name = nameMatch ? nameMatch[1].trim() : null;
-              
+
               if (name) {
                 const email = emailMatch ? emailMatch[1].trim() : "";
                 const phone = phoneMatch ? phoneMatch[1].trim() : "";
                 let address = "";
-                
+
                 if (addressMatch) {
-                  const addressParts = addressMatch[1].split(';');
+                  const addressParts = addressMatch[1].split(";");
                   // Formato típico: ;;calle;ciudad;estado;código postal;país
-                  address = addressParts.slice(2).filter(part => part.trim()).join(', ');
+                  address = addressParts
+                    .slice(2)
+                    .filter((part) => part.trim())
+                    .join(", ");
                 }
 
                 const clientData = {
@@ -471,91 +552,100 @@ export default function NuevoClientes() {
                 };
 
                 // Crear cliente
-                await apiRequest.post('/api/clients', clientData);
+                await apiRequest.post("/api/clients", clientData);
                 importedCount++;
               }
             } catch (cardError) {
-              console.error('Error processing individual vCard:', cardError);
+              console.error("Error processing individual vCard:", cardError);
               // Continuar con la siguiente tarjeta
             }
           }
 
           // Actualizar lista de clientes
-          queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
-          
+          queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+
           toast({
             title: "Importación exitosa",
-            description: `Se importaron ${importedCount} contactos de vCard.`
+            description: `Se importaron ${importedCount} contactos de vCard.`,
           });
 
           setShowImportDialog(false);
           setVcfFile(null);
-          
         } catch (error: any) {
-          console.error('Error processing vCard file:', error);
+          console.error("Error processing vCard file:", error);
           toast({
             variant: "destructive",
             title: "Error",
-            description: "Error al procesar el archivo vCard: " + (error.message || "Error desconocido")
+            description:
+              "Error al procesar el archivo vCard: " +
+              (error.message || "Error desconocido"),
           });
         }
       };
 
       reader.readAsText(vcfFile);
     } catch (error: any) {
-      console.error('Error importing vCard contacts:', error);
+      console.error("Error importing vCard contacts:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudieron importar los contactos: " + (error.message || "Error desconocido")
+        description:
+          "No se pudieron importar los contactos: " +
+          (error.message || "Error desconocido"),
       });
     }
   };
 
   // Manejar selección de archivo
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'csv' | 'vcf') => {
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: "csv" | "vcf",
+  ) => {
     if (e.target.files && e.target.files.length > 0) {
-      if (type === 'csv') {
+      if (type === "csv") {
         setCsvFile(e.target.files[0]);
-        csvImportForm.setValue('csvData', 'Archivo seleccionado');
+        csvImportForm.setValue("csvData", "Archivo seleccionado");
       } else {
         setVcfFile(e.target.files[0]);
       }
     }
   };
-  
+
   // Manejar la importación inteligente de clientes
   const handleSmartImportComplete = async (importedClients: Client[]) => {
     try {
-      console.log("Procesando importación inteligente de clientes...", importedClients);
-      
+      console.log(
+        "Procesando importación inteligente de clientes...",
+        importedClients,
+      );
+
       // Asignar el userId a los clientes importados si existe un perfil
-      const clientsWithUserId = importedClients.map(client => ({
+      const clientsWithUserId = importedClients.map((client) => ({
         ...client,
-        userId: profile?.id?.toString() || "dev-user-123"
+        userId: profile?.id?.toString() || "dev-user-123",
       }));
-      
+
       // Guardar los clientes en Firebase
       for (const client of clientsWithUserId) {
         await saveClient(client);
       }
-      
+
       // Actualizar la lista de clientes
-      queryClient.invalidateQueries({ queryKey: ['firebaseClients'] });
-      
+      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
+
       toast({
         title: "Importación inteligente exitosa",
-        description: `Se han importado ${importedClients.length} clientes correctamente.`
+        description: `Se han importado ${importedClients.length} clientes correctamente.`,
       });
-      
+
       // Cerrar el diálogo de importación inteligente
       setShowSmartImportDialog(false);
     } catch (error: any) {
-      console.error('Error en la importación inteligente:', error);
+      console.error("Error en la importación inteligente:", error);
       toast({
         variant: "destructive",
         title: "Error en la importación inteligente",
-        description: error.message || "No se pudieron importar los clientes"
+        description: error.message || "No se pudieron importar los clientes",
       });
     }
   };
@@ -609,20 +699,20 @@ export default function NuevoClientes() {
     setCurrentClient(client);
     setShowDeleteDialog(true);
   };
-  
+
   // Manejar selección de cliente individual
   const handleClientSelection = (clientId: string) => {
-    setSelectedClients(prev => {
+    setSelectedClients((prev) => {
       if (prev.includes(clientId)) {
         // Si ya está seleccionado, lo quitamos
-        return prev.filter(id => id !== clientId);
+        return prev.filter((id) => id !== clientId);
       } else {
         // Si no está seleccionado, lo añadimos
         return [...prev, clientId];
       }
     });
   };
-  
+
   // Seleccionar o deseleccionar todos los clientes
   const handleSelectAll = () => {
     if (selectAllChecked) {
@@ -630,52 +720,52 @@ export default function NuevoClientes() {
       setSelectedClients([]);
     } else {
       // Si no están todos seleccionados, seleccionamos todos
-      setSelectedClients(filteredClients.map(client => client.id));
+      setSelectedClients(filteredClients.map((client) => client.id));
     }
     setSelectAllChecked(!selectAllChecked);
   };
-  
+
   // Abrir diálogo de eliminación masiva
   const openBatchDeleteDialog = () => {
     if (selectedClients.length === 0) {
       toast({
         title: "Selección vacía",
         description: "Por favor, selecciona al menos un contacto para eliminar",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
     setShowBatchDeleteDialog(true);
   };
-  
+
   // Eliminar clientes seleccionados en lote
   const deleteSelectedClients = async () => {
     try {
       setIsProcessing(true);
-      
+
       // Eliminar cada cliente seleccionado
       for (const clientId of selectedClients) {
         await deleteClient(clientId);
       }
-      
+
       // Actualizar lista de clientes
-      queryClient.invalidateQueries({ queryKey: ['firebaseClients'] });
-      
+      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
+
       toast({
         title: "Eliminación exitosa",
-        description: `Se han eliminado ${selectedClients.length} contactos`
+        description: `Se han eliminado ${selectedClients.length} contactos`,
       });
-      
+
       // Limpiar selección y cerrar diálogo
       setSelectedClients([]);
       setSelectAllChecked(false);
       setShowBatchDeleteDialog(false);
     } catch (error) {
-      console.error('Error al eliminar clientes en lote:', error);
+      console.error("Error al eliminar clientes en lote:", error);
       toast({
         title: "Error al eliminar",
         description: "No se pudieron eliminar algunos contactos",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
@@ -684,17 +774,17 @@ export default function NuevoClientes() {
 
   // Manejar entrada de etiquetas
   const handleTagInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && tagInput.trim()) {
+    if (e.key === "Enter" && tagInput.trim()) {
       e.preventDefault();
-      
+
       // Obtener etiquetas actuales
-      const currentTags = clientForm.getValues('tags') || [];
-      
+      const currentTags = clientForm.getValues("tags") || [];
+
       // Añadir la nueva etiqueta si no existe
       if (!currentTags.includes(tagInput.trim())) {
-        clientForm.setValue('tags', [...currentTags, tagInput.trim()]);
+        clientForm.setValue("tags", [...currentTags, tagInput.trim()]);
       }
-      
+
       // Limpiar el campo de entrada
       setTagInput("");
     }
@@ -702,14 +792,17 @@ export default function NuevoClientes() {
 
   // Eliminar una etiqueta
   const removeTag = (tag: string) => {
-    const currentTags = clientForm.getValues('tags') || [];
-    clientForm.setValue('tags', currentTags.filter(t => t !== tag));
+    const currentTags = clientForm.getValues("tags") || [];
+    clientForm.setValue(
+      "tags",
+      currentTags.filter((t) => t !== tag),
+    );
   };
 
   // Agregar o quitar una etiqueta del filtro
   const toggleTagFilter = (tag: string) => {
     if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter(t => t !== tag));
+      setSelectedTags(selectedTags.filter((t) => t !== tag));
     } else {
       setSelectedTags([...selectedTags, tag]);
     }
@@ -724,11 +817,17 @@ export default function NuevoClientes() {
 
   if (isError) {
     return (
-      <div className="flex-1 p-6 page-scroll-container" style={{WebkitOverflowScrolling: 'touch', height: '100%'}}>
+      <div
+        className="flex-1  p-6 page-scroll-container"
+        style={{ WebkitOverflowScrolling: "touch", height: "100%" }}
+      >
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Clientes</h1>
           <div className="flex gap-2">
-            <Dialog open={showAddClientDialog} onOpenChange={setShowAddClientDialog}>
+            <Dialog
+              open={showAddClientDialog}
+              onOpenChange={setShowAddClientDialog}
+            >
               <DialogTrigger asChild>
                 <Button className="bg-cyan-500 hover:bg-cyan-600">
                   <UserPlus className="h-4 w-4 mr-2" />
@@ -744,7 +843,10 @@ export default function NuevoClientes() {
                 </DialogHeader>
 
                 <Form {...clientForm}>
-                  <form onSubmit={clientForm.handleSubmit(handleCreateClient)} className="space-y-4">
+                  <form
+                    onSubmit={clientForm.handleSubmit(handleCreateClient)}
+                    className="space-y-4"
+                  >
                     <FormField
                       control={clientForm.control}
                       name="name"
@@ -781,7 +883,10 @@ export default function NuevoClientes() {
                           <FormItem>
                             <FormLabel>Teléfono</FormLabel>
                             <FormControl>
-                              <Input placeholder="+1 (555) 123-4567" {...field} />
+                              <Input
+                                placeholder="+1 (555) 123-4567"
+                                {...field}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -796,7 +901,10 @@ export default function NuevoClientes() {
                         <FormItem>
                           <FormLabel>Dirección</FormLabel>
                           <FormControl>
-                            <Input placeholder="123 Calle Principal" {...field} />
+                            <Input
+                              placeholder="123 Calle Principal"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -804,19 +912,21 @@ export default function NuevoClientes() {
                     />
 
                     <DialogFooter>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
+                      <Button
+                        type="button"
+                        variant="outline"
                         onClick={() => setShowAddClientDialog(false)}
                       >
                         Cancelar
                       </Button>
-                      <Button 
-                        type="submit" 
+                      <Button
+                        type="submit"
                         disabled={createClientMutation.isPending}
                         className="bg-cyan-500 hover:bg-cyan-600"
                       >
-                        {createClientMutation.isPending ? "Guardando..." : "Guardar"}
+                        {createClientMutation.isPending
+                          ? "Guardando..."
+                          : "Guardar"}
                       </Button>
                     </DialogFooter>
                   </form>
@@ -829,13 +939,21 @@ export default function NuevoClientes() {
         <Alert className="mb-6 border-orange-200 bg-orange-50">
           <AlertTriangle className="h-4 w-4 text-orange-600" />
           <AlertDescription className="text-orange-800">
-            <p className="font-medium mb-2">No se pudieron cargar los clientes existentes</p>
-            <p className="text-sm mb-3">Esto puede deberse a problemas de conectividad o configuración de la base de datos. Puedes crear nuevos clientes que se guardarán una vez que se resuelva la conexión.</p>
+            <p className="font-medium mb-2">
+              No se pudieron cargar los clientes existentes
+            </p>
+            <p className="text-sm mb-3">
+              Esto puede deberse a problemas de conectividad o configuración de
+              la base de datos. Puedes crear nuevos clientes que se guardarán
+              una vez que se resuelva la conexión.
+            </p>
             <div className="flex gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
-                onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/clients'] })}
+                onClick={() =>
+                  queryClient.invalidateQueries({ queryKey: ["/api/clients"] })
+                }
                 className="border-orange-300 text-orange-700 hover:bg-orange-100"
               >
                 Reintentar
@@ -848,11 +966,13 @@ export default function NuevoClientes() {
           <CardContent className="p-6">
             <div className="text-center">
               <UserPlus className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium mb-1">Comenzar agregando clientes</h3>
+              <h3 className="text-lg font-medium mb-1">
+                Comenzar agregando clientes
+              </h3>
               <p className="text-gray-500 mb-4">
                 Crea tu primer cliente para comenzar a generar estimados.
               </p>
-              <Button 
+              <Button
                 onClick={() => setShowAddClientDialog(true)}
                 className="bg-cyan-500 hover:bg-cyan-600"
               >
@@ -869,7 +989,10 @@ export default function NuevoClientes() {
   // Generar una lista de clientes para la visualización
   if (isLoading) {
     return (
-      <div className="flex-1 p-6 page-scroll-container" style={{WebkitOverflowScrolling: 'touch', height: '100%'}}>
+      <div
+        className="flex-1 p-6 page-scroll-container"
+        style={{ WebkitOverflowScrolling: "touch", height: "100%" }}
+      >
         <h1 className="text-2xl font-bold mb-6">Clientes</h1>
         <div className="mb-6 space-y-4">
           <Skeleton className="h-10 w-full md:w-3/4" />
@@ -902,14 +1025,17 @@ export default function NuevoClientes() {
   }
 
   return (
-    <div className="flex-1 p-6 page-scroll-container" style={{WebkitOverflowScrolling: 'touch', height: '100%'}}>
+    <div
+      className=" mb-52 flex-1 p-6 page-scroll-container"
+      style={{ WebkitOverflowScrolling: "touch", height: "100%" }}
+    >
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl font-bold">Clients</h1>
         <div className="flex flex-wrap gap-2">
           {selectedClients.length > 0 && (
-            <Button 
-              variant="destructive" 
-              onClick={openBatchDeleteDialog} 
+            <Button
+              variant="destructive"
+              onClick={openBatchDeleteDialog}
               className="animate-in fade-in"
             >
               <Trash2 className="w-4 h-4 mr-2" />
@@ -920,7 +1046,10 @@ export default function NuevoClientes() {
             <Upload className="w-4 h-4 mr-2" />
             Importar
           </Button>
-          <Button variant="outline" onClick={() => setShowSmartImportDialog(true)}>
+          <Button
+            variant="outline"
+            onClick={() => setShowSmartImportDialog(true)}
+          >
             <Upload className="w-4 h-4 mr-2" />
             Importación Inteligente
           </Button>
@@ -967,18 +1096,18 @@ export default function NuevoClientes() {
         {allTags.length > 0 && (
           <div className="flex flex-wrap gap-2 items-center">
             <Sliders className="h-4 w-4 mr-1 text-muted-foreground" />
-            <div className="text-sm text-muted-foreground mr-2">Filtrar por etiquetas:</div>
-            {allTags.map(tag => (
-              <Badge 
-                key={tag} 
+            <div className="text-sm text-muted-foreground mr-2">
+              Filtrar por etiquetas:
+            </div>
+            {allTags.map((tag) => (
+              <Badge
+                key={tag}
                 variant={selectedTags.includes(tag) ? "default" : "outline"}
                 className="cursor-pointer"
                 onClick={() => toggleTagFilter(tag)}
               >
                 {tag}
-                {selectedTags.includes(tag) && (
-                  <X className="ml-1 h-3 w-3" />
-                )}
+                {selectedTags.includes(tag) && <X className="ml-1 h-3 w-3" />}
               </Badge>
             ))}
             {selectedTags.length > 0 && (
@@ -991,12 +1120,18 @@ export default function NuevoClientes() {
 
         {/* Pestañas para filtrar por fuente */}
         {allSources.length > 0 && (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
             <TabsList className="mb-4  flex w-full">
               <TabsTrigger value="all">Todos</TabsTrigger>
               <TabsTrigger value="no_source">Sin fuente</TabsTrigger>
-              {allSources.map(source => (
-                <TabsTrigger key={source} value={source}>{source}</TabsTrigger>
+              {allSources.map((source) => (
+                <TabsTrigger key={source} value={source}>
+                  {source}
+                </TabsTrigger>
               ))}
             </TabsList>
           </Tabs>
@@ -1011,8 +1146,8 @@ export default function NuevoClientes() {
           </div>
           <h3 className="text-lg font-medium mb-1">No hay clientes</h3>
           <p className="text-muted-foreground mb-4">
-            {searchTerm || selectedTags.length > 0 || activeTab !== "all" 
-              ? "No se encontraron clientes con los filtros aplicados." 
+            {searchTerm || selectedTags.length > 0 || activeTab !== "all"
+              ? "No se encontraron clientes con los filtros aplicados."
               : "Comienza agregando tu primer cliente o importando contactos."}
           </p>
           {(searchTerm || selectedTags.length > 0 || activeTab !== "all") && (
@@ -1023,23 +1158,23 @@ export default function NuevoClientes() {
         </div>
       ) : viewMode === "grid" ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredClients.map(client => (
+          {filteredClients.map((client) => (
             <Card key={client.id} className="">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex justify-between items-start">
                   <span className="truncate">{client.name}</span>
                   <div className="flex">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => openEditForm(client)}
                       className="h-8 w-8"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => openDeleteDialog(client)}
                       className="h-8 w-8 text-destructive"
                     >
@@ -1049,7 +1184,9 @@ export default function NuevoClientes() {
                 </CardTitle>
                 {client.source && (
                   <CardDescription>
-                    <Badge variant="outline" className="mt-1">{client.source}</Badge>
+                    <Badge variant="outline" className="mt-1">
+                      {client.source}
+                    </Badge>
                   </CardDescription>
                 )}
               </CardHeader>
@@ -1058,7 +1195,10 @@ export default function NuevoClientes() {
                   {client.email && (
                     <div className="flex items-center">
                       <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <a href={`mailto:${client.email}`} className="truncate hover:underline">
+                      <a
+                        href={`mailto:${client.email}`}
+                        className="truncate hover:underline"
+                      >
                         {client.email}
                       </a>
                     </div>
@@ -1066,7 +1206,10 @@ export default function NuevoClientes() {
                   {client.phone && (
                     <div className="flex items-center">
                       <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <a href={`tel:${client.phone}`} className="hover:underline">
+                      <a
+                        href={`tel:${client.phone}`}
+                        className="hover:underline"
+                      >
                         {client.phone}
                       </a>
                     </div>
@@ -1079,13 +1222,15 @@ export default function NuevoClientes() {
                   )}
                   {client.lastContact && (
                     <div className="flex items-center text-muted-foreground text-xs">
-                      <span>Último contacto: {formatDate(client.lastContact)}</span>
+                      <span>
+                        Último contacto: {formatDate(client.lastContact)}
+                      </span>
                     </div>
                   )}
                 </div>
                 {client.tags && client.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-3">
-                    {client.tags.map(tag => (
+                    {client.tags.map((tag) => (
                       <Badge key={tag} variant="secondary" className="text-xs">
                         {tag}
                       </Badge>
@@ -1102,25 +1247,35 @@ export default function NuevoClientes() {
             <thead className="bg-muted/50">
               <tr>
                 <th className="px-2 py-3 text-center text-sm font-medium text-muted-foreground w-10">
-                  <Checkbox 
+                  <Checkbox
                     id="select-all"
                     checked={selectAllChecked}
                     onCheckedChange={handleSelectAll}
                     aria-label="Seleccionar todos los contactos"
                   />
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Nombre</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Contacto</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground hidden md:table-cell">Dirección</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground hidden md:table-cell">Fuente</th>
-                <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Acciones</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+                  Nombre
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+                  Contacto
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground hidden md:table-cell">
+                  Dirección
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground hidden md:table-cell">
+                  Fuente
+                </th>
+                <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
+                  Acciones
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y">
-              {filteredClients.map(client => (
+              {filteredClients.map((client) => (
                 <tr key={client.id} className="hover:bg-muted/30">
                   <td className="px-2 py-3 text-center">
-                    <Checkbox 
+                    <Checkbox
                       id={`select-client-${client.id}`}
                       checked={selectedClients.includes(client.id)}
                       onCheckedChange={() => handleClientSelection(client.id)}
@@ -1131,8 +1286,12 @@ export default function NuevoClientes() {
                     <div className="font-medium">{client.name}</div>
                     {client.tags && client.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {client.tags.map(tag => (
-                          <Badge key={tag} variant="secondary" className="text-xs">
+                        {client.tags.map((tag) => (
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="text-xs"
+                          >
                             {tag}
                           </Badge>
                         ))}
@@ -1143,7 +1302,10 @@ export default function NuevoClientes() {
                     {client.email && (
                       <div className="flex items-center">
                         <Mail className="h-3 w-3 mr-1 text-muted-foreground" />
-                        <a href={`mailto:${client.email}`} className="truncate hover:underline">
+                        <a
+                          href={`mailto:${client.email}`}
+                          className="truncate hover:underline"
+                        >
                           {client.email}
                         </a>
                       </div>
@@ -1151,31 +1313,38 @@ export default function NuevoClientes() {
                     {client.phone && (
                       <div className="flex items-center mt-1">
                         <Phone className="h-3 w-3 mr-1 text-muted-foreground" />
-                        <a href={`tel:${client.phone}`} className="hover:underline">
+                        <a
+                          href={`tel:${client.phone}`}
+                          className="hover:underline"
+                        >
                           {client.phone}
                         </a>
                       </div>
                     )}
                   </td>
                   <td className="px-4 py-3 text-sm truncate hidden md:table-cell max-w-[200px]">
-                    {client.address || '—'}
+                    {client.address || "—"}
                   </td>
                   <td className="px-4 py-3 text-sm hidden md:table-cell">
-                    {client.source ? <Badge variant="outline">{client.source}</Badge> : '—'}
+                    {client.source ? (
+                      <Badge variant="outline">{client.source}</Badge>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => openEditForm(client)}
                         className="h-8 w-8"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => openDeleteDialog(client)}
                         className="h-8 w-8 text-destructive"
                       >
@@ -1195,7 +1364,9 @@ export default function NuevoClientes() {
         <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0">
           {/* Header - Fixed */}
           <div className="px-6 py-4 border-b bg-background shrink-0">
-            <DialogTitle className="text-lg font-semibold">Add New Client</DialogTitle>
+            <DialogTitle className="text-lg font-semibold">
+              Add New Client
+            </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground mt-1">
               Complete the client information. Only the name is required.
             </DialogDescription>
@@ -1204,14 +1375,17 @@ export default function NuevoClientes() {
           {/* Scrollable Content */}
           <ScrollArea className="flex-1 px-6 py-4">
             <Form {...clientForm}>
-              <form onSubmit={clientForm.handleSubmit(handleClientFormSubmit)} className="space-y-6 pr-3">
+              <form
+                onSubmit={clientForm.handleSubmit(handleClientFormSubmit)}
+                className="space-y-6 pr-3"
+              >
                 {/* Basic Information */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                     <UserPlus className="h-4 w-4" />
                     Basic Information
                   </div>
-                  
+
                   <FormField
                     control={clientForm.control}
                     name="name"
@@ -1221,10 +1395,10 @@ export default function NuevoClientes() {
                           Name <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="Client full name" 
+                          <Input
+                            placeholder="Client full name"
                             className="h-11"
-                            {...field} 
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -1243,11 +1417,11 @@ export default function NuevoClientes() {
                             Email
                           </FormLabel>
                           <FormControl>
-                            <Input 
-                              placeholder="email@example.com" 
+                            <Input
+                              placeholder="email@example.com"
                               type="email"
                               className="h-11"
-                              {...field} 
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1265,10 +1439,10 @@ export default function NuevoClientes() {
                             Phone
                           </FormLabel>
                           <FormControl>
-                            <Input 
-                              placeholder="(555) 123-4567" 
+                            <Input
+                              placeholder="(555) 123-4567"
                               className="h-11"
-                              {...field} 
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1284,13 +1458,15 @@ export default function NuevoClientes() {
                     <MapPin className="h-4 w-4" />
                     Address
                   </div>
-                  
+
                   <FormField
                     control={clientForm.control}
                     name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Street Address</FormLabel>
+                        <FormLabel className="text-sm font-medium">
+                          Street Address
+                        </FormLabel>
                         <FormControl>
                           <AddressInput
                             value={field.value}
@@ -1309,12 +1485,14 @@ export default function NuevoClientes() {
                       name="city"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">City</FormLabel>
+                          <FormLabel className="text-sm font-medium">
+                            City
+                          </FormLabel>
                           <FormControl>
-                            <Input 
-                              placeholder="City" 
+                            <Input
+                              placeholder="City"
                               className="h-11"
-                              {...field} 
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1327,12 +1505,14 @@ export default function NuevoClientes() {
                       name="state"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">State</FormLabel>
+                          <FormLabel className="text-sm font-medium">
+                            State
+                          </FormLabel>
                           <FormControl>
-                            <Input 
-                              placeholder="State" 
+                            <Input
+                              placeholder="State"
                               className="h-11"
-                              {...field} 
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1345,12 +1525,14 @@ export default function NuevoClientes() {
                       name="zipCode"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">ZIP Code</FormLabel>
+                          <FormLabel className="text-sm font-medium">
+                            ZIP Code
+                          </FormLabel>
                           <FormControl>
-                            <Input 
-                              placeholder="ZIP" 
+                            <Input
+                              placeholder="ZIP"
                               className="h-11"
-                              {...field} 
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1362,19 +1544,23 @@ export default function NuevoClientes() {
 
                 {/* Additional Information */}
                 <div className="space-y-4 pt-4 border-t pb-4">
-                  <div className="text-sm font-medium text-foreground">Additional Information (Optional)</div>
-                  
+                  <div className="text-sm font-medium text-foreground">
+                    Additional Information (Optional)
+                  </div>
+
                   <FormField
                     control={clientForm.control}
                     name="source"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">How did you meet this client?</FormLabel>
+                        <FormLabel className="text-sm font-medium">
+                          How did you meet this client?
+                        </FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="Referral, Google, Facebook, etc." 
+                          <Input
+                            placeholder="Referral, Google, Facebook, etc."
                             className="h-11"
-                            {...field} 
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -1387,12 +1573,14 @@ export default function NuevoClientes() {
                     name="notes"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Notes</FormLabel>
+                        <FormLabel className="text-sm font-medium">
+                          Notes
+                        </FormLabel>
                         <FormControl>
-                          <Textarea 
+                          <Textarea
                             placeholder="Additional information about the client..."
                             className="min-h-[80px] resize-none"
-                            {...field} 
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -1407,9 +1595,9 @@ export default function NuevoClientes() {
           {/* Footer with Action Buttons - Fixed */}
           <div className="px-6 py-4 border-t bg-muted/20 shrink-0">
             <div className="flex justify-end gap-3">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => {
                   setShowAddClientDialog(false);
                   clientForm.reset();
@@ -1418,8 +1606,8 @@ export default function NuevoClientes() {
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 onClick={clientForm.handleSubmit(handleClientFormSubmit)}
                 disabled={createClientMutation.isPending}
                 className="h-11 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-md"
@@ -1439,7 +1627,10 @@ export default function NuevoClientes() {
       </Dialog>
 
       {/* Diálogo para editar cliente */}
-      <Dialog open={showEditClientDialog} onOpenChange={setShowEditClientDialog}>
+      <Dialog
+        open={showEditClientDialog}
+        onOpenChange={setShowEditClientDialog}
+      >
         <DialogContent className="max-w-md max-h-[90vh] ">
           <DialogHeader className="sticky top-0 bg-background z-10 pb-4">
             <DialogTitle>Editar cliente</DialogTitle>
@@ -1449,18 +1640,23 @@ export default function NuevoClientes() {
           </DialogHeader>
 
           <Form {...clientForm}>
-            <form onSubmit={clientForm.handleSubmit(handleClientFormSubmit)} className="space-y-5">
+            <form
+              onSubmit={clientForm.handleSubmit(handleClientFormSubmit)}
+              className="space-y-5"
+            >
               <FormField
                 control={clientForm.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-medium">Nombre*</FormLabel>
+                    <FormLabel className="text-base font-medium">
+                      Nombre*
+                    </FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="Nombre del cliente" 
-                        className="h-11" 
-                        {...field} 
+                      <Input
+                        placeholder="Nombre del cliente"
+                        className="h-11"
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -1474,13 +1670,15 @@ export default function NuevoClientes() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-base font-medium">Email</FormLabel>
+                      <FormLabel className="text-base font-medium">
+                        Email
+                      </FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Email" 
+                        <Input
+                          placeholder="Email"
                           type="email"
-                          className="h-11" 
-                          {...field} 
+                          className="h-11"
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1493,12 +1691,14 @@ export default function NuevoClientes() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-base font-medium">Teléfono</FormLabel>
+                      <FormLabel className="text-base font-medium">
+                        Teléfono
+                      </FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Teléfono" 
-                          className="h-11" 
-                          {...field} 
+                        <Input
+                          placeholder="Teléfono"
+                          className="h-11"
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1508,14 +1708,18 @@ export default function NuevoClientes() {
               </div>
 
               <div className="mt-2 pt-2 border-t border-border">
-                <h3 className="text-sm font-medium text-muted-foreground mb-4">Información de dirección</h3>
-                
+                <h3 className="text-sm font-medium text-muted-foreground mb-4">
+                  Información de dirección
+                </h3>
+
                 <FormField
                   control={clientForm.control}
                   name="address"
                   render={({ field }) => (
                     <FormItem className="mb-5">
-                      <FormLabel className="text-base font-medium">Dirección</FormLabel>
+                      <FormLabel className="text-base font-medium">
+                        Dirección
+                      </FormLabel>
                       <FormControl>
                         <AddressInput
                           value={field.value}
@@ -1535,12 +1739,14 @@ export default function NuevoClientes() {
                     name="city"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base font-medium">Ciudad</FormLabel>
+                        <FormLabel className="text-base font-medium">
+                          Ciudad
+                        </FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="Ciudad" 
-                            className="h-11" 
-                            {...field} 
+                          <Input
+                            placeholder="Ciudad"
+                            className="h-11"
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -1553,12 +1759,14 @@ export default function NuevoClientes() {
                     name="state"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base font-medium">Estado</FormLabel>
+                        <FormLabel className="text-base font-medium">
+                          Estado
+                        </FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="Estado" 
-                            className="h-11" 
-                            {...field} 
+                          <Input
+                            placeholder="Estado"
+                            className="h-11"
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -1571,13 +1779,11 @@ export default function NuevoClientes() {
                     name="zipCode"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base font-medium">Código Postal</FormLabel>
+                        <FormLabel className="text-base font-medium">
+                          Código Postal
+                        </FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="CP" 
-                            className="h-11" 
-                            {...field} 
-                          />
+                          <Input placeholder="CP" className="h-11" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1587,19 +1793,23 @@ export default function NuevoClientes() {
               </div>
 
               <div className="mt-4 pt-2 border-t border-border">
-                <h3 className="text-sm font-medium text-muted-foreground mb-4">Información adicional</h3>
-                
+                <h3 className="text-sm font-medium text-muted-foreground mb-4">
+                  Información adicional
+                </h3>
+
                 <FormField
                   control={clientForm.control}
                   name="source"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-base font-medium">Fuente</FormLabel>
+                      <FormLabel className="text-base font-medium">
+                        Fuente
+                      </FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="¿Cómo conoció al cliente?" 
-                          className="h-11" 
-                          {...field} 
+                        <Input
+                          placeholder="¿Cómo conoció al cliente?"
+                          className="h-11"
+                          {...field}
                         />
                       </FormControl>
                       <FormDescription className="text-xs">
@@ -1615,13 +1825,18 @@ export default function NuevoClientes() {
                   name="tags"
                   render={() => (
                     <FormItem className="mt-5">
-                      <FormLabel className="text-base font-medium">Etiquetas</FormLabel>
+                      <FormLabel className="text-base font-medium">
+                        Etiquetas
+                      </FormLabel>
                       <div className="flex flex-wrap gap-2 mb-2">
-                        {clientForm.getValues('tags')?.map(tag => (
-                          <Badge key={tag} className="flex items-center gap-1 py-1.5 px-3">
+                        {clientForm.getValues("tags")?.map((tag) => (
+                          <Badge
+                            key={tag}
+                            className="flex items-center gap-1 py-1.5 px-3"
+                          >
                             {tag}
-                            <X 
-                              className="h-3.5 w-3.5 cursor-pointer ml-1" 
+                            <X
+                              className="h-3.5 w-3.5 cursor-pointer ml-1"
                               onClick={() => removeTag(tag)}
                             />
                           </Badge>
@@ -1649,12 +1864,14 @@ export default function NuevoClientes() {
                   name="notes"
                   render={({ field }) => (
                     <FormItem className="mt-5">
-                      <FormLabel className="text-base font-medium">Notas</FormLabel>
+                      <FormLabel className="text-base font-medium">
+                        Notas
+                      </FormLabel>
                       <FormControl>
-                        <Textarea 
+                        <Textarea
                           placeholder="Notas adicionales sobre el cliente"
                           className="min-h-[100px] resize-y"
-                          {...field} 
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1664,18 +1881,15 @@ export default function NuevoClientes() {
               </div>
 
               <DialogFooter className="mt-6 pt-2 border-t border-border">
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setShowEditClientDialog(false)}
                   className="h-11"
                 >
                   Cancelar
                 </Button>
-                <Button 
-                  type="submit" 
-                  className="h-11 min-w-[120px]"
-                >
+                <Button type="submit" className="h-11 min-w-[120px]">
                   Actualizar Cliente
                 </Button>
               </DialogFooter>
@@ -1684,270 +1898,43 @@ export default function NuevoClientes() {
         </DialogContent>
       </Dialog>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       {/* Diálogo para eliminar cliente */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Eliminar cliente</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.
+              ¿Estás seguro de que deseas eliminar este cliente? Esta acción no
+              se puede deshacer.
             </DialogDescription>
           </DialogHeader>
-          
+
           {currentClient && (
             <div className="py-4">
               <h3 className="font-medium">{currentClient.name}</h3>
-              {currentClient.email && <p className="text-sm text-muted-foreground">{currentClient.email}</p>}
-              {currentClient.phone && <p className="text-sm text-muted-foreground">{currentClient.phone}</p>}
+              {currentClient.email && (
+                <p className="text-sm text-muted-foreground">
+                  {currentClient.email}
+                </p>
+              )}
+              {currentClient.phone && (
+                <p className="text-sm text-muted-foreground">
+                  {currentClient.phone}
+                </p>
+              )}
             </div>
           )}
 
           <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setShowDeleteDialog(false)}
             >
               Cancelar
             </Button>
-            <Button 
-              type="button" 
+            <Button
+              type="button"
               variant="destructive"
               onClick={handleDeleteClient}
             >
@@ -1967,12 +1954,16 @@ export default function NuevoClientes() {
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs value={importType} onValueChange={(value) => setImportType(value as "csv" | "vcf")} className="w-full">
+          <Tabs
+            value={importType}
+            onValueChange={(value) => setImportType(value as "csv" | "vcf")}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="csv">Archivo CSV</TabsTrigger>
               <TabsTrigger value="vcf">Archivo vCard</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="csv" className="mt-4">
               <form onSubmit={handleCsvImport} className="space-y-4">
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-md p-6 text-center">
@@ -1985,7 +1976,7 @@ export default function NuevoClientes() {
                     <Input
                       type="file"
                       accept=".csv"
-                      onChange={(e) => handleFileChange(e, 'csv')}
+                      onChange={(e) => handleFileChange(e, "csv")}
                       className="max-w-xs"
                     />
                   </div>
@@ -1993,37 +1984,40 @@ export default function NuevoClientes() {
                     <p className="mt-2 text-sm font-medium">{csvFile.name}</p>
                   )}
                 </div>
-                
+
                 <div className="text-sm text-muted-foreground">
-                  <h4 className="font-medium text-foreground mb-1">Formato esperado:</h4>
-                  <p>La primera línea debe contener encabezados: Nombre,Email,Teléfono,Dirección</p>
+                  <h4 className="font-medium text-foreground mb-1">
+                    Formato esperado:
+                  </h4>
+                  <p>
+                    La primera línea debe contener encabezados:
+                    Nombre,Email,Teléfono,Dirección
+                  </p>
                   <p className="mt-2">Ejemplo:</p>
                   <pre className="bg-muted p-2 rounded-md mt-1 ">
                     <code>
-                      Nombre,Email,Teléfono,Dirección<br/>
+                      Nombre,Email,Teléfono,Dirección
+                      <br />
                       Juan Pérez,juan@ejemplo.com,555-123-4567,Calle 123
                     </code>
                   </pre>
                 </div>
 
                 <DialogFooter>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={() => setShowImportDialog(false)}
                   >
                     Cancelar
                   </Button>
-                  <Button 
-                    type="submit"
-                    disabled={!csvFile}
-                  >
+                  <Button type="submit" disabled={!csvFile}>
                     Importar CSV
                   </Button>
                 </DialogFooter>
               </form>
             </TabsContent>
-            
+
             <TabsContent value="vcf" className="mt-4">
               <form onSubmit={handleVcfImport} className="space-y-4">
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-md p-6 text-center">
@@ -2031,12 +2025,13 @@ export default function NuevoClientes() {
                     <FileSymlink className="h-8 w-8 text-muted-foreground mb-2" />
                     <h3 className="font-medium mb-1">Archivo vCard</h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Selecciona un archivo .vcf exportado desde Contactos de Apple u otra aplicación.
+                      Selecciona un archivo .vcf exportado desde Contactos de
+                      Apple u otra aplicación.
                     </p>
                     <Input
                       type="file"
                       accept=".vcf"
-                      onChange={(e) => handleFileChange(e, 'vcf')}
+                      onChange={(e) => handleFileChange(e, "vcf")}
                       className="max-w-xs"
                     />
                   </div>
@@ -2044,9 +2039,11 @@ export default function NuevoClientes() {
                     <p className="mt-2 text-sm font-medium">{vcfFile.name}</p>
                   )}
                 </div>
-                
+
                 <div className="text-sm text-muted-foreground">
-                  <h4 className="font-medium text-foreground mb-1">¿Cómo exportar contactos de Apple?</h4>
+                  <h4 className="font-medium text-foreground mb-1">
+                    ¿Cómo exportar contactos de Apple?
+                  </h4>
                   <ol className="list-decimal pl-5 space-y-1">
                     <li>Abre la aplicación Contactos en tu Mac o iPhone</li>
                     <li>Selecciona los contactos que deseas exportar</li>
@@ -2057,17 +2054,14 @@ export default function NuevoClientes() {
                 </div>
 
                 <DialogFooter>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={() => setShowImportDialog(false)}
                   >
                     Cancelar
                   </Button>
-                  <Button 
-                    type="submit"
-                    disabled={!vcfFile}
-                  >
+                  <Button type="submit" disabled={!vcfFile}>
                     Importar vCard
                   </Button>
                 </DialogFooter>
@@ -2078,35 +2072,40 @@ export default function NuevoClientes() {
       </Dialog>
 
       {/* Diálogo de Eliminación Masiva */}
-      <Dialog open={showBatchDeleteDialog} onOpenChange={setShowBatchDeleteDialog}>
+      <Dialog
+        open={showBatchDeleteDialog}
+        onOpenChange={setShowBatchDeleteDialog}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Eliminar contactos seleccionados</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que deseas eliminar {selectedClients.length} contactos? Esta acción no se puede deshacer.
+              ¿Estás seguro de que deseas eliminar {selectedClients.length}{" "}
+              contactos? Esta acción no se puede deshacer.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-4">
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                Esta acción eliminará permanentemente {selectedClients.length} contactos de tu base de datos.
+                Esta acción eliminará permanentemente {selectedClients.length}{" "}
+                contactos de tu base de datos.
               </AlertDescription>
             </Alert>
           </div>
 
           <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setShowBatchDeleteDialog(false)}
               disabled={isProcessing}
             >
               Cancelar
             </Button>
-            <Button 
-              type="button" 
+            <Button
+              type="button"
               variant="destructive"
               onClick={deleteSelectedClients}
               disabled={isProcessing}
@@ -2117,7 +2116,7 @@ export default function NuevoClientes() {
                   Eliminando...
                 </>
               ) : (
-                'Eliminar seleccionados'
+                "Eliminar seleccionados"
               )}
             </Button>
           </DialogFooter>
@@ -2125,7 +2124,7 @@ export default function NuevoClientes() {
       </Dialog>
 
       {/* Diálogo de Importación Inteligente con mayor control de edición */}
-      <ContactImportWizard 
+      <ContactImportWizard
         isOpen={showSmartImportDialog}
         onClose={() => setShowSmartImportDialog(false)}
         onImportComplete={handleSmartImportComplete}

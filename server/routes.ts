@@ -2970,6 +2970,11 @@ Output must be between 200-900 characters in English.`;
         console.log('🔍 [CLAUSE-DEBUG] Sample protection data:', req.body.protections?.[0]);
         console.log('🔍 [CLAUSE-DEBUG] Intelligent clauses received:', req.body.selectedIntelligentClauses?.length || 0);
         
+        // DEBUG: Log Step 3 data mapping
+        console.log('🔍 [STEP3-DEBUG] Timeline data received:', req.body.timeline);
+        console.log('🔍 [STEP3-DEBUG] Permits data received:', req.body.permits);
+        console.log('🔍 [STEP3-DEBUG] Warranties data received:', req.body.warranties);
+        
         console.log('📋 [API] Enhanced contract data captured:', {
           hasExtraClauses: contractData.extraClauses.length > 0,
           hasIntelligentClauses: contractData.selectedIntelligentClauses.length > 0,
@@ -2987,13 +2992,19 @@ Output must be between 200-900 characters in English.`;
           });
         }
         
-        // CRITICAL FIX: Map protections to protectionClauses for PDF service
+        // CRITICAL FIX: Map all Step 3 data to PDF service format
         const pdfData = {
           ...contractData,
-          protectionClauses: req.body.protections || []
+          protectionClauses: req.body.protections || [],
+          timeline: contractData.timeline,
+          warranties: contractData.warranties,
+          permitInfo: contractData.permitInfo
         };
         
         console.log('🔧 [FIX] Mapped protections to protectionClauses:', pdfData.protectionClauses?.length || 0);
+        console.log('🔧 [STEP3-PDF] Timeline passed to PDF service:', pdfData.timeline);
+        console.log('🔧 [STEP3-PDF] Warranties passed to PDF service:', pdfData.warranties);
+        console.log('🔧 [STEP3-PDF] Permit info passed to PDF service:', pdfData.permitInfo);
         
         // Generate premium PDF with enhanced data
         const pdfBuffer = await premiumPdfService.generateProfessionalPDF(pdfData);

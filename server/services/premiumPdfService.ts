@@ -30,6 +30,15 @@ export interface ContractPdfData {
     responsibility: string;
     numbers: string;
   };
+  timeline?: {
+    startDate: string;
+    endDate: string;
+    estimatedDuration?: string;
+  };
+  warranties?: {
+    workmanship: string;
+    materials: string;
+  };
 }
 
 class PremiumPdfService {
@@ -291,7 +300,7 @@ class PremiumPdfService {
             <div class="numbered-section">
                 <p><span class="section-number">3. COMMENCEMENT AND COMPLETION</span></p>
                 <p class="legal-text">
-                    The Contractor shall commence work within ten (10) business days following execution of this Agreement and receipt of the initial payment, weather and site conditions permitting. The Contractor shall proceed with due diligence and in a timely manner to achieve substantial completion. Time is of the essence in this Agreement. The Contractor shall provide the Client with reasonable advance notice of any circumstances that may delay completion, including but not limited to adverse weather conditions, permit delays, or unforeseen site conditions.
+                    ${this.generateTimelineSection(data.timeline)}
                 </p>
             </div>
 
@@ -335,7 +344,7 @@ class PremiumPdfService {
             <div class="numbered-section">
                 <p><span class="section-number">9. WARRANTY AND REMEDIES</span></p>
                 <p class="legal-text">
-                    The Contractor hereby warrants all work performed under this Agreement against defects in materials and workmanship for a period of twelve (12) months from the date of substantial completion. This warranty does not cover damage resulting from normal wear and tear, abuse, neglect, accident, or failure to properly maintain the work. Upon written notice of any warranty defect, the Contractor shall, at its option, repair or replace the defective work at no cost to the Client within thirty (30) days. This warranty is in addition to any manufacturer warranties that may apply to materials or equipment.
+                    ${this.generateWarrantySection(data.warranties)}
                 </p>
             </div>
 
@@ -470,6 +479,62 @@ class PremiumPdfService {
     permitText += `All work shall be performed in strict compliance with applicable building codes, zoning ordinances, environmental regulations, safety requirements, and industry standards. The responsible party shall schedule and coordinate all required inspections. Upon completion, all permits shall be properly closed out and documentation provided as appropriate.`;
     
     return permitText;
+  }
+
+  private generateTimelineSection(timeline?: { startDate: string; endDate: string; estimatedDuration?: string }): string {
+    if (!timeline || (!timeline.startDate && !timeline.endDate)) {
+      // Default timeline section when no timeline data is provided
+      return `The Contractor shall commence work within ten (10) business days following execution of this Agreement and receipt of the initial payment, weather and site conditions permitting. The Contractor shall proceed with due diligence and in a timely manner to achieve substantial completion. Time is of the essence in this Agreement. The Contractor shall provide the Client with reasonable advance notice of any circumstances that may delay completion, including but not limited to adverse weather conditions, permit delays, or unforeseen site conditions.`;
+    }
+
+    let timelineText = '';
+    
+    if (timeline.startDate) {
+      const startDate = new Date(timeline.startDate);
+      const formattedStartDate = startDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      timelineText += `<strong>Project Start Date:</strong> Work shall commence on or about ${formattedStartDate}, subject to receipt of initial payment and favorable weather conditions. `;
+    } else {
+      timelineText += `The Contractor shall commence work within ten (10) business days following execution of this Agreement and receipt of the initial payment, weather and site conditions permitting. `;
+    }
+
+    if (timeline.endDate) {
+      const endDate = new Date(timeline.endDate);
+      const formattedEndDate = endDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      timelineText += `<strong>Substantial Completion Date:</strong> All work shall be substantially completed by ${formattedEndDate}. `;
+    }
+
+    if (timeline.startDate && timeline.endDate) {
+      const start = new Date(timeline.startDate);
+      const end = new Date(timeline.endDate);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      timelineText += `<strong>Project Duration:</strong> The estimated completion time is ${diffDays} calendar days. `;
+    }
+
+    timelineText += `Time is of the essence in this Agreement. The Contractor shall proceed with due diligence and in a timely manner to achieve substantial completion. The Contractor shall provide the Client with reasonable advance notice of any circumstances that may delay completion, including but not limited to adverse weather conditions, permit delays, or unforeseen site conditions. Extensions of time may be granted only through written agreement of both parties.`;
+
+    return timelineText;
+  }
+
+  private generateWarrantySection(warranties?: { workmanship: string; materials: string }): string {
+    if (!warranties || (!warranties.workmanship && !warranties.materials)) {
+      // Default warranty section when no warranty data is provided
+      return `The Contractor hereby warrants all work performed under this Agreement against defects in materials and workmanship for a period of twelve (12) months from the date of substantial completion. This warranty does not cover damage resulting from normal wear and tear, abuse, neglect, accident, or failure to properly maintain the work. Upon written notice of any warranty defect, the Contractor shall, at its option, repair or replace the defective work at no cost to the Client within thirty (30) days. This warranty is in addition to any manufacturer warranties that may apply to materials or equipment.`;
+    }
+
+    let warrantyText = '';
+    
+    if (warranties.workmanship) {
+      warrantyText += `<strong>Workmanship Warranty:</strong> The Contractor hereby warrants all work performed under this Agreement against defects in workmanship for a period of ${warranties.workmanship} from the date of substantial completion. `;
+    }
+    
+    if (warranties.materials) {
+      warrantyText += `<strong>Materials Warranty:</strong> ${warranties.materials}. `;
+    }
+
+    warrantyText += `This warranty does not cover damage resulting from normal wear and tear, abuse, neglect, accident, or failure to properly maintain the work. Upon written notice of any warranty defect, the Contractor shall, at its option, repair or replace the defective work at no cost to the Client within thirty (30) days. These warranties are in addition to any manufacturer warranties that may apply to materials or equipment.`;
+
+    return warrantyText;
   }
 
   async generateProfessionalPDF(data: ContractPdfData): Promise<Buffer> {
