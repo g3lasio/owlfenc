@@ -1193,15 +1193,27 @@ export default function CyberpunkLegalDefense() {
           tax: extractedData.financials?.tax || 0
         },
         // Enhanced data for the working PDF endpoint
-        protections: intelligentClauses.filter(clause => 
-          selectedClauses.has(clause.id) || clause.category === 'MANDATORY'
-        ).map(clause => ({
-          id: clause.id,
-          title: clause.title || 'Protection Clause',
-          content: clause.clause || 'Standard protection clause',
-          category: clause.category || 'PROTECTION',
-          riskLevel: clause.riskLevel || 'MEDIUM'
-        })),
+        protections: (() => {
+          console.log('🔍 [CLAUSE-DEBUG] Current intelligentClauses count:', intelligentClauses.length);
+          console.log('🔍 [CLAUSE-DEBUG] Current selectedClauses count:', selectedClauses.size);
+          
+          const filteredClauses = intelligentClauses.filter(clause => 
+            selectedClauses.has(clause.id) || clause.category === 'MANDATORY'
+          );
+          
+          console.log('🔍 [CLAUSE-DEBUG] Filtered clauses for PDF:', filteredClauses.length);
+          if (filteredClauses.length > 0) {
+            console.log('🔍 [CLAUSE-DEBUG] Sample clause:', filteredClauses[0]);
+          }
+          
+          return filteredClauses.map(clause => ({
+            id: clause.id,
+            title: clause.title || 'Protection Clause',
+            content: clause.clause || 'Standard protection clause',
+            category: clause.category || 'PROTECTION',
+            riskLevel: clause.riskLevel || 'MEDIUM'
+          }));
+        })(),
         
         // Additional contract customizations that the working API expects
         paymentTerms: allFormData.paymentTerms || {},
