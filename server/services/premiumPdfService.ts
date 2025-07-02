@@ -373,11 +373,21 @@ class PremiumPdfService {
         ${data.protectionClauses && data.protectionClauses.length > 0 ? `
         <div class="page-break"></div>
         <div class="content-section">
-            <div class="section-title">PROJECT-SPECIFIC PROTECTION CLAUSES</div>
+            <div class="section-title">INTELLIGENT CONTRACTOR PROTECTION CLAUSES</div>
+            <div style="background: #f0f9ff; border: 2px solid #0891b2; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                <p style="font-size: 11px; color: #0f172a; margin: 0; font-weight: bold; text-align: center;">
+                    🛡️ The following ${data.protectionClauses.length} clause${data.protectionClauses.length > 1 ? 's have' : ' has'} been intelligently selected to provide enhanced legal protection for this project
+                </p>
+            </div>
             ${data.protectionClauses.map((clause, index) => `
-                <div class="numbered-section">
-                    <p><span class="section-number">${index + 13}. ${clause.title.toUpperCase()}</span></p>
-                    <p class="legal-text">${clause.content}</p>
+                <div class="numbered-section" style="border-left: 4px solid #0891b2; padding-left: 20px; margin-bottom: 25px; background: linear-gradient(to right, #f0f9ff 0%, #ffffff 100%);">
+                    <p><span class="section-number" style="color: #0891b2;">${index + 13}. ${clause.title.toUpperCase()}</span></p>
+                    <div style="background: #e0f2fe; padding: 12px; border-radius: 6px; margin: 10px 0; border: 1px solid #b3e5fc;">
+                        <p style="font-size: 9px; color: #0891b2; margin: 0 0 8px 0; font-weight: bold; text-transform: uppercase;">
+                            🔒 SELECTED PROTECTION CLAUSE - ${clause.riskLevel || 'STANDARD'} RISK MITIGATION
+                        </p>
+                        <p class="legal-text" style="margin: 0; color: #0f172a;">${clause.clause || clause.content || clause.description || 'Protective clause content not available'}</p>
+                    </div>
                 </div>
             `).join('')}
         </div>

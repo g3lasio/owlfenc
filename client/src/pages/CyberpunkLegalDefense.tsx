@@ -1249,7 +1249,7 @@ export default function CyberpunkLegalDefense() {
             ? {
                 id: clause.id,
                 title: clause.title,
-                content: clause.content,
+                content: clause.clause,
                 category: clause.category,
                 riskLevel: clause.riskLevel,
               }
@@ -1287,7 +1287,7 @@ export default function CyberpunkLegalDefense() {
             ? {
                 id: clause.id,
                 title: clause.title,
-                content: clause.content,
+                content: clause.clause,
                 category: clause.category,
                 riskLevel: clause.riskLevel,
               }
@@ -1496,6 +1496,14 @@ export default function CyberpunkLegalDefense() {
           console.log(
             "🔍 [CLAUSE-DEBUG] Current selectedClauses count:",
             selectedClauses.size,
+          );
+          console.log(
+            "🔍 [CLAUSE-DEBUG] Selected clause IDs:",
+            Array.from(selectedClauses),
+          );
+          console.log(
+            "🔍 [CLAUSE-DEBUG] Available clause IDs:",
+            intelligentClauses.map(c => c.id),
           );
 
           const filteredClauses = intelligentClauses.filter(

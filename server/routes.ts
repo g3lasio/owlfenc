@@ -2969,6 +2969,7 @@ Output must be between 200-900 characters in English.`;
         console.log('🔍 [CLAUSE-DEBUG] Frontend protections received:', req.body.protections?.length || 0);
         console.log('🔍 [CLAUSE-DEBUG] Sample protection data:', req.body.protections?.[0]);
         console.log('🔍 [CLAUSE-DEBUG] Intelligent clauses received:', req.body.selectedIntelligentClauses?.length || 0);
+        console.log('🔍 [CLAUSE-DEBUG] Clause data received:', req.body.selectedIntelligentClauses?.slice(0, 2) || []);
         
         // DEBUG: Log Step 3 data mapping
         console.log('🔍 [STEP3-DEBUG] Timeline data received:', req.body.timeline);
@@ -2995,13 +2996,14 @@ Output must be between 200-900 characters in English.`;
         // CRITICAL FIX: Map all Step 3 data to PDF service format
         const pdfData = {
           ...contractData,
-          protectionClauses: req.body.protections || [],
+          protectionClauses: contractData.selectedIntelligentClauses || req.body.protections || [],
           timeline: contractData.timeline,
           warranties: contractData.warranties,
           permitInfo: contractData.permitInfo
         };
         
         console.log('🔧 [FIX] Mapped protections to protectionClauses:', pdfData.protectionClauses?.length || 0);
+        console.log('🔧 [CLAUSE-FIX] Protection clauses for PDF:', pdfData.protectionClauses?.map(c => ({ title: c.title, hasContent: !!c.content || !!c.description })));
         console.log('🔧 [STEP3-PDF] Timeline passed to PDF service:', pdfData.timeline);
         console.log('🔧 [STEP3-PDF] Warranties passed to PDF service:', pdfData.warranties);
         console.log('🔧 [STEP3-PDF] Permit info passed to PDF service:', pdfData.permitInfo);
