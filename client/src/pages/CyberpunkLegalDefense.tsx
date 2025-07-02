@@ -248,6 +248,28 @@ export default function CyberpunkLegalDefense() {
   const [isDirty, setIsDirty] = useState<boolean>(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Función para cargar automáticamente datos del contratista desde Company Profile
+  const loadContractorDataFromProfile = useCallback(() => {
+    if (!profile) return;
+    
+    console.log('📋 Loading contractor data from Company Profile:', profile);
+    
+    // Auto-poblar datos del contratista con información del perfil
+    setExtractedData(prev => ({
+      ...prev,
+      contractorCompany: profile.company || prev?.contractorCompany || '',
+      contractorName: profile.ownerName || profile.company || prev?.contractorName || '',
+      contractorAddress: profile.address && profile.city && profile.state 
+        ? `${profile.address}, ${profile.city}, ${profile.state} ${profile.zipCode || ''}`.trim()
+        : prev?.contractorAddress || '',
+      contractorPhone: profile.phone || profile.mobilePhone || prev?.contractorPhone || '',
+      contractorEmail: profile.email || prev?.contractorEmail || '',
+      contractorLicense: profile.license || prev?.contractorLicense || ''
+    }));
+    
+    console.log('✅ Contractor data loaded from profile');
+  }, [profile]);
+
   // Sistema de autoguardado en tiempo real
   const performAutoSave = useCallback(async () => {
     if (!autoSaveEnabled || !user?.uid || !extractedData) return;
@@ -572,6 +594,13 @@ export default function CyberpunkLegalDefense() {
     console.log('🔧 Complete contract editing state prepared with full data preservation');
   }, [profile]);
 
+  // Auto-cargar datos del contratista cuando el perfil esté disponible o cuando se avanza al paso 2/3
+  useEffect(() => {
+    if (profile && (currentStep === 2 || currentStep === 3 || currentPhase === 'defense-review')) {
+      loadContractorDataFromProfile();
+    }
+  }, [profile, currentStep, currentPhase, loadContractorDataFromProfile]);
+
   // Definir pasos del workflow cyberpunk
   const workflowSteps: WorkflowStep[] = [
     {
@@ -895,6 +924,11 @@ export default function CyberpunkLegalDefense() {
 
         // Mark as selected project source
         setSelectedFile(null); // Clear any uploaded file
+        
+        // Auto-load contractor data from Company Profile
+        setTimeout(() => {
+          loadContractorDataFromProfile();
+        }, 100);
         
         // Generate intelligent clauses for the project
         console.log('Advancing to step 3 with data:', result.extractedData);
