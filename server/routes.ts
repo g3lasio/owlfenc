@@ -2965,12 +2965,18 @@ Output must be between 200-900 characters in English.`;
           originalRequest: req.body
         };
         
+        // DEBUG: Log detailed clause data mapping
+        console.log('🔍 [CLAUSE-DEBUG] Frontend protections received:', req.body.protections?.length || 0);
+        console.log('🔍 [CLAUSE-DEBUG] Sample protection data:', req.body.protections?.[0]);
+        console.log('🔍 [CLAUSE-DEBUG] Intelligent clauses received:', req.body.selectedIntelligentClauses?.length || 0);
+        
         console.log('📋 [API] Enhanced contract data captured:', {
           hasExtraClauses: contractData.extraClauses.length > 0,
           hasIntelligentClauses: contractData.selectedIntelligentClauses.length > 0,
           hasCustomTerms: Object.keys(contractData.customTerms).length > 0,
           hasPaymentTerms: Object.keys(contractData.paymentTerms).length > 0,
-          hasWarranties: Object.keys(contractData.warranties).length > 0
+          hasWarranties: Object.keys(contractData.warranties).length > 0,
+          hasProtections: req.body.protections?.length || 0
         });
         
         // Validate required data
@@ -2981,8 +2987,16 @@ Output must be between 200-900 characters in English.`;
           });
         }
         
+        // CRITICAL FIX: Map protections to protectionClauses for PDF service
+        const pdfData = {
+          ...contractData,
+          protectionClauses: req.body.protections || []
+        };
+        
+        console.log('🔧 [FIX] Mapped protections to protectionClauses:', pdfData.protectionClauses?.length || 0);
+        
         // Generate premium PDF with enhanced data
-        const pdfBuffer = await premiumPdfService.generateProfessionalPDF(contractData);
+        const pdfBuffer = await premiumPdfService.generateProfessionalPDF(pdfData);
         
         // Set headers for PDF download
         const filename = `Contract_${contractData.client.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
