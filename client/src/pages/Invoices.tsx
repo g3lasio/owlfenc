@@ -483,8 +483,8 @@ const Invoices: React.FC = () => {
                     <p>No se encontraron estimados</p>
                   </div>
                 ) : (
-                  <div className="grid gap-2 max-h-[280px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-                    {filteredEstimates.map((estimate) => (
+                  <div className="grid gap-2">
+                    {filteredEstimates.slice(0, 3).map((estimate) => (
                       <Card
                         key={estimate.id}
                         className={`cursor-pointer transition-all ${

@@ -127,9 +127,9 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
         aria-label="Toggle mobile menu"
       >
         {isMobileMenuOpen ? (
-          <X className="h-6 w-6 text-background" />
+          <X className="h-6 w-6 text-white" />
         ) : (
-          <Menu className="h-6 w-6 text-background" />
+          <Menu className="h-6 w-6 text-white" />
         )}
       </button>
 
