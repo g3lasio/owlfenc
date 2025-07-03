@@ -7,6 +7,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useProfile } from "@/hooks/use-profile";
+import axios from "axios";
 import {
   Card,
   CardContent,
@@ -321,41 +322,23 @@ const Invoices: React.FC = () => {
     }
   };
 
-  // Handle invoice generation
+  // Handle invoice generation - EXACTLY like EstimatesWizard does it
   const handleGenerateInvoice = async () => {
     if (!selectedEstimate || !currentUser) return;
 
+    // Use the exact same validation as EstimatesWizard
+    if (!profile?.company) {
+      toast({
+        title: "Perfil Incompleto",
+        description:
+          "Completa el nombre de tu empresa en tu perfil antes de generar facturas.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsGenerating(true);
-
-      // Use profile from useProfile hook or fetch if not loaded
-      let userProfile = profile;
-      
-      if (!userProfile && currentUser) {
-        // Fallback: fetch profile if not loaded from hook
-        const profileResponse = await fetch("/api/profile", {
-          headers: {
-            Authorization: `Bearer ${await currentUser.getIdToken()}`,
-            'Content-Type': 'application/json'
-          },
-        });
-        
-        if (profileResponse.ok) {
-          userProfile = await profileResponse.json();
-        }
-      }
-      
-      console.log('📋 Using profile for invoice:', userProfile);
-      
-      if (!userProfile?.company) {
-        toast({
-          title: "Perfil Incompleto",
-          description:
-            "Completa el nombre de tu empresa en tu perfil antes de generar facturas.",
-          variant: "destructive",
-        });
-        return;
-      }
 
       const amounts = calculateAmounts();
       const invoiceNumber = generateInvoiceNumber();
@@ -364,17 +347,17 @@ const Invoices: React.FC = () => {
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + invoiceConfig.paymentTerms);
 
-      // Build invoice payload exactly like EstimatesWizard does
+      // Build invoice payload EXACTLY like EstimatesWizard does
       const invoicePayload = {
         profile: {
-          company: userProfile.company,
-          address: userProfile.address
-            ? `${userProfile.address}${userProfile.city ? ", " + userProfile.city : ""}${userProfile.state ? ", " + userProfile.state : ""}${userProfile.zipCode ? " " + userProfile.zipCode : ""}`
+          company: profile.company,
+          address: profile.address
+            ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}`
             : "",
-          phone: userProfile.phone || "",
-          email: userProfile.email || currentUser?.email || "",
-          website: userProfile.website || "",
-          logo: userProfile.logo || "",
+          phone: profile.phone || "",
+          email: profile.email || currentUser?.email || "",
+          website: profile.website || "",
+          logo: profile.logo || "",
         },
         estimate: {
           client: {
@@ -403,21 +386,12 @@ const Invoices: React.FC = () => {
         },
       };
 
-      // Generate PDF using the same endpoint as EstimatesWizard
-      const response = await fetch("/api/invoice-pdf", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(invoicePayload),
+      // Use axios EXACTLY like EstimatesWizard does
+      const response = await axios.post("/api/invoice-pdf", invoicePayload, {
+        responseType: "blob",
       });
 
-      if (!response.ok) {
-        throw new Error("Error generating PDF");
-      }
-
-      // Download the PDF
-      const blob = await response.blob();
+      const blob = new Blob([response.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
