@@ -49,6 +49,14 @@ import {
   doc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Types
 interface SavedEstimate {
@@ -121,6 +129,8 @@ const Invoices: React.FC = () => {
   const [loadingEstimates, setLoadingEstimates] = useState(true);
   const [invoiceHistory, setInvoiceHistory] = useState<InvoiceData[]>([]);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [showEmailPreview, setShowEmailPreview] = useState(false);
+  const [emailPreviewContent, setEmailPreviewContent] = useState("");
 
   // Load estimates on mount
   useEffect(() => {
@@ -346,6 +356,58 @@ const Invoices: React.FC = () => {
   };
 
   // Handle sending invoice by email
+  // Generate email preview HTML
+  const generateEmailPreview = () => {
+    if (!selectedEstimate || !profile) return "";
+    
+    const { total, paid, balance } = calculateAmounts();
+    const invoiceNumber = generateInvoiceNumber();
+    const dueDate = new Date(Date.now() + invoiceConfig.paymentTerms * 24 * 60 * 60 * 1000);
+    
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #1a1a1a; padding: 30px; text-align: center;">
+          ${profile.logo ? `<img src="${profile.logo}" alt="${profile.company}" style="max-height: 60px; margin-bottom: 10px;">` : ''}
+          <h1 style="color: #ffffff; margin: 10px 0;">FACTURA</h1>
+          <p style="color: #888; margin: 0;">${invoiceNumber}</p>
+        </div>
+        
+        <div style="padding: 30px; background: #f8f9fa;">
+          <h2 style="color: #333; margin-bottom: 20px;">Resumen de Factura</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 10px 0;"><strong>Cliente:</strong></td>
+              <td>${selectedEstimate.clientName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0;"><strong>Proyecto:</strong></td>
+              <td>${selectedEstimate.projectType}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0;"><strong>Total:</strong></td>
+              <td>$${total.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0;"><strong>Pagado:</strong></td>
+              <td>$${paid.toFixed(2)}</td>
+            </tr>
+            <tr style="background: #e9ecef;">
+              <td style="padding: 10px 0;"><strong>Balance:</strong></td>
+              <td><strong>$${balance.toFixed(2)}</strong></td>
+            </tr>
+          </table>
+        </div>
+        
+        <div style="padding: 20px; text-align: center; background: #2563eb;">
+          <p style="color: white; margin: 10px 0;">Fecha de vencimiento: ${dueDate.toLocaleDateString('es-ES')}</p>
+          <a href="#" style="display: inline-block; background: white; color: #2563eb; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            Pagar Ahora
+          </a>
+        </div>
+      </div>
+    `;
+  };
+
   const handleSendInvoiceEmail = async () => {
     if (!selectedEstimate || !profile) {
       toast({
@@ -952,21 +1014,15 @@ const Invoices: React.FC = () => {
                     Generar Factura
                   </Button>
                   <Button 
-                    onClick={handleSendInvoiceEmail} 
+                    onClick={() => {
+                      setEmailPreviewContent(generateEmailPreview());
+                      setShowEmailPreview(true);
+                    }}
                     className="flex-1"
-                    disabled={isSendingEmail}
+                    variant="outline"
                   >
-                    {isSendingEmail ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Enviando...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="mr-2 h-4 w-4" />
-                        Enviar por Email
-                      </>
-                    )}
+                    <Mail className="mr-2 h-4 w-4" />
+                    Vista Previa Email
                   </Button>
                 </div>
 
@@ -984,32 +1040,33 @@ const Invoices: React.FC = () => {
   };
 
   return (
-    <div className="page-container">
-      <div className="scrollable-content space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Sistema de Facturación</h1>
-            <p className="text-muted-foreground">
-              Genere facturas profesionales desde sus estimados guardados
-            </p>
+    <>
+      <div className="page-container">
+        <div className="scrollable-content space-y-6">
+          {/* Header */}
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">Sistema de Facturación</h1>
+              <p className="text-muted-foreground">
+                Genere facturas profesionales desde sus estimados guardados
+              </p>
+            </div>
           </div>
-        </div>
 
-        {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="wizard" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Generar Factura
-            </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center gap-2">
-              <History className="h-4 w-4" />
-              Historial de Facturas
-            </TabsTrigger>
-          </TabsList>
+          {/* Main Content */}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="wizard" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Generar Factura
+              </TabsTrigger>
+              <TabsTrigger value="history" className="flex items-center gap-2">
+                <History className="h-4 w-4" />
+                Historial de Facturas
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="wizard" className="space-y-6">
+            <TabsContent value="wizard" className="space-y-6">
             {/* Progress steps */}
             <div className="flex items-center justify-center mb-8">
               <div className="flex items-center space-x-4 max-w-2xl w-full">
@@ -1300,10 +1357,57 @@ const Invoices: React.FC = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
-    </div>
+
+      {/* Email Preview Dialog */}
+      <Dialog open={showEmailPreview} onOpenChange={setShowEmailPreview}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Vista Previa del Email</DialogTitle>
+            <DialogDescription>
+              Así es como se verá el email antes de enviarlo
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="h-[400px] border rounded-lg p-4">
+            <div dangerouslySetInnerHTML={{ __html: emailPreviewContent }} />
+          </ScrollArea>
+          
+          <div className="flex gap-3 mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowEmailPreview(false)}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={async () => {
+                setShowEmailPreview(false);
+                await handleSendInvoiceEmail();
+              }}
+              className="flex-1"
+              disabled={isSendingEmail}
+            >
+              {isSendingEmail ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Enviar Email
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
