@@ -406,9 +406,9 @@ const Invoices: React.FC = () => {
         return (
           <div className="space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Seleccionar Estimado</CardTitle>
-                <CardDescription>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg">Seleccionar Estimado</CardTitle>
+                <CardDescription className="text-sm">
                   Seleccione el estimado desde el cual desea generar la factura
                 </CardDescription>
               </CardHeader>
@@ -438,7 +438,7 @@ const Invoices: React.FC = () => {
                     <p>No se encontraron estimados</p>
                   </div>
                 ) : (
-                  <div className="grid gap-4">
+                  <div className="grid gap-2 max-h-[280px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
                     {filteredEstimates.map((estimate) => (
                       <Card
                         key={estimate.id}
@@ -455,20 +455,23 @@ const Invoices: React.FC = () => {
                           }));
                         }}
                       >
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-start">
-                            <div className="space-y-1">
-                              <h4 className="font-semibold">{estimate.clientName}</h4>
-                              <p className="text-sm text-muted-foreground">{estimate.projectType}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(estimate.createdAt).toLocaleDateString()}
-                              </p>
+                        <CardContent className="p-3">
+                          <div className="flex justify-between items-center gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium text-sm truncate">{estimate.clientName}</h4>
+                                <span className="text-xs text-muted-foreground">•</span>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(estimate.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate">{estimate.projectType}</p>
                             </div>
-                            <div className="text-right">
-                              <p className="text-lg font-bold">${estimate.total.toFixed(2)}</p>
-                              <Badge variant="outline" className="mt-1">
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <Badge variant="outline" className="text-xs">
                                 {estimate.items.length} items
                               </Badge>
+                              <p className="text-base font-bold">${estimate.total.toFixed(2)}</p>
                             </div>
                           </div>
                         </CardContent>
@@ -820,9 +823,9 @@ const Invoices: React.FC = () => {
           
           <TabsContent value="history" className="space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Historial de Facturas</CardTitle>
-                <CardDescription>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg">Historial de Facturas</CardTitle>
+                <CardDescription className="text-sm">
                   Todas las facturas generadas están disponibles aquí para descargar
                 </CardDescription>
               </CardHeader>
