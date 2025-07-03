@@ -86,6 +86,7 @@ const Invoices: React.FC = () => {
   // Selection state
   const [selectedEstimate, setSelectedEstimate] = useState<SavedEstimate | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
   
   // Invoice configuration
   const [invoiceConfig, setInvoiceConfig] = useState({
@@ -304,12 +305,84 @@ const Invoices: React.FC = () => {
     if (!selectedEstimate || !currentUser) return;
     
     try {
+      setIsGenerating(true);
+      
+      // Get user profile
+      const profileResponse = await fetch('/api/profile');
+      const profile = await profileResponse.json();
+      
+      if (!profile?.company) {
+        toast({
+          title: "Perfil Incompleto",
+          description: "Completa el nombre de tu empresa en tu perfil antes de generar facturas.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const amounts = calculateAmounts();
       const invoiceNumber = generateInvoiceNumber();
       
       // Calculate due date
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + invoiceConfig.paymentTerms);
+      
+      // Build invoice payload exactly like EstimatesWizard does
+      const invoicePayload = {
+        profile: {
+          company: profile.company,
+          address: profile.address
+            ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}`
+            : "",
+          phone: profile.phone || "",
+          email: profile.email || currentUser?.email || "",
+          website: profile.website || "",
+          logo: profile.logo || "",
+        },
+        estimate: {
+          client: {
+            name: selectedEstimate.clientName,
+            email: selectedEstimate.clientEmail,
+            phone: selectedEstimate.clientPhone,
+            address: selectedEstimate.clientAddress
+          },
+          items: selectedEstimate.items,
+          subtotal: selectedEstimate.subtotal,
+          discountAmount: selectedEstimate.discount,
+          taxRate: selectedEstimate.tax > 0 ? (selectedEstimate.tax / selectedEstimate.subtotal) * 100 : 0,
+          tax: selectedEstimate.tax,
+          total: selectedEstimate.total,
+        },
+        invoiceConfig: {
+          projectCompleted: invoiceConfig.projectCompleted,
+          downPaymentAmount: invoiceConfig.paidAmount > 0 ? invoiceConfig.paidAmount.toString() : "",
+          totalAmountPaid: invoiceConfig.paidAmount >= amounts.total,
+        },
+      };
+      
+      // Generate PDF using the same endpoint as EstimatesWizard
+      const response = await fetch("/api/invoice-pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(invoicePayload),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error generating PDF');
+      }
+      
+      // Download the PDF
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `invoice-${invoiceNumber}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
       
       // Determine payment status
       let paymentStatus: 'pending' | 'partial' | 'paid' = 'pending';
@@ -319,7 +392,7 @@ const Invoices: React.FC = () => {
         paymentStatus = 'partial';
       }
       
-      // Create invoice data
+      // Create invoice data for Firebase
       const invoiceData: InvoiceData = {
         estimateId: selectedEstimate.id,
         invoiceNumber,
@@ -349,15 +422,16 @@ const Invoices: React.FC = () => {
       
       toast({
         title: 'Factura generada exitosamente',
-        description: `Factura ${invoiceNumber} creada correctamente`
+        description: `Factura ${invoiceNumber} descargada correctamente`
       });
-      
-      // Generate PDF using existing backend
-      await handleDownloadPdf(selectedEstimate, invoiceData);
       
       // Send email if requested
       if (invoiceConfig.sendEmail && invoiceConfig.recipientEmail) {
-        await handleSendEmail(selectedEstimate, invoiceData);
+        // Email functionality can be implemented later
+        toast({
+          title: 'Email pendiente',
+          description: 'La funcionalidad de email se implementará próximamente'
+        });
       }
       
       // Reset wizard
@@ -382,65 +456,8 @@ const Invoices: React.FC = () => {
         description: 'No se pudo generar la factura',
         variant: 'destructive'
       });
-    }
-  };
-  
-  // Handle PDF download
-  const handleDownloadPdf = async (estimate: SavedEstimate, invoiceData: InvoiceData) => {
-    try {
-      // Use the existing invoice PDF generation endpoint
-      const response = await fetch('/api/invoices/generate-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          estimate,
-          invoiceData,
-          userId: currentUser?.uid
-        })
-      });
-      
-      if (!response.ok) throw new Error('Error generating PDF');
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Factura-${invoiceData.invoiceNumber}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-    }
-  };
-  
-  // Handle email sending
-  const handleSendEmail = async (estimate: SavedEstimate, invoiceData: InvoiceData) => {
-    try {
-      const response = await fetch('/api/invoices/send-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          to: invoiceConfig.recipientEmail,
-          estimate,
-          invoiceData
-        })
-      });
-      
-      if (!response.ok) throw new Error('Error sending email');
-      
-      toast({
-        title: 'Email enviado',
-        description: `Factura enviada a ${invoiceConfig.recipientEmail}`
-      });
-    } catch (error) {
-      console.error('Error sending email:', error);
+    } finally {
+      setIsGenerating(false);
     }
   };
   
@@ -912,11 +929,93 @@ const Invoices: React.FC = () => {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => {
+                                  onClick={async () => {
                                     // Find the original estimate
                                     const estimate = savedEstimates.find(e => e.id === invoice.estimateId);
-                                    if (estimate) {
-                                      handleDownloadPdf(estimate, invoice);
+                                    if (estimate && currentUser) {
+                                      try {
+                                        // Get user profile
+                                        const profileResponse = await fetch('/api/profile');
+                                        const profile = await profileResponse.json();
+                                        
+                                        if (!profile?.company) {
+                                          toast({
+                                            title: "Perfil Incompleto",
+                                            description: "Completa el nombre de tu empresa en tu perfil antes de descargar facturas.",
+                                            variant: "destructive",
+                                          });
+                                          return;
+                                        }
+                                        
+                                        // Build invoice payload exactly like EstimatesWizard does
+                                        const invoicePayload = {
+                                          profile: {
+                                            company: profile.company,
+                                            address: profile.address
+                                              ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}`
+                                              : "",
+                                            phone: profile.phone || "",
+                                            email: profile.email || currentUser?.email || "",
+                                            website: profile.website || "",
+                                            logo: profile.logo || "",
+                                          },
+                                          estimate: {
+                                            client: {
+                                              name: estimate.clientName,
+                                              email: estimate.clientEmail,
+                                              phone: estimate.clientPhone,
+                                              address: estimate.clientAddress
+                                            },
+                                            items: estimate.items,
+                                            subtotal: estimate.subtotal,
+                                            discountAmount: estimate.discount,
+                                            taxRate: estimate.tax > 0 ? (estimate.tax / estimate.subtotal) * 100 : 0,
+                                            tax: estimate.tax,
+                                            total: estimate.total,
+                                          },
+                                          invoiceConfig: {
+                                            projectCompleted: true,
+                                            downPaymentAmount: invoice.paidAmount > 0 ? invoice.paidAmount.toString() : "",
+                                            totalAmountPaid: invoice.paidAmount >= invoice.totalAmount,
+                                          },
+                                        };
+                                        
+                                        // Generate PDF using the same endpoint as EstimatesWizard
+                                        const response = await fetch("/api/invoice-pdf", {
+                                          method: "POST",
+                                          headers: {
+                                            "Content-Type": "application/json",
+                                          },
+                                          body: JSON.stringify(invoicePayload),
+                                        });
+                                        
+                                        if (!response.ok) {
+                                          throw new Error('Error generating PDF');
+                                        }
+                                        
+                                        // Download the PDF
+                                        const blob = await response.blob();
+                                        const url = window.URL.createObjectURL(blob);
+                                        const link = document.createElement("a");
+                                        link.href = url;
+                                        link.download = `invoice-${invoice.invoiceNumber}.pdf`;
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                        window.URL.revokeObjectURL(url);
+                                        
+                                        toast({
+                                          title: 'Factura descargada',
+                                          description: `Factura ${invoice.invoiceNumber} descargada correctamente`
+                                        });
+                                      } catch (error) {
+                                        console.error('Error downloading PDF:', error);
+                                        toast({
+                                          title: 'Error al descargar',
+                                          description: 'No se pudo descargar la factura',
+                                          variant: 'destructive'
+                                        });
+                                      }
                                     }
                                   }}
                                 >
