@@ -5,6 +5,47 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =================================================================
+   SISTEMA UNIFICADO DE VARIABLES CSS - FASE 1
+   Fecha: 03/01/2025
+   Propósito: Centralizar todas las medidas del layout para consistencia
+   ================================================================= */
+:root {
+  /* Dimensiones del Header */
+  --header-height: 80px;
+  --header-mobile-height: 64px;
+  
+  /* Dimensiones del Footer */
+  --footer-height: 40px;
+  --footer-padding-y: 8px;
+  
+  /* Dimensiones del Sidebar */
+  --sidebar-width-collapsed: 64px;
+  --sidebar-width-expanded: 288px;
+  --sidebar-toggle-height: 56px;
+  --sidebar-footer-height: 48px;
+  
+  /* Espaciados principales */
+  --content-padding: 24px;
+  --content-padding-mobile: 16px;
+  
+  /* Alturas calculadas dinámicamente */
+  --main-content-height: calc(100vh - var(--header-height) - var(--footer-height));
+  --main-content-height-mobile: calc(100vh - var(--header-mobile-height) - var(--footer-height));
+  --sidebar-scroll-height: calc(100vh - var(--sidebar-toggle-height) - var(--sidebar-footer-height));
+  
+  /* Z-index hierarchy */
+  --z-header: 50;
+  --z-sidebar: 40;
+  --z-mobile-menu: 45;
+  --z-content: 10;
+  --z-footer: 30;
+  
+  /* Transiciones */
+  --transition-default: 300ms ease-in-out;
+  --transition-fast: 150ms ease-out;
+}
+
 /* CONTROL DE SCROLL - VERSIÓN MEJORADA */
 html, body {
   height: 100vh;
