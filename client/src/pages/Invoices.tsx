@@ -160,17 +160,24 @@ const Invoices: React.FC = () => {
         
         // Los datos vienen con campos planos, no anidados
         const clientName = data.clientName || data.client?.name || 'Sin nombre';
-        const subtotal = data.subtotal || 0;
-        const discount = data.discount || 0;
-        const tax = data.tax || 0;
+        const clientPhone = data.clientPhone || '';
         
-        // Verificar que el total esté en el formato correcto (no en centavos)
+        // Verificar que el total esté en el formato correcto
         let total = data.total || 0;
+        let subtotal = data.subtotal || 0;
+        let discount = data.discount || 0;
+        let tax = data.tax || 0;
         
-        // Si el total parece estar en centavos (muy grande), convertirlo
-        if (total > 1000000) {
-          console.warn(`Total parece estar en centavos: ${total}, convirtiendo a dólares`);
+        // Detectar si los valores están en centavos o dólares
+        // Si el total es un número entero grande, probablemente está en centavos
+        const isInCents = Number.isInteger(total) && total > 5000;
+        
+        if (isInCents) {
+          console.warn(`Convirtiendo de centavos a dólares: ${total} → ${(total / 100).toFixed(2)}`);
           total = total / 100;
+          subtotal = subtotal / 100;
+          discount = discount / 100;
+          tax = tax / 100;
         }
         
         estimates.push({
@@ -248,6 +255,7 @@ const Invoices: React.FC = () => {
   const calculateAmounts = () => {
     if (!selectedEstimate) return { total: 0, paid: 0, balance: 0 };
     
+    // El total ya debe estar convertido a dólares en loadEstimates()
     const total = selectedEstimate.total;
     const paid = invoiceConfig.paidAmount;
     const balance = total - paid;

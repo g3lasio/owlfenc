@@ -123,13 +123,13 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
       {/* Mobile Hamburger Button */}
       <button
         onClick={toggleMobileMenu}
-        className="md:hidden fixed top-4 right-4 z-[999999] p-2 bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200"
+        className="md:hidden fixed top-8 right-4 z-[999999]   transition-all duration-200"
         aria-label="Toggle mobile menu"
       >
         {isMobileMenuOpen ? (
-          <X className="h-6 w-6 text-gray-700" />
+          <X className="h-6 w-6 text-background" />
         ) : (
-          <Menu className="h-6 w-6 text-gray-700" />
+          <Menu className="h-6 w-6 text-background" />
         )}
       </button>
 
