@@ -481,6 +481,12 @@ Changelog:
   * Maintained all backend functionality while simplifying user interface visualization
   * Users no longer see redundant intermediate step that caused confusion
   * Workflow now displays clean 3-step process matching actual user experience
+- July 3, 2025. Fixed critical invoice PDF data loss issue - unit prices showing $0.00:
+  * Identified field name mismatch between frontend (unitPrice, totalPrice) and backend (price, total)
+  * Updated /api/invoice-pdf endpoint in routes.ts to map item.unitPrice and item.totalPrice correctly
+  * Modified invoice item mapping to use correct field names from frontend estimate data
+  * Invoice PDFs now display accurate unit prices and totals instead of $0.00
+  * Preserved all existing functionality while fixing data accuracy issue
 - July 1, 2025. CRITICAL FIX: Complete Permit Card Backend Integration:
   * Identified root cause: Frontend sent permitInfo but backend only captured permits
   * Added permitInfo capture to server/routes.ts /api/generate-pdf endpoint (line 2945)

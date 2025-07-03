@@ -1573,8 +1573,8 @@ Output must be between 200-900 characters in English.`;
             code: item.name || 'Item',
             description: item.description || '',
             qty: item.quantity || 1,
-            unit_price: `$${Number(item.price || 0).toFixed(2)}`,
-            total: `$${Number(item.total || 0).toFixed(2)}`
+            unit_price: `$${Number(item.unitPrice || 0).toFixed(2)}`,
+            total: `$${Number(item.totalPrice || 0).toFixed(2)}`
           })) || [],
           subtotal: `$${Number(estimate.subtotal || 0).toFixed(2)}`,
           discounts: Number(estimate.discountAmount || 0) > 0 ? `-$${Number(estimate.discountAmount || 0).toFixed(2)}` : '$0.00',
