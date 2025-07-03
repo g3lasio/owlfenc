@@ -46,47 +46,53 @@
   --transition-fast: 150ms ease-out;
 }
 
-/* CONTROL DE SCROLL - VERSIÓN MEJORADA */
-html, body {
-  height: 100vh;
+/* =================================================================
+   SISTEMA DE LAYOUT PRINCIPAL - FASE 2
+   Fecha: 03/01/2025
+   Propósito: Layout base consistente sin conflictos
+   ================================================================= */
+
+/* Base del documento - Sin conflictos de scroll */
+html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  height: 100%;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  overflow-y: auto;
 }
 
 #root {
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   margin: 0;
   padding: 0;
 }
 
-/* PREVENIR SCROLL HORIZONTAL GLOBAL */
-* {
-  overflow-x: hidden;
-}
-
-/* PERMITIR SCROLL VERTICAL CONTROLADO DONDE SEA NECESARIO */
-.scrollable-content {
-  overflow-y: auto;
-  max-height: 100%;
-}
-
-/* ELIMINACIÓN TOTAL DE SCROLLBARS Y FLECHAS */
+/* Sistema de Scrollbar Consistente */
+/* Scrollbar visible pero sutil para mejor UX */
 *::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
+  width: 8px;
+  height: 8px;
 }
 
 *::-webkit-scrollbar-track {
-  display: none !important;
+  background: rgba(0, 0, 0, 0.1);
 }
 
 *::-webkit-scrollbar-thumb {
-  display: none !important;
+  background: rgba(0, 200, 255, 0.3);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 200, 255, 0.5);
 }
 
 /* SCROLLBARS PARA EMAIL PREVIEW DIALOG */
@@ -122,232 +128,115 @@ html, body {
   display: none !important;
 }
 
-/* PARA FIREFOX Y EDGE */
+/* Sistema de Scrollbar para Firefox */
 * {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 200, 255, 0.3) rgba(0, 0, 0, 0.1);
 }
 
-/* ELIMINACIÓN ADICIONAL DE CLASES SCROLL */
-.scrollbar-hide,
-.scrollbar-thin,
-.scrollbar-track-gray-800,
-.scrollbar-track-slate-100,
-.scrollbar-thumb-cyan-500,
-.scrollbar-thumb-slate-300 {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-
-.scrollbar-hide::-webkit-scrollbar,
-.scrollbar-thin::-webkit-scrollbar,
-.scrollbar-track-gray-800::-webkit-scrollbar,
-.scrollbar-track-slate-100::-webkit-scrollbar,
-.scrollbar-thumb-cyan-500::-webkit-scrollbar,
-.scrollbar-thumb-slate-300::-webkit-scrollbar {
-  display: none !important;
-}
-
-/* FORZAR ALTURA FIJA PARA EVITAR SCROLL INFINITO */
-.min-h-screen {
-  min-height: auto !important;
-  height: auto !important;
-}
-
-/* ELIMINAR TODOS LOS SCROLLS PROBLEMÁTICOS */
-.flex-1 {
-  max-height: calc(100vh - 144px) !important;
-}
-
-/* PÁGINA PRINCIPAL CON SCROLL CONTROLADO */
+/* Clases de Layout Unificadas - Usando Variables CSS */
 .page-container {
-  min-height: 100vh;
+  min-height: var(--main-content-height);
   width: 100%;
   position: relative;
 }
 
 .scrollable-content {
-  height: auto;
+  height: 100%;
   overflow-y: auto;
-  max-height: calc(100vh - 100px);
-  padding: 1rem;
+  padding: var(--content-padding);
+}
+
+@media (max-width: 768px) {
+  .scrollable-content {
+    padding: var(--content-padding-mobile);
+  }
 }
 
 
 
-/* Contenedor principal de la app */
+/* Contenedores de Layout - Sin !important, usando variables */
 .app-container {
-  height: 100vh !important;
-  max-height: 100vh !important;
-  overflow: hidden !important;
-  display: flex !important;
-  flex-direction: row !important;
+  height: 100vh;
+  display: flex;
+  flex-direction: row;
 }
 
-/* Sidebar fijo */
+/* Sidebar */
 .sidebar-container {
-  height: 100vh !important;
-  max-height: 100vh !important;
-  overflow-y: auto !important;
-  flex-shrink: 0 !important;
+  height: 100vh;
+  overflow-y: auto;
+  flex-shrink: 0;
 }
 
 /* Área de contenido principal */
 .main-content-area {
-  height: 100vh !important;
-  max-height: 100vh !important;
-  overflow: hidden !important;
-  flex: 1 !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-/* Páginas individuales - SIN SCROLL */
-.page-container {
-  height: calc(100vh - 104px) !important;
-  max-height: calc(100vh - 104px) !important;
-  overflow: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
-  flex: 1 !important;
-  margin-bottom: 40px !important;
+  height: 100vh;
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Contenido scrollable controlado */
 .controlled-scroll {
-  flex: 1 !important;
-  overflow-y: auto !important;
-  max-height: calc(100vh - var(--header-height, 120px)) !important;
-}
-
-/* Contenido controlado - SOLO SCROLL DONDE NECESARIO */
-.scrollable-content {
-  overflow-y: auto !important;
-  max-height: calc(100vh - 144px) !important;
-  padding: 1.5rem !important;
-  flex: 1 !important;
-  scrollbar-width: thin !important;
+  flex: 1;
+  overflow-y: auto;
+  max-height: var(--main-content-height);
 }
 
 /* Estructuras específicas para diferentes tipos de contenido */
 .content-with-header {
-  display: flex !important;
-  flex-direction: column !important;
-  height: 100vh !important;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
 }
 
 .content-with-header .header-section {
-  flex-shrink: 0 !important;
-  padding: 1.5rem !important;
-  border-bottom: 1px solid hsl(var(--border)) !important;
+  flex-shrink: 0;
+  padding: var(--content-padding);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .content-with-header .main-section {
-  flex: 1 !important;
-  overflow-y: auto !important;
-  padding: 1.5rem !important;
-}
-
-/* Eliminación global de scroll infinito problemático */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--border)) transparent;
-}
-
-/* Webkit browsers */
-*::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-*::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
-  border-radius: 4px;
-}
-
-*::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--foreground) / 0.3);
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--content-padding);
 }
 
 /* Headers fijos */
 .fixed-header {
-  flex-shrink: 0 !important;
-  overflow: visible !important;
+  flex-shrink: 0;
+  overflow: visible;
 }
 
-/* Prevenir scroll en diálogos */
+/* Diálogos con scroll controlado */
 .dialog-content {
-  max-height: 95vh !important;
-  overflow: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
+  max-height: 95vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .dialog-body {
-  flex: 1 !important;
-  overflow-y: auto !important;
+  flex: 1;
+  overflow-y: auto;
 }
 
-/* Layout principal sin bloqueo de scroll */
+/* Box sizing global */
 * {
-  box-sizing: border-box !important;
+  box-sizing: border-box;
 }
 
-html, body {
-  height: 100vh !important;
-  max-height: 100vh !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: auto !important; /* Allow scrolling */
-}
-
-#root {
-  overflow: auto !important; /* Allow scrolling */
-  height: 100vh !important;
-  max-height: 100vh !important;
-}
-
-aside {
-  height: 100vh !important;
-  max-height: 100vh !important;
-  overflow-y: auto !important; /* Allow vertical scrolling in sidebar */
-  box-sizing: border-box !important;
-}
-
-/* Main allows internal scrolling */
-main {
-  height: 100vh !important;
-  max-height: 100vh !important;
-  overflow: auto !important; /* Allow scrolling */
-}
-
-/* Permitir scroll en páginas específicas */
+/* Contenedores específicos */
 .scrollable-page {
-  overflow-y: auto !important;
-  height: 100% !important;
-}
-
-.scrollable-page * {
-  overflow: visible !important;
+  overflow-y: auto;
+  height: 100%;
 }
 
 .home-container {
-  overflow: hidden !important;
-  height: 100% !important;
-  max-height: 100% !important;
-}
-
-/* Allow scrolling in flex containers when needed - but be more specific */
-.flex-1[style*="overflow-y: auto"] {
-  overflow-y: auto !important;
-}
-
-.flex, .flex-col {
-  overflow: visible !important;
+  overflow: hidden;
+  height: 100%;
 }
 
 /* Animaciones para el reactor de Iron Man */
