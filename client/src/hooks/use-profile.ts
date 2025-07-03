@@ -29,15 +29,6 @@ export interface UserProfile {
   socialMedia: Record<string, string>;
   documents: Record<string, string>;
   logo: string;
-  
-  // Datos estructurados de la empresa para uso en contratos
-  company?: {
-    name?: string;
-    address?: string;
-    phone?: string;
-    email?: string;
-    license?: string;
-  };
 }
 
 export function useProfile() {
@@ -83,9 +74,20 @@ export function useProfile() {
       
       // Si no hay datos en localStorage o Firebase, intentar API del servidor
       try {
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json'
+        };
+        
+        // Agregar token de Firebase si está disponible
+        if (currentUser) {
+          const token = await currentUser.getIdToken();
+          headers.Authorization = `Bearer ${token}`;
+        }
+        
         const response = await fetch("/api/profile", {
           method: "GET",
-          credentials: "include"
+          credentials: "include",
+          headers
         });
         
         if (!response.ok) {

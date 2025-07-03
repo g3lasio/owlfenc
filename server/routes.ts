@@ -4136,12 +4136,17 @@ Output must be between 200-900 characters in English.`;
       try {
         const user = await storage.getUserByFirebaseUid(firebaseUserId);
         if (user) {
-          console.log('✅ Usuario encontrado en base de datos:', user.id);
+          console.log('✅ Usuario encontrado en base de datos:', {
+            id: user.id,
+            company: user.company,
+            ownerName: user.ownerName,
+            email: user.email
+          });
           
           // Return actual user data from database
           const profileData = {
             id: user.id,
-            company: user.companyName || "",
+            company: user.company || "",
             ownerName: user.ownerName || "",
             role: user.role || "Owner",
             email: user.email || "",
@@ -4181,9 +4186,60 @@ Output must be between 200-900 characters in English.`;
         console.error('Error fetching user from database:', dbError);
       }
 
-      // If no user found in database, return empty profile structure
-      // This forces users to complete their profile
-      const emptyProfile = {
+      // If no user found in database, try to get from Firebase directly
+      console.log('🔍 No se encontró usuario en PostgreSQL, intentando Firebase...');
+      
+      // Try to get user data from Firebase Auth
+      try {
+        const firebaseUser = await admin.auth().getUser(firebaseUserId);
+        if (firebaseUser) {
+          console.log('✅ Usuario encontrado en Firebase Auth');
+          
+          // Create profile from Firebase data
+          const firebaseProfile = {
+            id: firebaseUserId,
+            company: firebaseUser.displayName || "",
+            ownerName: firebaseUser.displayName || "",
+            role: "Owner",
+            email: firebaseUser.email || "",
+            phone: firebaseUser.phoneNumber || "",
+            mobilePhone: "",
+            address: "",
+            city: "",
+            state: "",
+            zipCode: "",
+            license: "",
+            insurancePolicy: "",
+            ein: "",
+            businessType: "LLC",
+            yearEstablished: "",
+            website: "",
+            description: "",
+            specialties: [],
+            socialMedia: {},
+            logo: ""
+          };
+          
+          // Check if we have stored profile data with logo
+          try {
+            const storedData = (global as any).profileStorage || {};
+            if (storedData.company || storedData.logo) {
+              const mergedProfile = { ...firebaseProfile, ...storedData };
+              console.log('📋 Firebase profile merged with stored data, logo length:', storedData.logo?.length || 0);
+              return res.json(mergedProfile);
+            }
+          } catch (err) {
+            console.warn('Could not merge stored profile data:', err);
+          }
+          
+          return res.json(firebaseProfile);
+        }
+      } catch (fbError) {
+        console.error('Error getting user from Firebase Auth:', fbError);
+      }
+      
+      // Last resort: return minimal profile with stored data if available
+      const minimalProfile = {
         id: firebaseUserId,
         company: "",
         ownerName: "",
@@ -4207,19 +4263,19 @@ Output must be between 200-900 characters in English.`;
         logo: ""
       };
       
-      // Check if we have stored profile data with logo
+      // Always check for stored data
       try {
-        const storedData = global.profileStorage || {};
-        if (storedData.company || storedData.logo) {
-          const mergedProfile = { ...emptyProfile, ...storedData };
-          console.log('📋 Empty profile merged with stored data, logo length:', storedData.logo?.length || 0);
-          return res.json(mergedProfile);
+        const storedData = (global as any).profileStorage || {};
+        if (storedData) {
+          const finalProfile = { ...minimalProfile, ...storedData };
+          console.log('📋 Returning profile with stored data');
+          return res.json(finalProfile);
         }
       } catch (err) {
-        console.warn('Could not load stored profile data:', err);
+        console.warn('Could not access stored data:', err);
       }
       
-      res.json(emptyProfile);
+      res.json(minimalProfile);
     } catch (error) {
       console.error("Error loading profile:", error);
       res.status(500).json({ error: "Error loading profile" });
