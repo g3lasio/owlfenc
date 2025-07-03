@@ -14,20 +14,12 @@ import {
 } from "@/components/ui/tooltip";
 import {
   LogOut,
-  User,
-  CreditCard,
-  Building,
-  Settings,
-  Brain as BrainIcon,
-  ChevronRight,
   ArrowRight,
 } from "lucide-react";
 import { navigationGroups, NavigationItem } from "@/config/navigation";
 import { useTranslation } from "react-i18next";
-import { useLanguage } from "@/contexts/LanguageContext";
 import LanguageSwitch from "@/components/ui/language-switch";
 
-// Definición de tipos para la suscripción y planes
 interface UserSubscription {
   id?: number;
   status: string;
@@ -45,35 +37,29 @@ interface SidebarProps {
 
 export default function Sidebar({ onWidthChange }: SidebarProps) {
   const [location] = useLocation();
-  const { user, signOut } = useAuth();
+  const { currentUser, signOut } = useAuth();
   const { toast } = useToast();
   const { t } = useTranslation();
-  const { setLanguage } = useLanguage();
   
-  // Estado del sidebar: expandido/colapsado
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(() => {
-    return window.innerWidth >= 1024; // Expandido por defecto en desktop
+    return window.innerWidth >= 1024;
   });
 
-  // Función para manejar el toggle del sidebar
   const toggleSidebar = () => {
     setIsSidebarExpanded(!isSidebarExpanded);
   };
 
-  // Auto-colapso en móvil y auto-cerrar al hacer clic en elementos del menú
   const handleMenuItemClick = () => {
     if (window.innerWidth < 1024) {
       setIsSidebarExpanded(false);
     }
   };
 
-  // Notificar cambios de ancho al padre
   useEffect(() => {
     const newWidth = isSidebarExpanded ? 288 : 64;
     onWidthChange?.(newWidth);
   }, [isSidebarExpanded, onWidthChange]);
 
-  // Responsive behavior
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1024 && isSidebarExpanded) {
@@ -85,10 +71,9 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, [isSidebarExpanded]);
 
-  // Queries para suscripción y planes
   const { data: userSubscription } = useQuery<UserSubscription>({
     queryKey: ["user", "subscription"],
-    enabled: !!user,
+    enabled: !!currentUser,
   });
 
   const { data: plans } = useQuery<Plan[]>({
@@ -99,14 +84,14 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
     try {
       await signOut();
       toast({
-        title: t("sidebar.signedOut"),
-        description: t("sidebar.signedOutSuccess"),
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión exitosamente",
       });
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
       toast({
-        title: t("sidebar.signOutError"),
-        description: t("sidebar.signOutErrorDesc"),
+        title: "Error",
+        description: "Error al cerrar sesión",
         variant: "destructive",
       });
     }
@@ -118,46 +103,50 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
     <TooltipProvider>
       <div className="flex flex-col h-full">
         <div
-          className={`bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out relative`}
+          className="bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out relative"
           style={{
             width: isSidebarExpanded ? "288px" : "64px",
             height: "calc(100vh - 64px)",
             boxShadow: "2px 0 8px rgba(0, 0, 0, 0.1)"
           }}
         >
-          {/* Header con toggle - FLECHA CYAN BRILLANTE */}
-          <div className={`flex-shrink-0 ${isSidebarExpanded ? "p-3" : "p-2"}`}>
+          {/* BRIGHT CYAN ARROW BUTTON */}
+          <div className="flex-shrink-0 p-3">
             <button
               onClick={toggleSidebar}
-              className="w-full bg-cyan-500 hover:bg-cyan-600 text-white p-3 rounded-lg flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl"
+              className="w-full h-12 bg-gradient-to-r from-cyan-400 to-cyan-600 hover:from-cyan-500 hover:to-cyan-700 text-white rounded-lg flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+              style={{
+                background: "linear-gradient(45deg, #00FFFF, #0088CC)",
+                boxShadow: "0 4px 20px rgba(0, 255, 255, 0.4)"
+              }}
             >
               <ArrowRight
-                size={24}
-                className={`transition-transform duration-300 ${isSidebarExpanded ? "rotate-180" : ""}`}
+                className={`w-6 h-6 transition-transform duration-300 ${isSidebarExpanded ? "rotate-180" : ""}`}
+                style={{ color: "white", filter: "drop-shadow(0 0 4px rgba(255,255,255,0.8))" }}
               />
             </button>
           </div>
 
           {/* Contenido del sidebar */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
+          <div className="flex-1 overflow-y-auto p-2">
             {/* Información del usuario */}
-            {user && (
+            {currentUser && (
               <div className={`${isSidebarExpanded ? "mb-4" : "mb-2"}`}>
                 {isSidebarExpanded ? (
                   <div className="bg-muted/50 rounded-lg p-3">
                     <div className="flex items-center space-x-3">
                       <Avatar className="h-10 w-10">
-                        <AvatarImage src={user.photoURL || ""} />
+                        <AvatarImage src={currentUser.photoURL || ""} />
                         <AvatarFallback>
-                          {user.displayName?.[0]?.toUpperCase() || "U"}
+                          {currentUser.displayName?.[0]?.toUpperCase() || "U"}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">
-                          {user.displayName || user.email}
+                          {currentUser.displayName || currentUser.email}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
-                          {currentPlan?.name || t("sidebar.freePlan")}
+                          {currentPlan?.name || "Plan Gratuito"}
                         </p>
                       </div>
                     </div>
@@ -167,17 +156,17 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                     <TooltipTrigger asChild>
                       <div className="flex justify-center">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.photoURL || ""} />
+                          <AvatarImage src={currentUser.photoURL || ""} />
                           <AvatarFallback className="text-xs">
-                            {user.displayName?.[0]?.toUpperCase() || "U"}
+                            {currentUser.displayName?.[0]?.toUpperCase() || "U"}
                           </AvatarFallback>
                         </Avatar>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="right">
-                      <p>{user.displayName || user.email}</p>
+                      <p>{currentUser.displayName || currentUser.email}</p>
                       <p className="text-xs opacity-70">
-                        {currentPlan?.name || t("sidebar.freePlan")}
+                        {currentPlan?.name || "Plan Gratuito"}
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -191,19 +180,19 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                 <div key={group.title} className="space-y-1">
                   {isSidebarExpanded && (
                     <h3 className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      {t(`navigation.groups.${group.title}`)}
+                      {group.title}
                     </h3>
                   )}
                   
                   {group.items
-                    .filter((item: NavigationItem) => !item.requiresAuth || user)
+                    .filter((item: NavigationItem) => !item.requiresAuth || currentUser)
                     .map((item: NavigationItem) => {
-                      const isActive = location === item.href;
+                      const isActive = location === item.path;
                       const Icon = item.icon;
 
                       if (isSidebarExpanded) {
                         return (
-                          <Link key={item.href} href={item.href}>
+                          <Link key={item.path} href={item.path}>
                             <Button
                               variant={isActive ? "secondary" : "ghost"}
                               className={`w-full justify-start ${
@@ -211,16 +200,16 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                               }`}
                               onClick={handleMenuItemClick}
                             >
-                              <Icon size={16} className="mr-2" />
-                              {t(`navigation.${item.label}`)}
+                              <Icon className="mr-2 h-4 w-4" />
+                              {item.label}
                             </Button>
                           </Link>
                         );
                       } else {
                         return (
-                          <Tooltip key={item.href}>
+                          <Tooltip key={item.path}>
                             <TooltipTrigger asChild>
-                              <Link href={item.href}>
+                              <Link href={item.path}>
                                 <Button
                                   variant={isActive ? "secondary" : "ghost"}
                                   size="icon"
@@ -229,12 +218,12 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                                   }`}
                                   onClick={handleMenuItemClick}
                                 >
-                                  <Icon size={16} />
+                                  <Icon className="h-4 w-4" />
                                 </Button>
                               </Link>
                             </TooltipTrigger>
                             <TooltipContent side="right">
-                              <p>{t(`navigation.${item.label}`)}</p>
+                              <p>{item.label}</p>
                             </TooltipContent>
                           </Tooltip>
                         );
@@ -249,14 +238,14 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             </nav>
           </div>
 
-          {/* Footer con acciones del usuario */}
+          {/* Footer */}
           <div className="flex-shrink-0 p-2 border-t border-border">
             <div className="space-y-2">
               {/* Switch de idioma */}
               {isSidebarExpanded ? (
                 <div className="flex items-center justify-between px-2">
                   <span className="text-xs text-muted-foreground">
-                    {t("sidebar.language")}
+                    Idioma
                   </span>
                   <LanguageSwitch />
                 </div>
@@ -268,13 +257,13 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="right">
-                    <p>{t("sidebar.language")}</p>
+                    <p>Idioma</p>
                   </TooltipContent>
                 </Tooltip>
               )}
 
               {/* Botón de cerrar sesión */}
-              {user && (
+              {currentUser && (
                 <>
                   {isSidebarExpanded ? (
                     <Button
@@ -282,8 +271,8 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                       onClick={handleSignOut}
                       className="w-full justify-start text-muted-foreground hover:text-foreground"
                     >
-                      <LogOut size={16} className="mr-2" />
-                      {t("sidebar.signOut")}
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Cerrar Sesión
                     </Button>
                   ) : (
                     <Tooltip>
@@ -294,11 +283,11 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                           onClick={handleSignOut}
                           className="w-full text-muted-foreground hover:text-foreground"
                         >
-                          <LogOut size={16} />
+                          <LogOut className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent side="right">
-                        <p>{t("sidebar.signOut")}</p>
+                        <p>Cerrar Sesión</p>
                       </TooltipContent>
                     </Tooltip>
                   )}
