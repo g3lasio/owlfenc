@@ -120,41 +120,112 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             flex flex-col bg-card transition-all duration-300
             ${isSidebarExpanded ? "w-72 border-r border-border" : "w-16"}
             translate-x-0
-            fixed left-0 top-0 z-40 h-screen
+            fixed left-0 top-0 z-40
           `}
           style={{
             overflowY: "hidden",
-            overflowX: "hidden"
+            overflowX: "hidden",
+            height: "calc(100vh - 64px)", // Dejar espacio para el footer
+            boxShadow: "2px 0 8px rgba(0, 0, 0, 0.1)"
           }}
         >
           {/* Header con toggle */}
           <div
             className={`flex-shrink-0 ${isSidebarExpanded ? "p-3 border-b border-border" : "p-2"}`}
           >
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={toggleSidebar}
-              className="w-full flex items-center justify-center hover:bg-accent/70 hover:scale-110 transition-all duration-300 group"
+              className="w-full flex items-center justify-center p-2 transition-all duration-500 group relative overflow-hidden"
               style={{
-                background:
-                  "linear-gradient(135deg, rgba(0,255,255,0.1), rgba(0,200,255,0.05))",
-                borderRadius: "12px",
-                border: "1px solid rgba(0,255,255,0.2)",
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                cursor: "pointer",
               }}
             >
+              {/* Efecto de brillo futurista */}
               <div
-                className="transition-all duration-500 ease-in-out group-hover:text-cyan-400"
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{
+                  background: "radial-gradient(circle at center, rgba(0,255,255,0.15) 0%, transparent 70%)",
+                }}
+              />
+              
+              {/* Flecha futurista */}
+              <div
+                className="relative transition-all duration-500 ease-in-out"
                 style={{
                   transform: isSidebarExpanded
                     ? "rotate(180deg)"
                     : "rotate(0deg)",
-                  filter: "drop-shadow(0 0 4px rgba(0,255,255,0.3))",
                 }}
               >
-                <ChevronsRight className="h-5 w-5" />
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="group-hover:scale-110 transition-transform duration-300"
+                >
+                  {/* Flecha principal con diseño futurista */}
+                  <path
+                    d="M9 6L15 12L9 18"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="transition-all duration-300"
+                    style={{
+                      stroke: "url(#arrowGradient)",
+                      filter: "drop-shadow(0 0 6px rgba(0,255,255,0.6))",
+                    }}
+                  />
+                  
+                  {/* Segunda flecha para efecto de profundidad */}
+                  <path
+                    d="M5 6L11 12L5 18"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="opacity-40 transition-all duration-300 group-hover:opacity-60"
+                    style={{
+                      stroke: "url(#arrowGradientSecondary)",
+                    }}
+                  />
+                  
+                  {/* Gradientes futuristas */}
+                  <defs>
+                    <linearGradient id="arrowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#00ffff" />
+                      <stop offset="50%" stopColor="#00ccff" />
+                      <stop offset="100%" stopColor="#0099ff" />
+                    </linearGradient>
+                    <linearGradient id="arrowGradientSecondary" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#00ffff" stopOpacity="0.6" />
+                      <stop offset="100%" stopColor="#0099ff" stopOpacity="0.3" />
+                    </linearGradient>
+                  </defs>
+                </svg>
               </div>
-            </Button>
+              
+              {/* Efecto de pulso */}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  animation: "pulse 2s ease-in-out infinite",
+                }}
+              >
+                <div
+                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full opacity-0 group-hover:opacity-30"
+                  style={{
+                    background: "radial-gradient(circle, rgba(0,255,255,0.4) 0%, transparent 70%)",
+                    animation: "pulseRing 1.5s ease-out infinite",
+                  }}
+                />
+              </div>
+            </button>
           </div>
 
           {/* Área de navegación con scroll interno */}
