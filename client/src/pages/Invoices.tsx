@@ -116,13 +116,25 @@ const Invoices: React.FC = () => {
     try {
       setLoadingEstimates(true);
       const estimatesRef = collection(db, 'estimates');
-      const q = query(
+      
+      // Intentar primero con firebaseUserId
+      let q = query(
         estimatesRef, 
-        where('userId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc')
+        where('firebaseUserId', '==', currentUser.uid)
       );
       
-      const snapshot = await getDocs(q);
+      let snapshot = await getDocs(q);
+      
+      // Si no hay resultados, intentar con userId
+      if (snapshot.empty) {
+        console.log('No estimates found with firebaseUserId, trying with userId...');
+        q = query(
+          estimatesRef,
+          where('userId', '==', currentUser.uid)
+        );
+        snapshot = await getDocs(q);
+      }
+      
       const estimates: SavedEstimate[] = [];
       
       snapshot.forEach((doc) => {
@@ -144,6 +156,9 @@ const Invoices: React.FC = () => {
         });
       });
       
+      // Ordenar por fecha de creación descendente
+      estimates.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
       setSavedEstimates(estimates);
     } catch (error) {
       console.error('Error loading estimates:', error);
@@ -164,8 +179,7 @@ const Invoices: React.FC = () => {
       const invoicesRef = collection(db, 'invoices');
       const q = query(
         invoicesRef,
-        where('userId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', currentUser.uid)
       );
       
       const snapshot = await getDocs(q);
@@ -177,6 +191,9 @@ const Invoices: React.FC = () => {
           ...doc.data() as InvoiceData
         });
       });
+      
+      // Ordenar por fecha de creación descendente
+      invoices.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
       setInvoiceHistory(invoices);
     } catch (error) {
