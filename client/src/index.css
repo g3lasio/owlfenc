@@ -978,6 +978,18 @@ body {
   }
 }
 
+@keyframes pulseShadow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0,255,255,0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(0,255,255,0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0,255,255,0);
+  }
+}
+
 /* Solución para el chat y scrolling */
 .chat-interface-container {
   display: flex;
