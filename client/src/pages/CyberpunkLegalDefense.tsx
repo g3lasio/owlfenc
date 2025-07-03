@@ -1148,6 +1148,7 @@ export default function CyberpunkLegalDefense() {
           setExtractedData(result.extractedData);
           setCurrentStep(3);
           setCurrentPhase("defense-review");
+          setShowPreview(true); // Show preview immediately
 
           // Mark as selected project source
           setSelectedFile(null); // Clear any uploaded file
