@@ -275,6 +275,16 @@ export default function CyberpunkLegalDefense() {
   const [approvedProjects, setApprovedProjects] = useState<any[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [contractPreviewHtml, setContractPreviewHtml] = useState<string>("");
+  
+  // Monitor contractPreviewHtml changes
+  useEffect(() => {
+    console.log("[PREVIEW STATE] contractPreviewHtml changed:", {
+      hasContent: !!contractPreviewHtml,
+      length: contractPreviewHtml?.length,
+      currentStep,
+      showPreview
+    });
+  }, [contractPreviewHtml, currentStep, showPreview]);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [loadingProjects, setLoadingProjects] = useState(false);
 
@@ -714,7 +724,7 @@ export default function CyberpunkLegalDefense() {
       // Load complete contract data into the form for editing
       setExtractedData(mappedData);
       setCurrentPhase("defense-review");
-      setCurrentStep(2);
+      setCurrentStep(3);
 
       // Restore all form states if they exist
       if (contract.approvedClauses) {
@@ -1355,8 +1365,15 @@ export default function CyberpunkLegalDefense() {
 
   // Generar preview real del contrato
   const generateRealContractPreview = useCallback(async () => {
-    if (!extractedData) return;
+    if (!extractedData) {
+      console.log("[PREVIEW] No extracted data available");
+      return;
+    }
 
+    console.log("[PREVIEW] Starting contract preview generation");
+    console.log("[PREVIEW] Current step:", currentStep);
+    console.log("[PREVIEW] Show preview state:", showPreview);
+    
     setLoadingPreview(true);
     try {
       const selectedClausesData = intelligentClauses.filter(
@@ -1411,6 +1428,9 @@ export default function CyberpunkLegalDefense() {
         protections: selectedClausesData,
       };
 
+      console.log("[PREVIEW] Sending request to /api/contracts/preview");
+      console.log("[PREVIEW] Selected clauses:", selectedClausesData.length);
+      
       const response = await fetch("/api/contracts/preview", {
         method: "POST",
         headers: {
@@ -1420,25 +1440,38 @@ export default function CyberpunkLegalDefense() {
       });
 
       if (!response.ok) {
+        console.error("[PREVIEW] Response not ok:", response.status);
         throw new Error("Error generando preview del contrato");
       }
 
       const previewData = await response.json();
+      console.log("[PREVIEW] Preview generated successfully, HTML length:", previewData.html?.length);
+      console.log("[PREVIEW] Setting preview HTML...");
       setContractPreviewHtml(previewData.html);
+      console.log("[PREVIEW] Preview HTML set successfully");
     } catch (error) {
-      console.error("Error generando preview:", error);
+      console.error("[PREVIEW] Error generando preview:", error);
       setContractPreviewHtml(
         '<div class="error">Error generando preview del contrato</div>',
       );
     } finally {
+      console.log("[PREVIEW] Preview generation completed");
       setLoadingPreview(false);
     }
   }, [extractedData, intelligentClauses, selectedClauses, profile]);
 
   // Actualizar preview cuando cambien los datos o selecciones
   useEffect(() => {
+    console.log("[PREVIEW EFFECT] Checking conditions:");
+    console.log("[PREVIEW EFFECT] - extractedData exists:", !!extractedData);
+    console.log("[PREVIEW EFFECT] - showPreview:", showPreview);
+    console.log("[PREVIEW EFFECT] - currentStep:", currentStep);
+    
     if (extractedData && showPreview && currentStep === 3) {
+      console.log("[PREVIEW EFFECT] All conditions met, generating preview...");
       generateRealContractPreview();
+    } else {
+      console.log("[PREVIEW EFFECT] Conditions not met, skipping preview generation");
     }
   }, [
     extractedData,
@@ -3667,6 +3700,7 @@ export default function CyberpunkLegalDefense() {
                                 lineHeight: "1.2",
                                 fontFamily: "Times New Roman, serif",
                               }}
+                              onLoad={() => console.log("[PREVIEW] Preview rendered in DOM")}
                             />
                           ) : (
                             <div className="h-64 md:h-80 xl:h-96 flex items-center justify-center">
