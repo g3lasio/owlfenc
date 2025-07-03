@@ -19,21 +19,13 @@ import {
   Building,
   Settings,
   Brain as BrainIcon,
-  ChevronDown,
   ChevronRight,
-  ChevronLeft,
-  ArrowRightToLine,
-  ArrowLeftToLine,
-  ChevronsRight,
-  ChevronsLeft,
-  Menu,
-  X,
+  ArrowRight,
 } from "lucide-react";
 import { navigationGroups, NavigationItem } from "@/config/navigation";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import LanguageSwitch from "@/components/ui/language-switch";
-import { motion, AnimatePresence } from "framer-motion";
 
 // Definición de tipos para la suscripción y planes
 interface UserSubscription {
@@ -53,314 +45,269 @@ interface SidebarProps {
 
 export default function Sidebar({ onWidthChange }: SidebarProps) {
   const [location] = useLocation();
-  const { currentUser, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [isSidebarExpanded, setSidebarExpanded] = useState(false);
-
   const { t } = useTranslation();
-  const { language } = useLanguage();
-
-  // Query para obtener suscripción del usuario
-  const { data: subscription, isLoading: subscriptionLoading } =
-    useQuery<UserSubscription>({
-      queryKey: ["/api/user/subscription"],
-      enabled: !!currentUser,
-    });
-
-  // Query para obtener planes disponibles
-  const { data: plans, isLoading: plansLoading } = useQuery<Plan[]>({
-    queryKey: ["/api/subscription/plans"],
-    enabled: !!currentUser,
+  const { setLanguage } = useLanguage();
+  
+  // Estado del sidebar: expandido/colapsado
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(() => {
+    return window.innerWidth >= 1024; // Expandido por defecto en desktop
   });
 
-  const handleLogout = async () => {
-    setLoading(true);
-    try {
-      await logout();
-      toast({
-        title: t("general.success"),
-        description: t("auth.logoutSuccess"),
-      });
-    } catch (error) {
-      toast({
-        title: t("general.error"),
-        description: t("auth.logoutError"),
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Función para manejar el toggle del sidebar
   const toggleSidebar = () => {
-    setSidebarExpanded(!isSidebarExpanded);
+    setIsSidebarExpanded(!isSidebarExpanded);
   };
 
-
-
-  // Función para cerrar el sidebar automáticamente al hacer clic en elementos del menú
+  // Auto-colapso en móvil y auto-cerrar al hacer clic en elementos del menú
   const handleMenuItemClick = () => {
-    if (isSidebarExpanded) {
-      setSidebarExpanded(false);
+    if (window.innerWidth < 1024) {
+      setIsSidebarExpanded(false);
     }
   };
 
-  // Comunicar cambios de ancho al componente padre
+  // Notificar cambios de ancho al padre
   useEffect(() => {
-    const width = isSidebarExpanded ? 288 : 64;
-    onWidthChange?.(width);
+    const newWidth = isSidebarExpanded ? 288 : 64;
+    onWidthChange?.(newWidth);
   }, [isSidebarExpanded, onWidthChange]);
 
+  // Responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024 && isSidebarExpanded) {
+        setIsSidebarExpanded(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isSidebarExpanded]);
+
+  // Queries para suscripción y planes
+  const { data: userSubscription } = useQuery<UserSubscription>({
+    queryKey: ["user", "subscription"],
+    enabled: !!user,
+  });
+
+  const { data: plans } = useQuery<Plan[]>({
+    queryKey: ["subscription", "plans"],
+  });
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: t("sidebar.signedOut"),
+        description: t("sidebar.signedOutSuccess"),
+      });
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      toast({
+        title: t("sidebar.signOutError"),
+        description: t("sidebar.signOutErrorDesc"),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const currentPlan = plans?.find((plan) => plan.id === userSubscription?.planId);
+
   return (
-    <>
-      <TooltipProvider>
-        <aside
-          className={`
-            flex flex-col bg-card transition-all duration-300
-            ${isSidebarExpanded ? "w-72 border-r border-border" : "w-16"}
-            translate-x-0
-            fixed left-0 top-0 z-40
-          `}
+    <TooltipProvider>
+      <div className="flex flex-col h-full">
+        <div
+          className={`bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out relative`}
           style={{
-            overflowY: "hidden",
-            overflowX: "hidden",
-            height: "calc(100vh - 64px)", // Dejar espacio para el footer
+            width: isSidebarExpanded ? "288px" : "64px",
+            height: "calc(100vh - 64px)",
             boxShadow: "2px 0 8px rgba(0, 0, 0, 0.1)"
           }}
         >
-          {/* Header con toggle */}
+          {/* Header con toggle - FLECHA CYAN BRILLANTE */}
           <div className={`flex-shrink-0 ${isSidebarExpanded ? "p-3" : "p-2"}`}>
             <button
               onClick={toggleSidebar}
-              className="w-full bg-cyan-500 hover:bg-cyan-600 text-white p-3 rounded-lg flex items-center justify-center transition-all duration-300"
+              className="w-full bg-cyan-500 hover:bg-cyan-600 text-white p-3 rounded-lg flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl"
             >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+              <ArrowRight
+                size={24}
                 className={`transition-transform duration-300 ${isSidebarExpanded ? "rotate-180" : ""}`}
-              >
-                <path
-                  d="M9 6L15 12L9 18"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              />
             </button>
           </div>
 
-          {/* Área de navegación con scroll interno */}
-          <div
-            className="flex-1 overflow-hidden"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              maxHeight: "calc(100vh - var(--sidebar-toggle-height) - var(--sidebar-footer-height))"
-            }}
-          >
-            {isSidebarExpanded ? (
-              // Vista expandida con scroll
-              <div
-                className="custom-scroll flex-1 px-3 py-3"
-                style={{
-                  overflowY: "auto",
-                  overflowX: "hidden"
-                }}
-              >
-                {navigationGroups.map((group, index) => (
-                  <div key={`group-${index}`} style={{ marginBottom: "16px" }}>
-                    <h3
-                      className="text-xs font-semibold uppercase tracking-wider px-2 mb-2 text-center"
-                      style={{ color: "#00ffff" }}
-                    >
-                      {t(`navigation.${group.title}`)}
-                    </h3>
+          {/* Contenido del sidebar */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
+            {/* Información del usuario */}
+            {user && (
+              <div className={`${isSidebarExpanded ? "mb-4" : "mb-2"}`}>
+                {isSidebarExpanded ? (
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <div className="flex items-center space-x-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={user.photoURL || ""} />
+                        <AvatarFallback>
+                          {user.displayName?.[0]?.toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {user.displayName || user.email}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {currentPlan?.name || t("sidebar.freePlan")}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex justify-center">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.photoURL || ""} />
+                          <AvatarFallback className="text-xs">
+                            {user.displayName?.[0]?.toUpperCase() || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>{user.displayName || user.email}</p>
+                      <p className="text-xs opacity-70">
+                        {currentPlan?.name || t("sidebar.freePlan")}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            )}
 
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "4px",
-                      }}
-                    >
-                      {group.items
-                        .filter(
-                          (item) =>
-                            item.path !== "/mervin" && item.id !== "mervin",
-                        )
-                        .map((item) => (
-                          <Link key={item.id} href={item.path}>
+            {/* Navegación */}
+            <nav className="space-y-1">
+              {navigationGroups.map((group, groupIndex) => (
+                <div key={group.title} className="space-y-1">
+                  {isSidebarExpanded && (
+                    <h3 className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      {t(`navigation.groups.${group.title}`)}
+                    </h3>
+                  )}
+                  
+                  {group.items
+                    .filter((item: NavigationItem) => !item.requiresAuth || user)
+                    .map((item: NavigationItem) => {
+                      const isActive = location === item.href;
+                      const Icon = item.icon;
+
+                      if (isSidebarExpanded) {
+                        return (
+                          <Link key={item.href} href={item.href}>
                             <Button
-                              variant="ghost"
-                              className={`w-full justify-start px-2 py-1.5 h-auto hover:bg-accent text-sm font-normal ${
-                                location === item.path
-                                  ? "bg-primary/20 text-primary"
-                                  : ""
+                              variant={isActive ? "secondary" : "ghost"}
+                              className={`w-full justify-start ${
+                                isActive ? "bg-secondary" : ""
                               }`}
                               onClick={handleMenuItemClick}
                             >
-                              {item.icon.startsWith("lucide-") ? (
-                                <>
-                                  {item.icon === "lucide-user" && (
-                                    <User className="h-4 w-4 mr-3" />
-                                  )}
-                                  {item.icon === "lucide-credit-card" && (
-                                    <CreditCard className="h-4 w-4 mr-3" />
-                                  )}
-                                  {item.icon === "lucide-building" && (
-                                    <Building className="h-4 w-4 mr-3" />
-                                  )}
-                                  {item.icon === "lucide-settings" && (
-                                    <Settings className="h-4 w-4 mr-3" />
-                                  )}
-                                  {item.icon === "lucide-brain" && (
-                                    <BrainIcon className="h-4 w-4 mr-3" />
-                                  )}
-                                </>
-                              ) : (
-                                <i
-                                  className={`${item.icon} mr-3 text-base`}
-                                ></i>
-                              )}
-                              {t(item.label)}
+                              <Icon size={16} className="mr-2" />
+                              {t(`navigation.${item.label}`)}
                             </Button>
                           </Link>
-                        ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              // Vista colapsada con scroll y espaciado profesional
-              <div
-                className="custom-scroll flex-1 px-2 py-3"
-                style={{
-                  overflowY: "auto",
-                  overflowX: "hidden"
-                }}
-              >
-                {/* Agrupar iconos por sección con separadores visuales */}
-                {navigationGroups.map((group, groupIndex) => (
-                  <div
-                    key={`group-${groupIndex}`}
-                    style={{ marginBottom: "16px" }}
-                  >
-                    {/* Separador visual sutil entre grupos */}
-                    {groupIndex > 0 && (
-                      <div
-                        style={{
-                          height: "1px",
-                          background: "rgba(255,255,255,0.08)",
-                          margin: "12px 6px",
-                          borderRadius: "1px",
-                        }}
-                      ></div>
-                    )}
-
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "8px", // Espaciado reducido entre iconos
-                      }}
-                    >
-                      {group.items
-                        .filter(
-                          (item) =>
-                            item.path !== "/mervin" && item.id !== "mervin",
-                        )
-                        .map((item: NavigationItem) => (
-                          <Tooltip key={item.id}>
+                        );
+                      } else {
+                        return (
+                          <Tooltip key={item.href}>
                             <TooltipTrigger asChild>
-                              <Link
-                                href={item.path}
-                                className={`
-                                  flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 mx-auto
-                                  hover:bg-accent/50 hover:scale-105 hover:shadow-md
-                                  ${
-                                    location === item.path
-                                      ? "bg-primary/20 text-primary border border-primary/30 shadow-sm"
-                                      : "text-muted-foreground hover:text-primary"
-                                  }
-                                `}
-                                style={{
-                                  minHeight: "40px",
-                                  minWidth: "40px",
-                                }}
-                                onClick={handleMenuItemClick}
-                              >
-                                {item.icon.startsWith("lucide-") ? (
-                                  <>
-                                    {item.icon === "lucide-building" && (
-                                      <Building className="h-4 w-4" />
-                                    )}
-                                    {item.icon === "lucide-settings" && (
-                                      <Settings className="h-4 w-4" />
-                                    )}
-                                    {item.icon === "lucide-credit-card" && (
-                                      <CreditCard className="h-4 w-4" />
-                                    )}
-                                    {item.icon === "lucide-brain" && (
-                                      <BrainIcon className="h-4 w-4" />
-                                    )}
-                                  </>
-                                ) : (
-                                  <i className={`${item.icon} text-base`} />
-                                )}
+                              <Link href={item.href}>
+                                <Button
+                                  variant={isActive ? "secondary" : "ghost"}
+                                  size="icon"
+                                  className={`w-full ${
+                                    isActive ? "bg-secondary" : ""
+                                  }`}
+                                  onClick={handleMenuItemClick}
+                                >
+                                  <Icon size={16} />
+                                </Button>
                               </Link>
                             </TooltipTrigger>
-                            <TooltipContent
-                              side="right"
-                              className="bg-background border border-border text-foreground shadow-xl"
-                            >
-                              <p className="font-medium">{t(item.label)}</p>
+                            <TooltipContent side="right">
+                              <p>{t(`navigation.${item.label}`)}</p>
                             </TooltipContent>
                           </Tooltip>
-                        ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                        );
+                      }
+                    })}
+                  
+                  {groupIndex < navigationGroups.length - 1 && (
+                    <Separator className="my-2 opacity-50" />
+                  )}
+                </div>
+              ))}
+            </nav>
           </div>
 
-          {/* Footer fijo */}
-          {isSidebarExpanded && (
-            <div
-              className="flex-shrink-0 p-2 border-t border-border bg-card"
-              style={{ 
-                height: 'var(--sidebar-footer-height)',
-                minHeight: 'var(--sidebar-footer-height)'
-              }}
-            >
-              <div className="flex items-center justify-between space-x-2">
-                <Button
-                  variant="ghost"
-                  className="flex-1 justify-start text-destructive hover:bg-destructive/10 hover:text-destructive text-xs font-normal h-8"
-                  onClick={handleLogout}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <i className="ri-loader-2-line animate-spin mr-2"></i>
-                  ) : (
-                    <LogOut className="h-3 w-3 mr-2" />
-                  )}
-                  {t("general.logout")}
-                </Button>
-
-                <div className="flex-shrink-0">
+          {/* Footer con acciones del usuario */}
+          <div className="flex-shrink-0 p-2 border-t border-border">
+            <div className="space-y-2">
+              {/* Switch de idioma */}
+              {isSidebarExpanded ? (
+                <div className="flex items-center justify-between px-2">
+                  <span className="text-xs text-muted-foreground">
+                    {t("sidebar.language")}
+                  </span>
                   <LanguageSwitch />
                 </div>
-              </div>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex justify-center">
+                      <LanguageSwitch />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>{t("sidebar.language")}</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              {/* Botón de cerrar sesión */}
+              {user && (
+                <>
+                  {isSidebarExpanded ? (
+                    <Button
+                      variant="ghost"
+                      onClick={handleSignOut}
+                      className="w-full justify-start text-muted-foreground hover:text-foreground"
+                    >
+                      <LogOut size={16} className="mr-2" />
+                      {t("sidebar.signOut")}
+                    </Button>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleSignOut}
+                          className="w-full text-muted-foreground hover:text-foreground"
+                        >
+                          <LogOut size={16} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        <p>{t("sidebar.signOut")}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </>
+              )}
             </div>
-          )}
-        </aside>
-      </TooltipProvider>
-    </>
+          </div>
+        </div>
+      </div>
+    </TooltipProvider>
   );
 }
