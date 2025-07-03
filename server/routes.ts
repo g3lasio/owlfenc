@@ -28,6 +28,7 @@ import aiImportRoutes from "./routes/ai-import-routes";
 import { memoryService } from "./services/memoryService";
 import { stripeService } from "./services/stripeService";
 import { permitService } from "./services/permitService";
+import admin from "firebase-admin";
 import { searchService } from "./services/searchService";
 import { sendEmail } from "./services/emailService";
 import {
@@ -4116,29 +4117,93 @@ Output must be between 200-900 characters in English.`;
   // Profile endpoint used by frontend
   app.get("/api/profile", async (req: Request, res: Response) => {
     try {
-      // Try to get saved profile data first, then fallback to defaults
-      let profileData = {
-        id: "dev-user-123",
-        company: "Los primos",
-        ownerName: "Gelasio Sanchez", 
+      // Get Firebase UID from authorization header
+      let firebaseUserId = "dev-user-123";
+      const authHeader = req.headers.authorization;
+      
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        try {
+          const token = authHeader.substring(7);
+          const decodedToken = await admin.auth().verifyIdToken(token);
+          firebaseUserId = decodedToken.uid;
+          console.log("✅ Token Firebase verificado, UID:", firebaseUserId);
+        } catch (authError) {
+          console.warn("No se pudo verificar token Firebase, usando usuario de desarrollo");
+        }
+      }
+
+      // First try to get the user from PostgreSQL by Firebase UID
+      try {
+        const user = await storage.getUserByFirebaseUid(firebaseUserId);
+        if (user) {
+          console.log('✅ Usuario encontrado en base de datos:', user.id);
+          
+          // Return actual user data from database
+          const profileData = {
+            id: user.id,
+            company: user.companyName || "",
+            ownerName: user.ownerName || "",
+            role: user.role || "Owner",
+            email: user.email || "",
+            phone: user.phone || "",
+            mobilePhone: user.mobilePhone || "",
+            address: user.address || "",
+            city: user.city || "",
+            state: user.state || "",
+            zipCode: user.zipCode || "",
+            license: user.license || "",
+            insurancePolicy: user.insurancePolicy || "",
+            ein: user.ein || "",
+            businessType: user.businessType || "LLC",
+            yearEstablished: user.yearEstablished || "",
+            website: user.website || "",
+            description: user.description || "",
+            specialties: user.specialties || [],
+            socialMedia: user.socialMedia || {},
+            logo: user.logo || ""
+          };
+          
+          // Check for any updates stored in memory
+          try {
+            const storedData = global.profileStorage || {};
+            if (storedData.company || storedData.logo) {
+              const updatedProfile = { ...profileData, ...storedData };
+              console.log('📋 Profile merged with stored data, logo length:', storedData.logo?.length || 0);
+              return res.json(updatedProfile);
+            }
+          } catch (err) {
+            console.warn('Could not merge stored profile data:', err);
+          }
+          
+          return res.json(profileData);
+        }
+      } catch (dbError) {
+        console.error('Error fetching user from database:', dbError);
+      }
+
+      // If no user found in database, return empty profile structure
+      // This forces users to complete their profile
+      const emptyProfile = {
+        id: firebaseUserId,
+        company: "",
+        ownerName: "",
         role: "Owner",
-        email: "truthbackpack@gmail.com",
-        phone: "(555) 123-4567",
+        email: "",
+        phone: "",
         mobilePhone: "",
-        address: "2901 Owens Court",
-        city: "Fairfield",
-        state: "California", 
-        zipCode: "94534",
-        license: "C-13 #123456",
-        insurancePolicy: "ABC-123456",
-        ein: "12-3456789",
+        address: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        license: "",
+        insurancePolicy: "",
+        ein: "",
         businessType: "LLC",
-        yearEstablished: "2020",
-        website: "owlfenc.com",
-        description: "Professional fencing contractor",
-        specialties: ["Residential Fencing", "Commercial Fencing"],
+        yearEstablished: "",
+        website: "",
+        description: "",
+        specialties: [],
         socialMedia: {},
-        documents: {},
         logo: ""
       };
       
@@ -4146,14 +4211,15 @@ Output must be between 200-900 characters in English.`;
       try {
         const storedData = global.profileStorage || {};
         if (storedData.company || storedData.logo) {
-          profileData = { ...profileData, ...storedData };
-          console.log('📋 Profile loaded with stored data, logo length:', storedData.logo?.length || 0);
+          const mergedProfile = { ...emptyProfile, ...storedData };
+          console.log('📋 Empty profile merged with stored data, logo length:', storedData.logo?.length || 0);
+          return res.json(mergedProfile);
         }
       } catch (err) {
         console.warn('Could not load stored profile data:', err);
       }
       
-      res.json(profileData);
+      res.json(emptyProfile);
     } catch (error) {
       console.error("Error loading profile:", error);
       res.status(500).json({ error: "Error loading profile" });

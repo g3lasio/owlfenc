@@ -307,8 +307,12 @@ const Invoices: React.FC = () => {
     try {
       setIsGenerating(true);
       
-      // Get user profile
-      const profileResponse = await fetch('/api/profile');
+      // Get user profile with authorization
+      const profileResponse = await fetch('/api/profile', {
+        headers: {
+          'Authorization': `Bearer ${await currentUser.getIdToken()}`
+        }
+      });
       const profile = await profileResponse.json();
       
       if (!profile?.company) {
@@ -934,8 +938,12 @@ const Invoices: React.FC = () => {
                                     const estimate = savedEstimates.find(e => e.id === invoice.estimateId);
                                     if (estimate && currentUser) {
                                       try {
-                                        // Get user profile
-                                        const profileResponse = await fetch('/api/profile');
+                                        // Get user profile with authorization
+                                        const profileResponse = await fetch('/api/profile', {
+                                          headers: {
+                                            'Authorization': `Bearer ${await currentUser.getIdToken()}`
+                                          }
+                                        });
                                         const profile = await profileResponse.json();
                                         
                                         if (!profile?.company) {
