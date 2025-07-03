@@ -1946,10 +1946,10 @@ export default function NuevoClientes() {
 
       {/* Diálogo para importar clientes */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="p-4 my-4 max-w-md">
           <DialogHeader>
-            <DialogTitle>Importar contactos</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="my-4">Importar contactos</DialogTitle>
+            <DialogDescription className="my-4">
               Importa tus contactos desde un archivo CSV o vCard.
             </DialogDescription>
           </DialogHeader>
@@ -1957,7 +1957,7 @@ export default function NuevoClientes() {
           <Tabs
             value={importType}
             onValueChange={(value) => setImportType(value as "csv" | "vcf")}
-            className="w-full"
+            className="w-full my-4"
           >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="csv">Archivo CSV</TabsTrigger>

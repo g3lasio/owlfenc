@@ -981,7 +981,7 @@ export default function Materials() {
 
       {/* Dialog para agregar material */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] ">
+        <DialogContent className="p-4 md:p-0  md:max-w-2xl max-h-[90vh] ">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">
               Agregar Nuevo Material
@@ -1147,7 +1147,7 @@ export default function Materials() {
 
       {/* Dialog para editar material */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] ">
+        <DialogContent className="p-4 md:p-0  md:max-w-2xl max-h-[90vh] ">
           <DialogHeader>
             <DialogTitle>Editar Material</DialogTitle>
             <DialogDescription>
@@ -1346,10 +1346,10 @@ export default function Materials() {
 
       {/* Dialog de confirmación para eliminar */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
+        <DialogContent className="p-4">
           <DialogHeader>
-            <DialogTitle>¿Eliminar material?</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="my-4">¿Eliminar material?</DialogTitle>
+            <DialogDescription className="my-4">
               {deletingMaterial && (
                 <>
                   ¿Estás seguro de que quieres eliminar el material "
@@ -1360,9 +1360,9 @@ export default function Materials() {
             </DialogDescription>
           </DialogHeader>
 
-          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+          <DialogFooter className="flex my-4 flex-col-reverse sm:flex-row gap-2">
             <DialogClose asChild>
-              <Button variant="outline" className="w-full sm:w-auto">
+              <Button variant="outline" className="my-4 w-full sm:w-auto">
                 Cancelar
               </Button>
             </DialogClose>

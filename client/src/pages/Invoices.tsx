@@ -279,7 +279,7 @@ const Invoices: React.FC = () => {
   // Save invoice to history
   const saveInvoiceToHistory = async (invoiceData: InvoiceData) => {
     if (!currentUser) return;
-    
+
     try {
       // Add invoice to Firebase collection
       const invoicesRef = collection(db, "invoices");
@@ -288,10 +288,10 @@ const Invoices: React.FC = () => {
         userId: currentUser.uid,
         createdAt: new Date().toISOString(),
       });
-      
+
       // Update local state
       setInvoiceHistory([invoiceData, ...invoiceHistory]);
-      
+
       console.log("✅ Invoice saved to history");
     } catch (error) {
       console.error("❌ Error saving invoice to history:", error);
@@ -359,15 +359,17 @@ const Invoices: React.FC = () => {
   // Generate email preview HTML
   const generateEmailPreview = () => {
     if (!selectedEstimate || !profile) return "";
-    
+
     const { total, paid, balance } = calculateAmounts();
     const invoiceNumber = generateInvoiceNumber();
-    const dueDate = new Date(Date.now() + invoiceConfig.paymentTerms * 24 * 60 * 60 * 1000);
-    
+    const dueDate = new Date(
+      Date.now() + invoiceConfig.paymentTerms * 24 * 60 * 60 * 1000,
+    );
+
     return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #1a1a1a; padding: 30px; text-align: center;">
-          ${profile.logo ? `<img src="${profile.logo}" alt="${profile.company}" style="max-height: 60px; margin-bottom: 10px;">` : ''}
+          ${profile.logo ? `<img src="${profile.logo}" alt="${profile.company}" style="max-height: 60px; margin-bottom: 10px;">` : ""}
           <h1 style="color: #ffffff; margin: 10px 0;">FACTURA</h1>
           <p style="color: #888; margin: 0;">${invoiceNumber}</p>
         </div>
@@ -399,7 +401,7 @@ const Invoices: React.FC = () => {
         </div>
         
         <div style="padding: 20px; text-align: center; background: #2563eb;">
-          <p style="color: white; margin: 10px 0;">Fecha de vencimiento: ${dueDate.toLocaleDateString('es-ES')}</p>
+          <p style="color: white; margin: 10px 0;">Fecha de vencimiento: ${dueDate.toLocaleDateString("es-ES")}</p>
           <a href="#" style="display: inline-block; background: white; color: #2563eb; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
             Pagar Ahora
           </a>
@@ -420,7 +422,7 @@ const Invoices: React.FC = () => {
 
     try {
       setIsSendingEmail(true);
-      
+
       // Prepare data for email service
       const emailData = {
         profile,
@@ -429,7 +431,7 @@ const Invoices: React.FC = () => {
         emailConfig: {
           paymentLink: generatePaymentLink(), // You can implement this
           ccContractor: true,
-        }
+        },
       };
 
       console.log("📧 Sending invoice email with data:", emailData);
@@ -458,7 +460,7 @@ const Invoices: React.FC = () => {
       // Save invoice to history
       const invoiceNumber = generateInvoiceNumber();
       const { total, paid, balance } = calculateAmounts();
-      
+
       const invoiceData: InvoiceData = {
         estimateId: selectedEstimate.id,
         invoiceNumber,
@@ -468,14 +470,16 @@ const Invoices: React.FC = () => {
         totalAmount: total,
         paidAmount: paid,
         balanceAmount: balance,
-        paymentStatus: balance === 0 ? "paid" : paid > 0 ? "partial" : "pending",
-        dueDate: new Date(Date.now() + invoiceConfig.paymentTerms * 24 * 60 * 60 * 1000).toISOString(),
+        paymentStatus:
+          balance === 0 ? "paid" : paid > 0 ? "partial" : "pending",
+        dueDate: new Date(
+          Date.now() + invoiceConfig.paymentTerms * 24 * 60 * 60 * 1000,
+        ).toISOString(),
         paymentTerms: invoiceConfig.paymentTerms,
         createdAt: new Date().toISOString(),
       };
 
       await saveInvoiceToHistory(invoiceData);
-      
     } catch (error) {
       console.error("❌ Error sending invoice email:", error);
       toast({
@@ -689,7 +693,7 @@ const Invoices: React.FC = () => {
                     <p>No se encontraron estimados</p>
                   </div>
                 ) : (
-                  <div className="grid gap-2">
+                  <div className="grid gap-2 ">
                     {filteredEstimates.slice(0, 3).map((estimate) => (
                       <Card
                         key={estimate.id}
@@ -707,9 +711,9 @@ const Invoices: React.FC = () => {
                         }}
                       >
                         <CardContent className="p-3">
-                          <div className="flex justify-between items-center gap-4">
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <h4 className="font-medium text-sm truncate">
                                   {estimate.clientName}
                                 </h4>
@@ -739,6 +743,57 @@ const Invoices: React.FC = () => {
                       </Card>
                     ))}
                   </div>
+
+                  // <div className="grid gap-2">
+                  //   {filteredEstimates.slice(0, 3).map((estimate) => (
+                  //     <Card
+                  //       key={estimate.id}
+                  //       className={`cursor-pointer transition-all ${
+                  //         selectedEstimate?.id === estimate.id
+                  //           ? "border-primary ring-2 ring-primary ring-offset-2"
+                  //           : "hover:border-primary/50"
+                  //       }`}
+                  //       onClick={() => {
+                  //         setSelectedEstimate(estimate);
+                  //         setInvoiceConfig((prev) => ({
+                  //           ...prev,
+                  //           recipientEmail: estimate.clientEmail,
+                  //         }));
+                  //       }}
+                  //     >
+                  //       <CardContent className="p-3">
+                  //         <div className="flex  justify-between items-center gap-4">
+                  //           <div className="flex-1 min-w-0">
+                  //             <div className="flex items-center gap-2">
+                  //               <h4 className="font-medium text-sm truncate">
+                  //                 {estimate.clientName}
+                  //               </h4>
+                  //               <span className="text-xs text-muted-foreground">
+                  //                 •
+                  //               </span>
+                  //               <p className="text-xs text-muted-foreground">
+                  //                 {new Date(
+                  //                   estimate.createdAt,
+                  //                 ).toLocaleDateString()}
+                  //               </p>
+                  //             </div>
+                  //             <p className="text-xs text-muted-foreground truncate">
+                  //               {estimate.projectType}
+                  //             </p>
+                  //           </div>
+                  //           <div className="flex items-center gap-3 flex-shrink-0">
+                  //             <Badge variant="outline" className="text-xs">
+                  //               {estimate.items.length} items
+                  //             </Badge>
+                  //             <p className="text-base font-bold">
+                  //               ${estimate.total.toFixed(2)}
+                  //             </p>
+                  //           </div>
+                  //         </div>
+                  //       </CardContent>
+                  //     </Card>
+                  //   ))}
+                  // </div>
                 )}
               </CardContent>
             </Card>
@@ -1013,7 +1068,7 @@ const Invoices: React.FC = () => {
                     <Download className="mr-2 h-4 w-4" />
                     Generar Factura
                   </Button>
-                  <Button 
+                  <Button
                     onClick={() => {
                       setEmailPreviewContent(generateEmailPreview());
                       setShowEmailPreview(true);
@@ -1027,7 +1082,8 @@ const Invoices: React.FC = () => {
                 </div>
 
                 <p className="text-sm text-muted-foreground text-center">
-                  Puede descargar la factura como PDF o enviarla directamente por email al cliente
+                  Puede descargar la factura como PDF o enviarla directamente
+                  por email al cliente
                 </p>
               </CardContent>
             </Card>
@@ -1067,19 +1123,19 @@ const Invoices: React.FC = () => {
             </TabsList>
 
             <TabsContent value="wizard" className="space-y-6">
-            {/* Progress steps */}
-            <div className="flex items-center justify-center mb-8">
-              <div className="flex items-center space-x-4 max-w-2xl w-full">
-                {WIZARD_STEPS.map((step, index) => {
-                  const Icon = step.icon;
-                  const isActive = currentStep === step.id;
-                  const isCompleted = currentStep > step.id;
+              {/* Progress steps */}
+              <div className="flex items-center justify-center mb-8">
+                <div className="flex items-center space-x-4 max-w-2xl w-full">
+                  {WIZARD_STEPS.map((step, index) => {
+                    const Icon = step.icon;
+                    const isActive = currentStep === step.id;
+                    const isCompleted = currentStep > step.id;
 
-                  return (
-                    <div key={step.id} className="flex items-center flex-1">
-                      <div className="flex flex-col items-center">
-                        <div
-                          className={`
+                    return (
+                      <div key={step.id} className="flex items-center flex-1">
+                        <div className="flex flex-col items-center">
+                          <div
+                            className={`
                             flex items-center justify-center w-10 h-10 rounded-full
                             ${
                               isActive
@@ -1089,274 +1145,276 @@ const Invoices: React.FC = () => {
                                   : "bg-muted text-muted-foreground"
                             }
                           `}
-                        >
-                          {isCompleted ? (
-                            <Check className="h-5 w-5" />
-                          ) : (
-                            <Icon className="h-5 w-5" />
-                          )}
-                        </div>
-                        <span
-                          className={`
+                          >
+                            {isCompleted ? (
+                              <Check className="h-5 w-5" />
+                            ) : (
+                              <Icon className="h-5 w-5" />
+                            )}
+                          </div>
+                          <span
+                            className={`
                           text-sm mt-2 ${isActive ? "font-medium" : "text-muted-foreground"}
                         `}
-                        >
-                          {step.title}
-                        </span>
-                      </div>
-                      {index < WIZARD_STEPS.length - 1 && (
-                        <div
-                          className={`
+                          >
+                            {step.title}
+                          </span>
+                        </div>
+                        {index < WIZARD_STEPS.length - 1 && (
+                          <div
+                            className={`
                           flex-1 h-1 mx-4 ${isCompleted ? "bg-green-600" : "bg-muted"}
                         `}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
 
-            {/* Current step content */}
-            {renderWizardStep()}
+              {/* Current step content */}
+              {renderWizardStep()}
 
-            {/* Navigation buttons */}
-            <div className="flex justify-between">
-              <Button
-                variant="outline"
-                onClick={prevStep}
-                disabled={currentStep === 1}
-              >
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                Anterior
-              </Button>
-
-              {currentStep < WIZARD_STEPS.length && (
-                <Button onClick={nextStep} disabled={!canProceedToNext()}>
-                  Siguiente
-                  <ChevronRight className="ml-2 h-4 w-4" />
+              {/* Navigation buttons */}
+              <div className="flex justify-between">
+                <Button
+                  variant="outline"
+                  onClick={prevStep}
+                  disabled={currentStep === 1}
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Anterior
                 </Button>
-              )}
-            </div>
-          </TabsContent>
 
-          <TabsContent value="history" className="space-y-6">
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg">Historial de Facturas</CardTitle>
-                <CardDescription className="text-sm">
-                  Todas las facturas generadas están disponibles aquí para
-                  descargar
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {invoiceHistory.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <History className="mx-auto h-12 w-12 mb-4" />
-                    <p>No hay facturas generadas aún</p>
-                  </div>
-                ) : (
-                  <div className="grid gap-4">
-                    {invoiceHistory.map((invoice) => (
-                      <Card
-                        key={invoice.id}
-                        className="hover:border-primary/50 transition-all"
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-start">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-semibold">
-                                  {invoice.invoiceNumber}
-                                </h4>
-                                <Badge
-                                  variant={
-                                    invoice.paymentStatus === "paid"
-                                      ? "default"
+                {currentStep < WIZARD_STEPS.length && (
+                  <Button onClick={nextStep} disabled={!canProceedToNext()}>
+                    Siguiente
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="history" className="space-y-6">
+              <Card>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg">
+                    Historial de Facturas
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Todas las facturas generadas están disponibles aquí para
+                    descargar
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {invoiceHistory.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <History className="mx-auto h-12 w-12 mb-4" />
+                      <p>No hay facturas generadas aún</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4">
+                      {invoiceHistory.map((invoice) => (
+                        <Card
+                          key={invoice.id}
+                          className="hover:border-primary/50 transition-all"
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-semibold">
+                                    {invoice.invoiceNumber}
+                                  </h4>
+                                  <Badge
+                                    variant={
+                                      invoice.paymentStatus === "paid"
+                                        ? "default"
+                                        : invoice.paymentStatus === "partial"
+                                          ? "secondary"
+                                          : "destructive"
+                                    }
+                                  >
+                                    {invoice.paymentStatus === "paid"
+                                      ? "Pagado"
                                       : invoice.paymentStatus === "partial"
-                                        ? "secondary"
-                                        : "destructive"
-                                  }
-                                >
-                                  {invoice.paymentStatus === "paid"
-                                    ? "Pagado"
-                                    : invoice.paymentStatus === "partial"
-                                      ? "Parcial"
-                                      : "Pendiente"}
-                                </Badge>
+                                        ? "Parcial"
+                                        : "Pendiente"}
+                                  </Badge>
+                                </div>
+                                <p className="text-sm font-medium">
+                                  {invoice.clientName}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(
+                                    invoice.createdAt,
+                                  ).toLocaleDateString()}{" "}
+                                  • {invoice.projectType}
+                                </p>
                               </div>
-                              <p className="text-sm font-medium">
-                                {invoice.clientName}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(
-                                  invoice.createdAt,
-                                ).toLocaleDateString()}{" "}
-                                • {invoice.projectType}
-                              </p>
-                            </div>
-                            <div className="text-right space-y-2">
-                              <p className="text-lg font-bold">
-                                ${invoice.totalAmount.toFixed(2)}
-                              </p>
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={async () => {
-                                    // Find the original estimate
-                                    const estimate = savedEstimates.find(
-                                      (e) => e.id === invoice.estimateId,
-                                    );
-                                    if (estimate && currentUser) {
-                                      try {
-                                        // Get user profile with authorization
-                                        const profileResponse = await fetch(
-                                          "/api/profile",
-                                          {
-                                            headers: {
-                                              Authorization: `Bearer ${await currentUser.getIdToken()}`,
+                              <div className="text-right space-y-2">
+                                <p className="text-lg font-bold">
+                                  ${invoice.totalAmount.toFixed(2)}
+                                </p>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={async () => {
+                                      // Find the original estimate
+                                      const estimate = savedEstimates.find(
+                                        (e) => e.id === invoice.estimateId,
+                                      );
+                                      if (estimate && currentUser) {
+                                        try {
+                                          // Get user profile with authorization
+                                          const profileResponse = await fetch(
+                                            "/api/profile",
+                                            {
+                                              headers: {
+                                                Authorization: `Bearer ${await currentUser.getIdToken()}`,
+                                              },
                                             },
-                                          },
-                                        );
-                                        const profile =
-                                          await profileResponse.json();
+                                          );
+                                          const profile =
+                                            await profileResponse.json();
 
-                                        if (!profile?.company) {
+                                          if (!profile?.company) {
+                                            toast({
+                                              title: "Perfil Incompleto",
+                                              description:
+                                                "Completa el nombre de tu empresa en tu perfil antes de descargar facturas.",
+                                              variant: "destructive",
+                                            });
+                                            return;
+                                          }
+
+                                          // Build invoice payload exactly like EstimatesWizard does
+                                          const invoicePayload = {
+                                            profile: {
+                                              company: profile.company,
+                                              address: profile.address
+                                                ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}`
+                                                : "",
+                                              phone: profile.phone || "",
+                                              email:
+                                                profile.email ||
+                                                currentUser?.email ||
+                                                "",
+                                              website: profile.website || "",
+                                              logo: profile.logo || "",
+                                            },
+                                            estimate: {
+                                              client: {
+                                                name: estimate.clientName,
+                                                email: estimate.clientEmail,
+                                                phone: estimate.clientPhone,
+                                                address: estimate.clientAddress,
+                                              },
+                                              items: estimate.items,
+                                              subtotal: estimate.subtotal,
+                                              discountAmount: estimate.discount,
+                                              taxRate:
+                                                estimate.tax > 0
+                                                  ? (estimate.tax /
+                                                      estimate.subtotal) *
+                                                    100
+                                                  : 0,
+                                              tax: estimate.tax,
+                                              total: estimate.total,
+                                            },
+                                            invoiceConfig: {
+                                              projectCompleted: true,
+                                              downPaymentAmount:
+                                                invoice.paidAmount > 0
+                                                  ? invoice.paidAmount.toString()
+                                                  : "",
+                                              totalAmountPaid:
+                                                invoice.paidAmount >=
+                                                invoice.totalAmount,
+                                            },
+                                          };
+
+                                          // Generate PDF using the same endpoint as EstimatesWizard
+                                          const response = await fetch(
+                                            "/api/invoice-pdf",
+                                            {
+                                              method: "POST",
+                                              headers: {
+                                                "Content-Type":
+                                                  "application/json",
+                                              },
+                                              body: JSON.stringify(
+                                                invoicePayload,
+                                              ),
+                                            },
+                                          );
+
+                                          if (!response.ok) {
+                                            throw new Error(
+                                              "Error generating PDF",
+                                            );
+                                          }
+
+                                          // Download the PDF
+                                          const blob = await response.blob();
+                                          const url =
+                                            window.URL.createObjectURL(blob);
+                                          const link =
+                                            document.createElement("a");
+                                          link.href = url;
+                                          link.download = `invoice-${invoice.invoiceNumber}.pdf`;
+                                          document.body.appendChild(link);
+                                          link.click();
+                                          document.body.removeChild(link);
+                                          window.URL.revokeObjectURL(url);
+
                                           toast({
-                                            title: "Perfil Incompleto",
+                                            title: "Factura descargada",
+                                            description: `Factura ${invoice.invoiceNumber} descargada correctamente`,
+                                          });
+                                        } catch (error) {
+                                          console.error(
+                                            "Error downloading PDF:",
+                                            error,
+                                          );
+                                          toast({
+                                            title: "Error al descargar",
                                             description:
-                                              "Completa el nombre de tu empresa en tu perfil antes de descargar facturas.",
+                                              "No se pudo descargar la factura",
                                             variant: "destructive",
                                           });
-                                          return;
                                         }
-
-                                        // Build invoice payload exactly like EstimatesWizard does
-                                        const invoicePayload = {
-                                          profile: {
-                                            company: profile.company,
-                                            address: profile.address
-                                              ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}`
-                                              : "",
-                                            phone: profile.phone || "",
-                                            email:
-                                              profile.email ||
-                                              currentUser?.email ||
-                                              "",
-                                            website: profile.website || "",
-                                            logo: profile.logo || "",
-                                          },
-                                          estimate: {
-                                            client: {
-                                              name: estimate.clientName,
-                                              email: estimate.clientEmail,
-                                              phone: estimate.clientPhone,
-                                              address: estimate.clientAddress,
-                                            },
-                                            items: estimate.items,
-                                            subtotal: estimate.subtotal,
-                                            discountAmount: estimate.discount,
-                                            taxRate:
-                                              estimate.tax > 0
-                                                ? (estimate.tax /
-                                                    estimate.subtotal) *
-                                                  100
-                                                : 0,
-                                            tax: estimate.tax,
-                                            total: estimate.total,
-                                          },
-                                          invoiceConfig: {
-                                            projectCompleted: true,
-                                            downPaymentAmount:
-                                              invoice.paidAmount > 0
-                                                ? invoice.paidAmount.toString()
-                                                : "",
-                                            totalAmountPaid:
-                                              invoice.paidAmount >=
-                                              invoice.totalAmount,
-                                          },
-                                        };
-
-                                        // Generate PDF using the same endpoint as EstimatesWizard
-                                        const response = await fetch(
-                                          "/api/invoice-pdf",
-                                          {
-                                            method: "POST",
-                                            headers: {
-                                              "Content-Type":
-                                                "application/json",
-                                            },
-                                            body: JSON.stringify(
-                                              invoicePayload,
-                                            ),
-                                          },
-                                        );
-
-                                        if (!response.ok) {
-                                          throw new Error(
-                                            "Error generating PDF",
-                                          );
-                                        }
-
-                                        // Download the PDF
-                                        const blob = await response.blob();
-                                        const url =
-                                          window.URL.createObjectURL(blob);
-                                        const link =
-                                          document.createElement("a");
-                                        link.href = url;
-                                        link.download = `invoice-${invoice.invoiceNumber}.pdf`;
-                                        document.body.appendChild(link);
-                                        link.click();
-                                        document.body.removeChild(link);
-                                        window.URL.revokeObjectURL(url);
-
-                                        toast({
-                                          title: "Factura descargada",
-                                          description: `Factura ${invoice.invoiceNumber} descargada correctamente`,
-                                        });
-                                      } catch (error) {
-                                        console.error(
-                                          "Error downloading PDF:",
-                                          error,
-                                        );
-                                        toast({
-                                          title: "Error al descargar",
-                                          description:
-                                            "No se pudo descargar la factura",
-                                          variant: "destructive",
-                                        });
                                       }
-                                    }
-                                  }}
-                                >
-                                  <Download className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    // Handle email resend
-                                    toast({
-                                      title: "Función en desarrollo",
-                                      description:
-                                        "Reenvío de email próximamente",
-                                    });
-                                  }}
-                                >
-                                  <Mail className="h-4 w-4" />
-                                </Button>
+                                    }}
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      // Handle email resend
+                                      toast({
+                                        title: "Función en desarrollo",
+                                        description:
+                                          "Reenvío de email próximamente",
+                                      });
+                                    }}
+                                  >
+                                    <Mail className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>
@@ -1371,20 +1429,20 @@ const Invoices: React.FC = () => {
               Así es como se verá el email antes de enviarlo
             </DialogDescription>
           </DialogHeader>
-          
+
           <ScrollArea className="h-[400px] border rounded-lg p-4">
             <div dangerouslySetInnerHTML={{ __html: emailPreviewContent }} />
           </ScrollArea>
-          
+
           <div className="flex gap-3 mt-4">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setShowEmailPreview(false)}
               className="flex-1"
             >
               Cancelar
             </Button>
-            <Button 
+            <Button
               onClick={async () => {
                 setShowEmailPreview(false);
                 await handleSendInvoiceEmail();

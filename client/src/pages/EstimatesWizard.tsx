@@ -3871,7 +3871,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center sm:justify-end">
                   {/* HUD-STYLE MATERIALS AI SEARCH - Compact Futuristic Design */}
-                  <div className="relative z-40">
+                  <div className="relative z-10">
                     <button
                       disabled={
                         !estimate.projectDetails.trim() ||
@@ -4284,11 +4284,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </div>
                     </button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-4xl">
+                  <DialogContent className="p-4   max-w-4xl">
                     <DialogHeader>
-                      <DialogTitle>Select Material from Inventory</DialogTitle>
+                      <DialogTitle className="my-4">
+                        Select Material from Inventory
+                      </DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4">
+                    <div className="space-y-4 pb-10 ">
                       <div className="relative">
                         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -4310,7 +4312,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                               : "No materials available"}
                           </p>
                         ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="overflow-y-auto h-[50dvh] pb-10 grid grid-cols-1 md:grid-cols-2 gap-3">
                             {filteredMaterials.map((material) => (
                               <div
                                 key={material.id}
@@ -4342,7 +4344,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   <p className="text-sm">Click "Add Material" to get started</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 ">
                   {estimate.items.map((item, index) => (
                     <div key={item.id} className="p-3 sm:p-4 border rounded-lg">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -5865,18 +5867,18 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         open={showEstimatesHistory}
         onOpenChange={setShowEstimatesHistory}
       >
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="p-4 md:m-0 md:max-w-4xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="my-4 flex items-center gap-2">
               <FileText className="h-5 w-5" />
               Mis Estimados Guardados
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="my-4">
               Historial completo de todos los estimados creados y guardados
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 my-4">
             {isLoadingEstimates ? (
               <div className="text-center py-8">
                 <div className="inline-flex items-center gap-2">
