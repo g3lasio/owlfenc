@@ -115,43 +115,77 @@ const Invoices: React.FC = () => {
     
     try {
       setLoadingEstimates(true);
-      const estimatesRef = collection(db, 'estimates');
+      console.log('🔐 Loading estimates for user:', currentUser.uid);
+      
+      // Primero intentar con la colección 'projects' que es donde se están guardando
+      const projectsRef = collection(db, 'projects');
       
       // Intentar primero con firebaseUserId
       let q = query(
-        estimatesRef, 
+        projectsRef, 
         where('firebaseUserId', '==', currentUser.uid)
       );
       
       let snapshot = await getDocs(q);
+      console.log(`📊 Found ${snapshot.size} projects with firebaseUserId`);
       
       // Si no hay resultados, intentar con userId
       if (snapshot.empty) {
-        console.log('No estimates found with firebaseUserId, trying with userId...');
+        console.log('No projects found with firebaseUserId, trying with userId...');
         q = query(
-          estimatesRef,
+          projectsRef,
           where('userId', '==', currentUser.uid)
         );
         snapshot = await getDocs(q);
+        console.log(`📊 Found ${snapshot.size} projects with userId`);
+      }
+      
+      // Si todavía no hay resultados, intentar con la colección 'estimates'
+      if (snapshot.empty) {
+        console.log('No projects found, trying estimates collection...');
+        const estimatesRef = collection(db, 'estimates');
+        q = query(
+          estimatesRef,
+          where('firebaseUserId', '==', currentUser.uid)
+        );
+        snapshot = await getDocs(q);
+        console.log(`📊 Found ${snapshot.size} in estimates collection`);
       }
       
       const estimates: SavedEstimate[] = [];
       
       snapshot.forEach((doc) => {
         const data = doc.data();
+        console.log('Raw estimate data from Firebase:', data);
+        
+        // Los datos vienen con campos planos, no anidados
+        const clientName = data.clientName || data.client?.name || 'Sin nombre';
+        const subtotal = data.subtotal || 0;
+        const discount = data.discount || 0;
+        const tax = data.tax || 0;
+        
+        // Verificar que el total esté en el formato correcto (no en centavos)
+        let total = data.total || 0;
+        
+        // Si el total parece estar en centavos (muy grande), convertirlo
+        if (total > 1000000) {
+          console.warn(`Total parece estar en centavos: ${total}, convirtiendo a dólares`);
+          total = total / 100;
+        }
+        
         estimates.push({
           id: doc.id,
-          clientName: data.client?.name || 'Sin nombre',
-          clientEmail: data.client?.email || '',
-          clientPhone: data.client?.phone || '',
-          clientAddress: data.client?.address || '',
-          projectType: data.projectType || 'General',
+          clientName: clientName,
+          clientEmail: data.clientEmail || data.client?.email || '',
+          clientPhone: data.clientPhone || data.client?.phone || '',
+          clientAddress: data.clientAddress || data.client?.address || '',
+          projectType: data.projectType || 'fence',
           items: data.items || [],
-          subtotal: data.subtotal || 0,
-          discount: data.discount || 0,
-          tax: data.tax || 0,
-          total: data.total || 0,
-          createdAt: data.createdAt || new Date().toISOString(),
+          subtotal: subtotal,
+          discount: discount,
+          tax: tax,
+          total: total,
+          createdAt: data.createdAt || data.date || new Date().toISOString(),
           notes: data.notes || ''
         });
       });
@@ -176,6 +210,9 @@ const Invoices: React.FC = () => {
     if (!currentUser) return;
     
     try {
+      // SEGURIDAD CRÍTICA: Solo cargar facturas del usuario autenticado
+      console.log('Loading invoices for user:', currentUser.uid);
+      
       const invoicesRef = collection(db, 'invoices');
       const q = query(
         invoicesRef,
