@@ -103,34 +103,47 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
   // Para el resto de las páginas (protegidas), mostrar el layout completo
   return (
-    <div className="flex  bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       {/* Sidebar fijo a la izquierda */}
       <Sidebar onWidthChange={setSidebarWidth} />
 
       {/* Contenido principal */}
       <div
-        className="flex-1 flex flex-col "
-        /* style={{ marginLeft: 0, width: `calc(100% - ${sidebarWidth}px)` }} */
+        className="flex-1 flex flex-col h-screen overflow-hidden"
         style={{ marginLeft: 0 }}
       >
+        {/* Header fijo */}
         <Header
           toggleMobileMenu={toggleMobileMenu}
           isMobileMenuOpen={isMobileMenuOpen}
         />
 
-        {/* Área de contenido principal con scroll controlado */}
+        {/* Área de contenido principal - sin márgenes adicionales */}
         <main
-          className={`flex-1 overflow-y-auto  ${sidebarWidth == 64 ? "md:ml-[64px]" : "md:ml-[288px]"}  mt-20 scrollable-content`}
+          className={`flex-1 overflow-y-auto ${sidebarWidth == 64 ? "md:ml-[64px]" : "md:ml-[288px]"}`}
+          style={{
+            height: 'calc(100vh - var(--header-height) - var(--footer-height))',
+            paddingTop: 0,
+            marginTop: 0
+          }}
         >
-          <Switch>
-            <Route path="/settings/profile" component={Profile} />
-            <Route path="*">{children}</Route>
-          </Switch>
+          <div className="h-full">
+            <Switch>
+              <Route path="/settings/profile" component={Profile} />
+              <Route path="*">{children}</Route>
+            </Switch>
+          </div>
         </main>
 
         {/* Footer fijo */}
-        <footer className="py-2  px-4 bg-gray-900 border-t border-cyan-900/30 text-xs text-center text-cyan-500/50 flex-shrink-0">
-          <div className="flex justify-center items-center space-x-4">
+        <footer 
+          className="flex-shrink-0 py-2 px-4 bg-gray-900 border-t border-cyan-900/30 text-xs text-center text-cyan-500/50"
+          style={{
+            height: 'var(--footer-height)',
+            minHeight: 'var(--footer-height)'
+          }}
+        >
+          <div className="flex justify-center items-center space-x-4 h-full">
             <Link
               to="/privacy-policy"
               className="hover:text-cyan-400 cursor-pointer transition-colors"

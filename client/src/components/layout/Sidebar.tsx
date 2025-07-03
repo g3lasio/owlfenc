@@ -142,14 +142,11 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             flex flex-col bg-card transition-all duration-300
             ${isSidebarExpanded ? "w-72 border-r border-border" : "w-16"}
             ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-            fixed left-0 top-0 z-40
+            fixed left-0 top-0 z-40 h-screen
           `}
           style={{
-            height: "100%",
-            overflowY: "auto",
-            overflowX: "hidden",
-
-            paddingTop: "80px", // Espacio para el footer
+            overflowY: "hidden",
+            overflowX: "hidden"
           }}
         >
           {/* Header con toggle */}
@@ -184,26 +181,20 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
 
           {/* Área de navegación con scroll interno */}
           <div
-            className="flex-1"
+            className="flex-1 overflow-hidden"
             style={{
-              minHeight: 0,
-              overflow: "hidden",
               display: "flex",
               flexDirection: "column",
+              maxHeight: "calc(100vh - var(--sidebar-toggle-height) - var(--sidebar-footer-height))"
             }}
           >
             {isSidebarExpanded ? (
               // Vista expandida con scroll
               <div
-                className="custom-scroll"
+                className="custom-scroll flex-1 px-3 py-3"
                 style={{
-                  height: "100%",
                   overflowY: "auto",
-                  overflowX: "hidden",
-                  paddingTop: "12px",
-                  paddingLeft: "12px",
-                  paddingRight: "12px",
-                  paddingBottom: "80px", // Espacio para el footer
+                  overflowX: "hidden"
                 }}
               >
                 {navigationGroups.map((group, index) => (
@@ -272,15 +263,10 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             ) : (
               // Vista colapsada con scroll y espaciado profesional
               <div
-                className="custom-scroll"
+                className="custom-scroll flex-1 px-2 py-3"
                 style={{
-                  height: "100%",
                   overflowY: "auto",
-                  overflowX: "hidden",
-                  paddingTop: "12px",
-                  paddingLeft: "8px",
-                  paddingRight: "8px",
-                  paddingBottom: "20px", // Espacio reducido
+                  overflowX: "hidden"
                 }}
               >
                 {/* Agrupar iconos por sección con separadores visuales */}
@@ -368,11 +354,14 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             )}
           </div>
 
-          {/* Footer fijo - posicionado absolutamente */}
+          {/* Footer fijo */}
           {isSidebarExpanded && (
             <div
-              className="absolute bottom-0 left-0 right-0 p-2 border-t border-border bg-card"
-              style={{ zIndex: 50 }}
+              className="flex-shrink-0 p-2 border-t border-border bg-card"
+              style={{ 
+                height: 'var(--sidebar-footer-height)',
+                minHeight: 'var(--sidebar-footer-height)'
+              }}
             >
               <div className="flex items-center justify-between space-x-2">
                 <Button
