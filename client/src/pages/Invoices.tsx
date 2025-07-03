@@ -31,7 +31,7 @@ import {
   Check,
   ArrowRight
 } from 'lucide-react';
-import { collection, getDocs, query, where, addDoc, updateDoc, doc, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, where, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 // Types
