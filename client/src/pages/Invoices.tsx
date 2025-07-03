@@ -120,6 +120,7 @@ const Invoices: React.FC = () => {
   const [savedEstimates, setSavedEstimates] = useState<SavedEstimate[]>([]);
   const [loadingEstimates, setLoadingEstimates] = useState(true);
   const [invoiceHistory, setInvoiceHistory] = useState<InvoiceData[]>([]);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   // Load estimates on mount
   useEffect(() => {
@@ -265,6 +266,28 @@ const Invoices: React.FC = () => {
     }
   };
 
+  // Save invoice to history
+  const saveInvoiceToHistory = async (invoiceData: InvoiceData) => {
+    if (!currentUser) return;
+    
+    try {
+      // Add invoice to Firebase collection
+      const invoicesRef = collection(db, "invoices");
+      await addDoc(invoicesRef, {
+        ...invoiceData,
+        userId: currentUser.uid,
+        createdAt: new Date().toISOString(),
+      });
+      
+      // Update local state
+      setInvoiceHistory([invoiceData, ...invoiceHistory]);
+      
+      console.log("✅ Invoice saved to history");
+    } catch (error) {
+      console.error("❌ Error saving invoice to history:", error);
+    }
+  };
+
   // Filter estimates based on search
   const filteredEstimates = savedEstimates.filter(
     (estimate) =>
@@ -320,6 +343,94 @@ const Invoices: React.FC = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
+  };
+
+  // Handle sending invoice by email
+  const handleSendInvoiceEmail = async () => {
+    if (!selectedEstimate || !profile) {
+      toast({
+        title: "Error",
+        description: "No se pudo enviar el email. Falta información necesaria.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSendingEmail(true);
+      
+      // Prepare data for email service
+      const emailData = {
+        profile,
+        estimate: selectedEstimate,
+        invoiceConfig,
+        emailConfig: {
+          paymentLink: generatePaymentLink(), // You can implement this
+          ccContractor: true,
+        }
+      };
+
+      console.log("📧 Sending invoice email with data:", emailData);
+
+      const response = await fetch("/api/invoice-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(emailData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.details || "Error al enviar email");
+      }
+
+      const result = await response.json();
+      console.log("✅ Invoice email sent:", result);
+
+      toast({
+        title: "¡Factura enviada!",
+        description: `La factura ha sido enviada a ${selectedEstimate.clientEmail}`,
+      });
+
+      // Save invoice to history
+      const invoiceNumber = generateInvoiceNumber();
+      const { total, paid, balance } = calculateAmounts();
+      
+      const invoiceData: InvoiceData = {
+        estimateId: selectedEstimate.id,
+        invoiceNumber,
+        clientName: selectedEstimate.clientName,
+        clientEmail: selectedEstimate.clientEmail,
+        projectType: selectedEstimate.projectType,
+        totalAmount: total,
+        paidAmount: paid,
+        balanceAmount: balance,
+        paymentStatus: balance === 0 ? "paid" : paid > 0 ? "partial" : "pending",
+        dueDate: new Date(Date.now() + invoiceConfig.paymentTerms * 24 * 60 * 60 * 1000).toISOString(),
+        paymentTerms: invoiceConfig.paymentTerms,
+        createdAt: new Date().toISOString(),
+      };
+
+      await saveInvoiceToHistory(invoiceData);
+      
+    } catch (error) {
+      console.error("❌ Error sending invoice email:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar la factura por email",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  // Generate payment link (if using Stripe)
+  const generatePaymentLink = () => {
+    // This can be implemented with Stripe payment links
+    // For now, return a placeholder
+    return `https://pay.owlfence.com/invoice/${generateInvoiceNumber()}`;
   };
 
   // Handle invoice generation - EXACTLY like EstimatesWizard does it
@@ -837,14 +948,30 @@ const Invoices: React.FC = () => {
                 {/* Action buttons */}
                 <div className="flex gap-3">
                   <Button onClick={handleGenerateInvoice} className="flex-1">
-                    <CheckCircle className="mr-2 h-4 w-4" />
+                    <Download className="mr-2 h-4 w-4" />
                     Generar Factura
+                  </Button>
+                  <Button 
+                    onClick={handleSendInvoiceEmail} 
+                    className="flex-1"
+                    disabled={isSendingEmail}
+                  >
+                    {isSendingEmail ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-4 w-4" />
+                        Enviar por Email
+                      </>
+                    )}
                   </Button>
                 </div>
 
                 <p className="text-sm text-muted-foreground text-center">
-                  La factura se descargará automáticamente y se guardará en el
-                  historial
+                  Puede descargar la factura como PDF o enviarla directamente por email al cliente
                 </p>
               </CardContent>
             </Card>

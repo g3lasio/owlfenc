@@ -50,6 +50,7 @@ import paymentRoutes from "./routes/payment-routes"; // Import payment routes
 import contractorPaymentRoutes from "./routes/contractor-payment-routes"; // Import contractor payment routes
 import estimatesRoutes from "./routes/estimates"; // Import new estimates routes
 import { invoicePdfService } from './invoice-pdf-service';
+import { sendInvoiceEmail } from './services/invoiceEmailService';
 import { puppeteerPdfService } from "./puppeteer-pdf-service";
 import estimatesSimpleRoutes from "./routes/estimates-simple"; // Import simple estimates routes
 import { setupTemplatesRoutes } from "./routes/templates";
@@ -1645,6 +1646,94 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
+  // 📧 NEW: Send Invoice via HTML Email
+  app.post("/api/invoice-email", async (req: Request, res: Response) => {
+    console.log('📧 Invoice Email Service started');
+    
+    try {
+      const requestData = req.body;
+      console.log('🔍 Email request data:', JSON.stringify(requestData, null, 2));
+      
+      // Extract data similar to invoice-pdf endpoint
+      const profile = requestData.profile || {};
+      const estimate = requestData.estimate || {};
+      const invoiceConfig = requestData.invoiceConfig || {};
+      const emailConfig = requestData.emailConfig || {};
+      
+      // Calculate amounts
+      const subtotal = estimate.subtotal || 0;
+      const discountAmount = estimate.discountAmount || 0;
+      const tax = estimate.tax || 0;
+      const total = estimate.total || 0;
+      const amountPaid = invoiceConfig.downPaymentAmount ? parseFloat(invoiceConfig.downPaymentAmount) : 0;
+      const balanceDue = total - amountPaid;
+      
+      // Generate invoice number
+      const invoiceNumber = `INV-${Date.now()}`;
+      
+      // Prepare data for email service
+      const emailData = {
+        contractor: {
+          company: profile.company || 'Your Company',
+          email: profile.email || '',
+          phone: profile.phone || '',
+          address: profile.address || '',
+          logo: profile.logo || undefined,
+        },
+        client: {
+          name: estimate.client?.name || '',
+          email: estimate.client?.email || '',
+          phone: estimate.client?.phone || '',
+          address: estimate.client?.address || '',
+        },
+        invoice: {
+          number: invoiceNumber,
+          date: new Date().toLocaleDateString('es-US'),
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('es-US'),
+          items: estimate.items?.map((item: any) => ({
+            description: item.name || item.description || '',
+            quantity: item.quantity || 1,
+            unitPrice: item.unitPrice || 0,
+            total: item.totalPrice || (item.quantity * item.unitPrice) || 0,
+          })) || [],
+          subtotal,
+          tax,
+          discountAmount,
+          total,
+          amountPaid,
+          balanceDue,
+        },
+        paymentLink: emailConfig.paymentLink,
+        ccContractor: emailConfig.ccContractor !== false, // Default to true
+        testMode: process.env.RESEND_API_KEY?.includes('test_') || false,
+      };
+      
+      console.log('📊 Prepared email data:', JSON.stringify(emailData, null, 2));
+      
+      // Send email using the service
+      const result = await sendInvoiceEmail(emailData);
+      
+      if (result.success) {
+        console.log('✅ Invoice email sent successfully:', result.messageId);
+        res.json({
+          success: true,
+          messageId: result.messageId,
+          message: 'Factura enviada por email exitosamente',
+        });
+      } else {
+        throw new Error(result.error || 'Error al enviar email');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error sending invoice email:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error al enviar factura por email',
+        details: error instanceof Error ? error.message : 'Error desconocido',
+      });
+    }
+  });
+
   // 🚀 NEW: Professional Puppeteer PDF Generation (replaces PDFMonkey)
   app.post("/api/estimate-puppeteer-pdf", async (req: Request, res: Response) => {
     console.log('🎯 Professional PDF generation with Puppeteer started');
@@ -2701,13 +2790,12 @@ Output must be between 200-900 characters in English.`;
       );
 
       // Enviar email
-      const result = await emailService.sendEstimateByEmail(
-        estimate,
-        templateId ? String(templateId) : null,
-        email,
-        subject,
-        message,
-      );
+      const result = await sendEmail({
+        to: email,
+        subject: subject || `Estimate for ${estimate.clientName}`,
+        html: `<div>${message || 'Please find your estimate attached.'}</div>`,
+        attachments: []
+      });
 
       if (result) {
         res.json({ success: true, message: "Email enviado correctamente" });
