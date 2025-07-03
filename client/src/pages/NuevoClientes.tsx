@@ -990,7 +990,7 @@ export default function NuevoClientes() {
   if (isLoading) {
     return (
       <div
-        className="flex-1 p-6 page-scroll-container"
+        className="flex-1 p-6 "
         style={{ WebkitOverflowScrolling: "touch", height: "100%" }}
       >
         <h1 className="text-2xl font-bold mb-6">Clientes</h1>
@@ -1026,7 +1026,7 @@ export default function NuevoClientes() {
 
   return (
     <div
-      className=" mb-52 flex-1 p-6 page-scroll-container"
+      className=" mb-52 flex-1 p-6 "
       style={{ WebkitOverflowScrolling: "touch", height: "100%" }}
     >
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">

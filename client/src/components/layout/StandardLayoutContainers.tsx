@@ -1,5 +1,5 @@
-import React from 'react';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { cn } from "@/lib/utils";
 
 // Contenedor principal que ocupa toda la altura disponible
 interface FullHeightContainerProps {
@@ -7,17 +7,12 @@ interface FullHeightContainerProps {
   className?: string;
 }
 
-export const FullHeightContainer: React.FC<FullHeightContainerProps> = ({ 
-  children, 
-  className 
+export const FullHeightContainer: React.FC<FullHeightContainerProps> = ({
+  children,
+  className,
 }) => {
   return (
-    <div 
-      className={cn(
-        "flex flex-col h-full w-full ",
-        className
-      )}
-    >
+    <div className={cn("flex flex-col h-full w-full ", className)}>
       {children}
     </div>
   );
@@ -29,19 +24,12 @@ interface FixedHeaderProps {
   className?: string;
 }
 
-export const FixedHeader: React.FC<FixedHeaderProps> = ({ 
-  children, 
-  className 
+export const FixedHeader: React.FC<FixedHeaderProps> = ({
+  children,
+  className,
 }) => {
   return (
-    <div 
-      className={cn(
-        "flex-shrink-0 w-full",
-        className
-      )}
-    >
-      {children}
-    </div>
+    <div className={cn("flex-shrink-0 w-full", className)}>{children}</div>
   );
 };
 
@@ -52,17 +40,17 @@ interface ScrollableContentProps {
   padding?: boolean;
 }
 
-export const ScrollableContent: React.FC<ScrollableContentProps> = ({ 
-  children, 
+export const ScrollableContent: React.FC<ScrollableContentProps> = ({
+  children,
   className,
-  padding = true
+  padding = true,
 }) => {
   return (
-    <div 
+    <div
       className={cn(
         "flex-1  overflow-x-hidden custom-scroll",
         padding && "p-4",
-        className
+        className,
       )}
       style={{ minHeight: 0 }} // Crucial para flex containers
     >
@@ -77,19 +65,12 @@ interface FixedFooterProps {
   className?: string;
 }
 
-export const FixedFooter: React.FC<FixedFooterProps> = ({ 
-  children, 
-  className 
+export const FixedFooter: React.FC<FixedFooterProps> = ({
+  children,
+  className,
 }) => {
   return (
-    <div 
-      className={cn(
-        "flex-shrink-0 w-full",
-        className
-      )}
-    >
-      {children}
-    </div>
+    <div className={cn("flex-shrink-0 w-full", className)}>{children}</div>
   );
 };
 
@@ -100,20 +81,20 @@ interface DialogContainerProps {
   maxHeight?: string;
 }
 
-export const DialogContainer: React.FC<DialogContainerProps> = ({ 
-  children, 
+export const DialogContainer: React.FC<DialogContainerProps> = ({
+  children,
   className,
-  maxHeight = "98vh"
+  maxHeight = "98vh",
 }) => {
   return (
-    <div 
+    <div
       className={cn(
         "flex flex-col  bg-gray-900 border-cyan-400/30 shadow-[0_0_50px_rgba(6,182,212,0.3)]",
-        className
+        className,
       )}
-      style={{ 
+      style={{
         maxHeight,
-        height: maxHeight 
+        height: maxHeight,
       }}
     >
       {children}
@@ -127,19 +108,12 @@ interface TabContainerProps {
   className?: string;
 }
 
-export const TabContainer: React.FC<TabContainerProps> = ({ 
-  children, 
-  className 
+export const TabContainer: React.FC<TabContainerProps> = ({
+  children,
+  className,
 }) => {
   return (
-    <div 
-      className={cn(
-        "flex-1 flex flex-col ",
-        className
-      )}
-    >
-      {children}
-    </div>
+    <div className={cn("flex-1 flex flex-col ", className)}>{children}</div>
   );
 };
 
@@ -149,20 +123,11 @@ interface TabNavigationProps {
   className?: string;
 }
 
-export const TabNavigation: React.FC<TabNavigationProps> = ({ 
-  children, 
-  className 
+export const TabNavigation: React.FC<TabNavigationProps> = ({
+  children,
+  className,
 }) => {
-  return (
-    <div 
-      className={cn(
-        "flex-shrink-0 mb-4",
-        className
-      )}
-    >
-      {children}
-    </div>
-  );
+  return <div className={cn("flex-shrink-0 mb-4", className)}>{children}</div>;
 };
 
 // Contenido de pestaña con scroll
@@ -171,16 +136,13 @@ interface TabContentProps {
   className?: string;
 }
 
-export const TabContent: React.FC<TabContentProps> = ({ 
-  children, 
-  className 
+export const TabContent: React.FC<TabContentProps> = ({
+  children,
+  className,
 }) => {
   return (
-    <div 
-      className={cn(
-        "flex-1  overflow-x-hidden custom-scroll p-4",
-        className
-      )}
+    <div
+      className={cn("flex-1  overflow-x-hidden custom-scroll p-4", className)}
       style={{ minHeight: 0 }}
     >
       {children}
@@ -201,23 +163,16 @@ interface CardGridProps {
   };
 }
 
-export const CardGrid: React.FC<CardGridProps> = ({ 
-  children, 
+export const CardGrid: React.FC<CardGridProps> = ({
+  children,
   className,
-  cols = { default: 1, md: 2, lg: 3 }
+  cols = { default: 1, md: 2, lg: 3 },
 }) => {
-  const gridCols = `grid-cols-${cols.default || 1} ${cols.sm ? `sm:grid-cols-${cols.sm}` : ''} ${cols.md ? `md:grid-cols-${cols.md}` : ''} ${cols.lg ? `lg:grid-cols-${cols.lg}` : ''} ${cols.xl ? `xl:grid-cols-${cols.xl}` : ''}`.trim();
-  
+  const gridCols =
+    `grid-cols-${cols.default || 1} ${cols.sm ? `sm:grid-cols-${cols.sm}` : ""} ${cols.md ? `md:grid-cols-${cols.md}` : ""} ${cols.lg ? `lg:grid-cols-${cols.lg}` : ""} ${cols.xl ? `xl:grid-cols-${cols.xl}` : ""}`.trim();
+
   return (
-    <div 
-      className={cn(
-        "grid gap-4",
-        gridCols,
-        className
-      )}
-    >
-      {children}
-    </div>
+    <div className={cn("grid gap-4", gridCols, className)}>{children}</div>
   );
 };
 
@@ -227,17 +182,12 @@ interface FormContainerProps {
   className?: string;
 }
 
-export const FormContainer: React.FC<FormContainerProps> = ({ 
-  children, 
-  className 
+export const FormContainer: React.FC<FormContainerProps> = ({
+  children,
+  className,
 }) => {
   return (
-    <div 
-      className={cn(
-        "space-y-6 w-full max-w-full",
-        className
-      )}
-    >
+    <div className={cn("space-y-6 w-full max-w-full", className)}>
       {children}
     </div>
   );

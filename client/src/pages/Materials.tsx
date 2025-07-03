@@ -1,11 +1,24 @@
-import { useState, useEffect } from 'react';
-import { toast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { AlertCircle, FileUp, Plus, Search, Trash } from 'lucide-react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useState, useEffect } from "react";
+import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { AlertCircle, FileUp, Plus, Search, Trash } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -13,18 +26,34 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogClose
-} from '@/components/ui/dialog';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import AppLayout from '../components/layout/AppLayout';
-import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
-import { useLocation } from 'wouter';
-import { useAuth } from '../contexts/AuthContext';
-import Papa from 'papaparse';
-import { analyzeCSVWithAnthropic } from '../services/anthropicService';
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import AppLayout from "../components/layout/AppLayout";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  doc,
+  serverTimestamp,
+  updateDoc,
+} from "firebase/firestore";
+import { db } from "../lib/firebase";
+import { useLocation } from "wouter";
+import { useAuth } from "../contexts/AuthContext";
+import Papa from "papaparse";
+import { analyzeCSVWithAnthropic } from "../services/anthropicService";
 
 // Definir interfaz para Material
 interface Material {
@@ -44,29 +73,29 @@ interface Material {
 
 // Categorías comunes de materiales
 const COMMON_CATEGORIES = [
-  'Madera',
-  'Metal',
-  'Cercas',
-  'Concreto',
-  'Tornillería',
-  'Herramientas',
-  'Acabados',
-  'Otro'
+  "Madera",
+  "Metal",
+  "Cercas",
+  "Concreto",
+  "Tornillería",
+  "Herramientas",
+  "Acabados",
+  "Otro",
 ];
 
 // Unidades comunes de medida
 const COMMON_UNITS = [
-  'pieza',
-  'metro',
-  'pie',
-  'kg',
-  'lb',
-  'galón',
-  'litro',
-  'bolsa',
-  'caja',
-  'par',
-  'juego'
+  "pieza",
+  "metro",
+  "pie",
+  "kg",
+  "lb",
+  "galón",
+  "litro",
+  "bolsa",
+  "caja",
+  "par",
+  "juego",
 ];
 
 /**
@@ -76,27 +105,31 @@ export default function Materials() {
   const { currentUser } = useAuth();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [filteredMaterials, setFilteredMaterials] = useState<Material[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [newMaterial, setNewMaterial] = useState<Partial<Material>>({
-    name: '',
-    category: '',
-    description: '',
-    unit: 'pieza',
+    name: "",
+    category: "",
+    description: "",
+    unit: "pieza",
     price: 0,
-    supplier: '',
-    supplierLink: '',
-    sku: ''
+    supplier: "",
+    supplierLink: "",
+    sku: "",
   });
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
-  const [deletingMaterial, setDeletingMaterial] = useState<Material | null>(null);
+  const [deletingMaterial, setDeletingMaterial] = useState<Material | null>(
+    null,
+  );
   const [categories, setCategories] = useState<string[]>([]);
-  const [selectedMaterials, setSelectedMaterials] = useState<Set<string>>(new Set());
+  const [selectedMaterials, setSelectedMaterials] = useState<Set<string>>(
+    new Set(),
+  );
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
 
   const [, navigate] = useLocation();
@@ -104,7 +137,7 @@ export default function Materials() {
   // Comprobar autenticación y cargar materiales al montar
   useEffect(() => {
     if (!currentUser) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
 
@@ -124,23 +157,23 @@ export default function Materials() {
 
     setIsLoading(true);
     try {
-      const materialsRef = collection(db, 'materials');
-      const q = query(materialsRef, where('userId', '==', currentUser.uid));
+      const materialsRef = collection(db, "materials");
+      const q = query(materialsRef, where("userId", "==", currentUser.uid));
       const querySnapshot = await getDocs(q);
 
       const materialsData: Material[] = [];
       const categoriesSet = new Set<string>();
 
       querySnapshot.forEach((doc) => {
-        const data = doc.data() as Omit<Material, 'id'>;
+        const data = doc.data() as Omit<Material, "id">;
         const material: Material = {
           id: doc.id,
           ...data,
-          price: typeof data.price === 'number' ? data.price : 0
+          price: typeof data.price === "number" ? data.price : 0,
         };
-        
+
         materialsData.push(material);
-        
+
         // Guardar categoría para filtrado
         if (data.category) {
           categoriesSet.add(data.category);
@@ -149,18 +182,19 @@ export default function Materials() {
 
       // Ordenar materiales por nombre
       materialsData.sort((a, b) => a.name.localeCompare(b.name));
-      
+
       // Actualizar estados
       setMaterials(materialsData);
       setCategories(Array.from(categoriesSet));
-      
+
       console.log(`Cargados ${materialsData.length} materiales`);
     } catch (error) {
-      console.error('Error al cargar materiales:', error);
+      console.error("Error al cargar materiales:", error);
       toast({
         title: "Error al cargar materiales",
-        description: "No se pudieron cargar los materiales. Por favor, inténtalo de nuevo.",
-        variant: "destructive"
+        description:
+          "No se pudieron cargar los materiales. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -172,23 +206,24 @@ export default function Materials() {
    */
   const filterMaterials = () => {
     let filtered = [...materials];
-    
+
     // Filtrar por término de búsqueda
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(m => 
-        m.name.toLowerCase().includes(term) || 
-        m.description?.toLowerCase().includes(term) || 
-        m.sku?.toLowerCase().includes(term) || 
-        m.supplier?.toLowerCase().includes(term)
+      filtered = filtered.filter(
+        (m) =>
+          m.name.toLowerCase().includes(term) ||
+          m.description?.toLowerCase().includes(term) ||
+          m.sku?.toLowerCase().includes(term) ||
+          m.supplier?.toLowerCase().includes(term),
       );
     }
-    
+
     // Filtrar por categoría seleccionada
-    if (selectedCategory && selectedCategory !== 'todas') {
-      filtered = filtered.filter(m => m.category === selectedCategory);
+    if (selectedCategory && selectedCategory !== "todas") {
+      filtered = filtered.filter((m) => m.category === selectedCategory);
     }
-    
+
     setFilteredMaterials(filtered);
   };
 
@@ -197,67 +232,71 @@ export default function Materials() {
    */
   const saveMaterial = async () => {
     if (!currentUser) return;
-    
+
     try {
       // Verificar campos obligatorios
       if (!newMaterial.name || !newMaterial.category || !newMaterial.unit) {
         toast({
           title: "Datos incompletos",
-          description: "Por favor, completa los campos obligatorios: Nombre, Categoría y Unidad.",
-          variant: "destructive"
+          description:
+            "Por favor, completa los campos obligatorios: Nombre, Categoría y Unidad.",
+          variant: "destructive",
         });
         return;
       }
-      
+
       // Convertir el precio a número
-      const price = typeof newMaterial.price === 'number' ? newMaterial.price : 
-                    parseFloat(String(newMaterial.price || '0')) || 0;
-                    
+      const price =
+        typeof newMaterial.price === "number"
+          ? newMaterial.price
+          : parseFloat(String(newMaterial.price || "0")) || 0;
+
       // Crear documento en Firestore
       const materialData = {
         ...newMaterial,
         price,
         userId: currentUser.uid,
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       };
-      
-      const docRef = await addDoc(collection(db, 'materials'), materialData);
-      
+
+      const docRef = await addDoc(collection(db, "materials"), materialData);
+
       // Actualizar la lista de materiales
       const newMaterialWithId: Material = {
         id: docRef.id,
         ...materialData,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       } as Material;
-      
-      setMaterials(prev => [...prev, newMaterialWithId]);
-      
+
+      setMaterials((prev) => [...prev, newMaterialWithId]);
+
       // Limpiar formulario
       setNewMaterial({
-        name: '',
-        category: '',
-        description: '',
-        unit: 'pieza',
+        name: "",
+        category: "",
+        description: "",
+        unit: "pieza",
         price: 0,
-        supplier: '',
-        supplierLink: '',
-        sku: ''
+        supplier: "",
+        supplierLink: "",
+        sku: "",
       });
-      
+
       setShowAddDialog(false);
-      
+
       toast({
         title: "Material agregado",
-        description: `Se ha agregado el material "${newMaterial.name}" correctamente.`
+        description: `Se ha agregado el material "${newMaterial.name}" correctamente.`,
       });
     } catch (error) {
-      console.error('Error al guardar material:', error);
+      console.error("Error al guardar material:", error);
       toast({
         title: "Error al guardar",
-        description: "No se pudo guardar el material. Por favor, inténtalo de nuevo.",
-        variant: "destructive"
+        description:
+          "No se pudo guardar el material. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
       });
     }
   };
@@ -267,47 +306,59 @@ export default function Materials() {
    */
   const updateMaterial = async () => {
     if (!currentUser || !editingMaterial) return;
-    
+
     try {
       // Verificar campos obligatorios
-      if (!editingMaterial.name || !editingMaterial.category || !editingMaterial.unit) {
+      if (
+        !editingMaterial.name ||
+        !editingMaterial.category ||
+        !editingMaterial.unit
+      ) {
         toast({
           title: "Datos incompletos",
-          description: "Por favor, completa los campos obligatorios: Nombre, Categoría y Unidad.",
-          variant: "destructive"
+          description:
+            "Por favor, completa los campos obligatorios: Nombre, Categoría y Unidad.",
+          variant: "destructive",
         });
         return;
       }
-      
+
       // Convertir valores numéricos
       const materialData = {
         ...editingMaterial,
-        price: typeof editingMaterial.price === 'number' ? editingMaterial.price : 
-               parseFloat(String(editingMaterial.price || '0')) || 0,
-        updatedAt: serverTimestamp()
+        price:
+          typeof editingMaterial.price === "number"
+            ? editingMaterial.price
+            : parseFloat(String(editingMaterial.price || "0")) || 0,
+        updatedAt: serverTimestamp(),
       };
-      
+
       // Actualizar documento en Firestore
-      const materialRef = doc(db, 'materials', editingMaterial.id);
+      const materialRef = doc(db, "materials", editingMaterial.id);
       await updateDoc(materialRef, materialData);
-      
+
       // Actualizar la lista de materiales
-      setMaterials(prev => prev.map(m => 
-        m.id === editingMaterial.id ? {...materialData, id: m.id} as Material : m
-      ));
-      
+      setMaterials((prev) =>
+        prev.map((m) =>
+          m.id === editingMaterial.id
+            ? ({ ...materialData, id: m.id } as Material)
+            : m,
+        ),
+      );
+
       setShowEditDialog(false);
-      
+
       toast({
         title: "Material actualizado",
-        description: `Se ha actualizado el material "${editingMaterial.name}" correctamente.`
+        description: `Se ha actualizado el material "${editingMaterial.name}" correctamente.`,
       });
     } catch (error) {
-      console.error('Error al actualizar material:', error);
+      console.error("Error al actualizar material:", error);
       toast({
         title: "Error al actualizar",
-        description: "No se pudo actualizar el material. Por favor, inténtalo de nuevo.",
-        variant: "destructive"
+        description:
+          "No se pudo actualizar el material. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
       });
     }
   };
@@ -317,27 +368,28 @@ export default function Materials() {
    */
   const deleteMaterial = async () => {
     if (!currentUser || !deletingMaterial) return;
-    
+
     try {
       // Eliminar documento de Firestore
-      const materialRef = doc(db, 'materials', deletingMaterial.id);
+      const materialRef = doc(db, "materials", deletingMaterial.id);
       await deleteDoc(materialRef);
-      
+
       // Actualizar la lista de materiales
-      setMaterials(prev => prev.filter(m => m.id !== deletingMaterial.id));
-      
+      setMaterials((prev) => prev.filter((m) => m.id !== deletingMaterial.id));
+
       setShowDeleteDialog(false);
-      
+
       toast({
         title: "Material eliminado",
-        description: `Se ha eliminado el material "${deletingMaterial.name}" correctamente.`
+        description: `Se ha eliminado el material "${deletingMaterial.name}" correctamente.`,
       });
     } catch (error) {
-      console.error('Error al eliminar material:', error);
+      console.error("Error al eliminar material:", error);
       toast({
         title: "Error al eliminar",
-        description: "No se pudo eliminar el material. Por favor, inténtalo de nuevo.",
-        variant: "destructive"
+        description:
+          "No se pudo eliminar el material. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
       });
     }
   };
@@ -346,7 +398,7 @@ export default function Materials() {
    * Manejar selección de material individual
    */
   const toggleMaterialSelection = (materialId: string) => {
-    setSelectedMaterials(prev => {
+    setSelectedMaterials((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(materialId)) {
         newSet.delete(materialId);
@@ -366,7 +418,7 @@ export default function Materials() {
       setSelectedMaterials(new Set());
     } else {
       // Seleccionar todos los materiales visibles
-      setSelectedMaterials(new Set(filteredMaterials.map(m => m.id)));
+      setSelectedMaterials(new Set(filteredMaterials.map((m) => m.id)));
     }
   };
 
@@ -375,33 +427,34 @@ export default function Materials() {
    */
   const deleteBatchMaterials = async () => {
     if (!currentUser || selectedMaterials.size === 0) return;
-    
+
     try {
       const materialsToDelete = Array.from(selectedMaterials);
-      const deletePromises = materialsToDelete.map(materialId => {
-        const materialRef = doc(db, 'materials', materialId);
+      const deletePromises = materialsToDelete.map((materialId) => {
+        const materialRef = doc(db, "materials", materialId);
         return deleteDoc(materialRef);
       });
-      
+
       await Promise.all(deletePromises);
-      
+
       // Actualizar la lista de materiales
-      setMaterials(prev => prev.filter(m => !selectedMaterials.has(m.id)));
-      
+      setMaterials((prev) => prev.filter((m) => !selectedMaterials.has(m.id)));
+
       // Limpiar selección
       setSelectedMaterials(new Set());
       setShowBatchDeleteDialog(false);
-      
+
       toast({
         title: "Materiales eliminados",
-        description: `Se han eliminado ${materialsToDelete.length} materiales correctamente.`
+        description: `Se han eliminado ${materialsToDelete.length} materiales correctamente.`,
       });
     } catch (error) {
-      console.error('Error al eliminar materiales:', error);
+      console.error("Error al eliminar materiales:", error);
       toast({
         title: "Error al eliminar",
-        description: "No se pudieron eliminar algunos materiales. Por favor, inténtalo de nuevo.",
-        variant: "destructive"
+        description:
+          "No se pudieron eliminar algunos materiales. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
       });
     }
   };
@@ -409,7 +462,9 @@ export default function Materials() {
   /**
    * Manejar la subida de un archivo CSV
    */
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file || !currentUser) {
       return;
@@ -420,52 +475,91 @@ export default function Materials() {
     try {
       // Leer el archivo como texto
       const fileText = await readFileAsText(file);
-      
+
       let processedMaterials: Partial<Material>[] = [];
-      
+
       try {
         // Intentar procesar el CSV con Claude
-        processedMaterials = await analyzeCSVWithAnthropic(fileText) as Partial<Material>[];
-        console.log('Procesamiento con Anthropic exitoso:', processedMaterials);
+        processedMaterials = (await analyzeCSVWithAnthropic(
+          fileText,
+        )) as Partial<Material>[];
+        console.log("Procesamiento con Anthropic exitoso:", processedMaterials);
       } catch (aiError) {
-        console.warn('Error al procesar con Anthropic, usando procesamiento fallback:', aiError);
-        
+        console.warn(
+          "Error al procesar con Anthropic, usando procesamiento fallback:",
+          aiError,
+        );
+
         // Procesamiento fallback con PapaParse si Claude falla
-        const parseResult = await new Promise<Papa.ParseResult<any>>((resolve, reject) => {
-          Papa.parse(fileText, {
-            header: true,
-            skipEmptyLines: true,
-            complete: resolve,
-            error: reject
-          });
-        });
-        
+        const parseResult = await new Promise<Papa.ParseResult<any>>(
+          (resolve, reject) => {
+            Papa.parse(fileText, {
+              header: true,
+              skipEmptyLines: true,
+              complete: resolve,
+              error: reject,
+            });
+          },
+        );
+
         if (parseResult.errors.length > 0) {
-          console.warn('Errores en CSV:', parseResult.errors);
+          console.warn("Errores en CSV:", parseResult.errors);
         }
-        
-        processedMaterials = parseResult.data.map(row => ({
-          name: row.name || row.Name || row.nombre || row.Nombre || row.NOMBRE || '',
-          category: row.category || row.Category || row.categoría || row.Categoría || row.CATEGORIA || '',
-          description: row.description || row.Description || row.descripción || row.Descripción || '',
-          unit: row.unit || row.Unit || row.unidad || row.Unidad || 'pieza',
-          price: parseFloat(row.price || row.Price || row.precio || row.Precio || '0') || 0,
-          supplier: row.supplier || row.Supplier || row.proveedor || row.Proveedor || '',
-          supplierLink: row.supplierLink || row.SupplierLink || row['Supplier Link'] || '',
-          sku: row.sku || row.SKU || row.código || row.Código || ''
-        })).filter(m => m.name && m.name.trim() !== '');
+
+        processedMaterials = parseResult.data
+          .map((row) => ({
+            name:
+              row.name ||
+              row.Name ||
+              row.nombre ||
+              row.Nombre ||
+              row.NOMBRE ||
+              "",
+            category:
+              row.category ||
+              row.Category ||
+              row.categoría ||
+              row.Categoría ||
+              row.CATEGORIA ||
+              "",
+            description:
+              row.description ||
+              row.Description ||
+              row.descripción ||
+              row.Descripción ||
+              "",
+            unit: row.unit || row.Unit || row.unidad || row.Unidad || "pieza",
+            price:
+              parseFloat(
+                row.price || row.Price || row.precio || row.Precio || "0",
+              ) || 0,
+            supplier:
+              row.supplier ||
+              row.Supplier ||
+              row.proveedor ||
+              row.Proveedor ||
+              "",
+            supplierLink:
+              row.supplierLink ||
+              row.SupplierLink ||
+              row["Supplier Link"] ||
+              "",
+            sku: row.sku || row.SKU || row.código || row.Código || "",
+          }))
+          .filter((m) => m.name && m.name.trim() !== "");
       }
-      
+
       if (processedMaterials.length === 0) {
         toast({
           title: "Sin materiales",
-          description: "No se encontraron materiales válidos en el archivo CSV.",
-          variant: "destructive"
+          description:
+            "No se encontraron materiales válidos en el archivo CSV.",
+          variant: "destructive",
         });
         setIsUploading(false);
         return;
       }
-      
+
       // Guardar materiales en Firebase
       const batch: Material[] = [];
       for (const material of processedMaterials) {
@@ -473,40 +567,44 @@ export default function Materials() {
           ...material,
           userId: currentUser.uid,
           createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
+          updatedAt: serverTimestamp(),
         };
-        
+
         try {
-          const docRef = await addDoc(collection(db, 'materials'), materialData);
+          const docRef = await addDoc(
+            collection(db, "materials"),
+            materialData,
+          );
           batch.push({
             id: docRef.id,
             ...materialData,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           } as Material);
         } catch (error) {
-          console.error('Error al guardar material:', error);
+          console.error("Error al guardar material:", error);
         }
       }
-      
+
       // Actualizar estado con nuevos materiales
-      setMaterials(prev => [...prev, ...batch]);
-      
+      setMaterials((prev) => [...prev, ...batch]);
+
       toast({
         title: "Importación exitosa",
-        description: `Se han importado ${batch.length} materiales desde CSV.`
+        description: `Se han importado ${batch.length} materiales desde CSV.`,
       });
     } catch (error) {
-      console.error('Error al procesar archivo CSV:', error);
+      console.error("Error al procesar archivo CSV:", error);
       toast({
         title: "Error en importación",
-        description: "No se pudo procesar el archivo CSV. Verifica el formato e inténtalo de nuevo.",
-        variant: "destructive"
+        description:
+          "No se pudo procesar el archivo CSV. Verifica el formato e inténtalo de nuevo.",
+        variant: "destructive",
       });
     } finally {
       setIsUploading(false);
       // Limpiar el campo de archivo para permitir subir el mismo archivo nuevamente
-      event.target.value = '';
+      event.target.value = "";
     }
   };
 
@@ -526,9 +624,9 @@ export default function Materials() {
    * Formatear precio para mostrar
    */
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
+    return new Intl.NumberFormat("es-MX", {
+      style: "currency",
+      currency: "MXN",
     }).format(price);
   };
 
@@ -536,7 +634,7 @@ export default function Materials() {
    * Abrir diálogo de edición con datos del material
    */
   const openEditDialog = (material: Material) => {
-    setEditingMaterial({...material});
+    setEditingMaterial({ ...material });
     setShowEditDialog(true);
   };
 
@@ -560,8 +658,11 @@ export default function Materials() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12">
-                  <Checkbox 
-                    checked={selectedMaterials.size === filteredMaterials.length && filteredMaterials.length > 0}
+                  <Checkbox
+                    checked={
+                      selectedMaterials.size === filteredMaterials.length &&
+                      filteredMaterials.length > 0
+                    }
                     onCheckedChange={toggleSelectAll}
                     aria-label="Seleccionar todos"
                   />
@@ -578,9 +679,11 @@ export default function Materials() {
               {filteredMaterials.map((material) => (
                 <TableRow key={material.id}>
                   <TableCell>
-                    <Checkbox 
+                    <Checkbox
                       checked={selectedMaterials.has(material.id)}
-                      onCheckedChange={() => toggleMaterialSelection(material.id)}
+                      onCheckedChange={() =>
+                        toggleMaterialSelection(material.id)
+                      }
                       aria-label={`Seleccionar ${material.name}`}
                     />
                   </TableCell>
@@ -588,10 +691,14 @@ export default function Materials() {
                     <div>
                       <div className="font-medium">{material.name}</div>
                       {material.description && (
-                        <div className="text-sm text-muted-foreground">{material.description}</div>
+                        <div className="text-sm  text-muted-foreground ">
+                          {material.description}
+                        </div>
                       )}
                       {material.sku && (
-                        <div className="text-xs text-muted-foreground">SKU: {material.sku}</div>
+                        <div className="text-xs text-muted-foreground">
+                          SKU: {material.sku}
+                        </div>
                       )}
                     </div>
                   </TableCell>
@@ -652,19 +759,25 @@ export default function Materials() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-start">
                     <div className="flex items-start gap-3 flex-1">
-                      <Checkbox 
+                      <Checkbox
                         checked={selectedMaterials.has(material.id)}
-                        onCheckedChange={() => toggleMaterialSelection(material.id)}
+                        onCheckedChange={() =>
+                          toggleMaterialSelection(material.id)
+                        }
                         aria-label={`Seleccionar ${material.name}`}
                         className="mt-1"
                       />
                       <div className="flex-1">
                         <h3 className="font-medium">{material.name}</h3>
                         {material.description && (
-                          <p className="text-sm text-muted-foreground mt-1">{material.description}</p>
+                          <p className="text-sm hidden text-muted-foreground mt-1">
+                            {material.description}
+                          </p>
                         )}
                         {material.sku && (
-                          <p className="text-xs text-muted-foreground">SKU: {material.sku}</p>
+                          <p className="text-xs text-muted-foreground">
+                            SKU: {material.sku}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -672,16 +785,24 @@ export default function Materials() {
                       {material.category}
                     </span>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-muted-foreground text-xs uppercase tracking-wide block mb-1">Precio</span>
-                      <span className="font-medium">{formatPrice(material.price)}</span>
-                      <span className="text-muted-foreground ml-1">por {material.unit}</span>
+                      <span className="text-muted-foreground text-xs uppercase tracking-wide block mb-1">
+                        Precio
+                      </span>
+                      <span className="font-medium">
+                        {formatPrice(material.price)}
+                      </span>
+                      <span className="text-muted-foreground ml-1">
+                        por {material.unit}
+                      </span>
                     </div>
                     {material.supplier && (
                       <div>
-                        <span className="text-muted-foreground text-xs uppercase tracking-wide block mb-1">Proveedor</span>
+                        <span className="text-muted-foreground text-xs uppercase tracking-wide block mb-1">
+                          Proveedor
+                        </span>
                         {material.supplierLink ? (
                           <a
                             href={material.supplierLink}
@@ -697,7 +818,7 @@ export default function Materials() {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex justify-end gap-2 pt-2">
                     <Button
                       variant="outline"
@@ -730,19 +851,31 @@ export default function Materials() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <button 
-                onClick={() => navigate('/')}
+              <button
+                onClick={() => navigate("/")}
                 className="p-2 hover:bg-secondary rounded-lg transition-colors flex items-center gap-2 text-muted-foreground hover:text-foreground"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m15 18-6-6 6-6"/>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m15 18-6-6 6-6" />
                 </svg>
                 <span className="hidden sm:inline">Regresar al Dashboard</span>
               </button>
               <div className="h-6 w-px bg-border hidden sm:block"></div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Inventario de Materiales</h1>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">
+                Inventario de Materiales
+              </h1>
             </div>
-            
+
             {/* Indicador de materiales */}
             <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
@@ -782,8 +915,8 @@ export default function Materials() {
           </Select>
           <div className="flex gap-2">
             {selectedMaterials.size > 0 && (
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={() => setShowBatchDeleteDialog(true)}
                 className="flex-1 sm:flex-none"
               >
@@ -791,7 +924,10 @@ export default function Materials() {
                 Eliminar ({selectedMaterials.size})
               </Button>
             )}
-            <Button onClick={() => setShowAddDialog(true)} className="flex-1 sm:flex-none">
+            <Button
+              onClick={() => setShowAddDialog(true)}
+              className="flex-1 sm:flex-none"
+            >
               <Plus className="mr-2 h-4 w-4" />
               <span className="hidden sm:inline">Agregar</span>
               <span className="sm:hidden">Nuevo</span>
@@ -847,29 +983,39 @@ export default function Materials() {
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="max-w-2xl max-h-[90vh] ">
           <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl">Agregar Nuevo Material</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">
+              Agregar Nuevo Material
+            </DialogTitle>
             <DialogDescription className="text-sm sm:text-base">
               Completa los detalles del material para agregarlo al inventario.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name" className="required">Nombre</Label>
+                <Label htmlFor="name" className="required">
+                  Nombre
+                </Label>
                 <Input
                   id="name"
                   placeholder="Poste de madera 4x4"
                   value={newMaterial.name}
-                  onChange={(e) => setNewMaterial({...newMaterial, name: e.target.value})}
+                  onChange={(e) =>
+                    setNewMaterial({ ...newMaterial, name: e.target.value })
+                  }
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="category" className="required">Categoría</Label>
+                <Label htmlFor="category" className="required">
+                  Categoría
+                </Label>
                 <Select
                   value={newMaterial.category}
-                  onValueChange={(value) => setNewMaterial({...newMaterial, category: value})}
+                  onValueChange={(value) =>
+                    setNewMaterial({ ...newMaterial, category: value })
+                  }
                 >
                   <SelectTrigger id="category">
                     <SelectValue placeholder="Selecciona una categoría" />
@@ -884,23 +1030,32 @@ export default function Materials() {
                 </Select>
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="description">Descripción</Label>
               <Input
                 id="description"
                 placeholder="Poste de madera tratada para uso exterior"
-                value={newMaterial.description || ''}
-                onChange={(e) => setNewMaterial({...newMaterial, description: e.target.value})}
+                value={newMaterial.description || ""}
+                onChange={(e) =>
+                  setNewMaterial({
+                    ...newMaterial,
+                    description: e.target.value,
+                  })
+                }
               />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="unit" className="required">Unidad</Label>
+                <Label htmlFor="unit" className="required">
+                  Unidad
+                </Label>
                 <Select
                   value={newMaterial.unit}
-                  onValueChange={(value) => setNewMaterial({...newMaterial, unit: value})}
+                  onValueChange={(value) =>
+                    setNewMaterial({ ...newMaterial, unit: value })
+                  }
                 >
                   <SelectTrigger id="unit">
                     <SelectValue placeholder="Selecciona una unidad" />
@@ -914,7 +1069,7 @@ export default function Materials() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="price">Precio</Label>
                 <Input
@@ -923,49 +1078,65 @@ export default function Materials() {
                   step="0.01"
                   min="0"
                   placeholder="0.00"
-                  value={newMaterial.price || ''}
-                  onChange={(e) => setNewMaterial({...newMaterial, price: parseFloat(e.target.value) || 0})}
+                  value={newMaterial.price || ""}
+                  onChange={(e) =>
+                    setNewMaterial({
+                      ...newMaterial,
+                      price: parseFloat(e.target.value) || 0,
+                    })
+                  }
                 />
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="sku">SKU</Label>
                 <Input
                   id="sku"
                   placeholder="ABC-123"
-                  value={newMaterial.sku || ''}
-                  onChange={(e) => setNewMaterial({...newMaterial, sku: e.target.value})}
+                  value={newMaterial.sku || ""}
+                  onChange={(e) =>
+                    setNewMaterial({ ...newMaterial, sku: e.target.value })
+                  }
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="supplier">Proveedor</Label>
                 <Input
                   id="supplier"
                   placeholder="Home Depot"
-                  value={newMaterial.supplier || ''}
-                  onChange={(e) => setNewMaterial({...newMaterial, supplier: e.target.value})}
+                  value={newMaterial.supplier || ""}
+                  onChange={(e) =>
+                    setNewMaterial({ ...newMaterial, supplier: e.target.value })
+                  }
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="supplierLink">Enlace del Proveedor</Label>
               <Input
                 id="supplierLink"
                 type="url"
                 placeholder="https://www.homedepot.com/..."
-                value={newMaterial.supplierLink || ''}
-                onChange={(e) => setNewMaterial({...newMaterial, supplierLink: e.target.value})}
+                value={newMaterial.supplierLink || ""}
+                onChange={(e) =>
+                  setNewMaterial({
+                    ...newMaterial,
+                    supplierLink: e.target.value,
+                  })
+                }
               />
             </div>
           </div>
-          
+
           <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
             <DialogClose asChild>
-              <Button variant="outline" className="w-full sm:w-auto">Cancelar</Button>
+              <Button variant="outline" className="w-full sm:w-auto">
+                Cancelar
+              </Button>
             </DialogClose>
             <Button onClick={saveMaterial} className="w-full sm:w-auto">
               Agregar Material
@@ -983,62 +1154,93 @@ export default function Materials() {
               Actualiza los detalles del material.
             </DialogDescription>
           </DialogHeader>
-          
+
           {editingMaterial && (
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-name" className="required">Nombre</Label>
+                  <Label htmlFor="edit-name" className="required">
+                    Nombre
+                  </Label>
                   <Input
                     id="edit-name"
                     placeholder="Poste de madera 4x4"
                     value={editingMaterial.name}
-                    onChange={(e) => setEditingMaterial({...editingMaterial, name: e.target.value})}
+                    onChange={(e) =>
+                      setEditingMaterial({
+                        ...editingMaterial,
+                        name: e.target.value,
+                      })
+                    }
                   />
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="edit-category" className="required">Categoría</Label>
+                  <Label htmlFor="edit-category" className="required">
+                    Categoría
+                  </Label>
                   <Select
                     value={editingMaterial.category}
-                    onValueChange={(value) => setEditingMaterial({...editingMaterial, category: value})}
+                    onValueChange={(value) =>
+                      setEditingMaterial({
+                        ...editingMaterial,
+                        category: value,
+                      })
+                    }
                   >
                     <SelectTrigger id="edit-category">
                       <SelectValue placeholder="Selecciona una categoría" />
                     </SelectTrigger>
                     <SelectContent>
                       {COMMON_CATEGORIES.map((category) => (
-                        <SelectItem key={category} value={category || "categoria_sin_nombre"}>
+                        <SelectItem
+                          key={category}
+                          value={category || "categoria_sin_nombre"}
+                        >
                           {category || "Categoría sin nombre"}
                         </SelectItem>
                       ))}
                       {/* Incluir la categoría actual si no está en las comunes */}
-                      {!COMMON_CATEGORIES.includes(editingMaterial.category) && editingMaterial.category && (
-                        <SelectItem value={editingMaterial.category || "categoria_sin_nombre"}>
-                          {editingMaterial.category || "Categoría sin nombre"}
-                        </SelectItem>
-                      )}
+                      {!COMMON_CATEGORIES.includes(editingMaterial.category) &&
+                        editingMaterial.category && (
+                          <SelectItem
+                            value={
+                              editingMaterial.category || "categoria_sin_nombre"
+                            }
+                          >
+                            {editingMaterial.category || "Categoría sin nombre"}
+                          </SelectItem>
+                        )}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="edit-description">Descripción</Label>
                 <Input
                   id="edit-description"
                   placeholder="Poste de madera tratada para uso exterior"
-                  value={editingMaterial.description || ''}
-                  onChange={(e) => setEditingMaterial({...editingMaterial, description: e.target.value})}
+                  value={editingMaterial.description || ""}
+                  onChange={(e) =>
+                    setEditingMaterial({
+                      ...editingMaterial,
+                      description: e.target.value,
+                    })
+                  }
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-unit" className="required">Unidad</Label>
+                  <Label htmlFor="edit-unit" className="required">
+                    Unidad
+                  </Label>
                   <Select
                     value={editingMaterial.unit}
-                    onValueChange={(value) => setEditingMaterial({...editingMaterial, unit: value})}
+                    onValueChange={(value) =>
+                      setEditingMaterial({ ...editingMaterial, unit: value })
+                    }
                   >
                     <SelectTrigger id="edit-unit">
                       <SelectValue placeholder="Selecciona una unidad" />
@@ -1050,15 +1252,16 @@ export default function Materials() {
                         </SelectItem>
                       ))}
                       {/* Incluir la unidad actual si no está en las comunes */}
-                      {!COMMON_UNITS.includes(editingMaterial.unit) && editingMaterial.unit && (
-                        <SelectItem value={editingMaterial.unit}>
-                          {editingMaterial.unit}
-                        </SelectItem>
-                      )}
+                      {!COMMON_UNITS.includes(editingMaterial.unit) &&
+                        editingMaterial.unit && (
+                          <SelectItem value={editingMaterial.unit}>
+                            {editingMaterial.unit}
+                          </SelectItem>
+                        )}
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="edit-price">Precio</Label>
                   <Input
@@ -1067,50 +1270,72 @@ export default function Materials() {
                     step="0.01"
                     min="0"
                     placeholder="0.00"
-                    value={editingMaterial.price || ''}
-                    onChange={(e) => setEditingMaterial({...editingMaterial, price: parseFloat(e.target.value) || 0})}
+                    value={editingMaterial.price || ""}
+                    onChange={(e) =>
+                      setEditingMaterial({
+                        ...editingMaterial,
+                        price: parseFloat(e.target.value) || 0,
+                      })
+                    }
                   />
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-sku">SKU</Label>
                   <Input
                     id="edit-sku"
                     placeholder="ABC-123"
-                    value={editingMaterial.sku || ''}
-                    onChange={(e) => setEditingMaterial({...editingMaterial, sku: e.target.value})}
+                    value={editingMaterial.sku || ""}
+                    onChange={(e) =>
+                      setEditingMaterial({
+                        ...editingMaterial,
+                        sku: e.target.value,
+                      })
+                    }
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="edit-supplier">Proveedor</Label>
                   <Input
                     id="edit-supplier"
                     placeholder="Home Depot"
-                    value={editingMaterial.supplier || ''}
-                    onChange={(e) => setEditingMaterial({...editingMaterial, supplier: e.target.value})}
+                    value={editingMaterial.supplier || ""}
+                    onChange={(e) =>
+                      setEditingMaterial({
+                        ...editingMaterial,
+                        supplier: e.target.value,
+                      })
+                    }
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="edit-supplierLink">Enlace del Proveedor</Label>
                 <Input
                   id="edit-supplierLink"
                   type="url"
                   placeholder="https://www.homedepot.com/..."
-                  value={editingMaterial.supplierLink || ''}
-                  onChange={(e) => setEditingMaterial({...editingMaterial, supplierLink: e.target.value})}
+                  value={editingMaterial.supplierLink || ""}
+                  onChange={(e) =>
+                    setEditingMaterial({
+                      ...editingMaterial,
+                      supplierLink: e.target.value,
+                    })
+                  }
                 />
               </div>
             </div>
           )}
-          
+
           <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
             <DialogClose asChild>
-              <Button variant="outline" className="w-full sm:w-auto">Cancelar</Button>
+              <Button variant="outline" className="w-full sm:w-auto">
+                Cancelar
+              </Button>
             </DialogClose>
             <Button onClick={updateMaterial} className="w-full sm:w-auto">
               Actualizar Material
@@ -1127,17 +1352,25 @@ export default function Materials() {
             <DialogDescription>
               {deletingMaterial && (
                 <>
-                  ¿Estás seguro de que quieres eliminar el material "<strong>{deletingMaterial.name}</strong>"? Esta acción no se puede deshacer.
+                  ¿Estás seguro de que quieres eliminar el material "
+                  <strong>{deletingMaterial.name}</strong>"? Esta acción no se
+                  puede deshacer.
                 </>
               )}
             </DialogDescription>
           </DialogHeader>
-          
+
           <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
             <DialogClose asChild>
-              <Button variant="outline" className="w-full sm:w-auto">Cancelar</Button>
+              <Button variant="outline" className="w-full sm:w-auto">
+                Cancelar
+              </Button>
             </DialogClose>
-            <Button variant="destructive" onClick={deleteMaterial} className="w-full sm:w-auto">
+            <Button
+              variant="destructive"
+              onClick={deleteMaterial}
+              className="w-full sm:w-auto"
+            >
               Eliminar
             </Button>
           </DialogFooter>
@@ -1145,33 +1378,38 @@ export default function Materials() {
       </Dialog>
 
       {/* Diálogo de confirmación para eliminación en lote */}
-      <Dialog open={showBatchDeleteDialog} onOpenChange={setShowBatchDeleteDialog}>
+      <Dialog
+        open={showBatchDeleteDialog}
+        onOpenChange={setShowBatchDeleteDialog}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirmar eliminación en lote</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que deseas eliminar {selectedMaterials.size} materiales seleccionados? 
-              Esta acción no se puede deshacer.
+              ¿Estás seguro de que deseas eliminar {selectedMaterials.size}{" "}
+              materiales seleccionados? Esta acción no se puede deshacer.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="max-h-60  border rounded-md p-3 bg-muted/50">
             <p className="text-sm font-medium mb-2">Materiales a eliminar:</p>
             <ul className="text-sm space-y-1">
               {materials
-                .filter(m => selectedMaterials.has(m.id))
-                .map(material => (
+                .filter((m) => selectedMaterials.has(m.id))
+                .map((material) => (
                   <li key={material.id} className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-red-500 rounded-full"></span>
                     {material.name} ({material.category})
                   </li>
-                ))
-              }
+                ))}
             </ul>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowBatchDeleteDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowBatchDeleteDialog(false)}
+            >
               Cancelar
             </Button>
             <Button variant="destructive" onClick={deleteBatchMaterials}>

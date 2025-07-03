@@ -446,7 +446,7 @@ function Projects() {
   }
 
   return (
-    <div className="page-container bg-background">
+    <div className=" bg-background">
       <div className="fixed-header p-6 border-b">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Proyectos</h1>
@@ -509,29 +509,47 @@ function Projects() {
             onValueChange={setProgressFilter}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-8">
-              <TabsTrigger value="all" className="text-xs">
+            <TabsList className="flex flex-wrap  sm:grid sm:grid-cols-4 md:grid-cols-8 gap-1 overflow-x-auto scrollbar-hide">
+              <TabsTrigger value="all" className="text-xs whitespace-nowrap">
                 Todos
               </TabsTrigger>
-              <TabsTrigger value="estimate_created" className="text-xs">
+              <TabsTrigger
+                value="estimate_created"
+                className="text-xs whitespace-nowrap"
+              >
                 Estimado
               </TabsTrigger>
-              <TabsTrigger value="rejected" className="text-xs">
+              <TabsTrigger
+                value="rejected"
+                className="text-xs whitespace-nowrap"
+              >
                 Rechazado
               </TabsTrigger>
-              <TabsTrigger value="in_contract" className="text-xs">
+              <TabsTrigger
+                value="in_contract"
+                className="text-xs whitespace-nowrap"
+              >
                 Contrato
               </TabsTrigger>
-              <TabsTrigger value="scheduled" className="text-xs">
+              <TabsTrigger
+                value="scheduled"
+                className="text-xs whitespace-nowrap"
+              >
                 Programado
               </TabsTrigger>
-              <TabsTrigger value="in_progress" className="text-xs">
+              <TabsTrigger
+                value="in_progress"
+                className="text-xs whitespace-nowrap"
+              >
                 Proyecto
               </TabsTrigger>
-              <TabsTrigger value="paid" className="text-xs">
+              <TabsTrigger value="paid" className="text-xs whitespace-nowrap">
                 Pagado
               </TabsTrigger>
-              <TabsTrigger value="completed" className="text-xs">
+              <TabsTrigger
+                value="completed"
+                className="text-xs whitespace-nowrap"
+              >
                 Completado
               </TabsTrigger>
             </TabsList>
@@ -545,8 +563,7 @@ function Projects() {
           </div>
         </div>
       </div>
-
-      <div className="controlled-scroll p-6 ">
+      <div className="p-6">
         {filteredProjects.length === 0 ? (
           <div className="text-center py-12 bg-muted/20 rounded-lg">
             <i className="ri-search-line text-3xl mb-2 text-muted-foreground"></i>
@@ -555,7 +572,10 @@ function Projects() {
             </p>
           </div>
         ) : viewMode === "grid" ? (
-          <CardGrid cols={{ default: 1, md: 2, lg: 3 }} className="gap-6">
+          <CardGrid
+            cols={{ default: 1, md: 2, lg: 3 }}
+            className="gap-6 md:h-[40dvh] overflow-y-auto "
+          >
             {filteredProjects.map((project) => {
               const displayInfo = getProjectDisplayInfo(project);
               return (
@@ -619,17 +639,25 @@ function Projects() {
                       </div>
 
                       {project.projectDescription && (
-                        <div className="text-xs text-muted-foreground line-clamp-2 bg-muted/30 p-2 rounded">
+                        <div className="text-xs hidden md:block text-muted-foreground line-clamp-2 bg-muted/30 p-2 rounded">
                           {project.projectDescription}
                         </div>
                       )}
 
-                      {project.totalPrice && (
-                        <div className="flex items-center gap-2 text-sm font-medium text-green-600">
-                          <i className="ri-money-dollar-circle-line"></i>
-                          <span>${project.totalPrice.toLocaleString()}</span>
-                        </div>
-                      )}
+                      {
+                        //@ts-ignore
+                        project.total && (
+                          <div className="flex items-center gap-2 text-sm font-medium text-green-600">
+                            <i className="ri-money-dollar-circle-line"></i>
+                            <span>
+                              {
+                                //@ts-ignore
+                                project.total
+                              }
+                            </span>
+                          </div>
+                        )
+                      }
                     </div>
 
                     <div className="flex gap-2 mt-4 pt-3 border-t">
@@ -659,8 +687,8 @@ function Projects() {
           </CardGrid>
         ) : (
           <div className="border rounded-lg ">
-            <div className="">
-              <table className="w-full">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full min-w-[640px]">
                 <thead className="bg-muted/50">
                   <tr className="border-b">
                     <th className="text-left p-3 font-medium">Cliente</th>
@@ -722,7 +750,9 @@ function Projects() {
                         <td className="p-3 hidden lg:table-cell">
                           <Badge
                             variant="outline"
-                            className={`${getProgressColor(project.projectProgress || "estimate_created")} text-xs`}
+                            className={`${getProgressColor(
+                              project.projectProgress || "estimate_created",
+                            )} text-xs`}
                           >
                             {getProgressLabel(
                               project.projectProgress || "estimate_created",
@@ -743,7 +773,7 @@ function Projects() {
                           </div>
                         </td>
                         <td className="p-3">
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 flex-wrap">
                             <Button
                               size="sm"
                               variant="outline"
@@ -773,7 +803,6 @@ function Projects() {
           </div>
         )}
       </div>
-
       {isDialogOpen && selectedProject && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="dialog-content p-0 max-w-7xl w-[98vw] h-[95vh]">
