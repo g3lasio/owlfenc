@@ -5,6 +5,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import multer from "multer";
 import pdfParse from "pdf-parse";
 import centralizedEmailRoutes from "./routes/centralized-email-routes-fix";
+import { setupProductionRoutes, setupProductionErrorHandlers } from "./production-setup";
 
 dotenv.config();
 
@@ -15,9 +16,19 @@ import './db';
 global.propertyCache = {};
 global.lastApiErrorMessage = "";
 
+// Log startup information
+console.log('🚀 Starting server...');
+console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`🔌 Port: ${process.env.PORT || 5000}`);
+
+// En producción, no salir si faltan variables de Firebase, solo advertir
 if (!process.env.FIREBASE_API_KEY || !process.env.FIREBASE_PROJECT_ID) {
-  console.error("Missing Firebase configuration. Please check your environment variables.");
-  process.exit(1);
+  console.warn("⚠️  Missing Firebase configuration. Please check your environment variables.");
+  if (process.env.NODE_ENV === 'production') {
+    console.warn("⚠️  Running in production mode without Firebase config - some features may not work");
+  } else {
+    process.exit(1);
+  }
 }
 
 const app = express();
@@ -106,6 +117,10 @@ app.use((req, res, next) => {
 });
 
 // 🔧 Registrar TODAS las rutas de API ANTES de iniciar el servidor
+// Add health check routes
+import healthRoutes from './routes/health';
+app.use('/api', healthRoutes);
+
 // Add OCR simplified routes
 app.use('/api/ocr', ocrSimpleRoutes);
 
@@ -124,27 +139,39 @@ console.log('📧 [CENTRALIZED-EMAIL] Rutas registradas en /api/centralized-emai
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
+    
+    console.error('Error handler:', err);
     res.status(status).json({ message });
-    throw err;
+    // No lanzar el error en producción
+    if (process.env.NODE_ENV !== 'production') {
+      throw err;
+    }
   });
 
-  // Setup Vite middleware first, before starting server
+  // Setup server based on environment
   try {
+    const port = parseInt(process.env.PORT || '5000', 10);
     const server = await new Promise<any>((resolve) => {
-      const httpServer = app.listen(5000, "0.0.0.0", () => {
-        log('Server started on port 5000');
+      const httpServer = app.listen(port, "0.0.0.0", () => {
+        log(`Server started on port ${port}`);
         resolve(httpServer);
       });
     });
     
-    // Setup Vite development server
-    await setupVite(app, server);
+    // Only setup Vite in development mode
+    if (process.env.NODE_ENV !== 'production') {
+      await setupVite(app, server);
+      console.log('📄 Frontend served via Vite development server');
+    } else {
+      // In production, use custom production setup
+      setupProductionRoutes(app);
+      setupProductionErrorHandlers();
+      console.log('📄 Frontend served from production build');
+    }
     
     console.log('✅ OPTIMIZED CONTRACT GENERATOR READY!');
     console.log('📊 Puppeteer PDF Service: Local generation without external dependencies');
     console.log('🎯 Professional template with modern design and print optimization');
-    console.log('📄 Frontend properly served via Vite development server');
     
   } catch (error) {
     console.error('Server setup error:', error instanceof Error ? error.message : String(error));
