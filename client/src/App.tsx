@@ -48,10 +48,10 @@ import AITestingPage from "@/pages/AITestingPage";
 import DeepSearchDemo from "@/pages/DeepSearchDemo";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
-import AuthDiagnostic from "./pages/AuthDiagnostic";
-import AppleAuthTest from "./pages/AppleAuthTest";
-import { lazy } from "react";
-import CyberpunkLegalDefense from "./pages/CyberpunkLegalDefense";
+import AuthDiagnostic from './pages/AuthDiagnostic';
+import AppleAuthTest from './pages/AppleAuthTest';
+import { lazy } from 'react';
+import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
 
 import { Redirect } from "wouter";
 
@@ -82,12 +82,12 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
 }
 
 function Router() {
+
   return (
     <Switch>
       {/* Rutas públicas */}
       <Route path="/login" component={() => <AuthPage />} />
-      <Route path="/signup" component={() => <AuthPage />} />{" "}
-      {/* Mantiene la misma ruta pero usa AuthPage */}
+      <Route path="/signup" component={() => <AuthPage />} /> {/* Mantiene la misma ruta pero usa AuthPage */}
       <Route path="/recuperar-password" component={RecuperarPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/login/email-link-callback" component={EmailLinkCallback} />
@@ -98,8 +98,11 @@ function Router() {
       <Route path="/about-mervin" component={AboutMervin} />
       <Route path="/legal-policy" component={LegalPolicy} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
+
       {/* Rutas protegidas */}
-      <Route path="/">{() => <ProtectedRoute component={Home} />}</Route>
+      <Route path="/">
+        {() => <ProtectedRoute component={Home} />}
+      </Route>
       <Route path="/mervin">
         {() => <ProtectedRoute component={Mervin} />}
       </Route>
@@ -112,10 +115,8 @@ function Router() {
       <Route path="/invoices">
         {() => <ProtectedRoute component={Invoices} />}
       </Route>
-      <Route
-        path="/clients"
-        component={() => <ProtectedRoute component={NuevoClientes} />}
-      />
+
+      <Route path="/clients" component={() => <ProtectedRoute component={NuevoClientes} />} />
       <Route path="/materials">
         {() => <ProtectedRoute component={Materials} />}
       </Route>
@@ -149,6 +150,7 @@ function Router() {
       <Route path="/subscription">
         {() => <ProtectedRoute component={Subscription} />}
       </Route>
+
       <Route path="/billing">
         {() => <ProtectedRoute component={Billing} />}
       </Route>
@@ -158,6 +160,7 @@ function Router() {
       <Route path="/security">
         {() => <ProtectedRoute component={SecuritySettings} />}
       </Route>
+
       <Route path="/smart-contract-wizard">
         {() => <ProtectedRoute component={SmartContractWizard} />}
       </Route>
@@ -173,6 +176,7 @@ function Router() {
       <Route path="/cyberpunk-legal-defense">
         {() => <ProtectedRoute component={CyberpunkLegalDefense} />}
       </Route>
+
       <Route path="/unified-contracts">
         {() => <ProtectedRoute component={UnifiedContractManager} />}
       </Route>
@@ -203,6 +207,7 @@ function Router() {
       <Route path="/estimates-legacy">
         {() => <ProtectedRoute component={EstimateGenerator} />}
       </Route>
+
       {/* Página no encontrada */}
       <Route component={NotFound} />
     </Switch>
