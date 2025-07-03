@@ -1,15 +1,28 @@
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { 
-  Search, 
-  Filter, 
-  Download, 
-  Eye, 
+import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Search,
+  Filter,
+  Download,
+  Eye,
   RefreshCw,
   Calendar,
   DollarSign,
@@ -18,8 +31,8 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  XCircle
-} from 'lucide-react';
+  XCircle,
+} from "lucide-react";
 
 interface PaymentHistoryProps {
   payments: any[] | undefined;
@@ -34,57 +47,58 @@ export default function PaymentHistory({
   projects = [],
   isLoading,
   onResendPaymentLink,
-  onRefresh
+  onRefresh,
 }: PaymentHistoryProps) {
   const { t } = useTranslation();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount / 100);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'succeeded': { 
-        variant: 'default' as const, 
-        icon: CheckCircle, 
-        label: 'Paid' 
+      succeeded: {
+        variant: "default" as const,
+        icon: CheckCircle,
+        label: "Paid",
       },
-      'pending': { 
-        variant: 'secondary' as const, 
-        icon: Clock, 
-        label: 'Pending' 
+      pending: {
+        variant: "secondary" as const,
+        icon: Clock,
+        label: "Pending",
       },
-      'failed': { 
-        variant: 'destructive' as const, 
-        icon: XCircle, 
-        label: 'Failed' 
+      failed: {
+        variant: "destructive" as const,
+        icon: XCircle,
+        label: "Failed",
       },
-      'canceled': { 
-        variant: 'outline' as const, 
-        icon: AlertCircle, 
-        label: 'Canceled' 
+      canceled: {
+        variant: "outline" as const,
+        icon: AlertCircle,
+        label: "Canceled",
       },
-      'expired': { 
-        variant: 'outline' as const, 
-        icon: AlertCircle, 
-        label: 'Expired' 
-      }
+      expired: {
+        variant: "outline" as const,
+        icon: AlertCircle,
+        label: "Expired",
+      },
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+    const config =
+      statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     const Icon = config.icon;
 
     return (
@@ -97,46 +111,55 @@ export default function PaymentHistory({
 
   const getPaymentTypeBadge = (type: string) => {
     const typeConfig = {
-      'deposit': { label: 'Initial Payment', color: 'bg-blue-100 text-blue-800' },
-      'final': { label: 'Final Payment', color: 'bg-green-100 text-green-800' },
-      'milestone': { label: 'Milestone', color: 'bg-purple-100 text-purple-800' },
-      'additional': { label: 'Additional', color: 'bg-orange-100 text-orange-800' }
+      deposit: { label: "Initial Payment", color: "bg-blue-100 text-blue-800" },
+      final: { label: "Final Payment", color: "bg-green-100 text-green-800" },
+      milestone: { label: "Milestone", color: "bg-purple-100 text-purple-800" },
+      additional: {
+        label: "Additional",
+        color: "bg-orange-100 text-orange-800",
+      },
     };
 
-    const config = typeConfig[type as keyof typeof typeConfig] || { 
-      label: type, 
-      color: 'bg-gray-100 text-gray-800' 
+    const config = typeConfig[type as keyof typeof typeConfig] || {
+      label: type,
+      color: "bg-gray-100 text-gray-800",
     };
 
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+      <span
+        className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}
+      >
         {config.label}
       </span>
     );
   };
 
   const getProjectInfo = (projectId: number) => {
-    return projects.find(p => p.id === projectId);
+    return projects.find((p) => p.id === projectId);
   };
 
-  const filteredPayments = payments.filter(payment => {
-    const matchesSearch = 
+  const filteredPayments = payments.filter((payment) => {
+    const matchesSearch =
       payment.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
-    
+
+    const matchesStatus =
+      statusFilter === "all" || payment.status === statusFilter;
+
     return matchesSearch && matchesStatus;
   });
 
   const calculateTotals = () => {
-    const totalAmount = filteredPayments.reduce((sum, payment) => sum + payment.amount, 0);
+    const totalAmount = filteredPayments.reduce(
+      (sum, payment) => sum + payment.amount,
+      0,
+    );
     const paidAmount = filteredPayments
-      .filter(p => p.status === 'succeeded')
+      .filter((p) => p.status === "succeeded")
       .reduce((sum, payment) => sum + payment.amount, 0);
     const pendingAmount = filteredPayments
-      .filter(p => p.status === 'pending')
+      .filter((p) => p.status === "pending")
       .reduce((sum, payment) => sum + payment.amount, 0);
 
     return { totalAmount, paidAmount, pendingAmount };
@@ -150,7 +173,9 @@ export default function PaymentHistory({
         <CardContent className="p-6">
           <div className="flex items-center justify-center">
             <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-muted-foreground">Loading payment history...</span>
+            <span className="ml-2 text-muted-foreground">
+              Loading payment history...
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -197,7 +222,7 @@ export default function PaymentHistory({
             </div>
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
-              <select 
+              <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-3 py-2 border border-border rounded-md text-sm"
@@ -213,95 +238,107 @@ export default function PaymentHistory({
 
           {/* Table */}
           <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice</TableHead>
-                  <TableHead>Client & Project</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPayments.length === 0 ? (
+            <div className="w-full overflow-x-auto">
+              <Table className="min-w-[800px]">
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No payments found
-                    </TableCell>
+                    <TableHead>Invoice</TableHead>
+                    <TableHead>Client & Project</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ) : (
-                  filteredPayments.map((payment) => {
-                    const project = getProjectInfo(payment.projectId);
-                    return (
-                      <TableRow key={payment.id}>
-                        <TableCell>
-                          <div className="font-medium">
-                            {payment.invoiceNumber || `PAY-${payment.id}`}
-                          </div>
-                          {payment.description && (
-                            <div className="text-xs text-muted-foreground">
-                              {payment.description}
+                </TableHeader>
+                <TableBody>
+                  {filteredPayments.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="text-center py-8 text-muted-foreground"
+                      >
+                        No payments found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredPayments.map((payment) => {
+                      const project = getProjectInfo(payment.projectId);
+                      return (
+                        <TableRow key={payment.id}>
+                          <TableCell>
+                            <div className="font-medium">
+                              {payment.invoiceNumber || `PAY-${payment.id}`}
                             </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <User className="h-3 w-3 text-muted-foreground" />
-                              <span className="font-medium">{payment.clientName}</span>
-                            </div>
-                            {project && (
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <MapPin className="h-3 w-3" />
-                                <span>{project.address}</span>
+                            {payment.description && (
+                              <div className="text-xs text-muted-foreground">
+                                {payment.description}
                               </div>
                             )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {getPaymentTypeBadge(payment.type)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">
-                            {formatCurrency(payment.amount)}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(payment.status)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            {payment.paidDate ? 
-                              formatDate(payment.paidDate) : 
-                              payment.createdAt ? formatDate(payment.createdAt) : '-'
-                            }
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            {payment.status === 'pending' && payment.paymentLinkUrl && onResendPaymentLink && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => onResendPaymentLink(payment.id)}
-                              >
-                                <RefreshCw className="h-4 w-4" />
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <User className="h-3 w-3 text-muted-foreground" />
+                                <span className="font-medium">
+                                  {payment.clientName}
+                                </span>
+                              </div>
+                              {project && (
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <MapPin className="h-3 w-3" />
+                                  <span>{project.address}</span>
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {getPaymentTypeBadge(payment.type)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium">
+                              {formatCurrency(payment.amount)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(payment.status)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              {payment.paidDate
+                                ? formatDate(payment.paidDate)
+                                : payment.createdAt
+                                  ? formatDate(payment.createdAt)
+                                  : "-"}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button variant="ghost" size="sm">
+                                <Eye className="h-4 w-4" />
                               </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
+                              {payment.status === "pending" &&
+                                payment.paymentLinkUrl &&
+                                onResendPaymentLink && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      onResendPaymentLink(payment.id)
+                                    }
+                                  >
+                                    <RefreshCw className="h-4 w-4" />
+                                  </Button>
+                                )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
 
           {/* Pagination would go here if needed */}

@@ -640,7 +640,7 @@ function Projects() {
 
                       {project.projectDescription && (
                         <div className="text-xs hidden md:block text-muted-foreground line-clamp-2 bg-muted/30 p-2 rounded">
-                          {project.projectDescription}
+                          {project.projectDescription.slice(0, 250)}...
                         </div>
                       )}
 

@@ -434,7 +434,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="page-container -bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 ">
+    <div className="page-container p-4 pt-10  -bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 ">
       {/* Cyberpunk Background Effects */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-0 w-32 h-32 border-t-2 border-l-2 border-cyan-400/30"></div>
@@ -1304,12 +1304,12 @@ export default function Settings() {
 
         {/* Cyberpunk Save Button */}
         <div className="flex justify-center md:justify-end pt-6 border-t border-slate-700/50">
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+          <div className="mb-10  relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 blur-xl group-hover:blur-2xl transition-all duration-500  "></div>
             <Button
               onClick={handleSaveSettings}
               disabled={saveLoading}
-              className="relative px-6 md:px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold border border-cyan-400/50 hover:border-cyan-400 transition-all duration-300 disabled:opacity-50"
+              className="relative  px-6 md:px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold border border-cyan-400/50 hover:border-cyan-400 transition-all duration-300 disabled:opacity-50"
             >
               <div className="flex items-center gap-2">
                 {saveLoading ? (

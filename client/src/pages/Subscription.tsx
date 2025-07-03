@@ -304,7 +304,7 @@ export default function Subscription() {
     userSubscription.planId;
 
   return (
-    <div className="container max-w-6xl mx-auto py-12">
+    <div className="container max-w-6xl p-4 mx-auto py-12">
       <div className="text-center mb-10">
         <h1 className="text-3xl font-bold tracking-tight mb-3">
           Planes de Suscripción

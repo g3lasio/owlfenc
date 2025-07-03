@@ -1,24 +1,30 @@
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { 
-  CreditCard, 
-  Settings, 
-  Bell, 
-  DollarSign, 
-  Clock, 
+import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  CreditCard,
+  Settings,
+  Bell,
+  DollarSign,
+  Clock,
   CheckCircle,
   AlertCircle,
   Shield,
-  Building2
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+  Building2,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface PaymentSettingsProps {
   stripeAccountStatus?: {
@@ -38,24 +44,24 @@ interface PaymentSettingsProps {
 
 export default function PaymentSettings({
   stripeAccountStatus,
-  onConnectStripe
+  onConnectStripe,
 }: PaymentSettingsProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
-  
+
   const [settings, setSettings] = useState({
     autoSendInvoices: true,
     paymentReminders: true,
-    defaultPaymentTerms: '30',
-    preferredPaymentMethods: ['card', 'apple_pay'],
-    invoicePrefix: 'INV',
-    depositPercentage: '50'
+    defaultPaymentTerms: "30",
+    preferredPaymentMethods: ["card", "apple_pay"],
+    invoicePrefix: "INV",
+    depositPercentage: "50",
   });
 
   const handleSettingChange = (key: string, value: any) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
-      [key]: value
+      [key]: value,
     }));
   };
 
@@ -88,17 +94,21 @@ export default function PaymentSettings({
               <CreditCard className="h-8 w-8 text-muted-foreground" />
               <div>
                 <h4 className="font-medium">Stripe Connect Account</h4>
-                <p className="text-sm text-muted-foreground">
-                  Conexión bancaria temporalmente suspendida durante revisión de compliance
-                </p>
+              </div>
+              <div className="md:block hidden text-sm text-muted-foreground">
+                Conexión bancaria temporalmente suspendida durante revisión de
+                compliance
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Badge variant="secondary" className="bg-orange-50 text-orange-700 border-orange-200">
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge
+                variant="secondary"
+                className="bg-orange-50 text-orange-700 border-orange-200"
+              >
                 <Clock className="h-3 w-3 mr-1" />
                 En Revisión
               </Badge>
-              <Button 
+              <Button
                 disabled={true}
                 variant="outline"
                 className="opacity-50 cursor-not-allowed"
@@ -108,36 +118,55 @@ export default function PaymentSettings({
             </div>
           </div>
 
-          {stripeAccountStatus?.hasStripeAccount && stripeAccountStatus.accountDetails && (
-            <div className="bg-muted/30 p-4 rounded-lg space-y-2">
-              <h5 className="font-medium text-sm">Account Status</h5>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  {stripeAccountStatus.accountDetails.payoutsEnabled ? 
-                    <CheckCircle className="h-4 w-4 text-green-600" /> : 
-                    <AlertCircle className="h-4 w-4 text-orange-600" />
-                  }
-                  <span>Bank Account: {stripeAccountStatus.accountDetails.payoutsEnabled ? 'Connected' : 'Pending'}</span>
+          {stripeAccountStatus?.hasStripeAccount &&
+            stripeAccountStatus.accountDetails && (
+              <div className="bg-muted/30 p-4 rounded-lg space-y-2">
+                <h5 className="font-medium text-sm">Account Status</h5>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    {stripeAccountStatus.accountDetails.payoutsEnabled ? (
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 text-orange-600" />
+                    )}
+                    <span>
+                      Bank Account:{" "}
+                      {stripeAccountStatus.accountDetails.payoutsEnabled
+                        ? "Connected"
+                        : "Pending"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {stripeAccountStatus.accountDetails.chargesEnabled ? (
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 text-orange-600" />
+                    )}
+                    <span>
+                      Payments:{" "}
+                      {stripeAccountStatus.accountDetails.chargesEnabled
+                        ? "Enabled"
+                        : "Disabled"}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {stripeAccountStatus.accountDetails.chargesEnabled ? 
-                    <CheckCircle className="h-4 w-4 text-green-600" /> : 
-                    <AlertCircle className="h-4 w-4 text-orange-600" />
-                  }
-                  <span>Payments: {stripeAccountStatus.accountDetails.chargesEnabled ? 'Enabled' : 'Disabled'}</span>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <div>Account ID: {stripeAccountStatus.accountDetails.id}</div>
+                  {stripeAccountStatus.accountDetails.country && (
+                    <div>
+                      Country:{" "}
+                      {stripeAccountStatus.accountDetails.country.toUpperCase()}
+                    </div>
+                  )}
+                  {stripeAccountStatus.accountDetails.defaultCurrency && (
+                    <div>
+                      Currency:{" "}
+                      {stripeAccountStatus.accountDetails.defaultCurrency.toUpperCase()}
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>Account ID: {stripeAccountStatus.accountDetails.id}</div>
-                {stripeAccountStatus.accountDetails.country && (
-                  <div>Country: {stripeAccountStatus.accountDetails.country.toUpperCase()}</div>
-                )}
-                {stripeAccountStatus.accountDetails.defaultCurrency && (
-                  <div>Currency: {stripeAccountStatus.accountDetails.defaultCurrency.toUpperCase()}</div>
-                )}
-              </div>
-            </div>
-          )}
+            )}
         </CardContent>
       </Card>
 
@@ -155,13 +184,17 @@ export default function PaymentSettings({
         <CardContent className="space-y-6">
           {/* Default Deposit Percentage */}
           <div className="space-y-2">
-            <Label htmlFor="depositPercentage">Default Initial Payment (%)</Label>
+            <Label htmlFor="depositPercentage">
+              Default Initial Payment (%)
+            </Label>
             <div className="flex items-center gap-2">
               <Input
                 id="depositPercentage"
                 type="number"
                 value={settings.depositPercentage}
-                onChange={(e) => handleSettingChange('depositPercentage', e.target.value)}
+                onChange={(e) =>
+                  handleSettingChange("depositPercentage", e.target.value)
+                }
                 className="w-24"
                 min="0"
                 max="100"
@@ -180,7 +213,9 @@ export default function PaymentSettings({
                 id="paymentTerms"
                 type="number"
                 value={settings.defaultPaymentTerms}
-                onChange={(e) => handleSettingChange('defaultPaymentTerms', e.target.value)}
+                onChange={(e) =>
+                  handleSettingChange("defaultPaymentTerms", e.target.value)
+                }
                 className="w-24"
                 min="1"
                 max="90"
@@ -197,7 +232,9 @@ export default function PaymentSettings({
             <Input
               id="invoicePrefix"
               value={settings.invoicePrefix}
-              onChange={(e) => handleSettingChange('invoicePrefix', e.target.value)}
+              onChange={(e) =>
+                handleSettingChange("invoicePrefix", e.target.value)
+              }
               className="w-32"
               placeholder="INV"
             />
@@ -208,17 +245,20 @@ export default function PaymentSettings({
           {/* Automation Settings */}
           <div className="space-y-4">
             <h4 className="font-medium">Automation</h4>
-            
+
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <Label>Auto-send Invoices</Label>
                 <p className="text-sm text-muted-foreground">
-                  Automatically send invoice receipts when payments are processed
+                  Automatically send invoice receipts when payments are
+                  processed
                 </p>
               </div>
               <Switch
                 checked={settings.autoSendInvoices}
-                onCheckedChange={(checked) => handleSettingChange('autoSendInvoices', checked)}
+                onCheckedChange={(checked) =>
+                  handleSettingChange("autoSendInvoices", checked)
+                }
               />
             </div>
 
@@ -231,7 +271,9 @@ export default function PaymentSettings({
               </div>
               <Switch
                 checked={settings.paymentReminders}
-                onCheckedChange={(checked) => handleSettingChange('paymentReminders', checked)}
+                onCheckedChange={(checked) =>
+                  handleSettingChange("paymentReminders", checked)
+                }
               />
             </div>
           </div>
@@ -299,7 +341,9 @@ export default function PaymentSettings({
           <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <Shield className="h-4 w-4 text-green-600" />
-              <span className="font-medium text-green-800">Security Status</span>
+              <span className="font-medium text-green-800">
+                Security Status
+              </span>
             </div>
             <div className="space-y-1 text-sm text-green-700">
               <div className="flex items-center gap-2">
@@ -320,8 +364,9 @@ export default function PaymentSettings({
           <div className="space-y-2">
             <Label>Data Retention</Label>
             <p className="text-sm text-muted-foreground">
-              Payment data is automatically retained for 7 years to comply with financial regulations.
-              Personal data can be deleted upon request in compliance with privacy laws.
+              Payment data is automatically retained for 7 years to comply with
+              financial regulations. Personal data can be deleted upon request
+              in compliance with privacy laws.
             </p>
           </div>
         </CardContent>
@@ -329,11 +374,12 @@ export default function PaymentSettings({
 
       {/* Save Settings */}
       <div className="flex justify-end">
-        <Button 
+        <Button
           onClick={() => {
             toast({
               title: "Settings Saved",
-              description: "Your payment settings have been updated successfully.",
+              description:
+                "Your payment settings have been updated successfully.",
             });
           }}
         >

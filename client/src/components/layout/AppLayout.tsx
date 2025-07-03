@@ -101,10 +101,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <main
           className="flex-1 overflow-y-auto"
           style={{
-            marginLeft: `${sidebarWidth}px`,
-            height: 'calc(100vh - var(--header-height) - var(--footer-height))',
+            // marginLeft: `${sidebarWidth}px`,
+            // height: "calc(100vh - var(--header-height) - var(--footer-height))",
             paddingTop: 0,
-            marginTop: 0
+            marginTop: 0,
           }}
         >
           <div className="h-full">
@@ -116,11 +116,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </main>
 
         {/* Footer fijo */}
-        <footer 
+        <footer
           className="flex-shrink-0 py-2 px-4 bg-gray-900 border-t border-cyan-900/30 text-xs text-center text-cyan-500/50"
           style={{
-            height: 'var(--footer-height)',
-            minHeight: 'var(--footer-height)'
+            height: "var(--footer-height)",
+            minHeight: "var(--footer-height)",
           }}
         >
           <div className="flex justify-center items-center space-x-4 h-full">
@@ -144,8 +144,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </div>
         </footer>
       </div>
-
-
     </div>
   );
 }

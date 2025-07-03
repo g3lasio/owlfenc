@@ -447,10 +447,10 @@ const ProjectPayments: React.FC = () => {
   const hasDataErrors = projectsError || paymentsError;
 
   return (
-    <div className="container mx-auto py-8 mb-40 ">
+    <div className="md:container p-4 md:mx-auto py-8 mb-40 ">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Payment Management</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Payment Management</h1>
           <p className="text-muted-foreground">
             Simplified payment workflow with guided steps and complete tracking
           </p>

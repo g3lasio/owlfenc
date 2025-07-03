@@ -42,7 +42,10 @@ import { db } from "@/lib/firebase";
 import { MaterialInventoryService } from "../services/materialInventoryService";
 import { EmailService } from "../services/emailService";
 import { checkEmailVerification } from "@/lib/firebase";
-import { shareOrDownloadPdf, getSharingCapabilities } from "@/utils/mobileSharing";
+import {
+  shareOrDownloadPdf,
+  getSharingCapabilities,
+} from "@/utils/mobileSharing";
 import {
   Search,
   Plus,
@@ -52,7 +55,6 @@ import {
   Eye,
   Share2,
   Save,
-
   Trash2,
   Users,
   ChevronRight,
@@ -149,10 +151,14 @@ export default function EstimatesWizardFixed() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [editingEstimateId, setEditingEstimateId] = useState<string | null>(null);
-  
+  const [editingEstimateId, setEditingEstimateId] = useState<string | null>(
+    null,
+  );
+
   // Mobile sharing capabilities
-  const [sharingCapabilities, setSharingCapabilities] = useState(() => getSharingCapabilities());
+  const [sharingCapabilities, setSharingCapabilities] = useState(() =>
+    getSharingCapabilities(),
+  );
   const [estimate, setEstimate] = useState<EstimateData>({
     client: null,
     items: [],
@@ -232,8 +238,8 @@ export default function EstimatesWizardFixed() {
   // Check for edit mode on component mount
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const editId = urlParams.get('edit');
-    
+    const editId = urlParams.get("edit");
+
     if (editId) {
       setIsEditMode(true);
       setEditingEstimateId(editId);
@@ -244,7 +250,7 @@ export default function EstimatesWizardFixed() {
   // Email dialog states
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showEmailPreview, setShowEmailPreview] = useState(false);
-  
+
   // Client editing state for preview step
   const [isEditingClient, setIsEditingClient] = useState(false);
 
@@ -648,12 +654,12 @@ export default function EstimatesWizardFixed() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           projectDescription: description,
           includeMaterials: searchType === "materials" || searchType === "full",
           includeLabor: searchType === "labor" || searchType === "full",
           location: estimate.client?.address || "Estados Unidos",
-          projectType: "construction"
+          projectType: "construction",
         }),
       });
 
@@ -688,52 +694,78 @@ export default function EstimatesWizardFixed() {
         console.log("🔍 NEW DEEPSEARCH - Using data.items:", data.items);
         items = data.items;
       } else if (searchType === "full") {
-        console.log("🔍 NEW DEEPSEARCH - FULL COSTS - Processing combined response");
+        console.log(
+          "🔍 NEW DEEPSEARCH - FULL COSTS - Processing combined response",
+        );
         console.log("🔍 NEW DEEPSEARCH - FULL COSTS - Data structure:", data);
-        
+
         // For combined endpoint, the data is nested in data.data
         const combinedData = data.data || data;
-        console.log("🔍 NEW DEEPSEARCH - FULL COSTS - Combined data:", combinedData);
-        
+        console.log(
+          "🔍 NEW DEEPSEARCH - FULL COSTS - Combined data:",
+          combinedData,
+        );
+
         const materialItems: any[] = [];
         const laborItems: any[] = [];
-        
+
         // Process materials from combinedData.materials
         if (combinedData.materials && Array.isArray(combinedData.materials)) {
           console.log("🔍 Found materials:", combinedData.materials.length);
           combinedData.materials.forEach((material: any) => {
             materialItems.push({
-              id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+              id:
+                Date.now().toString() + Math.random().toString(36).substr(2, 9),
               materialId: material.id || Date.now().toString(),
               name: material.name || "Unknown Material",
               description: material.description || "",
               quantity: material.quantity || 1,
               price: material.price || material.unitPrice || 0,
               unit: material.unit || "each",
-              total: (material.quantity || 1) * (material.price || material.unitPrice || 0),
+              total:
+                (material.quantity || 1) *
+                (material.price || material.unitPrice || 0),
             });
           });
         }
-        
+
         // Process labor services from combinedData.laborCosts
         if (combinedData.laborCosts && Array.isArray(combinedData.laborCosts)) {
-          console.log("🔍 Found labor services:", combinedData.laborCosts.length);
+          console.log(
+            "🔍 Found labor services:",
+            combinedData.laborCosts.length,
+          );
           combinedData.laborCosts.forEach((service: any) => {
             laborItems.push({
-              id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+              id:
+                Date.now().toString() + Math.random().toString(36).substr(2, 9),
               materialId: service.id || Date.now().toString(),
               name: service.name || "Unknown Service",
               description: service.description || "",
               quantity: service.quantity || 1,
-              price: service.unitPrice || service.totalPrice || service.totalCost || 0,
+              price:
+                service.unitPrice ||
+                service.totalPrice ||
+                service.totalCost ||
+                0,
               unit: service.unit || "service",
-              total: service.totalCost || service.totalPrice || ((service.quantity || 1) * (service.unitPrice || 0)),
+              total:
+                service.totalCost ||
+                service.totalPrice ||
+                (service.quantity || 1) * (service.unitPrice || 0),
             });
           });
         }
-        
+
         items = [...materialItems, ...laborItems];
-        console.log("🔍 NEW DEEPSEARCH - FULL COSTS - Total items:", items.length, "Materials:", materialItems.length, "Labor:", laborItems.length);
+        console.log(
+          "🔍 NEW DEEPSEARCH - FULL COSTS - Total items:",
+          items.length,
+          "Materials:",
+          materialItems.length,
+          "Labor:",
+          laborItems.length,
+        );
       } else if (data.items) {
         console.log("🔍 NEW DEEPSEARCH - Fallback to data.items:", data.items);
         items = data.items;
@@ -742,19 +774,25 @@ export default function EstimatesWizardFixed() {
       console.log("🔍 NEW DEEPSEARCH - Final items to process:", items);
 
       if (items && items.length > 0) {
-        const newItems = searchType === "full" ? items : items.map((item: any) => {
-          console.log("🔍 NEW DEEPSEARCH - Processing item:", item);
-          return {
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-            materialId: item.id || Date.now().toString(),
-            name: item.name || item.material || "Unknown Item",
-            description: item.description || item.details || "",
-            quantity: item.quantity || 1,
-            price: item.price || item.unitPrice || 0,
-            unit: item.unit || "each",
-            total: (item.quantity || 1) * (item.price || item.unitPrice || 0),
-          };
-        });
+        const newItems =
+          searchType === "full"
+            ? items
+            : items.map((item: any) => {
+                console.log("🔍 NEW DEEPSEARCH - Processing item:", item);
+                return {
+                  id:
+                    Date.now().toString() +
+                    Math.random().toString(36).substr(2, 9),
+                  materialId: item.id || Date.now().toString(),
+                  name: item.name || item.material || "Unknown Item",
+                  description: item.description || item.details || "",
+                  quantity: item.quantity || 1,
+                  price: item.price || item.unitPrice || 0,
+                  unit: item.unit || "each",
+                  total:
+                    (item.quantity || 1) * (item.price || item.unitPrice || 0),
+                };
+              });
 
         console.log("🔍 NEW DEEPSEARCH - New items created:", newItems);
 
@@ -767,9 +805,10 @@ export default function EstimatesWizardFixed() {
 
         toast({
           title: `${searchType === "full" ? "Full Costs Analysis" : "AI Search"} Completed`,
-          description: searchType === "full" 
-            ? `Added ${newItems.length} items (materials + labor) with complete cost analysis`
-            : `Successfully found and added ${newItems.length} ${successMessage} to your estimate`,
+          description:
+            searchType === "full"
+              ? `Added ${newItems.length} items (materials + labor) with complete cost analysis`
+              : `Successfully found and added ${newItems.length} ${successMessage} to your estimate`,
         });
 
         // Mostrar mensaje de Mervin
@@ -867,48 +906,55 @@ export default function EstimatesWizardFixed() {
       if (estimate.items.length > 0 && !estimate.client && clients.length > 0) {
         try {
           let clientToRestore = null;
-          
+
           // Method 1: Try to restore from localStorage (most recent session)
-          const savedClient = localStorage.getItem('currentEstimateClient');
+          const savedClient = localStorage.getItem("currentEstimateClient");
           if (savedClient) {
             try {
               const parsedClient = JSON.parse(savedClient);
               // Verify this client still exists in the database
-              clientToRestore = clients.find(c => c.id === parsedClient.id);
+              clientToRestore = clients.find((c) => c.id === parsedClient.id);
               if (clientToRestore) {
-                console.log('✅ AUTO-RECOVERY: Restored client from localStorage');
+                console.log(
+                  "✅ AUTO-RECOVERY: Restored client from localStorage",
+                );
               }
             } catch (parseError) {
-              console.warn('localStorage client data corrupted, trying alternatives');
+              console.warn(
+                "localStorage client data corrupted, trying alternatives",
+              );
             }
           }
-          
+
           // Method 2: Try to find the most recent client used by ID
           if (!clientToRestore) {
-            const lastUsedClientId = localStorage.getItem('lastUsedClientId');
+            const lastUsedClientId = localStorage.getItem("lastUsedClientId");
             if (lastUsedClientId) {
-              clientToRestore = clients.find(c => c.id === lastUsedClientId);
+              clientToRestore = clients.find((c) => c.id === lastUsedClientId);
             }
           }
-          
+
           // Method 3: Use the first available client as fallback
           if (!clientToRestore && clients.length > 0) {
             clientToRestore = clients[0];
           }
-          
+
           if (clientToRestore) {
             // Auto-restore the client silently for seamless experience
-            setEstimate(prev => ({
+            setEstimate((prev) => ({
               ...prev,
-              client: clientToRestore
+              client: clientToRestore,
             }));
-            
+
             // Update localStorage for future sessions
-            localStorage.setItem('lastUsedClientId', clientToRestore.id);
-            localStorage.setItem('currentEstimateClient', JSON.stringify(clientToRestore));
+            localStorage.setItem("lastUsedClientId", clientToRestore.id);
+            localStorage.setItem(
+              "currentEstimateClient",
+              JSON.stringify(clientToRestore),
+            );
           }
         } catch (error) {
-          console.error('AUTO-RECOVERY: Failed to restore client data:', error);
+          console.error("AUTO-RECOVERY: Failed to restore client data:", error);
         }
       }
     };
@@ -1027,33 +1073,37 @@ export default function EstimatesWizardFixed() {
           })
           .map((doc) => {
             const data = doc.data();
-            
+
             // Better data extraction with multiple fallback paths
-            const clientName = data.clientInformation?.name || 
-                             data.clientName || 
-                             data.client?.name || 
-                             "Cliente sin nombre";
-            
-            const clientEmail = data.clientInformation?.email || 
-                              data.clientEmail || 
-                              data.client?.email || 
-                              "";
-            
+            const clientName =
+              data.clientInformation?.name ||
+              data.clientName ||
+              data.client?.name ||
+              "Cliente sin nombre";
+
+            const clientEmail =
+              data.clientInformation?.email ||
+              data.clientEmail ||
+              data.client?.email ||
+              "";
+
             // Better total calculation with multiple paths
-            let totalValue = data.projectTotalCosts?.totalSummary?.finalTotal ||
-                           data.projectTotalCosts?.total ||
-                           data.total ||
-                           data.estimateAmount ||
-                           0;
-            
+            let totalValue =
+              data.projectTotalCosts?.totalSummary?.finalTotal ||
+              data.projectTotalCosts?.total ||
+              data.total ||
+              data.estimateAmount ||
+              0;
+
             // No conversion - keep original values as they are stored
             const displayTotal = totalValue;
-            
-            const projectTitle = data.projectDetails?.name ||
-                               data.projectName ||
-                               data.title ||
-                               `Estimado para ${clientName}`;
-            
+
+            const projectTitle =
+              data.projectDetails?.name ||
+              data.projectName ||
+              data.title ||
+              `Estimado para ${clientName}`;
+
             return {
               id: doc.id,
               estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
@@ -1065,10 +1115,12 @@ export default function EstimatesWizardFixed() {
               estimateDate: data.createdAt
                 ? data.createdAt.toDate?.() || new Date(data.createdAt)
                 : new Date(),
-              items: data.projectTotalCosts?.materialCosts?.items || 
-                    data.items || 
-                    [],
-              projectType: data.projectType || data.projectDetails?.type || "fence",
+              items:
+                data.projectTotalCosts?.materialCosts?.items ||
+                data.items ||
+                [],
+              projectType:
+                data.projectType || data.projectDetails?.type || "fence",
               projectId: doc.id,
               pdfUrl: data.pdfUrl || null,
               originalData: data, // Store original data for editing
@@ -1096,33 +1148,37 @@ export default function EstimatesWizardFixed() {
         const estimatesSnapshot = await getDocs(estimatesQuery);
         const firebaseEstimates = estimatesSnapshot.docs.map((doc) => {
           const data = doc.data();
-          
+
           // Better data extraction for estimates collection
-          const clientName = data.clientInformation?.name || 
-                           data.clientName || 
-                           data.client?.name || 
-                           "Cliente sin nombre";
-          
-          const clientEmail = data.clientInformation?.email || 
-                            data.clientEmail || 
-                            data.client?.email || 
-                            "";
-          
+          const clientName =
+            data.clientInformation?.name ||
+            data.clientName ||
+            data.client?.name ||
+            "Cliente sin nombre";
+
+          const clientEmail =
+            data.clientInformation?.email ||
+            data.clientEmail ||
+            data.client?.email ||
+            "";
+
           // Better total calculation
-          let totalValue = data.projectTotalCosts?.totalSummary?.finalTotal ||
-                         data.projectTotalCosts?.total ||
-                         data.total ||
-                         data.estimateAmount ||
-                         0;
-          
+          let totalValue =
+            data.projectTotalCosts?.totalSummary?.finalTotal ||
+            data.projectTotalCosts?.total ||
+            data.total ||
+            data.estimateAmount ||
+            0;
+
           // No conversion - keep original values as they are stored
           const displayTotal = totalValue;
-          
-          const projectTitle = data.projectDetails?.name ||
-                             data.title ||
-                             data.projectName ||
-                             `Estimado para ${clientName}`;
-          
+
+          const projectTitle =
+            data.projectDetails?.name ||
+            data.title ||
+            data.projectName ||
+            `Estimado para ${clientName}`;
+
           return {
             id: doc.id,
             estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
@@ -1134,10 +1190,13 @@ export default function EstimatesWizardFixed() {
             estimateDate: data.createdAt
               ? data.createdAt.toDate?.() || new Date(data.createdAt)
               : new Date(),
-            items: data.projectTotalCosts?.materialCosts?.items || 
-                  data.items || 
-                  [],
-            projectType: data.projectType || data.projectDetails?.type || data.fenceType || "fence",
+            items:
+              data.projectTotalCosts?.materialCosts?.items || data.items || [],
+            projectType:
+              data.projectType ||
+              data.projectDetails?.type ||
+              data.fenceType ||
+              "fence",
             projectId: data.projectId || doc.id,
             pdfUrl: data.pdfUrl || null,
             originalData: data, // Store original data for editing
@@ -1172,22 +1231,30 @@ export default function EstimatesWizardFixed() {
       console.log(
         `✅ Total: ${uniqueEstimates.length} estimados únicos cargados`,
       );
-      
+
       // Debug: Log the first few estimates to see their data structure
       if (uniqueEstimates.length > 0) {
-        console.log("📋 Muestra de estimados cargados:", uniqueEstimates.slice(0, 3).map(est => ({
-          estimateNumber: est.estimateNumber,
-          clientName: est.clientName,
-          total: est.total,
-          title: est.title,
-          rawData: est.originalData ? {
-            clientInfo: est.originalData.clientInformation,
-            totalCosts: est.originalData.projectTotalCosts,
-            directTotal: est.originalData.total,
-            totalSummary: est.originalData.projectTotalCosts?.totalSummary,
-            hasCentsField: !!est.originalData.projectTotalCosts?.totalSummary?.finalTotalCents
-          } : null
-        })));
+        console.log(
+          "📋 Muestra de estimados cargados:",
+          uniqueEstimates.slice(0, 3).map((est) => ({
+            estimateNumber: est.estimateNumber,
+            clientName: est.clientName,
+            total: est.total,
+            title: est.title,
+            rawData: est.originalData
+              ? {
+                  clientInfo: est.originalData.clientInformation,
+                  totalCosts: est.originalData.projectTotalCosts,
+                  directTotal: est.originalData.total,
+                  totalSummary:
+                    est.originalData.projectTotalCosts?.totalSummary,
+                  hasCentsField:
+                    !!est.originalData.projectTotalCosts?.totalSummary
+                      ?.finalTotalCents,
+                }
+              : null,
+          })),
+        );
       }
 
       if (uniqueEstimates.length === 0) {
@@ -1209,7 +1276,7 @@ export default function EstimatesWizardFixed() {
     } finally {
       setIsLoadingEstimates(false);
     }
-  }
+  };
 
   // Simple edit function that matches Projects.tsx exactly
   const handleEditEstimate = (projectId: string) => {
@@ -1923,53 +1990,60 @@ export default function EstimatesWizardFixed() {
 
   // Client selection
   const selectClient = (client: Client) => {
-    console.log('📋 Client selected with full data:', {
+    console.log("📋 Client selected with full data:", {
       name: client.name,
       address: client.address,
       city: client.city,
       state: client.state,
       zipCode: client.zipCode || client.zipcode,
       email: client.email,
-      phone: client.phone
+      phone: client.phone,
     });
-    
+
     // Enhanced client object with proper address parsing
     const enhancedClient = {
       ...client,
       // Parse address if it's in format "street, city state zip"
-      ...(client.address && client.address.includes(',') && !client.city ? (() => {
-        const parts = client.address.split(',');
-        if (parts.length >= 2) {
-          const street = parts[0].trim();
-          const cityStateZip = parts[1].trim();
-          const lastSpace = cityStateZip.lastIndexOf(' ');
-          if (lastSpace > 0) {
-            const cityState = cityStateZip.substring(0, lastSpace).trim();
-            const zip = cityStateZip.substring(lastSpace + 1).trim();
-            const stateSpace = cityState.lastIndexOf(' ');
-            if (stateSpace > 0) {
-              return {
-                address: street,
-                city: cityState.substring(0, stateSpace).trim(),
-                state: cityState.substring(stateSpace + 1).trim(),
-                zipCode: zip
-              };
+      ...(client.address && client.address.includes(",") && !client.city
+        ? (() => {
+            const parts = client.address.split(",");
+            if (parts.length >= 2) {
+              const street = parts[0].trim();
+              const cityStateZip = parts[1].trim();
+              const lastSpace = cityStateZip.lastIndexOf(" ");
+              if (lastSpace > 0) {
+                const cityState = cityStateZip.substring(0, lastSpace).trim();
+                const zip = cityStateZip.substring(lastSpace + 1).trim();
+                const stateSpace = cityState.lastIndexOf(" ");
+                if (stateSpace > 0) {
+                  return {
+                    address: street,
+                    city: cityState.substring(0, stateSpace).trim(),
+                    state: cityState.substring(stateSpace + 1).trim(),
+                    zipCode: zip,
+                  };
+                }
+              }
             }
-          }
-        }
-        return {};
-      })() : {})
+            return {};
+          })()
+        : {}),
     };
-    
+
     // Save to localStorage for persistence and auto-recovery
-    localStorage.setItem('lastUsedClientId', client.id);
-    localStorage.setItem('currentEstimateClient', JSON.stringify(enhancedClient));
-    
+    localStorage.setItem("lastUsedClientId", client.id);
+    localStorage.setItem(
+      "currentEstimateClient",
+      JSON.stringify(enhancedClient),
+    );
+
     setEstimate((prev) => ({ ...prev, client: enhancedClient }));
     setIsEditingClient(false); // Close editing mode when new client is selected
-    
-    console.log('✅ CLIENT PERSISTENCE: Client saved to localStorage and state');
-    
+
+    console.log(
+      "✅ CLIENT PERSISTENCE: Client saved to localStorage and state",
+    );
+
     toast({
       title: "Client Selected",
       description: `${client.name} has been added to the estimate`,
@@ -2196,7 +2270,7 @@ export default function EstimatesWizardFixed() {
             ${profile?.logo ? `<img src="${profile.logo}" alt="Company Logo" style="max-width: 120px; max-height: 80px; margin-bottom: 10px;" />` : `<div style="width: 120px; height: 80px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; color: #666; font-size: 14px;">Logo</div>`}
             <h2 style="margin: 0; color: #2563eb; font-size: 1.5em;">${profile?.company || ""}</h2>
             <p style="margin: 5px 0; color: #666;">
-              ${profile?.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : ""}<br>
+              ${profile?.address ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}` : ""}<br>
               ${profile?.phone || ""}<br>
               ${profile?.email || ""}
             </p>
@@ -2763,8 +2837,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               ...(result.demoMode && {
                 demoMode: true,
                 originalClientEmail: result.originalClient,
-                sentToEmail: result.authorizedEmail
-              })
+                sentToEmail: result.authorizedEmail,
+              }),
             });
             console.log("✅ Estimado guardado en Firebase para seguimiento");
           } catch (saveError) {
@@ -2779,7 +2853,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         loadSavedEstimates();
       } else {
         // Handle specific error types
-        if (result.error === 'RESEND_TEST_MODE_LIMITATION') {
+        if (result.error === "RESEND_TEST_MODE_LIMITATION") {
           toast({
             title: "Limitación del Servicio de Email",
             description: `${result.message}. Email autorizado: ${result.details?.authorizedEmail}. Para enviar a cualquier dirección, se requiere verificar dominio en resend.com`,
@@ -2878,7 +2952,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       const templateData = convertEstimateDataToTemplate(estimate, companyData);
       const unifiedHtml = generateUnifiedEstimateHTML(templateData);
 
-      console.log('🔍 [DEBUG-FRONTEND] Profile data antes de enviar:', {
+      console.log("🔍 [DEBUG-FRONTEND] Profile data antes de enviar:", {
         company: profile?.company,
         email: profile?.email,
         phone: profile?.phone,
@@ -2888,7 +2962,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         zipCode: profile?.zipCode,
         logo: profile?.logo,
         logoLength: profile?.logo?.length || 0,
-        currentUserUid: currentUser?.uid
+        currentUserUid: currentUser?.uid,
       });
 
       // Preparar datos para PDF Monkey con validación completa
@@ -2950,13 +3024,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         notes: estimate.notes || "Estimado generado por Owl Fence",
       };
 
-      console.log('🔍 [DEBUG-FRONTEND] Enviando datos al backend:', {
+      console.log("🔍 [DEBUG-FRONTEND] Enviando datos al backend:", {
         firebaseUid: estimateData.firebaseUid,
         contractorCompanyName: estimateData.contractorCompanyName,
         contractorLogo: estimateData.contractorLogo,
         contractorEmail: estimateData.contractorEmail,
         contractorPhone: estimateData.contractorPhone,
-        estimateDataKeys: Object.keys(estimateData)
+        estimateDataKeys: Object.keys(estimateData),
       });
 
       const response = await fetch("/api/pdfmonkey-estimates/generate", {
@@ -3010,7 +3084,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     if (!profile?.company) {
       toast({
         title: "Profile Incomplete",
-        description: "Complete your company name in your profile before generating invoices.",
+        description:
+          "Complete your company name in your profile before generating invoices.",
         variant: "destructive",
       });
       return;
@@ -3027,11 +3102,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       const invoicePayload = {
         profile: {
           company: profile.company,
-          address: profile.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : "",
+          address: profile.address
+            ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}`
+            : "",
           phone: profile.phone || "",
           email: profile.email || currentUser?.email || "",
           website: profile.website || "",
-          logo: profile.logo || ""
+          logo: profile.logo || "",
         },
         estimate: {
           client: estimate.client,
@@ -3040,18 +3117,18 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           discountAmount: estimate.discountAmount,
           taxRate: estimate.taxRate,
           tax: estimate.tax,
-          total: estimate.total
+          total: estimate.total,
         },
-        invoiceConfig: defaultInvoiceConfig
+        invoiceConfig: defaultInvoiceConfig,
       };
 
       const response = await axios.post("/api/invoice-pdf", invoicePayload, {
-        responseType: 'blob'
+        responseType: "blob",
       });
 
-      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const blob = new Blob([response.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = `invoice-${Date.now()}.pdf`;
       document.body.appendChild(link);
@@ -3061,9 +3138,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       toast({
         title: "Invoice Generated",
-        description: "Your professional invoice has been generated and downloaded successfully.",
+        description:
+          "Your professional invoice has been generated and downloaded successfully.",
       });
-
     } catch (error) {
       console.error("Error generating invoice:", error);
       toast({
@@ -3080,7 +3157,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       if (!profile?.company) {
         toast({
           title: "❌ Perfil Incompleto",
-          description: "Debes completar el nombre de tu empresa en tu perfil antes de generar PDFs.",
+          description:
+            "Debes completar el nombre de tu empresa en tu perfil antes de generar PDFs.",
           variant: "destructive",
         });
         return;
@@ -3088,7 +3166,15 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       // Create payload in the exact format expected by Puppeteer service
       const payload = {
-        user: currentUser ? [{ uid: currentUser.uid, email: currentUser.email, displayName: currentUser.displayName }] : [],
+        user: currentUser
+          ? [
+              {
+                uid: currentUser.uid,
+                email: currentUser.email,
+                displayName: currentUser.displayName,
+              },
+            ]
+          : [],
         client: estimate.client || {},
         items: estimate.items || [],
         projectTotalCosts: {
@@ -3096,67 +3182,72 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           discount: estimate.discountAmount || 0,
           taxRate: estimate.taxRate || 10,
           tax: estimate.tax || 0,
-          total: estimate.total || 0
+          total: estimate.total || 0,
         },
         originalData: {
-          projectDescription: estimate.projectDetails || ""
-        }
+          projectDescription: estimate.projectDetails || "",
+        },
       };
-      
-      console.log('📤 Sending payload to PDF service:', payload);
-      
+
+      console.log("📤 Sending payload to PDF service:", payload);
+
       // Use new Puppeteer PDF service (local, no external dependency)
-      const response = await axios.post("/api/estimate-puppeteer-pdf", payload, {
-        responseType: 'blob' // Important for PDF download
-      });
-      
-      console.log('📨 Response received:', {
+      const response = await axios.post(
+        "/api/estimate-puppeteer-pdf",
+        payload,
+        {
+          responseType: "blob", // Important for PDF download
+        },
+      );
+
+      console.log("📨 Response received:", {
         status: response.status,
         headers: response.headers,
         dataType: typeof response.data,
-        dataSize: response.data?.size || 'unknown'
+        dataSize: response.data?.size || "unknown",
       });
-      
+
       // Validate the blob
       if (!response.data || response.data.size === 0) {
-        throw new Error('Received empty PDF data from server');
+        throw new Error("Received empty PDF data from server");
       }
-      
+
       // Create blob for sharing/downloading
-      const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
-      console.log('📄 Created PDF blob:', {
+      const pdfBlob = new Blob([response.data], { type: "application/pdf" });
+      console.log("📄 Created PDF blob:", {
         size: pdfBlob.size,
-        type: pdfBlob.type
+        type: pdfBlob.type,
       });
 
       // Generate filename with client name and timestamp
-      const clientName = estimate.client?.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'client';
+      const clientName =
+        estimate.client?.name?.replace(/[^a-zA-Z0-9]/g, "_") || "client";
       const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format
       const filename = `estimate-${clientName}-${timestamp}.pdf`;
 
       // Use mobile sharing utility for smart download/share behavior
       await shareOrDownloadPdf(pdfBlob, filename, {
-        title: `Estimate for ${estimate.client?.name || 'Client'}`,
-        text: `Professional estimate from ${profile?.company || 'your contractor'}`,
+        title: `Estimate for ${estimate.client?.name || "Client"}`,
+        text: `Professional estimate from ${profile?.company || "your contractor"}`,
         clientName: estimate.client?.name,
-        estimateNumber: `EST-${timestamp}`
+        estimateNumber: `EST-${timestamp}`,
       });
-      
-      console.log('📥 PDF download/share completed successfully');
-      
+
+      console.log("📥 PDF download/share completed successfully");
+
       // Get sharing capabilities for toast message
       const capabilities = getSharingCapabilities();
-      const actionText = capabilities.isMobile && capabilities.nativeShareSupported 
-        ? "PDF generated and ready to share" 
-        : "PDF downloaded successfully";
-      
+      const actionText =
+        capabilities.isMobile && capabilities.nativeShareSupported
+          ? "PDF generated and ready to share"
+          : "PDF downloaded successfully";
+
       toast({
         title: "✅ PDF Generated",
         description: actionText,
       });
-      
     } catch (error) {
-      console.error('PDF generation error:', error);
+      console.error("PDF generation error:", error);
       toast({
         title: "❌ Error",
         description: "Could not generate PDF. Please try again.",
@@ -3175,7 +3266,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <User className="h-5 w-5" />
-                  Seleccionar Cliente
+                  <p className="text-base">Seleccionar Cliente</p>
                 </div>
                 <Dialog
                   open={showAddClientDialog}
@@ -3184,7 +3275,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   <DialogTrigger asChild>
                     <Button size="sm">
                       <UserPlus className="h-4 w-4 mr-2" />
-                      Nuevo Cliente
+                      <p className="md:block hidden">Nuevo Cliente</p>
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-md sm:max-w-lg border-0 bg-transparent p-0 shadow-none">
@@ -3387,11 +3478,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       <h3 className="font-medium text-primary">
                         Cliente Seleccionado
                       </h3>
-                      <p className="text-sm font-medium">{estimate.client.name}</p>
+                      <p className="text-sm font-medium">
+                        {estimate.client.name}
+                      </p>
                     </div>
                     <Check className="h-5 w-5 text-primary" />
                   </div>
-                  
+
                   {/* Client Information Display Only */}
                   <div className="space-y-1 text-sm text-gray-600">
                     {estimate.client.email && (
@@ -3412,14 +3505,17 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         {estimate.client.address}
                         {estimate.client.city && `, ${estimate.client.city}`}
                         {estimate.client.state && `, ${estimate.client.state}`}
-                        {estimate.client.zipCode && ` ${estimate.client.zipCode}`}
+                        {estimate.client.zipCode &&
+                          ` ${estimate.client.zipCode}`}
                       </p>
                     )}
                   </div>
                 </div>
               )}
 
-              <div className={`${showAllClients ? 'max-h-64' : 'max-h-24'} overflow-y-auto border rounded-md bg-muted/20 transition-all duration-300`}>
+              <div
+                className={`${showAllClients ? "max-h-64" : "max-h-24"} overflow-y-auto border rounded-md bg-muted/20 transition-all duration-300`}
+              >
                 {isLoadingClients ? (
                   <p className="text-center py-4 text-muted-foreground">
                     Cargando clientes...
@@ -3432,7 +3528,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   </p>
                 ) : (
                   <div className="space-y-1">
-                    {(showAllClients ? filteredClients : filteredClients.slice(0, 3)).map((client) => (
+                    {(showAllClients
+                      ? filteredClients
+                      : filteredClients.slice(0, 3)
+                    ).map((client) => (
                       <div
                         key={client.id}
                         className={`p-1.5 border rounded cursor-pointer transition-colors ${
@@ -3458,7 +3557,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </div>
                     ))}
                     {filteredClients.length > 3 && !showAllClients && (
-                      <div 
+                      <div
                         className="text-xs text-center text-muted-foreground py-2 cursor-pointer hover:text-primary hover:bg-muted/50 rounded transition-colors"
                         onClick={() => setShowAllClients(true)}
                       >
@@ -3466,7 +3565,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </div>
                     )}
                     {showAllClients && filteredClients.length > 3 && (
-                      <div 
+                      <div
                         className="text-xs text-center text-muted-foreground py-2 cursor-pointer hover:text-primary hover:bg-muted/50 rounded transition-colors border-t"
                         onClick={() => setShowAllClients(false)}
                       >
@@ -3536,7 +3635,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     className="min-h-[120px] max-h-[300px] text-sm resize-none"
                   />
                 </div>
-                
+
                 {/* Smart Search Dynamic Bar - Compact & Mobile-Friendly */}
                 <div className="mt-3 p-3 bg-gradient-to-r from-slate-50 via-white to-slate-50 border border-slate-200 rounded-lg shadow-sm">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -3546,7 +3645,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
                           estimate.projectDetails.trim().length < 10
                             ? "bg-orange-100 text-orange-700 border border-orange-200"
-                            : evaluateProjectDescription(estimate.projectDetails).isDetailed
+                            : evaluateProjectDescription(
+                                  estimate.projectDetails,
+                                ).isDetailed
                               ? "bg-green-100 text-green-700 border border-green-200"
                               : "bg-yellow-100 text-yellow-700 border border-yellow-200"
                         }`}
@@ -3556,7 +3657,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                             <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
                             <span>Necesita más información</span>
                           </>
-                        ) : evaluateProjectDescription(estimate.projectDetails).isDetailed ? (
+                        ) : evaluateProjectDescription(estimate.projectDetails)
+                            .isDetailed ? (
                           <>
                             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                             <span>Listo para DeepSearch</span>
@@ -3568,7 +3670,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           </>
                         )}
                       </div>
-                      
+
                       {/* Progress Bar */}
                       <div className="flex-1 min-w-0">
                         <div className="w-full bg-slate-200 rounded-full h-1.5">
@@ -3576,7 +3678,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                             className={`h-1.5 rounded-full transition-all duration-500 ${
                               estimate.projectDetails.trim().length < 10
                                 ? "bg-orange-400"
-                                : evaluateProjectDescription(estimate.projectDetails).isDetailed
+                                : evaluateProjectDescription(
+                                      estimate.projectDetails,
+                                    ).isDetailed
                                   ? "bg-green-500"
                                   : "bg-yellow-500"
                             }`}
@@ -3585,9 +3689,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                 100,
                                 Math.max(
                                   10,
-                                  (estimate.projectDetails.trim().length / 100) * 100
-                                )
-                              )}%`
+                                  (estimate.projectDetails.trim().length /
+                                    100) *
+                                    100,
+                                ),
+                              )}%`,
                             }}
                           />
                         </div>
@@ -3604,30 +3710,48 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           <span>•</span>
                           <span>
                             {(() => {
-                              const evaluation = evaluateProjectDescription(estimate.projectDetails);
+                              const evaluation = evaluateProjectDescription(
+                                estimate.projectDetails,
+                              );
                               const detectedItems = [];
-                              
+
                               // Check for dimensions
-                              if (/\d+\s*(ft|feet|linear|sq|square|yard|meter|inch)/i.test(estimate.projectDetails)) {
+                              if (
+                                /\d+\s*(ft|feet|linear|sq|square|yard|meter|inch)/i.test(
+                                  estimate.projectDetails,
+                                )
+                              ) {
                                 detectedItems.push("medidas");
                               }
-                              
+
                               // Check for materials
-                              if (/(wood|cedar|vinyl|chain|fence|concrete|steel|aluminum|material)/i.test(estimate.projectDetails)) {
+                              if (
+                                /(wood|cedar|vinyl|chain|fence|concrete|steel|aluminum|material)/i.test(
+                                  estimate.projectDetails,
+                                )
+                              ) {
                                 detectedItems.push("materiales");
                               }
-                              
+
                               // Check for location
-                              if (/(yard|backyard|front|side|property|pool|garden|patio)/i.test(estimate.projectDetails)) {
+                              if (
+                                /(yard|backyard|front|side|property|pool|garden|patio)/i.test(
+                                  estimate.projectDetails,
+                                )
+                              ) {
                                 detectedItems.push("ubicación");
                               }
-                              
+
                               // Check for project type
-                              if (/(fence|fencing|gate|deck|roof|floor|paint|electrical|plumb)/i.test(estimate.projectDetails)) {
+                              if (
+                                /(fence|fencing|gate|deck|roof|floor|paint|electrical|plumb)/i.test(
+                                  estimate.projectDetails,
+                                )
+                              ) {
                                 detectedItems.push("tipo");
                               }
 
-                              return detectedItems.length > 0 
+                              return detectedItems.length > 0
                                 ? `${detectedItems.slice(0, 2).join(", ")}${detectedItems.length > 2 ? "..." : ""} detectado${detectedItems.length > 1 ? "s" : ""}`
                                 : "descripción básica";
                             })()}
@@ -3642,33 +3766,53 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     <div className="mt-2 pt-2 border-t border-slate-200">
                       <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 text-xs">
                         {(() => {
-                          const evaluation = evaluateProjectDescription(estimate.projectDetails);
+                          const evaluation = evaluateProjectDescription(
+                            estimate.projectDetails,
+                          );
                           const checks = [
                             {
                               label: "Dimensiones",
-                              detected: /\d+\s*(ft|feet|linear|sq|square|yard|meter|inch)/i.test(estimate.projectDetails),
-                              color: "text-blue-600"
+                              detected:
+                                /\d+\s*(ft|feet|linear|sq|square|yard|meter|inch)/i.test(
+                                  estimate.projectDetails,
+                                ),
+                              color: "text-blue-600",
                             },
                             {
                               label: "Materiales",
-                              detected: /(wood|cedar|vinyl|chain|fence|concrete|steel|aluminum|material)/i.test(estimate.projectDetails),
-                              color: "text-purple-600"
+                              detected:
+                                /(wood|cedar|vinyl|chain|fence|concrete|steel|aluminum|material)/i.test(
+                                  estimate.projectDetails,
+                                ),
+                              color: "text-purple-600",
                             },
                             {
                               label: "Detalles",
-                              detected: estimate.projectDetails.trim().length > 50,
-                              color: "text-orange-600"
-                            }
+                              detected:
+                                estimate.projectDetails.trim().length > 50,
+                              color: "text-orange-600",
+                            },
                           ];
 
                           return checks.map((check, index) => (
-                            <div key={index} className="flex items-center gap-1">
+                            <div
+                              key={index}
+                              className="flex items-center gap-1"
+                            >
                               <div
                                 className={`w-1.5 h-1.5 rounded-full ${
-                                  check.detected ? "bg-green-500" : "bg-slate-300"
+                                  check.detected
+                                    ? "bg-green-500"
+                                    : "bg-slate-300"
                                 }`}
                               />
-                              <span className={check.detected ? check.color : "text-slate-400"}>
+                              <span
+                                className={
+                                  check.detected
+                                    ? check.color
+                                    : "text-slate-400"
+                                }
+                              >
                                 {check.label}
                               </span>
                             </div>
@@ -3679,33 +3823,38 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   )}
 
                   {/* Improvement Suggestions */}
-                  {estimate.projectDetails.trim().length >= 10 && 
-                   !evaluateProjectDescription(estimate.projectDetails).isDetailed && (
-                    <div className="mt-2 pt-2 border-t border-slate-200">
-                      <div className="text-xs text-slate-600">
-                        <span className="font-medium">Sugerencia:</span> Añade{" "}
-                        {!(/\d+\s*(ft|feet|linear|sq|square)/i.test(estimate.projectDetails)) && "medidas específicas, "}
-                        {!(/(wood|cedar|vinyl|chain|concrete)/i.test(estimate.projectDetails)) && "tipos de materiales "}
-                        para mejorar la precisión del DeepSearch.
+                  {estimate.projectDetails.trim().length >= 10 &&
+                    !evaluateProjectDescription(estimate.projectDetails)
+                      .isDetailed && (
+                      <div className="mt-2 pt-2 border-t border-slate-200">
+                        <div className="text-xs text-slate-600">
+                          <span className="font-medium">Sugerencia:</span> Añade{" "}
+                          {!/\d+\s*(ft|feet|linear|sq|square)/i.test(
+                            estimate.projectDetails,
+                          ) && "medidas específicas, "}
+                          {!/(wood|cedar|vinyl|chain|concrete)/i.test(
+                            estimate.projectDetails,
+                          ) && "tipos de materiales "}
+                          para mejorar la precisión del DeepSearch.
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
                 {/* Mensaje de ayuda dinámico */}
                 {estimate.projectDetails.trim().length >= 10 &&
-                !evaluateProjectDescription(estimate.projectDetails)
-                  .isDetailed && (
-                  <div className="flex items-start gap-2 mt-2 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
-                    <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-yellow-700">
-                      <strong>Para DeepSearch necesito más detalles:</strong>{" "}
-                      Incluye medidas específicas, tipos de materiales,
-                      ubicación del trabajo, o usa{" "}
-                      <strong>"Enhance with Mervin AI"</strong> para generar una
-                      descripción completa.
-                    </p>
-                  </div>
-                )}
+                  !evaluateProjectDescription(estimate.projectDetails)
+                    .isDetailed && (
+                    <div className="flex items-start gap-2 mt-2 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
+                      <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-yellow-700">
+                        <strong>Para DeepSearch necesito más detalles:</strong>{" "}
+                        Incluye medidas específicas, tipos de materiales,
+                        ubicación del trabajo, o usa{" "}
+                        <strong>"Enhance with Mervin AI"</strong> para generar
+                        una descripción completa.
+                      </p>
+                    </div>
+                  )}
               </div>
             </CardContent>
           </Card>
@@ -3738,7 +3887,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         hover:border-cyan-400/60 hover:shadow-lg hover:shadow-cyan-400/20
                       `}
                       style={{
-                        clipPath: "polygon(8px 0%, 100% 0%, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0% 100%, 0% 8px)"
+                        clipPath:
+                          "polygon(8px 0%, 100% 0%, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0% 100%, 0% 8px)",
                       }}
                       onClick={() => {
                         console.log(
@@ -3761,13 +3911,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       <div className="absolute top-0 right-0 w-2 h-2 border-r border-t border-cyan-400/60"></div>
                       <div className="absolute bottom-0 left-0 w-2 h-2 border-l border-b border-cyan-400/60"></div>
                       <div className="absolute bottom-0 right-0 w-2 h-2 border-r border-b border-cyan-400/60"></div>
-                      
+
                       {/* Scanning Lines */}
                       <div className="absolute inset-0 ">
                         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent animate-pulse"></div>
-                        <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent animate-pulse" style={{animationDelay: "0.5s"}}></div>
+                        <div
+                          className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent animate-pulse"
+                          style={{ animationDelay: "0.5s" }}
+                        ></div>
                       </div>
-                      
+
                       {/* Holographic Border Glow */}
                       <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/5 via-blue-400/10 to-cyan-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
@@ -3784,7 +3937,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         ) : (
                           <>
                             <Search className="h-4 w-4 text-cyan-400" />
-                            <span className="text-sm tracking-wide">DeepSearch Material</span>
+                            <span className="text-sm tracking-wide">
+                              DeepSearch Material
+                            </span>
                             <ChevronDown
                               className={`h-3 w-3 text-cyan-400 transition-transform duration-300 ${showNewDeepsearchDialog ? "rotate-180" : ""}`}
                             />
@@ -3802,7 +3957,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         <div
                           className="bg-black/80 backdrop-blur-xl border border-cyan-400/30  max-w-sm w-full mx-4 relative"
                           style={{
-                            clipPath: "polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px)"
+                            clipPath:
+                              "polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px)",
                           }}
                           onClick={(e) => e.stopPropagation()}
                         >
@@ -3811,7 +3967,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           <div className="absolute top-0 right-0 w-3 h-3 border-r-2 border-t-2 border-cyan-400/80"></div>
                           <div className="absolute bottom-0 left-0 w-3 h-3 border-l-2 border-b-2 border-cyan-400/80"></div>
                           <div className="absolute bottom-0 right-0 w-3 h-3 border-r-2 border-b-2 border-cyan-400/80"></div>
-                          
+
                           {/* Header */}
                           <div className="border-b border-cyan-400/20 p-3">
                             <div className="text-xs font-mono text-cyan-400 mb-1 tracking-wider">
@@ -4092,11 +4248,15 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         </span>
                       </div>
                       <span className="text-xs text-slate-400 font-mono">
-                        {aiProgress < 20 ? "Initializing AI analysis..." :
-                         aiProgress < 40 ? "Processing project requirements..." :
-                         aiProgress < 60 ? "Generating materials list..." :
-                         aiProgress < 80 ? "Calculating labor costs..." :
-                         "Finalizing estimates..."}
+                        {aiProgress < 20
+                          ? "Initializing AI analysis..."
+                          : aiProgress < 40
+                            ? "Processing project requirements..."
+                            : aiProgress < 60
+                              ? "Generating materials list..."
+                              : aiProgress < 80
+                                ? "Calculating labor costs..."
+                                : "Finalizing estimates..."}
                       </span>
                     </div>
                   )}
@@ -4116,7 +4276,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       `}
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-teal-400/10 via-teal-400/5 to-teal-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      
+
                       <div className="relative flex items-center gap-2 text-white justify-center">
                         <Plus className="h-4 w-4 text-teal-400" />
                         <span className="hidden sm:inline">Add Material</span>
@@ -4437,16 +4597,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       case 3: // Preview
         // Debug logging for preview step
-        console.log('🔍 PREVIEW DEBUG - Current estimate state:', {
+        console.log("🔍 PREVIEW DEBUG - Current estimate state:", {
           client: estimate.client,
           clientExists: !!estimate.client,
           itemsCount: estimate.items.length,
-          items: estimate.items
+          items: estimate.items,
         });
-        
+
         const hasClient = !!estimate.client;
         const hasItems = estimate.items.length > 0;
-        
+
         return (
           <div className="space-y-4">
             {/* Header */}
@@ -4463,8 +4623,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               </CardHeader>
             </Card>
 
-
-
             {!hasClient || !hasItems ? (
               <Card className="border-amber-500/30">
                 <CardContent className="text-center py-8">
@@ -4478,7 +4636,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       <p>❌ Necesitas agregar materiales (paso 3)</p>
                     )}
                     {hasClient && hasItems && (
-                      <p>✅ Todos los datos están completos - verificando estado...</p>
+                      <p>
+                        ✅ Todos los datos están completos - verificando
+                        estado...
+                      </p>
                     )}
                   </div>
                   <div className="mt-4 flex gap-2 justify-center">
@@ -4538,7 +4699,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           ) : (
                             <div className="mb-3">
                               <div className="h-12 w-24 bg-gray-700 border border-gray-600 rounded p-1 flex items-center justify-center">
-                                <span className="text-xs text-gray-400">Logo</span>
+                                <span className="text-xs text-gray-400">
+                                  Logo
+                                </span>
                               </div>
                             </div>
                           )}
@@ -4583,136 +4746,212 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                             onClick={() => setIsEditingClient(!isEditingClient)}
                             className="h-6 px-2 text-xs text-cyan-400 hover:text-cyan-300"
                           >
-                            {isEditingClient ? 'Guardar' : 'Editar'}
+                            {isEditingClient ? "Guardar" : "Editar"}
                           </Button>
                         </div>
-                        
+
                         {isEditingClient ? (
                           <div className="space-y-2 bg-gray-800/50 p-3 rounded border">
                             {/* Editable Client Name */}
                             <div>
-                              <Label htmlFor="edit-client-name" className="text-xs text-gray-400">Nombre</Label>
+                              <Label
+                                htmlFor="edit-client-name"
+                                className="text-xs text-gray-400"
+                              >
+                                Nombre
+                              </Label>
                               <Input
                                 id="edit-client-name"
-                                value={estimate.client?.name || ''}
-                                onChange={(e) => setEstimate(prev => ({
-                                  ...prev,
-                                  client: { ...prev.client!, name: e.target.value }
-                                }))}
+                                value={estimate.client?.name || ""}
+                                onChange={(e) =>
+                                  setEstimate((prev) => ({
+                                    ...prev,
+                                    client: {
+                                      ...prev.client!,
+                                      name: e.target.value,
+                                    },
+                                  }))
+                                }
                                 placeholder="Nombre del cliente"
                                 className="h-7 text-xs bg-gray-900/50 border-gray-600"
                               />
                             </div>
-                            
+
                             {/* Editable Address */}
                             <div>
-                              <Label htmlFor="edit-client-address" className="text-xs text-gray-400">Dirección</Label>
+                              <Label
+                                htmlFor="edit-client-address"
+                                className="text-xs text-gray-400"
+                              >
+                                Dirección
+                              </Label>
                               <Input
                                 id="edit-client-address"
-                                value={estimate.client?.address || ''}
-                                onChange={(e) => setEstimate(prev => ({
-                                  ...prev,
-                                  client: { ...prev.client!, address: e.target.value }
-                                }))}
+                                value={estimate.client?.address || ""}
+                                onChange={(e) =>
+                                  setEstimate((prev) => ({
+                                    ...prev,
+                                    client: {
+                                      ...prev.client!,
+                                      address: e.target.value,
+                                    },
+                                  }))
+                                }
                                 placeholder="Dirección completa"
                                 className="h-7 text-xs bg-gray-900/50 border-gray-600"
                               />
                             </div>
-                            
+
                             {/* City and State */}
                             <div className="grid grid-cols-2 gap-2">
                               <div>
-                                <Label htmlFor="edit-client-city" className="text-xs text-gray-400">Ciudad</Label>
+                                <Label
+                                  htmlFor="edit-client-city"
+                                  className="text-xs text-gray-400"
+                                >
+                                  Ciudad
+                                </Label>
                                 <Input
                                   id="edit-client-city"
-                                  value={estimate.client?.city || ''}
-                                  onChange={(e) => setEstimate(prev => ({
-                                    ...prev,
-                                    client: { ...prev.client!, city: e.target.value }
-                                  }))}
+                                  value={estimate.client?.city || ""}
+                                  onChange={(e) =>
+                                    setEstimate((prev) => ({
+                                      ...prev,
+                                      client: {
+                                        ...prev.client!,
+                                        city: e.target.value,
+                                      },
+                                    }))
+                                  }
                                   placeholder="Ciudad"
                                   className="h-7 text-xs bg-gray-900/50 border-gray-600"
                                 />
                               </div>
                               <div>
-                                <Label htmlFor="edit-client-state" className="text-xs text-gray-400">Estado</Label>
+                                <Label
+                                  htmlFor="edit-client-state"
+                                  className="text-xs text-gray-400"
+                                >
+                                  Estado
+                                </Label>
                                 <Input
                                   id="edit-client-state"
-                                  value={estimate.client?.state || ''}
-                                  onChange={(e) => setEstimate(prev => ({
-                                    ...prev,
-                                    client: { ...prev.client!, state: e.target.value }
-                                  }))}
+                                  value={estimate.client?.state || ""}
+                                  onChange={(e) =>
+                                    setEstimate((prev) => ({
+                                      ...prev,
+                                      client: {
+                                        ...prev.client!,
+                                        state: e.target.value,
+                                      },
+                                    }))
+                                  }
                                   placeholder="Estado"
                                   className="h-7 text-xs bg-gray-900/50 border-gray-600"
                                 />
                               </div>
                             </div>
-                            
+
                             {/* ZIP Code */}
                             <div>
-                              <Label htmlFor="edit-client-zip" className="text-xs text-gray-400">Código Postal</Label>
+                              <Label
+                                htmlFor="edit-client-zip"
+                                className="text-xs text-gray-400"
+                              >
+                                Código Postal
+                              </Label>
                               <Input
                                 id="edit-client-zip"
-                                value={estimate.client?.zipCode || estimate.client?.zipcode || ''}
-                                onChange={(e) => setEstimate(prev => ({
-                                  ...prev,
-                                  client: { ...prev.client!, zipCode: e.target.value }
-                                }))}
+                                value={
+                                  estimate.client?.zipCode ||
+                                  estimate.client?.zipcode ||
+                                  ""
+                                }
+                                onChange={(e) =>
+                                  setEstimate((prev) => ({
+                                    ...prev,
+                                    client: {
+                                      ...prev.client!,
+                                      zipCode: e.target.value,
+                                    },
+                                  }))
+                                }
                                 placeholder="Código postal"
                                 className="h-7 text-xs bg-gray-900/50 border-gray-600"
                               />
                             </div>
-                            
+
                             {/* Phone */}
                             <div>
-                              <Label htmlFor="edit-client-phone" className="text-xs text-gray-400">Teléfono</Label>
+                              <Label
+                                htmlFor="edit-client-phone"
+                                className="text-xs text-gray-400"
+                              >
+                                Teléfono
+                              </Label>
                               <Input
                                 id="edit-client-phone"
-                                value={estimate.client?.phone || ''}
-                                onChange={(e) => setEstimate(prev => ({
-                                  ...prev,
-                                  client: { ...prev.client!, phone: e.target.value }
-                                }))}
+                                value={estimate.client?.phone || ""}
+                                onChange={(e) =>
+                                  setEstimate((prev) => ({
+                                    ...prev,
+                                    client: {
+                                      ...prev.client!,
+                                      phone: e.target.value,
+                                    },
+                                  }))
+                                }
                                 placeholder="Teléfono"
                                 className="h-7 text-xs bg-gray-900/50 border-gray-600"
                               />
                             </div>
-                            
+
                             {/* Email */}
                             <div>
-                              <Label htmlFor="edit-client-email" className="text-xs text-gray-400">Email</Label>
+                              <Label
+                                htmlFor="edit-client-email"
+                                className="text-xs text-gray-400"
+                              >
+                                Email
+                              </Label>
                               <Input
                                 id="edit-client-email"
-                                value={estimate.client?.email || ''}
-                                onChange={(e) => setEstimate(prev => ({
-                                  ...prev,
-                                  client: { ...prev.client!, email: e.target.value }
-                                }))}
+                                value={estimate.client?.email || ""}
+                                onChange={(e) =>
+                                  setEstimate((prev) => ({
+                                    ...prev,
+                                    client: {
+                                      ...prev.client!,
+                                      email: e.target.value,
+                                    },
+                                  }))
+                                }
                                 placeholder="Email"
                                 className="h-7 text-xs bg-gray-900/50 border-gray-600"
                               />
                             </div>
-                            
+
                             {/* Quick Fill for Turner Group */}
-                            {estimate.client?.name === "Turner Group Construction" && (
+                            {estimate.client?.name ===
+                              "Turner Group Construction" && (
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                  setEstimate(prev => ({
+                                  setEstimate((prev) => ({
                                     ...prev,
-                                    client: { 
-                                      ...prev.client!, 
-                                      address: "8055 Collins Dr", 
-                                      city: "Oakland", 
-                                      state: "CA", 
-                                      zipCode: "94621" 
-                                    }
+                                    client: {
+                                      ...prev.client!,
+                                      address: "8055 Collins Dr",
+                                      city: "Oakland",
+                                      state: "CA",
+                                      zipCode: "94621",
+                                    },
                                   }));
                                   toast({
                                     title: "Address completed",
-                                    description: "Turner Group Construction address filled"
+                                    description:
+                                      "Turner Group Construction address filled",
                                   });
                                 }}
                                 className="w-full text-xs h-7"
@@ -4723,18 +4962,22 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           </div>
                         ) : (
                           <div className="text-sm text-gray-300">
-                            <p className="font-medium">{estimate.client?.name}</p>
+                            <p className="font-medium">
+                              {estimate.client?.name}
+                            </p>
                             <p className="text-xs text-gray-400">
-                              {estimate.client?.address && estimate.client.address.trim() !== '' ? 
-                                `${estimate.client.address}${estimate.client.city ? ', ' + estimate.client.city : ''}${estimate.client.state ? ', ' + estimate.client.state : ''}${estimate.client.zipcode || estimate.client.zipCode ? ' ' + (estimate.client.zipcode || estimate.client.zipCode) : ''}` : 
-                                'Complete address in Client step'
-                              }
+                              {estimate.client?.address &&
+                              estimate.client.address.trim() !== ""
+                                ? `${estimate.client.address}${estimate.client.city ? ", " + estimate.client.city : ""}${estimate.client.state ? ", " + estimate.client.state : ""}${estimate.client.zipcode || estimate.client.zipCode ? " " + (estimate.client.zipcode || estimate.client.zipCode) : ""}`
+                                : "Complete address in Client step"}
                             </p>
                             <p className="text-xs text-cyan-400">
-                              {estimate.client?.phone || 'Add phone in Client step'}
+                              {estimate.client?.phone ||
+                                "Add phone in Client step"}
                             </p>
                             <p className="text-xs text-cyan-400">
-                              {estimate.client?.email || 'Add email in Client step'}
+                              {estimate.client?.email ||
+                                "Add email in Client step"}
                             </p>
                           </div>
                         )}
@@ -4780,10 +5023,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       <div className="text-xs text-gray-400">
                         <p>
                           Ubicación:{" "}
-                          {estimate.client?.address ? 
-                            `${estimate.client.address}${estimate.client.city ? ', ' + estimate.client.city : ''}${estimate.client.state ? ', ' + estimate.client.state : ''}${estimate.client.zipcode || estimate.client.zipCode ? ' ' + (estimate.client.zipcode || estimate.client.zipCode) : ''}` : 
-                            "No especificada"
-                          }
+                          {estimate.client?.address
+                            ? `${estimate.client.address}${estimate.client.city ? ", " + estimate.client.city : ""}${estimate.client.state ? ", " + estimate.client.state : ""}${estimate.client.zipcode || estimate.client.zipCode ? " " + (estimate.client.zipcode || estimate.client.zipCode) : ""}`
+                            : "No especificada"}
                         </p>
                         <p>
                           Materiales: {estimate.items.length} items
@@ -4867,12 +5109,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <Button
                         onClick={handleDirectInvoiceGeneration}
-                        disabled={!estimate.client || estimate.items.length === 0}
+                        disabled={
+                          !estimate.client || estimate.items.length === 0
+                        }
                         size="sm"
                         className="border-orange-500/50 text-orange-300 hover:bg-orange-500/10 text-xs"
                       >
                         <FileText className="h-3 w-3 mr-1" />
-                        <span className="hidden sm:inline">Generate as Invoice</span>
+                        <span className="hidden sm:inline">
+                          Generate as Invoice
+                        </span>
                         <span className="sm:hidden">Invoice</span>
                       </Button>
 
@@ -4884,16 +5130,21 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         size="sm"
                         className="bg-green-600 hover:bg-green-700 text-white text-xs"
                       >
-                        {sharingCapabilities.isMobile && sharingCapabilities.nativeShareSupported ? (
+                        {sharingCapabilities.isMobile &&
+                        sharingCapabilities.nativeShareSupported ? (
                           <>
                             <Share2 className="h-3 w-3 mr-1" />
-                            <span className="hidden sm:inline">Share PDF Estimate</span>
+                            <span className="hidden sm:inline">
+                              Share PDF Estimate
+                            </span>
                             <span className="sm:hidden">Share</span>
                           </>
                         ) : (
                           <>
                             <Download className="h-3 w-3 mr-1" />
-                            <span className="hidden sm:inline">Generate as Estimate</span>
+                            <span className="hidden sm:inline">
+                              Generate as Estimate
+                            </span>
                             <span className="sm:hidden">Estimate</span>
                           </>
                         )}
@@ -4919,7 +5170,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       <Button
                         onClick={() => {
                           // If client has no email, show dialog to add one
-                          if (!estimate.client?.email || estimate.client.email.trim() === '') {
+                          if (
+                            !estimate.client?.email ||
+                            estimate.client.email.trim() === ""
+                          ) {
                             setShowEmailDialog(true);
                           } else {
                             openEmailCompose();
@@ -4947,18 +5201,17 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
   };
 
   return (
-    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-6xl">
+    <div className="md:container md:mx-auto mt-10 md:mt-0 px-4 sm:px-4 py-4 sm:py-8  md:max-w-6xl">
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl sm:text-3xl font-bold mb-2 truncate">
+            <h1 className="text-2xl  md:text-3xl font-bold mb-2 truncate">
               {isEditMode ? "Editar Estimado" : "Crear Nuevo Estimado"}
             </h1>
             <p className="text-muted-foreground text-sm sm:text-base">
-              {isEditMode 
+              {isEditMode
                 ? "Edita tu estimado existente y guarda los cambios"
-                : "Sigue los pasos para crear un estimado profesional para tu cliente"
-              }
+                : "Sigue los pasos para crear un estimado profesional para tu cliente"}
             </p>
           </div>
           <div className="flex gap-2">
@@ -5360,7 +5613,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               Configure invoice settings before generation
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-6 py-4">
             {/* Project Completion Status */}
             <div className="space-y-3">
@@ -5369,17 +5622,35 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               </Label>
               <div className="flex gap-3">
                 <Button
-                  variant={invoiceConfig.projectCompleted === true ? "default" : "outline"}
+                  variant={
+                    invoiceConfig.projectCompleted === true
+                      ? "default"
+                      : "outline"
+                  }
                   size="sm"
-                  onClick={() => setInvoiceConfig(prev => ({ ...prev, projectCompleted: true }))}
+                  onClick={() =>
+                    setInvoiceConfig((prev) => ({
+                      ...prev,
+                      projectCompleted: true,
+                    }))
+                  }
                   className="flex-1"
                 >
                   Yes
                 </Button>
                 <Button
-                  variant={invoiceConfig.projectCompleted === false ? "default" : "outline"}
+                  variant={
+                    invoiceConfig.projectCompleted === false
+                      ? "default"
+                      : "outline"
+                  }
                   size="sm"
-                  onClick={() => setInvoiceConfig(prev => ({ ...prev, projectCompleted: false }))}
+                  onClick={() =>
+                    setInvoiceConfig((prev) => ({
+                      ...prev,
+                      projectCompleted: false,
+                    }))
+                  }
                   className="flex-1"
                 >
                   No
@@ -5398,7 +5669,12 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   type="number"
                   placeholder="Enter amount (e.g., 500.00)"
                   value={invoiceConfig.downPaymentAmount}
-                  onChange={(e) => setInvoiceConfig(prev => ({ ...prev, downPaymentAmount: e.target.value }))}
+                  onChange={(e) =>
+                    setInvoiceConfig((prev) => ({
+                      ...prev,
+                      downPaymentAmount: e.target.value,
+                    }))
+                  }
                   className="w-full"
                 />
               </div>
@@ -5411,17 +5687,35 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               </Label>
               <div className="flex gap-3">
                 <Button
-                  variant={invoiceConfig.totalAmountPaid === true ? "default" : "outline"}
+                  variant={
+                    invoiceConfig.totalAmountPaid === true
+                      ? "default"
+                      : "outline"
+                  }
                   size="sm"
-                  onClick={() => setInvoiceConfig(prev => ({ ...prev, totalAmountPaid: true }))}
+                  onClick={() =>
+                    setInvoiceConfig((prev) => ({
+                      ...prev,
+                      totalAmountPaid: true,
+                    }))
+                  }
                   className="flex-1"
                 >
                   Yes
                 </Button>
                 <Button
-                  variant={invoiceConfig.totalAmountPaid === false ? "default" : "outline"}
+                  variant={
+                    invoiceConfig.totalAmountPaid === false
+                      ? "default"
+                      : "outline"
+                  }
                   size="sm"
-                  onClick={() => setInvoiceConfig(prev => ({ ...prev, totalAmountPaid: false }))}
+                  onClick={() =>
+                    setInvoiceConfig((prev) => ({
+                      ...prev,
+                      totalAmountPaid: false,
+                    }))
+                  }
                   className="flex-1"
                 >
                   No
@@ -5447,16 +5741,23 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             <Button
               onClick={async () => {
                 // Validate required fields
-                if (invoiceConfig.projectCompleted === null || invoiceConfig.totalAmountPaid === null) {
+                if (
+                  invoiceConfig.projectCompleted === null ||
+                  invoiceConfig.totalAmountPaid === null
+                ) {
                   toast({
                     title: "Configuration Required",
-                    description: "Please answer all questions before proceeding",
+                    description:
+                      "Please answer all questions before proceeding",
                     variant: "destructive",
                   });
                   return;
                 }
 
-                if (invoiceConfig.projectCompleted === false && !invoiceConfig.downPaymentAmount) {
+                if (
+                  invoiceConfig.projectCompleted === false &&
+                  !invoiceConfig.downPaymentAmount
+                ) {
                   toast({
                     title: "Down Payment Required",
                     description: "Please enter the down payment amount",
@@ -5469,7 +5770,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 if (!profile?.company) {
                   toast({
                     title: "Profile Incomplete",
-                    description: "Complete your company name in your profile before generating invoices.",
+                    description:
+                      "Complete your company name in your profile before generating invoices.",
                     variant: "destructive",
                   });
                   return;
@@ -5480,11 +5782,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   const invoicePayload = {
                     profile: {
                       company: profile.company,
-                      address: profile.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : "",
+                      address: profile.address
+                        ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}`
+                        : "",
                       phone: profile.phone || "",
                       email: profile.email || currentUser?.email || "",
                       website: profile.website || "",
-                      logo: profile.logo || ""
+                      logo: profile.logo || "",
                     },
                     estimate: {
                       client: estimate.client,
@@ -5493,22 +5797,31 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       discountAmount: estimate.discountAmount,
                       taxRate: estimate.taxRate,
                       tax: estimate.tax,
-                      total: estimate.total
+                      total: estimate.total,
                     },
-                    invoiceConfig
+                    invoiceConfig,
                   };
 
-                  console.log('Generating invoice PDF with payload:', invoicePayload);
+                  console.log(
+                    "Generating invoice PDF with payload:",
+                    invoicePayload,
+                  );
 
                   // Call invoice PDF service
-                  const response = await axios.post("/api/invoice-pdf", invoicePayload, {
-                    responseType: 'blob'
-                  });
+                  const response = await axios.post(
+                    "/api/invoice-pdf",
+                    invoicePayload,
+                    {
+                      responseType: "blob",
+                    },
+                  );
 
                   // Create download link
-                  const blob = new Blob([response.data], { type: 'application/pdf' });
+                  const blob = new Blob([response.data], {
+                    type: "application/pdf",
+                  });
                   const url = window.URL.createObjectURL(blob);
-                  const link = document.createElement('a');
+                  const link = document.createElement("a");
                   link.href = url;
                   link.download = `invoice-${Date.now()}.pdf`;
                   document.body.appendChild(link);
@@ -5526,14 +5839,15 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                   toast({
                     title: "Invoice Generated",
-                    description: "Your professional invoice has been generated and downloaded successfully.",
+                    description:
+                      "Your professional invoice has been generated and downloaded successfully.",
                   });
-
                 } catch (error) {
                   console.error("Error generating invoice:", error);
                   toast({
                     title: "Generation Failed",
-                    description: "Could not generate invoice. Please try again.",
+                    description:
+                      "Could not generate invoice. Please try again.",
                     variant: "destructive",
                   });
                 }
@@ -5641,7 +5955,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                 if (!profile?.company) {
                                   toast({
                                     title: "❌ Perfil Incompleto",
-                                    description: "Debes completar el nombre de tu empresa en tu perfil antes de generar PDFs.",
+                                    description:
+                                      "Debes completar el nombre de tu empresa en tu perfil antes de generar PDFs.",
                                     variant: "destructive",
                                   });
                                   return;
@@ -5649,97 +5964,156 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                                 // Get stored estimate data from originalData field
                                 const estimateData = estimate.originalData;
-                                
+
                                 if (!estimateData) {
                                   toast({
                                     title: "Error de datos",
-                                    description: "No se pudieron cargar los datos del estimado",
+                                    description:
+                                      "No se pudieron cargar los datos del estimado",
                                     variant: "destructive",
                                   });
                                   return;
                                 }
 
                                 // Extract client information from different possible locations
-                                const clientInfo = estimateData.clientInformation || 
-                                                 estimateData.client || 
-                                                 {
-                                                   name: estimate.clientName,
-                                                   email: estimate.clientEmail || "",
-                                                   phone: "",
-                                                   address: ""
-                                                 };
+                                const clientInfo =
+                                  estimateData.clientInformation ||
+                                    estimateData.client || {
+                                      name: estimate.clientName,
+                                      email: estimate.clientEmail || "",
+                                      phone: "",
+                                      address: "",
+                                    };
 
                                 // Extract items from different possible locations
-                                const items = estimateData.projectTotalCosts?.materialCosts?.items ||
-                                            estimateData.items ||
-                                            estimate.items ||
-                                            [];
+                                const items =
+                                  estimateData.projectTotalCosts?.materialCosts
+                                    ?.items ||
+                                  estimateData.items ||
+                                  estimate.items ||
+                                  [];
 
                                 // Extract financial data for tax and discount calculations
-                                const totalCosts = estimateData.projectTotalCosts?.totalSummary;
-                                const subtotal = totalCosts?.subtotal || estimateData.subtotal || estimate.subtotal || 0;
-                                const discountAmount = totalCosts?.discountAmount || estimateData.discountAmount || estimate.discountAmount || 0;
-                                const taxAmount = totalCosts?.tax || estimateData.tax || estimate.tax || 0;
-                                const finalTotal = totalCosts?.finalTotal || estimateData.total || estimate.total || 0;
+                                const totalCosts =
+                                  estimateData.projectTotalCosts?.totalSummary;
+                                const subtotal =
+                                  totalCosts?.subtotal ||
+                                  estimateData.subtotal ||
+                                  estimate.subtotal ||
+                                  0;
+                                const discountAmount =
+                                  totalCosts?.discountAmount ||
+                                  estimateData.discountAmount ||
+                                  estimate.discountAmount ||
+                                  0;
+                                const taxAmount =
+                                  totalCosts?.tax ||
+                                  estimateData.tax ||
+                                  estimate.tax ||
+                                  0;
+                                const finalTotal =
+                                  totalCosts?.finalTotal ||
+                                  estimateData.total ||
+                                  estimate.total ||
+                                  0;
 
                                 const payload = {
                                   company: {
                                     name: profile.company,
-                                    address: profile.address ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}` : "",
+                                    address: profile.address
+                                      ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}`
+                                      : "",
                                     phone: profile.phone || "",
-                                    email: profile.email || currentUser?.email || "",
+                                    email:
+                                      profile.email || currentUser?.email || "",
                                     website: profile.website || "",
-                                    logo: profile.logo || ""
+                                    logo: profile.logo || "",
                                   },
                                   estimate: {
-                                    number: estimate.estimateNumber || "EST-" + Date.now(),
+                                    number:
+                                      estimate.estimateNumber ||
+                                      "EST-" + Date.now(),
                                     date: new Date().toLocaleDateString(),
-                                    valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-                                    project_description: (estimateData.projectDetails?.description || 
-                                                       estimateData.projectDescription || 
-                                                       estimateData.projectScope ||
-                                                       estimate.projectDetails || 
-                                                       "").substring(0, 500),
+                                    valid_until: new Date(
+                                      Date.now() + 30 * 24 * 60 * 60 * 1000,
+                                    ).toLocaleDateString(),
+                                    project_description: (
+                                      estimateData.projectDetails
+                                        ?.description ||
+                                      estimateData.projectDescription ||
+                                      estimateData.projectScope ||
+                                      estimate.projectDetails ||
+                                      ""
+                                    ).substring(0, 500),
                                     items: items.map((item: any) => ({
-                                      code: item.name || item.material || "Item",
+                                      code:
+                                        item.name || item.material || "Item",
                                       description: item.description || "",
                                       qty: item.quantity || 1,
                                       unit_price: `$${Number(item.price || item.unitPrice || 0).toFixed(2)}`,
-                                      total: `$${Number(item.total || item.totalPrice || (item.quantity * item.price) || 0).toFixed(2)}`,
+                                      total: `$${Number(item.total || item.totalPrice || item.quantity * item.price || 0).toFixed(2)}`,
                                     })),
                                     subtotal: `$${Number(subtotal / 100).toFixed(2)}`,
-                                    discounts: discountAmount > 0 ? `-$${Number(discountAmount / 100).toFixed(2)}` : "$0.00",
-                                    tax_rate: Math.round((taxAmount / (subtotal - discountAmount)) * 100) || 0,
-                                    tax_amount: taxAmount > 0 ? `$${Number(taxAmount / 100).toFixed(2)}` : "$0.00",
-                                    total: `$${Number(finalTotal / 100).toFixed(2)}`
+                                    discounts:
+                                      discountAmount > 0
+                                        ? `-$${Number(discountAmount / 100).toFixed(2)}`
+                                        : "$0.00",
+                                    tax_rate:
+                                      Math.round(
+                                        (taxAmount /
+                                          (subtotal - discountAmount)) *
+                                          100,
+                                      ) || 0,
+                                    tax_amount:
+                                      taxAmount > 0
+                                        ? `$${Number(taxAmount / 100).toFixed(2)}`
+                                        : "$0.00",
+                                    total: `$${Number(finalTotal / 100).toFixed(2)}`,
                                   },
                                   client: {
-                                    name: clientInfo.name || estimate.clientName || "",
-                                    email: clientInfo.email || estimate.clientEmail || "",
+                                    name:
+                                      clientInfo.name ||
+                                      estimate.clientName ||
+                                      "",
+                                    email:
+                                      clientInfo.email ||
+                                      estimate.clientEmail ||
+                                      "",
                                     phone: clientInfo.phone || "",
-                                    address: clientInfo.address ? 
-                                      `${clientInfo.address}${clientInfo.city ? ', ' + clientInfo.city : ''}${clientInfo.state ? ', ' + clientInfo.state : ''}${clientInfo.zipCode ? ' ' + clientInfo.zipCode : ''}` : 
-                                      ""
+                                    address: clientInfo.address
+                                      ? `${clientInfo.address}${clientInfo.city ? ", " + clientInfo.city : ""}${clientInfo.state ? ", " + clientInfo.state : ""}${clientInfo.zipCode ? " " + clientInfo.zipCode : ""}`
+                                      : "",
                                   },
                                   firebaseUid: currentUser?.uid,
                                 };
 
-                                console.log("📊 Full Payload enviado a PDF:", JSON.stringify(payload, null, 2));
-                                console.log("📊 Items being sent:", payload.estimate.items);
+                                console.log(
+                                  "📊 Full Payload enviado a PDF:",
+                                  JSON.stringify(payload, null, 2),
+                                );
+                                console.log(
+                                  "📊 Items being sent:",
+                                  payload.estimate.items,
+                                );
 
-                                const res = await axios.post("/api/estimate-basic-pdf", payload);
+                                const res = await axios.post(
+                                  "/api/estimate-basic-pdf",
+                                  payload,
+                                );
                                 const downloadUrl = res.data.data.download_url;
-                                
+
                                 if (downloadUrl) {
                                   window.open(downloadUrl, "_blank");
                                   toast({
                                     title: "✅ PDF Generado",
-                                    description: "El PDF se ha generado y descargado correctamente",
+                                    description:
+                                      "El PDF se ha generado y descargado correctamente",
                                   });
                                 } else {
                                   toast({
                                     title: "Error",
-                                    description: "No se pudo obtener la URL de descarga del PDF",
+                                    description:
+                                      "No se pudo obtener la URL de descarga del PDF",
                                     variant: "destructive",
                                   });
                                 }
@@ -5747,7 +6121,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                 console.error("Error generating PDF:", error);
                                 toast({
                                   title: "❌ Error al generar PDF",
-                                  description: "No se pudo generar el PDF. Inténtalo de nuevo.",
+                                  description:
+                                    "No se pudo generar el PDF. Inténtalo de nuevo.",
                                   variant: "destructive",
                                 });
                               }
@@ -5809,7 +6184,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   discountName: "",
                 });
                 // Clear URL parameters
-                window.history.replaceState({}, document.title, window.location.pathname);
+                window.history.replaceState(
+                  {},
+                  document.title,
+                  window.location.pathname,
+                );
               }}
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -6061,8 +6440,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 {/* Footer */}
                 <div className="text-center pt-6 border-t border-gray-300">
                   <p className="text-gray-600">
-                    Thank you for choosing{" "}
-                    {profile?.company || "our services"}!
+                    Thank you for choosing {profile?.company || "our services"}!
                   </p>
                   <p className="text-sm text-gray-500 mt-2">
                     For questions about this estimate, please contact us at{" "}
@@ -6135,46 +6513,67 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   <div className="p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Name</label>
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                          Name
+                        </label>
                         <div className="text-sm font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
                           {estimate.client.name}
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</label>
-                        {!estimate.client.email || estimate.client.email.trim() === '' ? (
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                          Email
+                        </label>
+                        {!estimate.client.email ||
+                        estimate.client.email.trim() === "" ? (
                           <div className="space-y-2">
                             <Input
                               type="email"
                               placeholder="Enter client email..."
                               className="text-sm"
                               onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
+                                if (e.key === "Enter") {
                                   const input = e.target as HTMLInputElement;
                                   const newEmail = input.value.trim();
-                                  if (newEmail && /\S+@\S+\.\S+/.test(newEmail)) {
+                                  if (
+                                    newEmail &&
+                                    /\S+@\S+\.\S+/.test(newEmail)
+                                  ) {
                                     // Update client email
-                                    setEstimate(prev => ({
+                                    setEstimate((prev) => ({
                                       ...prev,
-                                      client: prev.client ? { ...prev.client, email: newEmail } : null
+                                      client: prev.client
+                                        ? { ...prev.client, email: newEmail }
+                                        : null,
                                     }));
                                     // Update localStorage
                                     if (estimate.client) {
-                                      const updatedClient = { ...estimate.client, email: newEmail };
-                                      localStorage.setItem('currentEstimateClient', JSON.stringify(updatedClient));
-                                      
+                                      const updatedClient = {
+                                        ...estimate.client,
+                                        email: newEmail,
+                                      };
+                                      localStorage.setItem(
+                                        "currentEstimateClient",
+                                        JSON.stringify(updatedClient),
+                                      );
+
                                       // Update client in Firebase
                                       try {
-                                        fetch('/api/clients', {
-                                          method: 'PUT',
-                                          headers: { 'Content-Type': 'application/json' },
+                                        fetch("/api/clients", {
+                                          method: "PUT",
+                                          headers: {
+                                            "Content-Type": "application/json",
+                                          },
                                           body: JSON.stringify({
                                             id: estimate.client.id,
-                                            email: newEmail
-                                          })
+                                            email: newEmail,
+                                          }),
                                         });
                                       } catch (error) {
-                                        console.log('Failed to update client in Firebase:', error);
+                                        console.log(
+                                          "Failed to update client in Firebase:",
+                                          error,
+                                        );
                                       }
                                     }
                                     toast({
@@ -6185,7 +6584,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                 }
                               }}
                             />
-                            <p className="text-xs text-gray-500">Press Enter to save email</p>
+                            <p className="text-xs text-gray-500">
+                              Press Enter to save email
+                            </p>
                           </div>
                         ) : (
                           <div className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg break-all">
@@ -6209,14 +6610,22 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 <div className="p-4 space-y-4">
                   {/* Email Recipient */}
                   <div className="space-y-2">
-                    <Label htmlFor="toEmail" className="text-sm font-medium text-gray-700">
+                    <Label
+                      htmlFor="toEmail"
+                      className="text-sm font-medium text-gray-700"
+                    >
                       Send to Email Address *
                     </Label>
                     <Input
                       id="toEmail"
                       type="email"
                       value={emailData.toEmail}
-                      onChange={(e) => setEmailData((prev) => ({ ...prev, toEmail: e.target.value }))}
+                      onChange={(e) =>
+                        setEmailData((prev) => ({
+                          ...prev,
+                          toEmail: e.target.value,
+                        }))
+                      }
                       placeholder="client@email.com"
                       className="w-full h-11 text-sm"
                     />
@@ -6224,13 +6633,21 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                   {/* Email Subject */}
                   <div className="space-y-2">
-                    <Label htmlFor="subject" className="text-sm font-medium text-gray-700">
+                    <Label
+                      htmlFor="subject"
+                      className="text-sm font-medium text-gray-700"
+                    >
                       Email Subject *
                     </Label>
                     <Input
                       id="subject"
                       value={emailData.subject}
-                      onChange={(e) => setEmailData((prev) => ({ ...prev, subject: e.target.value }))}
+                      onChange={(e) =>
+                        setEmailData((prev) => ({
+                          ...prev,
+                          subject: e.target.value,
+                        }))
+                      }
                       placeholder="Professional Estimate - Your Project"
                       className="w-full h-11 text-sm"
                     />
@@ -6238,13 +6655,21 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                   {/* Personal Message */}
                   <div className="space-y-2">
-                    <Label htmlFor="message" className="text-sm font-medium text-gray-700">
+                    <Label
+                      htmlFor="message"
+                      className="text-sm font-medium text-gray-700"
+                    >
                       Personal Message *
                     </Label>
                     <Textarea
                       id="message"
                       value={emailData.message}
-                      onChange={(e) => setEmailData((prev) => ({ ...prev, message: e.target.value }))}
+                      onChange={(e) =>
+                        setEmailData((prev) => ({
+                          ...prev,
+                          message: e.target.value,
+                        }))
+                      }
                       placeholder="Dear [Client Name], I hope this message finds you well. Please find attached our professional estimate for your project..."
                       rows={5}
                       className="w-full resize-none text-sm"
@@ -6261,11 +6686,19 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         type="checkbox"
                         id="sendCopy"
                         checked={emailData.sendCopy}
-                        onChange={(e) => setEmailData((prev) => ({ ...prev, sendCopy: e.target.checked }))}
+                        onChange={(e) =>
+                          setEmailData((prev) => ({
+                            ...prev,
+                            sendCopy: e.target.checked,
+                          }))
+                        }
                         className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
                       <div className="flex-1">
-                        <Label htmlFor="sendCopy" className="text-sm font-medium text-gray-700 cursor-pointer">
+                        <Label
+                          htmlFor="sendCopy"
+                          className="text-sm font-medium text-gray-700 cursor-pointer"
+                        >
                           Send me a copy
                         </Label>
                         <p className="text-xs text-gray-500 mt-0.5">
@@ -6290,19 +6723,25 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     {/* Email Headers */}
                     <div className="space-y-2 text-sm">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                        <span className="font-medium text-gray-600 min-w-12">To:</span>
+                        <span className="font-medium text-gray-600 min-w-12">
+                          To:
+                        </span>
                         <span className="text-gray-900 break-all font-mono text-xs bg-white px-2 py-1 rounded">
                           {emailData.toEmail || "client@email.com"}
                         </span>
                       </div>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                        <span className="font-medium text-gray-600 min-w-12">From:</span>
+                        <span className="font-medium text-gray-600 min-w-12">
+                          From:
+                        </span>
                         <span className="text-gray-900 break-all font-mono text-xs bg-white px-2 py-1 rounded">
                           {profile?.email || "your@email.com"}
                         </span>
                       </div>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                        <span className="font-medium text-gray-600 min-w-12">Subject:</span>
+                        <span className="font-medium text-gray-600 min-w-12">
+                          Subject:
+                        </span>
                         <span className="text-gray-900 break-words bg-white px-2 py-1 rounded flex-1">
                           {emailData.subject || "Professional Estimate"}
                         </span>
@@ -6313,7 +6752,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     <div className="border-t border-gray-300 pt-4">
                       <div className="bg-white rounded-lg p-4 border border-gray-200">
                         <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                          {emailData.message || "Your message will appear here..."}
+                          {emailData.message ||
+                            "Your message will appear here..."}
                         </div>
                       </div>
                     </div>
@@ -6321,14 +6761,18 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     {/* Attachment Info */}
                     <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
                       <span>📎</span>
-                      <span className="font-medium">Professional estimate attached</span>
+                      <span className="font-medium">
+                        Professional estimate attached
+                      </span>
                     </div>
 
                     {/* Copy Notification */}
                     {emailData.sendCopy && (
                       <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
                         <span>✓</span>
-                        <span className="font-medium">Copy will be sent to you</span>
+                        <span className="font-medium">
+                          Copy will be sent to you
+                        </span>
                       </div>
                     )}
                   </div>
@@ -6395,19 +6839,25 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               </h3>
               <div className="space-y-3 text-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                  <span className="text-cyan-300 font-medium min-w-16">To:</span>
+                  <span className="text-cyan-300 font-medium min-w-16">
+                    To:
+                  </span>
                   <span className="text-white bg-gray-700/50 px-3 py-1 rounded break-all">
                     {emailData.toEmail}
                   </span>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                  <span className="text-cyan-300 font-medium min-w-16">From:</span>
+                  <span className="text-cyan-300 font-medium min-w-16">
+                    From:
+                  </span>
                   <span className="text-white bg-gray-700/50 px-3 py-1 rounded break-all">
                     {profile?.email || "contact@company.com"}
                   </span>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                  <span className="text-cyan-300 font-medium min-w-16">Subject:</span>
+                  <span className="text-cyan-300 font-medium min-w-16">
+                    Subject:
+                  </span>
                   <span className="text-white bg-gray-700/50 px-3 py-1 rounded break-words flex-1">
                     {emailData.subject}
                   </span>
@@ -6423,11 +6873,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   Professional Email Content
                 </h3>
               </div>
-              
+
               <div className="p-6 space-y-6">
                 {/* Message Preview */}
                 <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
-                  <h4 className="font-semibold text-gray-800 mb-3">Personal Message</h4>
+                  <h4 className="font-semibold text-gray-800 mb-3">
+                    Personal Message
+                  </h4>
                   <div className="whitespace-pre-wrap text-gray-700 text-sm leading-relaxed">
                     {emailData.message}
                   </div>
@@ -6439,7 +6891,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     <FileText className="h-5 w-5" />
                     Attached Professional Estimate
                   </h4>
-                  
+
                   {previewHtml ? (
                     <div className="border-2 border-blue-200 rounded-lg overflow-hidden shadow-lg">
                       <div className="bg-blue-50 px-4 py-2 text-sm text-blue-700 font-medium flex items-center gap-2 border-b">
@@ -6451,13 +6903,15 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           srcDoc={previewHtml}
                           className="w-full border-0"
                           title="Professional Estimate Preview"
-                          style={{ height: '450px', minHeight: '450px' }}
+                          style={{ height: "450px", minHeight: "450px" }}
                         />
                       </div>
                     </div>
                   ) : (
                     <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 text-center">
-                      <div className="text-blue-600 font-medium mb-3">Generating estimate preview...</div>
+                      <div className="text-blue-600 font-medium mb-3">
+                        Generating estimate preview...
+                      </div>
                       <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
                     </div>
                   )}
@@ -6472,11 +6926,15 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                     <div className="bg-white p-3 rounded border text-center">
                       <div className="text-gray-600 mb-1">Client</div>
-                      <div className="font-medium text-gray-800">{estimate.client?.name}</div>
+                      <div className="font-medium text-gray-800">
+                        {estimate.client?.name}
+                      </div>
                     </div>
                     <div className="bg-white p-3 rounded border text-center">
                       <div className="text-gray-600 mb-1">Line Items</div>
-                      <div className="font-medium text-gray-800">{estimate.items.length} items</div>
+                      <div className="font-medium text-gray-800">
+                        {estimate.items.length} items
+                      </div>
                     </div>
                     <div className="bg-white p-3 rounded border text-center">
                       <div className="text-gray-600 mb-1">Total Amount</div>
@@ -6489,7 +6947,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                 {/* Company Signature */}
                 <div className="border-t pt-6 bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-gray-800 mb-3">Professional Signature</h4>
+                  <h4 className="font-semibold text-gray-800 mb-3">
+                    Professional Signature
+                  </h4>
                   <div className="text-sm space-y-2 text-gray-700">
                     <div className="font-bold text-blue-600 text-base">
                       {profile?.company || profile?.name || "Your Company"}
@@ -6523,11 +6983,18 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             {emailData.sendCopy && (
               <div className="bg-gradient-to-r from-blue-900/30 to-green-900/30 rounded-xl p-4 border border-blue-500/40 shadow-lg">
                 <div className="text-sm text-blue-300 flex items-start gap-3">
-                  <span className="text-green-400 flex-shrink-0 text-lg">✅</span>
+                  <span className="text-green-400 flex-shrink-0 text-lg">
+                    ✅
+                  </span>
                   <div className="flex-1">
-                    <div className="font-semibold mb-1">Email Copy Notification</div>
+                    <div className="font-semibold mb-1">
+                      Email Copy Notification
+                    </div>
                     <div className="text-blue-200">
-                      A copy of this email will be sent to: <span className="font-medium">{profile?.email || "your email"}</span>
+                      A copy of this email will be sent to:{" "}
+                      <span className="font-medium">
+                        {profile?.email || "your email"}
+                      </span>
                     </div>
                   </div>
                 </div>

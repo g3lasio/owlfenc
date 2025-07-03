@@ -1503,7 +1503,7 @@ export default function CyberpunkLegalDefense() {
           );
           console.log(
             "🔍 [CLAUSE-DEBUG] Available clause IDs:",
-            intelligentClauses.map(c => c.id),
+            intelligentClauses.map((c) => c.id),
           );
 
           const filteredClauses = intelligentClauses.filter(
@@ -2404,7 +2404,7 @@ export default function CyberpunkLegalDefense() {
         <div className="mb-8 px-4">
           {/* Mobile: Horizontal Scroll Stepper */}
           <div className="md:hidden  pb-4">
-            <div className="flex items-center space-x-4 min-w-max px-2">
+            <div className="flex items-center  space-x-0 md:space-x-4 min-w-max px-2">
               {workflowSteps.map((step, index) => (
                 <div key={step.id} className="flex items-center">
                   {/* Step Icon + Label */}
@@ -2442,7 +2442,7 @@ export default function CyberpunkLegalDefense() {
                     </div>
 
                     <p
-                      className={`text-xs font-mono mt-2 text-center max-w-20 leading-tight ${
+                      className={` text-xs font-mono mt-2 text-center max-w-20 leading-tight ${
                         step.status === "completed"
                           ? "text-green-400"
                           : step.status === "processing"
@@ -2599,7 +2599,7 @@ export default function CyberpunkLegalDefense() {
         )}
 
         {/* Current Step Card */}
-        <div className="max-w-2xl mx-auto px-4">
+        <div className="md:max-w-2xl md:mx-auto px-4">
           {currentPhase === "data-command" && (
             <Card className="border-2 border-cyan-400 bg-black/80 relative ">
               <HUDCorners />
@@ -2628,7 +2628,7 @@ export default function CyberpunkLegalDefense() {
                 <div className="mb-6">
                   <div className="flex justify-center">
                     <div className="relative bg-gray-800/50 rounded-lg p-1 border border-cyan-400/30">
-                      <div className="flex relative">
+                      <div className="flex  relative">
                         {/* Sliding Background */}
                         <div
                           className={`absolute top-1 bottom-1 w-1/2 bg-cyan-400/20 border border-cyan-400 rounded transition-all duration-300 ease-in-out ${

@@ -233,7 +233,7 @@ export default function Billing() {
   }, [paymentMethods]);
 
   return (
-    <div className="container max-w-5xl mx-auto py-6 space-y-6">
+    <div className="container p-4 max-w-5xl mx-auto py-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Facturación y Pagos</h1>
         <p className="text-muted-foreground">
@@ -242,13 +242,19 @@ export default function Billing() {
       </div>
 
       <Tabs defaultValue="payment-methods" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="payment-methods">Métodos de Pago</TabsTrigger>
-          <TabsTrigger value="billing-history">
-            Historial de Facturación
-          </TabsTrigger>
-          <TabsTrigger value="subscription">Suscripción</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="flex w-max min-w-full gap-2 px-2">
+            <TabsTrigger value="payment-methods" className="whitespace-nowrap">
+              Métodos de Pago
+            </TabsTrigger>
+            <TabsTrigger value="billing-history" className="whitespace-nowrap">
+              Historial de Facturación
+            </TabsTrigger>
+            <TabsTrigger value="subscription" className="whitespace-nowrap">
+              Suscripción
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* TAB: MÉTODOS DE PAGO */}
         <TabsContent value="payment-methods" className="space-y-4">

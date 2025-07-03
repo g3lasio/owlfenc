@@ -166,7 +166,7 @@ export default function Estimates() {
   const loadMaterials = async () => {
     try {
       setIsLoadingMaterials(true);
-      
+
       if (!currentUser) {
         console.error("No authenticated user found");
         return;
@@ -175,11 +175,11 @@ export default function Estimates() {
       const token = await currentUser.getIdToken();
       const response = await fetch("/api/materials", {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setMaterials(data);
@@ -495,9 +495,9 @@ export default function Estimates() {
       const token = await currentUser.getIdToken();
       const response = await fetch("/api/materials", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(newMaterial),
       });
@@ -531,11 +531,13 @@ export default function Estimates() {
   };
 
   return (
-    <div className="container mx-auto p-3 sm:p-4 lg:p-6 space-y-4 lg:space-y-6">
+    <div className="md:container md:mx-auto p-3 sm:p-4 lg:p-6 space-y-4 lg:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Crear Estimado</h1>
+          <h1 className=" sm:text-2xl text-xl md:text-3xl font-bold">
+            Crear Estimado
+          </h1>
           <p className="text-muted-foreground text-sm sm:text-base">
             Crea estimados profesionales de forma rápida y sencilla
           </p>
@@ -597,7 +599,9 @@ export default function Estimates() {
                   <div className="p-3 bg-muted/50 rounded-lg border">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <h4 className="font-medium text-sm sm:text-base truncate">{estimate.client.name}</h4>
+                        <h4 className="font-medium text-sm sm:text-base truncate">
+                          {estimate.client.name}
+                        </h4>
                         {estimate.client.email && (
                           <p className="text-xs sm:text-sm text-muted-foreground truncate">
                             {estimate.client.email}
@@ -674,7 +678,9 @@ export default function Estimates() {
                               className="p-3 border rounded-lg cursor-pointer hover:bg-muted transition-colors"
                               onClick={() => selectClient(client)}
                             >
-                              <h4 className="font-medium text-sm sm:text-base truncate">{client.name}</h4>
+                              <h4 className="font-medium text-sm sm:text-base truncate">
+                                {client.name}
+                              </h4>
                               {client.email && (
                                 <p className="text-xs sm:text-sm text-muted-foreground truncate">
                                   {client.email}
@@ -726,7 +732,9 @@ export default function Estimates() {
               <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Package className="h-4 w-4" />
-                  <span className="text-lg">Materiales ({estimate.items.length})</span>
+                  <span className="text-lg">
+                    Materiales ({estimate.items.length})
+                  </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Dialog
@@ -736,7 +744,9 @@ export default function Estimates() {
                     <DialogTrigger asChild>
                       <Button size="sm" className="flex-1 sm:flex-none">
                         <Plus className="h-4 w-4 mr-2" />
-                        <span className="hidden sm:inline">Agregar Material</span>
+                        <span className="hidden sm:inline">
+                          Agregar Material
+                        </span>
                         <span className="sm:hidden">Agregar</span>
                       </Button>
                     </DialogTrigger>
@@ -920,9 +930,16 @@ export default function Estimates() {
                       </div>
                     </DialogContent>
                   </Dialog>
-                  <Button variant="outline" size="sm" onClick={addCustomItem} className="flex-1 sm:flex-none">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={addCustomItem}
+                    className="flex-1 sm:flex-none"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
-                    <span className="hidden sm:inline">Artículo Personalizado</span>
+                    <span className="hidden sm:inline">
+                      Artículo Personalizado
+                    </span>
                     <span className="sm:hidden">Personalizado</span>
                   </Button>
                 </div>
@@ -932,7 +949,9 @@ export default function Estimates() {
               {estimate.items.length === 0 ? (
                 <div className="text-center py-6 lg:py-8 text-muted-foreground">
                   <Package className="h-10 w-10 lg:h-12 lg:w-12 mx-auto mb-3 lg:mb-4 opacity-50" />
-                  <p className="text-sm lg:text-base">No hay materiales agregados aún.</p>
+                  <p className="text-sm lg:text-base">
+                    No hay materiales agregados aún.
+                  </p>
                   <p className="text-xs lg:text-sm mt-1">
                     Haz clic en "Agregar Material" para comenzar.
                   </p>
@@ -942,7 +961,9 @@ export default function Estimates() {
                   {estimate.items.map((item, index) => (
                     <div key={item.id} className="border rounded-lg p-3 lg:p-4">
                       <div className="flex justify-between items-start mb-3">
-                        <h4 className="font-medium text-sm lg:text-base">Artículo {index + 1}</h4>
+                        <h4 className="font-medium text-sm lg:text-base">
+                          Artículo {index + 1}
+                        </h4>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -955,19 +976,31 @@ export default function Estimates() {
                       <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-4 lg:gap-3">
                         <div className="lg:col-span-2 space-y-3">
                           <div>
-                            <Label htmlFor={`name-${item.id}`} className="text-xs lg:text-sm">Nombre</Label>
+                            <Label
+                              htmlFor={`name-${item.id}`}
+                              className="text-xs lg:text-sm"
+                            >
+                              Nombre
+                            </Label>
                             <Input
                               id={`name-${item.id}`}
                               value={item.name}
                               onChange={(e) =>
-                                updateCustomItem(item.id, "name", e.target.value)
+                                updateCustomItem(
+                                  item.id,
+                                  "name",
+                                  e.target.value,
+                                )
                               }
                               placeholder="Nombre del artículo"
                               className="text-sm"
                             />
                           </div>
                           <div>
-                            <Label htmlFor={`description-${item.id}`} className="text-xs lg:text-sm">
+                            <Label
+                              htmlFor={`description-${item.id}`}
+                              className="text-xs lg:text-sm"
+                            >
                               Descripción
                             </Label>
                             <Input
@@ -987,7 +1020,10 @@ export default function Estimates() {
                         </div>
                         <div className="grid grid-cols-2 gap-3 lg:grid-cols-1 lg:gap-3">
                           <div>
-                            <Label htmlFor={`quantity-${item.id}`} className="text-xs lg:text-sm">
+                            <Label
+                              htmlFor={`quantity-${item.id}`}
+                              className="text-xs lg:text-sm"
+                            >
                               Cantidad
                             </Label>
                             <Input
@@ -1006,7 +1042,12 @@ export default function Estimates() {
                             />
                           </div>
                           <div>
-                            <Label htmlFor={`unit-${item.id}`} className="text-xs lg:text-sm">Unidad</Label>
+                            <Label
+                              htmlFor={`unit-${item.id}`}
+                              className="text-xs lg:text-sm"
+                            >
+                              Unidad
+                            </Label>
                             <Input
                               id={`unit-${item.id}`}
                               value={item.unit}
@@ -1024,7 +1065,10 @@ export default function Estimates() {
                         </div>
                         <div className="space-y-3">
                           <div>
-                            <Label htmlFor={`price-${item.id}`} className="text-xs lg:text-sm">
+                            <Label
+                              htmlFor={`price-${item.id}`}
+                              className="text-xs lg:text-sm"
+                            >
                               Precio Unitario
                             </Label>
                             <Input
@@ -1043,7 +1087,9 @@ export default function Estimates() {
                             />
                           </div>
                           <div className="p-2 bg-muted/50 rounded text-center border">
-                            <p className="text-xs font-medium text-muted-foreground">Total</p>
+                            <p className="text-xs font-medium text-muted-foreground">
+                              Total
+                            </p>
                             <p className="text-base lg:text-lg font-bold">
                               ${item.total.toFixed(2)}
                             </p>
@@ -1057,15 +1103,21 @@ export default function Estimates() {
                   <div className="border-t pt-3 lg:pt-4 space-y-2 bg-muted/30 -mx-3 lg:-mx-4 px-3 lg:px-4 pb-2">
                     <div className="flex justify-between text-sm lg:text-base">
                       <span>Subtotal:</span>
-                      <span className="font-medium">${estimate.subtotal.toFixed(2)}</span>
+                      <span className="font-medium">
+                        ${estimate.subtotal.toFixed(2)}
+                      </span>
                     </div>
                     <div className="flex justify-between text-sm lg:text-base">
                       <span>IVA (16%):</span>
-                      <span className="font-medium">${estimate.tax.toFixed(2)}</span>
+                      <span className="font-medium">
+                        ${estimate.tax.toFixed(2)}
+                      </span>
                     </div>
                     <div className="flex justify-between text-base lg:text-lg font-bold border-t pt-2 border-border">
                       <span>Total:</span>
-                      <span className="text-primary">${estimate.total.toFixed(2)}</span>
+                      <span className="text-primary">
+                        ${estimate.total.toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </div>

@@ -1,25 +1,31 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  CheckCircle, 
-  Clock, 
-  CreditCard, 
-  DollarSign, 
-  FileText, 
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle,
+  Clock,
+  CreditCard,
+  DollarSign,
+  FileText,
   LinkIcon,
   Mail,
   MapPin,
   Phone,
   User,
-  Calculator
-} from 'lucide-react';
+  Calculator,
+} from "lucide-react";
 
 // Types (same as in ProjectPayments.tsx)
 type Project = {
@@ -54,8 +60,8 @@ type ProjectPayment = {
   stripeCheckoutSessionId?: string;
   stripePaymentLinkId?: string;
   amount: number;
-  type: 'deposit' | 'final' | 'milestone' | 'additional';
-  status: 'pending' | 'succeeded' | 'failed' | 'canceled' | 'expired';
+  type: "deposit" | "final" | "milestone" | "additional";
+  status: "pending" | "succeeded" | "failed" | "canceled" | "expired";
   paymentMethod?: string;
   receiptUrl?: string;
   invoiceUrl?: string;
@@ -88,31 +94,36 @@ export default function ProjectPaymentWorkflow({
   payments,
   onCreatePayment,
   onSendInvoice,
-  isCreatingPayment
+  isCreatingPayment,
 }: ProjectPaymentWorkflowProps) {
   // Workflow state
-  const [currentStep, setCurrentStep] = useState<'select' | 'preview' | 'payment' | 'confirmation'>('select');
+  const [currentStep, setCurrentStep] = useState<
+    "select" | "preview" | "payment" | "confirmation"
+  >("select");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [editableAmount, setEditableAmount] = useState<string>('');
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'zelle' | 'link' | 'card' | 'ach'>('cash');
-  const [clientEmail, setClientEmail] = useState<string>('');
+  const [editableAmount, setEditableAmount] = useState<string>("");
+  const [paymentMethod, setPaymentMethod] = useState<
+    "cash" | "zelle" | "link" | "card" | "ach"
+  >("cash");
+  const [clientEmail, setClientEmail] = useState<string>("");
 
   // Helper functions
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
   const calculatePayments = (project: Project) => {
     const totalAmount = project.totalPrice ? project.totalPrice / 100 : 0; // Convert from cents
-    
+
     // Calculate paid amount from existing payments
-    const projectPayments = payments?.filter(p => p.projectId === project.id) || [];
+    const projectPayments =
+      payments?.filter((p) => p.projectId === project.id) || [];
     const totalPaid = projectPayments
-      .filter(p => p.status === 'succeeded')
-      .reduce((sum, p) => sum + (p.amount / 100), 0); // Convert from cents
+      .filter((p) => p.status === "succeeded")
+      .reduce((sum, p) => sum + p.amount / 100, 0); // Convert from cents
 
     const remainingBalance = totalAmount - totalPaid;
     const depositAmount = totalAmount * 0.5; // 50% deposit
@@ -121,7 +132,7 @@ export default function ProjectPaymentWorkflow({
       totalAmount,
       totalPaid,
       remainingBalance,
-      depositAmount
+      depositAmount,
     };
   };
 
@@ -133,9 +144,7 @@ export default function ProjectPaymentWorkflow({
           <DollarSign className="h-5 w-5" />
           Step 1: Select Project
         </CardTitle>
-        <CardDescription>
-          Choose the project to process payment
-        </CardDescription>
+        <CardDescription>Choose the project to process payment</CardDescription>
       </CardHeader>
       <CardContent>
         {!projects || projects.length === 0 ? (
@@ -150,40 +159,65 @@ export default function ProjectPaymentWorkflow({
             <div className="max-h-80  space-y-3 border rounded-lg p-4">
               {projects.map((project) => {
                 const amounts = calculatePayments(project);
-                
+
                 return (
-                  <Card 
+                  <Card
                     key={project.id}
                     className={`cursor-pointer transition-all hover:shadow-md ${
-                      selectedProject?.id === project.id ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:bg-gray-50'
+                      selectedProject?.id === project.id
+                        ? "ring-2 ring-blue-500 bg-blue-50"
+                        : "hover:bg-gray-50"
                     }`}
                     onClick={() => {
                       setSelectedProject(project);
-                      setClientEmail(project.clientEmail || '');
+                      setClientEmail(project.clientEmail || "");
                       setEditableAmount(amounts.depositAmount.toString());
                     }}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
-                          <h4 className="font-semibold text-lg">{project.clientName}</h4>
-                          <p className="text-sm text-gray-600">{project.projectType || 'General Project'}</p>
+                          <h4 className="font-semibold text-lg">
+                            {project.clientName}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {project.projectType || "General Project"}
+                          </p>
                         </div>
                         <div className="text-right space-y-1">
                           <div className="flex justify-between gap-4">
-                            <span className="text-sm text-gray-600">Total:</span>
-                            <span className="font-medium">{formatCurrency(amounts.totalAmount)}</span>
+                            <span className="text-sm text-gray-600">
+                              Total:
+                            </span>
+                            <span className="font-medium">
+                              {formatCurrency(amounts.totalAmount)}
+                            </span>
                           </div>
                           <div className="flex justify-between gap-4">
                             <span className="text-sm text-gray-600">Paid:</span>
-                            <span className="text-green-600 font-medium">{formatCurrency(amounts.totalPaid)}</span>
+                            <span className="text-green-600 font-medium">
+                              {formatCurrency(amounts.totalPaid)}
+                            </span>
                           </div>
                           <div className="flex justify-between gap-4">
-                            <span className="text-sm text-gray-600">Pending:</span>
-                            <span className="text-orange-600 font-medium">{formatCurrency(amounts.remainingBalance)}</span>
+                            <span className="text-sm text-gray-600">
+                              Pending:
+                            </span>
+                            <span className="text-orange-600 font-medium">
+                              {formatCurrency(amounts.remainingBalance)}
+                            </span>
                           </div>
-                          <Badge variant={amounts.remainingBalance > 0 ? "secondary" : "default"} className="ml-auto">
-                            {amounts.remainingBalance > 0 ? 'Pending' : 'Completed'}
+                          <Badge
+                            variant={
+                              amounts.remainingBalance > 0
+                                ? "secondary"
+                                : "default"
+                            }
+                            className="ml-auto"
+                          >
+                            {amounts.remainingBalance > 0
+                              ? "Pending"
+                              : "Completed"}
                           </Badge>
                         </div>
                       </div>
@@ -197,9 +231,15 @@ export default function ProjectPaymentWorkflow({
             {selectedProject && (
               <div className="flex justify-between items-center pt-4 border-t">
                 <div className="text-sm text-gray-600">
-                  Selected: <span className="font-medium">{selectedProject.clientName}</span>
+                  Selected:{" "}
+                  <span className="font-medium">
+                    {selectedProject.clientName}
+                  </span>
                 </div>
-                <Button onClick={() => setCurrentStep('preview')} className="bg-blue-600 hover:bg-blue-700">
+                <Button
+                  onClick={() => setCurrentStep("preview")}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
                   Continue to Review
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -214,7 +254,7 @@ export default function ProjectPaymentWorkflow({
   // Step 2: Enhanced Payment Preview
   const renderPaymentPreview = () => {
     if (!selectedProject) return null;
-    
+
     const amounts = calculatePayments(selectedProject);
     const previewAmount = parseFloat(editableAmount) || 0;
 
@@ -242,7 +282,9 @@ export default function ProjectPaymentWorkflow({
                   <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
                   <div>
                     <div className="text-sm text-gray-300">Full Name</div>
-                    <div className="font-semibold text-lg text-white">{selectedProject.clientName}</div>
+                    <div className="font-semibold text-lg text-white">
+                      {selectedProject.clientName}
+                    </div>
                   </div>
                 </div>
                 {selectedProject.clientEmail && (
@@ -250,7 +292,9 @@ export default function ProjectPaymentWorkflow({
                     <Mail className="h-4 w-4 text-cyan-400" />
                     <div>
                       <div className="text-sm text-gray-300">Email</div>
-                      <div className="text-sm font-medium text-white">{selectedProject.clientEmail}</div>
+                      <div className="text-sm font-medium text-white">
+                        {selectedProject.clientEmail}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -261,7 +305,9 @@ export default function ProjectPaymentWorkflow({
                     <Phone className="h-4 w-4 text-cyan-400" />
                     <div>
                       <div className="text-sm text-gray-300">Phone</div>
-                      <div className="text-sm font-medium text-white">{selectedProject.clientPhone}</div>
+                      <div className="text-sm font-medium text-white">
+                        {selectedProject.clientPhone}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -269,7 +315,9 @@ export default function ProjectPaymentWorkflow({
                   <MapPin className="h-4 w-4 text-cyan-400 mt-1" />
                   <div>
                     <div className="text-sm text-gray-300">Project Address</div>
-                    <div className="text-sm font-medium text-white">{selectedProject.address}</div>
+                    <div className="text-sm font-medium text-white">
+                      {selectedProject.address}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -286,18 +334,24 @@ export default function ProjectPaymentWorkflow({
               <div className="space-y-3">
                 <div>
                   <div className="text-sm text-gray-300">Project Type</div>
-                  <div className="font-semibold text-white">{selectedProject.projectType || 'General Project'}</div>
+                  <div className="font-semibold text-white">
+                    {selectedProject.projectType || "General Project"}
+                  </div>
                 </div>
                 {selectedProject.projectSubtype && (
                   <div>
                     <div className="text-sm text-gray-300">Style/Subtype</div>
-                    <div className="font-medium text-white">{selectedProject.projectSubtype}</div>
+                    <div className="font-medium text-white">
+                      {selectedProject.projectSubtype}
+                    </div>
                   </div>
                 )}
                 <div>
                   <div className="text-sm text-gray-300">Status</div>
                   <Badge variant="default" className="bg-cyan-600 text-white">
-                    {selectedProject.status === 'approved' ? 'Approved' : selectedProject.status}
+                    {selectedProject.status === "approved"
+                      ? "Approved"
+                      : selectedProject.status}
                   </Badge>
                 </div>
               </div>
@@ -335,7 +389,9 @@ export default function ProjectPaymentWorkflow({
               </div>
               <div className="text-center p-4 bg-gray-700 rounded-lg shadow-sm border border-cyan-500">
                 <div className="text-2xl font-bold text-orange-400">
-                  {formatCurrency(((selectedProject.totalPrice || 0) / 100) - amounts.totalPaid)}
+                  {formatCurrency(
+                    (selectedProject.totalPrice || 0) / 100 - amounts.totalPaid,
+                  )}
                 </div>
                 <div className="text-sm text-gray-300">Pending</div>
               </div>
@@ -350,7 +406,12 @@ export default function ProjectPaymentWorkflow({
 
           {/* Editable Payment Amount */}
           <div className="space-y-4 bg-gray-800 p-4 rounded-lg border border-cyan-400">
-            <Label htmlFor="paymentAmount" className="text-base font-medium text-white">Payment Amount</Label>
+            <Label
+              htmlFor="paymentAmount"
+              className="text-base font-medium text-white"
+            >
+              Payment Amount
+            </Label>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-300" />
@@ -363,20 +424,26 @@ export default function ProjectPaymentWorkflow({
                   placeholder="0.00"
                   step="0.01"
                   min="0"
-                  max={((selectedProject.totalPrice || 0) / 100) - amounts.totalPaid}
+                  max={
+                    (selectedProject.totalPrice || 0) / 100 - amounts.totalPaid
+                  }
                 />
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setEditableAmount(amounts.depositAmount.toString())}
+                onClick={() =>
+                  setEditableAmount(amounts.depositAmount.toString())
+                }
               >
                 50% Deposit
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setEditableAmount(amounts.remainingBalance.toString())}
+                onClick={() =>
+                  setEditableAmount(amounts.remainingBalance.toString())
+                }
               >
                 Full Balance
               </Button>
@@ -385,7 +452,9 @@ export default function ProjectPaymentWorkflow({
 
           {/* Client Email for Invoice */}
           <div className="space-y-2">
-            <Label htmlFor="clientEmail" className="text-base font-medium">Client Email (for invoice)</Label>
+            <Label htmlFor="clientEmail" className="text-base font-medium">
+              Client Email (for invoice)
+            </Label>
             <Input
               id="clientEmail"
               type="email"
@@ -398,15 +467,12 @@ export default function ProjectPaymentWorkflow({
 
           {/* Navigation */}
           <div className="flex justify-between pt-4">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentStep('select')}
-            >
+            <Button variant="outline" onClick={() => setCurrentStep("select")}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Projects
             </Button>
             <Button
-              onClick={() => setCurrentStep('payment')}
+              onClick={() => setCurrentStep("payment")}
               disabled={!previewAmount || previewAmount <= 0 || !clientEmail}
               className="bg-blue-600 hover:bg-blue-700"
             >
@@ -435,142 +501,176 @@ export default function ProjectPaymentWorkflow({
         {/* Enhanced Payment Options */}
         <div className="space-y-3">
           {/* Cash Payment */}
-          <div 
+          <div
             className={`relative cursor-pointer transition-all duration-300 group ${
-              paymentMethod === 'cash' ? 'bg-gray-900 border-cyan-400' : 'bg-gray-800 border-gray-600 hover:border-cyan-500'
+              paymentMethod === "cash"
+                ? "bg-gray-900 border-cyan-400"
+                : "bg-gray-800 border-gray-600 hover:border-cyan-500"
             } border-2 rounded-lg p-4`}
-            onClick={() => setPaymentMethod('cash')}
+            onClick={() => setPaymentMethod("cash")}
           >
             {/* Cyberpunk Corner Brackets */}
             <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-cyan-400"></div>
             <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-cyan-400"></div>
             <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-cyan-400"></div>
             <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-cyan-400"></div>
-            
+
             {/* Scanning Line Animation */}
-            {paymentMethod === 'cash' && (
+            {paymentMethod === "cash" && (
               <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse"></div>
             )}
-            
+
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0">
                 <DollarSign className="h-8 w-8 text-green-400" />
               </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-lg text-white">Cash</h4>
-                <p className="text-sm text-gray-300">Record cash payment received in person</p>
+                <p className="text-sm text-gray-300">
+                  Record cash payment received in person
+                </p>
               </div>
-              <Badge className="bg-green-600 text-white border-0">Available</Badge>
+              <Badge className="bg-green-600 text-white border-0">
+                Available
+              </Badge>
             </div>
           </div>
 
           {/* Zelle Payment */}
-          <div 
+          <div
             className={`relative cursor-pointer transition-all duration-300 group ${
-              paymentMethod === 'zelle' ? 'bg-gray-900 border-cyan-400' : 'bg-gray-800 border-gray-600 hover:border-cyan-500'
+              paymentMethod === "zelle"
+                ? "bg-gray-900 border-cyan-400"
+                : "bg-gray-800 border-gray-600 hover:border-cyan-500"
             } border-2 rounded-lg p-4`}
-            onClick={() => setPaymentMethod('zelle')}
+            onClick={() => setPaymentMethod("zelle")}
           >
             {/* Cyberpunk Corner Brackets */}
             <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-cyan-400"></div>
             <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-cyan-400"></div>
             <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-cyan-400"></div>
             <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-cyan-400"></div>
-            
+
             {/* Scanning Line Animation */}
-            {paymentMethod === 'zelle' && (
+            {paymentMethod === "zelle" && (
               <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse"></div>
             )}
-            
+
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0">
                 <Phone className="h-8 w-8 text-blue-400" />
               </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-lg text-white">Zelle</h4>
-                <p className="text-sm text-gray-300">Instant bank transfer via Zelle</p>
+                <p className="text-sm text-gray-300">
+                  Instant bank transfer via Zelle
+                </p>
               </div>
-              <Badge className="bg-blue-600 text-white border-0">Available</Badge>
+              <Badge className="bg-blue-600 text-white border-0">
+                Available
+              </Badge>
             </div>
           </div>
 
           {/* Payment Link */}
-          <div 
+          <div
             className={`relative cursor-pointer transition-all duration-300 group ${
-              paymentMethod === 'link' ? 'bg-gray-900 border-cyan-400' : 'bg-gray-800 border-gray-600 hover:border-cyan-500'
+              paymentMethod === "link"
+                ? "bg-gray-900 border-cyan-400"
+                : "bg-gray-800 border-gray-600 hover:border-cyan-500"
             } border-2 rounded-lg p-4`}
-            onClick={() => setPaymentMethod('link')}
+            onClick={() => setPaymentMethod("link")}
           >
             {/* Cyberpunk Corner Brackets */}
             <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-cyan-400"></div>
             <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-cyan-400"></div>
             <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-cyan-400"></div>
             <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-cyan-400"></div>
-            
+
             {/* Scanning Line Animation */}
-            {paymentMethod === 'link' && (
+            {paymentMethod === "link" && (
               <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse"></div>
             )}
-            
+
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0">
                 <LinkIcon className="h-8 w-8 text-purple-400" />
               </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-lg text-white">Payment Link</h4>
-                <p className="text-sm text-gray-300">Generate link for client to pay online</p>
+                <h4 className="font-semibold text-lg text-white">
+                  Payment Link
+                </h4>
+                <p className="text-sm text-gray-300">
+                  Generate link for client to pay online
+                </p>
               </div>
-              <Badge className="bg-orange-600 text-white border-0">In Development</Badge>
+              <Badge className="bg-orange-600 text-white border-0">
+                In Development
+              </Badge>
             </div>
           </div>
 
           {/* Credit Card (Paused) */}
-          <div 
+          <div
             className={`relative cursor-pointer transition-all duration-300 group opacity-60 ${
-              paymentMethod === 'card' ? 'bg-gray-900 border-gray-500' : 'bg-gray-800 border-gray-600 hover:border-gray-500'
+              paymentMethod === "card"
+                ? "bg-gray-900 border-gray-500"
+                : "bg-gray-800 border-gray-600 hover:border-gray-500"
             } border-2 rounded-lg p-4`}
-            onClick={() => setPaymentMethod('card')}
+            onClick={() => setPaymentMethod("card")}
           >
             {/* Cyberpunk Corner Brackets */}
             <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-gray-500"></div>
             <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-gray-500"></div>
             <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-gray-500"></div>
             <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-gray-500"></div>
-            
+
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0">
                 <CreditCard className="h-8 w-8 text-gray-500" />
               </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-lg text-gray-400">Credit Card</h4>
-                <p className="text-sm text-gray-500">Card terminal (Stripe Connect)</p>
+                <h4 className="font-semibold text-lg text-gray-400">
+                  Credit Card
+                </h4>
+                <p className="text-sm text-gray-500">
+                  Card terminal (Stripe Connect)
+                </p>
               </div>
-              <Badge className="bg-gray-600 text-gray-300 border-0">Paused</Badge>
+              <Badge className="bg-gray-600 text-gray-300 border-0">
+                Paused
+              </Badge>
             </div>
           </div>
 
           {/* ACH (Paused) */}
-          <div 
+          <div
             className={`relative cursor-pointer transition-all duration-300 group opacity-60 ${
-              paymentMethod === 'ach' ? 'bg-gray-900 border-gray-500' : 'bg-gray-800 border-gray-600 hover:border-gray-500'
+              paymentMethod === "ach"
+                ? "bg-gray-900 border-gray-500"
+                : "bg-gray-800 border-gray-600 hover:border-gray-500"
             } border-2 rounded-lg p-4`}
-            onClick={() => setPaymentMethod('ach')}
+            onClick={() => setPaymentMethod("ach")}
           >
             {/* Cyberpunk Corner Brackets */}
             <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-gray-500"></div>
             <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-gray-500"></div>
             <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-gray-500"></div>
             <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-gray-500"></div>
-            
+
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0">
                 <Calculator className="h-8 w-8 text-gray-500" />
               </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-lg text-gray-400">ACH</h4>
-                <p className="text-sm text-gray-500">Direct ACH bank transfer</p>
+                <p className="text-sm text-gray-500">
+                  Direct ACH bank transfer
+                </p>
               </div>
-              <Badge className="bg-gray-600 text-gray-300 border-0">Paused</Badge>
+              <Badge className="bg-gray-600 text-gray-300 border-0">
+                Paused
+              </Badge>
             </div>
           </div>
         </div>
@@ -579,19 +679,21 @@ export default function ProjectPaymentWorkflow({
         {paymentMethod && (
           <div className="bg-gray-50 p-4 rounded-lg">
             <h5 className="font-medium mb-2">Selected Method Instructions</h5>
-            {paymentMethod === 'cash' && (
+            {paymentMethod === "cash" && (
               <p className="text-sm text-gray-600">
                 ✅ Confirm you have received the cash payment before processing.
               </p>
             )}
-            {paymentMethod === 'zelle' && (
+            {paymentMethod === "zelle" && (
               <p className="text-sm text-gray-600">
-                📱 Provide your Zelle number to the client and confirm the transfer.
+                📱 Provide your Zelle number to the client and confirm the
+                transfer.
               </p>
             )}
-            {paymentMethod === 'link' && (
+            {paymentMethod === "link" && (
               <p className="text-sm text-gray-600">
-                🔗 A secure link will be generated that you can send to the client via email.
+                🔗 A secure link will be generated that you can send to the
+                client via email.
               </p>
             )}
           </div>
@@ -599,12 +701,12 @@ export default function ProjectPaymentWorkflow({
 
         {/* Navigation */}
         <div className="flex justify-between pt-4">
-          <Button variant="outline" onClick={() => setCurrentStep('preview')}>
+          <Button variant="outline" onClick={() => setCurrentStep("preview")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Summary
           </Button>
-          <Button 
-            onClick={() => setCurrentStep('confirmation')}
+          <Button
+            onClick={() => setCurrentStep("confirmation")}
             disabled={!paymentMethod}
             className="bg-blue-600 hover:bg-blue-700"
           >
@@ -616,7 +718,7 @@ export default function ProjectPaymentWorkflow({
     </Card>
   );
 
-  // Step 4: Payment Confirmation  
+  // Step 4: Payment Confirmation
   const renderConfirmation = () => {
     if (!selectedProject || !editableAmount) return null;
 
@@ -626,36 +728,40 @@ export default function ProjectPaymentWorkflow({
       clientEmail,
       clientName: selectedProject.clientName,
       paymentMethod,
-      description: `${selectedProject.projectType || 'Project'} - ${selectedProject.clientName}`,
-      type: 'deposit' as const
+      description: `${selectedProject.projectType || "Project"} - ${selectedProject.clientName}`,
+      type: "deposit" as const,
     };
 
     const handlePaymentSubmit = () => {
-      if (paymentMethod === 'cash' || paymentMethod === 'zelle') {
+      if (paymentMethod === "cash" || paymentMethod === "zelle") {
         // For cash and zelle, register the payment immediately
         onCreatePayment(paymentData);
-      } else if (paymentMethod === 'link') {
+      } else if (paymentMethod === "link") {
         // For payment links, create the link
         onCreatePayment(paymentData);
       }
 
       // Send invoice
       onSendInvoice({
-        projectName: selectedProject.projectType || 'Project',
+        projectName: selectedProject.projectType || "Project",
         clientName: selectedProject.clientName,
         clientEmail: selectedProject.clientEmail || clientEmail,
-        totalAmount: selectedProject.totalPrice ? selectedProject.totalPrice / 100 : 0,
+        totalAmount: selectedProject.totalPrice
+          ? selectedProject.totalPrice / 100
+          : 0,
         paidAmount: parseFloat(editableAmount),
-        remainingAmount: (selectedProject.totalPrice ? selectedProject.totalPrice / 100 : 0) - parseFloat(editableAmount)
+        remainingAmount:
+          (selectedProject.totalPrice ? selectedProject.totalPrice / 100 : 0) -
+          parseFloat(editableAmount),
       });
     };
 
     const handleStartOver = () => {
-      setCurrentStep('select');
+      setCurrentStep("select");
       setSelectedProject(null);
-      setEditableAmount('');
-      setPaymentMethod('cash');
-      setClientEmail('');
+      setEditableAmount("");
+      setPaymentMethod("cash");
+      setClientEmail("");
     };
 
     return (
@@ -672,23 +778,33 @@ export default function ProjectPaymentWorkflow({
         <CardContent className="space-y-6">
           {/* Payment Summary */}
           <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-lg border border-cyan-400">
-            <h4 className="font-semibold text-lg mb-4 text-white">Payment Summary</h4>
+            <h4 className="font-semibold text-lg mb-4 text-white">
+              Payment Summary
+            </h4>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <div>
                   <div className="text-sm text-gray-300">Client</div>
-                  <div className="font-semibold text-white">{selectedProject.clientName}</div>
+                  <div className="font-semibold text-white">
+                    {selectedProject.clientName}
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-300">Project</div>
-                  <div className="font-medium text-white">{selectedProject.projectType || 'General Project'}</div>
+                  <div className="font-medium text-white">
+                    {selectedProject.projectType || "General Project"}
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-300">Payment Method</div>
                   <Badge className="font-medium bg-cyan-600 text-white border-0">
-                    {paymentMethod === 'cash' ? 'Cash' : 
-                     paymentMethod === 'zelle' ? 'Zelle' : 
-                     paymentMethod === 'link' ? 'Payment Link' : paymentMethod}
+                    {paymentMethod === "cash"
+                      ? "Cash"
+                      : paymentMethod === "zelle"
+                        ? "Zelle"
+                        : paymentMethod === "link"
+                          ? "Payment Link"
+                          : paymentMethod}
                   </Badge>
                 </div>
               </div>
@@ -709,12 +825,14 @@ export default function ProjectPaymentWorkflow({
 
           {/* Next Steps */}
           <div className="bg-gray-800 p-4 rounded-lg border border-cyan-400">
-            <h5 className="font-medium text-cyan-400 mb-2">What will happen:</h5>
+            <h5 className="font-medium text-cyan-400 mb-2">
+              What will happen:
+            </h5>
             <ul className="text-sm text-gray-300 space-y-1">
               <li>✅ Payment will be registered in history</li>
               <li>📧 Invoice will be sent to client via email</li>
               <li>📊 Project status will be updated</li>
-              {paymentMethod === 'link' && (
+              {paymentMethod === "link" && (
                 <li>🔗 Secure payment link will be generated</li>
               )}
             </ul>
@@ -722,11 +840,15 @@ export default function ProjectPaymentWorkflow({
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-4">
-            <Button variant="outline" onClick={() => setCurrentStep('payment')} className="flex-1">
+            <Button
+              variant="outline"
+              onClick={() => setCurrentStep("payment")}
+              className="flex-1"
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Change Method
             </Button>
-            <Button 
+            <Button
               onClick={handlePaymentSubmit}
               disabled={isCreatingPayment}
               className="flex-1 bg-green-600 hover:bg-green-700"
@@ -743,7 +865,11 @@ export default function ProjectPaymentWorkflow({
                 </>
               )}
             </Button>
-            <Button variant="outline" onClick={handleStartOver} className="flex-1">
+            <Button
+              variant="outline"
+              onClick={handleStartOver}
+              className="flex-1"
+            >
               New Payment
             </Button>
           </div>
@@ -756,27 +882,31 @@ export default function ProjectPaymentWorkflow({
   return (
     <div className="space-y-6">
       {/* Step Indicator */}
-      <div className="flex items-center justify-center space-x-4 mb-8">
+      <div className="flex-wrap flex items-center justify-center space-x-4 mb-8">
         {[
-          { step: 'select', label: 'Seleccionar', icon: DollarSign },
-          { step: 'preview', label: 'Revisar', icon: FileText },
-          { step: 'payment', label: 'Método', icon: CreditCard },
-          { step: 'confirmation', label: 'Confirmar', icon: CheckCircle }
+          { step: "select", label: "Seleccionar", icon: DollarSign },
+          { step: "preview", label: "Revisar", icon: FileText },
+          { step: "payment", label: "Método", icon: CreditCard },
+          { step: "confirmation", label: "Confirmar", icon: CheckCircle },
         ].map(({ step, label, icon: Icon }) => (
           <div key={step} className="flex items-center">
-            <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-              currentStep === step 
-                ? 'bg-blue-600 border-blue-600 text-white' 
-                : 'border-gray-300 text-gray-400'
-            }`}>
+            <div
+              className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                currentStep === step
+                  ? "bg-blue-600 border-blue-600 text-white"
+                  : "border-gray-300 text-gray-400"
+              }`}
+            >
               <Icon className="h-5 w-5" />
             </div>
-            <span className={`ml-2 text-sm font-medium ${
-              currentStep === step ? 'text-blue-600' : 'text-gray-400'
-            }`}>
+            <span
+              className={`ml-2 text-sm font-medium ${
+                currentStep === step ? "text-blue-600" : "text-gray-400"
+              }`}
+            >
               {label}
             </span>
-            {step !== 'confirmation' && (
+            {step !== "confirmation" && (
               <div className="w-12 h-px bg-gray-300 ml-4" />
             )}
           </div>
@@ -784,10 +914,10 @@ export default function ProjectPaymentWorkflow({
       </div>
 
       {/* Current Step Content */}
-      {currentStep === 'select' && renderProjectSelection()}
-      {currentStep === 'preview' && renderPaymentPreview()}
-      {currentStep === 'payment' && renderPaymentMethod()}
-      {currentStep === 'confirmation' && renderConfirmation()}
+      {currentStep === "select" && renderProjectSelection()}
+      {currentStep === "preview" && renderPaymentPreview()}
+      {currentStep === "payment" && renderPaymentMethod()}
+      {currentStep === "confirmation" && renderConfirmation()}
     </div>
   );
 }
