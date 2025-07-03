@@ -1146,7 +1146,7 @@ export default function CyberpunkLegalDefense() {
         if (result.success) {
           // Set the extracted data with all project information
           setExtractedData(result.extractedData);
-          setCurrentStep(2);
+          setCurrentStep(3);
           setCurrentPhase("defense-review");
 
           // Mark as selected project source
@@ -1342,7 +1342,7 @@ export default function CyberpunkLegalDefense() {
 
       setContractAnalysis(updatedAnalysis);
       setCurrentPhase("digital-execution");
-      setCurrentStep(3);
+      setCurrentStep(4);
 
       toast({
         title: "DEFENSE SYSTEM ACTIVATED",
@@ -2825,7 +2825,7 @@ export default function CyberpunkLegalDefense() {
 
           {/* Step 2: Defense Review & Correction with Live Preview */}
           {extractedData &&
-            currentStep === 2 &&
+            currentStep === 3 &&
             currentPhase === "defense-review" && (
               <Card className="border-2 border-green-400 bg-black/80 relative  mt-6">
                 <HUDCorners />
@@ -3697,13 +3697,13 @@ export default function CyberpunkLegalDefense() {
                   <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
                     <Button
                       onClick={() => {
-                        setCurrentStep(2);
-                        setCurrentPhase("arsenal-builder");
+                        setCurrentStep(1);
+                        setCurrentPhase("data-command");
                       }}
                       variant="outline"
                       className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
                     >
-                      BACK TO REVIEW
+                      BACK TO PROJECT SELECTION
                     </Button>
                     <Button
                       onClick={() => {
@@ -3727,7 +3727,7 @@ export default function CyberpunkLegalDefense() {
                         );
                         console.log("Selected clauses:", selectedClausesData);
 
-                        setCurrentStep(3);
+                        setCurrentStep(4);
                         setCurrentPhase("digital-execution");
                         processExtractedDataWorkflow(completeData);
                       }}
@@ -3831,7 +3831,7 @@ export default function CyberpunkLegalDefense() {
                   <Button
                     onClick={() => {
                       setCurrentPhase("defense-review");
-                      setCurrentStep(2);
+                      setCurrentStep(3);
                     }}
                     variant="outline"
                     className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
