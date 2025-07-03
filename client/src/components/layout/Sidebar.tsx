@@ -57,7 +57,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [isSidebarExpanded, setSidebarExpanded] = useState(false);
-  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const { t } = useTranslation();
   const { language } = useLanguage();
 
@@ -97,18 +97,12 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
     setSidebarExpanded(!isSidebarExpanded);
   };
 
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!isMobileMenuOpen);
-  };
+
 
   // Función para cerrar el sidebar automáticamente al hacer clic en elementos del menú
   const handleMenuItemClick = () => {
     if (isSidebarExpanded) {
       setSidebarExpanded(false);
-    }
-    // Close mobile menu on mobile
-    if (window.innerWidth < 768) {
-      setMobileMenuOpen(false);
     }
   };
 
@@ -120,28 +114,12 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile Hamburger Button */}
-
-      <button
-        onClick={toggleMobileMenu}
-        className={`${isMobileMenuOpen ? "" : "md:hidden my-20   fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200"}`}
-        aria-label="Toggle mobile menu"
-      >
-        {isMobileMenuOpen ? <></> : <Menu className="h-6 w-6 text-gray-700" />}
-      </button>
-      {/* Mobile Backdrop */}
-      {isMobileMenuOpen && (
-        <div
-          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
       <TooltipProvider>
         <aside
           className={`
             flex flex-col bg-card transition-all duration-300
             ${isSidebarExpanded ? "w-72 border-r border-border" : "w-16"}
-            ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+            translate-x-0
             fixed left-0 top-0 z-40 h-screen
           `}
           style={{

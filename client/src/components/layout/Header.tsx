@@ -3,15 +3,7 @@ import { useState, useEffect } from "react";
 // No usamos useAuth en este componente, así que removemos la importación innecesaria
 import { useToast } from "@/hooks/use-toast";
 
-interface HeaderProps {
-  toggleMobileMenu: () => void;
-  isMobileMenuOpen: boolean;
-}
-
-export default function Header({
-  toggleMobileMenu,
-  isMobileMenuOpen,
-}: HeaderProps) {
+export default function Header() {
   const [path] = useLocation();
   const [glowPulse, setGlowPulse] = useState(false);
 
@@ -24,10 +16,7 @@ export default function Header({
     return () => clearInterval(interval);
   }, []);
 
-  const handleMenuToggle = () => {
-    console.log("Menu toggle clicked, current state:", isMobileMenuOpen);
-    toggleMobileMenu();
-  };
+
 
   // Verificar si estamos en la página de Materials para evitar duplicación de header
   const isMaterialsPage = path === '/materials';

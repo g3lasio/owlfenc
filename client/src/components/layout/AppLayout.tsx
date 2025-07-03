@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import Header from "./Header";
-import MobileMenu from "./MobileMenu";
+
 import Sidebar from "./Sidebar";
 import { Route, Switch, useLocation, Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,27 +20,9 @@ const Profile = () => {
 };
 
 export default function AppLayout({ children }: AppLayoutProps) {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { currentUser } = useAuth();
   const [location] = useLocation();
   const [sidebarWidth, setSidebarWidth] = useState(64);
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen((prevState) => {
-      const newState = !prevState;
-      console.log("Toggling menu state:", newState);
-      return newState;
-    });
-  };
-
-  useEffect(() => {
-    console.log("Menu state updated:", isMobileMenuOpen);
-    if (isMobileMenuOpen) {
-      document.body.classList.add("menu-open");
-    } else {
-      document.body.classList.remove("menu-open");
-    }
-  }, [isMobileMenuOpen]);
 
   // Verificar si la ruta actual es una página de autenticación
   const isAuthPage =
@@ -113,15 +95,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
         style={{ marginLeft: 0 }}
       >
         {/* Header fijo */}
-        <Header
-          toggleMobileMenu={toggleMobileMenu}
-          isMobileMenuOpen={isMobileMenuOpen}
-        />
+        <Header />
 
         {/* Área de contenido principal - sin márgenes adicionales */}
         <main
-          className={`flex-1 overflow-y-auto ${sidebarWidth == 64 ? "md:ml-[64px]" : "md:ml-[288px]"}`}
+          className="flex-1 overflow-y-auto"
           style={{
+            marginLeft: `${sidebarWidth}px`,
             height: 'calc(100vh - var(--header-height) - var(--footer-height))',
             paddingTop: 0,
             marginTop: 0
@@ -165,13 +145,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </footer>
       </div>
 
-      {/* Menu móvil overlay */}
-      {isMobileMenuOpen && (
-        <MobileMenu
-          isOpen={isMobileMenuOpen}
-          onClose={() => setIsMobileMenuOpen(false)}
-        />
-      )}
+
     </div>
   );
 }
