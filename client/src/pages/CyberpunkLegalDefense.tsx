@@ -724,7 +724,7 @@ export default function CyberpunkLegalDefense() {
       // Load complete contract data into the form for editing
       setExtractedData(mappedData);
       setCurrentPhase("defense-review");
-      setCurrentStep(3);
+      setCurrentStep(2);
 
       // Restore all form states if they exist
       if (contract.approvedClauses) {
@@ -1156,7 +1156,7 @@ export default function CyberpunkLegalDefense() {
         if (result.success) {
           // Set the extracted data with all project information
           setExtractedData(result.extractedData);
-          setCurrentStep(3);
+          setCurrentStep(2);
           setCurrentPhase("defense-review");
           setShowPreview(true); // Show preview immediately
 
@@ -1467,7 +1467,7 @@ export default function CyberpunkLegalDefense() {
     console.log("[PREVIEW EFFECT] - showPreview:", showPreview);
     console.log("[PREVIEW EFFECT] - currentStep:", currentStep);
     
-    if (extractedData && showPreview && currentStep === 3) {
+    if (extractedData && showPreview && currentStep === 2) {
       console.log("[PREVIEW EFFECT] All conditions met, generating preview...");
       generateRealContractPreview();
     } else {
@@ -3762,7 +3762,7 @@ export default function CyberpunkLegalDefense() {
                         );
                         console.log("Selected clauses:", selectedClausesData);
 
-                        setCurrentStep(4);
+                        setCurrentStep(3);
                         setCurrentPhase("digital-execution");
                         processExtractedDataWorkflow(completeData);
                       }}
