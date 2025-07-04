@@ -2230,12 +2230,10 @@ export default function CyberpunkLegalDefense() {
       setValidationResult(validation);
 
       // Paso 2: Análisis legal
-      setCurrentStep(2);
       const analysis = await performLegalRiskAnalysis(data);
       setContractAnalysis(analysis);
 
       // Paso 3: Generación de contrato
-      setCurrentStep(2);
       await generateDefensiveContract(data);
 
       // Paso 4: Preparación para firma
