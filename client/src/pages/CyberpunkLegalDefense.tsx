@@ -1456,19 +1456,14 @@ export default function CyberpunkLegalDefense() {
     console.log("[PREVIEW EFFECT] - showPreview:", showPreview);
     console.log("[PREVIEW EFFECT] - currentStep:", currentStep);
     
-    if (extractedData && showPreview && currentStep === 2) {
-      console.log("[PREVIEW EFFECT] All conditions met, generating preview...");
+    // Only generate preview when we have data and are in step 2
+    if (extractedData && currentStep === 2) {
+      console.log("[PREVIEW EFFECT] Step 2 with data, generating preview...");
       generateRealContractPreview();
     } else {
       console.log("[PREVIEW EFFECT] Conditions not met, skipping preview generation");
     }
-  }, [
-    extractedData,
-    selectedClauses,
-    showPreview,
-    currentStep,
-    generateRealContractPreview,
-  ]);
+  }, [extractedData, currentStep]); // Simplified dependencies
 
   // Función para generar el PDF del contrato profesional
   const generateContractPDF = useCallback(async () => {
