@@ -167,14 +167,8 @@ interface ContractAnalysis {
 export default function CyberpunkLegalDefense() {
   const { toast } = useToast();
 
-  // Estados principales del workflow
-  const [currentPhase, setCurrentPhase] = useState<
-    | "data-command"
-    | "arsenal-builder"
-    | "defense-review"
-    | "digital-execution"
-    | "completed"
-  >("data-command");
+  // Estados principales del workflow - SIMPLE 3 STEP WIZARD
+  const [currentStep, setCurrentStep] = useState(1);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [extractedData, setExtractedData] = useState<any>(null);
   const [validationResult, setValidationResult] =
@@ -183,7 +177,6 @@ export default function CyberpunkLegalDefense() {
     useState<ContractAnalysis | null>(null);
   const [generatedContract, setGeneratedContract] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
 
   // Estados para el nuevo sistema DeepSearch Defense
   const [approvedClauses, setApprovedClauses] = useState<DefenseClause[]>([]);
@@ -723,7 +716,6 @@ export default function CyberpunkLegalDefense() {
 
       // Load complete contract data into the form for editing
       setExtractedData(mappedData);
-      setCurrentPhase("defense-review");
       setCurrentStep(2);
 
       // Restore all form states if they exist
@@ -775,12 +767,11 @@ export default function CyberpunkLegalDefense() {
     if (
       profile &&
       (currentStep === 2 ||
-        currentStep === 3 ||
-        currentPhase === "defense-review")
+        currentStep === 3)
     ) {
       loadContractorDataFromProfile();
     }
-  }, [profile, currentStep, currentPhase, loadContractorDataFromProfile]);
+  }, [profile, currentStep, loadContractorDataFromProfile]);
 
   // Definir pasos del workflow cyberpunk
   const workflowSteps: WorkflowStep[] = [
@@ -1157,7 +1148,6 @@ export default function CyberpunkLegalDefense() {
           // Set the extracted data with all project information
           setExtractedData(result.extractedData);
           setCurrentStep(2);
-          setCurrentPhase("defense-review");
           setShowPreview(true); // Show preview immediately
 
           // Mark as selected project source
@@ -1352,8 +1342,7 @@ export default function CyberpunkLegalDefense() {
       };
 
       setContractAnalysis(updatedAnalysis);
-      setCurrentPhase("digital-execution");
-      setCurrentStep(4);
+      setCurrentStep(3);
 
       toast({
         title: "DEFENSE SYSTEM ACTIVATED",
@@ -1869,7 +1858,6 @@ export default function CyberpunkLegalDefense() {
     setClauseCustomizations({});
     setContractAnalysis(null);
     setGeneratedContract("");
-    setCurrentPhase("data-command");
     setCurrentStep(1);
     setSelectedFile(null);
     setIntelligentClauses([]);
@@ -1952,7 +1940,6 @@ export default function CyberpunkLegalDefense() {
 
         setExtractedData(data);
         setCurrentStep(2);
-        setCurrentPhase("arsenal-builder"); // Change phase to show data review interface
 
         if (hasCriticalMissing && missingCritical?.length > 0) {
           toast({
@@ -2253,7 +2240,6 @@ export default function CyberpunkLegalDefense() {
 
       // Paso 4: Preparación para firma
       setCurrentStep(3);
-      setCurrentPhase("digital-execution");
 
       toast({
         title: "⚡ MISSION ACCOMPLISHED",
@@ -2634,7 +2620,7 @@ export default function CyberpunkLegalDefense() {
 
         {/* Current Step Card */}
         <div className="md:max-w-2xl md:mx-auto px-4">
-          {currentPhase === "data-command" && (
+          {currentStep === 1 && (
             <Card className="border-2 border-cyan-400 bg-black/80 relative ">
               <HUDCorners />
               {isProcessing && <ScanLines active={true} />}
@@ -2859,8 +2845,7 @@ export default function CyberpunkLegalDefense() {
 
           {/* Step 2: Defense Review & Correction with Live Preview */}
           {extractedData &&
-            currentStep === 3 &&
-            currentPhase === "defense-review" && (
+            currentStep === 2 && (
               <Card className="border-2 border-green-400 bg-black/80 relative  mt-6">
                 <HUDCorners />
 
@@ -3733,7 +3718,6 @@ export default function CyberpunkLegalDefense() {
                     <Button
                       onClick={() => {
                         setCurrentStep(1);
-                        setCurrentPhase("data-command");
                       }}
                       variant="outline"
                       className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
@@ -3763,7 +3747,6 @@ export default function CyberpunkLegalDefense() {
                         console.log("Selected clauses:", selectedClausesData);
 
                         setCurrentStep(3);
-                        setCurrentPhase("digital-execution");
                         processExtractedDataWorkflow(completeData);
                       }}
                       className="bg-green-600 hover:bg-green-500 text-black font-bold py-3 px-8 rounded border-0 shadow-none"
@@ -3776,7 +3759,7 @@ export default function CyberpunkLegalDefense() {
             )}
 
           {/* Contract Generation & PDF Creation - Final Step */}
-          {extractedData && currentPhase === "digital-execution" && (
+          {extractedData && currentStep === 3 && (
             <Card className="border-2 border-purple-400 bg-black/80 relative  mt-6">
               <CardHeader className="text-center px-4 md:px-6">
                 <div className="flex items-center justify-center mb-4">
@@ -3865,8 +3848,7 @@ export default function CyberpunkLegalDefense() {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
                   <Button
                     onClick={() => {
-                      setCurrentPhase("defense-review");
-                      setCurrentStep(3);
+                      setCurrentStep(2);
                     }}
                     variant="outline"
                     className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
