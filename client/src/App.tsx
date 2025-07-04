@@ -52,6 +52,7 @@ import AuthDiagnostic from './pages/AuthDiagnostic';
 import AppleAuthTest from './pages/AppleAuthTest';
 import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
+import SimpleContractGenerator from './pages/SimpleContractGenerator';
 
 import { Redirect } from "wouter";
 
@@ -171,10 +172,13 @@ function Router() {
         {() => <ProtectedRoute component={LegalContractEngineFixed} />}
       </Route>
       <Route path="/legal-defense">
-        {() => <ProtectedRoute component={CyberpunkLegalDefense} />}
+        {() => <ProtectedRoute component={SimpleContractGenerator} />}
       </Route>
       <Route path="/cyberpunk-legal-defense">
         {() => <ProtectedRoute component={CyberpunkLegalDefense} />}
+      </Route>
+      <Route path="/simple-contracts">
+        {() => <ProtectedRoute component={SimpleContractGenerator} />}
       </Route>
 
       <Route path="/unified-contracts">
