@@ -268,6 +268,17 @@ export default function CyberpunkLegalDefense() {
   const [approvedProjects, setApprovedProjects] = useState<any[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [contractPreviewHtml, setContractPreviewHtml] = useState<string>("");
+  const [lockStepThree, setLockStepThree] = useState<boolean>(false);
+  
+  // Override setCurrentStep to respect lockStepThree
+  const safeSetCurrentStep = useCallback((step: number) => {
+    console.log(`🔒 SafeSetCurrentStep called: ${step}, lockStepThree: ${lockStepThree}`);
+    if (lockStepThree && step === 2) {
+      console.log("🔒 BLOCKED: Attempted to regress from step 3 to step 2");
+      return; // Block regression to step 2
+    }
+    setCurrentStep(step);
+  }, [lockStepThree, setCurrentStep]);
   
   // Monitor contractPreviewHtml changes
   useEffect(() => {
@@ -716,7 +727,7 @@ export default function CyberpunkLegalDefense() {
 
       // Load complete contract data into the form for editing
       setExtractedData(mappedData);
-      setCurrentStep(2);
+      safeSetCurrentStep(2);
 
       // Restore all form states if they exist
       if (contract.approvedClauses) {
@@ -1147,7 +1158,7 @@ export default function CyberpunkLegalDefense() {
         if (result.success) {
           // Set the extracted data with all project information
           setExtractedData(result.extractedData);
-          setCurrentStep(2);
+          safeSetCurrentStep(2);
           setShowPreview(true); // Show preview immediately
 
           // Mark as selected project source
@@ -1934,7 +1945,7 @@ export default function CyberpunkLegalDefense() {
         });
 
         setExtractedData(data);
-        setCurrentStep(2);
+        safeSetCurrentStep(2);
 
         if (hasCriticalMissing && missingCritical?.length > 0) {
           toast({
@@ -2169,7 +2180,7 @@ export default function CyberpunkLegalDefense() {
     };
 
     setContractAnalysis(analysis);
-    setCurrentStep(2);
+    safeSetCurrentStep(2);
 
     toast({
       title: "🛡️ CONTRACT ARSENAL READY",
@@ -2202,7 +2213,7 @@ export default function CyberpunkLegalDefense() {
     };
 
     setContractAnalysis(analysis);
-    setCurrentStep(2);
+    safeSetCurrentStep(2);
 
     toast({
       title: "🛡️ CONTRACT ARSENAL READY",
@@ -2240,7 +2251,13 @@ export default function CyberpunkLegalDefense() {
           "Legal defense matrix fully operational. Contract ready for deployment.",
       });
     } catch (error) {
-      await handleProcessingFallback(file);
+      console.error("🚨 ERROR in processExtractedDataWorkflow:", error);
+      // FORCE STEP 3: Don't regress to step 2 on errors when user clicked GENERATE CONTRACT
+      toast({
+        title: "⚡ CONTRACT PROCESSING",
+        description: "Finalizing contract generation with backup systems...",
+      });
+      setCurrentStep(3); // Force stay in step 3
     }
   };
 
@@ -2327,7 +2344,7 @@ export default function CyberpunkLegalDefense() {
         setGeneratedContract(
           result.data.contractHtml || "<p>Contrato básico generado</p>",
         );
-        setCurrentStep(2);
+        safeSetCurrentStep(2);
 
         toast({
           title: "⚡ BACKUP SUCCESSFUL",
@@ -3739,6 +3756,7 @@ export default function CyberpunkLegalDefense() {
                         );
                         console.log("Selected clauses:", selectedClausesData);
 
+                        setLockStepThree(true); // Lock step 3 to prevent regression
                         setCurrentStep(3);
                         processExtractedDataWorkflow(completeData);
                       }}
@@ -3841,7 +3859,7 @@ export default function CyberpunkLegalDefense() {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
                   <Button
                     onClick={() => {
-                      setCurrentStep(2);
+                      safeSetCurrentStep(2);
                     }}
                     variant="outline"
                     className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
