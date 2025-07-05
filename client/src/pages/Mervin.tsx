@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { 
-  Send, 
-  Paperclip, 
-  FileSpreadsheet, 
-  ClipboardList, 
-  ClipboardCheck, 
-  Building, 
-  BarChart4
+import {
+  Send,
+  Paperclip,
+  FileSpreadsheet,
+  ClipboardList,
+  ClipboardCheck,
+  Building,
+  BarChart4,
 } from "lucide-react";
 
 // Tipos para los mensajes
@@ -21,15 +21,40 @@ type Message = {
   sender: MessageSender;
   state?: MessageState;
   action?: string;
-}
+};
 
 // Botones de acción principales con iconos
 const actionButtons = [
-  { id: "estimates", text: "Generate Estimates", action: "estimates", icon: <FileSpreadsheet className="h-5 w-5" /> },
-  { id: "contracts", text: "Generate Contracts", action: "contracts", icon: <ClipboardList className="h-5 w-5" /> },
-  { id: "permits", text: "Permit Advisor", action: "permits", icon: <ClipboardCheck className="h-5 w-5" /> },
-  { id: "properties", text: "Verify Ownership", action: "properties", icon: <Building className="h-5 w-5" /> },
-  { id: "analytics", text: "Payment Tracker", action: "analytics", icon: <BarChart4 className="h-5 w-5" /> }
+  {
+    id: "estimates",
+    text: "Generate Estimates",
+    action: "estimates",
+    icon: <FileSpreadsheet className="h-5 w-5" />,
+  },
+  {
+    id: "contracts",
+    text: "Generate Contracts",
+    action: "contracts",
+    icon: <ClipboardList className="h-5 w-5" />,
+  },
+  {
+    id: "permits",
+    text: "Permit Advisor",
+    action: "permits",
+    icon: <ClipboardCheck className="h-5 w-5" />,
+  },
+  {
+    id: "properties",
+    text: "Verify Ownership",
+    action: "properties",
+    icon: <Building className="h-5 w-5" />,
+  },
+  {
+    id: "analytics",
+    text: "Payment Tracker",
+    action: "analytics",
+    icon: <BarChart4 className="h-5 w-5" />,
+  },
 ];
 
 export default function Mervin() {
@@ -43,9 +68,10 @@ export default function Mervin() {
   useEffect(() => {
     const welcomeMessage: Message = {
       id: "welcome",
-      content: "¡Hola! Soy Mervin, tu asistente virtual especializado en proyectos de construcción y cercas. Puedo ayudarte con las siguientes funciones:",
+      content:
+        "¡Hola! Soy Mervin, tu asistente virtual especializado en proyectos de construcción y cercas. Puedo ayudarte con las siguientes funciones:",
       sender: "assistant",
-      action: "menu"
+      action: "menu",
     };
 
     setMessages([welcomeMessage]);
@@ -59,10 +85,10 @@ export default function Mervin() {
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       content: inputValue,
-      sender: "user"
+      sender: "user",
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsLoading(true);
 
@@ -70,11 +96,12 @@ export default function Mervin() {
     setTimeout(() => {
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
-        content: "Estoy aquí para ayudarte. ¿Te gustaría generar un contrato, verificar una propiedad, consultar permisos, gestionar clientes o revisar facturación?",
-        sender: "assistant"
+        content:
+          "Estoy aquí para ayudarte. ¿Te gustaría generar un contrato, verificar una propiedad, consultar permisos, gestionar clientes o revisar facturación?",
+        sender: "assistant",
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
       setIsLoading(false);
 
       // Desplazar al final
@@ -93,10 +120,10 @@ export default function Mervin() {
       id: `thinking-${Date.now()}`,
       content: "Analizando datos...",
       sender: "assistant",
-      state: "analyzing"
+      state: "analyzing",
     };
 
-    setMessages(prev => [...prev, thinkingMessage]);
+    setMessages((prev) => [...prev, thinkingMessage]);
 
     // Desplazar al final
     setTimeout(() => {
@@ -106,25 +133,30 @@ export default function Mervin() {
     // Simular respuesta
     setTimeout(() => {
       // Eliminar mensaje de pensando
-      setMessages(prev => prev.filter(m => m.id !== thinkingMessage.id));
+      setMessages((prev) => prev.filter((m) => m.id !== thinkingMessage.id));
 
       // Determinar respuesta según acción
       let response = "";
-      switch(action) {
+      switch (action) {
         case "estimates":
-          response = "Puedo ayudarte a generar estimados precisos para tus proyectos de cercas. Para empezar, necesito algunos detalles básicos como tipo de cerca, longitud, altura y ubicación.";
+          response =
+            "Puedo ayudarte a generar estimados precisos para tus proyectos de cercas. Para empezar, necesito algunos detalles básicos como tipo de cerca, longitud, altura y ubicación.";
           break;
         case "contracts":
-          response = "Puedo ayudarte a generar un contrato profesional y legal. ¿Te gustaría crear un nuevo contrato desde cero, usar una plantilla existente o modificar un contrato anterior?";
+          response =
+            "Puedo ayudarte a generar un contrato profesional y legal. ¿Te gustaría crear un nuevo contrato desde cero, usar una plantilla existente o modificar un contrato anterior?";
           break;
         case "permits":
-          response = "Para ayudarte con información sobre permisos y regulaciones, necesito saber la ubicación exacta, tipo de cerca que planeas instalar y si la propiedad está en una zona con restricciones.";
+          response =
+            "Para ayudarte con información sobre permisos y regulaciones, necesito saber la ubicación exacta, tipo de cerca que planeas instalar y si la propiedad está en una zona con restricciones.";
           break;
         case "properties":
-          response = "Para verificar los detalles de una propiedad, necesito la dirección completa del inmueble. Esto me permitirá confirmar al propietario actual y verificar los límites de la propiedad.";
+          response =
+            "Para verificar los detalles de una propiedad, necesito la dirección completa del inmueble. Esto me permitirá confirmar al propietario actual y verificar los límites de la propiedad.";
           break;
         case "analytics":
-          response = "Puedo proporcionar análisis detallados sobre tendencias de costos de materiales, comparativas de proyectos anteriores y métricas de rentabilidad por tipo de proyecto.";
+          response =
+            "Puedo proporcionar análisis detallados sobre tendencias de costos de materiales, comparativas de proyectos anteriores y métricas de rentabilidad por tipo de proyecto.";
           break;
         default:
           response = "¿En qué puedo ayudarte hoy?";
@@ -133,10 +165,10 @@ export default function Mervin() {
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         content: response,
-        sender: "assistant"
+        sender: "assistant",
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
       setIsLoading(false);
 
       // Desplazar al final
@@ -155,16 +187,16 @@ export default function Mervin() {
   };
 
   return (
-    <div className="flex flex-col  bg-black text-white ">
+    <div className="flex flex-col h-screen  bg-black text-white ">
       {/* Contenedor de mensajes (scrollable) */}
       <div className="flex-1  pb-24">
         <div className="p-4 space-y-4">
           {messages.map((message) => (
-            <div 
+            <div
               key={message.id}
               className={`max-w-[85%] rounded-lg p-3 ${
-                message.sender === "assistant" 
-                  ? "bg-gray-900 text-white mr-auto" 
+                message.sender === "assistant"
+                  ? "bg-gray-900 text-white mr-auto"
                   : "bg-blue-900 text-white ml-auto"
               }`}
             >
@@ -172,9 +204,9 @@ export default function Mervin() {
               {message.sender === "assistant" && (
                 <div className="flex items-center mb-2">
                   <div className="w-8 h-8 rounded-full bg-cyan-900/30 flex items-center justify-center mr-2">
-                    <img 
-                      src="https://i.postimg.cc/W4nKDvTL/logo-mervin.png" 
-                      alt="Mervin AI" 
+                    <img
+                      src="https://i.postimg.cc/W4nKDvTL/logo-mervin.png"
+                      alt="Mervin AI"
                       className="w-6 h-6"
                     />
                   </div>
@@ -224,17 +256,21 @@ export default function Mervin() {
             <div className="max-w-[85%] rounded-lg p-3 bg-gray-900 mr-auto">
               <div className="flex items-center">
                 <div className="w-8 h-8 rounded-full bg-cyan-900/30 flex items-center justify-center mr-2">
-                  <img 
-                    src="https://i.postimg.cc/W4nKDvTL/logo-mervin.png" 
-                    alt="Mervin AI" 
+                  <img
+                    src="https://i.postimg.cc/W4nKDvTL/logo-mervin.png"
+                    alt="Mervin AI"
                     className="w-6 h-6"
                   />
                 </div>
                 <span className="text-cyan-400">Procesando</span>
                 <div className="ml-1 flex">
                   <span className="animate-pulse text-cyan-400">.</span>
-                  <span className="animate-pulse text-cyan-400 delay-200">.</span>
-                  <span className="animate-pulse text-cyan-400 delay-500">.</span>
+                  <span className="animate-pulse text-cyan-400 delay-200">
+                    .
+                  </span>
+                  <span className="animate-pulse text-cyan-400 delay-500">
+                    .
+                  </span>
                 </div>
               </div>
             </div>
@@ -248,8 +284,8 @@ export default function Mervin() {
       {/* Área de input FIJA en la parte inferior, fuera del scroll */}
       <div className="fixed bottom-8 left-0 right-0 p-3 bg-black border-t border-cyan-900/30">
         <div className="flex gap-2 max-w-screen-lg mx-auto">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="icon"
             className="bg-gray-800 text-cyan-500 border-cyan-900/50"
           >
@@ -278,13 +314,13 @@ export default function Mervin() {
       </div>
 
       {/* Footer fijo y minimalista */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black text-center p-1 text-xs text-gray-500 border-t border-gray-900/20">
+      {/* <div className="fixed bottom-0 left-0 right-0 bg-black text-center p-1 text-xs text-gray-500 border-t border-gray-900/20">
         <div className="flex justify-between px-4">
           <span>Política de privacidad</span>
           <span>Términos</span>
           <span>© 2025 Owl</span>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

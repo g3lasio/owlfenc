@@ -23,28 +23,28 @@ export default function SimpleContractGenerator() {
     
     setIsLoading(true);
     try {
-      // Load Firebase projects directly to avoid backend database issues
-      const { collection, query, where, getDocs } = await import("firebase/firestore");
-      const { db } = await import("@/lib/firebase");
+      // Use backend API with proper authentication
+      const response = await fetch("/api/projects", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "x-firebase-uid": currentUser.uid,
+        },
+      });
       
-      const projectsQuery = query(
-        collection(db, "projects"),
-        where("userId", "==", currentUser.uid)
-      );
+      if (!response.ok) {
+        throw new Error(`Backend API error: ${response.status}`);
+      }
       
-      const querySnapshot = await getDocs(projectsQuery);
-      const allProjects = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const allProjects = await response.json();
       
       // Filter approved projects
-      const approvedProjects = allProjects.filter(project => 
-        project.status === "approved" || project.status === "estimate_ready"
+      const approvedProjects = allProjects.filter((project: any) => 
+        project.status === "approved" || project.status === "estimate_ready" || project.projectProgress === "approved"
       );
       
       setProjects(approvedProjects);
-      console.log(`Loaded ${approvedProjects.length} approved projects`);
+      console.log(`Loaded ${approvedProjects.length} approved projects from backend API`);
     } catch (error) {
       console.error("Error loading projects:", error);
       toast({
@@ -62,39 +62,47 @@ export default function SimpleContractGenerator() {
     loadProjects();
   }, [loadProjects]);
 
-  // Step 1: Select project and move to step 2
+  // Step 1: Select project and move to step 2 with direct data processing
   const handleProjectSelect = useCallback(async (project: any) => {
     setIsLoading(true);
     try {
-      // Get contract data for the project
-      const response = await fetch("/api/projects/contract-data", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          project,
-          userId: currentUser?.uid,
-        }),
+      // Process project data directly for contract generation
+      const contractData = {
+        clientInfo: {
+          name: project.clientName,
+          address: project.address || project.clientAddress || "",
+          email: project.clientEmail || "",
+          phone: project.clientPhone || "",
+        },
+        projectDetails: {
+          description: project.projectDescription || project.description || project.projectType || "",
+          type: project.projectType || "Construction Project",
+        },
+        financials: {
+          total: project.totalAmount || project.totalPrice || 0,
+        },
+        materials: project.materials || [],
+      };
+      
+      setSelectedProject(project);
+      setContractData(contractData);
+      setCurrentStep(2);
+      
+      toast({
+        title: "Project Selected",
+        description: `Ready to generate contract for ${project.clientName}`,
       });
       
-      const result = await response.json();
-      
-      if (result.success) {
-        setSelectedProject(project);
-        setContractData(result.extractedData);
-        setCurrentStep(2); // Move to step 2
-        
-        toast({
-          title: "Project Selected",
-          description: `Ready to generate contract for ${project.clientName}`,
-        });
-      } else {
-        throw new Error(result.error || "Failed to load project data");
-      }
+      console.log("Project selected and processed:", {
+        projectId: project.id,
+        clientName: project.clientName,
+        totalAmount: contractData.financials.total
+      });
     } catch (error) {
       console.error("Error selecting project:", error);
       toast({
         title: "Error",
-        description: "Failed to load project data",
+        description: "Failed to process project data",
         variant: "destructive",
       });
     } finally {
@@ -102,29 +110,67 @@ export default function SimpleContractGenerator() {
     }
   }, [currentUser?.uid, toast]);
 
-  // Step 2: Generate contract and move to step 3
+  // Generate contract using backend API with comprehensive data
   const handleGenerateContract = useCallback(async () => {
+    if (!selectedProject || !currentUser?.uid) return;
+    
     setIsLoading(true);
     try {
+      // Collect comprehensive contract data
+      const contractPayload = {
+        userId: currentUser.uid,
+        client: {
+          name: contractData?.clientInfo?.name || selectedProject.clientName,
+          address: contractData?.clientInfo?.address || selectedProject.address || selectedProject.clientAddress || "",
+          email: contractData?.clientInfo?.email || selectedProject.clientEmail || "",
+          phone: contractData?.clientInfo?.phone || selectedProject.clientPhone || "",
+        },
+        project: {
+          description: contractData?.projectDetails?.description || selectedProject.description || selectedProject.projectType || "",
+          type: selectedProject.projectType || "Construction Project",
+          total: contractData?.financials?.total || selectedProject.totalAmount || selectedProject.total || 0,
+          materials: contractData?.materials || selectedProject.materials || [],
+        },
+        contractor: {
+          name: "Professional Contractor", // Will be filled by backend from user profile
+          company: "Construction Company", // Will be filled by backend from user profile
+        },
+        timeline: {
+          startDate: new Date().toISOString().split('T')[0],
+          completionDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          estimatedDuration: "30 days",
+        },
+        financials: {
+          total: contractData?.financials?.total || selectedProject.totalAmount || selectedProject.total || 0,
+          depositAmount: Math.round((contractData?.financials?.total || selectedProject.totalAmount || selectedProject.total || 0) * 0.5),
+          finalAmount: Math.round((contractData?.financials?.total || selectedProject.totalAmount || selectedProject.total || 0) * 0.5),
+        },
+        permitInfo: {
+          required: true,
+          responsibility: "contractor",
+          numbers: "",
+        },
+        insuranceInfo: {
+          general: { required: true, amount: "$1,000,000" },
+          workers: { required: true, amount: "$500,000" },
+          bond: { required: false, amount: "0" },
+        },
+        warranties: {
+          workmanship: "2 years",
+          materials: "Manufacturer warranty",
+        },
+        additionalTerms: "",
+      };
+
+      console.log("Generating contract with payload:", contractPayload);
+
       const response = await fetch("/api/generate-pdf", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          client: {
-            name: contractData.clientInfo?.name || selectedProject.clientName,
-            address: contractData.clientInfo?.address || "",
-            email: contractData.clientInfo?.email || "",
-            phone: contractData.clientInfo?.phone || "",
-          },
-          project: {
-            description: contractData.projectDetails?.description || "",
-            total: contractData.financials?.total || selectedProject.totalAmount,
-          },
-          timeline: {
-            startDate: new Date().toISOString().split('T')[0],
-            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          },
-        }),
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${currentUser.uid}`,
+        },
+        body: JSON.stringify(contractPayload),
       });
 
       if (response.ok && response.headers.get("content-type")?.includes("application/pdf")) {
@@ -140,26 +186,28 @@ export default function SimpleContractGenerator() {
         URL.revokeObjectURL(url);
 
         setGeneratedContract("PDF Generated Successfully");
-        setCurrentStep(3); // Move to step 3
+        setCurrentStep(3);
         
         toast({
           title: "Contract Generated",
-          description: "Professional PDF contract downloaded successfully",
+          description: `Professional PDF contract downloaded for ${selectedProject.clientName}`,
         });
       } else {
-        throw new Error("Failed to generate contract PDF");
+        const errorText = await response.text();
+        console.error("Contract generation failed:", errorText);
+        throw new Error(`Failed to generate contract PDF: ${response.status}`);
       }
     } catch (error) {
       console.error("Error generating contract:", error);
       toast({
-        title: "Error",
-        description: "Failed to generate contract",
+        title: "Generation Error",
+        description: "Failed to generate contract. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  }, [contractData, selectedProject, toast]);
+  }, [contractData, selectedProject, currentUser?.uid, toast]);
 
   // Reset to start new contract
   const handleNewContract = useCallback(() => {
