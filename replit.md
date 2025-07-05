@@ -505,6 +505,14 @@ Changelog:
   * Added error handling and fallback systems throughout the entire workflow
   * All buttons and functions now fully connected to backend with proper authentication and data flow
   * System provides seamless integration between Firebase projects and PostgreSQL backend with complete contract generation
+- July 5, 2025. CRITICAL FIX: Resolved Legal Defense project loading issue and optimized Firebase integration:
+  * Fixed backend storage system error that prevented project loading with "getUserByFirebaseUid is not a function"
+  * Implemented direct Firebase integration in SimpleContractGenerator to bypass problematic backend endpoints
+  * Enhanced project filtering to include multiple approval statuses: approved, estimate_ready, client_approved
+  * Fixed data mapping for proper project display with fallback values for clientName and pricing fields
+  * Optimized project rendering to use displaySubtotal, totalPrice, and totalAmount with proper formatting
+  * System now successfully loads and displays approved projects from Firebase with full functionality
+  * Eliminated database connectivity issues by using Firebase directly for reliable project data access
 - July 1, 2025. Eliminated Contract Arsenal Builder button from workflow display:
   * Removed step 2 (Contract Arsenal Builder) from workflowSteps array to show only 3 steps
   * Renumbered workflow steps: 1-Project Data Command, 2-Defense Review, 3-Digital Execution

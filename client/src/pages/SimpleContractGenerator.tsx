@@ -23,33 +23,41 @@ export default function SimpleContractGenerator() {
     
     setIsLoading(true);
     try {
-      // Use backend API with proper authentication
-      const response = await fetch("/api/projects", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "x-firebase-uid": currentUser.uid,
-        },
-      });
+      // Load projects directly from Firebase to avoid backend issues
+      const { collection, query, where, getDocs } = await import("firebase/firestore");
+      const { db } = await import("@/lib/firebase");
       
-      if (!response.ok) {
-        throw new Error(`Backend API error: ${response.status}`);
-      }
+      const projectsQuery = query(
+        collection(db, "projects"),
+        where("userId", "==", currentUser.uid)
+      );
       
-      const allProjects = await response.json();
+      const querySnapshot = await getDocs(projectsQuery);
+      const allProjects = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
       
       // Filter approved projects
       const approvedProjects = allProjects.filter((project: any) => 
-        project.status === "approved" || project.status === "estimate_ready" || project.projectProgress === "approved"
+        project.status === "approved" || 
+        project.status === "estimate_ready" || 
+        project.projectProgress === "approved" ||
+        project.projectProgress === "client_approved"
       );
       
       setProjects(approvedProjects);
-      console.log(`Loaded ${approvedProjects.length} approved projects from backend API`);
+      console.log(`Loaded ${approvedProjects.length} approved projects from Firebase`);
+      
+      if (approvedProjects.length === 0) {
+        console.log("No approved projects found. User needs to create estimates or approve projects first.");
+      }
     } catch (error) {
       console.error("Error loading projects:", error);
+      setProjects([]);
       toast({
-        title: "Error",
-        description: "Failed to load projects",
+        title: "Error Loading Projects",
+        description: "Could not connect to load your projects. Please refresh the page.",
         variant: "destructive",
       });
     } finally {
@@ -282,10 +290,10 @@ export default function SimpleContractGenerator() {
                         <div className="flex justify-between items-center">
                           <div>
                             <h3 className="font-semibold text-white">
-                              {project.clientName}
+                              {project.clientName || project.client || `Project ${project.estimateNumber || project.id}`}
                             </h3>
                             <p className="text-gray-400 text-sm">
-                              {project.projectType || "Project"} - ${(project.totalAmount / 100).toLocaleString()}
+                              {project.projectType || project.description || "Project"} - ${(project.totalAmount || project.totalPrice || project.displaySubtotal || 0).toLocaleString()}
                             </p>
                           </div>
                           <Button
