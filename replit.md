@@ -513,6 +513,14 @@ Changelog:
   * Optimized project rendering to use displaySubtotal, totalPrice, and totalAmount with proper formatting
   * System now successfully loads and displays approved projects from Firebase with full functionality
   * Eliminated database connectivity issues by using Firebase directly for reliable project data access
+- July 5, 2025. ENHANCED USER EXPERIENCE: Comprehensive Step 2 contract preview and expanded project availability:
+  * Expanded project filtering criteria to show 20 projects instead of just 2 - now includes all estimates with valid pricing
+  * Enhanced Step 2 with comprehensive contract preview including project details, timeline, payment terms, warranties, permits
+  * Added detailed financial breakdown with 50/50 payment split calculations and payment method options
+  * Implemented professional contract features checklist showing legal protections and compliance elements
+  * Created scrollable contract preview with organized sections: Project Information, Timeline, Financial Terms, Warranties & Permits
+  * Added scope of work preview for projects with detailed descriptions
+  * System now provides complete contract transparency before generation allowing users to review all terms and make informed decisions
 - July 1, 2025. Eliminated Contract Arsenal Builder button from workflow display:
   * Removed step 2 (Contract Arsenal Builder) from workflowSteps array to show only 3 steps
   * Renumbered workflow steps: 1-Project Data Command, 2-Defense Review, 3-Digital Execution

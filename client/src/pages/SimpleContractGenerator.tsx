@@ -38,12 +38,17 @@ export default function SimpleContractGenerator() {
         ...doc.data()
       }));
       
-      // Filter approved projects
+
+      
+      // Filter approved projects - expanded criteria
       const approvedProjects = allProjects.filter((project: any) => 
         project.status === "approved" || 
         project.status === "estimate_ready" || 
+        project.status === "estimate" ||
         project.projectProgress === "approved" ||
-        project.projectProgress === "client_approved"
+        project.projectProgress === "client_approved" ||
+        project.projectProgress === "estimate_ready" ||
+        project.displaySubtotal > 0 // Projects with valid pricing
       );
       
       setProjects(approvedProjects);
@@ -333,32 +338,138 @@ export default function SimpleContractGenerator() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                {/* Project Summary */}
+              <div className="space-y-6">{/* Removed max-h-96 overflow-y-auto for now */}
+                {/* Project Details */}
                 <div className="border border-gray-600 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-3">Project Summary</h3>
+                  <h3 className="text-lg font-semibold mb-3 text-cyan-400">📋 Project Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-gray-400">Client:</p>
-                      <p className="text-white">{selectedProject.clientName}</p>
+                      <p className="text-white font-semibold">{selectedProject.clientName || selectedProject.client || `Project ${selectedProject.estimateNumber}`}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Amount:</p>
-                      <p className="text-white">${(selectedProject.totalAmount / 100).toLocaleString()}</p>
+                      <p className="text-gray-400">Total Amount:</p>
+                      <p className="text-green-400 font-bold">${(selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0).toLocaleString()}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Type:</p>
+                      <p className="text-gray-400">Project Type:</p>
                       <p className="text-white">{selectedProject.projectType || "Construction Project"}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Status:</p>
-                      <p className="text-green-400">Ready for Contract</p>
+                      <p className="text-gray-400">Estimate #:</p>
+                      <p className="text-white">{selectedProject.estimateNumber || selectedProject.id}</p>
                     </div>
                   </div>
                 </div>
 
+                {/* Timeline & Dates */}
+                <div className="border border-gray-600 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold mb-3 text-cyan-400">📅 Project Timeline</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-gray-400">Start Date:</p>
+                      <p className="text-white">{new Date().toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Estimated Duration:</p>
+                      <p className="text-white">30 days</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Completion Date:</p>
+                      <p className="text-white">{new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Financial Terms */}
+                <div className="border border-gray-600 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold mb-3 text-cyan-400">💰 Payment Terms</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-gray-400">Deposit (50%):</p>
+                      <p className="text-white">${((selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0) * 0.5).toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Final Payment (50%):</p>
+                      <p className="text-white">${((selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0) * 0.5).toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Payment Terms:</p>
+                      <p className="text-white">50% down, 50% on completion</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Method:</p>
+                      <p className="text-white">Check, Cash, or Electronic Transfer</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Warranties & Permits */}
+                <div className="border border-gray-600 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold mb-3 text-cyan-400">🛡️ Warranties & Permits</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-gray-400">Workmanship Warranty:</p>
+                      <p className="text-white">2 years</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Materials Warranty:</p>
+                      <p className="text-white">Manufacturer warranty</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Permits Required:</p>
+                      <p className="text-green-400">Yes - Contractor Responsible</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Insurance:</p>
+                      <p className="text-green-400">$1M+ General Liability</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contract Clauses Preview */}
+                <div className="border border-gray-600 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold mb-3 text-cyan-400">📄 Contract Features</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-400">✓</span>
+                      <span className="text-white">Professional Legal Format</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-400">✓</span>
+                      <span className="text-white">Contractor Protection Clauses</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-400">✓</span>
+                      <span className="text-white">Dispute Resolution (AAA)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-400">✓</span>
+                      <span className="text-white">OSHA Compliance</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-400">✓</span>
+                      <span className="text-white">Indemnification Coverage</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-400">✓</span>
+                      <span className="text-white">Digital Signature Ready</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Project Description Preview */}
+                {selectedProject.projectDescription && (
+                  <div className="border border-gray-600 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold mb-3 text-cyan-400">📝 Scope of Work</h3>
+                    <div className="text-gray-300 text-sm max-h-32 overflow-y-auto">
+                      {selectedProject.projectDescription.slice(0, 300)}...
+                    </div>
+                  </div>
+                )}
+
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
                   <Button
                     onClick={() => setCurrentStep(1)}
                     variant="outline"
