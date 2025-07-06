@@ -3009,58 +3009,60 @@ Output must be between 200-900 characters in English.`;
         const firebaseUserId = req.headers['authorization']?.replace('Bearer ', '') || req.body.userId;
         console.log('🔑 [API] Firebase UID for contractor data:', firebaseUserId);
         
-        // Get real contractor profile data - fallback to hardcoded data for development
+        // Get contractor profile data from PostgreSQL database using Firebase UID
         let contractorData = req.body.contractor;
         
-        // Since Firebase Admin SDK has authentication issues in development,
-        // use the contractor data from the existing estimate/project
         if (firebaseUserId) {
-          console.log('📋 [API] Using contractor data from project estimate...');
-          
-          // Try to get contractor data from the project data in request
-          const projectData = req.body.project || {};
-          const estimateData = req.body.originalRequest || {};
-          
-          console.log('🔍 [DEBUG] Available estimate data fields:', {
-            hasContractorCompanyName: !!estimateData.contractorCompanyName,
-            hasContractorAddress: !!estimateData.contractorAddress,
-            hasContractorPhone: !!estimateData.contractorPhone,
-            hasContractorEmail: !!estimateData.contractorEmail,
-            estimateDataKeys: Object.keys(estimateData).filter(k => k.includes('contractor'))
-          });
-          
-          // Build contractor data from multiple sources with corrected field names
-          contractorData = {
-            name: estimateData.contractorCompanyName || 
-                  projectData.contractorName || 
-                  estimateData.contractorName ||
-                  'Owl Fenc',
-            company: estimateData.contractorCompanyName || 
-                     projectData.contractorCompany || 
-                     estimateData.contractorCompany ||
-                     'Owl Fenc',
-            address: estimateData.contractorAddress || 
-                     projectData.contractorAddress || 
-                     '2901 Owens Court, Antioch, CA 94534',
-            phone: estimateData.contractorPhone || 
-                   projectData.contractorPhone || 
-                   '202 549 3519',
-            email: estimateData.contractorEmail || 
-                   projectData.contractorEmail || 
-                   'info@chyrris.com',
-            license: estimateData.contractorLicense || 
-                     projectData.contractorLicense || 
-                     '',
-            ...req.body.contractor // Keep any additional fields from frontend
-          };
-          
-          console.log('🏢 [API] Enhanced contractor data from project:', {
-            name: contractorData.name,
-            company: contractorData.company,
-            hasAddress: !!contractorData.address && contractorData.address !== 'Address not provided',
-            hasPhone: !!contractorData.phone && contractorData.phone !== 'Phone not provided',
-            hasEmail: !!contractorData.email && contractorData.email !== 'Email not provided'
-          });
+          try {
+            console.log('📋 [API] Fetching contractor profile from database...');
+            const { storage } = await import('./storage');
+            const user = await storage.getUserByFirebaseUid(firebaseUserId);
+            
+            if (user && user.profile) {
+              console.log('✅ [API] Found user profile in database');
+              
+              // Build complete address from profile
+              let fullAddress = '';
+              if (user.profile.address) {
+                fullAddress = user.profile.address;
+                if (user.profile.city) fullAddress += `, ${user.profile.city}`;
+                if (user.profile.state) fullAddress += `, ${user.profile.state}`;
+                if (user.profile.zipCode) fullAddress += ` ${user.profile.zipCode}`;
+              }
+              
+              // Use real profile data - NO FALLBACKS
+              contractorData = {
+                name: user.profile.ownerName || user.profile.company,
+                company: user.profile.company || user.profile.ownerName,
+                address: fullAddress,
+                phone: user.profile.phone || user.profile.mobilePhone,
+                email: user.email || user.profile.email,
+                license: user.profile.licenseNumber || user.profile.license,
+                ...req.body.contractor
+              };
+              
+              console.log('🏢 [API] Real contractor data from profile:', {
+                name: contractorData.name,
+                company: contractorData.company,
+                address: contractorData.address,
+                phone: contractorData.phone,
+                email: contractorData.email
+              });
+            } else {
+              console.log('⚠️ [API] No user profile found in database');
+              // Don't generate contract without profile data
+              return res.status(400).json({ 
+                success: false, 
+                error: "User profile not found. Please complete your Company Profile first." 
+              });
+            }
+          } catch (profileError) {
+            console.error('❌ [API] Error fetching profile:', profileError);
+            return res.status(500).json({ 
+              success: false, 
+              error: "Unable to fetch contractor profile data" 
+            });
+          }
         }
         
         // Use premium service for contract data
