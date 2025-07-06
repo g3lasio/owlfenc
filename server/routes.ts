@@ -3012,8 +3012,28 @@ Output must be between 200-900 characters in English.`;
         // Get contractor data - use from request first, with profile fallback
         let contractorData = req.body.contractor || {};
         
-        // If contractor data is incomplete, try to get from user profile
-        if (firebaseUserId && (!contractorData.name || !contractorData.company)) {
+        // Skip database lookup due to schema issues - validate contractor data is provided
+        console.log('📋 [API] Contractor data validation (skipping database due to schema error)...');
+        
+        // Validate that contractor data is provided from frontend
+        if (!contractorData.name && !contractorData.company) {
+          console.log('❌ [API] No contractor data provided from frontend');
+          return res.status(400).json({ 
+            success: false, 
+            error: "Contractor information is required. Please ensure your Company Profile is complete." 
+          });
+        }
+        
+        console.log('✅ [API] Using contractor data from frontend:', {
+          hasName: !!contractorData.name,
+          hasCompany: !!contractorData.company,
+          hasAddress: !!contractorData.address,
+          hasPhone: !!contractorData.phone,
+          hasEmail: !!contractorData.email
+        });
+        
+        // DISABLED: Database lookup due to schema error
+        if (false && firebaseUserId && (!contractorData.name || !contractorData.company)) {
           try {
             console.log('📋 [API] Fetching contractor profile to complete missing data...');
             const { storage } = await import('./storage');

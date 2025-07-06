@@ -457,8 +457,12 @@ export default function SimpleContractGenerator() {
           materials: contractData?.materials || selectedProject.materials || [],
         },
         contractor: {
-          name: "", // Will be filled by backend from user profile
-          company: "", // Will be filled by backend from user profile
+          name: "Contractor Name", // Backend will replace with real profile data
+          company: "Company Name", // Backend will replace with real profile data
+          address: "Business Address",
+          phone: "Business Phone", 
+          email: "business@email.com",
+          license: "License Number"
         },
         timeline: {
           startDate: editableData.startDate || new Date().toISOString().split('T')[0],
