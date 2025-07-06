@@ -60,7 +60,7 @@ export default function SimpleContractGenerator() {
         },
         body: JSON.stringify({
           projectType: selectedProject.projectType || 'construction',
-          projectValue: selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0,
+          projectValue: selectedProject.total || selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0,
           location: selectedProject.clientAddress || editableData.clientAddress || '',
           projectDescription: selectedProject.projectDescription || ''
         }),
@@ -142,18 +142,15 @@ export default function SimpleContractGenerator() {
                                   data.description || 
                                   "";
         
-        // Extract financial information
-        let totalAmount = data.projectTotalCosts?.totalSummary?.finalTotal ||
-                         data.projectTotalCosts?.total ||
-                         data.total ||
-                         data.estimateAmount ||
-                         data.displayTotal ||
-                         0;
-        
-        // Convert from cents if needed
-        if (totalAmount > 10000) {
-          totalAmount = totalAmount / 100;
-        }
+        // Extract financial information - MATCH EstimatesWizard logic exactly
+        let totalValue = data.projectTotalCosts?.totalSummary?.finalTotal ||
+                        data.projectTotalCosts?.total ||
+                        data.total ||
+                        data.estimateAmount ||
+                        0;
+
+        // No conversion - keep original values as they are stored (matching EstimatesWizard)
+        const displayTotal = totalValue;
         
         return {
           id: doc.id,
@@ -170,11 +167,12 @@ export default function SimpleContractGenerator() {
           projectDescription,
           description: projectDescription,
           
-          // Financial information
-          totalAmount,
-          totalPrice: totalAmount,
-          displaySubtotal: totalAmount,
-          displayTotal: totalAmount,
+          // Financial information - MATCH EstimatesWizard fields exactly
+          total: displayTotal, // Primary field used in EstimatesWizard
+          totalAmount: displayTotal, // Backup field for compatibility  
+          totalPrice: displayTotal, // Backup field for compatibility
+          displaySubtotal: displayTotal, // Backup field for compatibility
+          displayTotal, // Backup field for compatibility
           
           // Items and costs
           items: data.items || data.projectTotalCosts?.materialCosts?.items || [],
@@ -353,19 +351,16 @@ export default function SimpleContractGenerator() {
                                 project.projectDetails || 
                                 `${projectType} project for ${clientName}`;
       
-      // Extract financial data
-      let totalAmount = project.totalAmount || 
-                       project.totalPrice || 
-                       project.displaySubtotal || 
-                       project.displayTotal || 
-                       project.total || 
-                       project.estimateAmount || 
-                       0;
+      // Extract financial data - MATCH EstimatesWizard logic exactly
+      const totalAmount = project.total || 
+                         project.totalAmount || 
+                         project.totalPrice || 
+                         project.displaySubtotal || 
+                         project.displayTotal || 
+                         project.estimateAmount || 
+                         0;
       
-      // Convert from cents if needed
-      if (totalAmount > 10000) {
-        totalAmount = totalAmount / 100;
-      }
+      // No conversion - keep original values as they are stored (matching EstimatesWizard)
       
       // Process project data comprehensively
       const contractData = {
@@ -893,7 +888,7 @@ export default function SimpleContractGenerator() {
                                   const newMilestones = [...editableData.paymentMilestones];
                                   const newPercentage = parseInt(e.target.value) || 0;
                                   newMilestones[index].percentage = newPercentage;
-                                  const totalAmount = selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0;
+                                  const totalAmount = selectedProject.total || selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0;
                                   newMilestones[index].amount = totalAmount * (newPercentage / 100);
                                   setEditableData(prev => ({ ...prev, paymentMilestones: newMilestones }));
                                 }}
@@ -921,7 +916,7 @@ export default function SimpleContractGenerator() {
                         onClick={() => {
                           const newId = Math.max(...editableData.paymentMilestones.map(m => m.id)) + 1;
                           const remainingPercentage = 100 - editableData.paymentMilestones.reduce((sum, m) => sum + m.percentage, 0);
-                          const totalAmount = selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0;
+                          const totalAmount = selectedProject.total || selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0;
                           const newMilestone = {
                             id: newId,
                             description: `Milestone ${newId}`,
