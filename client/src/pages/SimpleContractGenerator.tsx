@@ -419,9 +419,9 @@ export default function SimpleContractGenerator() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
+    <div className="min-h-screen bg-black text-white p-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8 text-center text-cyan-400">
+        <h1 className="text-2xl md:text-3xl font-bold mb-8 text-center text-cyan-400">
           Legal Defense Contract Generator
         </h1>
 
@@ -444,7 +444,7 @@ export default function SimpleContractGenerator() {
                 >
                   {step}
                 </div>
-                <span className="text-sm">
+                <span className="text-sm hidden md:inline">
                   {step === 1 && "Select Project"}
                   {step === 2 && "Review & Generate"}
                   {step === 3 && "Download & Complete"}
@@ -479,23 +479,21 @@ export default function SimpleContractGenerator() {
                         className="border border-gray-600 rounded-lg p-4 hover:border-cyan-400 cursor-pointer transition-colors"
                         onClick={() => handleProjectSelect(project)}
                       >
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h3 className="font-semibold text-white">
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-white mb-2">
                               {project.clientName || project.client?.name || project.client || `Project ${project.estimateNumber || project.id}`}
                             </h3>
-                            <p className="text-gray-400 text-sm">
+                            <p className="text-gray-400 text-sm mb-2">
                               {project.projectType || project.description || "Project"} - ${(project.totalAmount || project.totalPrice || project.displaySubtotal || 0).toLocaleString()}
                             </p>
-                            {/* Real-time data indicators */}
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs text-gray-500">
+                            <div className="space-y-1">
+                              <div className="text-xs text-gray-500">
                                 Email: {project.clientEmail || project.client?.email || "Not set"}
-                              </span>
-                              <span className="text-xs text-gray-500">•</span>
-                              <span className="text-xs text-gray-500">
+                              </div>
+                              <div className="text-xs text-gray-500">
                                 Phone: {project.clientPhone || project.client?.phone || "Not set"}
-                              </span>
+                              </div>
                             </div>
                           </div>
                           <Button
@@ -532,7 +530,7 @@ export default function SimpleContractGenerator() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2">
+              <div className="space-y-6">
                 {/* Editable Client Information */}
                 <div className="border border-gray-600 rounded-lg p-4">
                   <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">
@@ -619,46 +617,9 @@ export default function SimpleContractGenerator() {
                   </h3>
                   <div className="space-y-4">
                     {editableData.paymentMilestones.map((milestone, index) => (
-                      <div key={milestone.id} className="grid grid-cols-12 gap-2 items-end">
-                        <div className="col-span-5">
-                          <Label className="text-gray-400">Description</Label>
-                          <Input
-                            value={milestone.description}
-                            onChange={(e) => {
-                              const newMilestones = [...editableData.paymentMilestones];
-                              newMilestones[index].description = e.target.value;
-                              setEditableData(prev => ({ ...prev, paymentMilestones: newMilestones }));
-                            }}
-                            className="bg-gray-800 border-gray-600 text-white"
-                          />
-                        </div>
-                        <div className="col-span-3">
-                          <Label className="text-gray-400">Percentage</Label>
-                          <Input
-                            type="number"
-                            value={milestone.percentage}
-                            onChange={(e) => {
-                              const newMilestones = [...editableData.paymentMilestones];
-                              const newPercentage = parseInt(e.target.value) || 0;
-                              newMilestones[index].percentage = newPercentage;
-                              const totalAmount = selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0;
-                              newMilestones[index].amount = totalAmount * (newPercentage / 100);
-                              setEditableData(prev => ({ ...prev, paymentMilestones: newMilestones }));
-                            }}
-                            className="bg-gray-800 border-gray-600 text-white"
-                            min="0"
-                            max="100"
-                          />
-                        </div>
-                        <div className="col-span-3">
-                          <Label className="text-gray-400">Amount</Label>
-                          <Input
-                            value={`$${milestone.amount.toLocaleString()}`}
-                            disabled
-                            className="bg-gray-700 border-gray-600 text-gray-300"
-                          />
-                        </div>
-                        <div className="col-span-1">
+                      <div key={milestone.id} className="border border-gray-700 rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-3">
+                          <span className="font-semibold text-cyan-400">Milestone {index + 1}</span>
                           <Button
                             size="sm"
                             variant="ghost"
@@ -673,6 +634,50 @@ export default function SimpleContractGenerator() {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <Label className="text-gray-400">Description</Label>
+                            <Input
+                              value={milestone.description}
+                              onChange={(e) => {
+                                const newMilestones = [...editableData.paymentMilestones];
+                                newMilestones[index].description = e.target.value;
+                                setEditableData(prev => ({ ...prev, paymentMilestones: newMilestones }));
+                              }}
+                              className="bg-gray-800 border-gray-600 text-white"
+                              placeholder="Payment description"
+                            />
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-gray-400">Percentage</Label>
+                              <Input
+                                type="number"
+                                value={milestone.percentage}
+                                onChange={(e) => {
+                                  const newMilestones = [...editableData.paymentMilestones];
+                                  const newPercentage = parseInt(e.target.value) || 0;
+                                  newMilestones[index].percentage = newPercentage;
+                                  const totalAmount = selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0;
+                                  newMilestones[index].amount = totalAmount * (newPercentage / 100);
+                                  setEditableData(prev => ({ ...prev, paymentMilestones: newMilestones }));
+                                }}
+                                className="bg-gray-800 border-gray-600 text-white"
+                                min="0"
+                                max="100"
+                                placeholder="%"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-gray-400">Amount</Label>
+                              <div className="text-lg font-semibold text-green-400 mt-2">
+                                ${milestone.amount.toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}
