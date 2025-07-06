@@ -3387,6 +3387,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         originalData: {
           projectDescription: estimate.projectDetails || "",
         },
+        // Add contractor data from profile
+        contractor: {
+          name: profile?.company || profile?.ownerName || '',
+          company: profile?.company || '',
+          address: profile?.address || '',
+          phone: profile?.phone || '',
+          email: profile?.email || currentUser?.email || '',
+          website: profile?.website || '',
+          logo: profile?.logo || ''
+        }
       };
 
       console.log("📤 Sending payload to PDF service:", payload);

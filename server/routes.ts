@@ -1764,67 +1764,85 @@ Output must be between 200-900 characters in English.`;
       });
 
       // Get contractor profile data
-      let contractorData = {};
-      try {
-        if (user?.[0]?.uid) {
-          const profile = await storage.getUserByFirebaseUid(user[0].uid);
-          console.log('🔍 LOGO DEBUG - Profile fetched from DB:', {
-            profileExists: !!profile,
-            userId: user[0].uid,
-            hasLogo: profile ? !!profile.logo : false,
-            logoLength: profile?.logo ? profile.logo.length : 0,
-            logoType: profile?.logo ? (profile.logo.startsWith('data:') ? 'Base64' : 'Other') : 'None'
-          });
-          
-          if (profile) {
-            contractorData = {
-              name: profile.company || profile.ownerName || 'OWL FENC',
-              address: profile.address || '2901 Owens Court, Fairfield, California 94534',
-              phone: profile.phone || '(555) 123-4567',
-              email: profile.email || 'truthbackpack@gmail.com',
-              website: profile.website || 'https://owlfenc.com/',
-              logo: profile.logo || ''
-            };
-          }
-        }
-        
-        // If no logo from database, check global profile storage as fallback
-        if (!contractorData.logo && global.profileStorage?.logo) {
-          console.log('🔍 LOGO DEBUG - Using logo from global storage:', {
-            hasGlobalLogo: !!global.profileStorage.logo,
-            logoLength: global.profileStorage.logo.length,
-            logoType: global.profileStorage.logo.startsWith('data:') ? 'Base64' : 'Other'
-          });
-          
-          contractorData = {
-            name: global.profileStorage.company || global.profileStorage.ownerName || contractorData.name || 'OWL FENC',
-            address: global.profileStorage.address || contractorData.address || '2901 Owens Court, Fairfield, California 94534',
-            phone: global.profileStorage.phone || contractorData.phone || '(555) 123-4567',
-            email: global.profileStorage.email || contractorData.email || 'truthbackpack@gmail.com',
-            website: global.profileStorage.website || contractorData.website || 'https://owlfenc.com/',
-            logo: global.profileStorage.logo
-          };
-        }
-        
-        console.log('🔍 LOGO DEBUG - Final contractor data:', {
-          companyName: contractorData.name,
-          hasLogo: !!contractorData.logo,
-          logoLength: contractorData.logo ? contractorData.logo.length : 0,
-          logoPreview: contractorData.logo ? contractorData.logo.substring(0, 50) + '...' : 'No logo',
-          source: contractorData.logo ? (global.profileStorage?.logo === contractorData.logo ? 'Global Storage' : 'Database') : 'None'
-        });
-      } catch (profileError) {
-        console.warn('Warning: Could not fetch contractor profile:', profileError);
-        // Use fallback contractor data
+      let contractorData = {
+        name: '',
+        address: '',
+        phone: '',
+        email: '',
+        website: '',
+        logo: ''
+      };
+      
+      // First check if contractor data is provided in the request
+      if (requestData.contractor) {
         contractorData = {
-          name: 'OWL FENC',
-          address: '2901 Owens Court, Fairfield, California 94534',
-          phone: '(555) 123-4567',
-          email: 'truthbackpack@gmail.com',
-          website: 'https://owlfenc.com/',
-          logo: ''
+          name: requestData.contractor.name || requestData.contractor.company || '',
+          address: requestData.contractor.address || '',
+          phone: requestData.contractor.phone || '',
+          email: requestData.contractor.email || '',
+          website: requestData.contractor.website || '',
+          logo: requestData.contractor.logo || ''
+        };
+        console.log('✅ Using contractor data from frontend:', {
+          name: contractorData.name,
+          phone: contractorData.phone,
+          email: contractorData.email,
+          hasLogo: !!contractorData.logo
+        });
+      } else {
+        // Fallback to database lookup if not provided
+        try {
+          if (user?.[0]?.uid) {
+            const profile = await storage.getUserByFirebaseUid(user[0].uid);
+            console.log('🔍 LOGO DEBUG - Profile fetched from DB:', {
+              profileExists: !!profile,
+              userId: user[0].uid,
+              hasLogo: profile ? !!profile.logo : false,
+              logoLength: profile?.logo ? profile.logo.length : 0,
+              logoType: profile?.logo ? (profile.logo.startsWith('data:') ? 'Base64' : 'Other') : 'None'
+            });
+            
+            if (profile) {
+              contractorData = {
+                name: profile.company || profile.ownerName || '',
+                address: profile.address || '',
+                phone: profile.phone || '',
+                email: profile.email || '',
+                website: profile.website || '',
+                logo: profile.logo || ''
+              };
+            }
+          }
+        } catch (profileError) {
+          console.warn('Warning: Could not fetch contractor profile from DB:', profileError);
+        }
+      }
+      
+      // If no logo from database, check global profile storage as fallback
+      if (!contractorData.logo && global.profileStorage?.logo) {
+        console.log('🔍 LOGO DEBUG - Using logo from global storage:', {
+          hasGlobalLogo: !!global.profileStorage.logo,
+          logoLength: global.profileStorage.logo.length,
+          logoType: global.profileStorage.logo.startsWith('data:') ? 'Base64' : 'Other'
+        });
+        
+        contractorData = {
+          name: global.profileStorage.company || global.profileStorage.ownerName || contractorData.name || '',
+          address: global.profileStorage.address || contractorData.address || '',
+          phone: global.profileStorage.phone || contractorData.phone || '',
+          email: global.profileStorage.email || contractorData.email || '',
+          website: global.profileStorage.website || contractorData.website || '',
+          logo: global.profileStorage.logo
         };
       }
+      
+      console.log('🔍 LOGO DEBUG - Final contractor data:', {
+        companyName: contractorData.name,
+        hasLogo: !!contractorData.logo,
+        logoLength: contractorData.logo ? contractorData.logo.length : 0,
+        logoPreview: contractorData.logo ? contractorData.logo.substring(0, 50) + '...' : 'No logo',
+        source: contractorData.logo ? (global.profileStorage?.logo === contractorData.logo ? 'Global Storage' : 'Database') : 'None'
+      });
 
       // Process items data
       let processedItems = [];

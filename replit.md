@@ -149,6 +149,13 @@ Changelog:
   * PRESERVED VALID CONVERSIONS: Kept necessary percentage calculations (discountValue/100, taxRate/100)
   * VERIFICATION COMPLETE: Grep confirms zero problematic conversions remaining in codebase
   * RESULT CONFIRMED: Calculations now show correct values ($485 × 194.25 = $942.11, Total: $3,148.63)
+- July 6, 2025. ✅ CONTRACTOR DATA FIX: Resolved estimates PDF generation phone and email issues:
+  * Removed hardcoded fallback values "(555) 123-4567" and "truthbackpack@gmail.com" from backend
+  * Updated frontend EstimatesWizard to send complete contractor profile data in PDF generation payload
+  * Backend now prioritizes contractor data from frontend over database lookups
+  * Fixed business name mapping to use company name instead of owner name for consistency
+  * Enhanced PDF service to use real contractor phone numbers like "202 549 3519" instead of placeholders
+  * System now generates PDFs with authentic contractor information from user profiles
 - June 16, 2025. Initial setup
 - June 16, 2025. Fixed critical PDF generation system:
   * Resolved corrupted PDF files - now generates real binary PDFs instead of HTML/JSON responses
