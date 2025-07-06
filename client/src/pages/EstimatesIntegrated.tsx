@@ -189,7 +189,7 @@ export default function EstimatesIntegrated() {
           excludes: '',
           subtotal: 0,
           tax: 0,
-          total: projectData.totalPrice ? (projectData.totalPrice / 100) : 0,
+          total: projectData.totalPrice || 0, // CÁLCULOS SEGUROS: valores directos
           status: projectData.status || 'draft'
         });
 
@@ -586,7 +586,7 @@ export default function EstimatesIntegrated() {
                                 </Badge>
                               </div>
                               <div className="text-right">
-                                <p className="font-bold">${(material.price / 100).toFixed(2)}</p>
+                                <p className="font-bold">${material.price.toFixed(2)}</p>
                                 <p className="text-sm text-muted-foreground">por {material.unit}</p>
                               </div>
                             </div>

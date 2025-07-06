@@ -1622,18 +1622,9 @@ export default function EstimatesWizardFixed() {
               const rawTotal = parseFloat(item.total || item.totalPrice || 0);
 
               // NORMALIZAR PRECIOS: Aplicar conversión inteligente
+              // CÁLCULOS SEGUROS: Usar valores directos sin conversiones
               let price = rawPrice;
               let total = rawTotal;
-              
-              // Si el precio es mayor a 1000, probablemente está en centavos
-              if (rawPrice > 1000) {
-                price = rawPrice / 100;
-              }
-              
-              // Si el total es mayor a 1000, probablemente está en centavos
-              if (rawTotal > 1000) {
-                total = rawTotal / 100;
-              }
               
               // Si no hay total, calcularlo correctamente
               if (!total || total === 0) {
@@ -1668,15 +1659,9 @@ export default function EstimatesWizardFixed() {
             let price = rawPrice;
             let total = rawTotal;
             
-            // Si el precio es mayor a 1000, probablemente está en centavos
-            if (rawPrice > 1000) {
-              price = rawPrice / 100;
-            }
+            // CÁLCULOS SEGUROS: Usar precio directo sin conversiones
             
-            // Si el total es mayor a 1000, probablemente está en centavos
-            if (rawTotal > 1000) {
-              total = rawTotal / 100;
-            }
+            // CÁLCULOS SEGUROS: Usar total directo sin conversiones
             
             // Si no hay total, calcularlo correctamente
             if (!total || total === 0) {
@@ -1975,25 +1960,25 @@ export default function EstimatesWizardFixed() {
           category: "material",
           quantity: item.quantity,
           unit: item.unit || "unit",
-          unitPrice: Math.round(item.price * 100), // Store in cents
-          totalPrice: Math.round(item.total * 100), // Store in cents
+          unitPrice: item.price, // CÁLCULOS SEGUROS: valores directos
+          totalPrice: item.total, // CÁLCULOS SEGUROS: valores directos
           sortOrder: index,
           isOptional: false,
         })),
 
-        // Financial totals (stored in cents for precision)
-        subtotal: Math.round(estimate.subtotal * 100),
-        taxRate: Math.round((estimate.taxRate || 10) * 100), // Store as basis points
-        taxAmount: Math.round(estimate.tax * 100),
+        // CÁLCULOS SEGUROS: Financial totals stored as direct values
+        subtotal: estimate.subtotal, // CÁLCULOS SEGUROS: valores directos
+        taxRate: estimate.taxRate || 10, // CÁLCULOS SEGUROS: valores directos
+        taxAmount: estimate.tax, // CÁLCULOS SEGUROS: valores directos
         
         // CRÍTICO: Guardar información completa de descuentos
-        discount: Math.round((estimate.discountAmount || 0) * 100), // Store discount amount in cents
+        discount: estimate.discountAmount || 0, // CÁLCULOS SEGUROS: valores directos
         discountType: estimate.discountType || "percentage",
         discountValue: estimate.discountValue || 0,
-        discountAmount: Math.round((estimate.discountAmount || 0) * 100),
+        discountAmount: estimate.discountAmount || 0, // CÁLCULOS SEGUROS: valores directos
         discountName: estimate.discountName || "",
         
-        total: Math.round(estimate.total * 100),
+        total: estimate.total, // CÁLCULOS SEGUROS: valores directos
 
         // Display-friendly totals (for dashboard compatibility)
         displaySubtotal: estimate.subtotal,
@@ -2694,26 +2679,26 @@ export default function EstimatesWizardFixed() {
               unit: item.unit || "unit",
               unitPrice: item.price,
               totalPrice: item.total,
-              unitPriceCents: Math.round(item.price * 100),
-              totalPriceCents: Math.round(item.total * 100),
+              unitPriceCents: item.price, // CÁLCULOS SEGUROS: valores directos
+              totalPriceCents: item.total, // CÁLCULOS SEGUROS: valores directos
               sortOrder: index,
               isOptional: false,
             })),
             subtotal: estimate.subtotal,
-            subtotalCents: Math.round(estimate.subtotal * 100),
+            subtotalCents: estimate.subtotal, // CÁLCULOS SEGUROS: valores directos
             itemsCount: estimate.items.length,
           },
           laborCosts: {
             estimatedHours: Math.ceil(estimate.items.length * 2),
             hourlyRate: 45.0,
-            totalLabor: Math.round(estimate.total * 0.3),
+            totalLabor: estimate.total * 0.3, // CÁLCULOS SEGUROS: valores directos
             description: "Professional installation and labor services",
           },
           additionalCosts: {
             taxRate: estimate.taxRate || 10,
-            taxRateBasisPoints: Math.round((estimate.taxRate || 10) * 100),
+            taxRateBasisPoints: estimate.taxRate || 10, // CÁLCULOS SEGUROS: valores directos
             taxAmount: estimate.tax,
-            taxAmountCents: Math.round(estimate.tax * 100),
+            taxAmountCents: estimate.tax, // CÁLCULOS SEGUROS: valores directos
             discountType: estimate.discountType || null,
             discountValue: estimate.discountValue || 0,
             discountAmount: estimate.discountAmount || 0,
@@ -2726,10 +2711,10 @@ export default function EstimatesWizardFixed() {
             tax: estimate.tax,
             discount: estimate.discountAmount || 0,
             finalTotal: estimate.total,
-            subtotalCents: Math.round(estimate.subtotal * 100),
-            taxCents: Math.round(estimate.tax * 100),
-            discountCents: Math.round((estimate.discountAmount || 0) * 100),
-            finalTotalCents: Math.round(estimate.total * 100),
+            subtotalCents: estimate.subtotal, // CÁLCULOS SEGUROS: valores directos
+            taxCents: estimate.tax, // CÁLCULOS SEGUROS: valores directos
+            discountCents: estimate.discountAmount || 0, // CÁLCULOS SEGUROS: valores directos
+            finalTotalCents: estimate.total, // CÁLCULOS SEGUROS: valores directos
           },
         },
 
@@ -2756,22 +2741,22 @@ export default function EstimatesWizardFixed() {
         clientEmail: estimate.client.email || "",
         clientPhone: estimate.client.phone || "",
         contractorCompanyName: contractorInfo.company || "Owl Fence",
-        subtotal: Math.round(estimate.subtotal * 100),
-        total: Math.round(estimate.total * 100),
+        subtotal: estimate.subtotal, // CÁLCULOS SEGUROS: valores directos
+        total: estimate.total, // CÁLCULOS SEGUROS: valores directos
         items: estimate.items.map((item, index) => ({
           name: item.name,
           description: item.description || item.name,
           category: "material" as const,
           quantity: item.quantity,
           unit: item.unit || "unit",
-          unitPrice: Math.round(item.price * 100),
-          totalPrice: Math.round(item.total * 100),
+          unitPrice: item.price, // CÁLCULOS SEGUROS: valores directos
+          totalPrice: item.total, // CÁLCULOS SEGUROS: valores directos
           sortOrder: index,
           isOptional: false,
         })),
         taxRate: estimate.taxRate || 10,
-        taxAmount: Math.round(estimate.tax * 100),
-        estimateAmount: Math.round(estimate.total * 100),
+        taxAmount: estimate.tax, // CÁLCULOS SEGUROS: valores directos
+        estimateAmount: estimate.total, // CÁLCULOS SEGUROS: valores directos
       };
 
       console.log("📤 Enviando datos al servidor:", estimateData);
@@ -6138,7 +6123,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                             </div>
                             <div className="truncate">
                               <span className="font-medium">Total:</span> $
-                              {(estimate.total / 100).toFixed(2)}
+                              {estimate.total.toFixed(2)}
                             </div>
                           </div>
                           <div className="text-xs text-gray-500 mt-1">
@@ -6256,22 +6241,22 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                       unit_price: `$${Number(item.price || item.unitPrice || 0).toFixed(2)}`,
                                       total: `$${Number(item.total || item.totalPrice || item.quantity * item.price || 0).toFixed(2)}`,
                                     })),
-                                    subtotal: `$${Number(subtotal / 100).toFixed(2)}`,
+                                    subtotal: `$${Number(subtotal).toFixed(2)}`, // CÁLCULOS SEGUROS: valores directos
                                     discounts:
                                       discountAmount > 0
-                                        ? `-$${Number(discountAmount / 100).toFixed(2)}`
+                                        ? `-$${Number(discountAmount).toFixed(2)}` // CÁLCULOS SEGUROS: valores directos
                                         : "$0.00",
                                     tax_rate:
                                       Math.round(
                                         (taxAmount /
                                           (subtotal - discountAmount)) *
                                           100,
-                                      ) || 0,
+                                      ) || 0, // Esta conversión SÍ es correcta (para porcentaje)
                                     tax_amount:
                                       taxAmount > 0
-                                        ? `$${Number(taxAmount / 100).toFixed(2)}`
+                                        ? `$${Number(taxAmount).toFixed(2)}` // CÁLCULOS SEGUROS: valores directos
                                         : "$0.00",
-                                    total: `$${Number(finalTotal / 100).toFixed(2)}`,
+                                    total: `$${Number(finalTotal).toFixed(2)}`, // CÁLCULOS SEGUROS: valores directos
                                   },
                                   client: {
                                     name:
