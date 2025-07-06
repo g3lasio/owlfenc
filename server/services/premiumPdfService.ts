@@ -52,18 +52,11 @@ class PremiumPdfService {
   }
 
   /**
-   * Formats currency values properly, handling both cents and dollar amounts
+   * Formats currency values properly without converting
    */
   private formatCurrency(amount: number): string {
-    // If amount seems to be in cents (over 1000 and not a normal dollar amount)
-    let dollarAmount = amount;
-    if (amount > 1000 && amount.toString().length > 4) {
-      // Could be in cents, convert to dollars
-      dollarAmount = amount / 100;
-    }
-    
-    // Format as currency
-    return dollarAmount.toLocaleString('en-US', {
+    // Format as currency directly without conversion
+    return amount.toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });

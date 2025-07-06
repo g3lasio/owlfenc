@@ -459,7 +459,7 @@ export default function SimpleContractGenerator() {
           materials: contractData?.materials || selectedProject.materials || [],
         },
         contractor: {
-          name: profile?.ownerName || profile?.company || "Contractor Name",
+          name: profile?.company || profile?.ownerName || "Contractor Name",
           company: profile?.company || "Company Name",
           address: profile?.address ? 
             `${profile.address}${profile.city ? `, ${profile.city}` : ''}${profile.state ? `, ${profile.state}` : ''}${profile.zipCode ? ` ${profile.zipCode}` : ''}` : 
