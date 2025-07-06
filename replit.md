@@ -157,6 +157,14 @@ Changelog:
   * Removed automatic email content modification and redirection warnings
   * System now respects contractor independence - no cross-contamination of emails
   * Test mode only activates with FORCE_TEST_MODE=true environment variable for development
+- July 6, 2025. ✅ EMAIL DIALOG UX IMPROVEMENT: Fixed "copy to me" visibility and scrolling issues:
+  * Fixed dialog layout with proper flex structure and height constraints (h-90vh with flex-col)
+  * Moved "Send me a copy" checkbox to prominent position after email address field
+  * Enhanced scrolling functionality with min-h-0 and proper overflow-y-auto
+  * Eliminated duplicate copy option sections for cleaner interface
+  * Added blue-highlighted copy section with clear visibility of destination email
+  * Users can now easily see and access copy functionality without scrolling issues
+  * Mobile-responsive design ensures checkbox is always visible on all screen sizes
 - July 6, 2025. ✅ RESEND EMAIL SERVICE OPTIMIZATION: Enhanced contractor copy functionality with improved UX:
   * Confirmed existing "Send me a copy" checkbox functionality is working properly (lines 6894-6921)
   * Enhanced visual design with blue background, icons, and clear email destination display
