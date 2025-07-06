@@ -3009,37 +3009,63 @@ Output must be between 200-900 characters in English.`;
         const firebaseUserId = req.headers['authorization']?.replace('Bearer ', '') || req.body.userId;
         console.log('🔑 [API] Firebase UID for contractor data:', firebaseUserId);
         
-        // Fetch real contractor profile data from database
+        // Fetch real contractor profile data from Firebase
         let contractorData = req.body.contractor;
         if (firebaseUserId) {
           try {
-            console.log('📋 [API] Fetching contractor profile from database...');
-            const { storage } = await import('./storage');
-            const user = await storage.getUserByFirebaseUid(firebaseUserId);
+            console.log('📋 [API] Fetching contractor profile from Firebase...');
+            const admin = await import('firebase-admin');
             
-            if (user) {
-              console.log('✅ [API] Found user profile:', { userId: user.id, hasProfile: !!user.profile });
-              // Override contractor data with real profile information
+            // Ensure Firebase Admin is initialized
+            if (!admin.apps.length) {
+              admin.initializeApp({
+                projectId: process.env.FIREBASE_PROJECT_ID || 'owl-fenc'
+              });
+            }
+            
+            // Get user profile document from Firebase
+            const userDoc = await admin.firestore().collection('users').doc(firebaseUserId).get();
+            
+            if (userDoc.exists) {
+              const userData = userDoc.data();
+              console.log('✅ [API] Found Firebase user profile:', { 
+                hasCompany: !!userData?.company,
+                hasOwnerName: !!userData?.ownerName,
+                hasAddress: !!userData?.address
+              });
+              
+              // Build complete address from profile data
+              let fullAddress = '';
+              if (userData?.address) {
+                fullAddress = userData.address;
+                if (userData?.city) fullAddress += `, ${userData.city}`;
+                if (userData?.state) fullAddress += `, ${userData.state}`;
+                if (userData?.zipCode) fullAddress += ` ${userData.zipCode}`;
+              }
+              
+              // Override contractor data with real Firebase profile information
               contractorData = {
-                name: user.profile?.ownerName || user.profile?.company || user.name || req.body.contractor.name,
-                company: user.profile?.company || user.profile?.ownerName || req.body.contractor.company,
-                address: user.profile?.address || 'Address not provided',
-                phone: user.profile?.phone || 'Phone not provided',
-                email: user.email || user.profile?.email || 'Email not provided',
-                license: user.profile?.licenseNumber || '',
+                name: userData?.ownerName || userData?.company || 'Professional Contractor',
+                company: userData?.company || userData?.ownerName || 'Construction Company',
+                address: fullAddress || 'Address not provided',
+                phone: userData?.phone || userData?.mobilePhone || 'Phone not provided',
+                email: userData?.email || 'Email not provided',
+                license: userData?.license || '',
                 ...req.body.contractor // Keep any additional fields from frontend
               };
-              console.log('🏢 [API] Enhanced contractor data:', {
+              
+              console.log('🏢 [API] Enhanced contractor data from Firebase:', {
                 name: contractorData.name,
                 company: contractorData.company,
                 hasAddress: !!contractorData.address && contractorData.address !== 'Address not provided',
-                hasPhone: !!contractorData.phone && contractorData.phone !== 'Phone not provided'
+                hasPhone: !!contractorData.phone && contractorData.phone !== 'Phone not provided',
+                hasEmail: !!contractorData.email && contractorData.email !== 'Email not provided'
               });
             } else {
-              console.log('⚠️ [API] User profile not found, using fallback contractor data');
+              console.log('⚠️ [API] Firebase user profile not found, using fallback contractor data');
             }
           } catch (profileError) {
-            console.error('❌ [API] Error fetching contractor profile:', profileError);
+            console.error('❌ [API] Error fetching contractor profile from Firebase:', profileError);
             console.log('⚠️ [API] Using original contractor data from request');
           }
         }
