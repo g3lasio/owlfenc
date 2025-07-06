@@ -180,6 +180,9 @@ function Router() {
       <Route path="/simple-contracts">
         {() => <ProtectedRoute component={SimpleContractGenerator} />}
       </Route>
+      <Route path="/simple-contract-generator">
+        {() => <ProtectedRoute component={SimpleContractGenerator} />}
+      </Route>
 
       <Route path="/unified-contracts">
         {() => <ProtectedRoute component={UnifiedContractManager} />}
