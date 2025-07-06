@@ -544,15 +544,15 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
     // Aplicar ajuste a materiales
     result.materials = result.materials.map(material => ({
       ...material,
-      unitPrice: Math.round(material.unitPrice * adjustmentFactor * 100) / 100,
-      totalPrice: Math.round(material.totalPrice * adjustmentFactor * 100) / 100
+      unitPrice: Number((material.unitPrice * adjustmentFactor).toFixed(2)), // CÁLCULOS SEGUROS: sin × 100 problemático
+      totalPrice: Number((material.totalPrice * adjustmentFactor).toFixed(2)) // CÁLCULOS SEGUROS: sin × 100 problemático
     }));
 
     // Aplicar ajuste a labor
     result.laborCosts = result.laborCosts.map(labor => ({
       ...labor,
-      rate: Math.round(labor.rate * adjustmentFactor * 100) / 100,
-      total: Math.round(labor.total * adjustmentFactor * 100) / 100
+      rate: Number((labor.rate * adjustmentFactor).toFixed(2)), // CÁLCULOS SEGUROS: sin × 100 problemático
+      total: Number((labor.total * adjustmentFactor).toFixed(2)) // CÁLCULOS SEGUROS: sin × 100 problemático
     }));
 
     return result;
@@ -567,8 +567,8 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
 
     result.materials = result.materials.map(material => ({
       ...material,
-      unitPrice: Math.round(material.unitPrice * inflationFactor * 100) / 100,
-      totalPrice: Math.round(material.totalPrice * inflationFactor * 100) / 100
+      unitPrice: Number((material.unitPrice * inflationFactor).toFixed(2)), // CÁLCULOS SEGUROS: sin × 100 problemático
+      totalPrice: Number((material.totalPrice * inflationFactor).toFixed(2)) // CÁLCULOS SEGUROS: sin × 100 problemático
     }));
 
     return result;
@@ -866,7 +866,7 @@ Focus on PRECISION and RELEVANCE. Exclude irrelevant materials completely.`;
             quantity: Math.max(0, item.quantity || 0),
             unit: item.unit || original?.unit || 'pieces',
             unitPrice: item.unitPrice || original?.unitPrice || 0,
-            totalPrice: Math.round((item.quantity || 0) * (item.unitPrice || 0) * 100) / 100,
+            totalPrice: Number(((item.quantity || 0) * (item.unitPrice || 0)).toFixed(2)), // CÁLCULOS SEGUROS: sin × 100 problemático
             supplier: original?.supplier,
             specifications: original?.specifications
           };

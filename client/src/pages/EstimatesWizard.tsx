@@ -2702,9 +2702,7 @@ export default function EstimatesWizardFixed() {
             discountType: estimate.discountType || null,
             discountValue: estimate.discountValue || 0,
             discountAmount: estimate.discountAmount || 0,
-            discountAmountCents: Math.round(
-              (estimate.discountAmount || 0) * 100,
-            ),
+            discountAmountCents: estimate.discountAmount || 0, // CÁLCULOS SEGUROS: valores directos
           },
           totalSummary: {
             subtotal: estimate.subtotal,

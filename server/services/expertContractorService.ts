@@ -272,14 +272,14 @@ export class ExpertContractorService {
         preciseFormula: `ceil(${dimensions.linearFeet} / ${postSpacing}) + 1 = ${numPosts}`,
         wasteIncluded: Math.ceil(numPosts * (1 + postSpec.wasteFactorPercent / 100)),
         finalQuantity: Math.ceil(numPosts * (1 + postSpec.wasteFactorPercent / 100)),
-        unitPrice: Math.round(postSpec.unitPriceRange.typical * geoFactors.materialCostMultiplier * 100) / 100,
+        unitPrice: Number((postSpec.unitPriceRange.typical * geoFactors.materialCostMultiplier).toFixed(2)), // CÁLCULOS SEGUROS: sin × 100 problemático
         totalPrice: 0,
         laborHours: numPosts * postSpec.laborHoursPerUnit,
         laborCost: 0,
         justification: `Standard 8ft spacing for ${dimensions.linearFeet}ft fence requires ${numPosts} posts including end posts`
       };
-      postCalc.totalPrice = Math.round(postCalc.finalQuantity * postCalc.unitPrice * 100) / 100;
-      postCalc.laborCost = Math.round(postCalc.laborHours * 32 * geoFactors.laborCostMultiplier * 100) / 100;
+      postCalc.totalPrice = Number((postCalc.finalQuantity * postCalc.unitPrice).toFixed(2)); // CÁLCULOS SEGUROS: sin × 100 problemático
+      postCalc.laborCost = Number((postCalc.laborHours * 32 * geoFactors.laborCostMultiplier).toFixed(2)); // CÁLCULOS SEGUROS: sin × 100 problemático
       
       calculations.push(postCalc);
 
@@ -295,14 +295,14 @@ export class ExpertContractorService {
         preciseFormula: `(${dimensions.linearFeet} × ${dimensions.height}) ÷ ${boardCoverage} = ${numBoards}`,
         wasteIncluded: Math.ceil(numBoards * (1 + boardSpec.wasteFactorPercent / 100)),
         finalQuantity: Math.ceil(numBoards * (1 + boardSpec.wasteFactorPercent / 100)),
-        unitPrice: Math.round(boardSpec.unitPriceRange.typical * geoFactors.materialCostMultiplier * 100) / 100,
+        unitPrice: Number((boardSpec.unitPriceRange.typical * geoFactors.materialCostMultiplier).toFixed(2)), // CÁLCULOS SEGUROS: sin × 100 problemático
         totalPrice: 0,
         laborHours: numBoards * boardSpec.laborHoursPerUnit,
         laborCost: 0,
         justification: `${dimensions.height}ft height requires ${numBoards} boards with ${boardSpec.wasteFactorPercent}% waste factor`
       };
-      boardCalc.totalPrice = Math.round(boardCalc.finalQuantity * boardCalc.unitPrice * 100) / 100;
-      boardCalc.laborCost = Math.round(boardCalc.laborHours * 28 * geoFactors.laborCostMultiplier * 100) / 100;
+      boardCalc.totalPrice = Number((boardCalc.finalQuantity * boardCalc.unitPrice).toFixed(2)); // CÁLCULOS SEGUROS: sin × 100 problemático
+      boardCalc.laborCost = Number((boardCalc.laborHours * 28 * geoFactors.laborCostMultiplier).toFixed(2)); // CÁLCULOS SEGUROS: sin × 100 problemático
       
       calculations.push(boardCalc);
 
@@ -316,13 +316,13 @@ export class ExpertContractorService {
         preciseFormula: `(${dimensions.linearFeet} × ${dimensions.height} × 0.1) ÷ 0.5 = ${nailsNeeded} lbs`,
         wasteIncluded: Math.ceil(nailsNeeded * (1 + nailSpec.wasteFactorPercent / 100)),
         finalQuantity: Math.ceil(nailsNeeded * (1 + nailSpec.wasteFactorPercent / 100)),
-        unitPrice: Math.round(nailSpec.unitPriceRange.typical * geoFactors.materialCostMultiplier * 100) / 100,
+        unitPrice: Number((nailSpec.unitPriceRange.typical * geoFactors.materialCostMultiplier).toFixed(2)), // CÁLCULOS SEGUROS: sin × 100 problemático
         totalPrice: 0,
         laborHours: 0,
         laborCost: 0,
         justification: `Galvanized nails for ${dimensions.linearFeet}×${dimensions.height}ft fence with proper fastening density`
       };
-      nailCalc.totalPrice = Math.round(nailCalc.finalQuantity * nailCalc.unitPrice * 100) / 100;
+      nailCalc.totalPrice = Number((nailCalc.finalQuantity * nailCalc.unitPrice).toFixed(2)); // CÁLCULOS SEGUROS: sin × 100 problemático
       
       calculations.push(nailCalc);
 
@@ -337,14 +337,14 @@ export class ExpertContractorService {
           preciseFormula: `${numPosts} posts × 2×2×2ft holes ÷ 27 = ${concreteNeeded.toFixed(2)} cy`,
           wasteIncluded: Math.ceil(concreteNeeded * (1 + concreteSpec.wasteFactorPercent / 100) * 10) / 10,
           finalQuantity: Math.ceil(concreteNeeded * (1 + concreteSpec.wasteFactorPercent / 100) * 10) / 10,
-          unitPrice: Math.round(concreteSpec.unitPriceRange.typical * geoFactors.materialCostMultiplier * 100) / 100,
+          unitPrice: Number((concreteSpec.unitPriceRange.typical * geoFactors.materialCostMultiplier).toFixed(2)), // CÁLCULOS SEGUROS: sin × 100 problemático
           totalPrice: 0,
           laborHours: concreteNeeded * concreteSpec.laborHoursPerUnit,
           laborCost: 0,
           justification: `Post setting concrete for ${numPosts} posts in ${geoFactors.soilType} soil conditions`
         };
-        concreteCalc.totalPrice = Math.round(concreteCalc.finalQuantity * concreteCalc.unitPrice * 100) / 100;
-        concreteCalc.laborCost = Math.round(concreteCalc.laborHours * 35 * geoFactors.laborCostMultiplier * 100) / 100;
+        concreteCalc.totalPrice = Number((concreteCalc.finalQuantity * concreteCalc.unitPrice).toFixed(2)); // CÁLCULOS SEGUROS: sin × 100 problemático
+        concreteCalc.laborCost = Number((concreteCalc.laborHours * 35 * geoFactors.laborCostMultiplier).toFixed(2)); // CÁLCULOS SEGUROS: sin × 100 problemático
         
         calculations.push(concreteCalc);
       }
@@ -415,9 +415,9 @@ export class ExpertContractorService {
       materials,
       labor: laborItems,
       costs: {
-        materials: Math.round(totalMaterialsCost * 100) / 100,
-        labor: Math.round(totalLaborCost * 100) / 100,
-        total: Math.round(grandTotal * 100) / 100
+        materials: Number(totalMaterialsCost.toFixed(2)), // CÁLCULOS SEGUROS: sin × 100 problemático
+        labor: Number(totalLaborCost.toFixed(2)), // CÁLCULOS SEGUROS: sin × 100 problemático
+        total: Number(grandTotal.toFixed(2)) // CÁLCULOS SEGUROS: sin × 100 problemático
       },
       projectAnalysis: {
         dimensions,
