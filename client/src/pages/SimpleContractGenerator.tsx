@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/use-profile";
 import { Database, Eye, FileText, CheckCircle, Plus, Trash2, Edit2, Sparkles, Shield, AlertCircle, DollarSign, Calendar, Wrench, FileCheck, Loader2, Brain, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
@@ -43,6 +44,7 @@ export default function SimpleContractGenerator() {
   const [selectedClauses, setSelectedClauses] = useState<string[]>([]);
   
   const { currentUser } = useAuth();
+  const { profile } = useProfile();
   const { toast } = useToast();
   
   // Fetch AI-suggested legal clauses
@@ -457,12 +459,14 @@ export default function SimpleContractGenerator() {
           materials: contractData?.materials || selectedProject.materials || [],
         },
         contractor: {
-          name: "Contractor Name", // Backend will replace with real profile data
-          company: "Company Name", // Backend will replace with real profile data
-          address: "Business Address",
-          phone: "Business Phone", 
-          email: "business@email.com",
-          license: "License Number"
+          name: profile?.ownerName || profile?.company || "Contractor Name",
+          company: profile?.company || "Company Name",
+          address: profile?.address ? 
+            `${profile.address}${profile.city ? `, ${profile.city}` : ''}${profile.state ? `, ${profile.state}` : ''}${profile.zipCode ? ` ${profile.zipCode}` : ''}` : 
+            "Business Address",
+          phone: profile?.phone || profile?.mobilePhone || "Business Phone", 
+          email: profile?.email || "business@email.com",
+          license: profile?.licenseNumber || profile?.license || "License Number"
         },
         timeline: {
           startDate: editableData.startDate || new Date().toISOString().split('T')[0],
@@ -781,6 +785,60 @@ export default function SimpleContractGenerator() {
                       <p className="text-xs text-gray-500 mt-1">Based on project complexity</p>
                     </div>
                   </div>
+                </div>
+
+                {/* Contractor Information (Read-only from Profile) */}
+                <div className="border border-gray-600 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold mb-3 text-green-400 flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Contractor Information (From Company Profile)
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-gray-400">Company Name</Label>
+                      <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
+                        {profile?.company || "Not set in profile"}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-400">Owner Name</Label>
+                      <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
+                        {profile?.ownerName || "Not set in profile"}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-400">Business Address</Label>
+                      <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
+                        {profile?.address ? 
+                          `${profile.address}${profile.city ? `, ${profile.city}` : ''}${profile.state ? `, ${profile.state}` : ''}${profile.zipCode ? ` ${profile.zipCode}` : ''}` : 
+                          "Not set in profile"}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-400">Business Phone</Label>
+                      <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
+                        {profile?.phone || profile?.mobilePhone || "Not set in profile"}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-400">Business Email</Label>
+                      <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
+                        {profile?.email || "Not set in profile"}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-400">License Number</Label>
+                      <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
+                        {profile?.licenseNumber || profile?.license || "Not set in profile"}
+                      </div>
+                    </div>
+                  </div>
+                  {(!profile?.company || !profile?.address) && (
+                    <div className="mt-3 text-sm text-yellow-400 flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      Please complete your Company Profile to ensure accurate contractor information
+                    </div>
+                  )}
                 </div>
 
                 {/* Dynamic Payment Milestones */}
