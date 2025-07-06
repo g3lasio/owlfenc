@@ -472,37 +472,56 @@ export default function SimpleContractGenerator() {
                     <p className="mt-2 text-gray-400">Loading projects...</p>
                   </div>
                 ) : projects.length > 0 ? (
-                  <div className="grid gap-4">
+                  <div className="space-y-3">
                     {projects.slice(0, 10).map((project) => (
                       <div
                         key={project.id}
-                        className="border border-gray-600 rounded-lg p-4 hover:border-cyan-400 cursor-pointer transition-colors"
+                        className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 hover:border-cyan-400 hover:bg-gray-800/80 cursor-pointer transition-all duration-200"
                         onClick={() => handleProjectSelect(project)}
                       >
-                        <div className="flex justify-between items-start gap-4">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-white mb-2">
-                              {project.clientName || project.client?.name || project.client || `Project ${project.estimateNumber || project.id}`}
-                            </h3>
-                            <p className="text-gray-400 text-sm mb-2">
-                              {project.projectType || project.description || "Project"} - ${(project.totalAmount || project.totalPrice || project.displaySubtotal || 0).toLocaleString()}
-                            </p>
-                            <div className="space-y-1">
-                              <div className="text-xs text-gray-500">
-                                Email: {project.clientEmail || project.client?.email || "Not set"}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                Phone: {project.clientPhone || project.client?.phone || "Not set"}
-                              </div>
+                        {/* Contenido principal del card */}
+                        <div className="space-y-3">
+                          {/* Cliente y monto - Línea principal */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-base font-bold text-white truncate">
+                                {project.clientName || project.client?.name || project.client || `Project ${project.estimateNumber || project.id}`}
+                              </h3>
+                              <p className="text-cyan-400 font-semibold text-sm mt-1">
+                                ${(project.totalAmount || project.totalPrice || project.displaySubtotal || 0).toLocaleString()}
+                              </p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black shrink-0 text-xs px-3"
+                            >
+                              Select
+                            </Button>
+                          </div>
+                          
+                          {/* Tipo de proyecto */}
+                          <div className="bg-gray-700/50 rounded-lg px-3 py-2">
+                            <span className="text-gray-300 text-sm">
+                              {project.projectType || project.description || "Construction Project"}
+                            </span>
+                          </div>
+                          
+                          {/* Información de contacto compacta */}
+                          <div className="grid grid-cols-1 gap-1 text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-500 min-w-0 w-12 shrink-0">Email:</span>
+                              <span className="text-gray-300 truncate">
+                                {project.clientEmail || project.client?.email || "Not provided"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-500 min-w-0 w-12 shrink-0">Phone:</span>
+                              <span className="text-gray-300">
+                                {project.clientPhone || project.client?.phone || "Not provided"}
+                              </span>
                             </div>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
-                          >
-                            Select
-                          </Button>
                         </div>
                       </div>
                     ))}
