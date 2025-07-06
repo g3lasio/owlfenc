@@ -849,6 +849,21 @@ export default function EstimatesWizardFixed() {
   useEffect(() => {
     const subtotal = estimate.items.reduce((sum, item) => sum + item.total, 0);
 
+    console.log("🔍 TOTALS CALCULATION DEBUG", {
+      itemsCount: estimate.items.length,
+      itemsData: estimate.items.map(item => ({
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        total: item.total,
+        calculation: `${item.price} × ${item.quantity} = ${item.total}`
+      })),
+      subtotal,
+      taxRate: estimate.taxRate,
+      discountValue: estimate.discountValue,
+      discountType: estimate.discountType
+    });
+
     // Calculate discount amount
     let discountAmount = 0;
     if (estimate.discountValue > 0) {
@@ -865,6 +880,14 @@ export default function EstimatesWizardFixed() {
     // Calculate tax on discounted amount
     const tax = subtotalAfterDiscount * (estimate.taxRate / 100);
     const total = subtotalAfterDiscount + tax;
+
+    console.log("🔍 FINAL TOTALS DEBUG", {
+      subtotal,
+      discountAmount,
+      subtotalAfterDiscount,
+      tax,
+      total
+    });
 
     setEstimate((prev) => ({
       ...prev,
@@ -2336,13 +2359,30 @@ export default function EstimatesWizardFixed() {
   const updateItemQuantity = (itemId: string, newQuantity: number) => {
     if (newQuantity <= 0) return;
 
+    console.log("🔍 UPDATE QUANTITY DEBUG - Starting", {
+      itemId,
+      newQuantity,
+    });
+
     setEstimate((prev) => ({
       ...prev,
-      items: prev.items.map((item) =>
-        item.id === itemId
-          ? { ...item, quantity: newQuantity, total: item.price * newQuantity }
-          : item,
-      ),
+      items: prev.items.map((item) => {
+        if (item.id === itemId) {
+          const newTotal = item.price * newQuantity;
+          console.log("🔍 UPDATE QUANTITY DEBUG - Item calculation", {
+            itemName: item.name,
+            itemPrice: item.price,
+            oldQuantity: item.quantity,
+            newQuantity,
+            oldTotal: item.total,
+            newTotal,
+            calculation: `${item.price} × ${newQuantity} = ${newTotal}`
+          });
+          
+          return { ...item, quantity: newQuantity, total: newTotal };
+        }
+        return item;
+      }),
     }));
   };
 
