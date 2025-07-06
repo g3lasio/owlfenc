@@ -451,14 +451,14 @@ export default function SimpleContractGenerator() {
           phone: editableData.clientPhone || contractData?.clientInfo?.phone || selectedProject.clientPhone || "",
         },
         project: {
-          description: contractData?.projectDetails?.description || selectedProject.description || selectedProject.projectType || "",
+          description: contractData?.projectDetails?.description || selectedProject.description || selectedProject.projectDescription || selectedProject.projectType || "",
           type: selectedProject.projectType || "Construction Project",
-          total: contractData?.financials?.total || selectedProject.totalAmount || selectedProject.total || 0,
+          total: parseFloat((contractData?.financials?.total || selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || selectedProject.total || 0).toString()),
           materials: contractData?.materials || selectedProject.materials || [],
         },
         contractor: {
-          name: "Professional Contractor", // Will be filled by backend from user profile
-          company: "Construction Company", // Will be filled by backend from user profile
+          name: "", // Will be filled by backend from user profile
+          company: "", // Will be filled by backend from user profile
         },
         timeline: {
           startDate: editableData.startDate || new Date().toISOString().split('T')[0],
@@ -468,7 +468,7 @@ export default function SimpleContractGenerator() {
             "To be agreed",
         },
         financials: {
-          total: contractData?.financials?.total || selectedProject.totalAmount || selectedProject.total || 0,
+          total: parseFloat((contractData?.financials?.total || selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || selectedProject.total || 0).toString()),
           paymentMilestones: editableData.paymentMilestones,
         },
         permitInfo: {

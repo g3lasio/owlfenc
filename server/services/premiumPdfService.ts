@@ -51,6 +51,24 @@ class PremiumPdfService {
     return PremiumPdfService.instance;
   }
 
+  /**
+   * Formats currency values properly, handling both cents and dollar amounts
+   */
+  private formatCurrency(amount: number): string {
+    // If amount seems to be in cents (over 1000 and not a normal dollar amount)
+    let dollarAmount = amount;
+    if (amount > 1000 && amount.toString().length > 4) {
+      // Could be in cents, convert to dollars
+      dollarAmount = amount / 100;
+    }
+    
+    // Format as currency
+    return dollarAmount.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
   generateProfessionalLegalContractHTML(data: ContractPdfData): string {
     const currentDate = new Date().toLocaleDateString('en-US', {
       year: 'numeric',
@@ -248,10 +266,10 @@ class PremiumPdfService {
                 <div class="party-box">
                     <div class="party-title">Contractor</div>
                     <div class="party-details">
-                        <p><strong>Business Name:</strong> ${data.contractor.name}</p>
-                        <p><strong>Business Address:</strong><br>${data.contractor.address}</p>
-                        <p><strong>Telephone:</strong> ${data.contractor.phone}</p>
-                        <p><strong>Email:</strong> ${data.contractor.email}</p>
+                        <p><strong>Business Name:</strong> ${data.contractor?.name || 'Professional Contractor'}</p>
+                        <p><strong>Business Address:</strong><br>${data.contractor?.address || 'Address not provided'}</p>
+                        <p><strong>Telephone:</strong> ${data.contractor?.phone || 'Phone not provided'}</p>
+                        <p><strong>Email:</strong> ${data.contractor?.email || 'Email not provided'}</p>
                     </div>
                 </div>
                 <div class="party-box">
@@ -293,7 +311,7 @@ class PremiumPdfService {
             <div class="numbered-section">
                 <p><span class="section-number">2. CONTRACT PRICE AND PAYMENT TERMS</span></p>
                 <p class="legal-text">
-                    The total contract price for all work, materials, and services described herein shall be <strong>$${data.financials.total.toLocaleString('en-US')} USD</strong>. Payment shall be made according to the following schedule: (a) Fifty percent (50%) of the total contract price is due and payable upon execution of this Agreement as a down payment, and (b) The remaining fifty percent (50%) balance is due and payable immediately upon substantial completion and Client's acceptance of the work. All payments shall be made in United States currency. Late payments shall accrue interest at the rate of one and one-half percent (1.5%) per month or the maximum rate permitted by law, whichever is less.
+                    The total contract price for all work, materials, and services described herein shall be <strong>$${this.formatCurrency(data.financials.total)} USD</strong>. Payment shall be made according to the following schedule: (a) Fifty percent (50%) of the total contract price is due and payable upon execution of this Agreement as a down payment, and (b) The remaining fifty percent (50%) balance is due and payable immediately upon substantial completion and Client's acceptance of the work. All payments shall be made in United States currency. Late payments shall accrue interest at the rate of one and one-half percent (1.5%) per month or the maximum rate permitted by law, whichever is less.
                 </p>
             </div>
 
@@ -437,7 +455,7 @@ class PremiumPdfService {
                 <div class="signature-box">
                     <div class="signature-title">CONTRACTOR</div>
                     <div class="signature-line"></div>
-                    <p><strong>${data.contractor.name}</strong></p>
+                    <p><strong>${data.contractor?.name || 'Professional Contractor'}</strong></p>
                     <p>Print Name</p>
                     <br>
                     <p>Date: <span class="date-line"></span></p>
