@@ -27,6 +27,67 @@ export interface MaterialInventoryItem {
 export class MaterialInventoryService {
   
   /**
+   * CÁLCULOS SEGUROS: Normaliza precios inflados que pueden venir de datos legacy
+   */
+  static normalizePriceValue(price: any): number {
+    const numericPrice = typeof price === 'number' ? price : parseFloat(price) || 0;
+    // Si el precio es > 1000, probablemente está en centavos, convertir a dólares
+    return numericPrice > 1000 ? Number((numericPrice / 100).toFixed(2)) : numericPrice;
+  }
+
+  /**
+   * CÁLCULOS SEGUROS: Corrige materiales existentes con precios inflados
+   */
+  static async fixInflatedPricesInDatabase(userId: string): Promise<{ corrected: number; errors: string[] }> {
+    const results = { corrected: 0, errors: [] as string[] };
+    
+    try {
+      console.log('🔧 STARTING PRICE CORRECTION: Fixing inflated prices for user:', userId);
+      
+      const materialsRef = collection(db, 'materials');
+      const userMaterialsQuery = query(materialsRef, where('userId', '==', userId));
+      const querySnapshot = await getDocs(userMaterialsQuery);
+      
+      for (const docSnapshot of querySnapshot.docs) {
+        const material = docSnapshot.data();
+        const originalPrice = material.price;
+        
+        if (originalPrice > 1000) {
+          const correctedPrice = this.normalizePriceValue(originalPrice);
+          
+          try {
+            await docSnapshot.ref.update({
+              price: correctedPrice,
+              updatedAt: serverTimestamp(),
+              priceCorrection: `Auto-corrected from ${originalPrice} to ${correctedPrice}`
+            });
+            
+            console.log(`✅ PRICE CORRECTED: ${material.name} - ${originalPrice} → ${correctedPrice}`);
+            results.corrected++;
+          } catch (error) {
+            console.error(`❌ Error correcting price for ${material.name}:`, error);
+            results.errors.push(`Failed to correct ${material.name}`);
+          }
+        }
+      }
+      
+      if (results.corrected > 0) {
+        console.log(`🎯 CORRECTION COMPLETE: Fixed ${results.corrected} inflated prices`);
+        toast({
+          title: "Precios Corregidos",
+          description: `Se corrigieron ${results.corrected} precios inflados automáticamente`,
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Error during price correction:', error);
+      results.errors.push('Failed to access database');
+    }
+    
+    return results;
+  }
+
+  /**
    * Agrega materiales automáticamente al inventario desde DeepSearch
    */
   static async addMaterialsFromDeepSearch(
@@ -71,15 +132,28 @@ export class MaterialInventoryService {
             continue;
           }
 
+          // CÁLCULOS SEGUROS: Normalizar precios para evitar valores inflados
+          const rawPrice = typeof material.price === 'number' ? material.price : 
+                          (typeof material.unitPrice === 'number' ? material.unitPrice : 
+                          parseFloat(material.price || material.unitPrice) || 0);
+          
+          // CÁLCULOS SEGUROS: Detectar y corregir precios inflados (> 1000 probablemente en centavos)
+          const normalizedPrice = rawPrice > 1000 ? Number((rawPrice / 100).toFixed(2)) : rawPrice;
+          
+          console.log('💰 PRICE NORMALIZATION:', {
+            materialName: material.name,
+            rawPrice,
+            normalizedPrice,
+            wasInflated: rawPrice > 1000
+          });
+
           // Preparar datos del material para Firebase
           const materialData: MaterialInventoryItem = {
             name: material.name,
             category: material.category || 'General',
             description: material.description || `Auto-generated from DeepSearch`,
             unit: material.unit,
-            price: typeof material.price === 'number' ? material.price : 
-                   (typeof material.unitPrice === 'number' ? material.unitPrice : 
-                   parseFloat(material.price || material.unitPrice) || 0),
+            price: normalizedPrice, // CÁLCULOS SEGUROS: usar precio normalizado
             supplier: material.supplier || '',
             supplierLink: material.supplierLink || '',
             sku: material.sku || '',

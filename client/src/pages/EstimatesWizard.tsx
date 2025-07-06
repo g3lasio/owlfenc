@@ -1155,15 +1155,31 @@ export default function EstimatesWizardFixed() {
       const materialsData: Material[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data() as Omit<Material, "id">;
+        
+        // CÁLCULOS SEGUROS: Normalizar precios inflados al cargar desde DB
+        let normalizedPrice = typeof data.price === "number" ? data.price : 0;
+        if (normalizedPrice > 1000) {
+          normalizedPrice = Number((normalizedPrice / 100).toFixed(2));
+          console.log(`💰 NORMALIZED PRICE: ${data.name} - ${data.price} → ${normalizedPrice}`);
+        }
+        
         const material: Material = {
           id: doc.id,
           ...data,
-          price: typeof data.price === "number" ? data.price : 0,
+          price: normalizedPrice, // CÁLCULOS SEGUROS: usar precio normalizado
         };
         materialsData.push(material);
       });
 
       setMaterials(materialsData);
+      
+      // CÁLCULOS SEGUROS: Corregir automáticamente precios inflados en la base de datos
+      try {
+        console.log('🔧 AUTO-CORRECTING INFLATED PRICES...');
+        await MaterialInventoryService.fixInflatedPricesInDatabase(currentUser.uid);
+      } catch (error) {
+        console.error('Error during automatic price correction:', error);
+      }
     } catch (error) {
       console.error("Error loading materials from Firebase:", error);
       toast({
