@@ -354,17 +354,16 @@ export default function EstimatesIntegrated() {
 
   // Add material from your existing materials database
   const addMaterialToEstimate = (material: Material, quantity: number = 1) => {
-    const priceInDollars = material.price / 100; // Convert from cents to dollars
-    
+    // MATEMÁTICA DIRECTA: usar precio exacto sin conversiones
     const newItem: EstimateItem = {
       id: `item_${Date.now()}`,
       materialId: material.id,
       name: material.name,
       description: material.description || '',
       quantity,
-      price: priceInDollars,
+      price: material.price, // Precio directo sin conversiones
       unit: material.unit,
-      total: priceInDollars * quantity
+      total: material.price * quantity // Cálculo directo: precio × cantidad
     };
 
     setEstimate(prev => ({

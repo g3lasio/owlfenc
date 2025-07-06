@@ -794,15 +794,11 @@ ${extractedText}`,
         laborHours: project.laborHours || 0,
         totalPrice: (() => {
           const rawAmount = project.totalPrice || project.totalAmount || project.grandTotal || project.total || project.estimateAmount || project.amount || project.cost || 0;
-          const numAmount = Number(rawAmount);
-          // If amount is likely in cents (over 100,000), convert to dollars
-          return numAmount > 100000 ? Math.round(numAmount / 100) : numAmount;
+          return Number(rawAmount); // MATEMÁTICA DIRECTA: usar valor exacto sin conversiones
         })(),
         totalAmount: (() => {
           const rawAmount = project.totalPrice || project.totalAmount || project.grandTotal || project.total || project.estimateAmount || project.amount || project.cost || 0;
-          const numAmount = Number(rawAmount);
-          // If amount is likely in cents (over 100,000), convert to dollars
-          return numAmount > 100000 ? Math.round(numAmount / 100) : numAmount;
+          return Number(rawAmount); // MATEMÁTICA DIRECTA: usar valor exacto sin conversiones
         })(),
         status: project.status || 'draft',
         paymentStatus: project.paymentStatus || 'pending',
@@ -876,10 +872,9 @@ ${extractedText}`,
         propertyAddress: project.propertyAddress
       });
 
-      // Convertir precio desde centavos si es necesario
+      // MATEMÁTICA DIRECTA: usar valor exacto del proyecto
       const rawAmount = project.totalPrice || project.totalAmount || project.grandTotal || project.total || project.estimateAmount || project.amount || project.cost || 0;
-      const numAmount = Number(rawAmount);
-      const finalAmount = numAmount > 100000 ? Math.round(numAmount / 100) : numAmount;
+      const finalAmount = Number(rawAmount);
 
       // Mapear datos del proyecto Firebase a formato de contrato
       const contractData = {
@@ -2662,11 +2657,9 @@ Output must be between 200-900 characters in English.`;
         status: status,
       };
 
-      // Add total price if available
+      // Add total price if available - MATEMÁTICA DIRECTA
       if (estimateData.rulesBasedEstimate?.totals?.total) {
-        projectData.totalPrice = Math.round(
-          estimateData.rulesBasedEstimate.totals.total * 100,
-        );
+        projectData.totalPrice = estimateData.rulesBasedEstimate.totals.total; // Almacenar en dólares directamente
       }
 
       // Save to database
