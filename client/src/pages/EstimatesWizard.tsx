@@ -880,6 +880,126 @@ export default function EstimatesWizardFixed() {
     estimate.discountValue,
   ]);
 
+  // AUTOGUARDADO INTELIGENTE: Actualizar proyecto existente cuando cambien datos críticos
+  useEffect(() => {
+    // Debounce timer to avoid excessive saves
+    const timeoutId = setTimeout(() => {
+      autoSaveEstimateChanges();
+    }, 2000); // Wait 2 seconds after changes
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    estimate.items,
+    estimate.taxRate,
+    estimate.discountType,
+    estimate.discountValue,
+    estimate.discountAmount,
+    estimate.discountName,
+    estimate.subtotal,
+    estimate.tax,
+    estimate.total,
+    estimate.client,
+    estimate.projectDetails
+  ]);
+
+  // Función de autoguardado que actualiza el proyecto existente
+  const autoSaveEstimateChanges = useCallback(async () => {
+    if (!currentUser?.uid || !estimate.client || estimate.items.length === 0) {
+      return; // No autoguardar si no hay datos válidos
+    }
+
+    try {
+      console.log("💾 AUTOGUARDADO: Actualizando proyecto existente...");
+
+      // Preparar datos completos del estimado con descuentos e impuestos
+      const estimateNumber = `EST-${Date.now()}`;
+      const estimateData = {
+        firebaseUserId: currentUser.uid,
+        estimateNumber,
+        
+        // Información completa del cliente
+        clientName: estimate.client.name,
+        clientEmail: estimate.client.email || "",
+        clientPhone: estimate.client.phone || "",
+        clientAddress: estimate.client.address || "",
+        clientInformation: estimate.client,
+        
+        // Detalles del proyecto
+        projectDescription: estimate.projectDetails,
+        projectType: "construction",
+        
+        // Items completos
+        items: estimate.items.map((item, index) => ({
+          id: item.id,
+          materialId: item.materialId || "",
+          name: item.name,
+          description: item.description || "",
+          quantity: item.quantity,
+          unit: item.unit || "unit",
+          unitPrice: Math.round(item.price * 100),
+          totalPrice: Math.round(item.total * 100),
+          sortOrder: index,
+          isOptional: false,
+        })),
+
+        // DATOS FINANCIEROS COMPLETOS (CRÍTICO)
+        subtotal: Math.round(estimate.subtotal * 100),
+        taxRate: Math.round(estimate.taxRate * 100),
+        taxAmount: Math.round(estimate.tax * 100),
+        
+        // DESCUENTOS COMPLETOS
+        discount: Math.round((estimate.discountAmount || 0) * 100),
+        discountType: estimate.discountType || "percentage",
+        discountValue: estimate.discountValue || 0,
+        discountAmount: Math.round((estimate.discountAmount || 0) * 100),
+        discountName: estimate.discountName || "",
+        
+        total: Math.round(estimate.total * 100),
+
+        // Display-friendly totals
+        displaySubtotal: estimate.subtotal,
+        displayTax: estimate.tax,
+        displayTotal: estimate.total,
+        displayDiscountAmount: estimate.discountAmount || 0,
+
+        // Metadata
+        status: "draft",
+        type: "estimate",
+        source: "estimates-wizard-autosave",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Buscar proyecto existente para el mismo cliente
+      const { collection, query, where, getDocs, addDoc, updateDoc, doc } = await import("firebase/firestore");
+      const { db } = await import("@/lib/firebase");
+
+      const existingQuery = query(
+        collection(db, "estimates"),
+        where("firebaseUserId", "==", currentUser.uid),
+        where("clientName", "==", estimate.client.name)
+      );
+
+      const querySnapshot = await getDocs(existingQuery);
+
+      if (!querySnapshot.empty) {
+        // Actualizar proyecto existente
+        const existingDoc = querySnapshot.docs[0];
+        const docRef = doc(db, "estimates", existingDoc.id);
+        await updateDoc(docRef, estimateData);
+        console.log("✅ AUTOGUARDADO: Proyecto actualizado:", existingDoc.id);
+      } else {
+        // Crear nuevo proyecto si no existe
+        const docRef = await addDoc(collection(db, "estimates"), estimateData);
+        console.log("✅ AUTOGUARDADO: Nuevo proyecto creado:", docRef.id);
+      }
+      
+    } catch (error) {
+      console.error("❌ AUTOGUARDADO: Error:", error);
+      // Silenciar errores de autoguardado para no interrumpir al usuario
+    }
+  }, [currentUser?.uid, estimate]);
+
   // Initialize company data when contractor profile loads
   useEffect(() => {
     if (contractor) {
@@ -1809,13 +1929,21 @@ export default function EstimatesWizardFixed() {
         subtotal: Math.round(estimate.subtotal * 100),
         taxRate: Math.round((estimate.taxRate || 10) * 100), // Store as basis points
         taxAmount: Math.round(estimate.tax * 100),
-        discount: 0, // Default discount
+        
+        // CRÍTICO: Guardar información completa de descuentos
+        discount: Math.round((estimate.discountAmount || 0) * 100), // Store discount amount in cents
+        discountType: estimate.discountType || "percentage",
+        discountValue: estimate.discountValue || 0,
+        discountAmount: Math.round((estimate.discountAmount || 0) * 100),
+        discountName: estimate.discountName || "",
+        
         total: Math.round(estimate.total * 100),
 
         // Display-friendly totals (for dashboard compatibility)
         displaySubtotal: estimate.subtotal,
         displayTax: estimate.tax,
         displayTotal: estimate.total,
+        displayDiscountAmount: estimate.discountAmount || 0,
 
         // Additional metadata for dashboard
         itemsCount: estimate.items.length,
