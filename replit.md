@@ -149,6 +149,14 @@ Changelog:
   * PRESERVED VALID CONVERSIONS: Kept necessary percentage calculations (discountValue/100, taxRate/100)
   * VERIFICATION COMPLETE: Grep confirms zero problematic conversions remaining in codebase
   * RESULT CONFIRMED: Calculations now show correct values ($485 × 194.25 = $942.11, Total: $3,148.63)
+- July 6, 2025. ✅ CRITICAL EMAIL PRIVACY FIX: Eliminated test mode redirection to protect contractor privacy:
+  * FIXED MAJOR ISSUE: Test mode was redirecting ALL contractor emails to gelasio@chyrris.com
+  * Updated getAppropriateRecipient() to only redirect system test emails, not contractor-to-client emails
+  * Each contratista now sends estimados directly to their own clients without interference
+  * Contractors receive their own estimate copies directly to their email addresses
+  * Removed automatic email content modification and redirection warnings
+  * System now respects contractor independence - no cross-contamination of emails
+  * Test mode only activates with FORCE_TEST_MODE=true environment variable for development
 - July 6, 2025. ✅ RESEND EMAIL SERVICE OPTIMIZATION: Enhanced contractor copy functionality with improved UX:
   * Confirmed existing "Send me a copy" checkbox functionality is working properly (lines 6894-6921)
   * Enhanced visual design with blue background, icons, and clear email destination display

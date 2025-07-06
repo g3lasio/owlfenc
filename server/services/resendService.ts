@@ -30,20 +30,26 @@ export class ResendEmailService {
 
   /**
    * Detectar si estamos en modo de prueba de Resend
+   * Solo activo para emails de prueba específicos del sistema
    */
   private isTestMode(): boolean {
-    // En modo test, Resend solo permite enviar a gelasio@chyrris.com
-    return true; // Asumimos modo test hasta verificar dominio
+    // Modo de prueba solo para desarrollo interno del sistema
+    return process.env.NODE_ENV === 'development' && process.env.FORCE_TEST_MODE === 'true';
   }
 
   /**
    * Obtener destinatario apropiado según el modo
+   * Solo redirige emails de prueba del sistema, NO emails de contratistas reales
    */
-  private getAppropriateRecipient(originalEmail: string): string {
-    if (this.isTestMode() && originalEmail !== this.testModeEmail) {
-      console.log(`🧪 [TEST-MODE] Redirigiendo ${originalEmail} a ${this.testModeEmail} (modo prueba)`);
+  private getAppropriateRecipient(originalEmail: string, isSystemTest: boolean = false): string {
+    // Solo redirigir si es una prueba específica del sistema
+    if (this.isTestMode() && isSystemTest && originalEmail !== this.testModeEmail) {
+      console.log(`🧪 [SYSTEM-TEST] Redirigiendo email de prueba del sistema ${originalEmail} a ${this.testModeEmail}`);
       return this.testModeEmail;
     }
+    
+    // IMPORTANTE: Los emails de contratistas a clientes reales SIEMPRE van directamente
+    console.log(`📧 [PRODUCTION] Enviando email directamente a: ${originalEmail}`);
     return originalEmail;
   }
 
@@ -94,28 +100,15 @@ export class ResendEmailService {
       const contractorNoReplyEmail = this.generateContractorNoReplyEmail(params.contractorEmail, params.contractorCompany);
       console.log('📧 [CONTRACTOR-EMAIL] Email no-reply generado:', contractorNoReplyEmail);
 
-      // Aplicar detección de modo de prueba
-      const finalRecipient = this.getAppropriateRecipient(params.toEmail);
+      // Los emails de contratistas van directamente a clientes reales (NO redirección)
+      const finalRecipient = this.getAppropriateRecipient(params.toEmail, false);
       
-      // Agregar nota de modo de prueba al HTML si es necesario
+      // Los emails van directamente sin modificación de contenido
       let finalHtmlContent = params.htmlContent;
-      if (this.isTestMode() && finalRecipient !== params.toEmail) {
-        const testModeNote = `
-          <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 8px; color: #856404;">
-            <h4 style="margin: 0 0 10px 0; color: #856404;">🧪 Modo de Prueba Activo</h4>
-            <p style="margin: 0; font-size: 14px;">
-              Este estimado fue originalmente dirigido a <strong>${params.toEmail}</strong> (${params.toName}), 
-              pero se está enviando a ${this.testModeEmail} debido al modo de prueba de Resend. 
-              Para enviar a cualquier dirección, verifique un dominio en resend.com/domains.
-            </p>
-          </div>
-        `;
-        finalHtmlContent = finalHtmlContent.replace('<body', testModeNote + '<body');
-      }
       
       // Intentar enviar email desde dominio del contratista
       let clientEmailResult = await this.sendEmail({
-        to: finalRecipient,
+        to: params.toEmail,
         from: contractorNoReplyEmail,
         subject: params.subject,
         html: finalHtmlContent,
@@ -132,7 +125,7 @@ export class ResendEmailService {
         // Estrategia 1: Intentar con email directo del contratista
         console.log('📧 [CONTRACTOR-DIRECT] Intentando con email directo del contratista...');
         const directEmailResult = await this.sendEmail({
-          to: finalRecipient, // Usar mismo destinatario procesado
+          to: params.toEmail, // Email directo del cliente sin redirección
           from: params.contractorEmail, // Email directo del contratista
           subject: params.subject,
           html: finalHtmlContent,
@@ -160,8 +153,8 @@ export class ResendEmailService {
       if (clientEmailResult && params.sendCopyToContractor) {
         console.log('📧 [CONTRACTOR-EMAIL] Enviando copia al contratista...');
         
-        // Aplicar mismo proceso de detección de modo de prueba para la copia
-        const contractorRecipient = this.getAppropriateRecipient(params.contractorEmail);
+        // Los contratistas SIEMPRE reciben sus propias copias sin redirección
+        const contractorRecipient = params.contractorEmail;
         
         const copyHtml = `
           <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #4caf50;">
@@ -171,7 +164,6 @@ export class ResendEmailService {
               <strong>Desde:</strong> ${contractorNoReplyEmail}<br>
               <strong>Reply-To:</strong> ${params.contractorEmail}<br>
               <strong>Fecha:</strong> ${new Date().toLocaleString('es-ES')}
-              ${contractorRecipient !== params.contractorEmail ? `<br><strong>Nota:</strong> Copia redirigida a ${contractorRecipient} (modo prueba)` : ''}
             </p>
           </div>
           ${params.htmlContent}
