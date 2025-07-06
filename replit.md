@@ -149,6 +149,14 @@ Changelog:
   * PRESERVED VALID CONVERSIONS: Kept necessary percentage calculations (discountValue/100, taxRate/100)
   * VERIFICATION COMPLETE: Grep confirms zero problematic conversions remaining in codebase
   * RESULT CONFIRMED: Calculations now show correct values ($485 × 194.25 = $942.11, Total: $3,148.63)
+- July 6, 2025. ✅ RESEND EMAIL SERVICE OPTIMIZATION: Enhanced contractor copy functionality with improved UX:
+  * Confirmed existing "Send me a copy" checkbox functionality is working properly (lines 6894-6921)
+  * Enhanced visual design with blue background, icons, and clear email destination display
+  * Optimized user experience by making contractor copy checkbox checked by default
+  * Verified RESEND_API_KEY configuration and successful email delivery (IDs: 0d9b38df, 7a9a119f)
+  * System supports multi-tenant contractor-specific emails with comprehensive fallback strategies
+  * Test mode configured properly redirecting emails to gelasio@chyrris.com until domain verification
+  * Backend contractor copy system fully functional with sendCopyToContractor parameter working
 - July 6, 2025. ✅ CONTRACTOR DATA FIX: Resolved estimates PDF generation phone and email issues:
   * Removed hardcoded fallback values "(555) 123-4567" and "truthbackpack@gmail.com" from backend
   * Updated frontend EstimatesWizard to send complete contractor profile data in PDF generation payload

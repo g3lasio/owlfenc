@@ -2854,7 +2854,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 ✅ Schedule your project start date as soon as possible!
 
 *"Your project, our passion. Quality guaranteed."*`,
-        sendCopy: true,
+        sendCopy: true, // Predeterminado: siempre enviar copia al contratista
       });
     }
   }, [showEmailDialog, estimate.client, profile]);
@@ -6891,31 +6891,37 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     </p>
                   </div>
 
-                  {/* Send Copy Option */}
+                  {/* Send Copy Option - Enhanced */}
                   <div className="pt-2">
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        id="sendCopy"
-                        checked={emailData.sendCopy}
-                        onChange={(e) =>
-                          setEmailData((prev) => ({
-                            ...prev,
-                            sendCopy: e.target.checked,
-                          }))
-                        }
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div className="flex-1">
-                        <Label
-                          htmlFor="sendCopy"
-                          className="text-sm font-medium text-gray-700 cursor-pointer"
-                        >
-                          Send me a copy
-                        </Label>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          Copy will be sent to: {profile?.email || "your email"}
-                        </p>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          id="sendCopy"
+                          checked={emailData.sendCopy}
+                          onChange={(e) =>
+                            setEmailData((prev) => ({
+                              ...prev,
+                              sendCopy: e.target.checked,
+                            }))
+                          }
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <div className="flex-1">
+                          <Label
+                            htmlFor="sendCopy"
+                            className="text-sm font-medium text-blue-700 cursor-pointer flex items-center gap-2"
+                          >
+                            <Mail className="h-4 w-4" />
+                            Enviarme una copia del estimado
+                          </Label>
+                          <p className="text-xs text-blue-600 mt-1">
+                            📧 Copia será enviada a: <span className="font-mono bg-white px-2 py-0.5 rounded">{profile?.email || "tu email"}</span>
+                          </p>
+                          <p className="text-xs text-blue-500 mt-1">
+                            ✓ Te permite hacer seguimiento del estimado enviado
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
