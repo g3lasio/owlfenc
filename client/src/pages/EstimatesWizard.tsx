@@ -928,7 +928,7 @@ export default function EstimatesWizardFixed() {
         projectDescription: estimate.projectDetails,
         projectType: "construction",
         
-        // Items completos
+        // Items completos - VALORES DIRECTOS SIN CONVERSIONES
         items: estimate.items.map((item, index) => ({
           id: item.id,
           materialId: item.materialId || "",
@@ -936,27 +936,30 @@ export default function EstimatesWizardFixed() {
           description: item.description || "",
           quantity: item.quantity,
           unit: item.unit || "unit",
-          unitPrice: Math.round(item.price * 100),
-          totalPrice: Math.round(item.total * 100),
+          unitPrice: item.price, // NO convertir a centavos
+          price: item.price, // Agregar precio directo
+          totalPrice: item.total, // NO convertir a centavos
+          total: item.total, // Agregar total directo
           sortOrder: index,
           isOptional: false,
         })),
 
-        // DATOS FINANCIEROS COMPLETOS (CRÍTICO)
-        subtotal: Math.round(estimate.subtotal * 100),
-        taxRate: Math.round(estimate.taxRate * 100),
-        taxAmount: Math.round(estimate.tax * 100),
+        // DATOS FINANCIEROS DIRECTOS - SIN CONVERSIONES A CENTAVOS
+        subtotal: estimate.subtotal,
+        taxRate: estimate.taxRate,
+        taxAmount: estimate.tax,
+        tax: estimate.tax, // Agregar tax directo
         
-        // DESCUENTOS COMPLETOS
-        discount: Math.round((estimate.discountAmount || 0) * 100),
+        // DESCUENTOS DIRECTOS - SIN CONVERSIONES
+        discount: estimate.discountAmount || 0,
         discountType: estimate.discountType || "percentage",
         discountValue: estimate.discountValue || 0,
-        discountAmount: Math.round((estimate.discountAmount || 0) * 100),
+        discountAmount: estimate.discountAmount || 0,
         discountName: estimate.discountName || "",
         
-        total: Math.round(estimate.total * 100),
+        total: estimate.total,
 
-        // Display-friendly totals
+        // Display-friendly totals (mismos valores)
         displaySubtotal: estimate.subtotal,
         displayTax: estimate.tax,
         displayTotal: estimate.total,
@@ -1595,9 +1598,24 @@ export default function EstimatesWizardFixed() {
               );
               const rawTotal = parseFloat(item.total || item.totalPrice || 0);
 
-              // Detectar si los valores están en centavos - si el precio es > 500, dividir por 100
-              const price = rawPrice > 500 ? rawPrice / 100 : rawPrice;
-              const total = rawTotal > 500 ? rawTotal / 100 : rawTotal;
+              // NORMALIZAR PRECIOS: Aplicar conversión inteligente
+              let price = rawPrice;
+              let total = rawTotal;
+              
+              // Si el precio es mayor a 1000, probablemente está en centavos
+              if (rawPrice > 1000) {
+                price = rawPrice / 100;
+              }
+              
+              // Si el total es mayor a 1000, probablemente está en centavos
+              if (rawTotal > 1000) {
+                total = rawTotal / 100;
+              }
+              
+              // Si no hay total, calcularlo correctamente
+              if (!total || total === 0) {
+                total = price * quantity;
+              }
 
               return {
                 id: item.id || `item-${index}`,
@@ -1623,9 +1641,24 @@ export default function EstimatesWizardFixed() {
             const rawPrice = parseFloat(item.unitPrice || item.price || 0);
             const rawTotal = parseFloat(item.totalPrice || item.total || 0);
 
-            // Detectar si los valores están en centavos - si el precio es > 500, dividir por 100
-            const price = rawPrice > 500 ? rawPrice / 100 : rawPrice;
-            const total = rawTotal > 500 ? rawTotal / 100 : rawTotal;
+            // NORMALIZAR PRECIOS: Aplicar conversión inteligente
+            let price = rawPrice;
+            let total = rawTotal;
+            
+            // Si el precio es mayor a 1000, probablemente está en centavos
+            if (rawPrice > 1000) {
+              price = rawPrice / 100;
+            }
+            
+            // Si el total es mayor a 1000, probablemente está en centavos
+            if (rawTotal > 1000) {
+              total = rawTotal / 100;
+            }
+            
+            // Si no hay total, calcularlo correctamente
+            if (!total || total === 0) {
+              total = price * quantity;
+            }
 
             return {
               id: item.id || `item-${index}`,

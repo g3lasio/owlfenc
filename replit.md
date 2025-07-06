@@ -137,6 +137,14 @@ Owl Fence is a comprehensive SaaS platform designed for contractors in the const
 ## Changelog
 ```
 Changelog:
+- July 6, 2025. CRITICAL FIX: Eliminated incorrect cost calculation conversions:
+  * Removed all price-to-centavos conversions that were multiplying costs incorrectly
+  * Implemented direct calculation system: material cost × quantity = total (no conversions)
+  * Fixed autoguardado to store values in dollars, not cents, eliminating multiplication errors
+  * Added intelligent price normalization for legacy data (converts cent values > 1000 back to dollars)
+  * System now calculates exactly: $485 × 194.25 = $942.11 instead of inflated amounts
+  * Enhanced autoguardado to preserve discount and tax data accurately without conversions
+  * All financial calculations now work with simple, accurate arithmetic as requested
 - June 16, 2025. Initial setup
 - June 16, 2025. Fixed critical PDF generation system:
   * Resolved corrupted PDF files - now generates real binary PDFs instead of HTML/JSON responses
