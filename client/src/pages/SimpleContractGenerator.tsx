@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Database, Eye, FileText, CheckCircle, Plus, Trash2, Edit2, Sparkles, Shield, AlertCircle, DollarSign, Calendar, Wrench, FileCheck, Loader2, Brain, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 // Simple 3-step contract generator without complex state management
 export default function SimpleContractGenerator() {
@@ -139,10 +141,54 @@ export default function SimpleContractGenerator() {
     }
   }, [currentUser?.uid, toast]);
 
-  // Load projects when component mounts
+  // Set up real-time Firebase listener for projects
   useEffect(() => {
-    loadProjects();
-  }, [loadProjects]);
+    if (!currentUser?.uid) return;
+
+    console.log("🔄 Setting up real-time project listener for user:", currentUser.uid);
+    
+    const projectsQuery = query(
+      collection(db, "projects"),
+      where("userId", "==", currentUser.uid)
+    );
+    
+    // Real-time listener
+    const unsubscribe = onSnapshot(projectsQuery, 
+      (snapshot) => {
+        const allProjects = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        // Filter approved projects with expanded criteria
+        const approvedProjects = allProjects.filter((project: any) => 
+          project.status === "approved" || 
+          project.status === "estimate_ready" || 
+          project.status === "estimate" ||
+          project.projectProgress === "approved" ||
+          project.projectProgress === "client_approved" ||
+          project.projectProgress === "estimate_ready" ||
+          project.displaySubtotal > 0
+        );
+        
+        setProjects(approvedProjects);
+        console.log(`📊 Real-time update: ${approvedProjects.length} approved projects`);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error("Firebase listener error:", error);
+        toast({
+          title: "Connection Error",
+          description: "Real-time updates unavailable. Please refresh the page.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+      }
+    );
+
+    // Cleanup listener on unmount
+    return () => unsubscribe();
+  }, [currentUser?.uid, toast]);
   
   // Initialize editable data when project is selected
   useEffect(() => {
@@ -150,10 +196,10 @@ export default function SimpleContractGenerator() {
       const totalAmount = selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0;
       setEditableData(prev => ({
         ...prev,
-        clientName: selectedProject.clientName || selectedProject.client || '',
-        clientEmail: selectedProject.clientEmail || '',
-        clientPhone: selectedProject.clientPhone || '',
-        clientAddress: selectedProject.clientAddress || selectedProject.address || '',
+        clientName: selectedProject.clientName || selectedProject.client?.name || selectedProject.client || '',
+        clientEmail: selectedProject.clientEmail || selectedProject.client?.email || '',
+        clientPhone: selectedProject.clientPhone || selectedProject.client?.phone || '',
+        clientAddress: selectedProject.clientAddress || selectedProject.client?.address || selectedProject.address || '',
         paymentMilestones: [
           { id: 1, description: "Initial deposit", percentage: 50, amount: totalAmount * 0.5 },
           { id: 2, description: "Project completion", percentage: 50, amount: totalAmount * 0.5 }
@@ -166,34 +212,41 @@ export default function SimpleContractGenerator() {
   const handleProjectSelect = useCallback(async (project: any) => {
     setIsLoading(true);
     try {
-      // Process project data directly for contract generation
+      // Process project data comprehensively from all possible sources
       const contractData = {
         clientInfo: {
-          name: project.clientName,
-          address: project.address || project.clientAddress || "",
-          email: project.clientEmail || "",
-          phone: project.clientPhone || "",
+          name: project.clientName || project.client?.name || project.client || "",
+          address: project.address || project.clientAddress || project.client?.address || "",
+          email: project.clientEmail || project.client?.email || "",
+          phone: project.clientPhone || project.client?.phone || "",
         },
         projectDetails: {
           description: project.projectDescription || project.description || project.projectType || "",
           type: project.projectType || "Construction Project",
         },
         financials: {
-          total: project.totalAmount || project.totalPrice || 0,
+          total: project.totalAmount || project.totalPrice || project.displaySubtotal || project.total || 0,
         },
-        materials: project.materials || [],
+        materials: project.materials || project.items || [],
       };
       
       setSelectedProject(project);
       setContractData(contractData);
       
-      // Initialize editable data
-      const totalAmount = contractData.financials.total;
+      // Initialize editable data with all available project data
+      const totalAmount = project.totalAmount || project.totalPrice || project.displaySubtotal || project.total || 0;
+      
+      // Extract client data from various possible sources
+      const clientName = project.clientName || project.client?.name || project.client || "";
+      const clientEmail = project.clientEmail || project.client?.email || "";
+      const clientPhone = project.clientPhone || project.client?.phone || "";
+      const clientAddress = project.clientAddress || project.client?.address || project.address || "";
+      
       setEditableData({
-        clientName: project.clientName || "",
-        clientEmail: project.clientEmail || "",
-        clientPhone: project.clientPhone || "",
-        clientAddress: project.clientAddress || "",
+        clientName,
+        clientEmail,
+        clientPhone,
+        clientAddress,
         startDate: "",
         completionDate: "",
         permitResponsibility: "contractor",
@@ -347,8 +400,23 @@ export default function SimpleContractGenerator() {
     setSelectedProject(null);
     setContractData(null);
     setGeneratedContract("");
-    loadProjects();
-  }, [loadProjects]);
+    setEditableData({
+      clientName: "",
+      clientEmail: "",
+      clientPhone: "",
+      clientAddress: "",
+      startDate: "",
+      completionDate: "",
+      permitResponsibility: "contractor",
+      warrantyYears: "1",
+      paymentMilestones: [
+        { id: 1, description: "Initial deposit", percentage: 50, amount: 0 },
+        { id: 2, description: "Project completion", percentage: 50, amount: 0 }
+      ]
+    });
+    setSuggestedClauses([]);
+    setSelectedClauses([]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
@@ -414,11 +482,21 @@ export default function SimpleContractGenerator() {
                         <div className="flex justify-between items-center">
                           <div>
                             <h3 className="font-semibold text-white">
-                              {project.clientName || project.client || `Project ${project.estimateNumber || project.id}`}
+                              {project.clientName || project.client?.name || project.client || `Project ${project.estimateNumber || project.id}`}
                             </h3>
                             <p className="text-gray-400 text-sm">
                               {project.projectType || project.description || "Project"} - ${(project.totalAmount || project.totalPrice || project.displaySubtotal || 0).toLocaleString()}
                             </p>
+                            {/* Real-time data indicators */}
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-gray-500">
+                                Email: {project.clientEmail || project.client?.email || "Not set"}
+                              </span>
+                              <span className="text-xs text-gray-500">•</span>
+                              <span className="text-xs text-gray-500">
+                                Phone: {project.clientPhone || project.client?.phone || "Not set"}
+                              </span>
+                            </div>
                           </div>
                           <Button
                             variant="outline"
@@ -434,12 +512,9 @@ export default function SimpleContractGenerator() {
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-gray-400">No approved projects found</p>
-                    <Button
-                      onClick={loadProjects}
-                      className="mt-4 bg-cyan-600 hover:bg-cyan-500"
-                    >
-                      Refresh Projects
-                    </Button>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Create an estimate first to generate contracts
+                    </p>
                   </div>
                 )}
               </div>
