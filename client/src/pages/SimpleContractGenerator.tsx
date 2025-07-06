@@ -8,7 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Database, Eye, FileText, CheckCircle, Plus, Trash2, Edit2, Sparkles, Shield, AlertCircle, DollarSign, Calendar, Wrench, FileCheck, Loader2 } from "lucide-react";
+import { Database, Eye, FileText, CheckCircle, Plus, Trash2, Edit2, Sparkles, Shield, AlertCircle, DollarSign, Calendar, Wrench, FileCheck, Loader2, Brain, RefreshCw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 // Simple 3-step contract generator without complex state management
 export default function SimpleContractGenerator() {
@@ -33,17 +34,19 @@ export default function SimpleContractGenerator() {
     paymentMilestones: [
       { id: 1, description: "Initial deposit", percentage: 50, amount: 0 },
       { id: 2, description: "Project completion", percentage: 50, amount: 0 }
-    ],
-    suggestedClauses: [] as any[],
-    selectedClauses: [] as string[],
-    customClauses: [] as string[]
+    ]
   });
+  
+  const [suggestedClauses, setSuggestedClauses] = useState<any[]>([]);
+  const [selectedClauses, setSelectedClauses] = useState<string[]>([]);
   
   const { currentUser } = useAuth();
   const { toast } = useToast();
   
-  // Load AI-suggested legal clauses
-  const loadSuggestedClauses = async (project: any) => {
+  // Fetch AI-suggested legal clauses
+  const fetchAISuggestedClauses = useCallback(async () => {
+    if (!selectedProject) return;
+    
     setIsLoadingClauses(true);
     try {
       const response = await fetch('/api/legal-defense/suggest-clauses', {
@@ -52,42 +55,36 @@ export default function SimpleContractGenerator() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          projectType: project.projectType || 'construction',
-          projectValue: project.totalAmount || project.totalPrice || 0,
-          location: project.clientAddress || '',
-          projectDescription: project.projectDescription || ''
+          projectType: selectedProject.projectType || 'construction',
+          projectValue: selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0,
+          location: selectedProject.clientAddress || editableData.clientAddress || '',
+          projectDescription: selectedProject.projectDescription || ''
         }),
       });
 
       if (!response.ok) throw new Error('Failed to load clause suggestions');
       
       const data = await response.json();
-      setEditableData(prev => ({
-        ...prev,
-        suggestedClauses: data.clauses || [],
-        selectedClauses: data.clauses?.filter((c: any) => c.mandatory).map((c: any) => c.id) || []
-      }));
+      setSuggestedClauses(data.clauses || []);
+      setSelectedClauses(data.clauses?.filter((c: any) => c.mandatory).map((c: any) => c.id) || []);
     } catch (error) {
       console.error('Error loading clause suggestions:', error);
       // Use default clauses if AI fails
       const defaultClauses = [
-        { id: 'liability', name: 'Limitation of Liability', description: 'Limits contractor liability to contract value', mandatory: true, riskLevel: 'high' },
-        { id: 'indemnity', name: 'Indemnification', description: 'Client indemnifies contractor from third-party claims', mandatory: true, riskLevel: 'high' },
-        { id: 'warranty', name: 'Warranty Terms', description: 'Limited warranty on workmanship and materials', mandatory: false, riskLevel: 'medium' },
-        { id: 'payment', name: 'Payment Terms', description: 'Late payment penalties and collection rights', mandatory: true, riskLevel: 'medium' },
-        { id: 'scope', name: 'Scope Changes', description: 'Additional work requires written change orders', mandatory: false, riskLevel: 'low' },
-        { id: 'force-majeure', name: 'Force Majeure', description: 'Protection from unforeseeable circumstances', mandatory: false, riskLevel: 'medium' }
+        { id: 'liability', title: 'Limitation of Liability', description: 'Limits contractor liability to contract value', mandatory: true, risk: 'high' },
+        { id: 'indemnity', title: 'Indemnification', description: 'Client indemnifies contractor from third-party claims', mandatory: true, risk: 'high' },
+        { id: 'warranty', title: 'Warranty Terms', description: 'Limited warranty on workmanship and materials', mandatory: false, risk: 'medium' },
+        { id: 'payment', title: 'Payment Terms', description: 'Late payment penalties and collection rights', mandatory: true, risk: 'medium' },
+        { id: 'scope', title: 'Scope Changes', description: 'Additional work requires written change orders', mandatory: false, risk: 'low' },
+        { id: 'force-majeure', title: 'Force Majeure', description: 'Protection from unforeseeable circumstances', mandatory: false, risk: 'medium' }
       ];
       
-      setEditableData(prev => ({
-        ...prev,
-        suggestedClauses: defaultClauses,
-        selectedClauses: defaultClauses.filter(c => c.mandatory).map(c => c.id)
-      }));
+      setSuggestedClauses(defaultClauses);
+      setSelectedClauses(defaultClauses.filter(c => c.mandatory).map(c => c.id));
     } finally {
       setIsLoadingClauses(false);
     }
-  };
+  }, [selectedProject, editableData.clientAddress]);
 
   // Load projects for step 1
   const loadProjects = useCallback(async () => {
@@ -146,6 +143,24 @@ export default function SimpleContractGenerator() {
   useEffect(() => {
     loadProjects();
   }, [loadProjects]);
+  
+  // Initialize editable data when project is selected
+  useEffect(() => {
+    if (selectedProject) {
+      const totalAmount = selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0;
+      setEditableData(prev => ({
+        ...prev,
+        clientName: selectedProject.clientName || selectedProject.client || '',
+        clientEmail: selectedProject.clientEmail || '',
+        clientPhone: selectedProject.clientPhone || '',
+        clientAddress: selectedProject.clientAddress || selectedProject.address || '',
+        paymentMilestones: [
+          { id: 1, description: "Initial deposit", percentage: 50, amount: totalAmount * 0.5 },
+          { id: 2, description: "Project completion", percentage: 50, amount: totalAmount * 0.5 }
+        ]
+      }));
+    }
+  }, [selectedProject]);
 
   // Step 1: Select project and move to step 2 with direct data processing
   const handleProjectSelect = useCallback(async (project: any) => {
@@ -229,10 +244,10 @@ export default function SimpleContractGenerator() {
       const contractPayload = {
         userId: currentUser.uid,
         client: {
-          name: contractData?.clientInfo?.name || selectedProject.clientName,
-          address: contractData?.clientInfo?.address || selectedProject.address || selectedProject.clientAddress || "",
-          email: contractData?.clientInfo?.email || selectedProject.clientEmail || "",
-          phone: contractData?.clientInfo?.phone || selectedProject.clientPhone || "",
+          name: editableData.clientName || contractData?.clientInfo?.name || selectedProject.clientName,
+          address: editableData.clientAddress || contractData?.clientInfo?.address || selectedProject.address || selectedProject.clientAddress || "",
+          email: editableData.clientEmail || contractData?.clientInfo?.email || selectedProject.clientEmail || "",
+          phone: editableData.clientPhone || contractData?.clientInfo?.phone || selectedProject.clientPhone || "",
         },
         project: {
           description: contractData?.projectDetails?.description || selectedProject.description || selectedProject.projectType || "",
@@ -245,19 +260,27 @@ export default function SimpleContractGenerator() {
           company: "Construction Company", // Will be filled by backend from user profile
         },
         timeline: {
-          startDate: new Date().toISOString().split('T')[0],
-          completionDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          estimatedDuration: "30 days",
+          startDate: editableData.startDate || new Date().toISOString().split('T')[0],
+          completionDate: editableData.completionDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          estimatedDuration: editableData.startDate && editableData.completionDate ? 
+            `${Math.ceil((new Date(editableData.completionDate).getTime() - new Date(editableData.startDate).getTime()) / (1000 * 60 * 60 * 24))} days` : 
+            "To be agreed",
         },
         financials: {
           total: contractData?.financials?.total || selectedProject.totalAmount || selectedProject.total || 0,
-          depositAmount: Math.round((contractData?.financials?.total || selectedProject.totalAmount || selectedProject.total || 0) * 0.5),
-          finalAmount: Math.round((contractData?.financials?.total || selectedProject.totalAmount || selectedProject.total || 0) * 0.5),
+          paymentMilestones: editableData.paymentMilestones,
         },
         permitInfo: {
           required: true,
-          responsibility: "contractor",
+          responsibility: editableData.permitResponsibility,
           numbers: "",
+        },
+        warranty: {
+          years: editableData.warrantyYears,
+        },
+        legalClauses: {
+          selected: selectedClauses,
+          clauses: suggestedClauses.filter(c => selectedClauses.includes(c.id))
         },
         insuranceInfo: {
           general: { required: true, amount: "$1,000,000" },
