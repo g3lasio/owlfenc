@@ -1,9 +1,14 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Database, Eye, FileText, CheckCircle } from "lucide-react";
+import { Database, Eye, FileText, CheckCircle, Plus, Trash2, Edit2, Sparkles, Shield, AlertCircle, DollarSign, Calendar, Wrench, FileCheck, Loader2 } from "lucide-react";
 
 // Simple 3-step contract generator without complex state management
 export default function SimpleContractGenerator() {
@@ -13,9 +18,76 @@ export default function SimpleContractGenerator() {
   const [generatedContract, setGeneratedContract] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
+  const [isLoadingClauses, setIsLoadingClauses] = useState(false);
+  
+  // Editable fields state
+  const [editableData, setEditableData] = useState({
+    clientName: "",
+    clientEmail: "",
+    clientPhone: "",
+    clientAddress: "",
+    startDate: "",
+    completionDate: "",
+    permitResponsibility: "contractor",
+    warrantyYears: "1",
+    paymentMilestones: [
+      { id: 1, description: "Initial deposit", percentage: 50, amount: 0 },
+      { id: 2, description: "Project completion", percentage: 50, amount: 0 }
+    ],
+    suggestedClauses: [] as any[],
+    selectedClauses: [] as string[],
+    customClauses: [] as string[]
+  });
   
   const { currentUser } = useAuth();
   const { toast } = useToast();
+  
+  // Load AI-suggested legal clauses
+  const loadSuggestedClauses = async (project: any) => {
+    setIsLoadingClauses(true);
+    try {
+      const response = await fetch('/api/legal-defense/suggest-clauses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectType: project.projectType || 'construction',
+          projectValue: project.totalAmount || project.totalPrice || 0,
+          location: project.clientAddress || '',
+          projectDescription: project.projectDescription || ''
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to load clause suggestions');
+      
+      const data = await response.json();
+      setEditableData(prev => ({
+        ...prev,
+        suggestedClauses: data.clauses || [],
+        selectedClauses: data.clauses?.filter((c: any) => c.mandatory).map((c: any) => c.id) || []
+      }));
+    } catch (error) {
+      console.error('Error loading clause suggestions:', error);
+      // Use default clauses if AI fails
+      const defaultClauses = [
+        { id: 'liability', name: 'Limitation of Liability', description: 'Limits contractor liability to contract value', mandatory: true, riskLevel: 'high' },
+        { id: 'indemnity', name: 'Indemnification', description: 'Client indemnifies contractor from third-party claims', mandatory: true, riskLevel: 'high' },
+        { id: 'warranty', name: 'Warranty Terms', description: 'Limited warranty on workmanship and materials', mandatory: false, riskLevel: 'medium' },
+        { id: 'payment', name: 'Payment Terms', description: 'Late payment penalties and collection rights', mandatory: true, riskLevel: 'medium' },
+        { id: 'scope', name: 'Scope Changes', description: 'Additional work requires written change orders', mandatory: false, riskLevel: 'low' },
+        { id: 'force-majeure', name: 'Force Majeure', description: 'Protection from unforeseeable circumstances', mandatory: false, riskLevel: 'medium' }
+      ];
+      
+      setEditableData(prev => ({
+        ...prev,
+        suggestedClauses: defaultClauses,
+        selectedClauses: defaultClauses.filter(c => c.mandatory).map(c => c.id)
+      }));
+    } finally {
+      setIsLoadingClauses(false);
+    }
+  };
 
   // Load projects for step 1
   const loadProjects = useCallback(async () => {
@@ -99,7 +171,31 @@ export default function SimpleContractGenerator() {
       
       setSelectedProject(project);
       setContractData(contractData);
+      
+      // Initialize editable data
+      const totalAmount = contractData.financials.total;
+      setEditableData({
+        clientName: project.clientName || "",
+        clientEmail: project.clientEmail || "",
+        clientPhone: project.clientPhone || "",
+        clientAddress: project.clientAddress || "",
+        startDate: "",
+        completionDate: "",
+        permitResponsibility: "contractor",
+        warrantyYears: "1",
+        paymentMilestones: [
+          { id: 1, description: "Initial deposit", percentage: 50, amount: totalAmount * 0.5 },
+          { id: 2, description: "Project completion", percentage: 50, amount: totalAmount * 0.5 }
+        ],
+        suggestedClauses: [],
+        selectedClauses: [],
+        customClauses: []
+      });
+      
       setCurrentStep(2);
+      
+      // Load AI-suggested clauses
+      loadSuggestedClauses(project);
       
       toast({
         title: "Project Selected",
@@ -334,128 +430,309 @@ export default function SimpleContractGenerator() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-cyan-400">
                 <Eye className="h-5 w-5" />
-                Step 2: Review & Generate Contract
+                Step 2: Review & Customize Contract
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">{/* Removed max-h-96 overflow-y-auto for now */}
-                {/* Project Details */}
+              <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2">
+                {/* Editable Client Information */}
                 <div className="border border-gray-600 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-3 text-cyan-400">📋 Project Information</h3>
+                  <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">
+                    <Edit2 className="h-4 w-4" />
+                    Client Information (Editable)
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-gray-400">Client:</p>
-                      <p className="text-white font-semibold">{selectedProject.clientName || selectedProject.client || `Project ${selectedProject.estimateNumber}`}</p>
+                      <Label className="text-gray-400">Client Name</Label>
+                      <Input
+                        value={editableData.clientName}
+                        onChange={(e) => setEditableData(prev => ({ ...prev, clientName: e.target.value }))}
+                        className="bg-gray-800 border-gray-600 text-white"
+                      />
                     </div>
                     <div>
-                      <p className="text-gray-400">Total Amount:</p>
-                      <p className="text-green-400 font-bold">${(selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0).toLocaleString()}</p>
+                      <Label className="text-gray-400">Client Email</Label>
+                      <Input
+                        type="email"
+                        value={editableData.clientEmail}
+                        onChange={(e) => setEditableData(prev => ({ ...prev, clientEmail: e.target.value }))}
+                        className="bg-gray-800 border-gray-600 text-white"
+                        placeholder="client@email.com"
+                      />
                     </div>
                     <div>
-                      <p className="text-gray-400">Project Type:</p>
-                      <p className="text-white">{selectedProject.projectType || "Construction Project"}</p>
+                      <Label className="text-gray-400">Client Phone</Label>
+                      <Input
+                        value={editableData.clientPhone}
+                        onChange={(e) => setEditableData(prev => ({ ...prev, clientPhone: e.target.value }))}
+                        className="bg-gray-800 border-gray-600 text-white"
+                        placeholder="(555) 123-4567"
+                      />
                     </div>
                     <div>
-                      <p className="text-gray-400">Estimate #:</p>
-                      <p className="text-white">{selectedProject.estimateNumber || selectedProject.id}</p>
+                      <Label className="text-gray-400">Client Address</Label>
+                      <Input
+                        value={editableData.clientAddress}
+                        onChange={(e) => setEditableData(prev => ({ ...prev, clientAddress: e.target.value }))}
+                        className="bg-gray-800 border-gray-600 text-white"
+                        placeholder="123 Main St, City, State ZIP"
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* Timeline & Dates */}
+                {/* Editable Timeline */}
                 <div className="border border-gray-600 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-3 text-cyan-400">📅 Project Timeline</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-gray-400">Start Date:</p>
-                      <p className="text-white">{new Date().toLocaleDateString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400">Estimated Duration:</p>
-                      <p className="text-white">30 days</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400">Completion Date:</p>
-                      <p className="text-white">{new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Financial Terms */}
-                <div className="border border-gray-600 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-3 text-cyan-400">💰 Payment Terms</h3>
+                  <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Project Timeline (Editable)
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-gray-400">Deposit (50%):</p>
-                      <p className="text-white">${((selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0) * 0.5).toLocaleString()}</p>
+                      <Label className="text-gray-400">Start Date</Label>
+                      <Input
+                        type="date"
+                        value={editableData.startDate}
+                        onChange={(e) => setEditableData(prev => ({ ...prev, startDate: e.target.value }))}
+                        className="bg-gray-800 border-gray-600 text-white"
+                        placeholder="To be agreed with client"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Leave empty for "To be agreed with client and contractor"</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Final Payment (50%):</p>
-                      <p className="text-white">${((selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0) * 0.5).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400">Payment Terms:</p>
-                      <p className="text-white">50% down, 50% on completion</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400">Method:</p>
-                      <p className="text-white">Check, Cash, or Electronic Transfer</p>
+                      <Label className="text-gray-400">Completion Date</Label>
+                      <Input
+                        type="date"
+                        value={editableData.completionDate}
+                        onChange={(e) => setEditableData(prev => ({ ...prev, completionDate: e.target.value }))}
+                        className="bg-gray-800 border-gray-600 text-white"
+                        placeholder="To be determined"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Based on project complexity</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Warranties & Permits */}
+                {/* Dynamic Payment Milestones */}
                 <div className="border border-gray-600 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-3 text-cyan-400">🛡️ Warranties & Permits</h3>
+                  <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Payment Milestones (Customizable)
+                  </h3>
+                  <div className="space-y-4">
+                    {editableData.paymentMilestones.map((milestone, index) => (
+                      <div key={milestone.id} className="grid grid-cols-12 gap-2 items-end">
+                        <div className="col-span-5">
+                          <Label className="text-gray-400">Description</Label>
+                          <Input
+                            value={milestone.description}
+                            onChange={(e) => {
+                              const newMilestones = [...editableData.paymentMilestones];
+                              newMilestones[index].description = e.target.value;
+                              setEditableData(prev => ({ ...prev, paymentMilestones: newMilestones }));
+                            }}
+                            className="bg-gray-800 border-gray-600 text-white"
+                          />
+                        </div>
+                        <div className="col-span-3">
+                          <Label className="text-gray-400">Percentage</Label>
+                          <Input
+                            type="number"
+                            value={milestone.percentage}
+                            onChange={(e) => {
+                              const newMilestones = [...editableData.paymentMilestones];
+                              const newPercentage = parseInt(e.target.value) || 0;
+                              newMilestones[index].percentage = newPercentage;
+                              const totalAmount = selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0;
+                              newMilestones[index].amount = totalAmount * (newPercentage / 100);
+                              setEditableData(prev => ({ ...prev, paymentMilestones: newMilestones }));
+                            }}
+                            className="bg-gray-800 border-gray-600 text-white"
+                            min="0"
+                            max="100"
+                          />
+                        </div>
+                        <div className="col-span-3">
+                          <Label className="text-gray-400">Amount</Label>
+                          <Input
+                            value={`$${milestone.amount.toLocaleString()}`}
+                            disabled
+                            className="bg-gray-700 border-gray-600 text-gray-300"
+                          />
+                        </div>
+                        <div className="col-span-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              if (editableData.paymentMilestones.length > 1) {
+                                const newMilestones = editableData.paymentMilestones.filter((_, i) => i !== index);
+                                setEditableData(prev => ({ ...prev, paymentMilestones: newMilestones }));
+                              }
+                            }}
+                            className="text-red-400 hover:text-red-300"
+                            disabled={editableData.paymentMilestones.length <= 1}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-700">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const newId = Math.max(...editableData.paymentMilestones.map(m => m.id)) + 1;
+                          const remainingPercentage = 100 - editableData.paymentMilestones.reduce((sum, m) => sum + m.percentage, 0);
+                          const totalAmount = selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0;
+                          const newMilestone = {
+                            id: newId,
+                            description: `Milestone ${newId}`,
+                            percentage: remainingPercentage > 0 ? remainingPercentage : 0,
+                            amount: totalAmount * (remainingPercentage / 100)
+                          };
+                          setEditableData(prev => ({ 
+                            ...prev, 
+                            paymentMilestones: [...prev.paymentMilestones, newMilestone]
+                          }));
+                        }}
+                        className="border-cyan-400 text-cyan-400"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Milestone
+                      </Button>
+                      
+                      <div className="text-right">
+                        <p className="text-sm text-gray-400">
+                          Total: {editableData.paymentMilestones.reduce((sum, m) => sum + m.percentage, 0)}%
+                        </p>
+                        <p className="text-xs text-yellow-400">
+                          {editableData.paymentMilestones.reduce((sum, m) => sum + m.percentage, 0) !== 100 && "⚠️ Should equal 100%"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Editable Warranties & Permits */}
+                <div className="border border-gray-600 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Warranties & Permits (Options)
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-gray-400">Workmanship Warranty:</p>
-                      <p className="text-white">2 years</p>
+                      <Label className="text-gray-400">Warranty Period</Label>
+                      <Select
+                        value={editableData.warrantyYears}
+                        onValueChange={(value) => setEditableData(prev => ({ ...prev, warrantyYears: value }))}
+                      >
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1 Year</SelectItem>
+                          <SelectItem value="2">2 Years</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
-                      <p className="text-gray-400">Materials Warranty:</p>
-                      <p className="text-white">Manufacturer warranty</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400">Permits Required:</p>
-                      <p className="text-green-400">Yes - Contractor Responsible</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400">Insurance:</p>
-                      <p className="text-green-400">$1M+ General Liability</p>
+                      <Label className="text-gray-400">Permit Responsibility</Label>
+                      <Select
+                        value={editableData.permitResponsibility}
+                        onValueChange={(value) => setEditableData(prev => ({ ...prev, permitResponsibility: value }))}
+                      >
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="contractor">Contractor obtains permits</SelectItem>
+                          <SelectItem value="client">Client obtains permits</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>
 
-                {/* Contract Clauses Preview */}
+                {/* AI-Powered Legal Clauses */}
                 <div className="border border-gray-600 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-3 text-cyan-400">📄 Contract Features</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-green-400">✓</span>
-                      <span className="text-white">Professional Legal Format</span>
+                  <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">
+                    <Brain className="h-4 w-4" />
+                    AI-Powered Legal Defense Clauses
+                  </h3>
+                  
+                  {/* Loading state for AI clauses */}
+                  {isLoadingClauses && (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-cyan-400 mr-2" />
+                      <span className="text-gray-400">Analyzing project for optimal legal protection...</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-green-400">✓</span>
-                      <span className="text-white">Contractor Protection Clauses</span>
+                  )}
+                  
+                  {/* AI Generated Clauses */}
+                  {!isLoadingClauses && suggestedClauses.length > 0 && (
+                    <div className="space-y-3">
+                      <p className="text-sm text-gray-400 mb-4">
+                        Based on your ${(selectedProject.totalAmount || 0).toLocaleString()} {selectedProject.projectType || 'construction'} project, 
+                        AI recommends these protection clauses:
+                      </p>
+                      
+                      {suggestedClauses.map((clause) => (
+                        <div key={clause.id} className="flex items-start gap-3 p-3 bg-gray-800 rounded-lg">
+                          <Checkbox
+                            checked={selectedClauses.includes(clause.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedClauses(prev => [...prev, clause.id]);
+                              } else {
+                                setSelectedClauses(prev => prev.filter(id => id !== clause.id));
+                              }
+                            }}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-semibold text-white">{clause.title}</span>
+                              {clause.risk === 'high' && (
+                                <Badge variant="destructive" className="text-xs">High Risk</Badge>
+                              )}
+                              {clause.risk === 'medium' && (
+                                <Badge variant="secondary" className="text-xs">Medium Risk</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-400">{clause.description}</p>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={fetchAISuggestedClauses}
+                        className="w-full mt-4 border-cyan-400 text-cyan-400"
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Regenerate AI Suggestions
+                      </Button>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-green-400">✓</span>
-                      <span className="text-white">Dispute Resolution (AAA)</span>
+                  )}
+                  
+                  {/* Fallback if no clauses */}
+                  {!isLoadingClauses && suggestedClauses.length === 0 && (
+                    <div className="text-center py-8">
+                      <p className="text-gray-400 mb-4">Click to get AI-powered legal protection suggestions</p>
+                      <Button
+                        size="sm"
+                        onClick={fetchAISuggestedClauses}
+                        className="bg-cyan-600 hover:bg-cyan-700"
+                      >
+                        <Brain className="h-4 w-4 mr-2" />
+                        Get AI Suggestions
+                      </Button>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-green-400">✓</span>
-                      <span className="text-white">OSHA Compliance</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-green-400">✓</span>
-                      <span className="text-white">Indemnification Coverage</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-green-400">✓</span>
-                      <span className="text-white">Digital Signature Ready</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Project Description Preview */}
