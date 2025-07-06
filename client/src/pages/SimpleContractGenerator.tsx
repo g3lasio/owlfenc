@@ -93,43 +93,141 @@ export default function SimpleContractGenerator() {
     if (!currentUser?.uid) return;
     
     setIsLoading(true);
+    console.log("🔍 Loading estimates and projects for user:", currentUser.uid);
+    
     try {
       // Load projects directly from Firebase to avoid backend issues
       const { collection, query, where, getDocs } = await import("firebase/firestore");
       const { db } = await import("@/lib/firebase");
       
+      let allProjects = [];
+      
+      // 1. Load from estimates collection (primary source)
+      console.log("📋 Loading from estimates collection...");
+      const estimatesQuery = query(
+        collection(db, "estimates"),
+        where("firebaseUserId", "==", currentUser.uid)
+      );
+      
+      const estimatesSnapshot = await getDocs(estimatesQuery);
+      const firebaseEstimates = estimatesSnapshot.docs.map(doc => {
+        const data = doc.data();
+        
+        // Extract client information properly
+        const clientName = data.clientName || 
+                          data.clientInformation?.name || 
+                          data.client?.name || 
+                          "Cliente sin nombre";
+        
+        const clientEmail = data.clientEmail || 
+                           data.clientInformation?.email || 
+                           data.client?.email || 
+                           "";
+                           
+        const clientPhone = data.clientPhone || 
+                           data.clientInformation?.phone || 
+                           data.client?.phone || 
+                           "";
+        
+        // Extract project details
+        const projectType = data.projectType || 
+                           data.projectDetails?.type || 
+                           data.fenceType || 
+                           "Construction";
+        
+        const projectDescription = data.projectDescription || 
+                                  data.projectDetails || 
+                                  data.description || 
+                                  "";
+        
+        // Extract financial information
+        let totalAmount = data.projectTotalCosts?.totalSummary?.finalTotal ||
+                         data.projectTotalCosts?.total ||
+                         data.total ||
+                         data.estimateAmount ||
+                         data.displayTotal ||
+                         0;
+        
+        // Convert from cents if needed
+        if (totalAmount > 10000) {
+          totalAmount = totalAmount / 100;
+        }
+        
+        return {
+          id: doc.id,
+          estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
+          
+          // Client information
+          clientName,
+          clientEmail,
+          clientPhone,
+          clientAddress: data.clientAddress || data.address || "",
+          
+          // Project information
+          projectType,
+          projectDescription,
+          description: projectDescription,
+          
+          // Financial information
+          totalAmount,
+          totalPrice: totalAmount,
+          displaySubtotal: totalAmount,
+          displayTotal: totalAmount,
+          
+          // Items and costs
+          items: data.items || data.projectTotalCosts?.materialCosts?.items || [],
+          
+          // Status
+          status: data.status || "estimate",
+          projectProgress: "estimate_ready",
+          
+          // Metadata
+          createdAt: data.createdAt || new Date(),
+          source: "estimates",
+          originalData: data
+        };
+      });
+      
+      allProjects = [...allProjects, ...firebaseEstimates];
+      console.log(`📋 Loaded ${firebaseEstimates.length} estimates from Firebase`);
+      
+      // 2. Also load from projects collection as backup
+      console.log("🏗️ Loading from projects collection...");
       const projectsQuery = query(
         collection(db, "projects"),
-        where("userId", "==", currentUser.uid)
+        where("firebaseUserId", "==", currentUser.uid)
       );
       
-      const querySnapshot = await getDocs(projectsQuery);
-      const allProjects = querySnapshot.docs.map(doc => ({
+      const projectsSnapshot = await getDocs(projectsQuery);
+      const firebaseProjects = projectsSnapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
+        source: "projects"
       }));
       
+      allProjects = [...allProjects, ...firebaseProjects];
+      console.log(`🏗️ Loaded ${firebaseProjects.length} projects from Firebase`);
 
+      // 3. Filter for valid projects with financial data
+      const validProjects = allProjects.filter((project: any) => {
+        const hasValidAmount = (project.totalAmount || project.totalPrice || project.displaySubtotal || 0) > 0;
+        const hasClientName = project.clientName && project.clientName !== "Cliente sin nombre";
+        return hasValidAmount && hasClientName;
+      });
       
-      // Filter approved projects - expanded criteria
-      const approvedProjects = allProjects.filter((project: any) => 
-        project.status === "approved" || 
-        project.status === "estimate_ready" || 
-        project.status === "estimate" ||
-        project.projectProgress === "approved" ||
-        project.projectProgress === "client_approved" ||
-        project.projectProgress === "estimate_ready" ||
-        project.displaySubtotal > 0 // Projects with valid pricing
-      );
+      setProjects(validProjects);
+      console.log(`✅ Total loaded: ${validProjects.length} valid projects`);
       
-      setProjects(approvedProjects);
-      console.log(`Loaded ${approvedProjects.length} approved projects from Firebase`);
-      
-      if (approvedProjects.length === 0) {
-        console.log("No approved projects found. User needs to create estimates or approve projects first.");
+      if (validProjects.length === 0) {
+        console.log("❌ No valid projects found. User needs to create estimates first.");
+        toast({
+          title: "No Projects Found",
+          description: "Create estimates first to generate contracts.",
+          variant: "default",
+        });
       }
     } catch (error) {
-      console.error("Error loading projects:", error);
+      console.error("❌ Error loading projects:", error);
       setProjects([]);
       toast({
         title: "Error Loading Projects",
@@ -210,38 +308,88 @@ export default function SimpleContractGenerator() {
 
   // Step 1: Select project and move to step 2 with direct data processing
   const handleProjectSelect = useCallback(async (project: any) => {
+    console.log("🎯 Selecting project:", project);
     setIsLoading(true);
+    
     try {
-      // Process project data comprehensively from all possible sources
+      // Validate project data
+      if (!project) {
+        throw new Error("No project data provided");
+      }
+      
+      // Extract client data from various possible sources with comprehensive fallbacks
+      const clientName = project.clientName || 
+                        project.clientInformation?.name || 
+                        project.client?.name || 
+                        project.client || 
+                        "Cliente sin nombre";
+      
+      const clientEmail = project.clientEmail || 
+                         project.clientInformation?.email || 
+                         project.client?.email || 
+                         "";
+      
+      const clientPhone = project.clientPhone || 
+                         project.clientInformation?.phone || 
+                         project.client?.phone || 
+                         "";
+      
+      const clientAddress = project.clientAddress || 
+                           project.address || 
+                           project.clientInformation?.address || 
+                           project.client?.address || 
+                           "";
+      
+      // Extract project details
+      const projectType = project.projectType || 
+                         project.projectDetails?.type || 
+                         project.fenceType || 
+                         "Construction";
+      
+      const projectDescription = project.projectDescription || 
+                                project.description || 
+                                project.projectDetails || 
+                                `${projectType} project for ${clientName}`;
+      
+      // Extract financial data
+      let totalAmount = project.totalAmount || 
+                       project.totalPrice || 
+                       project.displaySubtotal || 
+                       project.displayTotal || 
+                       project.total || 
+                       project.estimateAmount || 
+                       0;
+      
+      // Convert from cents if needed
+      if (totalAmount > 10000) {
+        totalAmount = totalAmount / 100;
+      }
+      
+      // Process project data comprehensively
       const contractData = {
         clientInfo: {
-          name: project.clientName || project.client?.name || project.client || "",
-          address: project.address || project.clientAddress || project.client?.address || "",
-          email: project.clientEmail || project.client?.email || "",
-          phone: project.clientPhone || project.client?.phone || "",
+          name: clientName,
+          address: clientAddress,
+          email: clientEmail,
+          phone: clientPhone,
         },
         projectDetails: {
-          description: project.projectDescription || project.description || project.projectType || "",
-          type: project.projectType || "Construction Project",
+          description: projectDescription,
+          type: projectType,
         },
         financials: {
-          total: project.totalAmount || project.totalPrice || project.displaySubtotal || project.total || 0,
+          total: totalAmount,
         },
-        materials: project.materials || project.items || [],
+        materials: project.items || project.materials || [],
+        originalData: project.originalData || project
       };
+      
+      console.log("📋 Processed contract data:", contractData);
       
       setSelectedProject(project);
       setContractData(contractData);
       
-      // Initialize editable data with all available project data
-      const totalAmount = project.totalAmount || project.totalPrice || project.displaySubtotal || project.total || 0;
-      
-      // Extract client data from various possible sources
-      const clientName = project.clientName || project.client?.name || project.client || "";
-      const clientEmail = project.clientEmail || project.client?.email || "";
-      const clientPhone = project.clientPhone || project.client?.phone || "";
-      const clientAddress = project.clientAddress || project.client?.address || project.address || "";
-      
+      // Initialize editable data with comprehensive project data
       setEditableData({
         clientName,
         clientEmail,
