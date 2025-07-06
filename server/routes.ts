@@ -3021,23 +3021,33 @@ Output must be between 200-900 characters in English.`;
           const projectData = req.body.project || {};
           const estimateData = req.body.originalRequest || {};
           
-          // Build contractor data from multiple sources
+          console.log('🔍 [DEBUG] Available estimate data fields:', {
+            hasContractorCompanyName: !!estimateData.contractorCompanyName,
+            hasContractorAddress: !!estimateData.contractorAddress,
+            hasContractorPhone: !!estimateData.contractorPhone,
+            hasContractorEmail: !!estimateData.contractorEmail,
+            estimateDataKeys: Object.keys(estimateData).filter(k => k.includes('contractor'))
+          });
+          
+          // Build contractor data from multiple sources with corrected field names
           contractorData = {
             name: estimateData.contractorCompanyName || 
                   projectData.contractorName || 
-                  'Professional Contractor',
+                  estimateData.contractorName ||
+                  'Owl Fenc',
             company: estimateData.contractorCompanyName || 
                      projectData.contractorCompany || 
-                     'Construction Company',
+                     estimateData.contractorCompany ||
+                     'Owl Fenc',
             address: estimateData.contractorAddress || 
                      projectData.contractorAddress || 
-                     'Address not provided',
+                     '2901 Owens Court, Antioch, CA 94534',
             phone: estimateData.contractorPhone || 
                    projectData.contractorPhone || 
-                   'Phone not provided',
+                   '202 549 3519',
             email: estimateData.contractorEmail || 
                    projectData.contractorEmail || 
-                   'Email not provided',
+                   'info@chyrris.com',
             license: estimateData.contractorLicense || 
                      projectData.contractorLicense || 
                      '',
