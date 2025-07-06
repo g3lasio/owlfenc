@@ -493,6 +493,9 @@ export default function SimpleContractGenerator() {
           materials: "Manufacturer warranty",
         },
         additionalTerms: "",
+        
+        // Pass the complete selected project data for contractor extraction
+        originalRequest: selectedProject,
       };
 
       console.log("Generating contract with payload:", contractPayload);

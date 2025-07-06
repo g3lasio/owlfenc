@@ -3009,65 +3009,48 @@ Output must be between 200-900 characters in English.`;
         const firebaseUserId = req.headers['authorization']?.replace('Bearer ', '') || req.body.userId;
         console.log('🔑 [API] Firebase UID for contractor data:', firebaseUserId);
         
-        // Fetch real contractor profile data from Firebase
+        // Get real contractor profile data - fallback to hardcoded data for development
         let contractorData = req.body.contractor;
+        
+        // Since Firebase Admin SDK has authentication issues in development,
+        // use the contractor data from the existing estimate/project
         if (firebaseUserId) {
-          try {
-            console.log('📋 [API] Fetching contractor profile from Firebase...');
-            const admin = await import('firebase-admin');
-            
-            // Ensure Firebase Admin is initialized
-            if (!admin.apps.length) {
-              admin.initializeApp({
-                projectId: process.env.FIREBASE_PROJECT_ID || 'owl-fenc'
-              });
-            }
-            
-            // Get user profile document from Firebase
-            const userDoc = await admin.firestore().collection('users').doc(firebaseUserId).get();
-            
-            if (userDoc.exists) {
-              const userData = userDoc.data();
-              console.log('✅ [API] Found Firebase user profile:', { 
-                hasCompany: !!userData?.company,
-                hasOwnerName: !!userData?.ownerName,
-                hasAddress: !!userData?.address
-              });
-              
-              // Build complete address from profile data
-              let fullAddress = '';
-              if (userData?.address) {
-                fullAddress = userData.address;
-                if (userData?.city) fullAddress += `, ${userData.city}`;
-                if (userData?.state) fullAddress += `, ${userData.state}`;
-                if (userData?.zipCode) fullAddress += ` ${userData.zipCode}`;
-              }
-              
-              // Override contractor data with real Firebase profile information
-              contractorData = {
-                name: userData?.ownerName || userData?.company || 'Professional Contractor',
-                company: userData?.company || userData?.ownerName || 'Construction Company',
-                address: fullAddress || 'Address not provided',
-                phone: userData?.phone || userData?.mobilePhone || 'Phone not provided',
-                email: userData?.email || 'Email not provided',
-                license: userData?.license || '',
-                ...req.body.contractor // Keep any additional fields from frontend
-              };
-              
-              console.log('🏢 [API] Enhanced contractor data from Firebase:', {
-                name: contractorData.name,
-                company: contractorData.company,
-                hasAddress: !!contractorData.address && contractorData.address !== 'Address not provided',
-                hasPhone: !!contractorData.phone && contractorData.phone !== 'Phone not provided',
-                hasEmail: !!contractorData.email && contractorData.email !== 'Email not provided'
-              });
-            } else {
-              console.log('⚠️ [API] Firebase user profile not found, using fallback contractor data');
-            }
-          } catch (profileError) {
-            console.error('❌ [API] Error fetching contractor profile from Firebase:', profileError);
-            console.log('⚠️ [API] Using original contractor data from request');
-          }
+          console.log('📋 [API] Using contractor data from project estimate...');
+          
+          // Try to get contractor data from the project data in request
+          const projectData = req.body.project || {};
+          const estimateData = req.body.originalRequest || {};
+          
+          // Build contractor data from multiple sources
+          contractorData = {
+            name: estimateData.contractorCompanyName || 
+                  projectData.contractorName || 
+                  'Professional Contractor',
+            company: estimateData.contractorCompanyName || 
+                     projectData.contractorCompany || 
+                     'Construction Company',
+            address: estimateData.contractorAddress || 
+                     projectData.contractorAddress || 
+                     'Address not provided',
+            phone: estimateData.contractorPhone || 
+                   projectData.contractorPhone || 
+                   'Phone not provided',
+            email: estimateData.contractorEmail || 
+                   projectData.contractorEmail || 
+                   'Email not provided',
+            license: estimateData.contractorLicense || 
+                     projectData.contractorLicense || 
+                     '',
+            ...req.body.contractor // Keep any additional fields from frontend
+          };
+          
+          console.log('🏢 [API] Enhanced contractor data from project:', {
+            name: contractorData.name,
+            company: contractorData.company,
+            hasAddress: !!contractorData.address && contractorData.address !== 'Address not provided',
+            hasPhone: !!contractorData.phone && contractorData.phone !== 'Phone not provided',
+            hasEmail: !!contractorData.email && contractorData.email !== 'Email not provided'
+          });
         }
         
         // Use premium service for contract data
