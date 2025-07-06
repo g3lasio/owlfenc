@@ -3009,59 +3009,52 @@ Output must be between 200-900 characters in English.`;
         const firebaseUserId = req.headers['authorization']?.replace('Bearer ', '') || req.body.userId;
         console.log('🔑 [API] Firebase UID for contractor data:', firebaseUserId);
         
-        // Get contractor profile data from PostgreSQL database using Firebase UID
-        let contractorData = req.body.contractor;
+        // Get contractor data - use from request first, with profile fallback
+        let contractorData = req.body.contractor || {};
         
-        if (firebaseUserId) {
+        // If contractor data is incomplete, try to get from user profile
+        if (firebaseUserId && (!contractorData.name || !contractorData.company)) {
           try {
-            console.log('📋 [API] Fetching contractor profile from database...');
+            console.log('📋 [API] Fetching contractor profile to complete missing data...');
             const { storage } = await import('./storage');
             const user = await storage.getUserByFirebaseUid(firebaseUserId);
             
             if (user && user.profile) {
-              console.log('✅ [API] Found user profile in database');
+              console.log('✅ [API] Found user profile, filling missing contractor data');
               
-              // Build complete address from profile
-              let fullAddress = '';
-              if (user.profile.address) {
+              // Build complete address from profile if missing
+              let fullAddress = contractorData.address;
+              if (!fullAddress && user.profile.address) {
                 fullAddress = user.profile.address;
                 if (user.profile.city) fullAddress += `, ${user.profile.city}`;
                 if (user.profile.state) fullAddress += `, ${user.profile.state}`;
                 if (user.profile.zipCode) fullAddress += ` ${user.profile.zipCode}`;
               }
               
-              // Use real profile data - NO FALLBACKS
+              // Fill only missing fields from profile
               contractorData = {
-                name: user.profile.ownerName || user.profile.company,
-                company: user.profile.company || user.profile.ownerName,
-                address: fullAddress,
-                phone: user.profile.phone || user.profile.mobilePhone,
-                email: user.email || user.profile.email,
-                license: user.profile.licenseNumber || user.profile.license,
-                ...req.body.contractor
+                name: contractorData.name || user.profile.ownerName || user.profile.company,
+                company: contractorData.company || user.profile.company || user.profile.ownerName,
+                address: fullAddress || 'Address not provided',
+                phone: contractorData.phone || user.profile.phone || user.profile.mobilePhone,
+                email: contractorData.email || user.email || user.profile.email,
+                license: contractorData.license || user.profile.licenseNumber || user.profile.license || '',
+                ...contractorData
               };
               
-              console.log('🏢 [API] Real contractor data from profile:', {
+              console.log('🏢 [API] Enhanced contractor data:', {
                 name: contractorData.name,
                 company: contractorData.company,
-                address: contractorData.address,
-                phone: contractorData.phone,
-                email: contractorData.email
+                hasAddress: !!contractorData.address && contractorData.address !== 'Address not provided',
+                hasPhone: !!contractorData.phone,
+                hasEmail: !!contractorData.email
               });
             } else {
-              console.log('⚠️ [API] No user profile found in database');
-              // Don't generate contract without profile data
-              return res.status(400).json({ 
-                success: false, 
-                error: "User profile not found. Please complete your Company Profile first." 
-              });
+              console.log('⚠️ [API] No user profile found, using provided contractor data');
             }
           } catch (profileError) {
             console.error('❌ [API] Error fetching profile:', profileError);
-            return res.status(500).json({ 
-              success: false, 
-              error: "Unable to fetch contractor profile data" 
-            });
+            console.log('⚠️ [API] Using provided contractor data as fallback');
           }
         }
         
