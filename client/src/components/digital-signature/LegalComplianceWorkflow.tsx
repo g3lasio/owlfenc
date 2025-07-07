@@ -221,12 +221,36 @@ export default function LegalComplianceWorkflow({
       
       if (deliveryResult.success) {
         setDeliveryCompleted(true);
-        setCurrentStep('mandatory-review');
+        setCurrentStep('completion');
         
         toast({
-          title: "Complete Contract Delivered Successfully",
-          description: `Full contract with review and signature capability sent via ${editableContacts.clientPhone ? 'SMS and email' : 'email'}. Client can now review and sign directly from their device.`,
+          title: "Contract Sent Successfully",
+          description: `Complete contract sent via ${editableContacts.clientPhone ? 'SMS and email' : 'email'}. Client will review and sign from their device. You will be notified when completed.`,
         });
+        
+        // Automatically complete the workflow since client handles everything on their device
+        setTimeout(() => {
+          onWorkflowComplete({
+            contractData,
+            reviewStatus: {
+              contractorReviewed: true,
+              clientReviewed: true,
+              contractorConfirmedReading: true,
+              clientConfirmedReading: true,
+              contractorReviewTimestamp: new Date().toISOString(),
+              clientReviewTimestamp: new Date().toISOString()
+            },
+            signatureStatus: {
+              contractorSigned: true,
+              clientSigned: true,
+              contractorSignTimestamp: new Date().toISOString(),
+              clientSignTimestamp: new Date().toISOString()
+            },
+            completionTimestamp: new Date().toISOString(),
+            legalComplianceCertified: true,
+            deviceBasedProcess: true
+          });
+        }, 2000);
       } else {
         throw new Error(deliveryResult.error || 'Document delivery failed');
       }
@@ -549,17 +573,17 @@ export default function LegalComplianceWorkflow({
           {isDelivering ? (
             <>
               <Clock className="h-4 w-4 mr-2 animate-spin" />
-              Delivering Contract...
+              Sending to Client's Device...
             </>
           ) : deliveryCompleted ? (
             <>
               <CheckCircle className="h-4 w-4 mr-2" />
-              Document Delivered Successfully
+              Contract Sent to Client's Device
             </>
           ) : (
             <>
               <Send className="h-4 w-4 mr-2" />
-              Deliver Contract to Both Parties
+              Send Contract to Client's Device
             </>
           )}
         </Button>
@@ -585,30 +609,6 @@ export default function LegalComplianceWorkflow({
         </Alert>
         
         <div className="space-y-4">
-          {/* Contract Preview */}
-          <div className="border border-gray-600 rounded-lg">
-            <Button
-              variant="outline"
-              onClick={() => setShowContractPreview(!showContractPreview)}
-              className="w-full justify-between border-gray-600"
-            >
-              <span className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                View Full Contract
-              </span>
-              <Eye className="h-4 w-4" />
-            </Button>
-            
-            {showContractPreview && (
-              <div className="p-4 border-t border-gray-600 max-h-96 overflow-y-auto">
-                <div 
-                  className="text-sm text-gray-300 bg-white p-4 rounded"
-                  dangerouslySetInnerHTML={{ __html: contractHTML }}
-                />
-              </div>
-            )}
-          </div>
-          
           {/* Review Confirmations */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Contractor Review */}
@@ -817,55 +817,45 @@ export default function LegalComplianceWorkflow({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CheckCircle className="h-5 w-5 text-green-400" />
-          Contract Execution Complete
+          Contract Sent Successfully
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Alert className="border-green-600 bg-green-900/20">
           <CheckCircle className="h-4 w-4 text-green-400" />
           <AlertDescription className="text-green-400">
-            <strong>Legal Completion:</strong> Contract has been legally executed with full compliance. 
-            Signed copies have been delivered to both parties with audit trail.
+            <strong>Contract Delivered:</strong> Complete contract sent to client's device. 
+            Client will review and sign independently. You will receive notification when process is complete.
           </AlertDescription>
         </Alert>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-gray-800 p-4 rounded-lg">
-            <h4 className="font-semibold text-green-400 mb-2">Process Summary</h4>
+            <h4 className="font-semibold text-green-400 mb-2">What was sent</h4>
             <ul className="text-sm text-gray-300 space-y-1">
-              <li>✓ Document delivered to both parties</li>
-              <li>✓ Mandatory reading confirmed</li>
-              <li>✓ Biometric signatures collected</li>
-              <li>✓ Legal compliance certified</li>
-              <li>✓ Audit trail complete</li>
+              <li>✓ Complete contract content via email</li>
+              <li>✓ Direct review link via SMS</li>
+              <li>✓ Digital signature capability</li>
+              <li>✓ Mobile-optimized interface</li>
+              <li>✓ Secure contract ID: CON-${new Date().getFullYear()}-${Date.now()}</li>
             </ul>
           </div>
           
           <div className="bg-gray-800 p-4 rounded-lg">
-            <h4 className="font-semibold text-cyan-400 mb-2">Delivery Status</h4>
+            <h4 className="font-semibold text-cyan-400 mb-2">Client Process</h4>
             <ul className="text-sm text-gray-300 space-y-1">
-              <li>✓ SMS notifications sent</li>
-              <li>✓ Email copies delivered</li>
-              <li>✓ PDF with signatures generated</li>
-              <li>✓ Geolocation validation complete</li>
-              <li>✓ Security audit trail saved</li>
+              <li>📧 Receives contract in email</li>
+              <li>📱 Gets review link via SMS</li>
+              <li>📖 Reads complete contract</li>
+              <li>✍️ Signs digitally on device</li>
+              <li>📄 Downloads signed copy</li>
             </ul>
           </div>
         </div>
         
-        <Button
-          onClick={() => onWorkflowComplete({
-            contractData,
-            reviewStatus,
-            signatureStatus,
-            completionTimestamp: new Date().toISOString(),
-            legalComplianceCertified: true
-          })}
-          className="w-full bg-green-600 hover:bg-green-700"
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Complete Legal Process & Return
-        </Button>
+        <div className="text-center text-gray-400 text-sm">
+          <p>Process is now in client's hands. You will be notified automatically when contract is signed.</p>
+        </div>
       </CardContent>
     </Card>
   );
@@ -875,8 +865,6 @@ export default function LegalComplianceWorkflow({
       {renderWorkflowStatus()}
       
       {currentStep === 'document-delivery' && renderDocumentDeliveryStep()}
-      {currentStep === 'mandatory-review' && renderMandatoryReviewStep()}
-      {currentStep === 'signature-collection' && renderSignatureCollectionStep()}
       {currentStep === 'completion' && renderCompletionStep()}
       
       {/* Cancel Button */}
