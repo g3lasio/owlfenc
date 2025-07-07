@@ -219,3 +219,5 @@ export function AddressAutocomplete({
     </div>
   );
 }
+
+export default AddressAutocomplete;

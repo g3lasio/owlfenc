@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import AddressAutocomplete from "@/components/ui/address-autocomplete";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -868,11 +869,11 @@ export default function SimpleContractGenerator() {
                     </div>
                     <div>
                       <Label className="text-gray-400">Client Address</Label>
-                      <Input
+                      <AddressAutocomplete
                         value={editableData.clientAddress}
-                        onChange={(e) => setEditableData(prev => ({ ...prev, clientAddress: e.target.value }))}
-                        className="bg-gray-800 border-gray-600 text-white"
+                        onChange={(address) => setEditableData(prev => ({ ...prev, clientAddress: address }))}
                         placeholder="123 Main St, City, State ZIP"
+                        className="bg-gray-800 border-gray-600 text-white"
                       />
                     </div>
                   </div>
