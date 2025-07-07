@@ -134,6 +134,11 @@ registerRoutes(app);
 app.use("/api/centralized-email", centralizedEmailRoutes);
 console.log('📧 [CENTRALIZED-EMAIL] Rutas registradas en /api/centralized-email');
 
+// 📱 Registrar rutas de SMS
+import smsRoutes from './routes/sms';
+app.use("/api/sms", smsRoutes);
+console.log('📱 [SMS] Rutas registradas en /api/sms');
+
 (async () => {
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

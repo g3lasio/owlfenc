@@ -169,7 +169,7 @@ export default function LegalComplianceWorkflow({
         
         toast({
           title: "Document Delivered Successfully",
-          description: `Contract sent to both parties via SMS and email for mandatory review`,
+          description: `Contract sent to both parties via ${editableContacts.contractorPhone && editableContacts.clientPhone ? 'SMS and email' : 'email'} for mandatory review`,
         });
       } else {
         throw new Error(deliveryResult.error || 'Document delivery failed');
