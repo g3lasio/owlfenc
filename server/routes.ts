@@ -5457,6 +5457,69 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
+  // *** CONTRACT HTML GENERATION FOR LEGAL COMPLIANCE WORKFLOW ***
+  app.post("/api/generate-contract-html", async (req: Request, res: Response) => {
+    try {
+      console.log('📄 [CONTRACT-HTML] Generating contract HTML for legal compliance workflow...');
+      
+      // Get authentication
+      const firebaseUid = req.headers['x-firebase-uid'] as string;
+      console.log('🔐 [CONTRACT-HTML] Firebase UID:', firebaseUid);
+      
+      // Use the same contract generation logic as PDF generation but return HTML
+      const { default: PremiumPdfService } = await import('./services/premiumPdfService');
+      const premiumPdfService = PremiumPdfService.getInstance();
+      
+      // Process contract data similar to PDF generation
+      const contractData = {
+        client: req.body.client,
+        contractor: req.body.contractor,
+        project: req.body.project,
+        financials: req.body.financials,
+        timeline: req.body.timeline || {},
+        permits: req.body.permits || {},
+        warranties: req.body.warranties || {},
+        selectedClauses: req.body.selectedClauses || [],
+        paymentTerms: req.body.paymentTerms || {}
+      };
+      
+      console.log('📋 [CONTRACT-HTML] Contract data structure:', {
+        hasClient: !!contractData.client?.name,
+        hasContractor: !!contractData.contractor?.name,
+        projectType: contractData.project?.type,
+        totalAmount: contractData.financials?.total,
+        clausesCount: contractData.selectedClauses.length
+      });
+      
+      // Generate professional HTML contract content
+      const contractHTML = premiumPdfService.generateProfessionalLegalContractHTML(contractData);
+      
+      console.log('✅ [CONTRACT-HTML] HTML contract generated successfully');
+      console.log('📏 [CONTRACT-HTML] HTML length:', contractHTML.length);
+      
+      // Return JSON response with HTML content
+      res.json({
+        success: true,
+        html: contractHTML,
+        contractId: `CON-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
+        generatedAt: new Date().toISOString(),
+        clientName: contractData.client?.name,
+        contractorName: contractData.contractor?.name,
+        projectTotal: contractData.financials?.total
+      });
+      
+    } catch (error: any) {
+      console.error('❌ [CONTRACT-HTML] Error generating contract HTML:', error);
+      console.error('❌ [CONTRACT-HTML] Error stack:', error.stack);
+      
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Contract HTML generation failed',
+        details: 'Failed to generate contract HTML for legal compliance workflow'
+      });
+    }
+  });
+
   // Premium Contract PDF Generation
   app.post('/api/contracts/generate-pdf', async (req, res) => {
     try {
