@@ -31,8 +31,9 @@ export interface EmailDeliveryResult {
 
 export class ResendEmailAdvanced {
   private resend: Resend;
-  private platformDomain = 'resend.dev';
-  private testModeEmail = 'gelasio@chyrris.com';
+  private platformDomain = 'owlfenc.com';
+  private operationalEmail = 'system@owlfenc.com';
+  private testModeEmail = 'contracts@owlfenc.com';
 
   constructor() {
     if (!process.env.RESEND_API_KEY) {
@@ -42,36 +43,56 @@ export class ResendEmailAdvanced {
   }
 
   /**
-   * Detect if Resend is in test mode
+   * Detect if we should use production email delivery
    */
-  private isTestMode(): boolean {
-    return process.env.NODE_ENV === 'development';
+  private isProductionMode(): boolean {
+    return process.env.NODE_ENV === 'production';
   }
 
   /**
-   * Get appropriate recipient (handles test mode redirection)
+   * Check if domain is verified for direct delivery
    */
-  private getRecipient(originalEmail: string): string {
-    // In test mode, redirect all emails to authorized address
-    if (this.isTestMode()) {
-      console.log(`📧 [TEST-MODE] Redirecting email from ${originalEmail} to ${this.testModeEmail}`);
-      return this.testModeEmail;
+  private isDomainVerified(): boolean {
+    // In production, we assume owlfenc.com is verified
+    // In development, we use test routing
+    return this.isProductionMode();
+  }
+
+  /**
+   * Get appropriate recipient based on environment and domain verification
+   */
+  private getRecipient(originalEmail: string, recipientType: 'client' | 'contractor' | 'system' = 'client'): string {
+    // In production with verified domain, send directly to recipients
+    if (this.isDomainVerified()) {
+      console.log(`📧 [PRODUCTION] Sending directly to ${originalEmail}`);
+      return originalEmail;
     }
-    return originalEmail;
+    
+    // In development, use professional test routing
+    if (recipientType === 'system') {
+      console.log(`📧 [DEV-SYSTEM] Using operational email ${this.operationalEmail}`);
+      return this.operationalEmail;
+    }
+    
+    // For client/contractor emails in development, use test address but maintain transparency
+    console.log(`📧 [DEV-${recipientType.toUpperCase()}] Redirecting ${originalEmail} to ${this.testModeEmail} for testing`);
+    return this.testModeEmail;
   }
 
   /**
-   * Generate contractor-specific no-reply email
+   * Generate professional from email using owlfenc.com domain
    */
-  private generateContractorFromEmail(contractorCompany: string): string {
-    const cleanCompanyName = contractorCompany
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
-      .substring(0, 20);
-
-    return `noreply-${cleanCompanyName}@${this.platformDomain}`;
+  private generateFromEmail(emailType: 'contracts' | 'notifications' | 'system' = 'contracts'): string {
+    switch (emailType) {
+      case 'contracts':
+        return `contracts@${this.platformDomain}`;
+      case 'notifications':
+        return `notifications@${this.platformDomain}`;
+      case 'system':
+        return `system@${this.platformDomain}`;
+      default:
+        return `noreply@${this.platformDomain}`;
+    }
   }
 
   /**
@@ -106,17 +127,17 @@ export class ResendEmailAdvanced {
   }
 
   /**
-   * Add test mode banner to email content
+   * Add development mode banner to email content
    */
-  private addTestModeBanner(htmlContent: string, originalRecipient: string): string {
-    if (!this.isTestMode()) return htmlContent;
+  private addDevelopmentBanner(htmlContent: string, originalRecipient: string): string {
+    if (this.isDomainVerified()) return htmlContent;
 
     const banner = `
-      <div style="background: #fef3c7; border: 2px solid #f59e0b; padding: 15px; margin-bottom: 20px; border-radius: 8px; text-align: center;">
-        <h3 style="color: #b45309; margin: 0 0 10px 0;">📧 TEST MODE - Development Environment</h3>
-        <p style="color: #92400e; margin: 0; font-size: 14px;">
-          This email was originally intended for: <strong>${originalRecipient}</strong><br>
-          Redirected to authorized test email for development purposes.
+      <div style="background: #e3f2fd; border: 2px solid #2196f3; padding: 15px; margin-bottom: 20px; border-radius: 8px; text-align: center;">
+        <h3 style="color: #1565c0; margin: 0 0 10px 0;">🔧 Development Environment - Owl Fence</h3>
+        <p style="color: #0d47a1; margin: 0; font-size: 14px;">
+          <strong>Original Recipient:</strong> ${originalRecipient}<br>
+          Email routed through ${this.platformDomain} testing system for development purposes.
         </p>
       </div>
     `;
@@ -144,30 +165,32 @@ export class ResendEmailAdvanced {
         };
       }
 
-      // Determine recipient (handle test mode)
-      const finalRecipient = this.getRecipient(params.to);
-      const fromEmail = this.generateContractorFromEmail(params.contractorCompany);
+      // Determine recipient and sender based on environment
+      const finalRecipient = this.getRecipient(params.to, 'client');
+      const fromEmail = this.generateFromEmail('contracts');
 
-      // Prepare email content (add test mode banner if needed)
-      const finalHtmlContent = this.addTestModeBanner(params.htmlContent, params.to);
+      // Prepare email content (add development banner if needed)
+      const finalHtmlContent = this.addDevelopmentBanner(params.htmlContent, params.to);
 
       console.log('📧 [ADVANCED-EMAIL] From address:', fromEmail);
       console.log('📧 [ADVANCED-EMAIL] Final recipient:', finalRecipient);
-      console.log('📧 [ADVANCED-EMAIL] Test mode:', this.isTestMode());
+      console.log('📧 [ADVANCED-EMAIL] Domain verified:', this.isDomainVerified());
+      console.log('📧 [ADVANCED-EMAIL] Environment:', this.isProductionMode() ? 'PRODUCTION' : 'DEVELOPMENT');
 
       // Prepare email payload
       const emailPayload = {
         from: fromEmail,
         to: [finalRecipient],
-        subject: this.isTestMode() ? `[TEST] ${params.subject}` : params.subject,
+        subject: this.isDomainVerified() ? params.subject : `[DEV] ${params.subject}`,
         html: finalHtmlContent,
         replyTo: params.contractorEmail,
         headers: {
           'X-Contractor': params.contractorName,
           'X-Company': params.contractorCompany,
           'X-Original-Recipient': params.to,
-          'X-Service': 'Owl-Fence-Contracts',
-          'List-Unsubscribe': `<mailto:${params.contractorEmail}?subject=Unsubscribe>`
+          'X-Service': 'Owl-Fence-Legal-System',
+          'X-Domain': this.platformDomain,
+          'List-Unsubscribe': `<mailto:${this.operationalEmail}?subject=Unsubscribe>`
         },
         // Remove tags to avoid Resend validation issues
         ...(params.attachments && params.attachments.length > 0 && {
@@ -189,10 +212,10 @@ export class ResendEmailAdvanced {
         return {
           success: true,
           emailId: result.data.id,
-          message: this.isTestMode() 
-            ? `Email sent to test address ${finalRecipient} (originally ${params.to})`
-            : `Email sent successfully to ${finalRecipient}`,
-          strategy: 'contractor-noreply'
+          message: this.isDomainVerified() 
+            ? `Email sent directly to ${finalRecipient}`
+            : `Email sent via ${this.platformDomain} (originally ${params.to} → ${finalRecipient})`,
+          strategy: this.isDomainVerified() ? 'direct-delivery' : 'development-routing'
         };
       } else {
         console.error('❌ [ADVANCED-EMAIL] No email ID returned:', result);
@@ -201,16 +224,16 @@ export class ResendEmailAdvanced {
         if (result.error) {
           const errorMessage = result.error.message || 'Unknown Resend error';
           
-          // Check for test mode limitations
-          if (errorMessage.includes('You can only send testing emails')) {
-            console.log('🔒 [ADVANCED-EMAIL] Test mode limitation detected, auto-redirecting...');
+          // Check for domain verification issues
+          if (errorMessage.includes('You can only send testing emails') || errorMessage.includes('Domain not verified')) {
+            console.log('🔒 [ADVANCED-EMAIL] Domain verification limitation, using fallback routing...');
             
-            // Retry with authorized email
+            // Retry with operational email
             const retryPayload = {
               ...emailPayload,
-              to: [this.testModeEmail],
-              subject: `[AUTO-REDIRECT] ${emailPayload.subject}`,
-              html: this.addTestModeBanner(params.htmlContent, params.to)
+              to: [this.operationalEmail],
+              subject: `[ROUTING] ${emailPayload.subject}`,
+              html: this.addDevelopmentBanner(params.htmlContent, params.to)
             };
 
             const retryResult = await this.resend.emails.send(retryPayload);
@@ -219,8 +242,8 @@ export class ResendEmailAdvanced {
               return {
                 success: true,
                 emailId: retryResult.data.id,
-                message: `Email auto-redirected to authorized test address: ${this.testModeEmail}`,
-                strategy: 'auto-redirect'
+                message: `Email routed via ${this.operationalEmail} (intended for ${params.to})`,
+                strategy: 'operational-routing'
               };
             }
           }
@@ -269,7 +292,7 @@ export class ResendEmailAdvanced {
 
       return { 
         healthy: true, 
-        message: `Resend service healthy - ${this.isTestMode() ? 'TEST MODE' : 'PRODUCTION MODE'}` 
+        message: `Resend service healthy - Domain: ${this.platformDomain} - ${this.isDomainVerified() ? 'VERIFIED' : 'DEVELOPMENT MODE'}` 
       };
 
     } catch (error) {

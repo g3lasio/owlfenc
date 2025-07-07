@@ -192,11 +192,14 @@ router.get('/health', async (req, res) => {
         sms: {
           configured: smsStatus.configured,
           hasCredentials: smsStatus.hasCredentials,
-          fromNumber: smsStatus.fromNumber ? 'Configured' : 'Missing'
+          fromNumber: smsStatus.fromNumber ? 'Configured' : 'Missing',
+          domain: 'Twilio Cloud'
         },
         email: {
           healthy: emailHealth.healthy,
-          message: emailHealth.message
+          message: emailHealth.message,
+          domain: 'owlfenc.com',
+          environment: process.env.NODE_ENV === 'production' ? 'Production' : 'Development'
         }
       },
       overall: {
