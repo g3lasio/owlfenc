@@ -351,13 +351,14 @@ export default function SimpleContractGenerator() {
                                 project.projectDetails || 
                                 `${projectType} project for ${clientName}`;
       
-      // Extract financial data - MATCH EstimatesWizard logic exactly
-      const totalAmount = project.total || 
-                         project.totalAmount || 
-                         project.totalPrice || 
-                         project.displaySubtotal || 
+      // Extract financial data - CRITICAL FIX: Use display values first (in dollars, not centavos)
+      const totalAmount = project.displaySubtotal || 
                          project.displayTotal || 
+                         project.totalPrice || 
                          project.estimateAmount || 
+                         // Only use these as last resort and normalize if they're in centavos
+                         (project.total > 10000 ? project.total / 100 : project.total) ||
+                         (project.totalAmount > 10000 ? project.totalAmount / 100 : project.totalAmount) ||
                          0;
       
       // No conversion - keep original values as they are stored (matching EstimatesWizard)
@@ -450,7 +451,7 @@ export default function SimpleContractGenerator() {
         project: {
           description: contractData?.projectDetails?.description || selectedProject.description || selectedProject.projectDescription || selectedProject.projectType || "",
           type: selectedProject.projectType || "Construction Project",
-          total: parseFloat((selectedProject.total || selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0).toString()),
+          total: parseFloat((selectedProject.displaySubtotal || selectedProject.displayTotal || selectedProject.totalPrice || selectedProject.estimateAmount || (selectedProject.total > 10000 ? selectedProject.total / 100 : selectedProject.total) || (selectedProject.totalAmount > 10000 ? selectedProject.totalAmount / 100 : selectedProject.totalAmount) || 0).toString()),
           materials: contractData?.materials || selectedProject.materials || [],
         },
         contractor: {
@@ -471,7 +472,7 @@ export default function SimpleContractGenerator() {
             "To be agreed",
         },
         financials: {
-          total: parseFloat((selectedProject.total || selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0).toString()),
+          total: parseFloat((selectedProject.displaySubtotal || selectedProject.displayTotal || selectedProject.totalPrice || selectedProject.estimateAmount || (selectedProject.total > 10000 ? selectedProject.total / 100 : selectedProject.total) || (selectedProject.totalAmount > 10000 ? selectedProject.totalAmount / 100 : selectedProject.totalAmount) || 0).toString()),
           paymentMilestones: editableData.paymentMilestones,
         },
         permitInfo: {

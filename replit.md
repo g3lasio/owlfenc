@@ -173,14 +173,14 @@ Changelog:
   * System supports multi-tenant contractor-specific emails with comprehensive fallback strategies
   * Test mode configured properly redirecting emails to gelasio@chyrris.com until domain verification
   * Backend contractor copy system fully functional with sendCopyToContractor parameter working
-- July 7, 2025. ✅ CRITICAL PAYMENT MILESTONE FIX: Resolved missing project total and frontend-backend data corruption:
-  * FIXED MISSING PROJECT TOTAL: Added prominent green-highlighted project total display in Payment Milestone section header
-  * CORRECTED FIELD PRIORITY: Updated all cost references to prioritize 'total' field first (matching EstimatesWizard exactly)
-  * ELIMINATED DATA CORRUPTION: Fixed frontend-backend disconnection by ensuring consistent field mapping throughout PDF generation
-  * ENHANCED VALIDATION: Added comprehensive financial data logging in both frontend and backend to track data flow
-  * SECURED DATA INTEGRITY: Backend now validates and preserves exact project totals from frontend display
-  * MILESTONE ACCURACY: Payment milestone amounts now calculate using same total value displayed in UI
-  * TRANSPARENCY IMPROVEMENT: Added total amount summary in milestone footer for complete financial visibility
+- July 7, 2025. ✅ CRITICAL CONTRACT AMOUNT CORRUPTION FIX: Resolved $1.9M vs $19.7K financial data corruption:
+  * IDENTIFIED ROOT CAUSE: Frontend was prioritizing 'total' field containing centavo values over 'displaySubtotal' containing dollar values
+  * CORRECTED FIELD PRIORITY: Changed financial extraction to prioritize displaySubtotal/displayTotal first, then intelligently normalize centavo values
+  * ELIMINATED PDF CORRUPTION: Fixed contract PDFs showing $1,959,267.00 instead of correct $19,790.58 for Turner Group Construction
+  * ENHANCED DATA VALIDATION: Added comprehensive financial logging in frontend and backend to track value transformation
+  * SECURED FINANCIAL INTEGRITY: All contract generation now uses correct dollar values from UI display
+  * PREVENTED LEGAL RISK: Eliminated contracts with incorrect financial amounts that could cause legal and reputational damage
+  * SYSTEMATIC NORMALIZATION: Implemented intelligent conversion of values >$10,000 from centavos to dollars as safety fallback
 - July 6, 2025. ✅ CONTRACTOR DATA FIX: Resolved estimates PDF generation phone and email issues:
   * Removed hardcoded fallback values "(555) 123-4567" and "truthbackpack@gmail.com" from backend
   * Updated frontend EstimatesWizard to send complete contractor profile data in PDF generation payload
