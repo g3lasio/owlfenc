@@ -150,18 +150,96 @@ export default function LegalComplianceWorkflow({
       // Use Phase2IntegrationOrchestrator for comprehensive delivery
       const orchestrator = new Phase2IntegrationOrchestrator();
       
-      const deliveryResult = await orchestrator.executePhase2Integration({
-        contractData,
-        contractHTML,
-        clientEmail: editableContacts.clientEmail,
-        clientPhone: editableContacts.clientPhone,
-        contractorEmail: editableContacts.contractorEmail,
-        contractorPhone: editableContacts.contractorPhone,
-        enableSMSNotifications: true,
-        enableEmailDelivery: true,
-        enableGeolocationValidation: false, // For document delivery only
-        enableAdvancedPDFSecurity: false // For review stage only
-      });
+      // Use direct API calls instead of orchestrator for more reliable delivery
+      console.log('📧 [DELIVERY] Starting document delivery...');
+      
+      const deliveryResults = {
+        email: { success: false },
+        sms: { success: false }
+      };
+
+      // Send email using Resend service
+      try {
+        const emailResponse = await fetch('/api/sms/test-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: editableContacts.clientEmail,
+            contractorName: contractData.contractor.name,
+            contractorCompany: contractData.contractor.company,
+            subject: `Contract Review Required - ${contractData.project.type}`,
+            htmlContent: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h1 style="color: #00bcd4; text-align: center;">Contract Ready for Review</h1>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <h3>📋 Project Details</h3>
+                  <p><strong>Client:</strong> ${contractData.client.name}</p>
+                  <p><strong>Contractor:</strong> ${contractData.contractor.company || contractData.contractor.name}</p>
+                  <p><strong>Project:</strong> ${contractData.project.type}</p>
+                  <p><strong>Value:</strong> $${contractData.project.total || contractData.financials?.total || 'TBD'}</p>
+                </div>
+
+                <div style="background: #e3f2fd; padding: 15px; border-left: 4px solid #00bcd4; margin: 20px 0;">
+                  <h3>🔒 Legal Compliance Workflow</h3>
+                  <p>This contract has been prepared and is ready for mandatory review by both parties.</p>
+                  <p><strong>Next Steps:</strong></p>
+                  <ol>
+                    <li>Review all contract terms and conditions</li>
+                    <li>Confirm understanding of all clauses</li>
+                    <li>Proceed to secure digital signature process</li>
+                  </ol>
+                </div>
+
+                <div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                  <h4>Project Description:</h4>
+                  <p>${contractData.project.description || 'Professional construction services as specified in the contract terms.'}</p>
+                </div>
+
+                <p style="color: #666; font-size: 12px; text-align: center; margin-top: 30px;">
+                  This notification was sent via Owl Fence Legal Compliance System.<br>
+                  For questions, contact your contractor directly.
+                </p>
+              </div>`
+          })
+        });
+        
+        const emailResult = await emailResponse.json();
+        deliveryResults.email = emailResult;
+        console.log('📧 [EMAIL] Result:', emailResult);
+      } catch (emailError) {
+        console.error('📧 [EMAIL] Failed:', emailError);
+      }
+
+      // Send SMS if client phone is available
+      if (editableContacts.clientPhone) {
+        try {
+          const smsResponse = await fetch('/api/sms/contract-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: editableContacts.clientPhone,
+              clientName: contractData.client.name,
+              contractorName: contractData.contractor.name,
+              contractorCompany: contractData.contractor.company,
+              projectType: contractData.project.type
+            })
+          });
+          
+          const smsResult = await smsResponse.json();
+          deliveryResults.sms = smsResult;
+          console.log('📱 [SMS] Result:', smsResult);
+        } catch (smsError) {
+          console.error('📱 [SMS] Failed:', smsError);
+        }
+      }
+
+      const deliveryResult = {
+        success: deliveryResults.email.success || deliveryResults.sms.success,
+        email: deliveryResults.email,
+        sms: deliveryResults.sms,
+        error: !deliveryResults.email.success && !deliveryResults.sms.success ? 'Both email and SMS delivery failed' : null
+      };
       
       if (deliveryResult.success) {
         setDeliveryCompleted(true);

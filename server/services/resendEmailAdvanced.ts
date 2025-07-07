@@ -169,11 +169,7 @@ export class ResendEmailAdvanced {
           'X-Service': 'Owl-Fence-Contracts',
           'List-Unsubscribe': `<mailto:${params.contractorEmail}?subject=Unsubscribe>`
         },
-        tags: [
-          { name: 'type', value: 'contract-delivery' },
-          { name: 'contractor', value: params.contractorCompany.replace(/[^a-zA-Z0-9_-]/g, '-').substring(0, 40) },
-          { name: 'env', value: this.isTestMode() ? 'test' : 'prod' }
-        ],
+        // Remove tags to avoid Resend validation issues
         ...(params.attachments && params.attachments.length > 0 && {
           attachments: params.attachments.map(att => ({
             filename: att.filename,
