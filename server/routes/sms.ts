@@ -220,4 +220,94 @@ router.get('/health', async (req, res) => {
   }
 });
 
+// Send COMPLETE contract email (email with embedded contract content)
+router.post('/complete-contract-email', async (req, res) => {
+  try {
+    const {
+      to,
+      contractorName,
+      contractorCompany,
+      clientName,
+      contractHTML,
+      contractId,
+      reviewUrl
+    } = req.body;
+
+    console.log('📧 [COMPLETE-CONTRACT-EMAIL-API] Processing complete contract email...');
+    console.log('📧 [COMPLETE-CONTRACT-EMAIL-API] To:', to);
+    console.log('📧 [COMPLETE-CONTRACT-EMAIL-API] Contract ID:', contractId);
+    console.log('📧 [COMPLETE-CONTRACT-EMAIL-API] Review URL:', reviewUrl);
+
+    if (!to || !contractorName || !contractorCompany || !clientName || !contractHTML || !contractId || !reviewUrl) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: to, contractorName, contractorCompany, clientName, contractHTML, contractId, reviewUrl'
+      });
+    }
+
+    const result = await resendEmailAdvanced.sendCompleteContractEmail({
+      to,
+      contractorName,
+      contractorCompany,
+      clientName,
+      contractHTML,
+      contractId,
+      reviewUrl
+    });
+
+    res.json(result);
+
+  } catch (error) {
+    console.error('❌ [COMPLETE-CONTRACT-EMAIL-API] Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error sending complete contract email'
+    });
+  }
+});
+
+// Send COMPLETE contract SMS (SMS with direct review link)
+router.post('/complete-contract-sms', async (req, res) => {
+  try {
+    const {
+      to,
+      clientName,
+      contractorName,
+      contractorCompany,
+      contractId,
+      reviewUrl
+    } = req.body;
+
+    console.log('📱 [COMPLETE-CONTRACT-SMS-API] Processing complete contract SMS...');
+    console.log('📱 [COMPLETE-CONTRACT-SMS-API] To:', to);
+    console.log('📱 [COMPLETE-CONTRACT-SMS-API] Contract ID:', contractId);
+    console.log('📱 [COMPLETE-CONTRACT-SMS-API] Review URL:', reviewUrl);
+
+    if (!to || !clientName || !contractorName || !contractorCompany || !contractId || !reviewUrl) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: to, clientName, contractorName, contractorCompany, contractId, reviewUrl'
+      });
+    }
+
+    const result = await twilioService.sendCompleteContractSMS({
+      to,
+      clientName,
+      contractorName,
+      contractorCompany,
+      contractId,
+      reviewUrl
+    });
+
+    res.json(result);
+
+  } catch (error) {
+    console.error('❌ [COMPLETE-CONTRACT-SMS-API] Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error sending complete contract SMS'
+    });
+  }
+});
+
 export default router;

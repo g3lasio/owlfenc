@@ -149,6 +149,56 @@ export class TwilioService {
   }
 
   /**
+   * Send COMPLETE contract review SMS with direct link
+   */
+  async sendCompleteContractSMS(params: {
+    to: string;
+    clientName: string;
+    contractorName: string;
+    contractorCompany: string;
+    contractId: string;
+    reviewUrl: string;
+  }): Promise<SMSResponse> {
+    try {
+      console.log('📱 [COMPLETE-CONTRACT-SMS] Sending complete contract review SMS...');
+      console.log('📱 [COMPLETE-CONTRACT-SMS] To:', params.to);
+      console.log('📱 [COMPLETE-CONTRACT-SMS] Contract ID:', params.contractId);
+      console.log('📱 [COMPLETE-CONTRACT-SMS] Review URL:', params.reviewUrl);
+
+      const message = `🔒 CONTRACT READY FOR REVIEW
+
+Hi ${params.clientName},
+
+Your contract with ${params.contractorCompany} is ready for review and signature.
+
+📋 Contract ID: ${params.contractId}
+👷 Contractor: ${params.contractorName}
+
+📱 REVIEW & SIGN NOW:
+${params.reviewUrl}
+
+⚠️ IMPORTANT: This is a legally binding document. Please read carefully before signing.
+
+❓ Questions? Contact ${params.contractorCompany} directly.
+
+Powered by Owl Fence Legal Defense`;
+
+      return await this.sendSMS({
+        to: params.to,
+        message: message,
+        type: 'contract-notification'
+      });
+
+    } catch (error: any) {
+      console.error('❌ [COMPLETE-CONTRACT-SMS] Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Complete contract SMS delivery failed'
+      };
+    }
+  }
+
+  /**
    * Send contract notification SMS
    */
   async sendContractNotification(params: {

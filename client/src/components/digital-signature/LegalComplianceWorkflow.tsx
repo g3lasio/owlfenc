@@ -150,71 +150,48 @@ export default function LegalComplianceWorkflow({
       // Use Phase2IntegrationOrchestrator for comprehensive delivery
       const orchestrator = new Phase2IntegrationOrchestrator();
       
-      // Use direct API calls instead of orchestrator for more reliable delivery
-      console.log('📧 [DELIVERY] Starting document delivery...');
+      // Use new COMPLETE contract delivery system that sends full contract for device-based review and signing
+      console.log('📧 [DELIVERY] Starting complete contract delivery...');
+      
+      // Generate unique contract ID for tracking
+      const contractId = `CON-${new Date().getFullYear()}-${Date.now()}`;
+      
+      // Create public review URL where users can review and sign the complete contract
+      const reviewUrl = `${window.location.origin}/contract-review/${contractId}`;
+      console.log('🔗 [DELIVERY] Contract review URL generated:', reviewUrl);
       
       const deliveryResults = {
         email: { success: false },
         sms: { success: false }
       };
 
-      // Send email using Resend service
+      // Send COMPLETE contract email with embedded contract and review link
       try {
-        const emailResponse = await fetch('/api/sms/test-email', {
+        const emailResponse = await fetch('/api/sms/complete-contract-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             to: editableContacts.clientEmail,
             contractorName: contractData.contractor.name,
             contractorCompany: contractData.contractor.company,
-            subject: `Contract Review Required - ${contractData.project.type}`,
-            htmlContent: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h1 style="color: #00bcd4; text-align: center;">Contract Ready for Review</h1>
-                
-                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                  <h3>📋 Project Details</h3>
-                  <p><strong>Client:</strong> ${contractData.client.name}</p>
-                  <p><strong>Contractor:</strong> ${contractData.contractor.company || contractData.contractor.name}</p>
-                  <p><strong>Project:</strong> ${contractData.project.type}</p>
-                  <p><strong>Value:</strong> $${contractData.project.total || contractData.financials?.total || 'TBD'}</p>
-                </div>
-
-                <div style="background: #e3f2fd; padding: 15px; border-left: 4px solid #00bcd4; margin: 20px 0;">
-                  <h3>🔒 Legal Compliance Workflow</h3>
-                  <p>This contract has been prepared and is ready for mandatory review by both parties.</p>
-                  <p><strong>Next Steps:</strong></p>
-                  <ol>
-                    <li>Review all contract terms and conditions</li>
-                    <li>Confirm understanding of all clauses</li>
-                    <li>Proceed to secure digital signature process</li>
-                  </ol>
-                </div>
-
-                <div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                  <h4>Project Description:</h4>
-                  <p>${contractData.project.description || 'Professional construction services as specified in the contract terms.'}</p>
-                </div>
-
-                <p style="color: #666; font-size: 12px; text-align: center; margin-top: 30px;">
-                  This notification was sent via Owl Fence Legal Compliance System.<br>
-                  For questions, contact your contractor directly.
-                </p>
-              </div>`
+            clientName: contractData.client.name,
+            contractHTML: contractHTML,
+            contractId: contractId,
+            reviewUrl: reviewUrl
           })
         });
         
         const emailResult = await emailResponse.json();
         deliveryResults.email = emailResult;
-        console.log('📧 [EMAIL] Result:', emailResult);
+        console.log('📧 [COMPLETE-EMAIL] Result:', emailResult);
       } catch (emailError) {
-        console.error('📧 [EMAIL] Failed:', emailError);
+        console.error('📧 [COMPLETE-EMAIL] Failed:', emailError);
       }
 
-      // Send SMS if client phone is available
+      // Send COMPLETE contract SMS with direct review link
       if (editableContacts.clientPhone) {
         try {
-          const smsResponse = await fetch('/api/sms/contract-notification', {
+          const smsResponse = await fetch('/api/sms/complete-contract-sms', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -222,15 +199,16 @@ export default function LegalComplianceWorkflow({
               clientName: contractData.client.name,
               contractorName: contractData.contractor.name,
               contractorCompany: contractData.contractor.company,
-              projectType: contractData.project.type
+              contractId: contractId,
+              reviewUrl: reviewUrl
             })
           });
           
           const smsResult = await smsResponse.json();
           deliveryResults.sms = smsResult;
-          console.log('📱 [SMS] Result:', smsResult);
+          console.log('📱 [COMPLETE-SMS] Result:', smsResult);
         } catch (smsError) {
-          console.error('📱 [SMS] Failed:', smsError);
+          console.error('📱 [COMPLETE-SMS] Failed:', smsError);
         }
       }
 
@@ -246,8 +224,8 @@ export default function LegalComplianceWorkflow({
         setCurrentStep('mandatory-review');
         
         toast({
-          title: "Document Delivered Successfully",
-          description: `Contract sent to both parties via ${editableContacts.contractorPhone && editableContacts.clientPhone ? 'SMS and email' : 'email'} for mandatory review`,
+          title: "Complete Contract Delivered Successfully",
+          description: `Full contract with review and signature capability sent via ${editableContacts.clientPhone ? 'SMS and email' : 'email'}. Client can now review and sign directly from their device.`,
         });
       } else {
         throw new Error(deliveryResult.error || 'Document delivery failed');
@@ -255,8 +233,8 @@ export default function LegalComplianceWorkflow({
     } catch (error) {
       console.error('Document delivery error:', error);
       toast({
-        title: "Document Delivery Failed",
-        description: "Could not deliver contract to both parties. Legal process cannot continue.",
+        title: "Contract Delivery Failed", 
+        description: "Could not deliver complete contract for device-based review and signing. Please check email/SMS services and try again.",
         variant: "destructive"
       });
     } finally {

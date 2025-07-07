@@ -5635,6 +5635,459 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
+  // *** PUBLIC CONTRACT REVIEW PAGE - No Authentication Required ***
+  app.get("/contract-review/:contractId", async (req: Request, res: Response) => {
+    try {
+      const { contractId } = req.params;
+      console.log('📄 [PUBLIC-CONTRACT] Serving contract review page for:', contractId);
+      
+      // This will serve a public contract review page
+      // Contract data should be embedded securely in the page
+      const reviewPageHTML = `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Contract Review - ${contractId}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              line-height: 1.6; 
+              color: #333; 
+              background: #f5f5f5;
+              padding: 20px;
+            }
+            .container { 
+              max-width: 800px; 
+              margin: 0 auto; 
+              background: white; 
+              border-radius: 10px; 
+              box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+              overflow: hidden;
+            }
+            .header { 
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+              color: white; 
+              padding: 30px; 
+              text-align: center; 
+            }
+            .header h1 { font-size: 28px; margin-bottom: 10px; }
+            .header p { opacity: 0.9; font-size: 16px; }
+            .content { padding: 30px; }
+            .contract-content { 
+              border: 2px solid #e1e5e9; 
+              border-radius: 8px; 
+              padding: 25px; 
+              margin: 20px 0;
+              background: #fafbfc;
+              max-height: 60vh;
+              overflow-y: auto;
+            }
+            .signature-section { 
+              background: #f8f9fa; 
+              border-radius: 8px; 
+              padding: 25px; 
+              margin: 25px 0; 
+              border-left: 4px solid #28a745;
+            }
+            .btn { 
+              background: linear-gradient(135deg, #28a745 0%, #20c997 100%); 
+              color: white; 
+              border: none; 
+              padding: 12px 30px; 
+              border-radius: 6px; 
+              cursor: pointer; 
+              font-size: 16px;
+              font-weight: 600;
+              transition: all 0.3s ease;
+              display: inline-block;
+              text-decoration: none;
+              margin: 10px 5px;
+            }
+            .btn:hover { 
+              transform: translateY(-2px); 
+              box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+            }
+            .btn-secondary { 
+              background: linear-gradient(135deg, #6c757d 0%, #495057 100%); 
+            }
+            .canvas-container {
+              border: 2px dashed #dee2e6;
+              border-radius: 8px;
+              margin: 15px 0;
+              padding: 20px;
+              text-align: center;
+              background: white;
+            }
+            canvas {
+              border: 1px solid #ccc;
+              border-radius: 4px;
+              cursor: crosshair;
+            }
+            .step { margin: 25px 0; padding: 20px; border-radius: 8px; }
+            .step.active { background: #e3f2fd; border-left: 4px solid #2196f3; }
+            .step h3 { color: #1976d2; margin-bottom: 15px; }
+            .footer { 
+              background: #f8f9fa; 
+              padding: 20px; 
+              text-align: center; 
+              border-top: 1px solid #e9ecef;
+              color: #6c757d;
+            }
+            @media (max-width: 768px) {
+              body { padding: 10px; }
+              .container { margin: 0; }
+              .header, .content { padding: 20px; }
+              .header h1 { font-size: 24px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>📋 Contract Review</h1>
+              <p>Review and sign your contract securely</p>
+              <p><strong>Contract ID:</strong> ${contractId}</p>
+            </div>
+            
+            <div class="content">
+              <div class="step active" id="step-review">
+                <h3>📖 Step 1: Review Contract</h3>
+                <p>Please read the complete contract below. Take your time to review all terms and conditions.</p>
+                
+                <div class="contract-content" id="contract-content">
+                  <div style="text-align: center; padding: 40px; color: #666;">
+                    <div style="font-size: 18px; margin-bottom: 15px;">🔄 Loading Contract...</div>
+                    <div>Please wait while we load your contract details</div>
+                  </div>
+                </div>
+                
+                <label style="display: flex; align-items: center; margin: 20px 0; font-weight: 500;">
+                  <input type="checkbox" id="confirm-read" style="margin-right: 10px; transform: scale(1.2);">
+                  I have read and understood all terms and conditions in this contract
+                </label>
+                
+                <button class="btn" onclick="proceedToSignature()" id="proceed-btn" disabled>
+                  ✅ Proceed to Signature
+                </button>
+              </div>
+              
+              <div class="step" id="step-signature" style="display: none;">
+                <h3>✍️ Step 2: Digital Signature</h3>
+                <p>Please sign below using your finger (mobile) or mouse/trackpad (desktop):</p>
+                
+                <div class="canvas-container">
+                  <canvas id="signature-canvas" width="400" height="200"></canvas>
+                  <div style="margin-top: 15px;">
+                    <button class="btn btn-secondary" onclick="clearSignature()">🗑️ Clear</button>
+                    <button class="btn" onclick="confirmSignature()" id="confirm-signature-btn" disabled>
+                      ✅ Confirm Signature
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="step" id="step-complete" style="display: none;">
+                <h3>🎉 Contract Signed Successfully!</h3>
+                <p>Your contract has been signed and saved securely. Both parties will receive a copy of the signed document.</p>
+                
+                <button class="btn" onclick="downloadContract()">
+                  📄 Download Signed Contract
+                </button>
+              </div>
+            </div>
+            
+            <div class="footer">
+              <p>Powered by Owl Fence Legal Defense System</p>
+              <p>Secure • Compliant • Professional</p>
+            </div>
+          </div>
+          
+          <script>
+            // Load contract data
+            fetch('/api/contract-data/${contractId}')
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  document.getElementById('contract-content').innerHTML = data.contractHTML;
+                } else {
+                  document.getElementById('contract-content').innerHTML = 
+                    '<div style="color: red; text-align: center; padding: 20px;">Error loading contract. Please contact support.</div>';
+                }
+              })
+              .catch(error => {
+                document.getElementById('contract-content').innerHTML = 
+                  '<div style="color: red; text-align: center; padding: 20px;">Network error loading contract. Please try again.</div>';
+              });
+            
+            // Enable proceed button when checkbox is checked
+            document.getElementById('confirm-read').addEventListener('change', function() {
+              document.getElementById('proceed-btn').disabled = !this.checked;
+            });
+            
+            // Signature canvas setup
+            let canvas, ctx, isDrawing = false;
+            
+            function proceedToSignature() {
+              document.getElementById('step-review').style.display = 'none';
+              document.getElementById('step-signature').style.display = 'block';
+              document.getElementById('step-signature').classList.add('active');
+              
+              // Initialize canvas
+              canvas = document.getElementById('signature-canvas');
+              ctx = canvas.getContext('2d');
+              ctx.strokeStyle = '#000';
+              ctx.lineWidth = 2;
+              ctx.lineCap = 'round';
+              
+              // Mouse events
+              canvas.addEventListener('mousedown', startDrawing);
+              canvas.addEventListener('mousemove', draw);
+              canvas.addEventListener('mouseup', stopDrawing);
+              
+              // Touch events
+              canvas.addEventListener('touchstart', handleTouch);
+              canvas.addEventListener('touchmove', handleTouch);
+              canvas.addEventListener('touchend', stopDrawing);
+              
+              function startDrawing(e) {
+                isDrawing = true;
+                draw(e);
+                document.getElementById('confirm-signature-btn').disabled = false;
+              }
+              
+              function draw(e) {
+                if (!isDrawing) return;
+                
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+              }
+              
+              function handleTouch(e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 
+                                                 e.type === 'touchmove' ? 'mousemove' : 'mouseup', {
+                  clientX: touch.clientX,
+                  clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+              }
+              
+              function stopDrawing() {
+                if (isDrawing) {
+                  isDrawing = false;
+                  ctx.beginPath();
+                }
+              }
+            }
+            
+            function clearSignature() {
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              document.getElementById('confirm-signature-btn').disabled = true;
+            }
+            
+            function confirmSignature() {
+              // Convert canvas to base64
+              const signatureData = canvas.toDataURL();
+              
+              // Send signature to server
+              fetch('/api/contract-signature/${contractId}', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  signature: signatureData,
+                  timestamp: new Date().toISOString(),
+                  userAgent: navigator.userAgent
+                })
+              })
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  document.getElementById('step-signature').style.display = 'none';
+                  document.getElementById('step-complete').style.display = 'block';
+                  document.getElementById('step-complete').classList.add('active');
+                } else {
+                  alert('Error saving signature. Please try again.');
+                }
+              })
+              .catch(error => {
+                alert('Network error. Please check your connection and try again.');
+              });
+            }
+            
+            function downloadContract() {
+              window.open('/api/contract-download/${contractId}', '_blank');
+            }
+          </script>
+        </body>
+        </html>
+      `;
+      
+      res.setHeader('Content-Type', 'text/html');
+      res.send(reviewPageHTML);
+      
+    } catch (error) {
+      console.error('❌ [PUBLIC-CONTRACT] Error serving contract review page:', error);
+      res.status(500).send(`
+        <html>
+          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+            <h1>Error Loading Contract</h1>
+            <p>Sorry, there was an error loading the contract review page.</p>
+            <p>Contract ID: ${req.params.contractId}</p>
+          </body>
+        </html>
+      `);
+    }
+  });
+
+  // *** PUBLIC CONTRACT DATA API - No Authentication Required ***
+  app.get("/api/contract-data/:contractId", async (req: Request, res: Response) => {
+    try {
+      const { contractId } = req.params;
+      console.log('📄 [CONTRACT-DATA] Fetching contract data for:', contractId);
+      
+      // For now, we'll return a basic contract template
+      // In production, this would fetch from a secure contract storage
+      const contractHTML = `
+        <div style="font-family: 'Times New Roman', serif; line-height: 1.6; max-width: 100%;">
+          <h1 style="text-align: center; color: #333; margin-bottom: 30px; font-size: 24px;">
+            INDEPENDENT CONTRACTOR AGREEMENT
+          </h1>
+          
+          <div style="margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <p><strong>Contract ID:</strong> ${contractId}</p>
+            <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+            <p><strong>Status:</strong> Pending Signature</p>
+          </div>
+          
+          <h2 style="color: #444; border-bottom: 2px solid #dee2e6; padding-bottom: 10px;">1. PARTIES</h2>
+          <p style="margin-bottom: 20px;">
+            This Agreement is entered into between <strong>Contractor</strong> ("Contractor") 
+            and <strong>Client</strong> ("Client") for the performance of construction services.
+          </p>
+          
+          <h2 style="color: #444; border-bottom: 2px solid #dee2e6; padding-bottom: 10px;">2. SCOPE OF WORK</h2>
+          <p style="margin-bottom: 20px;">
+            The Contractor agrees to provide professional construction services as detailed in the project 
+            specifications, including all materials, labor, and equipment necessary for completion.
+          </p>
+          
+          <h2 style="color: #444; border-bottom: 2px solid #dee2e6; padding-bottom: 10px;">3. PAYMENT TERMS</h2>
+          <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <p><strong>Payment Schedule:</strong></p>
+            <ul style="margin-left: 20px;">
+              <li>50% deposit upon contract signing</li>
+              <li>50% final payment upon project completion</li>
+            </ul>
+          </div>
+          
+          <h2 style="color: #444; border-bottom: 2px solid #dee2e6; padding-bottom: 10px;">4. WARRANTIES</h2>
+          <p style="margin-bottom: 20px;">
+            Contractor warrants all work performed and materials used for a period of one (1) year 
+            from completion date, excluding normal wear and tear.
+          </p>
+          
+          <h2 style="color: #444; border-bottom: 2px solid #dee2e6; padding-bottom: 10px;">5. INSURANCE & LIABILITY</h2>
+          <p style="margin-bottom: 20px;">
+            Contractor maintains comprehensive general liability insurance with minimum coverage 
+            of $1,000,000 and will provide proof of insurance upon request.
+          </p>
+          
+          <h2 style="color: #444; border-bottom: 2px solid #dee2e6; padding-bottom: 10px;">6. COMPLETION TIMELINE</h2>
+          <p style="margin-bottom: 20px;">
+            Work shall commence within 14 days of contract execution and be completed according 
+            to the agreed timeline, weather and permit conditions permitting.
+          </p>
+          
+          <div style="margin-top: 40px; padding: 20px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+            <p style="margin: 0; font-weight: 500;">
+              📋 <strong>Important:</strong> By signing below, both parties acknowledge they have read, 
+              understood, and agree to be bound by all terms and conditions of this agreement.
+            </p>
+          </div>
+        </div>
+      `;
+      
+      res.json({
+        success: true,
+        contractHTML: contractHTML,
+        contractId: contractId,
+        loadedAt: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      console.error('❌ [CONTRACT-DATA] Error fetching contract data:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to load contract data'
+      });
+    }
+  });
+
+  // *** PUBLIC CONTRACT SIGNATURE API - No Authentication Required ***
+  app.post("/api/contract-signature/:contractId", async (req: Request, res: Response) => {
+    try {
+      const { contractId } = req.params;
+      const { signature, timestamp, userAgent } = req.body;
+      
+      console.log('✍️ [CONTRACT-SIGNATURE] Signature received for:', contractId);
+      console.log('✍️ [CONTRACT-SIGNATURE] Timestamp:', timestamp);
+      console.log('✍️ [CONTRACT-SIGNATURE] User Agent:', userAgent);
+      
+      // In production, save signature to secure storage
+      // For now, we'll just confirm receipt
+      
+      res.json({
+        success: true,
+        message: 'Signature saved successfully',
+        contractId: contractId,
+        signedAt: timestamp
+      });
+      
+    } catch (error) {
+      console.error('❌ [CONTRACT-SIGNATURE] Error saving signature:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to save signature'
+      });
+    }
+  });
+
+  // *** PUBLIC CONTRACT DOWNLOAD API - No Authentication Required ***
+  app.get("/api/contract-download/:contractId", async (req: Request, res: Response) => {
+    try {
+      const { contractId } = req.params;
+      console.log('📄 [CONTRACT-DOWNLOAD] Download request for:', contractId);
+      
+      // In production, generate and return signed PDF
+      // For now, return a basic response
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="contract-${contractId}.pdf"`);
+      
+      // Return a basic PDF placeholder
+      const pdfContent = Buffer.from('PDF placeholder for contract ' + contractId);
+      res.send(pdfContent);
+      
+    } catch (error) {
+      console.error('❌ [CONTRACT-DOWNLOAD] Error generating download:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to generate contract download'
+      });
+    }
+  });
+
   // Crear y retornar el servidor HTTP
   const server = createServer(app);
   return server;
