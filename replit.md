@@ -181,6 +181,14 @@ Changelog:
   * SECURED FINANCIAL INTEGRITY: All contract generation now uses correct dollar values from UI display
   * PREVENTED LEGAL RISK: Eliminated contracts with incorrect financial amounts that could cause legal and reputational damage
   * SYSTEMATIC NORMALIZATION: Implemented intelligent conversion of values >$10,000 from centavos to dollars as safety fallback
+- July 7, 2025. ✅ COMPREHENSIVE CODE OPTIMIZATION: Eliminated financial calculation duplication with robust helper function:
+  * CREATED CENTRALIZED SOLUTION: Built getCorrectProjectTotal() helper function consolidating all financial logic
+  * ELIMINATED CODE DUPLICATION: Removed 8+ instances of complex financial calculation logic across SimpleContractGenerator
+  * ENHANCED MAINTAINABILITY: Single source of truth for financial calculations prevents future inconsistencies
+  * ROBUST FALLBACK HIERARCHY: displaySubtotal → displayTotal → totalPrice → estimateAmount → intelligent centavo conversion
+  * SYSTEMATIC REPLACEMENT: Updated paymentMilestones initialization, project totals, contract payload, percentage calculations, AI descriptions
+  * PERFORMANCE OPTIMIZATION: Reduced complex calculations from repeated 120+ character expressions to single function calls
+  * FUTURE-PROOF ARCHITECTURE: Any changes to financial logic now require only single function modification
 - July 6, 2025. ✅ CONTRACTOR DATA FIX: Resolved estimates PDF generation phone and email issues:
   * Removed hardcoded fallback values "(555) 123-4567" and "truthbackpack@gmail.com" from backend
   * Updated frontend EstimatesWizard to send complete contractor profile data in PDF generation payload

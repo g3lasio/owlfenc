@@ -351,15 +351,8 @@ export default function SimpleContractGenerator() {
                                 project.projectDetails || 
                                 `${projectType} project for ${clientName}`;
       
-      // Extract financial data - CRITICAL FIX: Use display values first (in dollars, not centavos)
-      const totalAmount = project.displaySubtotal || 
-                         project.displayTotal || 
-                         project.totalPrice || 
-                         project.estimateAmount || 
-                         // Only use these as last resort and normalize if they're in centavos
-                         (project.total > 10000 ? project.total / 100 : project.total) ||
-                         (project.totalAmount > 10000 ? project.totalAmount / 100 : project.totalAmount) ||
-                         0;
+      // Extract financial data - CRITICAL FIX: Use helper function for consistent calculation
+      const totalAmount = getCorrectProjectTotal(project);
       
       // No conversion - keep original values as they are stored (matching EstimatesWizard)
       
@@ -398,8 +391,8 @@ export default function SimpleContractGenerator() {
         permitResponsibility: "contractor",
         warrantyYears: "1",
         paymentMilestones: [
-          { id: 1, description: "Initial deposit", percentage: 50, amount: totalAmount * 0.5 },
-          { id: 2, description: "Project completion", percentage: 50, amount: totalAmount * 0.5 }
+          { id: 1, description: "Initial deposit", percentage: 50, amount: getCorrectProjectTotal(selectedProject) * 0.5 },
+          { id: 2, description: "Project completion", percentage: 50, amount: getCorrectProjectTotal(selectedProject) * 0.5 }
         ],
         suggestedClauses: [],
         selectedClauses: [],
@@ -433,6 +426,17 @@ export default function SimpleContractGenerator() {
     }
   }, [currentUser?.uid, toast]);
 
+  // CRITICAL: Helper function to get correct project total (prioritizes display values over raw values in centavos)
+  const getCorrectProjectTotal = useCallback((project: any) => {
+    return project?.displaySubtotal || 
+           project?.displayTotal || 
+           project?.totalPrice || 
+           project?.estimateAmount || 
+           (project?.total > 10000 ? project.total / 100 : project.total) ||
+           (project?.totalAmount > 10000 ? project.totalAmount / 100 : project.totalAmount) ||
+           0;
+  }, []);
+
   // Generate contract using backend API with comprehensive data
   const handleGenerateContract = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid) return;
@@ -451,7 +455,7 @@ export default function SimpleContractGenerator() {
         project: {
           description: contractData?.projectDetails?.description || selectedProject.description || selectedProject.projectDescription || selectedProject.projectType || "",
           type: selectedProject.projectType || "Construction Project",
-          total: parseFloat((selectedProject.displaySubtotal || selectedProject.displayTotal || selectedProject.totalPrice || selectedProject.estimateAmount || (selectedProject.total > 10000 ? selectedProject.total / 100 : selectedProject.total) || (selectedProject.totalAmount > 10000 ? selectedProject.totalAmount / 100 : selectedProject.totalAmount) || 0).toString()),
+          total: getCorrectProjectTotal(selectedProject),
           materials: contractData?.materials || selectedProject.materials || [],
         },
         contractor: {
@@ -472,7 +476,7 @@ export default function SimpleContractGenerator() {
             "To be agreed",
         },
         financials: {
-          total: parseFloat((selectedProject.displaySubtotal || selectedProject.displayTotal || selectedProject.totalPrice || selectedProject.estimateAmount || (selectedProject.total > 10000 ? selectedProject.total / 100 : selectedProject.total) || (selectedProject.totalAmount > 10000 ? selectedProject.totalAmount / 100 : selectedProject.totalAmount) || 0).toString()),
+          total: getCorrectProjectTotal(selectedProject),
           paymentMilestones: editableData.paymentMilestones,
         },
         permitInfo: {
@@ -856,7 +860,7 @@ export default function SimpleContractGenerator() {
                     <div className="bg-green-900/30 border border-green-400 rounded-lg px-4 py-2">
                       <p className="text-sm text-gray-400">Project Total</p>
                       <p className="text-xl font-bold text-green-400">
-                        ${(selectedProject?.total || selectedProject?.totalAmount || selectedProject?.totalPrice || selectedProject?.displaySubtotal || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ${getCorrectProjectTotal(selectedProject).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </div>
                   </div>
@@ -906,7 +910,7 @@ export default function SimpleContractGenerator() {
                                   const newMilestones = [...editableData.paymentMilestones];
                                   const newPercentage = parseInt(e.target.value) || 0;
                                   newMilestones[index].percentage = newPercentage;
-                                  const totalAmount = selectedProject.total || selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0;
+                                  const totalAmount = getCorrectProjectTotal(selectedProject);
                                   newMilestones[index].amount = totalAmount * (newPercentage / 100);
                                   setEditableData(prev => ({ ...prev, paymentMilestones: newMilestones }));
                                 }}
@@ -934,7 +938,7 @@ export default function SimpleContractGenerator() {
                         onClick={() => {
                           const newId = Math.max(...editableData.paymentMilestones.map(m => m.id)) + 1;
                           const remainingPercentage = 100 - editableData.paymentMilestones.reduce((sum, m) => sum + m.percentage, 0);
-                          const totalAmount = selectedProject.total || selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0;
+                          const totalAmount = getCorrectProjectTotal(selectedProject);
                           const newMilestone = {
                             id: newId,
                             description: `Milestone ${newId}`,
@@ -1026,7 +1030,7 @@ export default function SimpleContractGenerator() {
                   {!isLoadingClauses && suggestedClauses.length > 0 && (
                     <div className="space-y-3">
                       <p className="text-sm text-gray-400 mb-4">
-                        Based on your ${(selectedProject.totalAmount || 0).toLocaleString()} {selectedProject.projectType || 'construction'} project, 
+                        Based on your ${getCorrectProjectTotal(selectedProject).toLocaleString()} {selectedProject.projectType || 'construction'} project, 
                         AI recommends these protection clauses:
                       </p>
                       
