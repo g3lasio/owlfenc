@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { 
   FileText, 
@@ -21,7 +22,9 @@ import {
   UserCheck,
   Lock,
   Unlock,
-  AlertCircle
+  AlertCircle,
+  Edit3,
+  Save
 } from "lucide-react";
 import DigitalSignatureCanvas from "./DigitalSignatureCanvas";
 import { Phase2IntegrationOrchestrator } from "@/services/digital-signature/Phase2IntegrationOrchestrator";
@@ -78,6 +81,24 @@ export default function LegalComplianceWorkflow({
   const [workflowProgress, setWorkflowProgress] = useState(0);
   const [legalViolations, setLegalViolations] = useState<string[]>([]);
   
+  // Editable contact info states
+  const [editableContacts, setEditableContacts] = useState({
+    contractorEmail: contractData.contractor.email || '',
+    clientEmail: contractData.client.email || '',
+    contractorPhone: contractData.contractor.phone || '',
+    clientPhone: contractData.client.phone || ''
+  });
+  const [editingField, setEditingField] = useState<string | null>(null);
+  
+  // Handle contact field updates
+  const handleContactUpdate = (field: string) => {
+    setEditingField(null);
+    toast({
+      title: "Contact Information Updated",
+      description: `${field === 'emails' ? 'Email addresses' : 'Phone numbers'} have been updated for contract delivery.`,
+    });
+  };
+  
   const { toast } = useToast();
 
   // Calculate workflow progress
@@ -132,10 +153,10 @@ export default function LegalComplianceWorkflow({
       const deliveryResult = await orchestrator.executePhase2Integration({
         contractData,
         contractHTML,
-        clientEmail: contractData.client.email,
-        clientPhone: contractData.client.phone,
-        contractorEmail: contractData.contractor.email,
-        contractorPhone: contractData.contractor.phone || '',
+        clientEmail: editableContacts.clientEmail,
+        clientPhone: editableContacts.clientPhone,
+        contractorEmail: editableContacts.contractorEmail,
+        contractorPhone: editableContacts.contractorPhone,
         enableSMSNotifications: true,
         enableEmailDelivery: true,
         enableGeolocationValidation: false, // For document delivery only
@@ -375,23 +396,91 @@ export default function LegalComplianceWorkflow({
         <div className="space-y-3">
           <div className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg">
             <Mail className="h-5 w-5 text-cyan-400" />
-            <div>
-              <p className="font-semibold text-white">Email Delivery</p>
-              <p className="text-sm text-gray-400">
-                Contractor: {contractData.contractor.email}<br/>
-                Client: {contractData.client.email}
-              </p>
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-semibold text-white">Email Delivery</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => editingField === 'emails' ? handleContactUpdate('emails') : setEditingField('emails')}
+                  className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300"
+                >
+                  {editingField === 'emails' ? <Save className="h-3 w-3" /> : <Edit3 className="h-3 w-3" />}
+                </Button>
+              </div>
+              
+              {editingField === 'emails' ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400 w-20">Contractor:</span>
+                    <Input
+                      value={editableContacts.contractorEmail}
+                      onChange={(e) => setEditableContacts(prev => ({ ...prev, contractorEmail: e.target.value }))}
+                      className="h-6 text-xs bg-gray-700 border-gray-600 text-white"
+                      placeholder="contractor@email.com"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400 w-20">Client:</span>
+                    <Input
+                      value={editableContacts.clientEmail}
+                      onChange={(e) => setEditableContacts(prev => ({ ...prev, clientEmail: e.target.value }))}
+                      className="h-6 text-xs bg-gray-700 border-gray-600 text-white"
+                      placeholder="client@email.com"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-400">
+                  <div>Contractor: {editableContacts.contractorEmail}</div>
+                  <div>Client: {editableContacts.clientEmail}</div>
+                </div>
+              )}
             </div>
           </div>
           
           <div className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg">
             <MessageSquare className="h-5 w-5 text-green-400" />
-            <div>
-              <p className="font-semibold text-white">SMS Notification</p>
-              <p className="text-sm text-gray-400">
-                Contractor: {contractData.contractor.phone || 'Not provided'}<br/>
-                Client: {contractData.client.phone}
-              </p>
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-semibold text-white">SMS Notification</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => editingField === 'phones' ? handleContactUpdate('phones') : setEditingField('phones')}
+                  className="h-6 w-6 p-0 text-green-400 hover:text-green-300"
+                >
+                  {editingField === 'phones' ? <Save className="h-3 w-3" /> : <Edit3 className="h-3 w-3" />}
+                </Button>
+              </div>
+              
+              {editingField === 'phones' ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400 w-20">Contractor:</span>
+                    <Input
+                      value={editableContacts.contractorPhone}
+                      onChange={(e) => setEditableContacts(prev => ({ ...prev, contractorPhone: e.target.value }))}
+                      className="h-6 text-xs bg-gray-700 border-gray-600 text-white"
+                      placeholder="(555) 123-4567"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400 w-20">Client:</span>
+                    <Input
+                      value={editableContacts.clientPhone}
+                      onChange={(e) => setEditableContacts(prev => ({ ...prev, clientPhone: e.target.value }))}
+                      className="h-6 text-xs bg-gray-700 border-gray-600 text-white"
+                      placeholder="(555) 123-4567"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-400">
+                  <div>Contractor: {editableContacts.contractorPhone || 'Not provided'}</div>
+                  <div>Client: {editableContacts.clientPhone}</div>
+                </div>
+              )}
             </div>
           </div>
         </div>
