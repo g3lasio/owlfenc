@@ -98,9 +98,19 @@ export default function SimpleContractGenerator() {
     console.log("🔍 Loading estimates and projects for user:", currentUser.uid);
     
     try {
-      // Load projects directly from Firebase to avoid backend issues
+      // FIREBASE CONNECTION VALIDATION
+      console.log("🔗 Validating Firebase connection...");
       const { collection, query, where, getDocs } = await import("firebase/firestore");
       const { db } = await import("@/lib/firebase");
+      
+      // Test Firebase connection with a simple query
+      try {
+        const testQuery = query(collection(db, "estimates"), where("firebaseUserId", "==", currentUser.uid));
+        console.log("✅ Firebase connection validated successfully");
+      } catch (connectionError) {
+        console.error("❌ Firebase connection failed:", connectionError);
+        throw new Error("No se pudo conectar a Firebase. Verifique su conexión a internet.");
+      }
       
       let allProjects = [];
       
@@ -208,11 +218,31 @@ export default function SimpleContractGenerator() {
       allProjects = [...allProjects, ...firebaseProjects];
       console.log(`🏗️ Loaded ${firebaseProjects.length} projects from Firebase`);
 
-      // 3. Filter for valid projects with financial data
+      // 3. Filter for valid projects with comprehensive data validation
       const validProjects = allProjects.filter((project: any) => {
-        const hasValidAmount = (project.totalAmount || project.totalPrice || project.displaySubtotal || 0) > 0;
-        const hasClientName = project.clientName && project.clientName !== "Cliente sin nombre";
-        return hasValidAmount && hasClientName;
+        // Financial validation
+        const financialAmount = getCorrectProjectTotal(project);
+        const hasValidAmount = financialAmount > 0;
+        
+        // Client data validation
+        const hasClientName = project.clientName && 
+                             project.clientName !== "Cliente sin nombre" && 
+                             project.clientName.trim().length > 0;
+        
+        // Data integrity check
+        const isValidProject = hasValidAmount && hasClientName;
+        
+        if (!isValidProject) {
+          console.warn("⚠️ Invalid project filtered out:", {
+            id: project.id,
+            clientName: project.clientName,
+            financialAmount,
+            hasValidAmount,
+            hasClientName
+          });
+        }
+        
+        return isValidProject;
       });
       
       setProjects(validProjects);
@@ -250,34 +280,86 @@ export default function SimpleContractGenerator() {
       where("userId", "==", currentUser.uid)
     );
     
-    // Real-time listener
+    // Real-time listener with enhanced error handling and data validation
     const unsubscribe = onSnapshot(projectsQuery, 
       (snapshot) => {
-        const allProjects = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        
-        // Filter approved projects with expanded criteria
-        const approvedProjects = allProjects.filter((project: any) => 
-          project.status === "approved" || 
-          project.status === "estimate_ready" || 
-          project.status === "estimate" ||
-          project.projectProgress === "approved" ||
-          project.projectProgress === "client_approved" ||
-          project.projectProgress === "estimate_ready" ||
-          project.displaySubtotal > 0
-        );
-        
-        setProjects(approvedProjects);
-        console.log(`📊 Real-time update: ${approvedProjects.length} approved projects`);
-        setIsLoading(false);
+        try {
+          console.log("🔄 Processing real-time Firebase update...");
+          
+          const allProjects = snapshot.docs.map(doc => {
+            const data = doc.data();
+            
+            // Data validation for each project
+            if (!data) {
+              console.warn("⚠️ Empty project data detected:", doc.id);
+              return null;
+            }
+            
+            return {
+              id: doc.id,
+              ...data,
+              timestamp: new Date().toISOString()
+            };
+          }).filter(Boolean); // Remove null entries
+          
+          // Enhanced project filtering with data integrity checks
+          const approvedProjects = allProjects.filter((project: any) => {
+            // Status validation
+            const hasValidStatus = project.status === "approved" || 
+                                  project.status === "estimate_ready" || 
+                                  project.status === "estimate" ||
+                                  project.projectProgress === "approved" ||
+                                  project.projectProgress === "client_approved" ||
+                                  project.projectProgress === "estimate_ready" ||
+                                  project.displaySubtotal > 0;
+            
+            // Financial data validation
+            const financialAmount = getCorrectProjectTotal(project);
+            const hasValidFinancials = financialAmount > 0 && financialAmount < 1000000; // Corruption check
+            
+            // Client data validation
+            const hasValidClient = project.clientName && 
+                                  project.clientName !== "Cliente sin nombre" &&
+                                  project.clientName.trim().length > 0;
+            
+            const isValid = hasValidStatus && hasValidFinancials && hasValidClient;
+            
+            if (!isValid) {
+              console.warn("⚠️ Invalid project filtered from real-time update:", {
+                id: project.id,
+                hasValidStatus,
+                hasValidFinancials,
+                hasValidClient,
+                financialAmount
+              });
+            }
+            
+            return isValid;
+          });
+          
+          setProjects(approvedProjects);
+          console.log(`📊 Real-time update: ${approvedProjects.length} validated projects`);
+          setIsLoading(false);
+        } catch (processError) {
+          console.error("❌ Error processing real-time update:", processError);
+          toast({
+            title: "Error de Datos",
+            description: "Error procesando actualización en tiempo real",
+            variant: "destructive"
+          });
+        }
       },
       (error) => {
-        console.error("Firebase listener error:", error);
+        console.error("❌ Firebase listener connection error:", error);
+        console.error("❌ Error details:", {
+          code: error.code,
+          message: error.message,
+          timestamp: new Date().toISOString()
+        });
+        
         toast({
-          title: "Connection Error",
-          description: "Real-time updates unavailable. Please refresh the page.",
+          title: "Error de Conexión",
+          description: "Conexión Firebase perdida. Intentando reconectar...",
           variant: "destructive",
         });
         setIsLoading(false);
@@ -391,8 +473,8 @@ export default function SimpleContractGenerator() {
         permitResponsibility: "contractor",
         warrantyYears: "1",
         paymentMilestones: [
-          { id: 1, description: "Initial deposit", percentage: 50, amount: getCorrectProjectTotal(selectedProject) * 0.5 },
-          { id: 2, description: "Project completion", percentage: 50, amount: getCorrectProjectTotal(selectedProject) * 0.5 }
+          { id: 1, description: "Initial deposit", percentage: 50, amount: getCorrectProjectTotal(project) * 0.5 },
+          { id: 2, description: "Project completion", percentage: 50, amount: getCorrectProjectTotal(project) * 0.5 }
         ],
         suggestedClauses: [],
         selectedClauses: [],
@@ -415,10 +497,17 @@ export default function SimpleContractGenerator() {
         totalAmount: contractData.financials.total
       });
     } catch (error) {
-      console.error("Error selecting project:", error);
+      console.error("❌ CRITICAL ERROR selecting project:", error);
+      console.error("❌ Project data when error occurred:", project);
+      console.error("❌ Error details:", {
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      });
+      
       toast({
-        title: "Error",
-        description: "Failed to process project data",
+        title: "Error de Conexión",
+        description: `Error procesando datos del proyecto: ${error.message || 'Error desconocido'}`,
         variant: "destructive",
       });
     } finally {
@@ -428,13 +517,38 @@ export default function SimpleContractGenerator() {
 
   // CRITICAL: Helper function to get correct project total (prioritizes display values over raw values in centavos)
   const getCorrectProjectTotal = useCallback((project: any) => {
-    return project?.displaySubtotal || 
-           project?.displayTotal || 
-           project?.totalPrice || 
-           project?.estimateAmount || 
-           (project?.total > 10000 ? project.total / 100 : project.total) ||
-           (project?.totalAmount > 10000 ? project.totalAmount / 100 : project.totalAmount) ||
-           0;
+    if (!project) {
+      console.warn("⚠️ getCorrectProjectTotal called with null/undefined project");
+      return 0;
+    }
+    
+    console.log("💰 Financial data analysis:", {
+      displaySubtotal: project.displaySubtotal,
+      displayTotal: project.displayTotal,
+      totalPrice: project.totalPrice,
+      estimateAmount: project.estimateAmount,
+      total: project.total,
+      totalAmount: project.totalAmount
+    });
+    
+    // Priority order: display values first (already in dollars), then convert centavos if needed
+    const result = project.displaySubtotal || 
+                   project.displayTotal || 
+                   project.totalPrice || 
+                   project.estimateAmount || 
+                   (project.total && project.total > 10000 ? project.total / 100 : project.total) ||
+                   (project.totalAmount && project.totalAmount > 10000 ? project.totalAmount / 100 : project.totalAmount) ||
+                   0;
+    
+    console.log("💰 Final calculated total:", result);
+    
+    // Data integrity check - warn if result seems corrupted
+    if (result > 1000000) {
+      console.warn("⚠️ POTENTIAL DATA CORRUPTION: Total amount exceeds $1M:", result);
+      console.warn("⚠️ Original project data:", project);
+    }
+    
+    return result;
   }, []);
 
   // Generate contract using backend API with comprehensive data
