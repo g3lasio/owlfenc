@@ -1471,7 +1471,7 @@ export default function SimpleContractGenerator() {
         )}
 
         {/* Step 3: Complete */}
-        {currentStep === 3 && !showDigitalSigning && (
+        {currentStep === 3 && !showLegalWorkflow && (
           <Card className="bg-gray-900 border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-green-400">
