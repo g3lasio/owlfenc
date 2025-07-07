@@ -205,6 +205,8 @@ Changelog:
   * PRECISE LOCATION DATA: Autocompletado provides accurate, standardized address formats for contract generation
   * MINIMAL CODE IMPACT: Single component replacement without altering other parts of the contract generation logic
   * CONSISTENT IMPLEMENTATION: Reused existing Mapbox integration already working in other parts of the system
+  * EXTENDED TO ESTIMATES: Also implemented AddressAutocomplete in EstimatesWizard.tsx for new client creation dialog
+  * UNIVERSAL COVERAGE: Address autocompletion now available across all client data entry points in the system
 - July 6, 2025. ✅ CONTRACTOR DATA FIX: Resolved estimates PDF generation phone and email issues:
   * Removed hardcoded fallback values "(555) 123-4567" and "truthbackpack@gmail.com" from backend
   * Updated frontend EstimatesWizard to send complete contractor profile data in PDF generation payload

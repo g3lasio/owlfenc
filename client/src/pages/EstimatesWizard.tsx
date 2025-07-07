@@ -4,6 +4,7 @@ import { useProfile } from "@/hooks/use-profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import AddressAutocomplete from "@/components/ui/address-autocomplete";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -3617,21 +3618,20 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                 DIRECCIÓN [OPTIONAL]
                               </Label>
                               <div className="relative group">
-                                <Input
-                                  id="address"
+                                <AddressAutocomplete
                                   value={newClient.address}
-                                  onChange={(e) =>
+                                  onChange={(address) =>
                                     setNewClient((prev) => ({
                                       ...prev,
-                                      address: e.target.value,
+                                      address: address,
                                     }))
                                   }
+                                  placeholder="123 Main St"
                                   className="
                                     bg-slate-800/50 border-cyan-400/30 text-white placeholder:text-slate-400
                                     focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50
                                     transition-all duration-300
                                   "
-                                  placeholder="123 Main St"
                                 />
                                 <div className="absolute inset-0 rounded-md bg-gradient-to-r from-cyan-400/5 to-blue-400/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                               </div>
