@@ -10,11 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
-import { Database, Eye, FileText, CheckCircle, Plus, Trash2, Edit2, Sparkles, Shield, AlertCircle, DollarSign, Calendar, Wrench, FileCheck, Loader2, Brain, RefreshCw, History, Clock, UserCheck, Search, Filter } from "lucide-react";
+import { Database, Eye, FileText, CheckCircle, Plus, Trash2, Edit2, Sparkles, Shield, AlertCircle, DollarSign, Calendar, Wrench, FileCheck, Loader2, Brain, RefreshCw, History, Clock, UserCheck, Search, Filter, PenTool } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { contractHistoryService, ContractHistoryEntry } from "@/services/contractHistoryService";
+import DigitalSignatureCanvas from "@/components/digital-signature/DigitalSignatureCanvas";
+import { Phase2IntegrationOrchestrator } from "@/services/digital-signature/Phase2IntegrationOrchestrator";
 
 // Simple 3-step contract generator without complex state management
 export default function SimpleContractGenerator() {
@@ -48,6 +50,19 @@ export default function SimpleContractGenerator() {
       { id: 2, description: "Project completion", percentage: 50, amount: 0 }
     ]
   });
+
+  // Digital Signature State
+  const [showDigitalSigning, setShowDigitalSigning] = useState(false);
+  const [contractorSignature, setContractorSignature] = useState<any>(null);
+  const [clientSignature, setClientSignature] = useState<any>(null);
+  const [contractorSigned, setContractorSigned] = useState(false);
+  const [clientSigned, setClientSigned] = useState(false);
+  const [contractorSignDate, setContractorSignDate] = useState("");
+  const [clientSignDate, setClientSignDate] = useState("");
+  const [isSigningContractor, setIsSigningContractor] = useState(false);
+  const [isSigningClient, setIsSigningClient] = useState(false);
+  const [isCompletingContract, setIsCompletingContract] = useState(false);
+  const [contractorName, setContractorName] = useState("");
   
   const [suggestedClauses, setSuggestedClauses] = useState<any[]>([]);
   const [selectedClauses, setSelectedClauses] = useState<string[]>([]);
@@ -821,6 +836,142 @@ export default function SimpleContractGenerator() {
     setSelectedClauses([]);
   }, []);
 
+  // Digital Signature Handlers
+  const handleContractorSign = useCallback(async () => {
+    if (!contractorSignature) return;
+    
+    setIsSigningContractor(true);
+    try {
+      const currentDate = new Date().toLocaleDateString('en-US');
+      setContractorSignDate(currentDate);
+      setContractorSigned(true);
+      
+      toast({
+        title: "Contractor Signature Captured",
+        description: `Signature recorded on ${currentDate}`,
+      });
+    } catch (error) {
+      console.error("Error signing contractor:", error);
+      toast({
+        title: "Signature Error",
+        description: "Failed to capture contractor signature",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSigningContractor(false);
+    }
+  }, [contractorSignature, toast]);
+
+  const handleClientSign = useCallback(async () => {
+    if (!clientSignature) return;
+    
+    setIsSigningClient(true);
+    try {
+      const currentDate = new Date().toLocaleDateString('en-US');
+      setClientSignDate(currentDate);
+      setClientSigned(true);
+      
+      toast({
+        title: "Client Signature Captured",
+        description: `Signature recorded on ${currentDate}`,
+      });
+    } catch (error) {
+      console.error("Error signing client:", error);
+      toast({
+        title: "Signature Error",
+        description: "Failed to capture client signature",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSigningClient(false);
+    }
+  }, [clientSignature, toast]);
+
+  const handleCompleteDigitalContract = useCallback(async () => {
+    if (!contractorSigned || !clientSigned || !selectedProject) return;
+    
+    setIsCompletingContract(true);
+    try {
+      // Prepare signature data for Phase 2 Integration
+      const signatureData = {
+        contractorSignature: {
+          imageData: contractorSignature.imageData,
+          biometrics: contractorSignature.biometrics,
+          metadata: contractorSignature.metadata,
+          signerName: contractorName,
+          signDate: contractorSignDate,
+          role: 'contractor'
+        },
+        clientSignature: {
+          imageData: clientSignature.imageData,
+          biometrics: clientSignature.biometrics,
+          metadata: clientSignature.metadata,
+          signerName: selectedProject.clientName,
+          signDate: clientSignDate,
+          role: 'client'
+        }
+      };
+
+      // Prepare contract data for advanced processing
+      const advancedContractData = {
+        ...contractData,
+        signatures: signatureData,
+        userId: currentUser?.uid,
+        projectId: selectedProject.id
+      };
+
+      // Initialize Phase 2 Integration Orchestrator
+      const orchestrator = new Phase2IntegrationOrchestrator();
+      
+      // Process with all advanced services (SMS, Email, PDF, Geolocation)
+      const result = await orchestrator.processAdvancedContract(advancedContractData);
+      
+      if (result.success) {
+        // Download the enhanced PDF with embedded signatures
+        if (result.enhancedPdfUrl) {
+          const link = document.createElement("a");
+          link.href = result.enhancedPdfUrl;
+          link.download = `digitally_signed_contract_${selectedProject.clientName}_${new Date().toISOString().split('T')[0]}.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+
+        // Reset digital signing state
+        setShowDigitalSigning(false);
+        setContractorSigned(false);
+        setClientSigned(false);
+        setContractorSignature(null);
+        setClientSignature(null);
+        setContractorSignDate("");
+        setClientSignDate("");
+        
+        toast({
+          title: "Digital Contract Completed",
+          description: `Advanced contract with embedded signatures and audit trail completed for ${selectedProject.clientName}`,
+        });
+      } else {
+        throw new Error(result.error || "Failed to process advanced contract");
+      }
+    } catch (error) {
+      console.error("Error completing digital contract:", error);
+      toast({
+        title: "Digital Contract Error",
+        description: "Failed to complete digital contract process",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCompletingContract(false);
+    }
+  }, [contractorSigned, clientSigned, selectedProject, contractorSignature, clientSignature, contractorName, contractorSignDate, clientSignDate, contractData, currentUser?.uid, toast]);
+
+  // Initialize contractor name from profile
+  useEffect(() => {
+    if (profile?.company || profile?.ownerName) {
+      setContractorName(profile.company || profile.ownerName);
+    }
+  }, [profile]);
+
   // Load contract history on component mount
   useEffect(() => {
     if (currentUser?.uid) {
@@ -1405,7 +1556,7 @@ export default function SimpleContractGenerator() {
         )}
 
         {/* Step 3: Complete */}
-        {currentStep === 3 && (
+        {currentStep === 3 && !showDigitalSigning && (
           <Card className="bg-gray-900 border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-green-400">
@@ -1428,20 +1579,167 @@ export default function SimpleContractGenerator() {
                   </p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <div className="flex flex-col space-y-4">
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Button
+                      onClick={handleGenerateContract}
+                      variant="outline"
+                      className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black"
+                    >
+                      Download Again
+                    </Button>
+                    <Button
+                      onClick={handleNewContract}
+                      className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-8"
+                    >
+                      Generate New Contract
+                    </Button>
+                  </div>
+                  
+                  {/* Digital Signature Option */}
+                  <div className="border-t border-gray-700 pt-6 mt-6">
+                    <div className="bg-blue-900/30 border border-blue-400 rounded-lg p-6">
+                      <div className="flex items-center justify-center gap-3 mb-4">
+                        <PenTool className="h-8 w-8 text-blue-400" />
+                        <h3 className="text-xl font-semibold text-blue-400">
+                          Advanced Digital Signing
+                        </h3>
+                      </div>
+                      <p className="text-gray-300 mb-4 text-center">
+                        Sign contract digitally with biometric validation, SMS verification, and secure audit trail
+                      </p>
+                      <Button
+                        onClick={() => setShowDigitalSigning(true)}
+                        className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 w-full"
+                      >
+                        Start Digital Signing Process
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 3: Digital Signing Interface */}
+        {currentStep === 3 && showDigitalSigning && (
+          <Card className="bg-gray-900 border-gray-700">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-400">
+                <PenTool className="h-5 w-5" />
+                Digital Contract Signing
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Progress Indicator */}
+                <div className="flex items-center justify-center gap-4 mb-8">
+                  <div className={`w-3 h-3 rounded-full ${!contractorSigned ? 'bg-blue-500' : 'bg-green-500'}`}></div>
+                  <span className="text-sm text-gray-400">Contractor</span>
+                  <div className="w-8 h-px bg-gray-600"></div>
+                  <div className={`w-3 h-3 rounded-full ${!clientSigned ? 'bg-gray-600' : 'bg-green-500'}`}></div>
+                  <span className="text-sm text-gray-400">Client</span>
+                </div>
+
+                {/* Side-by-side Signature Fields */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Contractor Signature */}
+                  <div className="bg-gray-800 border border-gray-600 rounded-lg p-6">
+                    <div className="text-center mb-4">
+                      <h3 className="text-lg font-semibold text-white mb-2">CONTRACTOR</h3>
+                      <p className="text-cyan-400 font-medium">{contractorName}</p>
+                      <p className="text-gray-400 text-sm">Print Name</p>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <DigitalSignatureCanvas
+                        onSignatureComplete={(signature) => setContractorSignature(signature)}
+                        onSignatureReset={() => setContractorSignature(null)}
+                        signerName={contractorName}
+                        signerRole="contractor"
+                        isReadOnly={contractorSigned}
+                        className="border border-gray-500 bg-white rounded"
+                      />
+                    </div>
+                    
+                    <div className="text-center">
+                      <p className="text-gray-400 text-sm mb-2">Date: {contractorSignDate || '_________________'}</p>
+                      {!contractorSigned ? (
+                        <Button
+                          onClick={handleContractorSign}
+                          disabled={!contractorSignature || isSigningContractor}
+                          className="bg-cyan-600 hover:bg-cyan-500 text-white"
+                        >
+                          {isSigningContractor ? 'Signing...' : 'Sign as Contractor'}
+                        </Button>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2 text-green-400">
+                          <CheckCircle className="h-4 w-4" />
+                          <span className="text-sm">Signed</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Client Signature */}
+                  <div className="bg-gray-800 border border-gray-600 rounded-lg p-6">
+                    <div className="text-center mb-4">
+                      <h3 className="text-lg font-semibold text-white mb-2">CLIENT</h3>
+                      <p className="text-cyan-400 font-medium">{selectedProject?.clientName}</p>
+                      <p className="text-gray-400 text-sm">Print Name</p>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <DigitalSignatureCanvas
+                        onSignatureComplete={(signature) => setClientSignature(signature)}
+                        onSignatureReset={() => setClientSignature(null)}
+                        signerName={selectedProject?.clientName || "Client"}
+                        signerRole="client"
+                        isReadOnly={clientSigned}
+                        className="border border-gray-500 bg-white rounded"
+                      />
+                    </div>
+                    
+                    <div className="text-center">
+                      <p className="text-gray-400 text-sm mb-2">Date: {clientSignDate || '_________________'}</p>
+                      {!clientSigned ? (
+                        <Button
+                          onClick={handleClientSign}
+                          disabled={!clientSignature || isSigningClient || !contractorSigned}
+                          className="bg-cyan-600 hover:bg-cyan-500 text-white"
+                        >
+                          {isSigningClient ? 'Signing...' : 'Sign as Client'}
+                        </Button>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2 text-green-400">
+                          <CheckCircle className="h-4 w-4" />
+                          <span className="text-sm">Signed</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
                   <Button
-                    onClick={handleGenerateContract}
+                    onClick={() => setShowDigitalSigning(false)}
                     variant="outline"
-                    className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black"
+                    className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
                   >
-                    Download Again
+                    Back to Contract
                   </Button>
-                  <Button
-                    onClick={handleNewContract}
-                    className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-8"
-                  >
-                    Generate New Contract
-                  </Button>
+                  
+                  {contractorSigned && clientSigned && (
+                    <Button
+                      onClick={handleCompleteDigitalContract}
+                      disabled={isCompletingContract}
+                      className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8"
+                    >
+                      {isCompletingContract ? 'Processing...' : 'Complete & Send Contract'}
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>
