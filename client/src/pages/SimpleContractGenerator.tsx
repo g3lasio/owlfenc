@@ -450,7 +450,7 @@ export default function SimpleContractGenerator() {
         project: {
           description: contractData?.projectDetails?.description || selectedProject.description || selectedProject.projectDescription || selectedProject.projectType || "",
           type: selectedProject.projectType || "Construction Project",
-          total: parseFloat((contractData?.financials?.total || selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || selectedProject.total || 0).toString()),
+          total: parseFloat((selectedProject.total || selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0).toString()),
           materials: contractData?.materials || selectedProject.materials || [],
         },
         contractor: {
@@ -471,7 +471,7 @@ export default function SimpleContractGenerator() {
             "To be agreed",
         },
         financials: {
-          total: parseFloat((contractData?.financials?.total || selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || selectedProject.total || 0).toString()),
+          total: parseFloat((selectedProject.total || selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0).toString()),
           paymentMilestones: editableData.paymentMilestones,
         },
         permitInfo: {
@@ -501,6 +501,15 @@ export default function SimpleContractGenerator() {
         originalRequest: selectedProject,
       };
 
+      // CRITICAL VALIDATION: Log financial data for debugging corruption issues
+      const displayedTotal = selectedProject?.total || selectedProject?.totalAmount || selectedProject?.totalPrice || selectedProject?.displaySubtotal || 0;
+      console.log("💰 [FRONTEND] Financial data validation before sending to backend:", {
+        displayedInUI: displayedTotal,
+        sentToBackend: contractPayload.financials.total,
+        paymentMilestones: contractPayload.financials.paymentMilestones,
+        dataMatches: displayedTotal === contractPayload.financials.total
+      });
+      
       console.log("Generating contract with payload:", contractPayload);
 
       const response = await fetch("/api/generate-pdf", {
@@ -838,10 +847,18 @@ export default function SimpleContractGenerator() {
 
                 {/* Dynamic Payment Milestones */}
                 <div className="border border-gray-600 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    Payment Milestones (Customizable)
-                  </h3>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-cyan-400 flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      Payment Milestones (Customizable)
+                    </h3>
+                    <div className="bg-green-900/30 border border-green-400 rounded-lg px-4 py-2">
+                      <p className="text-sm text-gray-400">Project Total</p>
+                      <p className="text-xl font-bold text-green-400">
+                        ${(selectedProject?.total || selectedProject?.totalAmount || selectedProject?.totalPrice || selectedProject?.displaySubtotal || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  </div>
                   <div className="space-y-4">
                     {editableData.paymentMilestones.map((milestone, index) => (
                       <div key={milestone.id} className="border border-gray-700 rounded-lg p-4">
@@ -937,6 +954,9 @@ export default function SimpleContractGenerator() {
                       <div className="text-right">
                         <p className="text-sm text-gray-400">
                           Total: {editableData.paymentMilestones.reduce((sum, m) => sum + m.percentage, 0)}%
+                        </p>
+                        <p className="text-sm font-semibold text-green-400">
+                          Amount: ${editableData.paymentMilestones.reduce((sum, m) => sum + m.amount, 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                         <p className="text-xs text-yellow-400">
                           {editableData.paymentMilestones.reduce((sum, m) => sum + m.percentage, 0) !== 100 && "⚠️ Should equal 100%"}

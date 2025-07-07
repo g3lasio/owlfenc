@@ -3100,19 +3100,37 @@ Output must be between 200-900 characters in English.`;
         const { default: PremiumPdfService } = await import('./services/premiumPdfService');
         const premiumPdfService = PremiumPdfService.getInstance();
         
+        // CRITICAL: Extract and validate project total to prevent data corruption
+        const projectTotal = req.body.financials?.total || req.body.project?.total || req.body.totalCost || 0;
+        
+        console.log('💰 [CRITICAL] Financial data validation:', {
+          'financials.total': req.body.financials?.total,
+          'project.total': req.body.project?.total,
+          'totalCost': req.body.totalCost,
+          'finalProjectTotal': projectTotal,
+          'paymentMilestones': req.body.financials?.paymentMilestones?.length || 0
+        });
+        
         // Enhanced contract data structure to capture ALL frontend data
         const contractData = {
           // Basic client and contractor info (enhanced with real data)
           client: req.body.client,
           contractor: contractorData,
-          project: req.body.project,
-          financials: req.body.financials,
+          project: {
+            ...req.body.project,
+            total: projectTotal // Ensure project.total matches displayed value
+          },
+          financials: {
+            ...req.body.financials,
+            total: projectTotal, // Ensure financials.total matches displayed value
+            projectValue: projectTotal // Additional field for validation
+          },
           
           // NEW: Enhanced frontend data capture
           contractorInfo: req.body.contractorInfo || {},
           clientInfo: req.body.clientInfo || {},
           paymentTerms: req.body.paymentTerms || {},
-          totalCost: req.body.totalCost || req.body.financials?.total || 0,
+          totalCost: projectTotal,
           timeline: req.body.timeline || {},
           permits: req.body.permits || {},
           permitInfo: req.body.permitInfo || {},

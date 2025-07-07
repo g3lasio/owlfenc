@@ -173,6 +173,14 @@ Changelog:
   * System supports multi-tenant contractor-specific emails with comprehensive fallback strategies
   * Test mode configured properly redirecting emails to gelasio@chyrris.com until domain verification
   * Backend contractor copy system fully functional with sendCopyToContractor parameter working
+- July 7, 2025. ✅ CRITICAL PAYMENT MILESTONE FIX: Resolved missing project total and frontend-backend data corruption:
+  * FIXED MISSING PROJECT TOTAL: Added prominent green-highlighted project total display in Payment Milestone section header
+  * CORRECTED FIELD PRIORITY: Updated all cost references to prioritize 'total' field first (matching EstimatesWizard exactly)
+  * ELIMINATED DATA CORRUPTION: Fixed frontend-backend disconnection by ensuring consistent field mapping throughout PDF generation
+  * ENHANCED VALIDATION: Added comprehensive financial data logging in both frontend and backend to track data flow
+  * SECURED DATA INTEGRITY: Backend now validates and preserves exact project totals from frontend display
+  * MILESTONE ACCURACY: Payment milestone amounts now calculate using same total value displayed in UI
+  * TRANSPARENCY IMPROVEMENT: Added total amount summary in milestone footer for complete financial visibility
 - July 6, 2025. ✅ CONTRACTOR DATA FIX: Resolved estimates PDF generation phone and email issues:
   * Removed hardcoded fallback values "(555) 123-4567" and "truthbackpack@gmail.com" from backend
   * Updated frontend EstimatesWizard to send complete contractor profile data in PDF generation payload
