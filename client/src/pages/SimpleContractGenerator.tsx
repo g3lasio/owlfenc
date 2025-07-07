@@ -793,7 +793,20 @@ export default function SimpleContractGenerator() {
           body: JSON.stringify(contractPayload),
         });
 
-        if (response.ok && response.headers.get("content-type")?.includes("application/pdf")) {
+        if (response.ok) {
+          const contentType = response.headers.get("content-type");
+          console.log("✅ PDF Generation Response:", {
+            status: response.status,
+            contentType,
+            headers: Object.fromEntries(response.headers.entries())
+          });
+
+          if (contentType?.includes("application/pdf")) {
+            console.log("📄 PDF content type confirmed - processing...");
+          } else {
+            console.log("⚠️ Unexpected content type, but response is OK - proceeding...");
+          }
+
           // PDF generated successfully - create basic HTML for legal workflow
           const basicHTML = `
             <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
@@ -840,15 +853,30 @@ export default function SimpleContractGenerator() {
           });
         } else {
           const errorText = await response.text();
-          console.error("Contract generation failed:", errorText);
-          throw new Error(`Failed to generate contract PDF: ${response.status}`);
+          console.error("❌ Contract generation failed:", {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries()),
+            error: errorText
+          });
+          throw new Error(`Failed to generate contract PDF: ${response.status} - ${response.statusText}. ${errorText}`);
         }
       }
     } catch (error) {
-      console.error("Error generating contract:", error);
+      console.error("❌ Error generating contract:", error);
+      console.error("❌ Error details:", {
+        message: error.message,
+        stack: error.stack,
+        contractPayload: {
+          clientName: contractPayload?.client?.name,
+          contractorName: contractPayload?.contractor?.name,
+          projectTotal: contractPayload?.financials?.total
+        }
+      });
+      
       toast({
         title: "Generation Error",
-        description: "Failed to generate contract. Please try again.",
+        description: `Failed to generate contract: ${error.message || 'Unknown error'}. Please check the console for details.`,
         variant: "destructive",
       });
     } finally {
