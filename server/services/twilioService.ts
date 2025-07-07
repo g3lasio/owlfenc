@@ -165,23 +165,29 @@ export class TwilioService {
       console.log('📱 [COMPLETE-CONTRACT-SMS] Contract ID:', params.contractId);
       console.log('📱 [COMPLETE-CONTRACT-SMS] Review URL:', params.reviewUrl);
 
-      const message = `🔒 CONTRACT READY FOR REVIEW
+      const message = `🏗️ CONTRATO COMPLETO - ${params.contractorCompany}
 
-Hi ${params.clientName},
+Hola ${params.clientName},
 
-Your contract with ${params.contractorCompany} is ready for review and signature.
+Su contrato de construcción está listo para revisar y firmar desde su dispositivo.
 
-📋 Contract ID: ${params.contractId}
-👷 Contractor: ${params.contractorName}
-
-📱 REVIEW & SIGN NOW:
+📋 ACCEDER AL CONTRATO:
 ${params.reviewUrl}
 
-⚠️ IMPORTANT: This is a legally binding document. Please read carefully before signing.
+Detalles:
+• Contratista: ${params.contractorName}
+• ID: ${params.contractId}
+• Enviado: ${new Date().toLocaleString()}
 
-❓ Questions? Contact ${params.contractorCompany} directly.
+✅ Su contrato incluye:
+• Términos completos del proyecto
+• Precios y cronograma  
+• Firma digital segura
+• Copia automática al completar
 
-Powered by Owl Fence Legal Defense`;
+⚠️ LEGAL: Contrato vinculante - lea completamente antes de firmar.
+
+${params.contractorCompany}`;
 
       return await this.sendSMS({
         to: params.to,

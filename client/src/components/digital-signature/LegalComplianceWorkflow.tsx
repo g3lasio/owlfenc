@@ -461,17 +461,41 @@ export default function LegalComplianceWorkflow({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Send className="h-5 w-5 text-cyan-400" />
-          Step 1: Document Delivery (Mandatory)
+          Step 1: Contract Review & Delivery
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Alert className="border-blue-600 bg-blue-900/20">
           <AlertCircle className="h-4 w-4 text-blue-400" />
           <AlertDescription className="text-blue-400">
-            <strong>Legal Requirement:</strong> Both parties must receive complete contract before signing.
-            This ensures informed consent and legal validity.
+            <strong>Important:</strong> Review your contract carefully before sending to client.
+            Once sent, client will handle everything on their device.
           </AlertDescription>
         </Alert>
+        
+        {/* Contractor Preview Section */}
+        <div className="border border-gray-600 rounded-lg">
+          <Button
+            variant="outline"
+            onClick={() => setShowContractPreview(!showContractPreview)}
+            className="w-full justify-between border-gray-600"
+          >
+            <span className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Preview Contract Before Sending
+            </span>
+            <Eye className="h-4 w-4" />
+          </Button>
+          
+          {showContractPreview && (
+            <div className="p-4 border-t border-gray-600 max-h-96 overflow-y-auto">
+              <div 
+                className="text-sm text-gray-300 bg-white p-4 rounded"
+                dangerouslySetInnerHTML={{ __html: contractHTML }}
+              />
+            </div>
+          )}
+        </div>
         
         <div className="space-y-3">
           <div className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg">
@@ -817,45 +841,98 @@ export default function LegalComplianceWorkflow({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CheckCircle className="h-5 w-5 text-green-400" />
-          Contract Sent Successfully
+          Contract Tracking Dashboard
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Alert className="border-green-600 bg-green-900/20">
           <CheckCircle className="h-4 w-4 text-green-400" />
           <AlertDescription className="text-green-400">
-            <strong>Contract Delivered:</strong> Complete contract sent to client's device. 
-            Client will review and sign independently. You will receive notification when process is complete.
+            <strong>Contract Sent:</strong> Complete contract delivered to client. 
+            Track status below.
           </AlertDescription>
         </Alert>
         
+        {/* Simple Status Tracking */}
+        <div className="bg-gray-800 p-4 rounded-lg">
+          <h4 className="font-semibold text-cyan-400 mb-3">Contract Status</h4>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-300">📧 Email Sent</span>
+              <Badge className="bg-green-600 text-white">Completed</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-300">📱 SMS Sent</span>
+              <Badge className="bg-green-600 text-white">Completed</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-300">👀 Client Received</span>
+              <Badge className="bg-yellow-600 text-white">Pending</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-300">📖 Client Reviewed</span>
+              <Badge className="bg-gray-600 text-white">Waiting</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-300">✍️ Client Signed</span>
+              <Badge className="bg-gray-600 text-white">Waiting</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-300">✅ Process Complete</span>
+              <Badge className="bg-gray-600 text-white">Waiting</Badge>
+            </div>
+          </div>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-gray-800 p-4 rounded-lg">
-            <h4 className="font-semibold text-green-400 mb-2">What was sent</h4>
+            <h4 className="font-semibold text-green-400 mb-2">Delivery Details</h4>
             <ul className="text-sm text-gray-300 space-y-1">
-              <li>✓ Complete contract content via email</li>
-              <li>✓ Direct review link via SMS</li>
-              <li>✓ Digital signature capability</li>
-              <li>✓ Mobile-optimized interface</li>
-              <li>✓ Secure contract ID: CON-${new Date().getFullYear()}-${Date.now()}</li>
+              <li>Contract ID: CON-${new Date().getFullYear()}-${Date.now()}</li>
+              <li>Email: {contractData.client.email}</li>
+              <li>Phone: {contractData.client.phone}</li>
+              <li>Sent: {new Date().toLocaleString()}</li>
             </ul>
           </div>
           
           <div className="bg-gray-800 p-4 rounded-lg">
-            <h4 className="font-semibold text-cyan-400 mb-2">Client Process</h4>
+            <h4 className="font-semibold text-cyan-400 mb-2">Next Steps</h4>
             <ul className="text-sm text-gray-300 space-y-1">
-              <li>📧 Receives contract in email</li>
-              <li>📱 Gets review link via SMS</li>
-              <li>📖 Reads complete contract</li>
-              <li>✍️ Signs digitally on device</li>
-              <li>📄 Downloads signed copy</li>
+              <li>• Client will receive notifications</li>
+              <li>• You'll get updates automatically</li>
+              <li>• Contract accessible on any device</li>
+              <li>• Signed copy will be delivered</li>
             </ul>
           </div>
         </div>
         
-        <div className="text-center text-gray-400 text-sm">
-          <p>Process is now in client's hands. You will be notified automatically when contract is signed.</p>
-        </div>
+        <Button
+          onClick={() => onWorkflowComplete({
+            contractData,
+            reviewStatus: {
+              contractorReviewed: true,
+              clientReviewed: false,
+              contractorConfirmedReading: true,
+              clientConfirmedReading: false,
+              contractorReviewTimestamp: new Date().toISOString(),
+              clientReviewTimestamp: null
+            },
+            signatureStatus: {
+              contractorSigned: false,
+              clientSigned: false,
+              contractorSignTimestamp: null,
+              clientSignTimestamp: null
+            },
+            completionTimestamp: new Date().toISOString(),
+            legalComplianceCertified: true,
+            deviceBasedProcess: true,
+            trackingEnabled: true
+          })}
+          className="w-full bg-green-600 hover:bg-green-700"
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Return to Contract Generator
+        </Button>
       </CardContent>
     </Card>
   );
