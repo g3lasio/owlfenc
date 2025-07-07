@@ -686,9 +686,11 @@ export default function SimpleContractGenerator() {
     if (!selectedProject || !currentUser?.uid) return;
     
     setIsLoading(true);
+    let contractPayload = null; // Initialize at function scope
+    
     try {
       // Collect comprehensive contract data
-      const contractPayload = {
+      contractPayload = {
         userId: currentUser.uid,
         client: {
           name: editableData.clientName || contractData?.clientInfo?.name || selectedProject.clientName,
@@ -867,11 +869,11 @@ export default function SimpleContractGenerator() {
       console.error("❌ Error details:", {
         message: error.message,
         stack: error.stack,
-        contractPayload: {
-          clientName: contractPayload?.client?.name,
-          contractorName: contractPayload?.contractor?.name,
-          projectTotal: contractPayload?.financials?.total
-        }
+        contractPayload: contractPayload ? {
+          clientName: contractPayload.client?.name,
+          contractorName: contractPayload.contractor?.name,
+          projectTotal: contractPayload.financials?.total
+        } : 'Not created yet'
       });
       
       toast({
@@ -882,7 +884,7 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoading(false);
     }
-  }, [contractData, selectedProject, currentUser?.uid, toast]);
+  }, [selectedProject, currentUser?.uid, profile, editableData, selectedClauses, suggestedClauses, getCorrectProjectTotal, toast]);
 
   // Reset to start new contract
   const handleNewContract = useCallback(() => {
