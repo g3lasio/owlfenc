@@ -228,29 +228,8 @@ export default function LegalComplianceWorkflow({
           description: `Complete contract sent via ${editableContacts.clientPhone ? 'SMS and email' : 'email'}. Client will review and sign from their device. You will be notified when completed.`,
         });
         
-        // Automatically complete the workflow since client handles everything on their device
-        setTimeout(() => {
-          onWorkflowComplete({
-            contractData,
-            reviewStatus: {
-              contractorReviewed: true,
-              clientReviewed: true,
-              contractorConfirmedReading: true,
-              clientConfirmedReading: true,
-              contractorReviewTimestamp: new Date().toISOString(),
-              clientReviewTimestamp: new Date().toISOString()
-            },
-            signatureStatus: {
-              contractorSigned: true,
-              clientSigned: true,
-              contractorSignTimestamp: new Date().toISOString(),
-              clientSignTimestamp: new Date().toISOString()
-            },
-            completionTimestamp: new Date().toISOString(),
-            legalComplianceCertified: true,
-            deviceBasedProcess: true
-          });
-        }, 2000);
+        // Don't auto-complete - stay in tracking dashboard to monitor contract status
+        // Client handles everything on their device independently
       } else {
         throw new Error(deliveryResult.error || 'Document delivery failed');
       }

@@ -62,21 +62,21 @@ export class ResendEmailAdvanced {
    * Get appropriate recipient based on environment and domain verification
    */
   private getRecipient(originalEmail: string, recipientType: 'client' | 'contractor' | 'system' = 'client'): string {
-    // In production with verified domain, send directly to recipients
-    if (this.isDomainVerified()) {
-      console.log(`📧 [PRODUCTION] Sending directly to ${originalEmail}`);
-      return originalEmail;
+    // Only redirect if FORCE_TEST_MODE is explicitly set to true
+    if (process.env.FORCE_TEST_MODE === 'true') {
+      console.log(`📧 [TEST-MODE] Redirecting ${originalEmail} to ${this.testModeEmail} for testing`);
+      return this.testModeEmail;
     }
     
-    // In development, use professional test routing
-    if (recipientType === 'system') {
+    // For system emails in development, use operational email
+    if (recipientType === 'system' && !this.isDomainVerified()) {
       console.log(`📧 [DEV-SYSTEM] Using operational email ${this.operationalEmail}`);
       return this.operationalEmail;
     }
     
-    // For client/contractor emails in development, use test address but maintain transparency
-    console.log(`📧 [DEV-${recipientType.toUpperCase()}] Redirecting ${originalEmail} to ${this.testModeEmail} for testing`);
-    return this.testModeEmail;
+    // Send directly to original recipient (real contractor/client emails)
+    console.log(`📧 [DIRECT] Sending to real recipient: ${originalEmail}`);
+    return originalEmail;
   }
 
   /**
