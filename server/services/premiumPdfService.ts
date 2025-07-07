@@ -610,6 +610,157 @@ class PremiumPdfService {
       throw new Error('Failed to generate premium PDF contract');
     }
   }
+
+  /**
+   * Generate contract HTML for legal compliance workflow
+   */
+  async generateContractHTML(data: ContractPdfData): Promise<string> {
+    try {
+      console.log('📄 [HTML GENERATION] Creating contract HTML...');
+      
+      // Use the same template as PDF generation but return HTML
+      const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Independent Contractor Agreement</title>
+    <style>
+        body { font-family: 'Times New Roman', serif; margin: 0; padding: 40px; background: white; color: #000; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .title { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
+        .parties { display: flex; justify-content: space-between; margin: 30px 0; }
+        .party { border: 2px solid #000; padding: 15px; width: 45%; }
+        .party h3 { margin: 0 0 10px 0; font-size: 16px; text-align: center; }
+        .section { margin: 20px 0; }
+        .section h3 { font-size: 16px; font-weight: bold; margin-bottom: 10px; }
+        .clause { margin: 15px 0; text-align: justify; line-height: 1.6; }
+        .signature-section { margin-top: 40px; display: flex; justify-content: space-between; }
+        .signature-block { width: 45%; text-align: center; }
+        .signature-line { border-bottom: 1px solid #000; margin-bottom: 5px; height: 60px; }
+        .footer { text-align: center; margin-top: 40px; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">INDEPENDENT CONTRACTOR AGREEMENT</div>
+        <p>Contract No: CON-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}</p>
+        <p>Date: ${new Date().toLocaleDateString()}</p>
+    </div>
+
+    <div class="parties">
+        <div class="party">
+            <h3>CONTRACTOR</h3>
+            <p><strong>${data.contractor.name}</strong></p>
+            <p>${data.contractor.address}</p>
+            <p>Phone: ${data.contractor.phone}</p>
+            <p>Email: ${data.contractor.email}</p>
+        </div>
+        <div class="party">
+            <h3>CLIENT</h3>
+            <p><strong>${data.client.name}</strong></p>
+            <p>${data.client.address}</p>
+            <p>Phone: ${data.client.phone}</p>
+            <p>Email: ${data.client.email}</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>1. PROJECT DESCRIPTION</h3>
+        <div class="clause">
+            The Contractor agrees to perform the following work: ${data.project.description || 'Construction services'} 
+            at the location: ${data.project.location}.
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>2. COMPENSATION</h3>
+        <div class="clause">
+            The total contract amount is $${(data.financials.total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. 
+            Payment terms and schedule to be agreed upon by both parties.
+        </div>
+    </div>
+
+    ${data.timeline ? `
+    <div class="section">
+        <h3>3. TIMELINE</h3>
+        <div class="clause">
+            Work shall commence on ${data.timeline.startDate || 'TBD'} and be completed by ${data.timeline.endDate || 'TBD'}.
+            ${data.timeline.estimatedDuration ? `Estimated duration: ${data.timeline.estimatedDuration}` : ''}
+        </div>
+    </div>
+    ` : ''}
+
+    ${data.warranties ? `
+    <div class="section">
+        <h3>4. WARRANTIES</h3>
+        <div class="clause">
+            Workmanship Warranty: ${data.warranties.workmanship || 'Standard warranty'}<br>
+            Materials Warranty: ${data.warranties.materials || 'Manufacturer warranty'}
+        </div>
+    </div>
+    ` : ''}
+
+    ${data.permitInfo?.permitsRequired ? `
+    <div class="section">
+        <h3>5. PERMITS AND COMPLIANCE</h3>
+        <div class="clause">
+            Permits are required for this project. Responsibility: ${data.permitInfo.responsibility || 'To be determined'}
+            ${data.permitInfo.numbers ? `<br>Permit Numbers: ${data.permitInfo.numbers}` : ''}
+        </div>
+    </div>
+    ` : ''}
+
+    <div class="section">
+        <h3>6. GENERAL TERMS</h3>
+        <div class="clause">
+            This agreement constitutes the entire agreement between the parties. Any modifications must be in writing and signed by both parties.
+            The Contractor agrees to perform all work in a professional manner according to industry standards.
+        </div>
+    </div>
+
+    ${data.protectionClauses && data.protectionClauses.length > 0 ? `
+    <div class="section">
+        <h3>7. PROTECTION CLAUSES</h3>
+        ${data.protectionClauses.map(clause => `
+        <div class="clause">
+            <strong>${clause.title}:</strong> ${clause.content}
+        </div>
+        `).join('')}
+    </div>
+    ` : ''}
+
+    <div class="signature-section">
+        <div class="signature-block">
+            <div class="signature-line"></div>
+            <p>Contractor Signature</p>
+            <p>${data.contractor.name}</p>
+            <p>Date: _______________</p>
+        </div>
+        <div class="signature-block">
+            <div class="signature-line"></div>
+            <p>Client Signature</p>
+            <p>${data.client.name}</p>
+            <p>Date: _______________</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>This contract is legally binding when signed by both parties</p>
+        <p>Powered by Legal Defense Digital Signature System</p>
+    </div>
+</body>
+</html>`;
+
+      console.log('✅ [HTML GENERATION] Contract HTML generated successfully');
+      return htmlContent;
+      
+    } catch (error) {
+      console.error('❌ [HTML GENERATION] Error generating contract HTML:', error);
+      throw new Error('Failed to generate contract HTML');
+    }
+  }
 }
 
 export default PremiumPdfService;

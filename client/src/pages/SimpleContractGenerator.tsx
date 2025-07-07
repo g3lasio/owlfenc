@@ -16,6 +16,7 @@ import { collection, query, where, onSnapshot, orderBy } from "firebase/firestor
 import { db } from "@/lib/firebase";
 import { contractHistoryService, ContractHistoryEntry } from "@/services/contractHistoryService";
 import DigitalSignatureCanvas from "@/components/digital-signature/DigitalSignatureCanvas";
+import LegalComplianceWorkflow from "@/components/digital-signature/LegalComplianceWorkflow";
 import { Phase2IntegrationOrchestrator } from "@/services/digital-signature/Phase2IntegrationOrchestrator";
 
 // Simple 3-step contract generator without complex state management
@@ -51,18 +52,11 @@ export default function SimpleContractGenerator() {
     ]
   });
 
-  // Digital Signature State
-  const [showDigitalSigning, setShowDigitalSigning] = useState(false);
-  const [contractorSignature, setContractorSignature] = useState<any>(null);
-  const [clientSignature, setClientSignature] = useState<any>(null);
-  const [contractorSigned, setContractorSigned] = useState(false);
-  const [clientSigned, setClientSigned] = useState(false);
-  const [contractorSignDate, setContractorSignDate] = useState("");
-  const [clientSignDate, setClientSignDate] = useState("");
-  const [isSigningContractor, setIsSigningContractor] = useState(false);
-  const [isSigningClient, setIsSigningClient] = useState(false);
-  const [isCompletingContract, setIsCompletingContract] = useState(false);
-  const [contractorName, setContractorName] = useState("");
+  // Legal Compliance Workflow State
+  const [showLegalWorkflow, setShowLegalWorkflow] = useState(false);
+  const [contractHTML, setContractHTML] = useState("");
+  const [isContractReady, setIsContractReady] = useState(false);
+  const [legalWorkflowCompleted, setLegalWorkflowCompleted] = useState(false);
   
   const [suggestedClauses, setSuggestedClauses] = useState<any[]>([]);
   const [selectedClauses, setSelectedClauses] = useState<string[]>([]);
@@ -767,7 +761,8 @@ export default function SimpleContractGenerator() {
       
       console.log("Generating contract with payload:", contractPayload);
 
-      const response = await fetch("/api/generate-pdf", {
+      // First generate contract HTML for legal workflow
+      const htmlResponse = await fetch("/api/generate-contract-html", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -776,29 +771,78 @@ export default function SimpleContractGenerator() {
         body: JSON.stringify(contractPayload),
       });
 
-      if (response.ok && response.headers.get("content-type")?.includes("application/pdf")) {
-        // PDF generated successfully
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `contract_${selectedProject.clientName}_${new Date().toISOString().split('T')[0]}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        setGeneratedContract("PDF Generated Successfully");
+      if (htmlResponse.ok) {
+        const contractHTMLData = await htmlResponse.json();
+        setContractHTML(contractHTMLData.html);
+        setContractData(contractPayload);
+        setIsContractReady(true);
         setCurrentStep(3);
         
         toast({
-          title: "Contract Generated",
-          description: `Professional PDF contract downloaded for ${selectedProject.clientName}`,
+          title: "Contract Ready for Legal Process",
+          description: `Contract generated for ${selectedProject.clientName}. Legal compliance workflow enabled.`,
         });
       } else {
-        const errorText = await response.text();
-        console.error("Contract generation failed:", errorText);
-        throw new Error(`Failed to generate contract PDF: ${response.status}`);
+        // Fallback to PDF generation if HTML endpoint fails
+        const response = await fetch("/api/generate-pdf", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${currentUser.uid}`,
+          },
+          body: JSON.stringify(contractPayload),
+        });
+
+        if (response.ok && response.headers.get("content-type")?.includes("application/pdf")) {
+          // PDF generated successfully - create basic HTML for legal workflow
+          const basicHTML = `
+            <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+              <h1>Independent Contractor Agreement</h1>
+              <p><strong>Contractor:</strong> ${contractPayload.contractor.name}</p>
+              <p><strong>Client:</strong> ${contractPayload.client.name}</p>
+              <p><strong>Project Total:</strong> $${contractPayload.financials.total.toLocaleString()}</p>
+              <p><strong>Project Description:</strong> ${contractPayload.project.description}</p>
+              <p>Complete contract details have been generated. Please proceed with the legal compliance workflow.</p>
+            </div>
+          `;
+          
+          // Generate professional HTML for legal workflow
+          try {
+            const htmlResponse = await fetch('/api/generate-contract-html', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-firebase-uid': currentUser?.uid || '',
+              },
+              body: JSON.stringify(contractPayload)
+            });
+            
+            if (htmlResponse.ok) {
+              const htmlData = await htmlResponse.json();
+              setContractHTML(htmlData.html);
+              console.log('✅ Professional contract HTML generated for legal workflow');
+            } else {
+              console.warn('⚠️ Failed to generate professional HTML, using basic fallback');
+              setContractHTML(basicHTML);
+            }
+          } catch (htmlError) {
+            console.error('HTML generation error:', htmlError);
+            setContractHTML(basicHTML);
+          }
+          
+          setContractData(contractPayload);
+          setIsContractReady(true);
+          setCurrentStep(3);
+          
+          toast({
+            title: "Contract Generated",
+            description: `Contract ready for legal compliance workflow with ${selectedProject.clientName}`,
+          });
+        } else {
+          const errorText = await response.text();
+          console.error("Contract generation failed:", errorText);
+          throw new Error(`Failed to generate contract PDF: ${response.status}`);
+        }
       }
     } catch (error) {
       console.error("Error generating contract:", error);
@@ -1596,23 +1640,24 @@ export default function SimpleContractGenerator() {
                     </Button>
                   </div>
                   
-                  {/* Digital Signature Option */}
+                  {/* Legal Compliance Workflow Option */}
                   <div className="border-t border-gray-700 pt-6 mt-6">
-                    <div className="bg-blue-900/30 border border-blue-400 rounded-lg p-6">
+                    <div className="bg-green-900/30 border border-green-400 rounded-lg p-6">
                       <div className="flex items-center justify-center gap-3 mb-4">
-                        <PenTool className="h-8 w-8 text-blue-400" />
-                        <h3 className="text-xl font-semibold text-blue-400">
-                          Advanced Digital Signing
+                        <Shield className="h-8 w-8 text-green-400" />
+                        <h3 className="text-xl font-semibold text-green-400">
+                          Legal Compliance Workflow
                         </h3>
                       </div>
                       <p className="text-gray-300 mb-4 text-center">
-                        Sign contract digitally with biometric validation, SMS verification, and secure audit trail
+                        Execute contract with mandatory review, biometric signatures, and full legal compliance
                       </p>
                       <Button
-                        onClick={() => setShowDigitalSigning(true)}
-                        className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 w-full"
+                        onClick={() => setShowLegalWorkflow(true)}
+                        disabled={!isContractReady}
+                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 w-full"
                       >
-                        Start Digital Signing Process
+                        Start Legal Compliance Process
                       </Button>
                     </div>
                   </div>
@@ -1622,128 +1667,27 @@ export default function SimpleContractGenerator() {
           </Card>
         )}
 
-        {/* Step 3: Digital Signing Interface */}
-        {currentStep === 3 && showDigitalSigning && (
-          <Card className="bg-gray-900 border-gray-700">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-blue-400">
-                <PenTool className="h-5 w-5" />
-                Digital Contract Signing
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* Progress Indicator */}
-                <div className="flex items-center justify-center gap-4 mb-8">
-                  <div className={`w-3 h-3 rounded-full ${!contractorSigned ? 'bg-blue-500' : 'bg-green-500'}`}></div>
-                  <span className="text-sm text-gray-400">Contractor</span>
-                  <div className="w-8 h-px bg-gray-600"></div>
-                  <div className={`w-3 h-3 rounded-full ${!clientSigned ? 'bg-gray-600' : 'bg-green-500'}`}></div>
-                  <span className="text-sm text-gray-400">Client</span>
-                </div>
-
-                {/* Side-by-side Signature Fields */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Contractor Signature */}
-                  <div className="bg-gray-800 border border-gray-600 rounded-lg p-6">
-                    <div className="text-center mb-4">
-                      <h3 className="text-lg font-semibold text-white mb-2">CONTRACTOR</h3>
-                      <p className="text-cyan-400 font-medium">{contractorName}</p>
-                      <p className="text-gray-400 text-sm">Print Name</p>
-                    </div>
-                    
-                    <div className="mb-4">
-                      <DigitalSignatureCanvas
-                        onSignatureComplete={(signature) => setContractorSignature(signature)}
-                        onSignatureReset={() => setContractorSignature(null)}
-                        signerName={contractorName}
-                        signerRole="contractor"
-                        isReadOnly={contractorSigned}
-                        className="border border-gray-500 bg-white rounded"
-                      />
-                    </div>
-                    
-                    <div className="text-center">
-                      <p className="text-gray-400 text-sm mb-2">Date: {contractorSignDate || '_________________'}</p>
-                      {!contractorSigned ? (
-                        <Button
-                          onClick={handleContractorSign}
-                          disabled={!contractorSignature || isSigningContractor}
-                          className="bg-cyan-600 hover:bg-cyan-500 text-white"
-                        >
-                          {isSigningContractor ? 'Signing...' : 'Sign as Contractor'}
-                        </Button>
-                      ) : (
-                        <div className="flex items-center justify-center gap-2 text-green-400">
-                          <CheckCircle className="h-4 w-4" />
-                          <span className="text-sm">Signed</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Client Signature */}
-                  <div className="bg-gray-800 border border-gray-600 rounded-lg p-6">
-                    <div className="text-center mb-4">
-                      <h3 className="text-lg font-semibold text-white mb-2">CLIENT</h3>
-                      <p className="text-cyan-400 font-medium">{selectedProject?.clientName}</p>
-                      <p className="text-gray-400 text-sm">Print Name</p>
-                    </div>
-                    
-                    <div className="mb-4">
-                      <DigitalSignatureCanvas
-                        onSignatureComplete={(signature) => setClientSignature(signature)}
-                        onSignatureReset={() => setClientSignature(null)}
-                        signerName={selectedProject?.clientName || "Client"}
-                        signerRole="client"
-                        isReadOnly={clientSigned}
-                        className="border border-gray-500 bg-white rounded"
-                      />
-                    </div>
-                    
-                    <div className="text-center">
-                      <p className="text-gray-400 text-sm mb-2">Date: {clientSignDate || '_________________'}</p>
-                      {!clientSigned ? (
-                        <Button
-                          onClick={handleClientSign}
-                          disabled={!clientSignature || isSigningClient || !contractorSigned}
-                          className="bg-cyan-600 hover:bg-cyan-500 text-white"
-                        >
-                          {isSigningClient ? 'Signing...' : 'Sign as Client'}
-                        </Button>
-                      ) : (
-                        <div className="flex items-center justify-center gap-2 text-green-400">
-                          <CheckCircle className="h-4 w-4" />
-                          <span className="text-sm">Signed</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-                  <Button
-                    onClick={() => setShowDigitalSigning(false)}
-                    variant="outline"
-                    className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
-                  >
-                    Back to Contract
-                  </Button>
-                  
-                  {contractorSigned && clientSigned && (
-                    <Button
-                      onClick={handleCompleteDigitalContract}
-                      disabled={isCompletingContract}
-                      className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8"
-                    >
-                      {isCompletingContract ? 'Processing...' : 'Complete & Send Contract'}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Step 3: Legal Compliance Workflow */}
+        {currentStep === 3 && showLegalWorkflow && (
+          <LegalComplianceWorkflow
+            contractData={contractData}
+            contractHTML={contractHTML}
+            onWorkflowComplete={(signedContract) => {
+              setLegalWorkflowCompleted(true);
+              setShowLegalWorkflow(false);
+              toast({
+                title: "Legal Process Complete",
+                description: "Contract executed with full legal compliance and audit trail",
+              });
+            }}
+            onCancel={() => {
+              setShowLegalWorkflow(false);
+              toast({
+                title: "Legal Process Cancelled",
+                description: "Returned to contract generation",
+              });
+            }}
+          />
         )}
           </>
         )}

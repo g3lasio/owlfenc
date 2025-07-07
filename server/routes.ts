@@ -3377,6 +3377,59 @@ Output must be between 200-900 characters in English.`;
     },
   );
 
+  // *** CONTRACT HTML GENERATION FOR LEGAL WORKFLOW ***
+  app.post("/api/generate-contract-html", async (req: Request, res: Response) => {
+    try {
+      console.log('📄 [CONTRACT-HTML] Generating contract HTML for legal workflow...');
+      
+      const firebaseUserId = req.headers['x-firebase-uid'] as string;
+      if (!firebaseUserId) {
+        return res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+      }
+      
+      // Use the same contract generation logic as PDF generation but return HTML
+      const { default: PremiumPdfService } = await import('./services/premiumPdfService');
+      const premiumPdfService = PremiumPdfService.getInstance();
+      
+      // Process contract data similar to PDF generation
+      const contractData = {
+        client: req.body.client,
+        contractor: req.body.contractor,
+        project: req.body.project,
+        financials: req.body.financials,
+        timeline: req.body.timeline || {},
+        permits: req.body.permits || {},
+        permitInfo: req.body.permitInfo || {},
+        warranties: req.body.warranties || {},
+        extraClauses: req.body.extraClauses || [],
+        consents: req.body.consents || {},
+        signatures: req.body.signatures || {},
+      };
+      
+      // Generate HTML content (we'll need to add this method to PremiumPdfService)
+      const htmlContent = await premiumPdfService.generateContractHTML(contractData);
+      
+      console.log('✅ [CONTRACT-HTML] HTML generated successfully');
+      
+      res.json({
+        success: true,
+        html: htmlContent,
+        contractId: `CON-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`
+      });
+      
+    } catch (error) {
+      console.error('❌ [CONTRACT-HTML] Error generating contract HTML:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to generate contract HTML',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // *** ESTIMATE EMAIL SENDING ROUTE ***
   app.post("/api/estimates/send", async (req: Request, res: Response) => {
     try {
