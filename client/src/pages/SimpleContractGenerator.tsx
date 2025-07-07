@@ -10,10 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
-import { Database, Eye, FileText, CheckCircle, Plus, Trash2, Edit2, Sparkles, Shield, AlertCircle, DollarSign, Calendar, Wrench, FileCheck, Loader2, Brain, RefreshCw } from "lucide-react";
+import { Database, Eye, FileText, CheckCircle, Plus, Trash2, Edit2, Sparkles, Shield, AlertCircle, DollarSign, Calendar, Wrench, FileCheck, Loader2, Brain, RefreshCw, History, Clock, UserCheck, Search, Filter } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { contractHistoryService, ContractHistoryEntry } from "@/services/contractHistoryService";
 
 // Simple 3-step contract generator without complex state management
 export default function SimpleContractGenerator() {
@@ -24,6 +25,13 @@ export default function SimpleContractGenerator() {
   const [isLoading, setIsLoading] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
   const [isLoadingClauses, setIsLoadingClauses] = useState(false);
+  
+  // History management state
+  const [currentView, setCurrentView] = useState<'contracts' | 'history'>('contracts');
+  const [contractHistory, setContractHistory] = useState<ContractHistoryEntry[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'draft' | 'completed' | 'processing'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Editable fields state
   const [editableData, setEditableData] = useState({
@@ -90,6 +98,118 @@ export default function SimpleContractGenerator() {
       setIsLoadingClauses(false);
     }
   }, [selectedProject, editableData.clientAddress]);
+
+  // Load contract history
+  const loadContractHistory = useCallback(async () => {
+    if (!currentUser?.uid) return;
+    
+    setIsLoadingHistory(true);
+    try {
+      console.log("📋 Loading contract history for user:", currentUser.uid);
+      const history = await contractHistoryService.getContractHistory(currentUser.uid);
+      setContractHistory(history);
+      console.log("✅ Contract history loaded:", history.length, "contracts");
+    } catch (error) {
+      console.error("❌ Error loading contract history:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load contract history",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }, [currentUser?.uid, toast]);
+
+  // Load contract from history and resume editing
+  const loadContractFromHistory = useCallback(async (contract: ContractHistoryEntry) => {
+    try {
+      console.log("🔄 Loading contract from history:", contract.id);
+      
+      // Extract contract data
+      const contractDataFromHistory = contract.contractData;
+      
+      // Set up project data from contract history
+      const projectFromHistory = {
+        id: contract.contractId,
+        clientName: contractDataFromHistory.client?.name || contract.clientName,
+        clientEmail: contractDataFromHistory.client?.email || "",
+        clientPhone: contractDataFromHistory.client?.phone || "",
+        clientAddress: contractDataFromHistory.client?.address || "",
+        projectType: contractDataFromHistory.project?.type || contract.projectType,
+        projectDescription: contractDataFromHistory.project?.description || "",
+        totalAmount: contractDataFromHistory.financials?.total || 0,
+        displaySubtotal: contractDataFromHistory.financials?.total || 0,
+        materials: contractDataFromHistory.materials || [],
+        originalData: contractDataFromHistory
+      };
+
+      // Set selected project and contract data
+      setSelectedProject(projectFromHistory);
+      setContractData(contractDataFromHistory);
+      
+      // Set editable data from contract history
+      setEditableData({
+        clientName: contractDataFromHistory.client?.name || contract.clientName,
+        clientEmail: contractDataFromHistory.client?.email || "",
+        clientPhone: contractDataFromHistory.client?.phone || "",
+        clientAddress: contractDataFromHistory.client?.address || "",
+        startDate: contractDataFromHistory.timeline?.startDate || "",
+        completionDate: contractDataFromHistory.timeline?.completionDate || "",
+        permitResponsibility: contractDataFromHistory.permits?.responsibility || "contractor",
+        warrantyYears: contractDataFromHistory.warranty?.years || "1",
+        paymentMilestones: contractDataFromHistory.payment?.milestones || [
+          { id: 1, description: "Initial deposit", percentage: 50, amount: (contractDataFromHistory.financials?.total || 0) * 0.5 },
+          { id: 2, description: "Project completion", percentage: 50, amount: (contractDataFromHistory.financials?.total || 0) * 0.5 }
+        ],
+        suggestedClauses: contractDataFromHistory.clauses?.suggested || [],
+        selectedClauses: contractDataFromHistory.clauses?.selected || [],
+        customClauses: contractDataFromHistory.clauses?.custom || []
+      });
+
+      // Set clauses from history
+      setSuggestedClauses(contractDataFromHistory.clauses?.suggested || []);
+      setSelectedClauses(contractDataFromHistory.clauses?.selected || []);
+      
+      // Switch to contract view and go to step 2 (review)
+      setCurrentView('contracts');
+      setCurrentStep(2);
+      
+      toast({
+        title: "Contract Loaded",
+        description: `Resumed contract for ${contract.clientName}`,
+      });
+      
+      console.log("✅ Contract loaded from history successfully");
+    } catch (error) {
+      console.error("❌ Error loading contract from history:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load contract from history",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  // Filter and search contracts
+  const filteredContracts = contractHistory.filter(contract => {
+    // Apply status filter
+    if (historyFilter !== 'all' && contract.status !== historyFilter) {
+      return false;
+    }
+    
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        contract.clientName.toLowerCase().includes(searchLower) ||
+        contract.projectType.toLowerCase().includes(searchLower) ||
+        (contract.contractData.project?.description || '').toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return true;
+  });
 
   // Load projects for step 1
   const loadProjects = useCallback(async () => {
@@ -701,6 +821,13 @@ export default function SimpleContractGenerator() {
     setSelectedClauses([]);
   }, []);
 
+  // Load contract history on component mount
+  useEffect(() => {
+    if (currentUser?.uid) {
+      loadContractHistory();
+    }
+  }, [currentUser?.uid, loadContractHistory]);
+
   return (
     <div className="min-h-screen bg-black text-white p-4">
       <div className="max-w-4xl mx-auto">
@@ -708,7 +835,47 @@ export default function SimpleContractGenerator() {
           Legal Defense Contract Generator
         </h1>
 
-        {/* Progress Steps */}
+        {/* View Navigation */}
+        <div className="flex justify-center mb-6">
+          <div className="bg-gray-900 border border-gray-700 rounded-lg p-1 flex gap-1">
+            <Button
+              variant={currentView === 'contracts' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setCurrentView('contracts')}
+              className={`flex items-center gap-2 px-4 py-2 ${
+                currentView === 'contracts'
+                  ? 'bg-cyan-400 text-black hover:bg-cyan-300'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-800'
+              }`}
+            >
+              <FileText className="h-4 w-4" />
+              New Contract
+            </Button>
+            <Button
+              variant={currentView === 'history' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setCurrentView('history')}
+              className={`flex items-center gap-2 px-4 py-2 ${
+                currentView === 'history'
+                  ? 'bg-cyan-400 text-black hover:bg-cyan-300'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-800'
+              }`}
+            >
+              <History className="h-4 w-4" />
+              History
+              {contractHistory.length > 0 && (
+                <Badge className="bg-cyan-600 text-white ml-1 px-1.5 py-0.5 text-xs">
+                  {contractHistory.length}
+                </Badge>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Contract Generation View */}
+        {currentView === 'contracts' && (
+          <>
+            {/* Progress Steps */}
         <div className="flex justify-center mb-8">
           <div className="flex items-center space-x-4">
             {[1, 2, 3].map((step) => (
@@ -1279,6 +1446,212 @@ export default function SimpleContractGenerator() {
               </div>
             </CardContent>
           </Card>
+        )}
+          </>
+        )}
+
+        {/* History View */}
+        {currentView === 'history' && (
+          <div className="space-y-6">
+            {/* History Header */}
+            <Card className="bg-gray-900 border-gray-700">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-cyan-400">
+                  <History className="h-5 w-5" />
+                  Contract History
+                  <Badge className="bg-cyan-600 text-white ml-2">
+                    {contractHistory.length} contracts
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Search and Filter Controls */}
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          placeholder="Search by client name, project type, or description..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Select value={historyFilter} onValueChange={(value: any) => setHistoryFilter(value)}>
+                        <SelectTrigger className="w-40 bg-gray-800 border-gray-600 text-white">
+                          <Filter className="h-4 w-4 mr-2" />
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-800 border-gray-600">
+                          <SelectItem value="all" className="text-white hover:bg-gray-700">All Status</SelectItem>
+                          <SelectItem value="draft" className="text-white hover:bg-gray-700">Draft</SelectItem>
+                          <SelectItem value="completed" className="text-white hover:bg-gray-700">Completed</SelectItem>
+                          <SelectItem value="processing" className="text-white hover:bg-gray-700">Processing</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={loadContractHistory}
+                        disabled={isLoadingHistory}
+                        className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${isLoadingHistory ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Contract List */}
+                  {isLoadingHistory ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto"></div>
+                      <p className="mt-2 text-gray-400">Loading contract history...</p>
+                    </div>
+                  ) : filteredContracts.length > 0 ? (
+                    <div className="space-y-3">
+                      {filteredContracts.map((contract) => (
+                        <div
+                          key={contract.id}
+                          className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 hover:border-cyan-400 hover:bg-gray-800/80 transition-all duration-200"
+                        >
+                          <div className="space-y-3">
+                            {/* Header Row */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="text-base font-bold text-white truncate">
+                                    {contract.clientName}
+                                  </h3>
+                                  <Badge 
+                                    className={`text-xs px-2 py-1 ${
+                                      contract.status === 'completed' 
+                                        ? 'bg-green-600 text-white' 
+                                        : contract.status === 'draft'
+                                        ? 'bg-yellow-600 text-white'
+                                        : 'bg-blue-600 text-white'
+                                    }`}
+                                  >
+                                    {contract.status === 'completed' && <CheckCircle className="h-3 w-3 mr-1" />}
+                                    {contract.status === 'draft' && <Clock className="h-3 w-3 mr-1" />}
+                                    {contract.status === 'processing' && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                                    {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
+                                  </Badge>
+                                </div>
+                                <p className="text-cyan-400 font-semibold text-sm">
+                                  ${(contract.contractData.financials?.total || 0).toLocaleString()}
+                                </p>
+                              </div>
+                              <div className="flex gap-2 shrink-0">
+                                {contract.status !== 'completed' && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => loadContractFromHistory(contract)}
+                                    className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs px-3"
+                                  >
+                                    <Edit2 className="h-3 w-3 mr-1" />
+                                    Resume
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => loadContractFromHistory(contract)}
+                                  className="border-gray-500 text-gray-300 hover:bg-gray-700 text-xs px-3"
+                                >
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  View
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            {/* Project Type and Description */}
+                            <div className="bg-gray-700/50 rounded-lg px-3 py-2">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Wrench className="h-3 w-3 text-gray-400" />
+                                <span className="text-gray-300 text-sm font-medium">
+                                  {contract.projectType}
+                                </span>
+                              </div>
+                              {contract.contractData.project?.description && (
+                                <p className="text-gray-400 text-xs mt-1 line-clamp-2">
+                                  {contract.contractData.project.description}
+                                </p>
+                              )}
+                            </div>
+                            
+                            {/* Contract Details */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                              <div className="flex items-center gap-1">
+                                <UserCheck className="h-3 w-3 text-gray-500" />
+                                <span className="text-gray-400">Client:</span>
+                                <span className="text-gray-300 truncate">
+                                  {contract.contractData.client?.email || 'No email'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3 text-gray-500" />
+                                <span className="text-gray-400">Created:</span>
+                                <span className="text-gray-300">
+                                  {contract.createdAt ? new Date(contract.createdAt).toLocaleDateString() : 'Unknown'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <FileText className="h-3 w-3 text-gray-500" />
+                                <span className="text-gray-400">ID:</span>
+                                <span className="text-gray-300 font-mono text-xs">
+                                  {contract.contractId?.slice(-8) || contract.id?.slice(-8) || 'N/A'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3 text-gray-500" />
+                                <span className="text-gray-400">Updated:</span>
+                                <span className="text-gray-300">
+                                  {contract.updatedAt ? new Date(contract.updatedAt).toLocaleDateString() : 'Unknown'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <History className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                      <p className="text-gray-400 mb-2">
+                        {searchTerm || historyFilter !== 'all' 
+                          ? 'No contracts match your filters' 
+                          : 'No contract history found'
+                        }
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {searchTerm || historyFilter !== 'all'
+                          ? 'Try adjusting your search or filter settings'
+                          : 'Generated contracts will appear here for easy access and editing'
+                        }
+                      </p>
+                      {(searchTerm || historyFilter !== 'all') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSearchTerm('');
+                            setHistoryFilter('all');
+                          }}
+                          className="mt-4 border-gray-600 text-gray-300 hover:bg-gray-800"
+                        >
+                          Clear Filters
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </div>
