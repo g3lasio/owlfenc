@@ -301,9 +301,24 @@ export class ResendEmailDifferentiated {
                 <input type="text" id="contractorName" placeholder="Type your full legal name here" value="${params.contractorName}" style="width: 100%; padding: 12px; border: 2px solid #28a745; border-radius: 8px; margin: 10px 0; font-size: 16px;">
                 
                 <div style="margin-top: 30px;">
-                  <button type="button" id="approveButton" style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">✅ APPROVE & SIGN CONTRACT</button>
-                  <button type="button" id="rejectButton" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">❌ REJECT CONTRACT</button>
+                  <button type="button" id="approveButton" onclick="approveContract(); console.log('Direct onclick called');" style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">✅ APPROVE & SIGN CONTRACT</button>
+                  <button type="button" id="rejectButton" onclick="rejectContract(); console.log('Direct onclick called');" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">❌ REJECT CONTRACT</button>
                 </div>
+                
+                <!-- ALTERNATIVE FORM-BASED APPROACH -->
+                <form action="${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://owlfenc.com'}/api/contract-signature" method="POST" style="margin-top: 20px; border: 2px dashed #28a745; padding: 20px; border-radius: 8px;">
+                  <h4 style="color: #28a745; text-align: center;">Alternative: Form-Based Approval</h4>
+                  <p style="text-align: center; font-size: 14px; color: #666;">If buttons above don't work, use this form as backup:</p>
+                  <input type="hidden" name="contractId" value="${params.contractId}">
+                  <input type="hidden" name="role" value="contractor">
+                  <input type="hidden" name="timestamp" value="">
+                  <div style="text-align: center; margin: 15px 0;">
+                    <input type="hidden" name="action" value="approve">
+                    <input type="text" name="contractorName" placeholder="Your full legal name" value="${params.contractorName}" style="width: 80%; padding: 10px; margin: 5px 0; border: 2px solid #28a745; border-radius: 4px;">
+                    <br>
+                    <button type="submit" style="background: #28a745; color: white; padding: 12px 24px; border: none; border-radius: 4px; font-weight: 600; margin: 10px; cursor: pointer;">✅ SUBMIT APPROVAL</button>
+                  </div>
+                </form>
                 
                 <div id="statusMessage" style="padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center; font-weight: bold; display: none;"></div>
               </div>
@@ -357,11 +372,73 @@ export class ResendEmailDifferentiated {
                   hasSignature = false;
                 }
 
-                // Add event listeners after DOM is loaded
-                document.addEventListener('DOMContentLoaded', function() {
-                  document.getElementById('approveButton').addEventListener('click', approveContract);
-                  document.getElementById('rejectButton').addEventListener('click', rejectContract);
-                });
+                // Multiple initialization strategies
+                function initializeButtonFunctionality() {
+                  console.log('🔧 [DEBUG] Initializing button functionality');
+                  
+                  try {
+                    // Strategy 1: Direct onclick handlers (already in HTML)
+                    console.log('✅ [DEBUG] Direct onclick handlers set in HTML');
+                    
+                    // Strategy 2: Event listeners  
+                    const approveBtn = document.getElementById('approveButton');
+                    const rejectBtn = document.getElementById('rejectButton');
+                    
+                    if (approveBtn && rejectBtn) {
+                      approveBtn.addEventListener('click', function(e) {
+                        console.log('📱 [DEBUG] Event listener approve clicked');
+                        e.preventDefault();
+                        approveContract();
+                      });
+                      
+                      rejectBtn.addEventListener('click', function(e) {
+                        console.log('📱 [DEBUG] Event listener reject clicked');
+                        e.preventDefault();
+                        rejectContract();
+                      });
+                      
+                      console.log('✅ [DEBUG] Event listeners attached successfully');
+                    } else {
+                      console.warn('⚠️ [DEBUG] Buttons not found for event listeners');
+                    }
+                    
+                    // Strategy 3: Global window functions (for maximum compatibility)
+                    window.approveContract = approveContract;
+                    window.rejectContract = rejectContract;
+                    console.log('✅ [DEBUG] Global functions assigned');
+                    
+                    // Strategy 4: Click simulation fallback
+                    setTimeout(() => {
+                      const buttons = document.querySelectorAll('#approveButton, #rejectButton');
+                      buttons.forEach(btn => {
+                        if (!btn.onclick && !btn._hasEventListener) {
+                          btn.addEventListener('click', function() {
+                            console.log('🔄 [DEBUG] Fallback click handler activated');
+                            const isApprove = btn.id === 'approveButton';
+                            if (isApprove) {
+                              approveContract();
+                            } else {
+                              rejectContract();
+                            }
+                          });
+                          btn._hasEventListener = true;
+                        }
+                      });
+                    }, 1000);
+                    
+                  } catch (error) {
+                    console.error('❌ [DEBUG] Error initializing buttons:', error);
+                  }
+                }
+
+                // Initialize immediately
+                initializeButtonFunctionality();
+                
+                // Also initialize after DOM loaded
+                document.addEventListener('DOMContentLoaded', initializeButtonFunctionality);
+                
+                // And initialize after window loaded
+                window.addEventListener('load', initializeButtonFunctionality);
 
                 function showStatus(message, isSuccess) {
                   const statusDiv = document.getElementById('statusMessage');
@@ -626,9 +703,24 @@ export class ResendEmailDifferentiated {
                 <input type="text" id="clientName" placeholder="Type your full legal name here" value="${params.clientName}" style="width: 100%; padding: 12px; border: 2px solid #007bff; border-radius: 8px; margin: 10px 0; font-size: 16px;">
                 
                 <div style="margin-top: 30px;">
-                  <button type="button" id="approveClientButton" style="background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">✅ SIGN & APPROVE CONTRACT</button>
-                  <button type="button" id="rejectClientButton" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">❌ DECLINE CONTRACT</button>
+                  <button type="button" id="approveClientButton" onclick="approveClientContract(); console.log('Client approve onclick called');" style="background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">✅ SIGN & APPROVE CONTRACT</button>
+                  <button type="button" id="rejectClientButton" onclick="rejectClientContract(); console.log('Client reject onclick called');" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">❌ DECLINE CONTRACT</button>
                 </div>
+                
+                <!-- ALTERNATIVE CLIENT FORM-BASED APPROACH -->
+                <form action="${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://owlfenc.com'}/api/contract-signature" method="POST" style="margin-top: 20px; border: 2px dashed #007bff; padding: 20px; border-radius: 8px;">
+                  <h4 style="color: #007bff; text-align: center;">Alternative: Form-Based Approval</h4>
+                  <p style="text-align: center; font-size: 14px; color: #666;">If buttons above don't work, use this form as backup:</p>
+                  <input type="hidden" name="contractId" value="${params.contractId}">
+                  <input type="hidden" name="role" value="client">
+                  <input type="hidden" name="timestamp" value="">
+                  <div style="text-align: center; margin: 15px 0;">
+                    <input type="hidden" name="action" value="approve">
+                    <input type="text" name="clientName" placeholder="Your full legal name" value="${params.clientName}" style="width: 80%; padding: 10px; margin: 5px 0; border: 2px solid #007bff; border-radius: 4px;">
+                    <br>
+                    <button type="submit" style="background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 4px; font-weight: 600; margin: 10px; cursor: pointer;">✅ SUBMIT APPROVAL</button>
+                  </div>
+                </form>
                 
                 <div id="clientStatusMessage" style="padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center; font-weight: bold; display: none;"></div>
               </div>
@@ -682,11 +774,73 @@ export class ResendEmailDifferentiated {
                   hasClientSignature = false;
                 }
 
-                // Add event listeners for client buttons after DOM is loaded
-                document.addEventListener('DOMContentLoaded', function() {
-                  document.getElementById('approveClientButton').addEventListener('click', approveClientContract);
-                  document.getElementById('rejectClientButton').addEventListener('click', rejectClientContract);
-                });
+                // Multiple initialization strategies for client buttons
+                function initializeClientButtonFunctionality() {
+                  console.log('🔧 [DEBUG] Initializing client button functionality');
+                  
+                  try {
+                    // Strategy 1: Direct onclick handlers (already in HTML)
+                    console.log('✅ [DEBUG] Direct client onclick handlers set in HTML');
+                    
+                    // Strategy 2: Event listeners  
+                    const approveBtn = document.getElementById('approveClientButton');
+                    const rejectBtn = document.getElementById('rejectClientButton');
+                    
+                    if (approveBtn && rejectBtn) {
+                      approveBtn.addEventListener('click', function(e) {
+                        console.log('📱 [DEBUG] Client event listener approve clicked');
+                        e.preventDefault();
+                        approveClientContract();
+                      });
+                      
+                      rejectBtn.addEventListener('click', function(e) {
+                        console.log('📱 [DEBUG] Client event listener reject clicked');
+                        e.preventDefault();
+                        rejectClientContract();
+                      });
+                      
+                      console.log('✅ [DEBUG] Client event listeners attached successfully');
+                    } else {
+                      console.warn('⚠️ [DEBUG] Client buttons not found for event listeners');
+                    }
+                    
+                    // Strategy 3: Global window functions (for maximum compatibility)
+                    window.approveClientContract = approveClientContract;
+                    window.rejectClientContract = rejectClientContract;
+                    console.log('✅ [DEBUG] Global client functions assigned');
+                    
+                    // Strategy 4: Click simulation fallback
+                    setTimeout(() => {
+                      const clientButtons = document.querySelectorAll('#approveClientButton, #rejectClientButton');
+                      clientButtons.forEach(btn => {
+                        if (!btn.onclick && !btn._hasEventListener) {
+                          btn.addEventListener('click', function() {
+                            console.log('🔄 [DEBUG] Client fallback click handler activated');
+                            const isApprove = btn.id === 'approveClientButton';
+                            if (isApprove) {
+                              approveClientContract();
+                            } else {
+                              rejectClientContract();
+                            }
+                          });
+                          btn._hasEventListener = true;
+                        }
+                      });
+                    }, 1000);
+                    
+                  } catch (error) {
+                    console.error('❌ [DEBUG] Error initializing client buttons:', error);
+                  }
+                }
+
+                // Initialize immediately
+                initializeClientButtonFunctionality();
+                
+                // Also initialize after DOM loaded
+                document.addEventListener('DOMContentLoaded', initializeClientButtonFunctionality);
+                
+                // And initialize after window loaded  
+                window.addEventListener('load', initializeClientButtonFunctionality);
 
                 function showClientStatus(message, isSuccess) {
                   const statusDiv = document.getElementById('clientStatusMessage');
