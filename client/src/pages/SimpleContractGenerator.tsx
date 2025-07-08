@@ -681,7 +681,99 @@ export default function SimpleContractGenerator() {
     return result;
   }, []);
 
-  // Generate contract using backend API with comprehensive data
+  // Direct PDF download function - uses working PDF endpoint
+  const handleDownloadPDF = useCallback(async () => {
+    if (!selectedProject || !currentUser?.uid) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // Collect comprehensive contract data
+      const contractPayload = {
+        userId: currentUser.uid,
+        client: {
+          name: editableData.clientName || contractData?.clientInfo?.name || selectedProject.clientName,
+          address: editableData.clientAddress || contractData?.clientInfo?.address || selectedProject.address || selectedProject.clientAddress || "",
+          email: editableData.clientEmail || contractData?.clientInfo?.email || selectedProject.clientEmail || "",
+          phone: editableData.clientPhone || contractData?.clientInfo?.phone || selectedProject.clientPhone || "",
+        },
+        project: {
+          description: contractData?.projectDetails?.description || selectedProject.description || selectedProject.projectDescription || selectedProject.projectType || "",
+          type: selectedProject.projectType || "Construction Project",
+          total: getCorrectProjectTotal(selectedProject),
+          materials: contractData?.materials || selectedProject.materials || [],
+        },
+        contractor: {
+          name: profile?.company || profile?.ownerName || "Company Name",
+          company: profile?.company || "Company Name",
+          address: `${profile?.address || ""} ${profile?.city || ""} ${profile?.state || ""} ${profile?.zipCode || ""}`.trim(),
+          phone: profile?.phone || profile?.mobilePhone || "",
+          email: profile?.email || "",
+          license: profile?.license || "",
+        },
+        financials: {
+          total: getCorrectProjectTotal(selectedProject),
+          subtotal: getCorrectProjectTotal(selectedProject),
+          tax: 0,
+          discount: 0
+        },
+        timeline: {
+          startDate: editableData.startDate || new Date().toISOString().split('T')[0],
+          completionDate: editableData.completionDate || "",
+          estimatedDuration: "As specified in project details"
+        },
+        paymentTerms: editableData.paymentMilestones || [
+          { id: 1, description: "Initial deposit", percentage: 50, amount: getCorrectProjectTotal(selectedProject) * 0.5 },
+          { id: 2, description: "Project completion", percentage: 50, amount: getCorrectProjectTotal(selectedProject) * 0.5 }
+        ]
+      };
+
+      console.log("📄 [PDF DOWNLOAD] Generating PDF with payload:", contractPayload);
+
+      // Call the working PDF endpoint that was confirmed in the system
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-firebase-uid': currentUser?.uid || '',
+        },
+        body: JSON.stringify(contractPayload)
+      });
+
+      if (response.ok) {
+        // Convert response to blob and download
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `contract-${selectedProject.clientName?.replace(/\s+/g, '_') || 'client'}-${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        toast({
+          title: "PDF Downloaded",
+          description: `Contract PDF downloaded successfully for ${selectedProject.clientName}`,
+        });
+      } else {
+        const errorText = await response.text();
+        console.error("❌ PDF download failed:", errorText);
+        throw new Error(`Failed to download PDF: ${response.status} - ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error("❌ Error downloading PDF:", error);
+      toast({
+        title: "Download Error", 
+        description: `Failed to download PDF: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedProject, currentUser?.uid, profile, editableData, contractData, getCorrectProjectTotal, toast]);
+
+  // Generate contract using backend API with comprehensive data (for legal workflow)
   const handleGenerateContract = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid) return;
     
@@ -1544,11 +1636,16 @@ export default function SimpleContractGenerator() {
                     
                     <div className="space-y-3">
                       <Button
-                        onClick={handleGenerateContract}
-                        className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 w-full"
+                        onClick={handleDownloadPDF}
+                        disabled={isLoading}
+                        className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 w-full disabled:opacity-50"
                       >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download PDF Contract
+                        {isLoading ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4 mr-2" />
+                        )}
+                        {isLoading ? "Generating PDF..." : "Download PDF Contract"}
                       </Button>
                       
                       <div className="flex items-center justify-center text-xs text-gray-400 gap-2">
