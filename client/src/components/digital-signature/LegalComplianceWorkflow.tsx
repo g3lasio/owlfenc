@@ -170,40 +170,51 @@ export default function LegalComplianceWorkflow({
       let deliveryResult = { success: false, method: deliveryMethod };
 
       if (deliveryMethod === 'email') {
-        // Send COMPLETE contract email ONLY
+        // DUAL SIGNATURE WORKFLOW: Send to BOTH contractor AND client
         try {
-          const emailResponse = await fetch('/api/sms/complete-contract-email', {
+          const dualWorkflowResponse = await fetch('/api/dual-signature/initiate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              to: editableContacts.clientEmail,
-              contractorName: contractData.contractor.name,
-              contractorCompany: contractData.contractor.company,
-              clientName: contractData.client.name,
-              contractHTML: contractHTML,
               contractId: contractId,
-              reviewUrl: reviewUrl
+              contractHTML: contractHTML,
+              contractorData: {
+                name: contractData.contractor.name,
+                company: contractData.contractor.company,
+                email: editableContacts.contractorEmail,
+                phone: editableContacts.contractorPhone
+              },
+              clientData: {
+                name: contractData.client.name,
+                email: editableContacts.clientEmail,
+                phone: editableContacts.clientPhone
+              },
+              projectDetails: {
+                description: contractData.project?.description || 'Contract Project',
+                value: `$${(contractData.project?.total || 0).toLocaleString()}`,
+                address: contractData.client?.address || 'Project Address'
+              }
             })
           });
           
-          if (!emailResponse.ok) {
-            throw new Error(`Email API returned ${emailResponse.status}: ${emailResponse.statusText}`);
+          if (!dualWorkflowResponse.ok) {
+            throw new Error(`Dual workflow API returned ${dualWorkflowResponse.status}: ${dualWorkflowResponse.statusText}`);
           }
           
-          let emailResult;
+          let dualResult;
           try {
-            emailResult = await emailResponse.json();
+            dualResult = await dualWorkflowResponse.json();
           } catch (parseError) {
-            console.error('📧 [EMAIL-ONLY] JSON parse error:', parseError);
-            throw new Error('Invalid response from email service');
+            console.error('📧 [DUAL-WORKFLOW] JSON parse error:', parseError);
+            throw new Error('Invalid response from dual signature service');
           }
           
           deliveryResult = { 
-            success: emailResult?.success || false, 
-            method: 'email', 
-            result: emailResult 
+            success: dualResult?.success || false, 
+            method: 'dual-email', 
+            result: dualResult 
           };
-          console.log('📧 [EMAIL-ONLY] Result:', emailResult);
+          console.log('📧 [DUAL-WORKFLOW] Result:', dualResult);
         } catch (emailError) {
           console.error('📧 [EMAIL-ONLY] Failed:', emailError);
           deliveryResult = { success: false, method: 'email', error: emailError.message };
@@ -263,7 +274,7 @@ export default function LegalComplianceWorkflow({
         
         toast({
           title: `Contract Sent via ${deliveryMethod.toUpperCase()}`,
-          description: `Complete contract delivered to ${contactInfo}. Client will review and sign from their device.`,
+          description: `Complete contract delivered to BOTH contractor and client via owlfenc.com domain. Both parties will review and sign independently.`,
         });
       } else {
         const errorMessage = deliveryResult.error || `${deliveryMethod} delivery failed`;

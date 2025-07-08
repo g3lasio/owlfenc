@@ -166,11 +166,15 @@ export class ResendEmailAdvanced {
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; background: #f5f7fa; }
-            .email-container { max-width: 700px; margin: 0 auto; background: white; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
+            .email-container { max-width: 100%; width: 100%; margin: 0 auto; background: white; box-shadow: 0 8px 32px rgba(0,0,0,0.1); box-sizing: border-box; }
+            @media (min-width: 600px) { .email-container { max-width: 700px; } }
             .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; text-align: center; }
             .header h1 { font-size: 28px; margin-bottom: 10px; font-weight: 700; }
             .header p { font-size: 16px; opacity: 0.9; }
-            .content { padding: 40px; }
+            .content { padding: 20px; }
+            @media (min-width: 600px) { 
+              .content { padding: 40px; } 
+            }
             .section { margin-bottom: 30px; }
             
             /* Contract Content Styling */
@@ -259,9 +263,14 @@ export class ResendEmailAdvanced {
               border-radius: 8px; 
               background: white; 
               width: 100%; 
+              max-width: 400px;
               height: 150px; 
               cursor: crosshair;
               margin: 15px 0;
+              box-sizing: border-box;
+            }
+            @media (max-width: 480px) { 
+              .signature-canvas { max-width: 100%; } 
             }
             .signature-input { 
               width: 100%; 
@@ -326,9 +335,14 @@ export class ResendEmailAdvanced {
               if (!canvas) return;
               ctx = canvas.getContext('2d');
               
-              // Set canvas size
-              canvas.width = canvas.offsetWidth;
-              canvas.height = 150;
+              // Set canvas size properly with device pixel ratio
+              const rect = canvas.getBoundingClientRect();
+              const dpr = window.devicePixelRatio || 1;
+              canvas.width = rect.width * dpr;
+              canvas.height = 150 * dpr;
+              canvas.style.width = rect.width + 'px';
+              canvas.style.height = '150px';
+              ctx.scale(dpr, dpr);
               
               // Drawing events
               canvas.addEventListener('mousedown', startDrawing);
@@ -379,7 +393,21 @@ export class ResendEmailAdvanced {
             function toggleReview() {
               reviewChecked = !reviewChecked;
               const checkbox = document.getElementById('reviewCheck');
-              checkbox.className = reviewChecked ? 'custom-checkbox checked' : 'custom-checkbox';
+              const signatureSection = document.getElementById('signatureSection');
+              
+              if (checkbox) {
+                checkbox.className = reviewChecked ? 'custom-checkbox checked' : 'custom-checkbox';
+                checkbox.style.background = reviewChecked ? '#28a745' : '#fff';
+                checkbox.style.color = reviewChecked ? '#fff' : '#000';
+                checkbox.innerHTML = reviewChecked ? '✓' : '';
+                checkbox.style.border = '2px solid ' + (reviewChecked ? '#28a745' : '#ddd');
+              }
+              
+              if (signatureSection) {
+                signatureSection.style.opacity = reviewChecked ? '1' : '0.5';
+                signatureSection.style.pointerEvents = reviewChecked ? 'auto' : 'none';
+              }
+              
               updateSubmitButton();
             }
             
@@ -389,14 +417,21 @@ export class ResendEmailAdvanced {
               const hasSignature = canvas && !isCanvasEmpty();
               const hasName = nameInput && nameInput.value.trim().length > 0;
               
+              submitBtn.disabled = !(reviewChecked && (hasSignature || hasName));
+              submitBtn.style.opacity = submitBtn.disabled ? '0.5' : '1';
+              submitBtn.style.cursor = submitBtn.disabled ? 'not-allowed' : 'pointer';
+              submitBtn.style.pointerEvents = submitBtn.disabled ? 'none' : 'auto';
+              
               if (reviewChecked && (hasSignature || hasName)) {
-                submitBtn.disabled = false;
                 submitBtn.className = 'button success';
                 submitBtn.textContent = '✓ Submit Signed Contract';
+                submitBtn.style.backgroundColor = '#28a745';
+                submitBtn.style.borderColor = '#28a745';
               } else {
-                submitBtn.disabled = true;
                 submitBtn.className = 'button';
                 submitBtn.textContent = 'Complete Review & Signature Required';
+                submitBtn.style.backgroundColor = '#6c757d';
+                submitBtn.style.borderColor = '#6c757d';
               }
             }
             
@@ -507,13 +542,39 @@ export class ResendEmailAdvanced {
                 <p style="margin-bottom: 20px; opacity: 0.9;">
                   Provide your legal signature using either method below:
                 </p>
+                
+                <!-- Signature Fields with Names -->
+                <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; max-width: 100%;">
+                  <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div style="border: 2px solid #ddd; padding: 12px; border-radius: 8px; text-align: center; min-height: 80px; flex: 1; min-width: 250px;">
+                      <div style="font-weight: bold; margin-bottom: 8px; color: #2c3e50; font-size: 14px;">CONTRACTOR</div>
+                      <div style="border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 5px; min-height: 40px; display: flex; align-items: center; justify-content: center;">
+                        <span id="contractorSignatureField" style="font-family: 'Brush Script MT', cursive; font-size: 16px;">
+                          ${params.contractorName}
+                        </span>
+                      </div>
+                      <small style="color: #666; font-size: 12px;">Signature</small>
+                    </div>
+                    
+                    <div style="border: 2px solid #ddd; padding: 12px; border-radius: 8px; text-align: center; min-height: 80px; flex: 1; min-width: 250px;">
+                      <div style="font-weight: bold; margin-bottom: 8px; color: #2c3e50; font-size: 14px;">CLIENT</div>
+                      <div style="border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 5px; min-height: 40px; display: flex; align-items: center; justify-content: center;">
+                        <span id="clientSignatureField" style="font-family: 'Brush Script MT', cursive; font-size: 16px;">
+                          ${params.clientName}
+                        </span>
+                      </div>
+                      <small style="color: #666; font-size: 12px;">Signature</small>
+                    </div>
+                  </div>
+                </div>
+                
                 <div class="signature-form">
                   <h4 style="margin-bottom: 15px; color: #495057;">Option 1: Draw Your Signature</h4>
-                  <canvas id="signatureCanvas" class="signature-canvas"></canvas>
+                  <canvas id="signatureCanvas" class="signature-canvas" width="400" height="150"></canvas>
                   <button type="button" class="button secondary" onclick="clearSignature()">Clear Signature</button>
                   
                   <h4 style="margin: 25px 0 15px 0; color: #495057;">Option 2: Type Your Name (Cursive Style)</h4>
-                  <input type="text" id="signatureName" class="signature-input" placeholder="Type your full legal name" />
+                  <input type="text" id="signatureName" class="signature-input" placeholder="Type your full legal name" value="" />
                   
                   <div style="margin-top: 25px;">
                     <button type="button" id="submitContract" class="button" onclick="submitContract()" disabled>
