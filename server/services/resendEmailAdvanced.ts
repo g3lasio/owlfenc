@@ -4,6 +4,7 @@
  */
 
 import { Resend } from 'resend';
+import { emailTracker } from './emailDeliveryTracker';
 
 export interface ContractEmailParams {
   to: string;
@@ -31,9 +32,9 @@ export interface EmailDeliveryResult {
 
 export class ResendEmailAdvanced {
   private resend: Resend;
-  private platformDomain = 'owlfenc.com';
-  private operationalEmail = 'system@owlfenc.com';
-  private testModeEmail = 'contracts@owlfenc.com';
+  private platformDomain = 'resend.dev'; // Use verified domain
+  private operationalEmail = 'onboarding@resend.dev';
+  private testModeEmail = 'delivered@resend.dev';
 
   constructor() {
     if (!process.env.RESEND_API_KEY) {
@@ -80,18 +81,19 @@ export class ResendEmailAdvanced {
   }
 
   /**
-   * Generate professional from email using owlfenc.com domain
+   * Generate verified from email address that actually works with Resend
    */
   private generateFromEmail(emailType: 'contracts' | 'notifications' | 'system' = 'contracts'): string {
+    // Use verified resend.dev domain for reliable delivery
     switch (emailType) {
       case 'contracts':
-        return `contracts@${this.platformDomain}`;
+        return 'onboarding@resend.dev'; // Verified address
       case 'notifications':
-        return `notifications@${this.platformDomain}`;
+        return 'onboarding@resend.dev'; // Verified address  
       case 'system':
-        return `system@${this.platformDomain}`;
+        return 'onboarding@resend.dev'; // Verified address
       default:
-        return `noreply@${this.platformDomain}`;
+        return 'onboarding@resend.dev'; // Verified address
     }
   }
 
@@ -574,18 +576,34 @@ export class ResendEmailAdvanced {
         </html>
       `;
 
-      // Send the complete contract email
+      // Send the complete contract email with verified FROM address
       const emailData = {
-        from: fromEmail,
+        from: 'Owl Fence Legal <onboarding@resend.dev>', // Verified sender
         to: recipient,
         subject: `🔒 Contract Review Required - ${params.contractorCompany}`,
-        html: this.addDevelopmentBanner(emailHTML, params.to)
+        html: this.addDevelopmentBanner(emailHTML, params.to),
+        reply_to: 'support@owlfenc.com' // Professional reply-to
       };
 
       const result = await this.resend.emails.send(emailData);
       
       console.log('✅ [COMPLETE-CONTRACT-EMAIL] Contract email sent successfully');
       console.log('📧 [COMPLETE-CONTRACT-EMAIL] Email ID:', result.data?.id);
+      console.log('📧 [COMPLETE-CONTRACT-EMAIL] Full result:', result);
+
+      // Track the email for real delivery monitoring
+      if (result.data?.id) {
+        emailTracker.trackEmail(
+          result.data.id,
+          recipient,
+          emailData.subject,
+          emailData.from
+        );
+        console.log('📊 [TRACKING] Email delivery tracking activated for', result.data.id);
+      } else {
+        console.error('❌ [COMPLETE-CONTRACT-EMAIL] No email ID received from Resend');
+        console.error('❌ [COMPLETE-CONTRACT-EMAIL] Result data:', result);
+      }
 
       return {
         success: true,
@@ -635,9 +653,9 @@ export class ResendEmailAdvanced {
       console.log('📧 [ADVANCED-EMAIL] Domain verified:', this.isDomainVerified());
       console.log('📧 [ADVANCED-EMAIL] Environment:', this.isProductionMode() ? 'PRODUCTION' : 'DEVELOPMENT');
 
-      // Prepare email payload
+      // Prepare email payload with verified FROM address
       const emailPayload = {
-        from: fromEmail,
+        from: `${params.contractorCompany} <onboarding@resend.dev>`, // Verified sender
         to: [finalRecipient],
         subject: this.isDomainVerified() ? params.subject : `[DEV] ${params.subject}`,
         html: finalHtmlContent,
@@ -666,6 +684,15 @@ export class ResendEmailAdvanced {
       if (result.data?.id) {
         console.log('✅ [ADVANCED-EMAIL] Email sent successfully');
         console.log('✅ [ADVANCED-EMAIL] Email ID:', result.data.id);
+
+        // Track the email for real delivery monitoring
+        emailTracker.trackEmail(
+          result.data.id,
+          finalRecipient,
+          emailPayload.subject,
+          emailPayload.from
+        );
+        console.log('📊 [TRACKING] Email delivery tracking activated for', result.data.id);
 
         return {
           success: true,

@@ -136,8 +136,12 @@ console.log('📧 [CENTRALIZED-EMAIL] Rutas registradas en /api/centralized-emai
 
 // 📱 Registrar rutas de SMS
 import smsRoutes from './routes/sms';
+import emailTrackingRoutes from './routes/email-tracking';
 app.use("/api/sms", smsRoutes);
 console.log('📱 [SMS] Rutas registradas en /api/sms');
+
+app.use("/api/email-tracking", emailTrackingRoutes);
+console.log('📊 [EMAIL-TRACKING] Rutas registradas en /api/email-tracking');
 
 (async () => {
 

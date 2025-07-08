@@ -1,6 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Client } from "@/lib/clientFirebase";
+import { useAuth } from "@/contexts/AuthContext";
+
+import {
+  getClients as getFirebaseClients,
+  saveClient,
+} from "@/lib/clientFirebase";
 import {
   Send,
   Paperclip,
@@ -21,7 +28,17 @@ type Message = {
   sender: MessageSender;
   state?: MessageState;
   action?: string;
+  clients?: Client[]; // ✅ new field
 };
+
+type EstimateStep1ChatFlowStep =
+  | "select-client"
+  | "awaiting-client-choice"
+  | "enter-new-client"
+  | "client-added"
+  | "awaiting-project-description"
+  | "awaiting-project-items"
+  | null;
 
 // Botones de acción principales con iconos
 const actionButtons = [
@@ -62,7 +79,12 @@ export default function Mervin() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [caseType, setCaseType] = useState<"Estimates" | "Contract" | "">("");
   const { toast } = useToast();
+  const [chatFlowStep, setChatFlowStep] =
+    useState<EstimateStep1ChatFlowStep>(null);
+  const [clients, setClients] = useState<Client[]>([]);
+  const { currentUser } = useAuth();
 
   // Inicializar con mensaje de bienvenida
   useEffect(() => {
@@ -78,10 +100,42 @@ export default function Mervin() {
   }, []);
 
   // Manejar envío de mensajes
+  // const handleSendMessage = () => {
+  //   if (inputValue.trim() === "" || isLoading) return;
+
+  //   // Agregar mensaje del usuario
+  //   const userMessage: Message = {
+  //     id: `user-${Date.now()}`,
+  //     content: inputValue,
+  //     sender: "user",
+  //   };
+
+  //   setMessages((prev) => [...prev, userMessage]);
+  //   setInputValue("");
+  //   setIsLoading(true);
+
+  //   // Simular respuesta
+  //   setTimeout(() => {
+  //     const assistantMessage: Message = {
+  //       id: `assistant-${Date.now()}`,
+  //       content:
+  //         "Estoy aquí para ayudarte. ¿Te gustaría generar un contrato, verificar una propiedad, consultar permisos, gestionar clientes o revisar facturación?",
+  //       sender: "assistant",
+  //     };
+
+  //     setMessages((prev) => [...prev, assistantMessage]);
+  //     setIsLoading(false);
+
+  //     // Desplazar al final
+  //     setTimeout(() => {
+  //       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  //     }, 100);
+  //   }, 1500);
+  // };
+
   const handleSendMessage = () => {
     if (inputValue.trim() === "" || isLoading) return;
 
-    // Agregar mensaje del usuario
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       content: inputValue,
@@ -89,9 +143,18 @@ export default function Mervin() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(false);
+
+    // Continue based on estimate flow
+    if (caseType === "Estimates") {
+      handleEstimateFlow(inputValue.trim().toLowerCase());
+      setInputValue("");
+      return;
+    }
+
+    // Default flow
     setInputValue("");
     setIsLoading(true);
-
     // Simular respuesta
     setTimeout(() => {
       const assistantMessage: Message = {
@@ -101,35 +164,65 @@ export default function Mervin() {
         sender: "assistant",
       };
 
-      setMessages((prev) => [...prev, assistantMessage]);
-      setIsLoading(false);
-
       // Desplazar al final
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 100);
     }, 1500);
   };
+  const handleClientSelect = (client: Client | null) => {
+    if (client) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content: `✅ Cliente "${client.name}" seleccionado. Continuando con la estimación...`,
+          sender: "assistant",
+        },
+      ]);
+      setChatFlowStep("client-added");
+      setChatFlowStep("awaiting-project-description");
+
+      const askDescriptionMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        content: "Por favor, proporciona una descripción del proyecto.",
+        sender: "assistant",
+      };
+
+      setMessages((prev) => [...prev, askDescriptionMessage]);
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+      // setEstimate((prev) => ({ ...prev, client }));
+    } else {
+      // Handle new client entry
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content:
+            "Por favor comparte los detalles del nuevo cliente en el siguiente formato:\n\nNombre, Email, Teléfono, Dirección, Ciudad, Estado, Código Postal",
+          sender: "assistant",
+        },
+      ]);
+      setChatFlowStep("enter-new-client");
+    }
+
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
 
   // Manejar selección de acción
   const handleAction = (action: string) => {
     setIsLoading(true);
-
-    // Mensaje temporal "Analizando..."
     const thinkingMessage: Message = {
       id: `thinking-${Date.now()}`,
       content: "Analizando datos...",
       sender: "assistant",
       state: "analyzing",
     };
-
     setMessages((prev) => [...prev, thinkingMessage]);
-
-    // Desplazar al final
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-
     // Simular respuesta
     setTimeout(() => {
       // Eliminar mensaje de pensando
@@ -140,7 +233,7 @@ export default function Mervin() {
       switch (action) {
         case "estimates":
           response =
-            "Puedo ayudarte a generar estimados precisos para tus proyectos de cercas. Para empezar, necesito algunos detalles básicos como tipo de cerca, longitud, altura y ubicación.";
+            "Vous pouvez générer des estimations précises pour vos projets en saisissant simplement quelques détails de base tels que les informations sur le client, la description du projet et l'inventaire.";
           break;
         case "contracts":
           response =
@@ -176,6 +269,173 @@ export default function Mervin() {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 100);
     }, 1500);
+    if (action === "estimates") {
+      setCaseType("Estimates");
+      setChatFlowStep("select-client");
+
+      // Load clients
+      getFirebaseClients().then((clientList) => {
+        setClients(clientList);
+
+        // Delay sending the assistant message by 3 seconds (3000 ms)
+        setTimeout(() => {
+          const assistantMessage: Message = {
+            id: `assistant-${Date.now()}`,
+            content: "Selecciona un cliente existente o crea uno nuevo:",
+            sender: "assistant",
+            clients: clientList,
+          };
+
+          setMessages((prev) => [...prev, assistantMessage]);
+          setChatFlowStep("awaiting-client-choice");
+          setIsLoading(false);
+
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+          }, 100);
+        }, 3000);
+      });
+
+      return; // Prevent default simulated reply
+    }
+
+    // Desplazar al final
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
+  const handleEstimateFlow = async (userInput: string) => {
+    if (chatFlowStep === "awaiting-client-choice") {
+      if (userInput === "nuevo cliente") {
+        setChatFlowStep("enter-new-client");
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "Por favor comparte los detalles del nuevo cliente en el siguiente formato:\n\nNombre, Email, Teléfono, Dirección, Ciudad, Estado, Código Postal",
+            sender: "assistant",
+          },
+        ]);
+      } else {
+        // Try to find client by name
+        const client = clients.find((c) =>
+          c.name.toLowerCase().includes(userInput),
+        );
+
+        if (client) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `assistant-${Date.now()}`,
+              content: `Cliente "${client.name}" seleccionado. Procediendo al siguiente paso.`,
+              sender: "assistant",
+            },
+          ]);
+          setChatFlowStep("client-added");
+          // Save selected client to estimate context
+          // setEstimate((prev) => ({ ...prev, client }));
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `assistant-${Date.now()}`,
+              content:
+                "No se encontró un cliente con ese nombre. Intenta de nuevo o escribe 'nuevo cliente'.",
+              sender: "assistant",
+            },
+          ]);
+        }
+      }
+    } else if (chatFlowStep === "enter-new-client") {
+      const parts = userInput.split(",");
+      if (parts.length < 3) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "Formato incorrecto. Asegúrate de incluir: Nombre, Email, Teléfono, Dirección, Ciudad, Estado, Código Postal.",
+            sender: "assistant",
+          },
+        ]);
+        return;
+      }
+
+      const [name, email, phone, address, city, state, zipCode] = parts.map(
+        (p) => p.trim(),
+      );
+
+      try {
+        const clientData = {
+          clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+          userId: currentUser.uid,
+          name,
+          email,
+          phone,
+          mobilePhone: "",
+          address,
+          city,
+          state,
+          zipCode,
+          notes: "",
+          source: "Manual - Estimates",
+          classification: "cliente",
+          tags: [],
+        };
+
+        const savedClient = await saveClient(clientData);
+
+        const clientWithId: Client = {
+          id: savedClient.id,
+          ...clientData,
+          createdAt: savedClient.createdAt || new Date(),
+          updatedAt: savedClient.updatedAt || new Date(),
+        };
+
+        setClients((prev) => [clientWithId, ...prev]);
+
+        // Attach to estimate state
+        // setEstimate((prev) => ({ ...prev, client: clientWithId }));
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content: `✅ Cliente "${name}" creado y asignado con éxito.`,
+            sender: "assistant",
+          },
+        ]);
+        setChatFlowStep("client-added");
+
+        toast({
+          title: "✅ Cliente Creado Exitosamente",
+          description: `${name} ha sido guardado y seleccionado para este estimado.`,
+          duration: 4000,
+        });
+      } catch (error) {
+        console.error("❌ Error creating client:", error);
+        toast({
+          title: "Error al Crear Cliente",
+          description:
+            error instanceof Error
+              ? error.message
+              : "No se pudo crear el cliente. Verifica tu conexión.",
+          variant: "destructive",
+          duration: 6000,
+        });
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "Ocurrió un error al guardar el cliente. Por favor intenta nuevamente.",
+            sender: "assistant",
+          },
+        ]);
+      }
+    }
   };
 
   // Manejar tecla Enter
@@ -225,6 +485,30 @@ export default function Mervin() {
               {message.sender === "user" && (
                 <div className="text-right mb-1">
                   <span className="text-blue-400 font-semibold">You</span>
+                </div>
+              )}
+
+              {message.clients && message.clients.length > 0 && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {message.clients.map((client) => (
+                    <button
+                      key={client.id}
+                      onClick={() => handleClientSelect(client)}
+                      className="bg-cyan-800 hover:bg-cyan-700 text-white px-3 py-2 rounded text-sm text-left"
+                    >
+                      <div className="font-semibold">{client.name}</div>
+                      <div className="text-xs opacity-80">
+                        {client.email || "Sin email"}
+                      </div>
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => handleClientSelect(null)}
+                    className="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm text-center col-span-2"
+                  >
+                    ➕ Nuevo Cliente
+                  </button>
                 </div>
               )}
 
@@ -312,15 +596,6 @@ export default function Mervin() {
           </Button>
         </div>
       </div>
-
-      {/* Footer fijo y minimalista */}
-      {/* <div className="fixed bottom-0 left-0 right-0 bg-black text-center p-1 text-xs text-gray-500 border-t border-gray-900/20">
-        <div className="flex justify-between px-4">
-          <span>Política de privacidad</span>
-          <span>Términos</span>
-          <span>© 2025 Owl</span>
-        </div>
-      </div> */}
     </div>
   );
 }
