@@ -228,26 +228,54 @@ export class ResendEmailDifferentiated {
                 </ol>
               </div>
               
-              <!-- EMBEDDED CONTRACT CONTENT -->
-              <div class="contract-content" style="background: #ffffff; border: 2px solid #28a745; padding: 25px; border-radius: 12px; margin: 25px 0; max-height: 400px; overflow-y: auto; font-family: 'Times New Roman', Times, serif;">
-                <h2 style="color: #2c3e50; text-align: center; margin-bottom: 20px;">INDEPENDENT CONTRACTOR AGREEMENT</h2>
+              <!-- EMBEDDED COMPLETE CONTRACT CONTENT -->
+              <div class="contract-content" style="background: #ffffff; border: 2px solid #28a745; padding: 25px; border-radius: 12px; margin: 25px 0; max-height: 600px; overflow-y: auto; font-family: 'Times New Roman', Times, serif; font-size: 14px;">
+                <h2 style="color: #2c3e50; text-align: center; margin-bottom: 20px; font-size: 18px;">INDEPENDENT CONTRACTOR AGREEMENT</h2>
                 
-                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">1. PARTIES</h3>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;">This Agreement is between <strong>${params.contractorName}</strong> ("Contractor") and <strong>${params.clientName}</strong> ("Client").</p>
+                <div style="border: 2px solid #28a745; padding: 15px; margin: 15px 0; background: #f8f9fa;">
+                  <h4 style="margin: 0 0 10px 0; color: #28a745;">CONTRACTING PARTIES</h4>
+                  <p style="margin: 5px 0; line-height: 1.4;"><strong>Contractor:</strong> ${params.contractorName}</p>
+                  <p style="margin: 5px 0; line-height: 1.4;"><strong>Client:</strong> ${params.clientName}</p>
+                  <p style="margin: 5px 0; line-height: 1.4;"><strong>Project Value:</strong> ${params.projectDetails?.value || 'As agreed'}</p>
+                  <p style="margin: 5px 0; line-height: 1.4;"><strong>Project Location:</strong> ${params.projectDetails?.address || 'Client property'}</p>
+                </div>
+
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">1. SCOPE OF WORK</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;">${params.projectDetails?.description || 'Professional construction services as specified in project documentation.'}</p>
                 
-                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">2. PROJECT DESCRIPTION</h3>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Scope:</strong> ${params.projectDetails?.description || 'Professional construction services'}</p>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Value:</strong> ${params.projectDetails?.value || 'As agreed'}</p>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Location:</strong> ${params.projectDetails?.address || 'Client property'}</p>
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">2. PAYMENT TERMS</h3>
+                <p style="line-height: 1.6; margin-bottom: 8px;"><strong>Total Contract Amount:</strong> ${params.projectDetails?.value || 'As specified'}</p>
+                <p style="line-height: 1.6; margin-bottom: 8px;"><strong>Payment Schedule:</strong></p>
+                <ul style="margin: 8px 0 12px 20px;">
+                  <li>50% deposit upon contract execution</li>
+                  <li>50% final payment upon project completion</li>
+                </ul>
+                <p style="line-height: 1.6; margin-bottom: 12px;"><strong>Payment Methods:</strong> Check, bank transfer, or approved electronic payment systems.</p>
                 
-                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">3. PAYMENT TERMS</h3>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Total:</strong> ${params.projectDetails?.value || 'As specified'} | <strong>Schedule:</strong> 50% deposit, 50% completion</p>
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">3. PROJECT TIMELINE</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px;">Work shall commence within seven (7) days of contract execution and deposit receipt. Project completion date as specified in attached timeline documentation.</p>
                 
-                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">4. WARRANTIES & INSURANCE</h3>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;">2-year workmanship warranty. Contractor maintains full liability insurance and workers' compensation.</p>
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">4. WARRANTIES & GUARANTEES</h3>
+                <p style="line-height: 1.6; margin-bottom: 8px;"><strong>Workmanship Warranty:</strong> Two (2) year warranty on all installation and construction work.</p>
+                <p style="line-height: 1.6; margin-bottom: 12px;"><strong>Materials Warranty:</strong> Manufacturer warranties apply; Contractor provides one (1) year warranty on material defects.</p>
                 
-                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">5. LEGAL COMPLIANCE</h3>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;">All work complies with local building codes. Contractor obtains necessary permits.</p>
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">5. INSURANCE & LIABILITY</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px;">Contractor maintains comprehensive general liability insurance minimum $1,000,000 and workers' compensation insurance. Client is protected from liability for work-related injuries or property damages.</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">6. PERMITS & COMPLIANCE</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px;">Contractor shall obtain all necessary permits and ensure work complies with applicable building codes, regulations, and local ordinances.</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">7. CHANGE ORDERS</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px;">Any changes to scope of work must be documented in writing and signed by both parties before implementation. Additional charges apply to scope changes.</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">8. TERMINATION</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px;">Either party may terminate this agreement with seven (7) days written notice. Client responsible for payment of completed work.</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">9. DISPUTE RESOLUTION</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px;">Disputes shall be resolved through binding arbitration in accordance with applicable state laws.</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">10. GOVERNING LAW</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px;">This agreement shall be governed by the laws of the state where the work is performed.</p>
               </div>
 
               <!-- SIGNATURE SECTION -->
@@ -273,8 +301,8 @@ export class ResendEmailDifferentiated {
                 <input type="text" id="contractorName" placeholder="Type your full legal name here" value="${params.contractorName}" style="width: 100%; padding: 12px; border: 2px solid #28a745; border-radius: 8px; margin: 10px 0; font-size: 16px;">
                 
                 <div style="margin-top: 30px;">
-                  <button type="button" onclick="approveContract()" style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">✅ APPROVE & SIGN CONTRACT</button>
-                  <button type="button" onclick="rejectContract()" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">❌ REJECT CONTRACT</button>
+                  <button type="button" id="approveButton" style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">✅ APPROVE & SIGN CONTRACT</button>
+                  <button type="button" id="rejectButton" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">❌ REJECT CONTRACT</button>
                 </div>
                 
                 <div id="statusMessage" style="padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center; font-weight: bold; display: none;"></div>
@@ -328,6 +356,12 @@ export class ResendEmailDifferentiated {
                   ctx.clearRect(0, 0, canvas.width, canvas.height);
                   hasSignature = false;
                 }
+
+                // Add event listeners after DOM is loaded
+                document.addEventListener('DOMContentLoaded', function() {
+                  document.getElementById('approveButton').addEventListener('click', approveContract);
+                  document.getElementById('rejectButton').addEventListener('click', rejectContract);
+                });
 
                 function showStatus(message, isSuccess) {
                   const statusDiv = document.getElementById('statusMessage');
@@ -512,36 +546,57 @@ export class ResendEmailDifferentiated {
                 </ul>
               </div>
               
-              <!-- EMBEDDED CONTRACT CONTENT -->
-              <div class="contract-content" style="background: #ffffff; border: 2px solid #007bff; padding: 25px; border-radius: 12px; margin: 25px 0; max-height: 400px; overflow-y: auto; font-family: 'Times New Roman', Times, serif;">
-                <h2 style="color: #2c3e50; text-align: center; margin-bottom: 20px;">INDEPENDENT CONTRACTOR AGREEMENT</h2>
+              <!-- EMBEDDED COMPLETE CONTRACT CONTENT -->
+              <div class="contract-content" style="background: #ffffff; border: 2px solid #007bff; padding: 25px; border-radius: 12px; margin: 25px 0; max-height: 600px; overflow-y: auto; font-family: 'Times New Roman', Times, serif; font-size: 14px;">
+                <h2 style="color: #2c3e50; text-align: center; margin-bottom: 20px; font-size: 18px;">INDEPENDENT CONTRACTOR AGREEMENT</h2>
                 
-                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">1. PARTIES</h3>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;">This Agreement is between <strong>${params.contractorName}</strong> ("Contractor") and <strong>${params.clientName}</strong> ("Client").</p>
+                <div style="border: 2px solid #007bff; padding: 15px; margin: 15px 0; background: #f8f9fa;">
+                  <h4 style="margin: 0 0 10px 0; color: #007bff;">CONTRACTING PARTIES</h4>
+                  <p style="margin: 5px 0; line-height: 1.4;"><strong>Contractor:</strong> ${params.contractorName}</p>
+                  <p style="margin: 5px 0; line-height: 1.4;"><strong>Client:</strong> ${params.clientName}</p>
+                  <p style="margin: 5px 0; line-height: 1.4;"><strong>Project Value:</strong> ${params.projectDetails?.value || 'As agreed'}</p>
+                  <p style="margin: 5px 0; line-height: 1.4;"><strong>Project Location:</strong> ${params.projectDetails?.address || 'Your property'}</p>
+                </div>
+
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">1. SCOPE OF WORK</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;">${params.projectDetails?.description || 'Professional construction services as specified in project documentation for your property.'}</p>
                 
-                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">2. PROJECT DESCRIPTION</h3>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Scope:</strong> ${params.projectDetails?.description || 'Professional construction services for your property'}</p>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Value:</strong> ${params.projectDetails?.value || 'As agreed'}</p>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Location:</strong> ${params.projectDetails?.address || 'Your property'}</p>
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">2. PAYMENT TERMS</h3>
+                <p style="line-height: 1.6; margin-bottom: 8px;"><strong>Total Contract Amount:</strong> ${params.projectDetails?.value || 'As specified'}</p>
+                <p style="line-height: 1.6; margin-bottom: 8px;"><strong>Payment Schedule:</strong></p>
+                <ul style="margin: 8px 0 12px 20px;">
+                  <li>50% deposit upon contract execution and signing</li>
+                  <li>50% final payment upon satisfactory project completion</li>
+                </ul>
+                <p style="line-height: 1.6; margin-bottom: 12px;"><strong>Payment Methods:</strong> Check, bank transfer, credit card, or approved electronic payment systems.</p>
                 
-                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">3. PAYMENT TERMS</h3>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Total Project Cost:</strong> ${params.projectDetails?.value || 'As specified'}</p>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Payment Schedule:</strong> 50% deposit upon contract signing, 50% upon project completion</p>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Payment Methods:</strong> Check, bank transfer, or approved payment platform</p>
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">3. PROJECT TIMELINE</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px;">Work shall commence within seven (7) calendar days of contract execution and deposit receipt. Project completion date as specified in attached timeline documentation and project specifications.</p>
                 
-                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">4. PROJECT TIMELINE</h3>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Start Date:</strong> Within 7 days of signed contract and deposit receipt</p>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Completion:</strong> As specified in project timeline documentation</p>
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">4. WARRANTIES & GUARANTEES</h3>
+                <p style="line-height: 1.6; margin-bottom: 8px;"><strong>Workmanship Warranty:</strong> Two (2) year comprehensive warranty on all installation and construction work performed.</p>
+                <p style="line-height: 1.6; margin-bottom: 12px;"><strong>Materials Warranty:</strong> All manufacturer warranties apply; Contractor provides additional one (1) year warranty covering material defects and installation issues.</p>
                 
-                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">5. WARRANTIES & GUARANTEES</h3>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Workmanship:</strong> 2-year warranty on installation and construction work</p>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Materials:</strong> Manufacturer warranties apply; contractor provides 1-year warranty on material defects</p>
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">5. INSURANCE & LIABILITY PROTECTION</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px;">Contractor maintains comprehensive general liability insurance minimum $1,000,000 and workers' compensation insurance as required by law. You are fully protected from liability for work-related injuries, property damages, or accidents occurring during project execution.</p>
                 
-                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">6. INSURANCE & LIABILITY</h3>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;">Contractor maintains comprehensive general liability insurance and workers' compensation. You are protected from liability for work-related injuries or damages.</p>
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">6. PERMITS & REGULATORY COMPLIANCE</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px;">Contractor shall obtain all necessary building permits, inspections, and ensure complete compliance with applicable building codes, regulations, zoning requirements, and local ordinances at no additional cost to Client.</p>
                 
-                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">7. PERMITS & COMPLIANCE</h3>
-                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;">Contractor will obtain all necessary permits and ensure work complies with local building codes and regulations.</p>
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">7. CHANGE ORDERS & MODIFICATIONS</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px;">Any changes to original scope of work must be documented in writing and signed by both parties before implementation. Additional charges for scope changes will be clearly itemized and agreed upon in advance.</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">8. PROJECT COMPLETION & ACCEPTANCE</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px;">Project shall be deemed complete upon Client's written acceptance or seven (7) days after substantial completion, whichever occurs first. Final payment due upon completion acceptance.</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">9. TERMINATION CLAUSE</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px;">Either party may terminate this agreement with seven (7) days written notice. Client responsible only for payment of work completed to date of termination.</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">10. DISPUTE RESOLUTION</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px;">Any disputes arising from this agreement shall be resolved through binding arbitration in accordance with applicable state laws and local jurisdiction requirements.</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px; font-size: 16px;">11. GOVERNING LAW</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px;">This agreement shall be governed by and construed in accordance with the laws of the state where the work is performed.</p>
               </div>
 
               <!-- CLIENT SIGNATURE SECTION -->
@@ -571,8 +626,8 @@ export class ResendEmailDifferentiated {
                 <input type="text" id="clientName" placeholder="Type your full legal name here" value="${params.clientName}" style="width: 100%; padding: 12px; border: 2px solid #007bff; border-radius: 8px; margin: 10px 0; font-size: 16px;">
                 
                 <div style="margin-top: 30px;">
-                  <button type="button" onclick="approveClientContract()" style="background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">✅ SIGN & APPROVE CONTRACT</button>
-                  <button type="button" onclick="rejectClientContract()" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">❌ DECLINE CONTRACT</button>
+                  <button type="button" id="approveClientButton" style="background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">✅ SIGN & APPROVE CONTRACT</button>
+                  <button type="button" id="rejectClientButton" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">❌ DECLINE CONTRACT</button>
                 </div>
                 
                 <div id="clientStatusMessage" style="padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center; font-weight: bold; display: none;"></div>
@@ -626,6 +681,12 @@ export class ResendEmailDifferentiated {
                   clientCtx.clearRect(0, 0, clientCanvas.width, clientCanvas.height);
                   hasClientSignature = false;
                 }
+
+                // Add event listeners for client buttons after DOM is loaded
+                document.addEventListener('DOMContentLoaded', function() {
+                  document.getElementById('approveClientButton').addEventListener('click', approveClientContract);
+                  document.getElementById('rejectClientButton').addEventListener('click', rejectClientContract);
+                });
 
                 function showClientStatus(message, isSuccess) {
                   const statusDiv = document.getElementById('clientStatusMessage');
