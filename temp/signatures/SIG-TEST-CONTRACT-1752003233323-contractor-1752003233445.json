@@ -1,0 +1,12 @@
+{
+  "contractId": "TEST-CONTRACT-1752003233323",
+  "role": "contractor",
+  "action": "approve",
+  "signatureName": "Elite Construction LLC",
+  "signatureData": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+  "timestamp": "2025-07-08T19:33:53.439Z",
+  "ipAddress": "127.0.0.1",
+  "userAgent": "node",
+  "signatureId": "SIG-TEST-CONTRACT-1752003233323-contractor-1752003233445",
+  "storedAt": "2025-07-08T19:33:53.445Z"
+}
