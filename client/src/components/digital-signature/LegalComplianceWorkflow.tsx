@@ -186,40 +186,70 @@ export default function LegalComplianceWorkflow({
             })
           });
           
-          const emailResult = await emailResponse.json();
-          deliveryResult = { success: emailResult.success, method: 'email', result: emailResult };
+          if (!emailResponse.ok) {
+            throw new Error(`Email API returned ${emailResponse.status}: ${emailResponse.statusText}`);
+          }
+          
+          let emailResult;
+          try {
+            emailResult = await emailResponse.json();
+          } catch (parseError) {
+            console.error('📧 [EMAIL-ONLY] JSON parse error:', parseError);
+            throw new Error('Invalid response from email service');
+          }
+          
+          deliveryResult = { 
+            success: emailResult?.success || false, 
+            method: 'email', 
+            result: emailResult 
+          };
           console.log('📧 [EMAIL-ONLY] Result:', emailResult);
         } catch (emailError) {
           console.error('📧 [EMAIL-ONLY] Failed:', emailError);
-          throw new Error('Email delivery failed');
+          deliveryResult = { success: false, method: 'email', error: emailError.message };
         }
         
       } else if (deliveryMethod === 'sms') {
         // Send COMPLETE contract SMS ONLY
         if (!editableContacts.clientPhone) {
-          throw new Error('Client phone number is required for SMS delivery');
-        }
-        
-        try {
-          const smsResponse = await fetch('/api/sms/complete-contract-sms', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              to: editableContacts.clientPhone,
-              clientName: contractData.client.name,
-              contractorName: contractData.contractor.name,
-              contractorCompany: contractData.contractor.company,
-              contractId: contractId,
-              reviewUrl: reviewUrl
-            })
-          });
-          
-          const smsResult = await smsResponse.json();
-          deliveryResult = { success: smsResult.success, method: 'sms', result: smsResult };
-          console.log('📱 [SMS-ONLY] Result:', smsResult);
-        } catch (smsError) {
-          console.error('📱 [SMS-ONLY] Failed:', smsError);
-          throw new Error('SMS delivery failed');
+          deliveryResult = { success: false, method: 'sms', error: 'Client phone number is required for SMS delivery' };
+        } else {
+          try {
+            const smsResponse = await fetch('/api/sms/complete-contract-sms', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: editableContacts.clientPhone,
+                clientName: contractData.client.name,
+                contractorName: contractData.contractor.name,
+                contractorCompany: contractData.contractor.company,
+                contractId: contractId,
+                reviewUrl: reviewUrl
+              })
+            });
+            
+            if (!smsResponse.ok) {
+              throw new Error(`SMS API returned ${smsResponse.status}: ${smsResponse.statusText}`);
+            }
+            
+            let smsResult;
+            try {
+              smsResult = await smsResponse.json();
+            } catch (parseError) {
+              console.error('📱 [SMS-ONLY] JSON parse error:', parseError);
+              throw new Error('Invalid response from SMS service');
+            }
+            
+            deliveryResult = { 
+              success: smsResult?.success || false, 
+              method: 'sms', 
+              result: smsResult 
+            };
+            console.log('📱 [SMS-ONLY] Result:', smsResult);
+          } catch (smsError) {
+            console.error('📱 [SMS-ONLY] Failed:', smsError);
+            deliveryResult = { success: false, method: 'sms', error: smsError.message };
+          }
         }
       }
       
@@ -236,7 +266,14 @@ export default function LegalComplianceWorkflow({
           description: `Complete contract delivered to ${contactInfo}. Client will review and sign from their device.`,
         });
       } else {
-        throw new Error(`${deliveryMethod} delivery failed`);
+        const errorMessage = deliveryResult.error || `${deliveryMethod} delivery failed`;
+        console.error('📧 Delivery failed:', errorMessage);
+        
+        toast({
+          title: "Contract Delivery Failed", 
+          description: `Could not deliver contract via ${deliveryMethod}. ${errorMessage}`,
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Document delivery error:', error);
