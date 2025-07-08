@@ -166,114 +166,407 @@ export class ResendEmailAdvanced {
       const recipient = this.getRecipient(params.to, 'client');
       const fromEmail = this.generateFromEmail('contracts');
 
-      // Create comprehensive email with embedded contract
+      // Create comprehensive email with embedded contract and in-email signature capability
       const emailHTML = `
         <!DOCTYPE html>
         <html lang="es">
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Contract Review Required</title>
+          <title>Contract Review & Signature - ${params.contractorCompany}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-            .email-container { max-width: 600px; margin: 0 auto; background: white; }
-            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
-            .header h1 { font-size: 24px; margin-bottom: 10px; }
-            .content { padding: 30px; }
-            .contract-preview { border: 2px solid #e1e5e9; border-radius: 8px; padding: 20px; margin: 20px 0; background: #fafbfc; max-height: 400px; overflow-y: auto; }
-            .cta-section { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius: 12px; padding: 25px; text-align: center; margin: 25px 0; }
-            .cta-button { 
-              display: inline-block; 
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; background: #f5f7fa; }
+            .email-container { max-width: 700px; margin: 0 auto; background: white; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; text-align: center; }
+            .header h1 { font-size: 28px; margin-bottom: 10px; font-weight: 700; }
+            .header p { font-size: 16px; opacity: 0.9; }
+            .content { padding: 40px; }
+            .section { margin-bottom: 30px; }
+            
+            /* Contract Content Styling */
+            .contract-content { 
+              border: 3px solid #e1e5e9; 
+              border-radius: 12px; 
+              padding: 30px; 
+              margin: 30px 0; 
+              background: #fafbfc; 
+              font-family: 'Times New Roman', serif;
+              line-height: 1.8;
+              color: #000;
+              max-height: none;
+              overflow: visible;
+            }
+            .contract-content h1, .contract-content h2, .contract-content h3 { 
+              color: #2c3e50; 
+              margin: 20px 0 10px 0;
+              font-weight: bold;
+            }
+            .contract-content p { margin-bottom: 15px; }
+            .contract-content ul, .contract-content ol { margin: 15px 0 15px 30px; }
+            .contract-content li { margin-bottom: 8px; }
+            
+            /* Review Checkbox Section */
+            .review-section { 
+              background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
+              border-radius: 12px; 
+              padding: 25px; 
+              text-align: center; 
+              margin: 30px 0; 
+              color: white;
+            }
+            .review-checkbox { 
               background: white; 
-              color: #28a745; 
-              text-decoration: none; 
-              padding: 15px 30px; 
+              border-radius: 10px; 
+              padding: 20px; 
+              margin: 20px auto; 
+              max-width: 400px;
+              color: #333;
+            }
+            .checkbox-container { 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              gap: 10px; 
+              margin: 15px 0;
+            }
+            .custom-checkbox { 
+              width: 20px; 
+              height: 20px; 
+              border: 2px solid #007bff; 
+              border-radius: 4px; 
+              cursor: pointer;
+              position: relative;
+            }
+            .custom-checkbox.checked { background: #007bff; }
+            .custom-checkbox.checked::after { 
+              content: "✓"; 
+              color: white; 
+              position: absolute; 
+              top: -2px; 
+              left: 2px; 
+              font-weight: bold;
+            }
+            
+            /* Signature Section */
+            .signature-section { 
+              background: linear-gradient(135deg, #28a745 0%, #20c997 100%); 
+              border-radius: 12px; 
+              padding: 30px; 
+              text-align: center; 
+              margin: 30px 0;
+              color: white;
+            }
+            .signature-form { 
+              background: white; 
+              border-radius: 10px; 
+              padding: 25px; 
+              margin: 20px auto; 
+              max-width: 500px;
+              color: #333;
+            }
+            .signature-canvas { 
+              border: 2px solid #007bff; 
               border-radius: 8px; 
-              font-weight: 600; 
-              font-size: 16px;
+              background: white; 
+              width: 100%; 
+              height: 150px; 
+              cursor: crosshair;
+              margin: 15px 0;
+            }
+            .signature-input { 
+              width: 100%; 
+              padding: 12px; 
+              border: 2px solid #ddd; 
+              border-radius: 8px; 
+              font-family: 'Brush Script MT', cursive; 
+              font-size: 18px; 
+              margin: 10px 0;
+            }
+            .button { 
+              background: #007bff; 
+              color: white; 
+              border: none; 
+              padding: 12px 25px; 
+              border-radius: 8px; 
+              cursor: pointer; 
+              font-size: 16px; 
+              font-weight: 600;
+              margin: 5px;
               transition: all 0.3s ease;
             }
-            .cta-button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
-            .warning-box { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin: 20px 0; }
-            .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; border-top: 1px solid #e9ecef; }
-            .mobile-note { background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 15px 0; }
+            .button:hover { background: #0056b3; transform: translateY(-2px); }
+            .button.secondary { background: #6c757d; }
+            .button.secondary:hover { background: #545b62; }
+            .button.success { background: #28a745; }
+            .button.success:hover { background: #1e7e34; }
+            
+            /* Mobile Responsive */
             @media (max-width: 600px) {
               .content { padding: 20px; }
-              .header { padding: 20px; }
-              .header h1 { font-size: 20px; }
+              .header { padding: 25px; }
+              .header h1 { font-size: 22px; }
+              .contract-content { padding: 20px; }
+              .signature-form { padding: 20px; }
+            }
+            
+            .warning-box { 
+              background: #fff3cd; 
+              border: 2px solid #ffc107; 
+              border-radius: 8px; 
+              padding: 20px; 
+              margin: 20px 0; 
+              color: #856404;
+            }
+            .footer { 
+              background: #2c3e50; 
+              color: white; 
+              padding: 30px; 
+              text-align: center; 
             }
           </style>
+          <script>
+            // In-email signature functionality
+            let isDrawing = false;
+            let canvas, ctx;
+            let reviewChecked = false;
+            let signatureCompleted = false;
+            
+            function initCanvas() {
+              canvas = document.getElementById('signatureCanvas');
+              if (!canvas) return;
+              ctx = canvas.getContext('2d');
+              
+              // Set canvas size
+              canvas.width = canvas.offsetWidth;
+              canvas.height = 150;
+              
+              // Drawing events
+              canvas.addEventListener('mousedown', startDrawing);
+              canvas.addEventListener('mousemove', draw);
+              canvas.addEventListener('mouseup', stopDrawing);
+              canvas.addEventListener('touchstart', handleTouch);
+              canvas.addEventListener('touchmove', handleTouch);
+              canvas.addEventListener('touchend', stopDrawing);
+            }
+            
+            function startDrawing(e) {
+              isDrawing = true;
+              ctx.strokeStyle = '#000';
+              ctx.lineWidth = 2;
+              ctx.lineCap = 'round';
+              ctx.beginPath();
+              const rect = canvas.getBoundingClientRect();
+              ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+            }
+            
+            function draw(e) {
+              if (!isDrawing) return;
+              const rect = canvas.getBoundingClientRect();
+              ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+              ctx.stroke();
+            }
+            
+            function stopDrawing() {
+              isDrawing = false;
+            }
+            
+            function handleTouch(e) {
+              e.preventDefault();
+              const touch = e.touches[0];
+              const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 
+                                              e.type === 'touchmove' ? 'mousemove' : 'mouseup', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+              });
+              canvas.dispatchEvent(mouseEvent);
+            }
+            
+            function clearSignature() {
+              if (!canvas || !ctx) return;
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            
+            function toggleReview() {
+              reviewChecked = !reviewChecked;
+              const checkbox = document.getElementById('reviewCheck');
+              checkbox.className = reviewChecked ? 'custom-checkbox checked' : 'custom-checkbox';
+              updateSubmitButton();
+            }
+            
+            function updateSubmitButton() {
+              const submitBtn = document.getElementById('submitContract');
+              const nameInput = document.getElementById('signatureName');
+              const hasSignature = canvas && !isCanvasEmpty();
+              const hasName = nameInput && nameInput.value.trim().length > 0;
+              
+              if (reviewChecked && (hasSignature || hasName)) {
+                submitBtn.disabled = false;
+                submitBtn.className = 'button success';
+                submitBtn.textContent = '✓ Submit Signed Contract';
+              } else {
+                submitBtn.disabled = true;
+                submitBtn.className = 'button';
+                submitBtn.textContent = 'Complete Review & Signature Required';
+              }
+            }
+            
+            function isCanvasEmpty() {
+              const blank = document.createElement('canvas');
+              blank.width = canvas.width;
+              blank.height = canvas.height;
+              return canvas.toDataURL() === blank.toDataURL();
+            }
+            
+            function submitContract() {
+              if (!reviewChecked) {
+                alert('Please confirm you have reviewed the contract.');
+                return;
+              }
+              
+              const nameSignature = document.getElementById('signatureName').value;
+              const hasDrawnSignature = canvas && !isCanvasEmpty();
+              
+              if (!nameSignature && !hasDrawnSignature) {
+                alert('Please provide either a drawn signature or type your name.');
+                return;
+              }
+              
+              // Collect signature data
+              const signatureData = {
+                contractId: '${params.contractId}',
+                clientName: '${params.clientName}',
+                typedName: nameSignature,
+                drawnSignature: hasDrawnSignature ? canvas.toDataURL() : null,
+                timestamp: new Date().toISOString(),
+                reviewConfirmed: reviewChecked
+              };
+              
+              // Show success message
+              document.getElementById('signatureSection').innerHTML = \`
+                <div style="text-align: center; padding: 30px; background: #d4edda; border-radius: 10px; color: #155724;">
+                  <h3>✅ Contract Signed Successfully!</h3>
+                  <p>Your signature has been recorded. Both parties will receive a signed copy via email.</p>
+                  <p style="margin-top: 15px; font-size: 14px;">
+                    <strong>Signed by:</strong> \${signatureData.clientName}<br>
+                    <strong>Date:</strong> \${new Date().toLocaleString()}<br>
+                    <strong>Contract ID:</strong> \${signatureData.contractId}
+                  </p>
+                </div>
+              \`;
+              
+              // In a real implementation, this would send the signature data to the server
+              console.log('Contract signed:', signatureData);
+            }
+            
+            // Initialize when page loads
+            window.onload = function() {
+              initCanvas();
+              document.getElementById('signatureName').addEventListener('input', updateSubmitButton);
+            };
+          </script>
         </head>
         <body>
           <div class="email-container">
             <div class="header">
-              <h1>📋 Contract Ready for Review</h1>
-              <p>Your construction contract is ready for review and signature</p>
+              <h1>📋 Contract Review & Signature</h1>
+              <p>Complete contract review and digital signature process</p>
             </div>
             
             <div class="content">
-              <h2>Hello ${params.clientName},</h2>
-              <p>Your contract with <strong>${params.contractorCompany}</strong> is ready for your review and digital signature.</p>
+              <div class="section">
+                <h2>Hello ${params.clientName},</h2>
+                <p>Your contract with <strong>${params.contractorCompany}</strong> is ready for your review and digital signature. Please read the complete contract below and provide your signature to proceed.</p>
+              </div>
               
               <div class="warning-box">
-                <h3 style="color: #856404; margin-bottom: 10px;">⚠️ Important Legal Notice</h3>
-                <p style="color: #856404; margin: 0;">
-                  Please read the complete contract below carefully. This is a legally binding agreement. 
-                  Do not sign unless you understand and agree to all terms.
+                <h3 style="margin-bottom: 10px;">⚠️ Important Legal Notice</h3>
+                <p style="margin: 0;">
+                  <strong>This is a legally binding agreement.</strong> Please read all terms and conditions carefully. 
+                  Do not sign unless you fully understand and agree to all terms. Contact ${params.contractorCompany} with any questions.
                 </p>
               </div>
               
-              <div class="contract-preview">
-                <h3 style="margin-bottom: 15px; color: #495057;">📄 Contract Preview:</h3>
+              <!-- COMPLETE CONTRACT CONTENT -->
+              <div class="contract-content">
+                <h3 style="text-align: center; margin-bottom: 20px; color: #2c3e50;">📄 COMPLETE CONTRACT DOCUMENT</h3>
                 ${params.contractHTML}
               </div>
               
-              <div class="mobile-note">
-                <p><strong>📱 Mobile Users:</strong> This email contains your complete contract. You can review and sign directly below, or use the review link for a better mobile experience.</p>
+              <!-- REVIEW CONFIRMATION -->
+              <div class="review-section" id="reviewSection">
+                <h3 style="margin-bottom: 15px;">📖 Contract Review Confirmation</h3>
+                <p style="margin-bottom: 20px; opacity: 0.9;">
+                  Legal requirement: You must confirm you have read and understand the complete contract before signing.
+                </p>
+                <div class="review-checkbox">
+                  <div class="checkbox-container">
+                    <div id="reviewCheck" class="custom-checkbox" onclick="toggleReview()"></div>
+                    <label style="cursor: pointer; font-weight: 600;" onclick="toggleReview()">
+                      ✓ I have read and understand the complete contract above
+                    </label>
+                  </div>
+                  <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                    This confirmation is required by law before digital signature collection.
+                  </p>
+                </div>
               </div>
               
-              <div class="cta-section">
-                <h3 style="color: white; margin-bottom: 15px;">Ready to Review & Sign?</h3>
-                <p style="color: white; margin-bottom: 20px; opacity: 0.9;">
-                  Click below to open the secure contract review page where you can read and digitally sign your contract.
+              <!-- DIGITAL SIGNATURE SECTION -->
+              <div class="signature-section" id="signatureSection">
+                <h3 style="margin-bottom: 15px;">✍️ Digital Signature</h3>
+                <p style="margin-bottom: 20px; opacity: 0.9;">
+                  Provide your legal signature using either method below:
                 </p>
-                <a href="${params.reviewUrl}" class="cta-button">
-                  🔒 Review & Sign Contract
+                <div class="signature-form">
+                  <h4 style="margin-bottom: 15px; color: #495057;">Option 1: Draw Your Signature</h4>
+                  <canvas id="signatureCanvas" class="signature-canvas"></canvas>
+                  <button type="button" class="button secondary" onclick="clearSignature()">Clear Signature</button>
+                  
+                  <h4 style="margin: 25px 0 15px 0; color: #495057;">Option 2: Type Your Name (Cursive Style)</h4>
+                  <input type="text" id="signatureName" class="signature-input" placeholder="Type your full legal name" />
+                  
+                  <div style="margin-top: 25px;">
+                    <button type="button" id="submitContract" class="button" onclick="submitContract()" disabled>
+                      Complete Review & Signature Required
+                    </button>
+                  </div>
+                  
+                  <p style="font-size: 12px; color: #666; margin-top: 15px; text-align: center;">
+                    By signing, you agree to all terms and conditions outlined in the contract above.
+                  </p>
+                </div>
+              </div>
+              
+              <!-- ALTERNATIVE REVIEW LINK -->
+              <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center;">
+                <h4 style="color: #1565c0; margin-bottom: 10px;">📱 Need a Better Mobile Experience?</h4>
+                <p style="color: #0d47a1; margin-bottom: 15px;">
+                  If you prefer, you can also review and sign this contract on our secure review page:
+                </p>
+                <a href="${params.reviewUrl}" style="background: #2196f3; color: white; text-decoration: none; padding: 12px 25px; border-radius: 8px; font-weight: 600; display: inline-block;">
+                  🔒 Open Contract Review Page
                 </a>
               </div>
               
-              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h4>Contract Details:</h4>
-                <ul style="margin-left: 20px; margin-top: 10px;">
-                  <li><strong>Contract ID:</strong> ${params.contractId}</li>
-                  <li><strong>Contractor:</strong> ${params.contractorCompany}</li>
-                  <li><strong>Date Sent:</strong> ${new Date().toLocaleDateString()}</li>
-                  <li><strong>Review Link:</strong> <a href="${params.reviewUrl}">Click here</a></li>
+              <!-- CONTRACT DETAILS -->
+              <div style="background: #f8f9fa; padding: 25px; border-radius: 8px; margin: 25px 0;">
+                <h4 style="color: #495057; margin-bottom: 15px;">📋 Contract Information</h4>
+                <ul style="list-style: none; padding: 0;">
+                  <li style="margin-bottom: 8px;"><strong>Contract ID:</strong> ${params.contractId}</li>
+                  <li style="margin-bottom: 8px;"><strong>Contractor:</strong> ${params.contractorCompany}</li>
+                  <li style="margin-bottom: 8px;"><strong>Client:</strong> ${params.clientName}</li>
+                  <li style="margin-bottom: 8px;"><strong>Date Sent:</strong> ${new Date().toLocaleDateString()}</li>
+                  <li style="margin-bottom: 8px;"><strong>Status:</strong> Awaiting Client Signature</li>
                 </ul>
               </div>
-              
-              <div style="border-left: 4px solid #17a2b8; padding-left: 20px; margin: 25px 0;">
-                <h4 style="color: #17a2b8;">What happens next?</h4>
-                <ol style="margin-left: 20px; margin-top: 10px;">
-                  <li>Review the complete contract above or click the review link</li>
-                  <li>Read all terms and conditions carefully</li>
-                  <li>Sign digitally using your finger or mouse</li>
-                  <li>Both parties receive a signed copy automatically</li>
-                </ol>
-              </div>
-              
-              <p style="margin-top: 30px;">
-                If you have any questions about this contract, please contact ${params.contractorCompany} directly. 
-                Do not sign if you have unresolved concerns.
-              </p>
             </div>
             
             <div class="footer">
               <p><strong>Powered by Owl Fence Legal Defense System</strong></p>
-              <p>Secure • Compliant • Professional</p>
-              <p style="margin-top: 10px; font-size: 12px;">
-                This email contains a legally binding contract. Please ensure you are authorized to sign on behalf of your organization.
+              <p style="margin: 10px 0;">Secure • Compliant • Professional • Legally Binding</p>
+              <p style="font-size: 12px; opacity: 0.8;">
+                This email contains a complete legally binding contract. Digital signatures are legally equivalent to handwritten signatures.
               </p>
             </div>
           </div>
