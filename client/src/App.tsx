@@ -54,6 +54,7 @@ import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
 import SimpleContractGenerator from './pages/SimpleContractGenerator';
 import ContractReview from './pages/ContractReview';
+import SecureContractSign from './pages/SecureContractSign';
 
 import { Redirect } from "wouter";
 
@@ -101,6 +102,7 @@ function Router() {
       <Route path="/legal-policy" component={LegalPolicy} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/contract-review/:contractId" component={ContractReview} />
+      <Route path="/sign/:token" component={SecureContractSign} />
 
       {/* Rutas protegidas */}
       <Route path="/">

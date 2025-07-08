@@ -1,305 +1,107 @@
 /**
- * Twilio SMS Service for Contract Delivery
- * Handles SMS notifications for contract delivery and verification
+ * TWILIO SMS SERVICE FOR SECURE CONTRACT LINKS
+ * Enhanced SMS delivery for contract signature workflow
  */
 
-import Twilio from 'twilio';
+import twilio from 'twilio';
 
-export interface SMSParams {
-  to: string;
-  message: string;
-  type?: 'contract-notification' | 'verification' | 'reminder';
-}
+// Initialize Twilio client
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const fromNumber = process.env.TWILIO_PHONE_NUMBER;
 
-export interface SMSResponse {
-  success: boolean;
-  messageId?: string;
-  status?: string;
-  error?: string;
-  deliveryStatus?: 'queued' | 'sent' | 'delivered' | 'failed';
-}
+const client = accountSid && authToken ? twilio(accountSid, authToken) : null;
 
-export class TwilioService {
-  private client: any = null;
-  private fromNumber: string = '';
-  private isConfigured: boolean = false;
-
-  constructor() {
-    this.initializeTwilio();
-  }
-
-  private initializeTwilio(): void {
-    try {
-      const accountSid = process.env.TWILIO_ACCOUNT_SID;
-      const authToken = process.env.TWILIO_AUTH_TOKEN;
-      const fromNumber = process.env.TWILIO_PHONE_NUMBER;
-
-      if (!accountSid || !authToken || !fromNumber) {
-        console.log('📱 [TWILIO] Missing credentials - SMS functionality disabled');
-        console.log('📱 [TWILIO] Required env vars: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER');
-        this.isConfigured = false;
-        return;
-      }
-
-      this.client = Twilio(accountSid, authToken);
-      this.fromNumber = fromNumber;
-      this.isConfigured = true;
-
-      console.log('✅ [TWILIO] Service initialized successfully');
-      console.log('📱 [TWILIO] From number:', this.fromNumber);
-    } catch (error) {
-      console.error('❌ [TWILIO] Initialization failed:', error);
-      this.isConfigured = false;
-    }
-  }
-
+export const twilioService = {
   /**
-   * Send SMS notification
+   * Send secure contract link via SMS
    */
-  async sendSMS(params: SMSParams): Promise<SMSResponse> {
+  async sendSecureContractSMS(params: {
+    to: string;
+    recipientName: string;
+    secureLink: string;
+    role: 'contractor' | 'client';
+  }) {
+    if (!client || !fromNumber) {
+      console.error('❌ [TWILIO] Service not configured');
+      return {
+        success: false,
+        message: 'SMS service not configured'
+      };
+    }
+    
     try {
-      if (!this.isConfigured || !this.client) {
-        console.log('📱 [TWILIO] Service not configured, skipping SMS');
-        return {
-          success: false,
-          error: 'Twilio service not configured. SMS functionality disabled.'
-        };
-      }
-
-      console.log('📱 [TWILIO] Sending SMS...');
-      console.log('📱 [TWILIO] To:', params.to);
-      console.log('📱 [TWILIO] From:', this.fromNumber);
-      console.log('📱 [TWILIO] Type:', params.type || 'contract-notification');
-      console.log('📱 [TWILIO] Message length:', params.message.length);
-
-      // Validate phone number format
-      const cleanTo = params.to.replace(/\s+/g, '');
-      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+      const message = `Hi ${params.recipientName},\n\n` +
+        `Your contract is ready for signature.\n\n` +
+        `🔐 Secure Link (expires in 72 hours):\n${params.secureLink}\n\n` +
+        `This is a single-use link for your security.\n\n` +
+        `- Owl Fence Contract Management`;
       
-      if (!phoneRegex.test(cleanTo)) {
-        return {
-          success: false,
-          error: 'Invalid phone number format. Use format: +1234567890'
-        };
-      }
-
-      // Prevent sending SMS to same number as from number
-      if (cleanTo === this.fromNumber) {
-        console.log('📱 [TWILIO] Cannot send SMS to same number as from number, skipping...');
-        return {
-          success: true,
-          messageId: 'skipped-same-number',
-          status: 'skipped',
-          deliveryStatus: 'skipped'
-        };
-      }
-
-      // Ensure message is within SMS limits (160 characters for single SMS)
-      if (params.message.length > 1600) {
-        console.warn('📱 [TWILIO] Message exceeds recommended length, truncating...');
-        params.message = params.message.substring(0, 1597) + '...';
-      }
-
-      const message = await this.client.messages.create({
-        body: params.message,
-        from: this.fromNumber,
-        to: params.to.replace(/\s+/g, '') // Remove spaces
+      const result = await client.messages.create({
+        body: message,
+        from: fromNumber,
+        to: params.to
       });
-
-      console.log('✅ [TWILIO] SMS sent successfully');
-      console.log('📱 [TWILIO] Message SID:', message.sid);
-      console.log('📱 [TWILIO] Status:', message.status);
-
+      
+      console.log(`✅ [TWILIO] SMS sent to ${params.to}: ${result.sid}`);
+      
       return {
         success: true,
-        messageId: message.sid,
-        status: message.status,
-        deliveryStatus: message.status as any
+        messageId: result.sid,
+        status: result.status
       };
-
-    } catch (error: any) {
-      console.error('❌ [TWILIO] SMS send failed:', error);
       
-      // Handle specific Twilio errors
-      let errorMessage = 'Unknown SMS error';
-      if (error.code) {
-        switch (error.code) {
-          case 21211:
-            errorMessage = 'Invalid phone number';
-            break;
-          case 21408:
-            errorMessage = 'Permission denied to send SMS to this number';
-            break;
-          case 21610:
-            errorMessage = 'SMS not allowed to this destination';
-            break;
-          case 21614:
-            errorMessage = 'Invalid sender phone number';
-            break;
-          default:
-            errorMessage = error.message || 'Twilio API error';
-        }
-      }
-
+    } catch (error) {
+      console.error('❌ [TWILIO] Failed to send SMS:', error);
       return {
         success: false,
-        error: errorMessage
+        message: error instanceof Error ? error.message : 'Failed to send SMS'
       };
     }
-  }
-
+  },
+  
   /**
-   * Send COMPLETE contract review SMS with direct link
+   * Send contract completion notification
    */
-  async sendCompleteContractSMS(params: {
+  async sendContractCompletionSMS(params: {
     to: string;
-    clientName: string;
-    contractorName: string;
-    contractorCompany: string;
+    recipientName: string;
     contractId: string;
-    reviewUrl: string;
-  }): Promise<SMSResponse> {
-    try {
-      console.log('📱 [COMPLETE-CONTRACT-SMS] Sending complete contract review SMS...');
-      console.log('📱 [COMPLETE-CONTRACT-SMS] To:', params.to);
-      console.log('📱 [COMPLETE-CONTRACT-SMS] Contract ID:', params.contractId);
-      console.log('📱 [COMPLETE-CONTRACT-SMS] Review URL:', params.reviewUrl);
-
-      const message = `🏗️ CONTRATO COMPLETO - ${params.contractorCompany}
-
-Hola ${params.clientName},
-
-Su contrato de construcción está listo para revisar y firmar desde su dispositivo.
-
-📋 ACCEDER AL CONTRATO:
-${params.reviewUrl}
-
-Detalles:
-• Contratista: ${params.contractorName}
-• ID: ${params.contractId}
-• Enviado: ${new Date().toLocaleString()}
-
-✅ Su contrato incluye:
-• Términos completos del proyecto
-• Precios y cronograma  
-• Firma digital segura
-• Copia automática al completar
-
-⚠️ LEGAL: Contrato vinculante - lea completamente antes de firmar.
-
-${params.contractorCompany}`;
-
-      return await this.sendSMS({
-        to: params.to,
-        message: message,
-        type: 'contract-notification'
-      });
-
-    } catch (error: any) {
-      console.error('❌ [COMPLETE-CONTRACT-SMS] Error:', error);
+  }) {
+    if (!client || !fromNumber) {
+      console.error('❌ [TWILIO] Service not configured');
       return {
         success: false,
-        error: error.message || 'Complete contract SMS delivery failed'
+        message: 'SMS service not configured'
+      };
+    }
+    
+    try {
+      const message = `Hi ${params.recipientName},\n\n` +
+        `✅ Contract ${params.contractId} has been fully signed!\n\n` +
+        `You'll receive the signed PDF via email shortly.\n\n` +
+        `Thank you for using Owl Fence Contract Management.`;
+      
+      const result = await client.messages.create({
+        body: message,
+        from: fromNumber,
+        to: params.to
+      });
+      
+      console.log(`✅ [TWILIO] Completion SMS sent to ${params.to}: ${result.sid}`);
+      
+      return {
+        success: true,
+        messageId: result.sid,
+        status: result.status
+      };
+      
+    } catch (error) {
+      console.error('❌ [TWILIO] Failed to send completion SMS:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to send SMS'
       };
     }
   }
-
-  /**
-   * Send contract notification SMS
-   */
-  async sendContractNotification(params: {
-    to: string;
-    clientName: string;
-    contractorName: string;
-    contractorCompany: string;
-    projectType: string;
-    contractUrl?: string;
-  }): Promise<SMSResponse> {
-    const message = `🏗️ Contract Ready - ${params.contractorCompany}
-
-Hi ${params.clientName}! Your ${params.projectType} contract from ${params.contractorName} is ready for review and signing.
-
-${params.contractUrl ? `View contract: ${params.contractUrl}` : 'Please check your email for contract details.'}
-
-Reply STOP to opt out.`;
-
-    return this.sendSMS({
-      to: params.to,
-      message,
-      type: 'contract-notification'
-    });
-  }
-
-  /**
-   * Send verification code SMS
-   */
-  async sendVerificationCode(params: {
-    to: string;
-    code: string;
-    contractorName: string;
-  }): Promise<SMSResponse> {
-    const message = `🔐 Contract Verification - ${params.contractorName}
-
-Your verification code: ${params.code}
-
-This code expires in 10 minutes. Do not share this code.
-
-Reply STOP to opt out.`;
-
-    return this.sendSMS({
-      to: params.to,
-      message,
-      type: 'verification'
-    });
-  }
-
-  /**
-   * Send contract completion SMS
-   */
-  async sendContractCompletion(params: {
-    to: string;
-    clientName: string;
-    contractorName: string;
-    contractorCompany: string;
-    projectType: string;
-  }): Promise<SMSResponse> {
-    const message = `✅ Contract Signed - ${params.contractorCompany}
-
-Hi ${params.clientName}! Your ${params.projectType} contract with ${params.contractorName} has been successfully signed by all parties.
-
-Project can now begin as scheduled.
-
-Reply STOP to opt out.`;
-
-    return this.sendSMS({
-      to: params.to,
-      message,
-      type: 'contract-notification'
-    });
-  }
-
-  /**
-   * Check if Twilio service is properly configured
-   */
-  isServiceConfigured(): boolean {
-    return this.isConfigured;
-  }
-
-  /**
-   * Get service status information
-   */
-  getServiceStatus(): {
-    configured: boolean;
-    fromNumber: string;
-    hasCredentials: boolean;
-  } {
-    return {
-      configured: this.isConfigured,
-      fromNumber: this.fromNumber,
-      hasCredentials: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER)
-    };
-  }
-}
-
-// Export singleton instance
-export const twilioService = new TwilioService();
+};
