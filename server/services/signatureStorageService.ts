@@ -1,168 +1,253 @@
+import fs from 'fs/promises';
+import path from 'path';
+
 /**
- * SIGNATURE STORAGE SERVICE
- * Robust signature collection and storage with audit trail
+ * Signature Storage Service
+ * Handles secure storage and retrieval of digital signatures for contract processing
  */
 
-export interface SignatureData {
+export interface SignatureRecord {
   contractId: string;
-  signerName: string;
-  signerRole: 'contractor' | 'client';
-  signatureType: 'canvas' | 'typed';
-  signatureData: string; // Base64 image for canvas, typed name for text
+  role: 'contractor' | 'client';
+  action: 'approve' | 'reject';
+  signatureName?: string;
+  signatureData?: string; // Base64 image data
+  reason?: string; // For rejections
   timestamp: string;
   ipAddress?: string;
   userAgent?: string;
-  deviceInfo?: string;
-  geolocation?: {
-    latitude: number;
-    longitude: number;
-  };
 }
 
-export interface ContractSignatures {
-  contractId: string;
-  contractorSignature?: SignatureData;
-  clientSignature?: SignatureData;
-  status: 'pending' | 'contractor-signed' | 'client-signed' | 'fully-signed';
-  createdAt: string;
-  lastUpdatedAt: string;
+export interface StorageResult {
+  success: boolean;
+  signatureId?: string;
+  error?: string;
 }
 
-export class SignatureStorageService {
-  private signatures = new Map<string, ContractSignatures>();
+class SignatureStorageService {
+  private storageDir: string;
 
-  /**
-   * Initialize contract signature tracking
-   */
-  initializeContract(contractId: string): ContractSignatures {
-    const contractSignatures: ContractSignatures = {
-      contractId,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      lastUpdatedAt: new Date().toISOString()
-    };
-    
-    this.signatures.set(contractId, contractSignatures);
-    console.log(`📝 [SIGNATURE-STORAGE] Contract ${contractId} initialized for signature collection`);
-    
-    return contractSignatures;
+  constructor() {
+    this.storageDir = path.join(process.cwd(), 'temp', 'signatures');
+    this.ensureStorageDirectory();
   }
 
   /**
-   * Store signature for contract
+   * Ensure storage directory exists
    */
-  storeSignature(contractId: string, signatureData: SignatureData): boolean {
+  private async ensureStorageDirectory(): Promise<void> {
     try {
-      let contractSignatures = this.signatures.get(contractId);
-      
-      // Initialize if not exists
-      if (!contractSignatures) {
-        contractSignatures = this.initializeContract(contractId);
-      }
-
-      // Store signature based on role
-      if (signatureData.signerRole === 'contractor') {
-        contractSignatures.contractorSignature = signatureData;
-        console.log(`✅ [SIGNATURE-STORAGE] Contractor signature stored for ${contractId}`);
-      } else if (signatureData.signerRole === 'client') {
-        contractSignatures.clientSignature = signatureData;
-        console.log(`✅ [SIGNATURE-STORAGE] Client signature stored for ${contractId}`);
-      }
-
-      // Update status
-      contractSignatures.lastUpdatedAt = new Date().toISOString();
-      contractSignatures.status = this.calculateStatus(contractSignatures);
-
-      this.signatures.set(contractId, contractSignatures);
-      
-      console.log(`📊 [SIGNATURE-STORAGE] Contract ${contractId} status: ${contractSignatures.status}`);
-      
-      return true;
+      await fs.mkdir(this.storageDir, { recursive: true });
     } catch (error) {
-      console.error(`❌ [SIGNATURE-STORAGE] Failed to store signature for ${contractId}:`, error);
+      console.error('❌ [SIGNATURE-STORAGE] Failed to create storage directory:', error);
+    }
+  }
+
+  /**
+   * Store a signature record
+   */
+  async storeSignature(record: SignatureRecord): Promise<StorageResult> {
+    try {
+      console.log('💾 [SIGNATURE-STORAGE] Storing signature record...');
+      console.log('📄 [SIGNATURE-STORAGE] Contract ID:', record.contractId);
+      console.log('👤 [SIGNATURE-STORAGE] Role:', record.role);
+      console.log('✅ [SIGNATURE-STORAGE] Action:', record.action);
+
+      // Generate unique signature ID
+      const signatureId = `SIG-${record.contractId}-${record.role}-${Date.now()}`;
+      
+      // Prepare storage record
+      const storageRecord = {
+        ...record,
+        signatureId,
+        storedAt: new Date().toISOString()
+      };
+
+      // Store as JSON file
+      const filename = `${signatureId}.json`;
+      const filepath = path.join(this.storageDir, filename);
+      
+      await fs.writeFile(filepath, JSON.stringify(storageRecord, null, 2), 'utf8');
+      
+      console.log('✅ [SIGNATURE-STORAGE] Signature stored successfully');
+      console.log('📁 [SIGNATURE-STORAGE] File:', filename);
+
+      return {
+        success: true,
+        signatureId
+      };
+    } catch (error) {
+      console.error('❌ [SIGNATURE-STORAGE] Failed to store signature:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown storage error'
+      };
+    }
+  }
+
+  /**
+   * Retrieve all signatures for a contract
+   */
+  async getContractSignatures(contractId: string): Promise<SignatureRecord[]> {
+    try {
+      console.log('🔍 [SIGNATURE-STORAGE] Retrieving signatures for contract:', contractId);
+      
+      await this.ensureStorageDirectory();
+      
+      const files = await fs.readdir(this.storageDir);
+      const contractFiles = files.filter(file => 
+        file.startsWith(`SIG-${contractId}`) && file.endsWith('.json')
+      );
+
+      const signatures: SignatureRecord[] = [];
+
+      for (const file of contractFiles) {
+        try {
+          const filepath = path.join(this.storageDir, file);
+          const content = await fs.readFile(filepath, 'utf8');
+          const record = JSON.parse(content);
+          signatures.push(record);
+        } catch (error) {
+          console.warn('⚠️ [SIGNATURE-STORAGE] Failed to read signature file:', file, error);
+        }
+      }
+
+      console.log('📊 [SIGNATURE-STORAGE] Found', signatures.length, 'signatures for contract', contractId);
+      return signatures;
+    } catch (error) {
+      console.error('❌ [SIGNATURE-STORAGE] Failed to retrieve signatures:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get signature by signature ID
+   */
+  async getSignatureById(signatureId: string): Promise<SignatureRecord | null> {
+    try {
+      const filepath = path.join(this.storageDir, `${signatureId}.json`);
+      const content = await fs.readFile(filepath, 'utf8');
+      return JSON.parse(content);
+    } catch (error) {
+      console.warn('⚠️ [SIGNATURE-STORAGE] Signature not found:', signatureId);
+      return null;
+    }
+  }
+
+  /**
+   * Check if both contractor and client have signed a contract
+   */
+  async isContractFullySigned(contractId: string): Promise<boolean> {
+    try {
+      const signatures = await this.getContractSignatures(contractId);
+      
+      const contractorApproval = signatures.find(sig => 
+        sig.role === 'contractor' && sig.action === 'approve'
+      );
+      
+      const clientApproval = signatures.find(sig => 
+        sig.role === 'client' && sig.action === 'approve'
+      );
+
+      const isFullySigned = !!(contractorApproval && clientApproval);
+      
+      console.log('🔍 [SIGNATURE-STORAGE] Contract', contractId, 'fully signed:', isFullySigned);
+      console.log('👷 [SIGNATURE-STORAGE] Contractor approved:', !!contractorApproval);
+      console.log('👤 [SIGNATURE-STORAGE] Client approved:', !!clientApproval);
+
+      return isFullySigned;
+    } catch (error) {
+      console.error('❌ [SIGNATURE-STORAGE] Failed to check contract status:', error);
       return false;
     }
   }
 
   /**
-   * Get contract signatures
+   * Get contract signature status summary
    */
-  getContractSignatures(contractId: string): ContractSignatures | null {
-    return this.signatures.get(contractId) || null;
-  }
+  async getContractStatus(contractId: string): Promise<{
+    contractorSigned: boolean;
+    clientSigned: boolean;
+    contractorRejected: boolean;
+    clientRejected: boolean;
+    fullySigned: boolean;
+    rejected: boolean;
+  }> {
+    try {
+      const signatures = await this.getContractSignatures(contractId);
+      
+      const contractorApproval = signatures.find(sig => 
+        sig.role === 'contractor' && sig.action === 'approve'
+      );
+      
+      const clientApproval = signatures.find(sig => 
+        sig.role === 'client' && sig.action === 'approve'
+      );
 
-  /**
-   * Check if contract is fully signed
-   */
-  isFullySigned(contractId: string): boolean {
-    const signatures = this.getContractSignatures(contractId);
-    return signatures?.status === 'fully-signed' || false;
-  }
+      const contractorRejection = signatures.find(sig => 
+        sig.role === 'contractor' && sig.action === 'reject'
+      );
+      
+      const clientRejection = signatures.find(sig => 
+        sig.role === 'client' && sig.action === 'reject'
+      );
 
-  /**
-   * Get signature by role
-   */
-  getSignatureByRole(contractId: string, role: 'contractor' | 'client'): SignatureData | null {
-    const signatures = this.getContractSignatures(contractId);
-    if (!signatures) return null;
-    
-    return role === 'contractor' ? signatures.contractorSignature || null : signatures.clientSignature || null;
-  }
-
-  /**
-   * Calculate contract status based on signatures
-   */
-  private calculateStatus(signatures: ContractSignatures): 'pending' | 'contractor-signed' | 'client-signed' | 'fully-signed' {
-    const hasContractor = !!signatures.contractorSignature;
-    const hasClient = !!signatures.clientSignature;
-    
-    if (hasContractor && hasClient) {
-      return 'fully-signed';
-    } else if (hasContractor) {
-      return 'contractor-signed';
-    } else if (hasClient) {
-      return 'client-signed';
-    } else {
-      return 'pending';
+      return {
+        contractorSigned: !!contractorApproval,
+        clientSigned: !!clientApproval,
+        contractorRejected: !!contractorRejection,
+        clientRejected: !!clientRejection,
+        fullySigned: !!(contractorApproval && clientApproval),
+        rejected: !!(contractorRejection || clientRejection)
+      };
+    } catch (error) {
+      console.error('❌ [SIGNATURE-STORAGE] Failed to get contract status:', error);
+      return {
+        contractorSigned: false,
+        clientSigned: false,
+        contractorRejected: false,
+        clientRejected: false,
+        fullySigned: false,
+        rejected: false
+      };
     }
   }
 
   /**
-   * Get all contracts with their signature status
+   * Clean old signature files (older than 30 days)
    */
-  getAllContracts(): ContractSignatures[] {
-    return Array.from(this.signatures.values());
-  }
+  async cleanOldSignatures(): Promise<void> {
+    try {
+      console.log('🧹 [SIGNATURE-STORAGE] Cleaning old signature files...');
+      
+      await this.ensureStorageDirectory();
+      
+      const files = await fs.readdir(this.storageDir);
+      const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+      
+      let deletedCount = 0;
 
-  /**
-   * Export signature data for legal audit
-   */
-  exportSignatureAuditTrail(contractId: string): any {
-    const signatures = this.getContractSignatures(contractId);
-    if (!signatures) return null;
+      for (const file of files) {
+        if (!file.endsWith('.json')) continue;
+        
+        try {
+          const filepath = path.join(this.storageDir, file);
+          const stats = await fs.stat(filepath);
+          
+          if (stats.mtime.getTime() < thirtyDaysAgo) {
+            await fs.unlink(filepath);
+            deletedCount++;
+          }
+        } catch (error) {
+          console.warn('⚠️ [SIGNATURE-STORAGE] Failed to process file during cleanup:', file);
+        }
+      }
 
-    return {
-      contractId,
-      status: signatures.status,
-      createdAt: signatures.createdAt,
-      lastUpdatedAt: signatures.lastUpdatedAt,
-      contractorSignature: signatures.contractorSignature ? {
-        signerName: signatures.contractorSignature.signerName,
-        signatureType: signatures.contractorSignature.signatureType,
-        timestamp: signatures.contractorSignature.timestamp,
-        ipAddress: signatures.contractorSignature.ipAddress,
-        deviceInfo: signatures.contractorSignature.deviceInfo
-      } : null,
-      clientSignature: signatures.clientSignature ? {
-        signerName: signatures.clientSignature.signerName,
-        signatureType: signatures.clientSignature.signatureType,
-        timestamp: signatures.clientSignature.timestamp,
-        ipAddress: signatures.clientSignature.ipAddress,
-        deviceInfo: signatures.clientSignature.deviceInfo
-      } : null,
-      auditGenerated: new Date().toISOString()
-    };
+      console.log('✅ [SIGNATURE-STORAGE] Cleanup completed. Deleted', deletedCount, 'old files');
+    } catch (error) {
+      console.error('❌ [SIGNATURE-STORAGE] Failed to clean old signatures:', error);
+    }
   }
 }
 
-export const signatureStorage = new SignatureStorageService();
+export const signatureStorageService = new SignatureStorageService();

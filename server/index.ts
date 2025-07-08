@@ -145,8 +145,13 @@ console.log('📊 [EMAIL-TRACKING] Rutas registradas en /api/email-tracking');
 
 // Dual signature workflow routes
 import dualSignatureRoutes from './routes/dual-signature';
+import contractSignatureRoutes from './routes/contract-signature';
 app.use("/api/dual-signature", dualSignatureRoutes);
 console.log('✍️ [DUAL-SIGNATURE] Rutas registradas en /api/dual-signature');
+
+// Contract signature processing routes
+app.use("/api", contractSignatureRoutes);
+console.log('✍️ [CONTRACT-SIGNATURE] Rutas registradas en /api/contract-signature');
 
 (async () => {
 

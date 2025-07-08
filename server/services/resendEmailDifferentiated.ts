@@ -228,9 +228,191 @@ export class ResendEmailDifferentiated {
                 </ol>
               </div>
               
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${params.reviewUrl}" class="review-button">Review & Sign Contract</a>
+              <!-- EMBEDDED CONTRACT CONTENT -->
+              <div class="contract-content" style="background: #ffffff; border: 2px solid #28a745; padding: 25px; border-radius: 12px; margin: 25px 0; max-height: 400px; overflow-y: auto; font-family: 'Times New Roman', Times, serif;">
+                <h2 style="color: #2c3e50; text-align: center; margin-bottom: 20px;">INDEPENDENT CONTRACTOR AGREEMENT</h2>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">1. PARTIES</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;">This Agreement is between <strong>${params.contractorName}</strong> ("Contractor") and <strong>${params.clientName}</strong> ("Client").</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">2. PROJECT DESCRIPTION</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Scope:</strong> ${params.projectDetails?.description || 'Professional construction services'}</p>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Value:</strong> ${params.projectDetails?.value || 'As agreed'}</p>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Location:</strong> ${params.projectDetails?.address || 'Client property'}</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">3. PAYMENT TERMS</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Total:</strong> ${params.projectDetails?.value || 'As specified'} | <strong>Schedule:</strong> 50% deposit, 50% completion</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">4. WARRANTIES & INSURANCE</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;">2-year workmanship warranty. Contractor maintains full liability insurance and workers' compensation.</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">5. LEGAL COMPLIANCE</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;">All work complies with local building codes. Contractor obtains necessary permits.</p>
               </div>
+
+              <!-- SIGNATURE SECTION -->
+              <div class="signature-section" style="background: #e8f5e8; border: 2px dashed #28a745; padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center;">
+                <h3 style="color: #2c3e50; margin-bottom: 20px;">🖊️ Contractor Digital Signature</h3>
+                
+                <div style="margin: 20px 0; text-align: left;">
+                  <label style="display: block; margin-bottom: 10px;">
+                    <input type="checkbox" id="contractorReview" required style="margin-right: 10px; transform: scale(1.2);">
+                    I have thoroughly reviewed all contract terms and conditions
+                  </label>
+                  <label style="display: block; margin-bottom: 10px;">
+                    <input type="checkbox" id="legalCompliance" required style="margin-right: 10px; transform: scale(1.2);">
+                    I confirm this contract meets all legal and regulatory requirements
+                  </label>
+                </div>
+                
+                <p><strong>Sign by drawing below or typing your name:</strong></p>
+                <canvas id="signatureCanvas" width="400" height="150" style="border: 2px solid #28a745; border-radius: 8px; background: white; cursor: crosshair; display: block; margin: 20px auto;"></canvas>
+                <button type="button" onclick="clearSignature()" style="background: #6c757d; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">Clear Signature</button>
+                
+                <p style="margin-top: 20px;"><strong>Or type your full legal name:</strong></p>
+                <input type="text" id="contractorName" placeholder="Type your full legal name here" value="${params.contractorName}" style="width: 100%; padding: 12px; border: 2px solid #28a745; border-radius: 8px; margin: 10px 0; font-size: 16px;">
+                
+                <div style="margin-top: 30px;">
+                  <button type="button" onclick="approveContract()" style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">✅ APPROVE & SIGN CONTRACT</button>
+                  <button type="button" onclick="rejectContract()" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">❌ REJECT CONTRACT</button>
+                </div>
+                
+                <div id="statusMessage" style="padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center; font-weight: bold; display: none;"></div>
+              </div>
+
+              <script>
+                // Signature Canvas Setup
+                const canvas = document.getElementById('signatureCanvas');
+                const ctx = canvas.getContext('2d');
+                let isDrawing = false;
+                let hasSignature = false;
+
+                canvas.addEventListener('mousedown', startDrawing);
+                canvas.addEventListener('mousemove', draw);
+                canvas.addEventListener('mouseup', stopDrawing);
+                canvas.addEventListener('touchstart', handleTouch);
+                canvas.addEventListener('touchmove', handleTouch);
+                canvas.addEventListener('touchend', stopDrawing);
+
+                function startDrawing(e) {
+                  isDrawing = true;
+                  hasSignature = true;
+                  const rect = canvas.getBoundingClientRect();
+                  ctx.beginPath();
+                  ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+                }
+
+                function draw(e) {
+                  if (!isDrawing) return;
+                  const rect = canvas.getBoundingClientRect();
+                  ctx.lineWidth = 2;
+                  ctx.lineCap = 'round';
+                  ctx.strokeStyle = '#2c3e50';
+                  ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+                  ctx.stroke();
+                }
+
+                function stopDrawing() { isDrawing = false; }
+
+                function handleTouch(e) {
+                  e.preventDefault();
+                  const touch = e.touches[0];
+                  const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 
+                                                   e.type === 'touchmove' ? 'mousemove' : 'mouseup', {
+                    clientX: touch.clientX, clientY: touch.clientY
+                  });
+                  canvas.dispatchEvent(mouseEvent);
+                }
+
+                function clearSignature() {
+                  ctx.clearRect(0, 0, canvas.width, canvas.height);
+                  hasSignature = false;
+                }
+
+                function showStatus(message, isSuccess) {
+                  const statusDiv = document.getElementById('statusMessage');
+                  statusDiv.textContent = message;
+                  statusDiv.style.background = isSuccess ? '#d4edda' : '#f8d7da';
+                  statusDiv.style.color = isSuccess ? '#155724' : '#721c24';
+                  statusDiv.style.border = isSuccess ? '1px solid #c3e6cb' : '1px solid #f5c6cb';
+                  statusDiv.style.display = 'block';
+                }
+
+                function approveContract() {
+                  const reviewChecked = document.getElementById('contractorReview').checked;
+                  const legalChecked = document.getElementById('legalCompliance').checked;
+                  const nameValue = document.getElementById('contractorName').value.trim();
+                  
+                  if (!reviewChecked || !legalChecked) {
+                    showStatus('❌ Please confirm both review checkboxes', false);
+                    return;
+                  }
+                  
+                  if (!hasSignature && !nameValue) {
+                    showStatus('❌ Please provide either a drawn signature or type your name', false);
+                    return;
+                  }
+
+                  const signatureData = hasSignature ? canvas.toDataURL() : null;
+                  const contractData = {
+                    contractId: '${params.contractId}',
+                    action: 'approve',
+                    contractorName: nameValue,
+                    signatureData: signatureData,
+                    timestamp: new Date().toISOString(),
+                    role: 'contractor'
+                  };
+
+                  fetch('${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://owlfenc.com'}/api/contract-signature', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(contractData)
+                  })
+                  .then(response => response.json())
+                  .then(data => {
+                    if (data.success) {
+                      showStatus('✅ Contract approved successfully! Client will be notified to sign.', true);
+                      document.querySelectorAll('button, input, canvas').forEach(el => el.disabled = true);
+                    } else {
+                      showStatus('❌ Error: ' + (data.message || 'Failed to process signature'), false);
+                    }
+                  })
+                  .catch(error => {
+                    showStatus('❌ Network error. Please try again.', false);
+                  });
+                }
+
+                function rejectContract() {
+                  const reason = prompt('Please provide a reason for rejecting this contract:');
+                  if (!reason) return;
+
+                  const contractData = {
+                    contractId: '${params.contractId}',
+                    action: 'reject',
+                    reason: reason,
+                    timestamp: new Date().toISOString(),
+                    role: 'contractor'
+                  };
+
+                  fetch('${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://owlfenc.com'}/api/contract-signature', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(contractData)
+                  })
+                  .then(response => response.json())
+                  .then(data => {
+                    if (data.success) {
+                      showStatus('Contract rejected. Client has been notified.', true);
+                      document.querySelectorAll('button, input, canvas').forEach(el => el.disabled = true);
+                    } else {
+                      showStatus('❌ Error: ' + (data.message || 'Failed to process rejection'), false);
+                    }
+                  })
+                  .catch(error => {
+                    showStatus('❌ Network error. Please try again.', false);
+                  });
+                }
+              </script>
               
               <div style="background: #e9ecef; padding: 15px; border-radius: 8px; margin-top: 25px;">
                 <p style="margin: 0; color: #495057; font-size: 14px;">
@@ -330,9 +512,205 @@ export class ResendEmailDifferentiated {
                 </ul>
               </div>
               
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${params.reviewUrl}" class="sign-button">Review & Sign Contract</a>
+              <!-- EMBEDDED CONTRACT CONTENT -->
+              <div class="contract-content" style="background: #ffffff; border: 2px solid #007bff; padding: 25px; border-radius: 12px; margin: 25px 0; max-height: 400px; overflow-y: auto; font-family: 'Times New Roman', Times, serif;">
+                <h2 style="color: #2c3e50; text-align: center; margin-bottom: 20px;">INDEPENDENT CONTRACTOR AGREEMENT</h2>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">1. PARTIES</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;">This Agreement is between <strong>${params.contractorName}</strong> ("Contractor") and <strong>${params.clientName}</strong> ("Client").</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">2. PROJECT DESCRIPTION</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Scope:</strong> ${params.projectDetails?.description || 'Professional construction services for your property'}</p>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Value:</strong> ${params.projectDetails?.value || 'As agreed'}</p>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Location:</strong> ${params.projectDetails?.address || 'Your property'}</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">3. PAYMENT TERMS</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Total Project Cost:</strong> ${params.projectDetails?.value || 'As specified'}</p>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Payment Schedule:</strong> 50% deposit upon contract signing, 50% upon project completion</p>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Payment Methods:</strong> Check, bank transfer, or approved payment platform</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">4. PROJECT TIMELINE</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Start Date:</strong> Within 7 days of signed contract and deposit receipt</p>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Completion:</strong> As specified in project timeline documentation</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">5. WARRANTIES & GUARANTEES</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Workmanship:</strong> 2-year warranty on installation and construction work</p>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;"><strong>Materials:</strong> Manufacturer warranties apply; contractor provides 1-year warranty on material defects</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">6. INSURANCE & LIABILITY</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;">Contractor maintains comprehensive general liability insurance and workers' compensation. You are protected from liability for work-related injuries or damages.</p>
+                
+                <h3 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">7. PERMITS & COMPLIANCE</h3>
+                <p style="line-height: 1.6; margin-bottom: 12px; text-align: justify;">Contractor will obtain all necessary permits and ensure work complies with local building codes and regulations.</p>
               </div>
+
+              <!-- CLIENT SIGNATURE SECTION -->
+              <div class="signature-section" style="background: #e3f2fd; border: 2px dashed #007bff; padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center;">
+                <h3 style="color: #2c3e50; margin-bottom: 20px;">✍️ Your Digital Signature</h3>
+                
+                <div style="margin: 20px 0; text-align: left;">
+                  <label style="display: block; margin-bottom: 15px;">
+                    <input type="checkbox" id="clientReview" required style="margin-right: 10px; transform: scale(1.2);">
+                    I have carefully read and understand all contract terms and conditions
+                  </label>
+                  <label style="display: block; margin-bottom: 15px;">
+                    <input type="checkbox" id="paymentAgreement" required style="margin-right: 10px; transform: scale(1.2);">
+                    I agree to the payment terms and schedule outlined above
+                  </label>
+                  <label style="display: block; margin-bottom: 15px;">
+                    <input type="checkbox" id="projectAuthorization" required style="margin-right: 10px; transform: scale(1.2);">
+                    I authorize ${params.contractorName} to begin work as specified
+                  </label>
+                </div>
+                
+                <p><strong>Sign by drawing below or typing your name:</strong></p>
+                <canvas id="clientSignatureCanvas" width="400" height="150" style="border: 2px solid #007bff; border-radius: 8px; background: white; cursor: crosshair; display: block; margin: 20px auto;"></canvas>
+                <button type="button" onclick="clearClientSignature()" style="background: #6c757d; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">Clear Signature</button>
+                
+                <p style="margin-top: 20px;"><strong>Or type your full legal name:</strong></p>
+                <input type="text" id="clientName" placeholder="Type your full legal name here" value="${params.clientName}" style="width: 100%; padding: 12px; border: 2px solid #007bff; border-radius: 8px; margin: 10px 0; font-size: 16px;">
+                
+                <div style="margin-top: 30px;">
+                  <button type="button" onclick="approveClientContract()" style="background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">✅ SIGN & APPROVE CONTRACT</button>
+                  <button type="button" onclick="rejectClientContract()" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; margin: 10px;">❌ DECLINE CONTRACT</button>
+                </div>
+                
+                <div id="clientStatusMessage" style="padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center; font-weight: bold; display: none;"></div>
+              </div>
+
+              <script>
+                // Client Signature Canvas Setup
+                const clientCanvas = document.getElementById('clientSignatureCanvas');
+                const clientCtx = clientCanvas.getContext('2d');
+                let isClientDrawing = false;
+                let hasClientSignature = false;
+
+                clientCanvas.addEventListener('mousedown', startClientDrawing);
+                clientCanvas.addEventListener('mousemove', drawClient);
+                clientCanvas.addEventListener('mouseup', stopClientDrawing);
+                clientCanvas.addEventListener('touchstart', handleClientTouch);
+                clientCanvas.addEventListener('touchmove', handleClientTouch);
+                clientCanvas.addEventListener('touchend', stopClientDrawing);
+
+                function startClientDrawing(e) {
+                  isClientDrawing = true;
+                  hasClientSignature = true;
+                  const rect = clientCanvas.getBoundingClientRect();
+                  clientCtx.beginPath();
+                  clientCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+                }
+
+                function drawClient(e) {
+                  if (!isClientDrawing) return;
+                  const rect = clientCanvas.getBoundingClientRect();
+                  clientCtx.lineWidth = 2;
+                  clientCtx.lineCap = 'round';
+                  clientCtx.strokeStyle = '#007bff';
+                  clientCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+                  clientCtx.stroke();
+                }
+
+                function stopClientDrawing() { isClientDrawing = false; }
+
+                function handleClientTouch(e) {
+                  e.preventDefault();
+                  const touch = e.touches[0];
+                  const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 
+                                                   e.type === 'touchmove' ? 'mousemove' : 'mouseup', {
+                    clientX: touch.clientX, clientY: touch.clientY
+                  });
+                  clientCanvas.dispatchEvent(mouseEvent);
+                }
+
+                function clearClientSignature() {
+                  clientCtx.clearRect(0, 0, clientCanvas.width, clientCanvas.height);
+                  hasClientSignature = false;
+                }
+
+                function showClientStatus(message, isSuccess) {
+                  const statusDiv = document.getElementById('clientStatusMessage');
+                  statusDiv.textContent = message;
+                  statusDiv.style.background = isSuccess ? '#d4edda' : '#f8d7da';
+                  statusDiv.style.color = isSuccess ? '#155724' : '#721c24';
+                  statusDiv.style.border = isSuccess ? '1px solid #c3e6cb' : '1px solid #f5c6cb';
+                  statusDiv.style.display = 'block';
+                }
+
+                function approveClientContract() {
+                  const reviewChecked = document.getElementById('clientReview').checked;
+                  const paymentChecked = document.getElementById('paymentAgreement').checked;
+                  const authChecked = document.getElementById('projectAuthorization').checked;
+                  const nameValue = document.getElementById('clientName').value.trim();
+                  
+                  if (!reviewChecked || !paymentChecked || !authChecked) {
+                    showClientStatus('❌ Please confirm all three checkboxes above', false);
+                    return;
+                  }
+                  
+                  if (!hasClientSignature && !nameValue) {
+                    showClientStatus('❌ Please provide either a drawn signature or type your name', false);
+                    return;
+                  }
+
+                  const signatureData = hasClientSignature ? clientCanvas.toDataURL() : null;
+                  const contractData = {
+                    contractId: '${params.contractId}',
+                    action: 'approve',
+                    clientName: nameValue,
+                    signatureData: signatureData,
+                    timestamp: new Date().toISOString(),
+                    role: 'client'
+                  };
+
+                  fetch('${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://owlfenc.com'}/api/contract-signature', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(contractData)
+                  })
+                  .then(response => response.json())
+                  .then(data => {
+                    if (data.success) {
+                      showClientStatus('🎉 Contract signed successfully! You will receive a copy shortly.', true);
+                      document.querySelectorAll('button, input, canvas').forEach(el => el.disabled = true);
+                    } else {
+                      showClientStatus('❌ Error: ' + (data.message || 'Failed to process signature'), false);
+                    }
+                  })
+                  .catch(error => {
+                    showClientStatus('❌ Network error. Please try again.', false);
+                  });
+                }
+
+                function rejectClientContract() {
+                  const reason = prompt('Please let us know why you are declining this contract (optional):');
+                  
+                  const contractData = {
+                    contractId: '${params.contractId}',
+                    action: 'reject',
+                    reason: reason || 'Client declined contract',
+                    timestamp: new Date().toISOString(),
+                    role: 'client'
+                  };
+
+                  fetch('${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://owlfenc.com'}/api/contract-signature', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(contractData)
+                  })
+                  .then(response => response.json())
+                  .then(data => {
+                    if (data.success) {
+                      showClientStatus('Contract declined. Your contractor has been notified.', true);
+                      document.querySelectorAll('button, input, canvas').forEach(el => el.disabled = true);
+                    } else {
+                      showClientStatus('❌ Error: ' + (data.message || 'Failed to process response'), false);
+                    }
+                  })
+                  .catch(error => {
+                    showClientStatus('❌ Network error. Please try again.', false);
+                  });
+                }
+              </script>
               
               <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 8px; margin-top: 25px;">
                 <p style="margin: 0; color: #155724; font-size: 14px;">

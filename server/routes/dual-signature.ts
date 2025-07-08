@@ -5,7 +5,7 @@
 
 import { Router } from 'express';
 import { dualSignatureWorkflow } from '../services/dualSignatureWorkflow';
-import { signatureStorage } from '../services/signatureStorageService';
+import { signatureStorageService } from '../services/signatureStorageService';
 
 const router = Router();
 
