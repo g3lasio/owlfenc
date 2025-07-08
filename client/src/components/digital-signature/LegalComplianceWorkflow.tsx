@@ -89,6 +89,7 @@ export default function LegalComplianceWorkflow({
     clientPhone: contractData.client.phone || ''
   });
   const [editingField, setEditingField] = useState<string | null>(null);
+  const [deliveryMethod, setDeliveryMethod] = useState<'email' | 'sms'>('email'); // Choose delivery method
   
   // Handle contact field updates
   const handleContactUpdate = (field: string) => {
@@ -165,31 +166,40 @@ export default function LegalComplianceWorkflow({
         sms: { success: false }
       };
 
-      // Send COMPLETE contract email with embedded contract and review link
-      try {
-        const emailResponse = await fetch('/api/sms/complete-contract-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: editableContacts.clientEmail,
-            contractorName: contractData.contractor.name,
-            contractorCompany: contractData.contractor.company,
-            clientName: contractData.client.name,
-            contractHTML: contractHTML,
-            contractId: contractId,
-            reviewUrl: reviewUrl
-          })
-        });
-        
-        const emailResult = await emailResponse.json();
-        deliveryResults.email = emailResult;
-        console.log('📧 [COMPLETE-EMAIL] Result:', emailResult);
-      } catch (emailError) {
-        console.error('📧 [COMPLETE-EMAIL] Failed:', emailError);
-      }
+      // Send contract using ONLY the selected method
+      let deliveryResult = { success: false, method: deliveryMethod };
 
-      // Send COMPLETE contract SMS with direct review link
-      if (editableContacts.clientPhone) {
+      if (deliveryMethod === 'email') {
+        // Send COMPLETE contract email ONLY
+        try {
+          const emailResponse = await fetch('/api/sms/complete-contract-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: editableContacts.clientEmail,
+              contractorName: contractData.contractor.name,
+              contractorCompany: contractData.contractor.company,
+              clientName: contractData.client.name,
+              contractHTML: contractHTML,
+              contractId: contractId,
+              reviewUrl: reviewUrl
+            })
+          });
+          
+          const emailResult = await emailResponse.json();
+          deliveryResult = { success: emailResult.success, method: 'email', result: emailResult };
+          console.log('📧 [EMAIL-ONLY] Result:', emailResult);
+        } catch (emailError) {
+          console.error('📧 [EMAIL-ONLY] Failed:', emailError);
+          throw new Error('Email delivery failed');
+        }
+        
+      } else if (deliveryMethod === 'sms') {
+        // Send COMPLETE contract SMS ONLY
+        if (!editableContacts.clientPhone) {
+          throw new Error('Client phone number is required for SMS delivery');
+        }
+        
         try {
           const smsResponse = await fetch('/api/sms/complete-contract-sms', {
             method: 'POST',
@@ -205,33 +215,28 @@ export default function LegalComplianceWorkflow({
           });
           
           const smsResult = await smsResponse.json();
-          deliveryResults.sms = smsResult;
-          console.log('📱 [COMPLETE-SMS] Result:', smsResult);
+          deliveryResult = { success: smsResult.success, method: 'sms', result: smsResult };
+          console.log('📱 [SMS-ONLY] Result:', smsResult);
         } catch (smsError) {
-          console.error('📱 [COMPLETE-SMS] Failed:', smsError);
+          console.error('📱 [SMS-ONLY] Failed:', smsError);
+          throw new Error('SMS delivery failed');
         }
       }
-
-      const deliveryResult = {
-        success: deliveryResults.email.success || deliveryResults.sms.success,
-        email: deliveryResults.email,
-        sms: deliveryResults.sms,
-        error: !deliveryResults.email.success && !deliveryResults.sms.success ? 'Both email and SMS delivery failed' : null
-      };
       
       if (deliveryResult.success) {
         setDeliveryCompleted(true);
         setCurrentStep('completion');
         
-        toast({
-          title: "Contract Sent Successfully",
-          description: `Complete contract sent via ${editableContacts.clientPhone ? 'SMS and email' : 'email'}. Client will review and sign from their device. You will be notified when completed.`,
-        });
+        const contactInfo = deliveryMethod === 'email' 
+          ? editableContacts.clientEmail 
+          : editableContacts.clientPhone;
         
-        // Don't auto-complete - stay in tracking dashboard to monitor contract status
-        // Client handles everything on their device independently
+        toast({
+          title: `Contract Sent via ${deliveryMethod.toUpperCase()}`,
+          description: `Complete contract delivered to ${contactInfo}. Client will review and sign from their device.`,
+        });
       } else {
-        throw new Error(deliveryResult.error || 'Document delivery failed');
+        throw new Error(`${deliveryMethod} delivery failed`);
       }
     } catch (error) {
       console.error('Document delivery error:', error);
@@ -469,124 +474,173 @@ export default function LegalComplianceWorkflow({
           {showContractPreview && (
             <div className="p-4 border-t border-gray-600 max-h-96 overflow-y-auto">
               <div 
-                className="text-sm text-gray-300 bg-white p-4 rounded"
+                className="text-sm text-black bg-white p-6 rounded shadow-lg border"
+                style={{ 
+                  color: '#000000',
+                  backgroundColor: '#ffffff',
+                  lineHeight: '1.6',
+                  fontSize: '14px'
+                }}
                 dangerouslySetInnerHTML={{ __html: contractHTML }}
               />
             </div>
           )}
         </div>
         
+        {/* Delivery Method Selection */}
         <div className="space-y-3">
-          <div className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg">
-            <Mail className="h-5 w-5 text-cyan-400" />
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-2">
-                <p className="font-semibold text-white">Email Delivery</p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => editingField === 'emails' ? handleContactUpdate('emails') : setEditingField('emails')}
-                  className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300"
-                >
-                  {editingField === 'emails' ? <Save className="h-3 w-3" /> : <Edit3 className="h-3 w-3" />}
-                </Button>
-              </div>
-              
-              {editingField === 'emails' ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400 w-20">Contractor:</span>
-                    <Input
-                      value={editableContacts.contractorEmail}
-                      onChange={(e) => setEditableContacts(prev => ({ ...prev, contractorEmail: e.target.value }))}
-                      className="h-6 text-xs bg-gray-700 border-gray-600 text-white"
-                      placeholder="contractor@email.com"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400 w-20">Client:</span>
-                    <Input
-                      value={editableContacts.clientEmail}
-                      onChange={(e) => setEditableContacts(prev => ({ ...prev, clientEmail: e.target.value }))}
-                      className="h-6 text-xs bg-gray-700 border-gray-600 text-white"
-                      placeholder="client@email.com"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="text-sm text-gray-400">
-                  <div>Contractor: {editableContacts.contractorEmail}</div>
-                  <div>Client: {editableContacts.clientEmail}</div>
-                </div>
-              )}
-            </div>
+          <h4 className="font-semibold text-white mb-3">Choose Delivery Method</h4>
+          
+          {/* Method Selection Radio Buttons */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Button
+              variant={deliveryMethod === 'email' ? 'default' : 'outline'}
+              className={`p-4 h-auto flex-col space-y-2 ${
+                deliveryMethod === 'email' 
+                  ? 'bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-400' 
+                  : 'border-gray-600 text-gray-300 hover:bg-gray-800'
+              }`}
+              onClick={() => setDeliveryMethod('email')}
+            >
+              <Mail className="h-6 w-6" />
+              <span className="font-semibold">Email Delivery</span>
+              <span className="text-xs opacity-75">Send contract via email</span>
+            </Button>
+            
+            <Button
+              variant={deliveryMethod === 'sms' ? 'default' : 'outline'}
+              className={`p-4 h-auto flex-col space-y-2 ${
+                deliveryMethod === 'sms' 
+                  ? 'bg-green-600 hover:bg-green-700 text-white border-green-400' 
+                  : 'border-gray-600 text-gray-300 hover:bg-gray-800'
+              }`}
+              onClick={() => setDeliveryMethod('sms')}
+            >
+              <MessageSquare className="h-6 w-6" />
+              <span className="font-semibold">SMS Delivery</span>
+              <span className="text-xs opacity-75">Send contract via text message</span>
+            </Button>
           </div>
           
-          <div className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg">
-            <MessageSquare className="h-5 w-5 text-green-400" />
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-2">
-                <p className="font-semibold text-white">SMS Notification</p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => editingField === 'phones' ? handleContactUpdate('phones') : setEditingField('phones')}
-                  className="h-6 w-6 p-0 text-green-400 hover:text-green-300"
-                >
-                  {editingField === 'phones' ? <Save className="h-3 w-3" /> : <Edit3 className="h-3 w-3" />}
-                </Button>
+          {/* Contact Information for Selected Method */}
+          {deliveryMethod === 'email' && (
+            <div className="flex items-center gap-3 p-3 bg-cyan-900/30 border border-cyan-600 rounded-lg">
+              <Mail className="h-5 w-5 text-cyan-400" />
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-semibold text-white">Email Addresses</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => editingField === 'emails' ? handleContactUpdate('emails') : setEditingField('emails')}
+                    className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300"
+                  >
+                    {editingField === 'emails' ? <Save className="h-3 w-3" /> : <Edit3 className="h-3 w-3" />}
+                  </Button>
+                </div>
+                
+                {editingField === 'emails' ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400 w-20">Contractor:</span>
+                      <Input
+                        value={editableContacts.contractorEmail}
+                        onChange={(e) => setEditableContacts(prev => ({ ...prev, contractorEmail: e.target.value }))}
+                        className="h-6 text-xs bg-gray-700 border-gray-600 text-white"
+                        placeholder="contractor@email.com"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400 w-20">Client:</span>
+                      <Input
+                        value={editableContacts.clientEmail}
+                        onChange={(e) => setEditableContacts(prev => ({ ...prev, clientEmail: e.target.value }))}
+                        className="h-6 text-xs bg-gray-700 border-gray-600 text-white"
+                        placeholder="client@email.com"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-300">
+                    <div>Contractor: {editableContacts.contractorEmail}</div>
+                    <div>Client: {editableContacts.clientEmail}</div>
+                  </div>
+                )}
               </div>
-              
-              {editingField === 'phones' ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400 w-20">Contractor:</span>
-                    <Input
-                      value={editableContacts.contractorPhone}
-                      onChange={(e) => setEditableContacts(prev => ({ ...prev, contractorPhone: e.target.value }))}
-                      className="h-6 text-xs bg-gray-700 border-gray-600 text-white"
-                      placeholder="(555) 123-4567"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400 w-20">Client:</span>
-                    <Input
-                      value={editableContacts.clientPhone}
-                      onChange={(e) => setEditableContacts(prev => ({ ...prev, clientPhone: e.target.value }))}
-                      className="h-6 text-xs bg-gray-700 border-gray-600 text-white"
-                      placeholder="(555) 123-4567"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="text-sm text-gray-400">
-                  <div>Contractor: {editableContacts.contractorPhone || 'Not provided'}</div>
-                  <div>Client: {editableContacts.clientPhone}</div>
-                </div>
-              )}
             </div>
-          </div>
+          )}
+          
+          {deliveryMethod === 'sms' && (
+            <div className="flex items-center gap-3 p-3 bg-green-900/30 border border-green-600 rounded-lg">
+              <MessageSquare className="h-5 w-5 text-green-400" />
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-semibold text-white">Phone Numbers</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => editingField === 'phones' ? handleContactUpdate('phones') : setEditingField('phones')}
+                    className="h-6 w-6 p-0 text-green-400 hover:text-green-300"
+                  >
+                    {editingField === 'phones' ? <Save className="h-3 w-3" /> : <Edit3 className="h-3 w-3" />}
+                  </Button>
+                </div>
+                
+                {editingField === 'phones' ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400 w-20">Contractor:</span>
+                      <Input
+                        value={editableContacts.contractorPhone}
+                        onChange={(e) => setEditableContacts(prev => ({ ...prev, contractorPhone: e.target.value }))}
+                        className="h-6 text-xs bg-gray-700 border-gray-600 text-white"
+                        placeholder="(555) 123-4567"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400 w-20">Client:</span>
+                      <Input
+                        value={editableContacts.clientPhone}
+                        onChange={(e) => setEditableContacts(prev => ({ ...prev, clientPhone: e.target.value }))}
+                        className="h-6 text-xs bg-gray-700 border-gray-600 text-white"
+                        placeholder="(555) 123-4567"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-300">
+                    <div>Contractor: {editableContacts.contractorPhone || 'Not provided'}</div>
+                    <div>Client: {editableContacts.clientPhone}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
         
         <Button
           onClick={handleDocumentDelivery}
           disabled={isDelivering || deliveryCompleted}
-          className="w-full bg-cyan-600 hover:bg-cyan-700"
+          className={`w-full ${
+            deliveryMethod === 'email' 
+              ? 'bg-cyan-600 hover:bg-cyan-700' 
+              : 'bg-green-600 hover:bg-green-700'
+          }`}
         >
           {isDelivering ? (
             <>
               <Clock className="h-4 w-4 mr-2 animate-spin" />
-              Sending to Client's Device...
+              Sending via {deliveryMethod.toUpperCase()}...
             </>
           ) : deliveryCompleted ? (
             <>
               <CheckCircle className="h-4 w-4 mr-2" />
-              Contract Sent to Client's Device
+              Contract Sent via {deliveryMethod.toUpperCase()}
             </>
           ) : (
             <>
-              <Send className="h-4 w-4 mr-2" />
-              Send Contract to Client's Device
+              {deliveryMethod === 'email' ? <Mail className="h-4 w-4 mr-2" /> : <MessageSquare className="h-4 w-4 mr-2" />}
+              Send Contract via {deliveryMethod.toUpperCase()}
             </>
           )}
         </Button>
