@@ -117,7 +117,7 @@ app.use((req, res, next) => {
 });
 
 // 🔧 Registrar TODAS las rutas de API ANTES de iniciar el servidor
-// Add health check routes
+// Add health check routes at root level for deployment health checks
 import healthRoutes from './routes/health';
 app.use('/api', healthRoutes);
 
@@ -163,6 +163,14 @@ import testSecureContractRoutes from './routes/test-secure-contract';
 app.use('/api/test', testSecureContractRoutes);
 console.log('🧪 [TEST-SECURE-CONTRACT] Test route registered at /api/test/test-secure-contract');
 
+// Add root health check for deployment monitoring (lightweight response)
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    timestamp: Date.now()
+  });
+});
+
 (async () => {
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -180,10 +188,24 @@ console.log('🧪 [TEST-SECURE-CONTRACT] Test route registered at /api/test/test
   // Setup server based on environment
   try {
     const port = parseInt(process.env.PORT || '5000', 10);
-    const server = await new Promise<any>((resolve) => {
+    
+    // Create server with timeout configuration for deployment health checks
+    const server = await new Promise<any>((resolve, reject) => {
       const httpServer = app.listen(port, "0.0.0.0", () => {
         log(`Server started on port ${port}`);
+        console.log(`✅ Health check available at: http://localhost:${port}/`);
+        console.log(`✅ API health check at: http://localhost:${port}/api/health`);
         resolve(httpServer);
+      });
+      
+      // Set server timeout for better deployment compatibility
+      httpServer.timeout = 30000; // 30 seconds
+      httpServer.keepAliveTimeout = 65000; // 65 seconds
+      httpServer.headersTimeout = 66000; // 66 seconds
+      
+      httpServer.on('error', (error) => {
+        console.error('Server startup error:', error);
+        reject(error);
       });
     });
     
@@ -198,15 +220,16 @@ console.log('🧪 [TEST-SECURE-CONTRACT] Test route registered at /api/test/test
       console.log('📄 Frontend served from production build');
     }
     
-    console.log('✅ OPTIMIZED CONTRACT GENERATOR READY!');
-    console.log('📊 Puppeteer PDF Service: Local generation without external dependencies');
-    console.log('🎯 Professional template with modern design and print optimization');
+    console.log('✅ OWL FENCE AI PLATFORM READY FOR DEPLOYMENT!');
+    console.log('📊 Multi-tenant contractor management system active');
+    console.log('🎯 Professional contract generation and email delivery enabled');
     
   } catch (error) {
     console.error('Server setup error:', error instanceof Error ? error.message : String(error));
     // Fallback: start basic server without Vite
-    const server = app.listen(5001, "0.0.0.0", () => {
-      log('Fallback server started on port 5001');
+    const server = app.listen(parseInt(process.env.PORT || '5001', 10), "0.0.0.0", () => {
+      log(`Fallback server started on port ${process.env.PORT || '5001'}`);
+      console.log('⚠️ Running in fallback mode - some features may be limited');
     });
   }
   

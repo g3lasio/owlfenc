@@ -2,8 +2,17 @@ import { Router } from 'express';
 
 const router = Router();
 
-// Health check endpoint
+// Lightweight health check endpoint for deployment monitoring
 router.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+// Detailed health check endpoint for monitoring systems
+router.get('/health/detailed', (req, res) => {
   const health = {
     status: 'OK',
     timestamp: new Date().toISOString(),
@@ -26,6 +35,11 @@ router.get('/health', (req, res) => {
 // Basic ping endpoint
 router.get('/ping', (req, res) => {
   res.json({ pong: true, timestamp: Date.now() });
+});
+
+// Readiness check for deployment monitoring (minimal response time)
+router.get('/ready', (req, res) => {
+  res.status(200).send('OK');
 });
 
 export default router;
