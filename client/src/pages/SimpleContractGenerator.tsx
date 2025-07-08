@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
-import { Database, Eye, FileText, CheckCircle, Plus, Trash2, Edit2, Sparkles, Shield, AlertCircle, DollarSign, Calendar, Wrench, FileCheck, Loader2, Brain, RefreshCw, History, Clock, UserCheck, Search, Filter, PenTool } from "lucide-react";
+import { Database, Eye, FileText, CheckCircle, Plus, Trash2, Edit2, Sparkles, Shield, AlertCircle, DollarSign, Calendar, Wrench, FileCheck, Loader2, Brain, RefreshCw, History, Clock, UserCheck, Search, Filter, PenTool, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -1517,51 +1517,94 @@ export default function SimpleContractGenerator() {
                     Contract Ready!
                   </h3>
                   <p className="text-gray-300">
-                    Professional legal contract has been generated and downloaded for{" "}
+                    Professional legal contract has been generated for{" "}
                     <span className="text-white font-semibold">
                       {selectedProject?.clientName}
                     </span>
                   </p>
+                  <p className="text-cyan-400 text-sm mt-2">
+                    Choose how you want to proceed with this contract:
+                  </p>
                 </div>
 
-                <div className="flex flex-col space-y-4">
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Button
-                      onClick={handleGenerateContract}
-                      variant="outline"
-                      className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black"
-                    >
-                      Download Again
-                    </Button>
-                    <Button
-                      onClick={handleNewContract}
-                      className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-8"
-                    >
-                      Generate New Contract
-                    </Button>
-                  </div>
+                {/* Two Main Options */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   
-                  {/* Legal Compliance Workflow Option */}
-                  <div className="border-t border-gray-700 pt-6 mt-6">
-                    <div className="bg-green-900/30 border border-green-400 rounded-lg p-6">
-                      <div className="flex items-center justify-center gap-3 mb-4">
-                        <Shield className="h-8 w-8 text-green-400" />
-                        <h3 className="text-xl font-semibold text-green-400">
-                          Legal Compliance Workflow
-                        </h3>
+                  {/* Option 1: Simple PDF Download */}
+                  <div className="bg-blue-900/30 border border-blue-400 rounded-xl p-6">
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                      <Download className="h-8 w-8 text-blue-400" />
+                      <h3 className="text-xl font-semibold text-blue-400">
+                        Option 1: Quick Download
+                      </h3>
+                    </div>
+                    <p className="text-gray-300 mb-6 text-center">
+                      Download the contract as PDF for immediate use. Perfect for simple agreements or when signatures will be handled separately.
+                    </p>
+                    
+                    <div className="space-y-3">
+                      <Button
+                        onClick={handleGenerateContract}
+                        className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 w-full"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download PDF Contract
+                      </Button>
+                      
+                      <div className="flex items-center justify-center text-xs text-gray-400 gap-2">
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Instant download</span>
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Print ready</span>
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Professional format</span>
                       </div>
-                      <p className="text-gray-300 mb-4 text-center">
-                        Execute contract with mandatory review, biometric signatures, and full legal compliance
-                      </p>
+                    </div>
+                  </div>
+
+                  {/* Option 2: Legal Compliance Process */}
+                  <div className="bg-green-900/30 border border-green-400 rounded-xl p-6">
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                      <Shield className="h-8 w-8 text-green-400" />
+                      <h3 className="text-xl font-semibold text-green-400">
+                        Option 2: Legal Compliance
+                      </h3>
+                    </div>
+                    <p className="text-gray-300 mb-6 text-center">
+                      Full legal compliance process with digital signatures, email/SMS delivery, and audit trail for maximum legal protection.
+                    </p>
+                    
+                    <div className="space-y-3">
                       <Button
                         onClick={() => setShowLegalWorkflow(true)}
                         disabled={!isContractReady}
-                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 w-full"
+                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 w-full"
                       >
-                        Start Legal Compliance Process
+                        <Shield className="h-4 w-4 mr-2" />
+                        Start Legal Process
                       </Button>
+                      
+                      <div className="flex items-center justify-center text-xs text-gray-400 gap-2">
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Digital signatures</span>
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Email delivery</span>
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Legal audit trail</span>
+                      </div>
                     </div>
                   </div>
+                </div>
+
+                {/* Additional Actions */}
+                <div className="border-t border-gray-700 pt-6">
+                  <Button
+                    onClick={handleNewContract}
+                    variant="outline"
+                    className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
+                  >
+                    Generate New Contract
+                  </Button>
                 </div>
               </div>
             </CardContent>
