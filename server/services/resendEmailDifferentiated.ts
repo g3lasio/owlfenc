@@ -26,7 +26,7 @@ export class ResendEmailDifferentiated {
    * Check if domain is verified with Resend
    */
   private isDomainVerified(): boolean {
-    return process.env.NODE_ENV === 'production' || process.env.FORCE_PRODUCTION_EMAIL === 'true';
+    return process.env.NODE_ENV === 'production' || process.env.FORCE_PRODUCTION_EMAIL === 'true' || process.env.ENABLE_REAL_EMAIL === 'true';
   }
 
   /**
