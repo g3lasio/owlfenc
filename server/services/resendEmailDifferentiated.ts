@@ -26,7 +26,17 @@ export class ResendEmailDifferentiated {
    * Check if domain is verified with Resend
    */
   private isDomainVerified(): boolean {
-    return process.env.NODE_ENV === 'production' || process.env.FORCE_PRODUCTION_EMAIL === 'true' || process.env.ENABLE_REAL_EMAIL === 'true';
+    console.log('🔍 [EMAIL-MODE] Checking email delivery mode...');
+    console.log('🔍 [EMAIL-MODE] NODE_ENV:', process.env.NODE_ENV);
+    console.log('🔍 [EMAIL-MODE] ENABLE_REAL_EMAIL:', process.env.ENABLE_REAL_EMAIL);
+    console.log('🔍 [EMAIL-MODE] FORCE_PRODUCTION_EMAIL:', process.env.FORCE_PRODUCTION_EMAIL);
+    
+    const isProduction = process.env.NODE_ENV === 'production' || 
+                        process.env.FORCE_PRODUCTION_EMAIL === 'true' || 
+                        process.env.ENABLE_REAL_EMAIL === 'true';
+    
+    console.log('🔍 [EMAIL-MODE] Result - Production mode:', isProduction);
+    return isProduction;
   }
 
   /**
