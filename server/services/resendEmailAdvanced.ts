@@ -135,7 +135,79 @@ export class ResendEmailAdvanced {
   }
 
   /**
-   * Send COMPLETE contract email with full review and signature capability
+   * Send contractor-specific contract review email
+   */
+  async sendContractorReviewEmail(params: any): Promise<{ success: boolean; emailId?: string; error?: string }> {
+    try {
+      const emailHtml = this.generateContractorEmailTemplate(params);
+      
+      const emailOptions = {
+        from: 'legal@owlfenc.com',
+        to: params.to,
+        subject: `🔐 Contractor Review Required - Contract ${params.contractId}`,
+        html: emailHtml,
+        tags: [
+          { name: 'category', value: 'contractor-signature' },
+          { name: 'contract-id', value: params.contractId }
+        ]
+      };
+
+      const result = await this.resend.emails.send(emailOptions);
+      
+      console.log('✅ [CONTRACTOR-EMAIL] Email sent successfully');
+      console.log('📊 [CONTRACTOR-EMAIL] Email ID:', result.data?.id);
+      
+      return {
+        success: true,
+        emailId: result.data?.id
+      };
+    } catch (error) {
+      console.error('❌ [CONTRACTOR-EMAIL] Failed to send email:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown email error'
+      };
+    }
+  }
+
+  /**
+   * Send client-specific contract review email  
+   */
+  async sendClientReviewEmail(params: any): Promise<{ success: boolean; emailId?: string; error?: string }> {
+    try {
+      const emailHtml = this.generateClientEmailTemplate(params);
+      
+      const emailOptions = {
+        from: 'sign.legal@owlfenc.com',
+        to: params.to,
+        subject: `📋 Your Contract Ready for Signature - ${params.projectDetails?.description || 'Project Contract'}`,
+        html: emailHtml,
+        tags: [
+          { name: 'category', value: 'client-signature' },
+          { name: 'contract-id', value: params.contractId }
+        ]
+      };
+
+      const result = await this.resend.emails.send(emailOptions);
+      
+      console.log('✅ [CLIENT-EMAIL] Email sent successfully');
+      console.log('📊 [CLIENT-EMAIL] Email ID:', result.data?.id);
+      
+      return {
+        success: true,
+        emailId: result.data?.id
+      };
+    } catch (error) {
+      console.error('❌ [CLIENT-EMAIL] Failed to send email:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown email error'
+      };
+    }
+  }
+
+  /**
+   * Send COMPLETE contract email with full review and signature capability (LEGACY)
    */
   async sendCompleteContractEmail(params: {
     to: string;

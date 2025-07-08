@@ -5,6 +5,7 @@
 
 import { Router } from 'express';
 import { dualSignatureWorkflow } from '../services/dualSignatureWorkflow';
+import { signatureStorage } from '../services/signatureStorageService';
 
 const router = Router();
 
@@ -158,6 +159,119 @@ router.post('/test-workflow', async (req, res) => {
       success: false,
       message: `Test workflow error: ${error instanceof Error ? error.message : 'Unknown error'}`,
       testMode: true
+    });
+  }
+});
+
+/**
+ * POST /api/dual-signature/store-signature
+ * Store digital signature for contract
+ */
+router.post('/store-signature', async (req, res) => {
+  try {
+    console.log('✍️ [SIGNATURE-API] Storing digital signature...');
+    
+    const {
+      contractId,
+      signerName,
+      signerRole,
+      signatureType,
+      signatureData,
+      metadata
+    } = req.body;
+
+    // Validate required fields
+    if (!contractId || !signerName || !signerRole || !signatureType || !signatureData) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required signature data'
+      });
+    }
+
+    // Validate role
+    if (!['contractor', 'client'].includes(signerRole)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid signer role'
+      });
+    }
+
+    // Prepare signature data
+    const signature = {
+      contractId,
+      signerName,
+      signerRole: signerRole as 'contractor' | 'client',
+      signatureType: signatureType as 'canvas' | 'typed',
+      signatureData,
+      timestamp: new Date().toISOString(),
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('User-Agent'),
+      deviceInfo: metadata?.deviceInfo,
+      geolocation: metadata?.geolocation
+    };
+
+    // Store signature
+    const success = signatureStorage.storeSignature(contractId, signature);
+    
+    if (success) {
+      const contractSignatures = signatureStorage.getContractSignatures(contractId);
+      
+      console.log('✅ [SIGNATURE-API] Signature stored successfully');
+      console.log('📊 [SIGNATURE-API] Contract status:', contractSignatures?.status);
+      
+      res.json({
+        success: true,
+        message: 'Signature stored successfully',
+        contractStatus: contractSignatures?.status,
+        isFullySigned: signatureStorage.isFullySigned(contractId)
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to store signature'
+      });
+    }
+  } catch (error) {
+    console.error('❌ [SIGNATURE-API] Error storing signature:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * GET /api/dual-signature/contract-status/:contractId
+ * Get contract signature status
+ */
+router.get('/contract-status/:contractId', async (req, res) => {
+  try {
+    const { contractId } = req.params;
+    
+    const signatures = signatureStorage.getContractSignatures(contractId);
+    
+    if (!signatures) {
+      // Initialize contract if not found
+      signatureStorage.initializeContract(contractId);
+      const newSignatures = signatureStorage.getContractSignatures(contractId);
+      
+      return res.json({
+        success: true,
+        contractSignatures: newSignatures,
+        isFullySigned: false
+      });
+    }
+    
+    res.json({
+      success: true,
+      contractSignatures: signatures,
+      isFullySigned: signatureStorage.isFullySigned(contractId)
+    });
+  } catch (error) {
+    console.error('❌ [SIGNATURE-API] Error getting contract status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
     });
   }
 });

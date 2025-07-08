@@ -4,7 +4,7 @@
  * Uses owlfenc.com institutional domain exclusively
  */
 
-import { resendEmailAdvanced } from './resendEmailAdvanced';
+import { resendEmailDifferentiated } from './resendEmailDifferentiated';
 import { twilioService } from './twilioService';
 
 export interface DualSignatureWorkflowParams {
@@ -47,7 +47,7 @@ export class DualSignatureWorkflow {
     : 'http://localhost:5000';
 
   /**
-   * Initiate complete dual signature workflow
+   * Initiate complete dual signature workflow with differentiated experiences
    * Both contractor and client receive contracts for independent signing
    */
   async initiateDualSignatureWorkflow(params: DualSignatureWorkflowParams): Promise<SignatureWorkflowResult> {
@@ -61,28 +61,26 @@ export class DualSignatureWorkflow {
       const contractorReviewUrl = `${this.baseUrl}/contract-review/${params.contractId}?role=contractor`;
       const clientReviewUrl = `${this.baseUrl}/contract-review/${params.contractId}?role=client`;
 
-      // Step 1: Send contract to CONTRACTOR for review and signature
-      console.log('📧 [CONTRACTOR-EMAIL] Sending contract to contractor...');
-      const contractorEmailResult = await resendEmailAdvanced.sendCompleteContractEmail({
+      // Step 1: Send CONTRACTOR-SPECIFIC contract review email
+      console.log('📧 [CONTRACTOR-EMAIL] Sending contractor-specific email...');
+      const contractorEmailResult = await resendEmailDifferentiated.sendContractorReviewEmail({
         to: params.contractorData.email,
         contractorName: params.contractorData.name,
-        contractorCompany: params.contractorData.company,
         clientName: params.clientData.name,
-        contractHTML: params.contractHTML,
         contractId: params.contractId,
-        reviewUrl: contractorReviewUrl
+        reviewUrl: contractorReviewUrl,
+        projectDetails: params.projectDetails
       });
 
-      // Step 2: Send contract to CLIENT for review and signature
-      console.log('📧 [CLIENT-EMAIL] Sending contract to client...');
-      const clientEmailResult = await resendEmailAdvanced.sendCompleteContractEmail({
+      // Step 2: Send CLIENT-SPECIFIC contract review email
+      console.log('📧 [CLIENT-EMAIL] Sending client-specific email...');
+      const clientEmailResult = await resendEmailDifferentiated.sendClientReviewEmail({
         to: params.clientData.email,
         contractorName: params.contractorData.name,
-        contractorCompany: params.contractorData.company,
         clientName: params.clientData.name,
-        contractHTML: params.contractHTML,
         contractId: params.contractId,
-        reviewUrl: clientReviewUrl
+        reviewUrl: clientReviewUrl,
+        projectDetails: params.projectDetails
       });
 
       // Step 3: Send SMS notifications to both parties
