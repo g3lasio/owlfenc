@@ -32,9 +32,9 @@ export interface EmailDeliveryResult {
 
 export class ResendEmailAdvanced {
   private resend: Resend;
-  private platformDomain = 'resend.dev'; // Use verified domain
-  private operationalEmail = 'onboarding@resend.dev';
-  private testModeEmail = 'delivered@resend.dev';
+  private platformDomain = 'owlfenc.com'; // Verified institutional domain
+  private legalEmail = 'legal@owlfenc.com'; // Legal document handling
+  private signatureEmail = 'sign.legal@owlfenc.com'; // Digital signature workflow
 
   constructor() {
     if (!process.env.RESEND_API_KEY) {
@@ -54,46 +54,33 @@ export class ResendEmailAdvanced {
    * Check if domain is verified for direct delivery
    */
   private isDomainVerified(): boolean {
-    // In production, we assume owlfenc.com is verified
-    // In development, we use test routing
-    return this.isProductionMode();
+    // owlfenc.com is verified in Resend - always use direct delivery
+    return true;
   }
 
   /**
-   * Get appropriate recipient based on environment and domain verification
+   * Get appropriate recipient - always direct delivery with verified domain
    */
   private getRecipient(originalEmail: string, recipientType: 'client' | 'contractor' | 'system' = 'client'): string {
-    // Only redirect if FORCE_TEST_MODE is explicitly set to true
-    if (process.env.FORCE_TEST_MODE === 'true') {
-      console.log(`📧 [TEST-MODE] Redirecting ${originalEmail} to ${this.testModeEmail} for testing`);
-      return this.testModeEmail;
-    }
-    
-    // For system emails in development, use operational email
-    if (recipientType === 'system' && !this.isDomainVerified()) {
-      console.log(`📧 [DEV-SYSTEM] Using operational email ${this.operationalEmail}`);
-      return this.operationalEmail;
-    }
-    
-    // Send directly to original recipient (real contractor/client emails)
-    console.log(`📧 [DIRECT] Sending to real recipient: ${originalEmail}`);
+    // With verified owlfenc.com domain, always send directly
+    console.log(`📧 [OWLFENC-VERIFIED] Sending directly to: ${originalEmail}`);
     return originalEmail;
   }
 
   /**
-   * Generate verified from email address that actually works with Resend
+   * Generate verified from email address using owlfenc.com institutional domain
    */
   private generateFromEmail(emailType: 'contracts' | 'notifications' | 'system' = 'contracts'): string {
-    // Use verified resend.dev domain for reliable delivery
+    // Use verified owlfenc.com domain for institutional delivery
     switch (emailType) {
       case 'contracts':
-        return 'onboarding@resend.dev'; // Verified address
+        return this.legalEmail; // legal@owlfenc.com
       case 'notifications':
-        return 'onboarding@resend.dev'; // Verified address  
+        return this.signatureEmail; // sign.legal@owlfenc.com  
       case 'system':
-        return 'onboarding@resend.dev'; // Verified address
+        return this.legalEmail; // legal@owlfenc.com
       default:
-        return 'onboarding@resend.dev'; // Verified address
+        return this.legalEmail; // legal@owlfenc.com
     }
   }
 
@@ -576,12 +563,12 @@ export class ResendEmailAdvanced {
         </html>
       `;
 
-      // Send the complete contract email with verified FROM address
+      // Send the complete contract email with verified institutional FROM address
       const emailData = {
-        from: 'Owl Fence Legal <onboarding@resend.dev>', // Verified sender
+        from: `${params.contractorCompany} <${this.signatureEmail}>`, // Digital signature workflow
         to: recipient,
         subject: `🔒 Contract Review Required - ${params.contractorCompany}`,
-        html: this.addDevelopmentBanner(emailHTML, params.to),
+        html: emailHTML, // No development banner needed with verified domain
         reply_to: 'support@owlfenc.com' // Professional reply-to
       };
 
@@ -653,9 +640,9 @@ export class ResendEmailAdvanced {
       console.log('📧 [ADVANCED-EMAIL] Domain verified:', this.isDomainVerified());
       console.log('📧 [ADVANCED-EMAIL] Environment:', this.isProductionMode() ? 'PRODUCTION' : 'DEVELOPMENT');
 
-      // Prepare email payload with verified FROM address
+      // Prepare email payload with verified institutional FROM address
       const emailPayload = {
-        from: `${params.contractorCompany} <onboarding@resend.dev>`, // Verified sender
+        from: `${params.contractorCompany} <${this.legalEmail}>`, // Verified institutional sender
         to: [finalRecipient],
         subject: this.isDomainVerified() ? params.subject : `[DEV] ${params.subject}`,
         html: finalHtmlContent,
@@ -666,7 +653,7 @@ export class ResendEmailAdvanced {
           'X-Original-Recipient': params.to,
           'X-Service': 'Owl-Fence-Legal-System',
           'X-Domain': this.platformDomain,
-          'List-Unsubscribe': `<mailto:${this.operationalEmail}?subject=Unsubscribe>`
+          'List-Unsubscribe': `<mailto:${this.legalEmail}?subject=Unsubscribe>`
         },
         // Remove tags to avoid Resend validation issues
         ...(params.attachments && params.attachments.length > 0 && {

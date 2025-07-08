@@ -143,6 +143,11 @@ console.log('📱 [SMS] Rutas registradas en /api/sms');
 app.use("/api/email-tracking", emailTrackingRoutes);
 console.log('📊 [EMAIL-TRACKING] Rutas registradas en /api/email-tracking');
 
+// Dual signature workflow routes
+import dualSignatureRoutes from './routes/dual-signature';
+app.use("/api/dual-signature", dualSignatureRoutes);
+console.log('✍️ [DUAL-SIGNATURE] Rutas registradas en /api/dual-signature');
+
 (async () => {
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
