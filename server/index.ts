@@ -84,8 +84,8 @@ app.use('/api/legal-defense-legacy', legalDefenseRoutes); // Keep legacy for com
 console.log('🛡️ [LEGAL-DEFENSE] Sistema unificado de contratos registrado en /api/legal-defense/generate-contract');
 console.log('🤖 [ANTHROPIC] Sistema inteligente de contratos registrado en /api/anthropic/generate-contract');
 
-// Add logging middleware first
-app.use((req, res, next) => {
+// Add logging middleware only for API routes
+app.use('/api', (req, res, next) => {
   const start = Date.now();
   const path = req.path;
   console.log(`[${new Date().toISOString()}] Iniciando petición: ${req.method} ${path}`);
@@ -99,18 +99,16 @@ app.use((req, res, next) => {
 
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
+    let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+    if (capturedJsonResponse) {
+      logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
     }
+
+    if (logLine.length > 80) {
+      logLine = logLine.slice(0, 79) + "…";
+    }
+
+    log(logLine);
   });
 
   next();
@@ -168,18 +166,6 @@ console.log('🧪 [TEST-SECURE-CONTRACT] Test route registered at /api/test/test
 
 (async () => {
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    
-    console.error('Error handler:', err);
-    res.status(status).json({ message });
-    // No lanzar el error en producción
-    if (process.env.NODE_ENV !== 'production') {
-      throw err;
-    }
-  });
-
   // Setup server based on environment
   try {
     const port = parseInt(process.env.PORT || '5000', 10);
@@ -218,6 +204,19 @@ console.log('🧪 [TEST-SECURE-CONTRACT] Test route registered at /api/test/test
     console.log('✅ OWL FENCE AI PLATFORM READY FOR DEPLOYMENT!');
     console.log('📊 Multi-tenant contractor management system active');
     console.log('🎯 Professional contract generation and email delivery enabled');
+    
+    // Add error handler after all routes and Vite setup
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      
+      console.error('Error handler:', err);
+      res.status(status).json({ message });
+      // No lanzar el error en producción
+      if (process.env.NODE_ENV !== 'production') {
+        throw err;
+      }
+    });
     
   } catch (error) {
     console.error('Server setup error:', error instanceof Error ? error.message : String(error));
