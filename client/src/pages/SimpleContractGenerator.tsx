@@ -773,7 +773,7 @@ export default function SimpleContractGenerator() {
     }
   }, [selectedProject, currentUser?.uid, profile, editableData, contractData, getCorrectProjectTotal, toast]);
 
-  // Simple Signature System handler - replaces Neural Signature with streamlined workflow
+  // ✍️ DIGITAL SIGNATURE WORKFLOW - Complete database-powered signature system
   const handleSimpleSignature = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid) return;
     
@@ -870,10 +870,10 @@ export default function SimpleContractGenerator() {
         }
       };
 
-      console.log("📝 [SIMPLE SIGNATURE] Initiating streamlined signature workflow with payload:", signaturePayload);
+      console.log("✍️ [DIGITAL-CONTRACTS] Initiating database-powered signature workflow with payload:", signaturePayload);
 
       // Validate payload before sending
-      console.log("🔍 [SIMPLE SIGNATURE] Payload validation:", {
+      console.log("🔍 [DIGITAL-CONTRACTS] Payload validation:", {
         userId: !!signaturePayload.userId,
         contractId: !!signaturePayload.contractId,
         contractorEmail: !!signaturePayload.contractorData?.email,
@@ -882,9 +882,9 @@ export default function SimpleContractGenerator() {
         totalAmount: signaturePayload.contractData?.totalAmount
       });
 
-      // Call Simple Signature initiate endpoint  
-      console.log("🌐 [SIMPLE SIGNATURE] Making request to URL:", window.location.origin + '/api/simple-signature/initiate');
-      const response = await fetch('/api/simple-signature/initiate', {
+      // Call Digital Contracts initiate endpoint (Firebase-based)
+      console.log("✍️ [DIGITAL-CONTRACTS] Making request to URL:", window.location.origin + '/api/digital-contracts/initiate');
+      const response = await fetch('/api/digital-contracts/initiate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -892,29 +892,31 @@ export default function SimpleContractGenerator() {
         body: JSON.stringify(signaturePayload)
       });
       
-      console.log("📡 [SIMPLE SIGNATURE] Response status:", response.status);
-      console.log("📡 [SIMPLE SIGNATURE] Response headers:", Object.fromEntries(response.headers.entries()));
+      console.log("📡 [DIGITAL-CONTRACTS] Response status:", response.status);
+      console.log("📡 [DIGITAL-CONTRACTS] Response headers:", Object.fromEntries(response.headers.entries()));
 
       if (response.ok) {
         const result = await response.json();
         
         toast({
-          title: "📱 Contract Sent for Signature",
-          description: "Contract sent to both contractor and client via email. Mobile-friendly signature links have been provided.",
+          title: "✍️ Digital Contract Created",
+          description: `Contract sent to ${contractPayload.contractor.name} and ${contractPayload.client.name}. They can sign from their devices using secure links.`,
         });
 
-        console.log("✅ [SIMPLE SIGNATURE] Workflow initiated successfully");
+        console.log("✅ [DIGITAL-CONTRACTS] Contract created with ID:", result.contractId);
+        console.log("📱 [DIGITAL-CONTRACTS] Contractor URL:", result.contractorSignUrl);
+        console.log("📱 [DIGITAL-CONTRACTS] Client URL:", result.clientSignUrl);
         
         // Optionally navigate to a success page or stay on current page
         // The emails have been sent automatically, no further action needed
         
       } else {
-        const errorText = await response.text();
-        console.error("❌ Simple Signature initiation failed:", errorText);
-        throw new Error(`Failed to start Simple Signature workflow: ${response.status}`);
+        const errorData = await response.json();
+        console.error("❌ Digital Contracts initiation failed:", errorData);
+        throw new Error(errorData.error || `Failed to create digital contract: ${response.status}`);
       }
     } catch (error) {
-      console.error("❌ Error initiating Simple Signature:", error);
+      console.error("❌ Error creating digital contract:", error);
       console.error("❌ Error details:", {
         message: error?.message,
         stack: error?.stack,
@@ -931,8 +933,8 @@ export default function SimpleContractGenerator() {
       }
       
       toast({
-        title: "Signature Error",
-        description: `Failed to send contract for signature: ${error?.message || 'Unknown error'}`,
+        title: "Contract Error",
+        description: `Failed to create digital contract: ${error?.message || 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {

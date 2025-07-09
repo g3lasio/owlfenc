@@ -39,6 +39,11 @@ import simpleSignatureRoutes from './routes/simple-signature';
 app.use('/api/simple-signature', simpleSignatureRoutes);
 console.log('🚨 [CRITICAL] Simple Signature routes registered FIRST - before any middleware');
 
+// Register Digital Contracts routes
+import digitalContractsRoutes from './routes/digital-contracts';
+app.use('/api/digital-contracts', digitalContractsRoutes);
+console.log('✍️ [DIGITAL-CONTRACTS] Routes registered at /api/digital-contracts');
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
