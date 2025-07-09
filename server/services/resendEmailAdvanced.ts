@@ -4,7 +4,6 @@
  */
 
 import { Resend } from 'resend';
-import { emailTracker } from './emailDeliveryTracker';
 
 export interface ContractEmailParams {
   to: string;
@@ -711,15 +710,9 @@ export class ResendEmailAdvanced {
       console.log('📧 [COMPLETE-CONTRACT-EMAIL] Email ID:', result.data?.id);
       console.log('📧 [COMPLETE-CONTRACT-EMAIL] Full result:', result);
 
-      // Track the email for real delivery monitoring
+      // Email tracking system removed - signature services eliminated
       if (result.data?.id) {
-        emailTracker.trackEmail(
-          result.data.id,
-          recipient,
-          emailData.subject,
-          emailData.from
-        );
-        console.log('📊 [TRACKING] Email delivery tracking activated for', result.data.id);
+        console.log('📊 [EMAIL-SENT] Email delivery successful for', result.data.id);
       } else {
         console.error('❌ [COMPLETE-CONTRACT-EMAIL] No email ID received from Resend');
         console.error('❌ [COMPLETE-CONTRACT-EMAIL] Result data:', result);
@@ -805,14 +798,8 @@ export class ResendEmailAdvanced {
         console.log('✅ [ADVANCED-EMAIL] Email sent successfully');
         console.log('✅ [ADVANCED-EMAIL] Email ID:', result.data.id);
 
-        // Track the email for real delivery monitoring
-        emailTracker.trackEmail(
-          result.data.id,
-          finalRecipient,
-          emailPayload.subject,
-          emailPayload.from
-        );
-        console.log('📊 [TRACKING] Email delivery tracking activated for', result.data.id);
+        // Email tracking system removed - signature services eliminated
+        console.log('📊 [EMAIL-SENT] Email delivery successful for', result.data.id);
 
         return {
           success: true,

@@ -1589,7 +1589,7 @@ export default function SimpleContractGenerator() {
         )}
 
         {/* Step 3: Complete */}
-        {currentStep === 3 && !showLegalWorkflow && (
+        {currentStep === 3 && (
           <Card className="bg-gray-900 border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-green-400">
@@ -1653,28 +1653,7 @@ export default function SimpleContractGenerator() {
           </Card>
         )}
 
-        {/* Step 3: Legal Compliance Workflow */}
-        {currentStep === 3 && showLegalWorkflow && (
-          <LegalComplianceWorkflow
-            contractData={contractData}
-            contractHTML={contractHTML}
-            onWorkflowComplete={(signedContract) => {
-              setLegalWorkflowCompleted(true);
-              setShowLegalWorkflow(false);
-              toast({
-                title: "Legal Process Complete",
-                description: "Contract executed with full legal compliance and audit trail",
-              });
-            }}
-            onCancel={() => {
-              setShowLegalWorkflow(false);
-              toast({
-                title: "Legal Process Cancelled",
-                description: "Returned to contract generation",
-              });
-            }}
-          />
-        )}
+
           </>
         )}
 
