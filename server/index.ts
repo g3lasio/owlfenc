@@ -32,6 +32,13 @@ if (!process.env.FIREBASE_API_KEY || !process.env.FIREBASE_PROJECT_ID) {
 }
 
 const app = express();
+
+// CRITICAL: Register Simple Signature routes IMMEDIATELY after Express app creation
+// This MUST come before ANY middleware to prevent Vite interception
+import simpleSignatureRoutes from './routes/simple-signature';
+app.use('/api/simple-signature', simpleSignatureRoutes);
+console.log('🚨 [CRITICAL] Simple Signature routes registered FIRST - before any middleware');
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -115,10 +122,7 @@ app.use('/api', (req, res, next) => {
 });
 
 // 🔧 Registrar TODAS las rutas de API ANTES de iniciar el servidor
-// CRITICAL: Register Simple Signature routes FIRST to prevent Vite interference
-import simpleSignatureRoutes from './routes/simple-signature';
-app.use('/api/simple-signature', simpleSignatureRoutes);
-console.log('📝 [SIMPLE-SIGNATURE] EARLY REGISTRATION - Streamlined signature routes registered at /api/simple-signature');
+// Simple Signature routes already registered at the very top - remove duplicate
 
 // Add health check routes at root level for deployment health checks
 import healthRoutes from './routes/health';
