@@ -1872,22 +1872,6 @@ export default function SimpleContractGenerator() {
             </CardHeader>
             <CardContent>
               <div className="text-center space-y-6">
-                <div className="bg-green-900/30 border border-green-400 rounded-lg p-6">
-                  <FileText className="h-12 w-12 text-green-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-green-400 mb-2">
-                    Contract Ready!
-                  </h3>
-                  <p className="text-gray-300">
-                    Professional legal contract has been generated for{" "}
-                    <span className="text-white font-semibold">
-                      {selectedProject?.clientName}
-                    </span>
-                  </p>
-                  <p className="text-cyan-400 text-sm mt-2">
-                    Choose how you want to proceed with this contract:
-                  </p>
-                </div>
-
                 {/* Single Download Option */}
                 <div className="max-w-md mx-auto">
                   <div className="bg-blue-900/30 border border-blue-400 rounded-xl p-6">
