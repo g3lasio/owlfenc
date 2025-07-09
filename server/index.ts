@@ -66,6 +66,9 @@ import legalDefenseUnifiedRoutes from './routes/legal-defense-unified';
 import emailContractRoutes from './routes/email-contract';
 import contractManagementRoutes from './routes/contract-management';
 
+// 🖊️ DUAL SIGNATURE SYSTEM - Contract Signing Workflow
+import dualSignatureRoutes from './routes/dualSignatureRoutes';
+
 // Registrar rutas de pagos
 app.use('/api', paymentRoutes);
 app.use('/api', emailRoutes);
@@ -87,6 +90,79 @@ app.use('/api/legal-defense', legalDefenseUnifiedRoutes); // Use unified routes
 app.use('/api/legal-defense-legacy', legalDefenseRoutes); // Keep legacy for compatibility
 console.log('🛡️ [LEGAL-DEFENSE] Sistema unificado de contratos registrado en /api/legal-defense/generate-contract');
 console.log('🤖 [ANTHROPIC] Sistema inteligente de contratos registrado en /api/anthropic/generate-contract');
+
+// 🖊️ Registrar sistema de firma dual
+app.use('/api/dual-signature', dualSignatureRoutes);
+console.log('🖊️ [DUAL-SIGNATURE] Sistema de firma dual registrado en /api/dual-signature');
+
+// 🖊️ Ruta para páginas de firma - DEBE IR ANTES de setupVite
+app.get('/sign/:contractId/:party', async (req, res) => {
+  try {
+    const { contractId, party } = req.params;
+    
+    console.log(`🔍 [SIGN-PAGE] Serving signature page for ${party}: ${contractId}`);
+    
+    // Validar party
+    if (!['contractor', 'client'].includes(party)) {
+      return res.status(400).send('Invalid party parameter');
+    }
+    
+    // Verificar que el contrato existe
+    const response = await fetch(`http://localhost:${process.env.PORT || 5000}/api/dual-signature/contract/${contractId}/${party}`);
+    
+    if (!response.ok) {
+      console.log(`❌ [SIGN-PAGE] Contract not found: ${contractId}`);
+      return res.status(404).send(`
+        <html>
+          <head><title>Contract Not Found</title></head>
+          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+            <h1>Contract Not Found</h1>
+            <p>The contract you're looking for doesn't exist or has expired.</p>
+            <p>Contract ID: ${contractId}</p>
+          </body>
+        </html>
+      `);
+    }
+    
+    // Servir la aplicación React con los parámetros de firma
+    // La aplicación React detectará la ruta y mostrará el componente de firma correspondiente
+    const html = `
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Contract Signature - Owl Fence</title>
+          <script type="module" crossorigin src="/src/main.tsx"></script>
+          <style>
+            body { 
+              margin: 0; 
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+              background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+              min-height: 100vh;
+            }
+            #root { min-height: 100vh; }
+          </style>
+        </head>
+        <body>
+          <div id="root"></div>
+          <script>
+            window.__SIGNATURE_DATA__ = {
+              contractId: "${contractId}",
+              party: "${party}"
+            };
+          </script>
+        </body>
+      </html>
+    `;
+    
+    res.send(html);
+    
+  } catch (error) {
+    console.error('❌ [SIGN-PAGE] Error serving signature page:', error);
+    res.status(500).send('Internal server error');
+  }
+});
 
 // Add logging middleware only for API routes
 app.use('/api', (req, res, next) => {

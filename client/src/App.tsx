@@ -53,6 +53,7 @@ import AppleAuthTest from './pages/AppleAuthTest';
 import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
 import SimpleContractGenerator from './pages/SimpleContractGenerator';
+import ContractSignature from './pages/ContractSignature';
 
 
 import { Redirect } from "wouter";
@@ -100,6 +101,9 @@ function Router() {
       <Route path="/about-mervin" component={AboutMervin} />
       <Route path="/legal-policy" component={LegalPolicy} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
+      
+      {/* Página pública de firma de contratos */}
+      <Route path="/sign/:contractId/:party" component={ContractSignature} />
 
 
       {/* Rutas protegidas */}

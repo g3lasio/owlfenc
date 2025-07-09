@@ -186,6 +186,7 @@ export class DualSignatureService {
       }
 
       // CRÍTICO: Verificar que el usuario tenga permiso para acceder a este contrato
+      // NOTA: Para firma pública, no siempre tendremos requestingUserId, así que es opcional
       if (requestingUserId && contract.userId !== requestingUserId) {
         console.error(`🚫 [SECURITY-VIOLATION] User ${requestingUserId} attempted to access contract ${contractId} owned by ${contract.userId}`);
         return {
@@ -494,6 +495,135 @@ export class DualSignatureService {
     } catch (error: any) {
       console.error('❌ [DUAL-SIGNATURE] Error sending dual notifications:', error);
     }
+  }
+
+  /**
+   * Generar HTML del email para el contratista
+   */
+  private generateContractorEmailHTML(params: {
+    contractorName: string;
+    clientName: string;
+    projectDescription: string;
+    totalAmount: number;
+    signUrl: string;
+    contractId: string;
+  }): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Contract Ready for Signature</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">🏗️ Contract Ready for Your Signature</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Professional Contract Management by Owl Fence</p>
+          </div>
+          
+          <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e2e8f0;">
+            <h2 style="color: #1e40af; margin-top: 0;">Hello ${params.contractorName},</h2>
+            
+            <p>Your contract is ready for signature! Please review and sign the contract for:</p>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0;">
+              <h3 style="margin: 0 0 10px 0; color: #1e40af;">📋 Project Details</h3>
+              <p><strong>Client:</strong> ${params.clientName}</p>
+              <p><strong>Project:</strong> ${params.projectDescription}</p>
+              <p><strong>Amount:</strong> $${params.totalAmount.toLocaleString()}</p>
+              <p><strong>Contract ID:</strong> ${params.contractId}</p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${params.signUrl}" 
+                 style="display: inline-block; background: #1e40af; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                📝 Review & Sign Contract
+              </a>
+            </div>
+            
+            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
+              <p style="margin: 0; font-size: 14px;">
+                <strong>⚠️ Important:</strong> Please review the complete contract before signing. 
+                Both you and your client will receive copies once both parties have signed.
+              </p>
+            </div>
+            
+            <p style="font-size: 14px; color: #666; margin-top: 30px;">
+              This email was sent from Owl Fence Legal Defense System. 
+              The signature link is secure and expires in 72 hours.
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+  }
+
+  /**
+   * Generar HTML del email para el cliente
+   */
+  private generateClientEmailHTML(params: {
+    clientName: string;
+    contractorName: string;
+    contractorCompany: string;
+    projectDescription: string;
+    totalAmount: number;
+    signUrl: string;
+    contractId: string;
+  }): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Contract for Review and Signature</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">👥 Contract for Your Review</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Professional Contract Management by Owl Fence</p>
+          </div>
+          
+          <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e2e8f0;">
+            <h2 style="color: #16a34a; margin-top: 0;">Hello ${params.clientName},</h2>
+            
+            <p>${params.contractorCompany} has prepared a contract for your project. Please review the terms and sign if you agree:</p>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #22c55e; margin: 20px 0;">
+              <h3 style="margin: 0 0 10px 0; color: #16a34a;">📋 Contract Details</h3>
+              <p><strong>Contractor:</strong> ${params.contractorName}</p>
+              <p><strong>Company:</strong> ${params.contractorCompany}</p>
+              <p><strong>Project:</strong> ${params.projectDescription}</p>
+              <p><strong>Amount:</strong> $${params.totalAmount.toLocaleString()}</p>
+              <p><strong>Contract ID:</strong> ${params.contractId}</p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${params.signUrl}" 
+                 style="display: inline-block; background: #16a34a; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                📝 Review & Sign Contract
+              </a>
+            </div>
+            
+            <div style="background: #d1ecf1; padding: 15px; border-radius: 8px; border-left: 4px solid #17a2b8; margin: 20px 0;">
+              <p style="margin: 0; font-size: 14px;">
+                <strong>ℹ️ How it works:</strong><br>
+                1. Click the button above to review the complete contract<br>
+                2. Read all terms and conditions carefully<br>
+                3. Sign electronically if you agree to the terms<br>
+                4. Both parties will receive the final signed contract
+              </p>
+            </div>
+            
+            <p style="font-size: 14px; color: #666; margin-top: 30px;">
+              This contract was generated by ${params.contractorCompany} using Owl Fence Legal Defense System. 
+              The signature link is secure and expires in 72 hours.
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
   }
 
   /**
