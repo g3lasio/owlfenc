@@ -115,6 +115,11 @@ app.use('/api', (req, res, next) => {
 });
 
 // 🔧 Registrar TODAS las rutas de API ANTES de iniciar el servidor
+// CRITICAL: Register Simple Signature routes FIRST to prevent Vite interference
+import simpleSignatureRoutes from './routes/simple-signature';
+app.use('/api/simple-signature', simpleSignatureRoutes);
+console.log('📝 [SIMPLE-SIGNATURE] EARLY REGISTRATION - Streamlined signature routes registered at /api/simple-signature');
+
 // Add health check routes at root level for deployment health checks
 import healthRoutes from './routes/health';
 app.use('/api', healthRoutes);
@@ -166,11 +171,7 @@ import neuralSignatureRoutes from './routes/neural-signature';
 app.use('/api/neural-signature', neuralSignatureRoutes);
 console.log('🧠 [NEURAL-SIGNATURE] AI-powered signature routes registered at /api/neural-signature');
 
-// Simple signature routes - streamlined replacement for Neural Signature
-import simpleSignatureRoutes from './routes/simple-signature';
-// Register simple signature routes EARLY to prevent Vite interference
-app.use('/api/simple-signature', simpleSignatureRoutes);
-console.log('📝 [SIMPLE-SIGNATURE] Streamlined signature routes registered at /api/simple-signature');
+// Simple signature routes already registered early - remove duplicate registration
 
 // Health check moved to /health to avoid interfering with frontend
 // Root endpoint will be handled by Vite/static files
