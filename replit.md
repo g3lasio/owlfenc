@@ -137,6 +137,14 @@ Owl Fence is a comprehensive SaaS platform designed for contractors in the const
 ## Changelog
 ```
 Changelog:
+- July 9, 2025. ✅ SIMPLIFIED CONTRACT UI: Removed digital signature system at user request due to functionality issues:
+  * REMOVED: Firmas Digitales button (Option 2) - purple gradient button with mobile signature workflow
+  * REMOVED: Email Signature button (Option 3) - cyan gradient button with email-based signing
+  * KEPT: Only Quick Download button for simple PDF generation and download
+  * USER FEEDBACK: "ya estoy muy decepcionado del sistema de firmado que no sabes hacerlo"
+  * DECISION: Focus on reliable PDF generation instead of complex signature workflows
+  * UI IMPROVEMENT: Centered single download option with clean, professional design
+Changelog:
 - July 9, 2025. ✅ ULTRA-SIMPLE EMAIL SIGNATURE SOLUTION IMPLEMENTED: Replaced complex Simple Signature system with direct email approach per user request:
   * PROBLEM SOLVED: Eliminated Vite middleware conflicts by avoiding complex API calls entirely
   * MAXIMUM SIMPLICITY: Uses existing PDF generation system (confirmed working) + native email client

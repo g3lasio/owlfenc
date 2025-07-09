@@ -1888,15 +1888,13 @@ export default function SimpleContractGenerator() {
                   </p>
                 </div>
 
-                {/* Three Main Options */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  
-                  {/* Option 1: Simple PDF Download */}
+                {/* Single Download Option */}
+                <div className="max-w-md mx-auto">
                   <div className="bg-blue-900/30 border border-blue-400 rounded-xl p-6">
                     <div className="flex items-center justify-center gap-3 mb-4">
                       <Download className="h-8 w-8 text-blue-400" />
                       <h3 className="text-xl font-semibold text-blue-400">
-                        Option 1: Quick Download
+                        Quick Download
                       </h3>
                     </div>
                     <p className="text-gray-300 mb-6 text-center">
@@ -1924,90 +1922,6 @@ export default function SimpleContractGenerator() {
                         <span>Print ready</span>
                         <CheckCircle className="h-3 w-3" />
                         <span>Professional format</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Option 2: NUEVO SISTEMA - Firmas Digitales */}
-                  <div className="bg-purple-900/30 border border-purple-400 rounded-xl p-6">
-                    <div className="flex items-center justify-center gap-3 mb-4">
-                      <PenTool className="h-8 w-8 text-purple-400" />
-                      <h3 className="text-xl font-semibold text-purple-400">
-                        ✍️ Firmas Digitales
-                      </h3>
-                    </div>
-                    <p className="text-gray-300 mb-6 text-center">
-                      Sistema nuevo de firmas digitales. Envía contratos por email a contratista y cliente, cada uno firma desde su dispositivo móvil con enlaces únicos y seguros.
-                    </p>
-                    
-                    <div className="space-y-3">
-                      <Button
-                        onClick={handleSimpleSignature}
-                        disabled={!isContractReady || isLoading}
-                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 px-6 w-full"
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Creando Contrato...
-                          </>
-                        ) : (
-                          <>
-                            <PenTool className="h-4 w-4 mr-2" />
-                            Enviar para Firmas Digitales
-                          </>
-                        )}
-                      </Button>
-                      
-                      <div className="flex items-center justify-center text-xs text-gray-400 gap-2">
-                        <CheckCircle className="h-3 w-3" />
-                        <span>Enlaces móviles</span>
-                        <CheckCircle className="h-3 w-3" />
-                        <span>Base de datos</span>
-                        <CheckCircle className="h-3 w-3" />
-                        <span>Seguimiento automático</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Option 3: Simple Email Signature */}
-                  <div className="bg-cyan-900/30 border border-cyan-400 rounded-xl p-6">
-                    <div className="flex items-center justify-center gap-3 mb-4">
-                      <Mail className="h-8 w-8 text-cyan-400" />
-                      <h3 className="text-xl font-semibold text-cyan-400">
-                        Option 3: Email Signature
-                      </h3>
-                    </div>
-                    <p className="text-gray-300 mb-6 text-center">
-                      Send contract directly to client via email with simple signature instructions. No complex systems - just email and manual signature.
-                    </p>
-                    
-                    <div className="space-y-3">
-                      <Button
-                        onClick={handleEmailSignature}
-                        disabled={!isContractReady || isLoading}
-                        className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3 px-6 w-full"
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Sending Email...
-                          </>
-                        ) : (
-                          <>
-                            <Mail className="h-4 w-4 mr-2" />
-                            Send Contract by Email
-                          </>
-                        )}
-                      </Button>
-                      
-                      <div className="flex items-center justify-center text-xs text-gray-400 gap-2">
-                        <CheckCircle className="h-3 w-3" />
-                        <span>Direct email</span>
-                        <CheckCircle className="h-3 w-3" />
-                        <span>PDF attachment</span>
-                        <CheckCircle className="h-3 w-3" />
-                        <span>Simple process</span>
                       </div>
                     </div>
                   </div>
