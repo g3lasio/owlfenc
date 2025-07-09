@@ -37,15 +37,7 @@ const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// CRITICAL: Register Simple Signature routes IMMEDIATELY after middleware
-import simpleSignatureRoutes from './routes/simple-signature';
-app.use('/api/simple-signature', simpleSignatureRoutes);
-console.log('🚨 [CRITICAL] Simple Signature routes registered FIRST - before any middleware');
 
-// Register Digital Contracts routes
-import digitalContractsRoutes from './routes/digital-contracts';
-app.use('/api/digital-contracts', digitalContractsRoutes);
-console.log('✍️ [DIGITAL-CONTRACTS] Routes registered at /api/digital-contracts');
 
 // Stripe configuration disabled for now to focus on Contract Generator optimization
 
@@ -155,30 +147,7 @@ console.log('📱 [SMS] Rutas registradas en /api/sms');
 app.use("/api/email-tracking", emailTrackingRoutes);
 console.log('📊 [EMAIL-TRACKING] Rutas registradas en /api/email-tracking');
 
-// Dual signature workflow routes
-import dualSignatureRoutes from './routes/dual-signature';
-import contractSignatureRoutes from './routes/contract-signature';
-import secureContractRoutes from './routes/secure-contract';
-app.use("/api/dual-signature", dualSignatureRoutes);
-console.log('✍️ [DUAL-SIGNATURE] Rutas registradas en /api/dual-signature');
 
-// Contract signature processing routes
-app.use("/api", contractSignatureRoutes);
-console.log('✍️ [CONTRACT-SIGNATURE] Rutas registradas en /api/contract-signature');
-
-// Secure contract signature routes
-app.use(secureContractRoutes);
-console.log('🔐 [SECURE-CONTRACT] Rutas registradas en /api/secure-contract');
-
-// Test route for secure contract system
-import testSecureContractRoutes from './routes/test-secure-contract';
-app.use('/api/test', testSecureContractRoutes);
-console.log('🧪 [TEST-SECURE-CONTRACT] Test route registered at /api/test/test-secure-contract');
-
-// Neural signature routes
-import neuralSignatureRoutes from './routes/neural-signature';
-app.use('/api/neural-signature', neuralSignatureRoutes);
-console.log('🧠 [NEURAL-SIGNATURE] AI-powered signature routes registered at /api/neural-signature');
 
 // Simple signature routes already registered early - remove duplicate registration
 

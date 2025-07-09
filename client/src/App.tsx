@@ -53,11 +53,7 @@ import AppleAuthTest from './pages/AppleAuthTest';
 import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
 import SimpleContractGenerator from './pages/SimpleContractGenerator';
-import ContractReview from './pages/ContractReview';
-import SecureContractSign from './pages/SecureContractSign';
-import NeuralSignature from './pages/NeuralSignature';
-import SimpleSignaturePage from './pages/SimpleSignaturePage';
-import DigitalSignaturePage from './pages/DigitalSignaturePage';
+
 
 import { Redirect } from "wouter";
 
@@ -104,9 +100,7 @@ function Router() {
       <Route path="/about-mervin" component={AboutMervin} />
       <Route path="/legal-policy" component={LegalPolicy} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
-      <Route path="/contract-review/:contractId" component={ContractReview} />
-      <Route path="/sign/:token" component={SecureContractSign} />
-      <Route path="/sign/:contractId" component={DigitalSignaturePage} />
+
 
       {/* Rutas protegidas */}
       <Route path="/">
