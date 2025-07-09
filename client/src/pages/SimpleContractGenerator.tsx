@@ -773,77 +773,143 @@ export default function SimpleContractGenerator() {
     }
   }, [selectedProject, currentUser?.uid, profile, editableData, contractData, getCorrectProjectTotal, toast]);
 
-  // Neural Signature System handler
-  const handleNeuralSignature = useCallback(async () => {
+  // Simple Signature System handler - replaces Neural Signature with streamlined workflow
+  const handleSimpleSignature = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid) return;
     
     setIsLoading(true);
     
     try {
-      // Initialize Neural Signature workflow with current contract data
-      const neuralPayload = {
-        contractId: selectedProject.id || `contract_${Date.now()}`,
-        contractorData: {
-          name: profile?.company || profile?.ownerName || "Contractor Name",
-          email: profile?.email || "",
-          phone: profile?.phone || profile?.mobilePhone || "",
-          company: profile?.company || "Company Name",
-          address: profile?.address ? 
-            `${profile.address}${profile.city ? `, ${profile.city}` : ''}${profile.state ? `, ${profile.state}` : ''}${profile.zipCode ? ` ${profile.zipCode}` : ''}` : 
-            "Business Address"
-        },
-        clientData: {
+      // First generate contract HTML using the contract generation service
+      const contractPayload = {
+        userId: currentUser.uid,
+        client: {
           name: editableData.clientName || selectedProject.clientName,
+          address: editableData.clientAddress || selectedProject.clientAddress || "",
           email: editableData.clientEmail || selectedProject.clientEmail || "",
           phone: editableData.clientPhone || selectedProject.clientPhone || "",
-          address: editableData.clientAddress || selectedProject.clientAddress || ""
         },
-        contractData: {
-          projectDescription: selectedProject.description || selectedProject.projectDescription || selectedProject.projectType || "",
-          totalAmount: getCorrectProjectTotal(selectedProject),
+        project: {
+          description: selectedProject.description || selectedProject.projectDescription || selectedProject.projectType || "",
+          type: selectedProject.projectType || "Construction Project",
+          total: getCorrectProjectTotal(selectedProject),
+          materials: selectedProject.materials || [],
+        },
+        contractor: {
+          name: profile?.company || profile?.ownerName || "Contractor Name",
+          company: profile?.company || "Company Name", 
+          address: profile?.address ? 
+            `${profile.address}${profile.city ? `, ${profile.city}` : ''}${profile.state ? `, ${profile.state}` : ''}${profile.zipCode ? ` ${profile.zipCode}` : ''}` : 
+            "Business Address",
+          phone: profile?.phone || profile?.mobilePhone || "",
+          email: profile?.email || "",
+          license: profile?.licenseNumber || profile?.license || ""
+        },
+        timeline: {
           startDate: editableData.startDate || new Date().toISOString().split('T')[0],
-          completionDate: editableData.completionDate || ""
-        }
+          completionDate: editableData.completionDate || "",
+        },
+        financials: {
+          total: getCorrectProjectTotal(selectedProject),
+          paymentMilestones: editableData.paymentMilestones,
+        },
+        selectedClauses: selectedClauses,
       };
 
-      console.log("🧠 [NEURAL SIGNATURE] Initiating Neural Signature workflow:", neuralPayload);
-
-      // Call Neural Signature initiate endpoint
-      const response = await fetch('/api/neural-signature/initiate', {
+      // Generate contract HTML first
+      const contractResponse = await fetch('/api/legal-defense/generate-contract-html', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-firebase-uid': currentUser?.uid || '',
         },
-        body: JSON.stringify(neuralPayload)
+        body: JSON.stringify(contractPayload)
+      });
+
+      let contractHtml = "";
+      if (contractResponse.ok) {
+        const contractResult = await contractResponse.json();
+        contractHtml = contractResult.contractHtml || "";
+      } else {
+        // Fallback contract HTML if generation fails
+        contractHtml = `
+          <h1>Independent Contractor Agreement</h1>
+          <p><strong>Contractor:</strong> ${contractPayload.contractor.name}</p>
+          <p><strong>Client:</strong> ${contractPayload.client.name}</p>
+          <p><strong>Project:</strong> ${contractPayload.project.description}</p>
+          <p><strong>Total Amount:</strong> $${contractPayload.project.total.toLocaleString()}</p>
+          <p><strong>Start Date:</strong> ${contractPayload.timeline.startDate}</p>
+          <p><strong>Completion Date:</strong> ${contractPayload.timeline.completionDate}</p>
+          <p>This contract covers the specified work as described above.</p>
+        `;
+      }
+
+      // Initialize Simple Signature workflow
+      const contractId = selectedProject.id || `contract_${Date.now()}`;
+      const signaturePayload = {
+        userId: currentUser.uid,
+        contractId,
+        contractorData: {
+          name: contractPayload.contractor.name,
+          email: contractPayload.contractor.email,
+          phone: contractPayload.contractor.phone,
+          company: contractPayload.contractor.company,
+        },
+        clientData: {
+          name: contractPayload.client.name,
+          email: contractPayload.client.email,
+          phone: contractPayload.client.phone,
+          address: contractPayload.client.address,
+        },
+        contractData: {
+          projectDescription: contractPayload.project.description,
+          totalAmount: contractPayload.project.total,
+          startDate: contractPayload.timeline.startDate,
+          completionDate: contractPayload.timeline.completionDate,
+          contractHtml: contractHtml,
+        }
+      };
+
+      console.log("📝 [SIMPLE SIGNATURE] Initiating streamlined signature workflow:", signaturePayload);
+
+      // Call Simple Signature initiate endpoint  
+      const response = await fetch('/api/simple-signature/initiate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(signaturePayload)
       });
 
       if (response.ok) {
         const result = await response.json();
         
         toast({
-          title: "Neural Signature Activated",
-          description: "AI-powered signature workflow initiated successfully. Redirecting to Neural Signature interface...",
+          title: "📱 Contract Sent for Signature",
+          description: "Contract sent to both contractor and client via email. Mobile-friendly signature links have been provided.",
         });
 
-        // Redirect to Neural Signature interface
-        window.location.href = `/neural-signature/${neuralPayload.contractId}`;
+        console.log("✅ [SIMPLE SIGNATURE] Workflow initiated successfully");
+        
+        // Optionally navigate to a success page or stay on current page
+        // The emails have been sent automatically, no further action needed
+        
       } else {
         const errorText = await response.text();
-        console.error("❌ Neural Signature initiation failed:", errorText);
-        throw new Error(`Failed to start Neural Signature workflow: ${response.status}`);
+        console.error("❌ Simple Signature initiation failed:", errorText);
+        throw new Error(`Failed to start Simple Signature workflow: ${response.status}`);
       }
     } catch (error) {
-      console.error("❌ Error initiating Neural Signature:", error);
+      console.error("❌ Error initiating Simple Signature:", error);
       toast({
-        title: "Neural Signature Error",
-        description: `Failed to start AI-powered signature workflow: ${error.message}`,
+        title: "Signature Error",
+        description: `Failed to send contract for signature: ${error.message}`,
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  }, [selectedProject, currentUser?.uid, profile, editableData, contractData, getCorrectProjectTotal, toast]);
+  }, [selectedProject, currentUser?.uid, profile, editableData, getCorrectProjectTotal, selectedClauses, toast]);
 
   // Generate contract using backend API with comprehensive data (for legal workflow)
   const handleGenerateContract = useCallback(async () => {
@@ -1764,35 +1830,44 @@ export default function SimpleContractGenerator() {
                     </div>
                   </div>
 
-                  {/* Option 3: Neural Signature System */}
-                  <div className="bg-purple-900/30 border border-purple-400 rounded-xl p-6">
+                  {/* Option 3: Simple Signature System */}
+                  <div className="bg-cyan-900/30 border border-cyan-400 rounded-xl p-6">
                     <div className="flex items-center justify-center gap-3 mb-4">
-                      <div className="text-purple-400 text-2xl">🧠</div>
-                      <h3 className="text-xl font-semibold text-purple-400">
-                        Option 3: Neural Signature
+                      <div className="text-cyan-400 text-2xl">📱</div>
+                      <h3 className="text-xl font-semibold text-cyan-400">
+                        Option 3: Mobile Signature
                       </h3>
                     </div>
                     <p className="text-gray-300 mb-6 text-center">
-                      Revolutionary AI-powered signature system with biometric validation, real-time analysis, and automatic PDF regeneration with embedded signatures.
+                      Send contract via email and SMS for mobile-friendly signature. One-click sending with automatic PDF generation and delivery to both parties.
                     </p>
                     
                     <div className="space-y-3">
                       <Button
-                        onClick={handleNeuralSignature}
-                        disabled={!isContractReady}
-                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 px-6 w-full"
+                        onClick={handleSimpleSignature}
+                        disabled={!isContractReady || isLoading}
+                        className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3 px-6 w-full"
                       >
-                        <div className="text-lg mr-2">🧠</div>
-                        Start Neural Process
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Sending Contract...
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-lg mr-2">📱</div>
+                            Send for Signature
+                          </>
+                        )}
                       </Button>
                       
                       <div className="flex items-center justify-center text-xs text-gray-400 gap-2">
                         <CheckCircle className="h-3 w-3" />
-                        <span>AI analysis</span>
+                        <span>Email & SMS</span>
                         <CheckCircle className="h-3 w-3" />
-                        <span>Biometric validation</span>
+                        <span>Mobile friendly</span>
                         <CheckCircle className="h-3 w-3" />
-                        <span>Auto PDF regeneration</span>
+                        <span>Auto PDF delivery</span>
                       </div>
                     </div>
                   </div>

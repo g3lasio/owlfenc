@@ -56,6 +56,7 @@ import SimpleContractGenerator from './pages/SimpleContractGenerator';
 import ContractReview from './pages/ContractReview';
 import SecureContractSign from './pages/SecureContractSign';
 import NeuralSignature from './pages/NeuralSignature';
+import SimpleSignaturePage from './pages/SimpleSignaturePage';
 
 import { Redirect } from "wouter";
 
@@ -224,6 +225,9 @@ function Router() {
       <Route path="/neural-signature/:contractId">
         {() => <ProtectedRoute component={NeuralSignature} />}
       </Route>
+      
+      {/* Simple Signature Route - mobile-friendly signature page */}
+      <Route path="/sign/:contractId" component={SimpleSignaturePage} />
 
       {/* Página no encontrada */}
       <Route component={NotFound} />

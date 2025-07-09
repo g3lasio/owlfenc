@@ -166,6 +166,11 @@ import neuralSignatureRoutes from './routes/neural-signature';
 app.use('/api/neural-signature', neuralSignatureRoutes);
 console.log('🧠 [NEURAL-SIGNATURE] AI-powered signature routes registered at /api/neural-signature');
 
+// Simple signature routes - streamlined replacement for Neural Signature
+import simpleSignatureRoutes from './routes/simple-signature';
+app.use('/api/simple-signature', simpleSignatureRoutes);
+console.log('📝 [SIMPLE-SIGNATURE] Streamlined signature routes registered at /api/simple-signature');
+
 // Health check moved to /health to avoid interfering with frontend
 // Root endpoint will be handled by Vite/static files
 

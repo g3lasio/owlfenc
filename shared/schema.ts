@@ -315,6 +315,53 @@ export const notifications = pgTable('notifications', {
   readAt: timestamp('read_at'),
 });
 
+// Simple Digital Contracts table for streamlined signature workflow
+export const digitalContracts = pgTable('digital_contracts', {
+  id: text('id').primaryKey(),
+  userId: integer('user_id').notNull(),
+  contractId: text('contract_id').notNull().unique(),
+  
+  // Contract basic data
+  contractorName: varchar('contractor_name', { length: 255 }).notNull(),
+  contractorEmail: varchar('contractor_email', { length: 255 }).notNull(),
+  contractorPhone: varchar('contractor_phone', { length: 50 }),
+  contractorCompany: varchar('contractor_company', { length: 255 }),
+  
+  clientName: varchar('client_name', { length: 255 }).notNull(),
+  clientEmail: varchar('client_email', { length: 255 }).notNull(),
+  clientPhone: varchar('client_phone', { length: 50 }),
+  clientAddress: text('client_address'),
+  
+  projectDescription: text('project_description').notNull(),
+  totalAmount: decimal('total_amount', { precision: 10, scale: 2 }).notNull(),
+  startDate: timestamp('start_date'),
+  completionDate: timestamp('completion_date'),
+  
+  // Contract HTML and PDF storage
+  contractHtml: text('contract_html').notNull(),
+  originalPdfPath: text('original_pdf_path'),
+  signedPdfPath: text('signed_pdf_path'),
+  
+  // Signature tracking
+  contractorSigned: boolean('contractor_signed').notNull().default(false),
+  contractorSignedAt: timestamp('contractor_signed_at'),
+  contractorSignatureData: text('contractor_signature_data'),
+  contractorSignatureType: varchar('contractor_signature_type', { length: 20 }), // 'drawing' or 'cursive'
+  
+  clientSigned: boolean('client_signed').notNull().default(false),
+  clientSignedAt: timestamp('client_signed_at'),
+  clientSignatureData: text('client_signature_data'),
+  clientSignatureType: varchar('client_signature_type', { length: 20 }), // 'drawing' or 'cursive'
+  
+  // Workflow status
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending', 'contractor_signed', 'both_signed', 'completed'
+  emailSent: boolean('email_sent').notNull().default(false),
+  emailSentAt: timestamp('email_sent_at'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Insert schemas for all tables
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -396,6 +443,12 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
   sentAt: true,
 });
 
+export const insertDigitalContractSchema = createInsertSchema(digitalContracts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types for all tables
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -437,6 +490,8 @@ export type EstimateAdjustment = typeof estimateAdjustments.$inferSelect;
 export type InsertEstimateAdjustment = z.infer<typeof insertEstimateAdjustmentSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type DigitalContract = typeof digitalContracts.$inferSelect;
+export type InsertDigitalContract = z.infer<typeof insertDigitalContractSchema>;
 
 // Legacy aliases for backward compatibility
 export type EstimateItem = Estimate;
