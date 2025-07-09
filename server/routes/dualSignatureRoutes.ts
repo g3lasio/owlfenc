@@ -78,10 +78,12 @@ router.post('/initiate', async (req, res) => {
 /**
  * GET /api/dual-signature/contract/:contractId/:party
  * Obtener datos del contrato para firma
+ * INCLUYE VERIFICACIÓN DE SEGURIDAD OPCIONAL
  */
 router.get('/contract/:contractId/:party', async (req, res) => {
   try {
     const { contractId, party } = req.params;
+    const requestingUserId = req.headers['x-user-id'] as string; // Para verificación de seguridad opcional
     
     if (!['contractor', 'client'].includes(party)) {
       return res.status(400).json({
@@ -91,10 +93,12 @@ router.get('/contract/:contractId/:party', async (req, res) => {
     }
     
     console.log(`🔍 [API] Getting contract for ${party} signing:`, contractId);
+    console.log(`🔐 [API] Requesting user ID:`, requestingUserId || 'No user ID provided');
     
     const result = await dualSignatureService.getContractForSigning(
       contractId, 
-      party as 'contractor' | 'client'
+      party as 'contractor' | 'client',
+      requestingUserId
     );
     
     if (result.success) {
@@ -122,14 +126,18 @@ router.get('/contract/:contractId/:party', async (req, res) => {
 /**
  * POST /api/dual-signature/sign
  * Procesar firma enviada
+ * INCLUYE VERIFICACIÓN DE SEGURIDAD OPCIONAL
  */
 router.post('/sign', async (req, res) => {
   try {
     console.log('✍️ [API] Processing signature submission...');
     
     const validatedData = signatureSubmissionSchema.parse(req.body);
+    const requestingUserId = req.headers['x-user-id'] as string; // Para verificación de seguridad opcional
     
-    const result = await dualSignatureService.processSignature(validatedData);
+    console.log(`🔐 [API] Requesting user ID:`, requestingUserId || 'No user ID provided');
+    
+    const result = await dualSignatureService.processSignature(validatedData, requestingUserId);
     
     if (result.success) {
       console.log('✅ [API] Signature processed successfully');

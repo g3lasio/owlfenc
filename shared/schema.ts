@@ -366,6 +366,11 @@ export const digitalContracts = pgTable('digital_contracts', {
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
+});
+
+export const insertDigitalContractSchema = createInsertSchema(digitalContracts).omit({
+  id: true,
+  createdAt: true,
   updatedAt: true,
 });
 
@@ -441,12 +446,6 @@ export const insertEstimateAdjustmentSchema = createInsertSchema(estimateAdjustm
 export const insertNotificationSchema = createInsertSchema(notifications).omit({
   id: true,
   sentAt: true,
-});
-
-export const insertDigitalContractSchema = createInsertSchema(digitalContracts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
 });
 
 // Types for all tables

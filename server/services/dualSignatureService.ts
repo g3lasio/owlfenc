@@ -163,8 +163,9 @@ export class DualSignatureService {
 
   /**
    * Obtener datos del contrato para mostrar en la página de firma
+   * INCLUYE VERIFICACIÓN DE SEGURIDAD PARA PREVENIR ACCESO CRUZADO
    */
-  async getContractForSigning(contractId: string, party: 'contractor' | 'client'): Promise<{
+  async getContractForSigning(contractId: string, party: 'contractor' | 'client', requestingUserId?: string): Promise<{
     success: boolean;
     contract?: DigitalContract;
     message: string;
@@ -181,6 +182,15 @@ export class DualSignatureService {
         return {
           success: false,
           message: 'Contract not found'
+        };
+      }
+
+      // CRÍTICO: Verificar que el usuario tenga permiso para acceder a este contrato
+      if (requestingUserId && contract.userId !== requestingUserId) {
+        console.error(`🚫 [SECURITY-VIOLATION] User ${requestingUserId} attempted to access contract ${contractId} owned by ${contract.userId}`);
+        return {
+          success: false,
+          message: 'Unauthorized access to contract'
         };
       }
 
@@ -215,8 +225,9 @@ export class DualSignatureService {
 
   /**
    * Procesar la firma enviada por una de las partes
+   * INCLUYE VERIFICACIÓN DE SEGURIDAD PARA PREVENIR ACCESO CRUZADO
    */
-  async processSignature(submission: SignatureSubmission): Promise<{
+  async processSignature(submission: SignatureSubmission, requestingUserId?: string): Promise<{
     success: boolean;
     message: string;
     status?: string;
@@ -235,6 +246,15 @@ export class DualSignatureService {
         return {
           success: false,
           message: 'Contract not found'
+        };
+      }
+
+      // CRÍTICO: Verificar que el usuario tenga permiso para acceder a este contrato
+      if (requestingUserId && contract.userId !== requestingUserId) {
+        console.error(`🚫 [SECURITY-VIOLATION] User ${requestingUserId} attempted to process signature for contract ${submission.contractId} owned by ${contract.userId}`);
+        return {
+          success: false,
+          message: 'Unauthorized access to contract'
         };
       }
 
