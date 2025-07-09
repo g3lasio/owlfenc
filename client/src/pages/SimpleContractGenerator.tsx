@@ -616,7 +616,7 @@ export default function SimpleContractGenerator() {
       setCurrentStep(2);
       
       // Load AI-suggested clauses
-      loadSuggestedClauses(project);
+      // Note: Suggested clauses functionality can be added in the future if needed
       
       toast({
         title: "Project Selected",
@@ -1684,114 +1684,91 @@ export default function SimpleContractGenerator() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center space-y-6">
-                {/* Single Download Option */}
-                <div className="max-w-md mx-auto">
-                  <div className="bg-blue-900/30 border border-blue-400 rounded-xl p-6">
-                    <div className="flex items-center justify-center gap-3 mb-4">
-                      <Download className="h-8 w-8 text-blue-400" />
-                      <h3 className="text-xl font-semibold text-blue-400">
-                        Quick Download
-                      </h3>
+              <div className="space-y-4">
+                {/* Compact Action Cards */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Quick Download */}
+                  <div className="bg-blue-900/30 border border-blue-400 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Download className="h-5 w-5 text-blue-400" />
+                      <h3 className="font-semibold text-blue-400">Quick Download</h3>
                     </div>
-                    <p className="text-gray-300 mb-6 text-center">
-                      Download the contract as PDF for immediate use. Perfect for simple agreements or when signatures will be handled separately.
+                    <p className="text-gray-300 text-sm mb-4">
+                      Download PDF for immediate use
                     </p>
-                    
-                    <div className="space-y-3">
-                      <Button
-                        onClick={handleDownloadPDF}
-                        disabled={isLoading}
-                        className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 w-full disabled:opacity-50"
-                      >
-                        {isLoading ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Download className="h-4 w-4 mr-2" />
-                        )}
-                        {isLoading ? "Generating PDF..." : "Download PDF Contract"}
-                      </Button>
-                      
-                      <div className="flex items-center justify-center text-xs text-gray-400 gap-2">
-                        <CheckCircle className="h-3 w-3" />
-                        <span>Instant download</span>
-                        <CheckCircle className="h-3 w-3" />
-                        <span>Print ready</span>
-                        <CheckCircle className="h-3 w-3" />
-                        <span>Professional format</span>
-                      </div>
+                    <Button
+                      onClick={handleDownloadPDF}
+                      disabled={isLoading}
+                      className="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 px-4 w-full disabled:opacity-50 text-sm"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                      )}
+                      {isLoading ? "Generating..." : "Download PDF"}
+                    </Button>
+                    <div className="flex items-center justify-center text-xs text-gray-400 mt-2 gap-1">
+                      <CheckCircle className="h-3 w-3" />
+                      <span>Instant • Print Ready</span>
+                    </div>
+                  </div>
+
+                  {/* Dual Signature */}
+                  <div className="bg-green-900/30 border border-green-400 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <PenTool className="h-5 w-5 text-green-400" />
+                      <h3 className="font-semibold text-green-400">Dual Signature</h3>
+                    </div>
+                    <p className="text-gray-300 text-sm mb-4">
+                      Send signature links to both parties
+                    </p>
+                    <Button
+                      onClick={handleDualSignature}
+                      disabled={isLoading || !contractHTML || isDualSignatureActive}
+                      className="bg-green-600 hover:bg-green-500 text-white font-medium py-2 px-4 w-full disabled:opacity-50 text-sm"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Mail className="h-4 w-4 mr-2" />
+                      )}
+                      {isLoading ? "Sending..." : "Send Links"}
+                    </Button>
+                    <div className="flex items-center justify-center text-xs text-gray-400 mt-2 gap-1">
+                      <CheckCircle className="h-3 w-3" />
+                      <span>Mobile • Auto Delivery</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Dual Signature Section */}
-                <div className="max-w-md mx-auto mt-6">
-                  <div className="bg-green-900/30 border border-green-400 rounded-xl p-6">
-                    <div className="flex items-center justify-center gap-3 mb-4">
-                      <PenTool className="h-8 w-8 text-green-400" />
-                      <h3 className="text-xl font-semibold text-green-400">
-                        Dual Signature Collection
-                      </h3>
-                    </div>
-                    <p className="text-gray-300 mb-6 text-center">
-                      Send personalized signature links to both contractor and client. Collect signatures asynchronously and receive the final signed PDF automatically.
-                    </p>
+                {/* Signature Status */}
+                {isDualSignatureActive && (
+                  <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-3">
+                    <h4 className="text-sm font-semibold text-green-400 mb-2">Signature Status</h4>
+                    <p className="text-xs text-gray-300 mb-2">{dualSignatureStatus}</p>
                     
-                    <div className="space-y-3">
-                      <Button
-                        onClick={handleDualSignature}
-                        disabled={isLoading || !contractHTML || isDualSignatureActive}
-                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 w-full disabled:opacity-50"
-                      >
-                        {isLoading ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Mail className="h-4 w-4 mr-2" />
-                        )}
-                        {isLoading ? "Sending Links..." : "Send Signature Links"}
-                      </Button>
-                      
-                      {/* Dual Signature Status */}
-                      {isDualSignatureActive && (
-                        <div className="mt-4 p-4 bg-gray-800 rounded-lg">
-                          <h4 className="text-sm font-semibold text-green-400 mb-2">Signature Status</h4>
-                          <p className="text-xs text-gray-300 mb-3">{dualSignatureStatus}</p>
-                          
-                          {contractorSignUrl && clientSignUrl && (
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-gray-400">Contractor Link:</span>
-                                <Badge className="bg-blue-600 text-white">Sent</Badge>
-                              </div>
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-gray-400">Client Link:</span>
-                                <Badge className="bg-blue-600 text-white">Sent</Badge>
-                              </div>
-                              <div className="text-xs text-gray-400 text-center mt-3">
-                                Both parties will receive signed PDF automatically when complete
-                              </div>
-                            </div>
-                          )}
+                    {contractorSignUrl && clientSignUrl && (
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-400">Contractor:</span>
+                          <Badge className="bg-blue-600 text-white text-xs">Sent</Badge>
                         </div>
-                      )}
-                      
-                      <div className="flex items-center justify-center text-xs text-gray-400 gap-2">
-                        <CheckCircle className="h-3 w-3" />
-                        <span>Asynchronous signing</span>
-                        <CheckCircle className="h-3 w-3" />
-                        <span>Mobile optimized</span>
-                        <CheckCircle className="h-3 w-3" />
-                        <span>Auto delivery</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-400">Client:</span>
+                          <Badge className="bg-blue-600 text-white text-xs">Sent</Badge>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
-                </div>
+                )}
 
                 {/* Additional Actions */}
-                <div className="border-t border-gray-700 pt-6">
+                <div className="border-t border-gray-700 pt-4 text-center">
                   <Button
                     onClick={handleNewContract}
                     variant="outline"
+                    size="sm"
                     className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
                   >
                     Generate New Contract
