@@ -379,11 +379,25 @@ function Projects() {
     window.location.href = `/estimates?edit=${projectId}`;
   };
 
-  const handleViewProject = async (projectId: string) => {
+  const handleViewProject = (projectId: string) => {
     try {
-      const project = await getProjectById(projectId);
-      setSelectedProject(project);
-      setIsDialogOpen(true);
+      console.log(`🔒 SECURITY: Loading project ${projectId} for user ${user?.uid}`);
+      
+      // Buscar el proyecto en los datos ya cargados
+      const project = projects.find(p => p.id === projectId);
+      
+      if (project) {
+        console.log("✅ Project found in loaded data:", project.clientName);
+        setSelectedProject(project);
+        setIsDialogOpen(true);
+      } else {
+        console.error("❌ Project not found in loaded data");
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se encontró el proyecto seleccionado.",
+        });
+      }
     } catch (error) {
       console.error("Error loading project details:", error);
       toast({
