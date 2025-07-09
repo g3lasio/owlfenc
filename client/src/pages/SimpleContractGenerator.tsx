@@ -844,8 +844,8 @@ export default function SimpleContractGenerator() {
         `;
       }
 
-      // Initialize Simple Signature workflow
-      const contractId = selectedProject.id || `contract_${Date.now()}`;
+      // Initialize Simple Signature workflow - ensure unique contract ID
+      const contractId = `contract_${currentUser.uid.substring(0, 8)}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
       const signaturePayload = {
         userId: currentUser.uid,
         contractId,
@@ -883,6 +883,7 @@ export default function SimpleContractGenerator() {
       });
 
       // Call Simple Signature initiate endpoint  
+      console.log("🌐 [SIMPLE SIGNATURE] Making request to URL:", window.location.origin + '/api/simple-signature/initiate');
       const response = await fetch('/api/simple-signature/initiate', {
         method: 'POST',
         headers: {
@@ -890,6 +891,9 @@ export default function SimpleContractGenerator() {
         },
         body: JSON.stringify(signaturePayload)
       });
+      
+      console.log("📡 [SIMPLE SIGNATURE] Response status:", response.status);
+      console.log("📡 [SIMPLE SIGNATURE] Response headers:", Object.fromEntries(response.headers.entries()));
 
       if (response.ok) {
         const result = await response.json();
@@ -919,8 +923,12 @@ export default function SimpleContractGenerator() {
         typeof: typeof error
       });
       
-      // Also log the payload that failed
-      console.error("❌ Failed payload:", signaturePayload);
+      // Also log the payload that failed (if it exists)
+      if (typeof signaturePayload !== 'undefined') {
+        console.error("❌ Failed payload:", signaturePayload);
+      } else {
+        console.error("❌ Failed payload: signaturePayload was undefined");
+      }
       
       toast({
         title: "Signature Error",

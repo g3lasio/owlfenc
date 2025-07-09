@@ -168,6 +168,7 @@ console.log('🧠 [NEURAL-SIGNATURE] AI-powered signature routes registered at /
 
 // Simple signature routes - streamlined replacement for Neural Signature
 import simpleSignatureRoutes from './routes/simple-signature';
+// Register simple signature routes EARLY to prevent Vite interference
 app.use('/api/simple-signature', simpleSignatureRoutes);
 console.log('📝 [SIMPLE-SIGNATURE] Streamlined signature routes registered at /api/simple-signature');
 
