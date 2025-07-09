@@ -52,6 +52,7 @@ export default function SimpleContractGenerator() {
 
   // Legal Compliance Workflow State
   const [isContractReady, setIsContractReady] = useState(false);
+  const [contractHTML, setContractHTML] = useState<string>("");
   
   const [suggestedClauses, setSuggestedClauses] = useState<any[]>([]);
   const [selectedClauses, setSelectedClauses] = useState<string[]>([]);
@@ -767,14 +768,6 @@ export default function SimpleContractGenerator() {
       setIsLoading(false);
     }
   }, [selectedProject, currentUser?.uid, profile, editableData, contractData, getCorrectProjectTotal, toast]);
-        title: "Email Error",
-        description: `Failed to prepare email: ${error?.message || 'Unknown error'}`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedProject, currentUser?.uid, profile, editableData, getCorrectProjectTotal, selectedClauses, toast]);
 
   // Generate contract using backend API with comprehensive data (for legal workflow)
   const handleGenerateContract = useCallback(async () => {

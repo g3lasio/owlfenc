@@ -216,14 +216,7 @@ function Router() {
       <Route path="/estimates-legacy">
         {() => <ProtectedRoute component={EstimateGenerator} />}
       </Route>
-      
-      {/* Neural Signature Route */}
-      <Route path="/neural-signature/:contractId">
-        {() => <ProtectedRoute component={NeuralSignature} />}
-      </Route>
-      
-      {/* Simple Signature Route - mobile-friendly signature page */}
-      <Route path="/sign/:contractId" component={SimpleSignaturePage} />
+
 
       {/* Página no encontrada */}
       <Route component={NotFound} />
