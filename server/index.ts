@@ -163,13 +163,8 @@ import testSecureContractRoutes from './routes/test-secure-contract';
 app.use('/api/test', testSecureContractRoutes);
 console.log('🧪 [TEST-SECURE-CONTRACT] Test route registered at /api/test/test-secure-contract');
 
-// Add root health check for deployment monitoring (lightweight response)
-app.get('/', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    timestamp: Date.now()
-  });
-});
+// Health check moved to /health to avoid interfering with frontend
+// Root endpoint will be handled by Vite/static files
 
 (async () => {
 
@@ -193,7 +188,7 @@ app.get('/', (req, res) => {
     const server = await new Promise<any>((resolve, reject) => {
       const httpServer = app.listen(port, "0.0.0.0", () => {
         log(`Server started on port ${port}`);
-        console.log(`✅ Health check available at: http://localhost:${port}/`);
+        console.log(`✅ Frontend available at: http://localhost:${port}/`);
         console.log(`✅ API health check at: http://localhost:${port}/api/health`);
         resolve(httpServer);
       });
