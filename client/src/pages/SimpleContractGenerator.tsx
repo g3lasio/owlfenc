@@ -870,7 +870,17 @@ export default function SimpleContractGenerator() {
         }
       };
 
-      console.log("📝 [SIMPLE SIGNATURE] Initiating streamlined signature workflow:", signaturePayload);
+      console.log("📝 [SIMPLE SIGNATURE] Initiating streamlined signature workflow with payload:", signaturePayload);
+
+      // Validate payload before sending
+      console.log("🔍 [SIMPLE SIGNATURE] Payload validation:", {
+        userId: !!signaturePayload.userId,
+        contractId: !!signaturePayload.contractId,
+        contractorEmail: !!signaturePayload.contractorData?.email,
+        clientEmail: !!signaturePayload.clientData?.email,
+        contractHtml: !!signaturePayload.contractData?.contractHtml,
+        totalAmount: signaturePayload.contractData?.totalAmount
+      });
 
       // Call Simple Signature initiate endpoint  
       const response = await fetch('/api/simple-signature/initiate', {
@@ -901,9 +911,20 @@ export default function SimpleContractGenerator() {
       }
     } catch (error) {
       console.error("❌ Error initiating Simple Signature:", error);
+      console.error("❌ Error details:", {
+        message: error?.message,
+        stack: error?.stack,
+        name: error?.name,
+        error: JSON.stringify(error),
+        typeof: typeof error
+      });
+      
+      // Also log the payload that failed
+      console.error("❌ Failed payload:", signaturePayload);
+      
       toast({
         title: "Signature Error",
-        description: `Failed to send contract for signature: ${error.message}`,
+        description: `Failed to send contract for signature: ${error?.message || 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
