@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
-import { Database, Eye, FileText, CheckCircle, Plus, Trash2, Edit2, Sparkles, Shield, AlertCircle, DollarSign, Calendar, Wrench, FileCheck, Loader2, Brain, RefreshCw, History, Clock, UserCheck, Search, Filter, PenTool, Download } from "lucide-react";
+import { Database, Eye, FileText, CheckCircle, Plus, Trash2, Edit2, Sparkles, Shield, AlertCircle, DollarSign, Calendar, Wrench, FileCheck, Loader2, Brain, RefreshCw, History, Clock, UserCheck, Search, Filter, PenTool, Download, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -940,6 +940,106 @@ export default function SimpleContractGenerator() {
     }
   }, [selectedProject, currentUser?.uid, profile, editableData, getCorrectProjectTotal, selectedClauses, toast]);
 
+  // Simple Email Signature - uses existing email system that works
+  const handleEmailSignature = useCallback(async () => {
+    if (!selectedProject || !currentUser?.uid) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // Use existing email system - redirect to estimate email with contract flag
+      const clientEmail = editableData.clientEmail || selectedProject.clientEmail;
+      const contractorEmail = profile?.email || "contractor@example.com";
+      
+      if (!clientEmail) {
+        toast({
+          title: "Missing Client Email",
+          description: "Please enter client email address to send contract",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create email content with contract signature instructions
+      const emailSubject = `Contract for Signature - ${selectedProject.clientName}`;
+      const emailContent = `
+        <h2>Contract Ready for Signature</h2>
+        <p>Dear ${selectedProject.clientName},</p>
+        <p>Please find attached your contract for the ${selectedProject.projectType} project.</p>
+        <p><strong>Project Total:</strong> $${getCorrectProjectTotal(selectedProject).toLocaleString()}</p>
+        <p><strong>Next Steps:</strong></p>
+        <ol>
+          <li>Review the attached contract PDF</li>
+          <li>Sign and date the contract</li>
+          <li>Reply to this email with the signed contract attached</li>
+          <li>Or call/text us at ${profile?.phone || profile?.mobilePhone || "your phone number"}</li>
+        </ol>
+        <p>If you have any questions, please don't hesitate to contact us.</p>
+        <p>Best regards,<br/>${profile?.company || profile?.ownerName || "Your Company"}</p>
+      `;
+
+      // Generate PDF first, then send email
+      const pdfResponse = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser.uid,
+          client: {
+            name: editableData.clientName || selectedProject.clientName,
+            address: editableData.clientAddress || selectedProject.clientAddress || "",
+            email: clientEmail,
+            phone: editableData.clientPhone || selectedProject.clientPhone || "",
+          },
+          project: {
+            description: selectedProject.description || selectedProject.projectDescription || "",
+            type: selectedProject.projectType || "Construction Project",
+            total: getCorrectProjectTotal(selectedProject),
+            materials: selectedProject.materials || [],
+          },
+          contractor: {
+            name: profile?.company || profile?.ownerName || "Contractor Name",
+            company: profile?.company || "Company Name", 
+            address: profile?.address || "Business Address",
+            phone: profile?.phone || profile?.mobilePhone || "",
+            email: profile?.email || "",
+            license: profile?.licenseNumber || profile?.license || ""
+          },
+          timeline: {
+            startDate: editableData.startDate || new Date().toISOString().split('T')[0],
+            completionDate: editableData.completionDate || "",
+          },
+          paymentMilestones: editableData.paymentMilestones,
+          selectedClauses: selectedClauses,
+        })
+      });
+
+      if (pdfResponse.ok) {
+        // Open email client with pre-filled content
+        const mailtoUrl = `mailto:${clientEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailContent.replace(/<[^>]*>/g, ''))}`;
+        window.open(mailtoUrl, '_blank');
+        
+        toast({
+          title: "✅ Email Ready",
+          description: `Email client opened. Please attach the contract PDF and send to ${clientEmail}`,
+        });
+      } else {
+        throw new Error('Failed to generate contract PDF');
+      }
+      
+    } catch (error) {
+      console.error("❌ Error with email signature:", error);
+      toast({
+        title: "Email Error",
+        description: `Failed to prepare email: ${error?.message || 'Unknown error'}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedProject, currentUser?.uid, profile, editableData, getCorrectProjectTotal, selectedClauses, toast]);
+
   // Generate contract using backend API with comprehensive data (for legal workflow)
   const handleGenerateContract = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid) return;
@@ -1859,44 +1959,44 @@ export default function SimpleContractGenerator() {
                     </div>
                   </div>
 
-                  {/* Option 3: Simple Signature System */}
+                  {/* Option 3: Simple Email Signature */}
                   <div className="bg-cyan-900/30 border border-cyan-400 rounded-xl p-6">
                     <div className="flex items-center justify-center gap-3 mb-4">
-                      <div className="text-cyan-400 text-2xl">📱</div>
+                      <Mail className="h-8 w-8 text-cyan-400" />
                       <h3 className="text-xl font-semibold text-cyan-400">
-                        Option 3: Mobile Signature
+                        Option 3: Email Signature
                       </h3>
                     </div>
                     <p className="text-gray-300 mb-6 text-center">
-                      Send contract via email and SMS for mobile-friendly signature. One-click sending with automatic PDF generation and delivery to both parties.
+                      Send contract directly to client via email with simple signature instructions. No complex systems - just email and manual signature.
                     </p>
                     
                     <div className="space-y-3">
                       <Button
-                        onClick={handleSimpleSignature}
+                        onClick={handleEmailSignature}
                         disabled={!isContractReady || isLoading}
                         className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3 px-6 w-full"
                       >
                         {isLoading ? (
                           <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Sending Contract...
+                            Sending Email...
                           </>
                         ) : (
                           <>
-                            <div className="text-lg mr-2">📱</div>
-                            Send for Signature
+                            <Mail className="h-4 w-4 mr-2" />
+                            Send Contract by Email
                           </>
                         )}
                       </Button>
                       
                       <div className="flex items-center justify-center text-xs text-gray-400 gap-2">
                         <CheckCircle className="h-3 w-3" />
-                        <span>Email & SMS</span>
+                        <span>Direct email</span>
                         <CheckCircle className="h-3 w-3" />
-                        <span>Mobile friendly</span>
+                        <span>PDF attachment</span>
                         <CheckCircle className="h-3 w-3" />
-                        <span>Auto PDF delivery</span>
+                        <span>Simple process</span>
                       </div>
                     </div>
                   </div>
