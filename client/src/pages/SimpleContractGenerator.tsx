@@ -773,6 +773,78 @@ export default function SimpleContractGenerator() {
     }
   }, [selectedProject, currentUser?.uid, profile, editableData, contractData, getCorrectProjectTotal, toast]);
 
+  // Neural Signature System handler
+  const handleNeuralSignature = useCallback(async () => {
+    if (!selectedProject || !currentUser?.uid) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // Initialize Neural Signature workflow with current contract data
+      const neuralPayload = {
+        contractId: selectedProject.id || `contract_${Date.now()}`,
+        contractorData: {
+          name: profile?.company || profile?.ownerName || "Contractor Name",
+          email: profile?.email || "",
+          phone: profile?.phone || profile?.mobilePhone || "",
+          company: profile?.company || "Company Name",
+          address: profile?.address ? 
+            `${profile.address}${profile.city ? `, ${profile.city}` : ''}${profile.state ? `, ${profile.state}` : ''}${profile.zipCode ? ` ${profile.zipCode}` : ''}` : 
+            "Business Address"
+        },
+        clientData: {
+          name: editableData.clientName || selectedProject.clientName,
+          email: editableData.clientEmail || selectedProject.clientEmail || "",
+          phone: editableData.clientPhone || selectedProject.clientPhone || "",
+          address: editableData.clientAddress || selectedProject.clientAddress || ""
+        },
+        contractData: {
+          projectDescription: selectedProject.description || selectedProject.projectDescription || selectedProject.projectType || "",
+          totalAmount: getCorrectProjectTotal(selectedProject),
+          startDate: editableData.startDate || new Date().toISOString().split('T')[0],
+          completionDate: editableData.completionDate || ""
+        }
+      };
+
+      console.log("🧠 [NEURAL SIGNATURE] Initiating Neural Signature workflow:", neuralPayload);
+
+      // Call Neural Signature initiate endpoint
+      const response = await fetch('/api/neural-signature/initiate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-firebase-uid': currentUser?.uid || '',
+        },
+        body: JSON.stringify(neuralPayload)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        toast({
+          title: "Neural Signature Activated",
+          description: "AI-powered signature workflow initiated successfully. Redirecting to Neural Signature interface...",
+        });
+
+        // Redirect to Neural Signature interface
+        window.location.href = `/neural-signature/${neuralPayload.contractId}`;
+      } else {
+        const errorText = await response.text();
+        console.error("❌ Neural Signature initiation failed:", errorText);
+        throw new Error(`Failed to start Neural Signature workflow: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("❌ Error initiating Neural Signature:", error);
+      toast({
+        title: "Neural Signature Error",
+        description: `Failed to start AI-powered signature workflow: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedProject, currentUser?.uid, profile, editableData, contractData, getCorrectProjectTotal, toast]);
+
   // Generate contract using backend API with comprehensive data (for legal workflow)
   const handleGenerateContract = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid) return;
@@ -1619,8 +1691,8 @@ export default function SimpleContractGenerator() {
                   </p>
                 </div>
 
-                {/* Two Main Options */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Three Main Options */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                   
                   {/* Option 1: Simple PDF Download */}
                   <div className="bg-blue-900/30 border border-blue-400 rounded-xl p-6">
@@ -1688,6 +1760,39 @@ export default function SimpleContractGenerator() {
                         <span>Email delivery</span>
                         <CheckCircle className="h-3 w-3" />
                         <span>Legal audit trail</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Option 3: Neural Signature System */}
+                  <div className="bg-purple-900/30 border border-purple-400 rounded-xl p-6">
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                      <div className="text-purple-400 text-2xl">🧠</div>
+                      <h3 className="text-xl font-semibold text-purple-400">
+                        Option 3: Neural Signature
+                      </h3>
+                    </div>
+                    <p className="text-gray-300 mb-6 text-center">
+                      Revolutionary AI-powered signature system with biometric validation, real-time analysis, and automatic PDF regeneration with embedded signatures.
+                    </p>
+                    
+                    <div className="space-y-3">
+                      <Button
+                        onClick={handleNeuralSignature}
+                        disabled={!isContractReady}
+                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 px-6 w-full"
+                      >
+                        <div className="text-lg mr-2">🧠</div>
+                        Start Neural Process
+                      </Button>
+                      
+                      <div className="flex items-center justify-center text-xs text-gray-400 gap-2">
+                        <CheckCircle className="h-3 w-3" />
+                        <span>AI analysis</span>
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Biometric validation</span>
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Auto PDF regeneration</span>
                       </div>
                     </div>
                   </div>
