@@ -161,6 +161,11 @@ import testSecureContractRoutes from './routes/test-secure-contract';
 app.use('/api/test', testSecureContractRoutes);
 console.log('🧪 [TEST-SECURE-CONTRACT] Test route registered at /api/test/test-secure-contract');
 
+// Neural signature routes
+import neuralSignatureRoutes from './routes/neural-signature';
+app.use('/api/neural-signature', neuralSignatureRoutes);
+console.log('🧠 [NEURAL-SIGNATURE] AI-powered signature routes registered at /api/neural-signature');
+
 // Health check moved to /health to avoid interfering with frontend
 // Root endpoint will be handled by Vite/static files
 

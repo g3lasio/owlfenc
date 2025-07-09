@@ -55,6 +55,7 @@ import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
 import SimpleContractGenerator from './pages/SimpleContractGenerator';
 import ContractReview from './pages/ContractReview';
 import SecureContractSign from './pages/SecureContractSign';
+import NeuralSignature from './pages/NeuralSignature';
 
 import { Redirect } from "wouter";
 
@@ -217,6 +218,11 @@ function Router() {
       </Route>
       <Route path="/estimates-legacy">
         {() => <ProtectedRoute component={EstimateGenerator} />}
+      </Route>
+      
+      {/* Neural Signature Route */}
+      <Route path="/neural-signature/:contractId">
+        {() => <ProtectedRoute component={NeuralSignature} />}
       </Route>
 
       {/* Página no encontrada */}
