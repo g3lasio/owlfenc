@@ -1928,35 +1928,44 @@ export default function SimpleContractGenerator() {
                     </div>
                   </div>
 
-                  {/* Option 2: Legal Compliance Process */}
-                  <div className="bg-green-900/30 border border-green-400 rounded-xl p-6">
+                  {/* Option 2: NUEVO SISTEMA - Firmas Digitales */}
+                  <div className="bg-purple-900/30 border border-purple-400 rounded-xl p-6">
                     <div className="flex items-center justify-center gap-3 mb-4">
-                      <Shield className="h-8 w-8 text-green-400" />
-                      <h3 className="text-xl font-semibold text-green-400">
-                        Option 2: Legal Compliance
+                      <PenTool className="h-8 w-8 text-purple-400" />
+                      <h3 className="text-xl font-semibold text-purple-400">
+                        ✍️ Firmas Digitales
                       </h3>
                     </div>
                     <p className="text-gray-300 mb-6 text-center">
-                      Full legal compliance process with digital signatures, email/SMS delivery, and audit trail for maximum legal protection.
+                      Sistema nuevo de firmas digitales. Envía contratos por email a contratista y cliente, cada uno firma desde su dispositivo móvil con enlaces únicos y seguros.
                     </p>
                     
                     <div className="space-y-3">
                       <Button
-                        onClick={() => setShowLegalWorkflow(true)}
-                        disabled={!isContractReady}
-                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 w-full"
+                        onClick={handleSimpleSignature}
+                        disabled={!isContractReady || isLoading}
+                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 px-6 w-full"
                       >
-                        <Shield className="h-4 w-4 mr-2" />
-                        Start Legal Process
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Creando Contrato...
+                          </>
+                        ) : (
+                          <>
+                            <PenTool className="h-4 w-4 mr-2" />
+                            Enviar para Firmas Digitales
+                          </>
+                        )}
                       </Button>
                       
                       <div className="flex items-center justify-center text-xs text-gray-400 gap-2">
                         <CheckCircle className="h-3 w-3" />
-                        <span>Digital signatures</span>
+                        <span>Enlaces móviles</span>
                         <CheckCircle className="h-3 w-3" />
-                        <span>Email delivery</span>
+                        <span>Base de datos</span>
                         <CheckCircle className="h-3 w-3" />
-                        <span>Legal audit trail</span>
+                        <span>Seguimiento automático</span>
                       </div>
                     </div>
                   </div>

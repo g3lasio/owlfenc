@@ -33,8 +33,11 @@ if (!process.env.FIREBASE_API_KEY || !process.env.FIREBASE_PROJECT_ID) {
 
 const app = express();
 
-// CRITICAL: Register Simple Signature routes IMMEDIATELY after Express app creation
-// This MUST come before ANY middleware to prevent Vite interception
+// CRITICAL: Configure JSON middleware FIRST - required for all API routes
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// CRITICAL: Register Simple Signature routes IMMEDIATELY after middleware
 import simpleSignatureRoutes from './routes/simple-signature';
 app.use('/api/simple-signature', simpleSignatureRoutes);
 console.log('🚨 [CRITICAL] Simple Signature routes registered FIRST - before any middleware');
@@ -43,9 +46,6 @@ console.log('🚨 [CRITICAL] Simple Signature routes registered FIRST - before a
 import digitalContractsRoutes from './routes/digital-contracts';
 app.use('/api/digital-contracts', digitalContractsRoutes);
 console.log('✍️ [DIGITAL-CONTRACTS] Routes registered at /api/digital-contracts');
-
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Stripe configuration disabled for now to focus on Contract Generator optimization
 
