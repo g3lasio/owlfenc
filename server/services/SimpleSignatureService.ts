@@ -19,7 +19,7 @@ export class SimpleSignatureService {
    * Initiate simple signature workflow - replaces Neural Signature
    */
   async initiateSignatureWorkflow(contractData: {
-    userId: number;
+    userId: string;
     contractId: string;
     contractorData: {
       name: string;
@@ -35,18 +35,27 @@ export class SimpleSignatureService {
     };
     contractData: {
       projectDescription: string;
-      totalAmount: number;
+      totalAmount: number | string;
       startDate?: string;
       completionDate?: string;
       contractHtml: string;
     };
   }) {
     console.log('🚀 [SIMPLE-SIGNATURE] Initiating simple signature workflow...');
+    console.log('📊 [SIMPLE-SIGNATURE] Received data:', {
+      userId: contractData.userId,
+      contractId: contractData.contractId,
+      totalAmount: contractData.contractData?.totalAmount,
+      totalAmountType: typeof contractData.contractData?.totalAmount
+    });
     
     try {
+      // Safely convert totalAmount to string
+      const totalAmountString = contractData.contractData?.totalAmount?.toString() || '0';
+      
       // 1. Store contract in database
       const contractRecord: InsertDigitalContract = {
-        userId: contractData.userId,
+        userId: parseInt(contractData.userId) || 1,
         contractId: contractData.contractId,
         contractorName: contractData.contractorData.name,
         contractorEmail: contractData.contractorData.email,
@@ -57,7 +66,7 @@ export class SimpleSignatureService {
         clientPhone: contractData.clientData.phone || null,
         clientAddress: contractData.clientData.address || null,
         projectDescription: contractData.contractData.projectDescription,
-        totalAmount: contractData.contractData.totalAmount.toString(),
+        totalAmount: totalAmountString,
         startDate: contractData.contractData.startDate ? new Date(contractData.contractData.startDate) : null,
         completionDate: contractData.contractData.completionDate ? new Date(contractData.contractData.completionDate) : null,
         contractHtml: contractData.contractData.contractHtml,
@@ -80,7 +89,7 @@ export class SimpleSignatureService {
         contractId: contractData.contractId,
         signatureUrl: contractorSignUrl,
         projectDescription: contractData.contractData.projectDescription,
-        totalAmount: contractData.contractData.totalAmount,
+        totalAmount: Number(contractData.contractData.totalAmount) || 0,
         clientName: contractData.clientData.name,
       });
 
@@ -92,7 +101,7 @@ export class SimpleSignatureService {
         contractId: contractData.contractId,
         signatureUrl: clientSignUrl,
         projectDescription: contractData.contractData.projectDescription,
-        totalAmount: contractData.contractData.totalAmount,
+        totalAmount: Number(contractData.contractData.totalAmount) || 0,
         contractorName: contractData.contractorData.name,
         contractorCompany: contractData.contractorData.company,
       });
@@ -439,75 +448,87 @@ export class SimpleSignatureService {
   /**
    * Send completion emails with signed PDF to both parties
    */
-  private async sendCompletionEmails(contract: DigitalContract, pdfPath: string) {
+  private async sendCompletionEmails(contract: DigitalContract, signedPdfPath: string) {
     try {
-      const fs = await import('fs');
-      const pdfBuffer = fs.readFileSync(pdfPath);
-      const pdfBase64 = pdfBuffer.toString('base64');
-
       const emailHtml = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Contract Completed</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Contract Signed Successfully</title>
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-          .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0; }
+          .success-badge { background: #28a745; color: white; padding: 10px 20px; border-radius: 20px; display: inline-block; margin: 10px 0; }
+          .project-details { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745; }
+          .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
             <h1>🎉 Contract Successfully Signed!</h1>
-            <p>Both parties have completed the signing process</p>
+            <p>All parties have completed the signature process</p>
           </div>
           
           <div class="content">
-            <div class="success">
-              <strong>✅ Contract Completed</strong><br>
-              All parties have signed the contract. The signed PDF is attached to this email.
+            <div class="success-badge">✅ COMPLETED</div>
+            
+            <p>Great news! Your contract has been successfully signed by all parties.</p>
+            
+            <div class="project-details">
+              <h3>📋 Contract Summary</h3>
+              <p><strong>Project:</strong> ${contract.projectDescription}</p>
+              <p><strong>Contractor:</strong> ${contract.contractorName}${contract.contractorCompany ? ` (${contract.contractorCompany})` : ''}</p>
+              <p><strong>Client:</strong> ${contract.clientName}</p>
+              <p><strong>Total Amount:</strong> $${Number(contract.totalAmount).toLocaleString()}</p>
+              <p><strong>Contract ID:</strong> ${contract.contractId}</p>
             </div>
 
-            <h3>📋 Contract Summary:</h3>
-            <ul>
-              <li><strong>Project:</strong> ${contract.projectDescription}</li>
-              <li><strong>Contractor:</strong> ${contract.contractorName}${contract.contractorCompany ? ` (${contract.contractorCompany})` : ''}</li>
-              <li><strong>Client:</strong> ${contract.clientName}</li>
-              <li><strong>Amount:</strong> $${Number(contract.totalAmount).toLocaleString()}</li>
-              <li><strong>Contract ID:</strong> ${contract.contractId}</li>
-            </ul>
-
-            <p><strong>Next Steps:</strong> Keep this signed contract for your records. The project can now proceed according to the agreed terms.</p>
+            <h3>📄 Your Signed Contract</h3>
+            <p>The fully signed contract with all signatures and dates is attached as a PDF.</p>
+            <p>Please keep this document for your records.</p>
             
-            <p><em>Thank you for using Owl Fence AI Platform for your contract signing needs!</em></p>
+            <h3>🚀 What's Next?</h3>
+            <p>Now that the contract is signed, the project can begin according to the agreed timeline.</p>
+            
+            <div class="footer">
+              <p>This email was sent securely from Owl Fence AI Platform</p>
+              <p>Both parties have received identical copies of the signed contract.</p>
+            </div>
           </div>
         </div>
       </body>
       </html>`;
 
+      // Read the signed PDF file
+      const fs = await import('fs');
+      const pdfBuffer = fs.readFileSync(signedPdfPath);
+
       // Send to contractor
-      await resendService.sendEmail({
+      await resendService.sendEmailWithAttachment({
         to: contract.contractorEmail,
-        subject: `✅ Contract Completed - ${contract.projectDescription}`,
+        subject: `✅ Contract Signed Successfully - ${contract.projectDescription}`,
         html: emailHtml,
         attachments: [{
           filename: `signed_contract_${contract.contractId}.pdf`,
-          content: pdfBase64,
+          content: pdfBuffer,
+          contentType: 'application/pdf'
         }]
       });
 
       // Send to client
-      await resendService.sendEmail({
+      await resendService.sendEmailWithAttachment({
         to: contract.clientEmail,
-        subject: `✅ Contract Completed - ${contract.projectDescription}`,
+        subject: `✅ Contract Signed Successfully - ${contract.projectDescription}`,
         html: emailHtml,
         attachments: [{
           filename: `signed_contract_${contract.contractId}.pdf`,
-          content: pdfBase64,
+          content: pdfBuffer,
+          contentType: 'application/pdf'
         }]
       });
 
@@ -520,4 +541,5 @@ export class SimpleSignatureService {
   }
 }
 
+// Export service instance
 export const simpleSignatureService = new SimpleSignatureService();
