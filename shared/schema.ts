@@ -315,10 +315,10 @@ export const notifications = pgTable('notifications', {
   readAt: timestamp('read_at'),
 });
 
-// Simple Digital Contracts table for streamlined signature workflow
+// Simple Digital Contracts table for streamlined signature workflow  
 export const digitalContracts = pgTable('digital_contracts', {
   id: text('id').primaryKey(),
-  userId: integer('user_id').notNull(),
+  userId: text('user_id').notNull(), // Changed to text for Firebase UID
   contractId: text('contract_id').notNull().unique(),
   
   // Contract basic data

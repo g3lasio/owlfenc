@@ -3,7 +3,8 @@ import { digitalContracts } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 
 export interface ContractData {
-  userId: number;
+  contractId: string;
+  userId: string; // Use string for Firebase UID
   contractorName: string;
   contractorEmail: string;
   contractorPhone: string;
@@ -32,12 +33,19 @@ export class DigitalContractService {
   async createContract(data: ContractData): Promise<string> {
     if (!db) throw new Error('Database not available');
     
-    const contractId = `contract_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const contractId = data.contractId || `contract_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     
+    console.log('📝 [DATABASE] Inserting contract with data:', {
+      id: contractId,
+      userId: data.userId,
+      contractorName: data.contractorName,
+      totalAmount: data.totalAmount
+    });
+
     await db.insert(digitalContracts).values({
       id: contractId,
       userId: data.userId,
-      contractId,
+      contractId: contractId,
       contractorName: data.contractorName,
       contractorEmail: data.contractorEmail,
       contractorPhone: data.contractorPhone,

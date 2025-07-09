@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { digitalContractService } from '../services/DigitalContractService';
+import { firebaseDigitalContractService } from '../services/FirebaseDigitalContractService';
 
 const router = Router();
 
@@ -22,22 +22,32 @@ router.post('/initiate', async (req, res) => {
       });
     }
     
-    // Crear contrato en base de datos
-    const contractId = await digitalContractService.createContract({
-      userId: parseInt(userId),
-      contractorName: contractorData.name,
-      contractorEmail: contractorData.email,
-      contractorPhone: contractorData.phone || '',
-      contractorCompany: contractorData.company || '',
-      clientName: clientData.name,
-      clientEmail: clientData.email,
-      clientPhone: clientData.phone || '',
-      clientAddress: clientData.address || '',
-      projectDescription: contractData.projectDescription || '',
-      totalAmount: parseFloat(contractData.totalAmount || '0'),
-      startDate: new Date(contractData.startDate || new Date()),
-      completionDate: new Date(contractData.completionDate || new Date()),
-      contractHtml: contractData.contractHtml || ''
+    // Usar contractId del frontend o generar uno nuevo
+    const finalContractId = req.body.contractId || `contract_${userId}_${Date.now()}`;
+    
+    // Crear contrato usando Firebase directamente como solicitado
+    const contractId = await firebaseDigitalContractService.createContract({
+      contractId: finalContractId,
+      userId: userId,
+      contractorData: {
+        name: contractorData.name,
+        email: contractorData.email,
+        phone: contractorData.phone || '',
+        company: contractorData.company || ''
+      },
+      clientData: {
+        name: clientData.name,
+        email: clientData.email,
+        phone: clientData.phone || '',
+        address: clientData.address || ''
+      },
+      contractData: {
+        projectDescription: contractData.projectDescription || '',
+        totalAmount: parseFloat(contractData.totalAmount || '0'),
+        startDate: contractData.startDate || new Date().toISOString(),
+        completionDate: contractData.completionDate || new Date().toISOString(),
+        contractHtml: contractData.contractHtml || ''
+      }
     });
     
     console.log('✅ [DIGITAL-CONTRACTS] Contract created:', contractId);
@@ -46,7 +56,7 @@ router.post('/initiate', async (req, res) => {
     // await sendContractEmails(contractId, contractorData, clientData);
     
     // Marcar emails como enviados
-    await digitalContractService.markEmailSent(contractId);
+    await firebaseDigitalContractService.markEmailSent(contractId);
     
     res.json({
       success: true,
@@ -69,7 +79,7 @@ router.post('/initiate', async (req, res) => {
 router.get('/:contractId', async (req, res) => {
   try {
     const { contractId } = req.params;
-    const contract = await digitalContractService.getContract(contractId);
+    const contract = await firebaseDigitalContractService.getContract(contractId);
     
     if (!contract) {
       return res.status(404).json({
@@ -125,7 +135,7 @@ router.post('/:contractId/sign', async (req, res) => {
       });
     }
     
-    const success = await digitalContractService.recordSignature({
+    const success = await firebaseDigitalContractService.recordSignature({
       contractId,
       party,
       signatureData,
@@ -140,7 +150,7 @@ router.post('/:contractId/sign', async (req, res) => {
     }
     
     // Verificar si ambas partes han firmado
-    const bothSigned = await digitalContractService.isBothSigned(contractId);
+    const bothSigned = await firebaseDigitalContractService.isBothSigned(contractId);
     
     console.log(`✅ [DIGITAL-CONTRACTS] Signature recorded for ${party}, both signed: ${bothSigned}`);
     
@@ -171,7 +181,7 @@ router.post('/:contractId/sign', async (req, res) => {
 router.get('/:contractId/status', async (req, res) => {
   try {
     const { contractId } = req.params;
-    const contract = await digitalContractService.getContract(contractId);
+    const contract = await firebaseDigitalContractService.getContract(contractId);
     
     if (!contract) {
       return res.status(404).json({
