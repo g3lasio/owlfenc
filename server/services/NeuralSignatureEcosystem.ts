@@ -107,9 +107,9 @@ export class NeuralSignatureEcosystem {
         ${contractHTML}
 
         PROJECT DETAILS:
-        - Description: ${projectDetails.description}
-        - Value: ${projectDetails.value}
-        - Location: ${projectDetails.address}
+        - Description: ${projectDetails?.description || projectDetails?.projectDescription || 'Project description not specified'}
+        - Value: ${projectDetails?.value || (projectDetails?.totalAmount ? `$${projectDetails.totalAmount}` : 'Value not specified')}
+        - Location: ${projectDetails?.address || projectDetails?.location || 'Location not specified'}
 
         Provide analysis in JSON format:
         {
@@ -234,8 +234,8 @@ export class NeuralSignatureEcosystem {
 
       // Step 1: AI Contract Analysis
       const contractAnalysis = await this.analyzeContractWithAI(
-        request.contractHTML, 
-        request.projectDetails
+        request.contractHTML || '', 
+        request.contractData || request.projectDetails
       );
 
       // Step 2: Generate Smart Signing URL (responsive web interface)
@@ -255,7 +255,7 @@ export class NeuralSignatureEcosystem {
         clientEmail: request.clientData.email,
         smartSigningUrl,
         contractAnalysis,
-        projectDetails: request.projectDetails
+        projectDetails: request.contractData || request.projectDetails
       });
 
       console.log('✅ [NEURAL] Neural signature process initiated successfully');
@@ -285,6 +285,8 @@ export class NeuralSignatureEcosystem {
     contractAnalysis: NeuralAnalysisResult;
     projectDetails: any;
   }) {
+
+    
     // Import Resend service
     const { resendService } = await import('./resendService');
 
@@ -321,8 +323,8 @@ export class NeuralSignatureEcosystem {
             
             <div class="project-info">
               <h3>📋 Project Summary</h3>
-              <p><strong>Description:</strong> ${params.projectDetails.description}</p>
-              <p><strong>Value:</strong> ${params.projectDetails.value}</p>
+              <p><strong>Description:</strong> ${(params.projectDetails && (params.projectDetails.description || params.projectDetails.projectDescription)) || 'Project details'}</p>
+              <p><strong>Value:</strong> ${(params.projectDetails && params.projectDetails.value) || (params.projectDetails && params.projectDetails.totalAmount && `$${params.projectDetails.totalAmount.toLocaleString()}`) || 'Value not specified'}</p>
               <p><strong>Complexity:</strong> ${params.contractAnalysis.contractComplexity.toUpperCase()}</p>
             </div>
 
