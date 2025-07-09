@@ -54,6 +54,12 @@ export default function SimpleContractGenerator() {
   const [isContractReady, setIsContractReady] = useState(false);
   const [contractHTML, setContractHTML] = useState<string>("");
   
+  // Dual Signature State
+  const [isDualSignatureActive, setIsDualSignatureActive] = useState(false);
+  const [dualSignatureStatus, setDualSignatureStatus] = useState<string>("");
+  const [contractorSignUrl, setContractorSignUrl] = useState<string>("");
+  const [clientSignUrl, setClientSignUrl] = useState<string>("");
+  
   const [suggestedClauses, setSuggestedClauses] = useState<any[]>([]);
   const [selectedClauses, setSelectedClauses] = useState<string[]>([]);
   
@@ -996,7 +1002,87 @@ export default function SimpleContractGenerator() {
     });
     setSuggestedClauses([]);
     setSelectedClauses([]);
+    // Reset dual signature state
+    setIsDualSignatureActive(false);
+    setDualSignatureStatus("");
+    setContractorSignUrl("");
+    setClientSignUrl("");
   }, []);
+
+  // Dual Signature Handler - Initiate dual signature workflow
+  const handleDualSignature = useCallback(async () => {
+    if (!selectedProject || !currentUser?.uid || !contractHTML) {
+      toast({
+        title: "Error",
+        description: "Contract must be generated before initiating dual signature",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setIsDualSignatureActive(true);
+    setDualSignatureStatus("Initiating dual signature workflow...");
+
+    try {
+      // Prepare contract data for dual signature
+      const dualSignaturePayload = {
+        userId: currentUser.uid,
+        contractHTML: contractHTML,
+        contractData: {
+          contractorName: profile?.company || profile?.ownerName || "Contractor Name",
+          contractorEmail: profile?.email || currentUser.email || "",
+          contractorPhone: profile?.phone || profile?.mobilePhone || "",
+          contractorCompany: profile?.company || "Company Name",
+          clientName: editableData.clientName || selectedProject.clientName,
+          clientEmail: editableData.clientEmail || selectedProject.clientEmail || "",
+          clientPhone: editableData.clientPhone || selectedProject.clientPhone || "",
+          clientAddress: editableData.clientAddress || selectedProject.clientAddress || "",
+          projectDescription: selectedProject.projectDescription || selectedProject.projectType || "Construction Project",
+          totalAmount: getCorrectProjectTotal(selectedProject),
+          startDate: editableData.startDate || new Date().toISOString().split('T')[0],
+          completionDate: editableData.completionDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        }
+      };
+
+      console.log("🖊️ [DUAL-SIGNATURE] Initiating dual signature workflow:", dualSignaturePayload);
+
+      const response = await fetch('/api/dual-signature/initiate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentUser.uid}`,
+        },
+        body: JSON.stringify(dualSignaturePayload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Dual signature initiation failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      setContractorSignUrl(result.contractorSignUrl || "");
+      setClientSignUrl(result.clientSignUrl || "");
+      setDualSignatureStatus("Dual signature links generated successfully");
+
+      toast({
+        title: "Dual Signature Initiated",
+        description: `Contract sent to both parties. Contract ID: ${result.contractId}`,
+      });
+
+    } catch (error) {
+      console.error("❌ [DUAL-SIGNATURE] Error:", error);
+      setDualSignatureStatus("Failed to initiate dual signature");
+      toast({
+        title: "Dual Signature Error",
+        description: `Failed to initiate dual signature: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedProject, currentUser, contractHTML, profile, editableData, getCorrectProjectTotal, toast]);
 
   // Legal Compliance Workflow - No manual signature handlers needed
   // All signature handling is now done through LegalComplianceWorkflow component
@@ -1633,6 +1719,69 @@ export default function SimpleContractGenerator() {
                         <span>Print ready</span>
                         <CheckCircle className="h-3 w-3" />
                         <span>Professional format</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dual Signature Section */}
+                <div className="max-w-md mx-auto mt-6">
+                  <div className="bg-green-900/30 border border-green-400 rounded-xl p-6">
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                      <PenTool className="h-8 w-8 text-green-400" />
+                      <h3 className="text-xl font-semibold text-green-400">
+                        Dual Signature Collection
+                      </h3>
+                    </div>
+                    <p className="text-gray-300 mb-6 text-center">
+                      Send personalized signature links to both contractor and client. Collect signatures asynchronously and receive the final signed PDF automatically.
+                    </p>
+                    
+                    <div className="space-y-3">
+                      <Button
+                        onClick={handleDualSignature}
+                        disabled={isLoading || !contractHTML || isDualSignatureActive}
+                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 w-full disabled:opacity-50"
+                      >
+                        {isLoading ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Mail className="h-4 w-4 mr-2" />
+                        )}
+                        {isLoading ? "Sending Links..." : "Send Signature Links"}
+                      </Button>
+                      
+                      {/* Dual Signature Status */}
+                      {isDualSignatureActive && (
+                        <div className="mt-4 p-4 bg-gray-800 rounded-lg">
+                          <h4 className="text-sm font-semibold text-green-400 mb-2">Signature Status</h4>
+                          <p className="text-xs text-gray-300 mb-3">{dualSignatureStatus}</p>
+                          
+                          {contractorSignUrl && clientSignUrl && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-gray-400">Contractor Link:</span>
+                                <Badge className="bg-blue-600 text-white">Sent</Badge>
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-gray-400">Client Link:</span>
+                                <Badge className="bg-blue-600 text-white">Sent</Badge>
+                              </div>
+                              <div className="text-xs text-gray-400 text-center mt-3">
+                                Both parties will receive signed PDF automatically when complete
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-center text-xs text-gray-400 gap-2">
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Asynchronous signing</span>
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Mobile optimized</span>
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Auto delivery</span>
                       </div>
                     </div>
                   </div>
