@@ -327,6 +327,20 @@ export default function SimpleContractGenerator() {
       setContractData(contractDataFromHistory);
       
       // Set editable data from contract history
+      const contractTotal = contractDataFromHistory.financials?.total || 0;
+      
+      // Ensure payment milestones always have amount field defined
+      let paymentMilestones = contractDataFromHistory.paymentTerms || [
+        { id: 1, description: "Initial deposit", percentage: 50, amount: contractTotal * 0.5 },
+        { id: 2, description: "Project completion", percentage: 50, amount: contractTotal * 0.5 }
+      ];
+      
+      // Fix any milestones that don't have amount field or have it as undefined
+      paymentMilestones = paymentMilestones.map(milestone => ({
+        ...milestone,
+        amount: milestone.amount ?? (contractTotal * (milestone.percentage || 0) / 100)
+      }));
+      
       setEditableData({
         clientName: contractDataFromHistory.client?.name || contract.clientName,
         clientEmail: contractDataFromHistory.client?.email || "",
@@ -336,10 +350,7 @@ export default function SimpleContractGenerator() {
         completionDate: contractDataFromHistory.formFields?.completionDate || contractDataFromHistory.timeline?.completionDate || "",
         permitResponsibility: contractDataFromHistory.formFields?.permitResponsibility || "contractor",
         warrantyYears: contractDataFromHistory.formFields?.warrantyYears || "1",
-        paymentMilestones: contractDataFromHistory.paymentTerms || [
-          { id: 1, description: "Initial deposit", percentage: 50, amount: (contractDataFromHistory.financials?.total || 0) * 0.5 },
-          { id: 2, description: "Project completion", percentage: 50, amount: (contractDataFromHistory.financials?.total || 0) * 0.5 }
-        ]
+        paymentMilestones
       });
 
       // Set clauses from history
@@ -1676,7 +1687,7 @@ export default function SimpleContractGenerator() {
                             <div>
                               <Label className="text-gray-400">Amount</Label>
                               <div className="text-lg font-semibold text-green-400 mt-2">
-                                ${milestone.amount.toLocaleString()}
+                                ${(milestone.amount || 0).toLocaleString()}
                               </div>
                             </div>
                           </div>
@@ -1714,7 +1725,7 @@ export default function SimpleContractGenerator() {
                           Total: {editableData.paymentMilestones.reduce((sum, m) => sum + m.percentage, 0)}%
                         </p>
                         <p className="text-sm font-semibold text-green-400">
-                          Amount: ${editableData.paymentMilestones.reduce((sum, m) => sum + m.amount, 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          Amount: ${editableData.paymentMilestones.reduce((sum, m) => sum + (m.amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                         <p className="text-xs text-yellow-400">
                           {editableData.paymentMilestones.reduce((sum, m) => sum + m.percentage, 0) !== 100 && "⚠️ Should equal 100%"}

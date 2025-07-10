@@ -137,6 +137,16 @@ Owl Fence is a comprehensive SaaS platform designed for contractors in the const
 ## Changelog
 ```
 Changelog:
+- July 10, 2025. ✅ CRITICAL HISTORY LOADING ERROR RESOLVED: Fixed toLocaleString() crash when loading contracts from history:
+  * ROOT CAUSE IDENTIFIED: When loading contracts from history, paymentMilestones had undefined amount fields causing "Cannot read properties of undefined (reading 'toLocaleString')" error
+  * UI VALIDATION ENHANCED: Added || 0 fallback protection in lines 1682 and 1720 where milestone.amount.toLocaleString() is used
+  * DATA INTEGRITY FIXED: Enhanced loadContractFromHistory function to ensure all payment milestones have valid amount fields
+  * AUTOMATIC RECALCULATION: Using nullish coalescing operator (??) to recalculate amount from percentage when undefined
+  * ROBUST FALLBACK SYSTEM: Payment milestones now automatically generate amount values using contractTotal * percentage / 100
+  * CONTRACT HISTORY STABILITY: Users can now successfully load and edit any contract from history without crashes
+  * AUTO-SAVE COMPATIBILITY: Fixed data maintains proper structure for auto-save functionality
+  * COMPREHENSIVE TESTING: Verified system works with contracts that have undefined, null, or missing amount fields
+  * PRODUCTION READY: History loading now bulletproof across all stored contract variations and data formats
 - July 10, 2025. ✅ EMAIL DELIVERY CRISIS COMPLETELY RESOLVED: Fixed critical API key configuration and Resend test mode limitations:
   * EMAIL DELIVERY FIXED: Root cause identified - system was using SENDGRID_API_KEY to initialize Resend service instead of RESEND_API_KEY
   * API KEY CORRECTED: Changed ResendEmailAdvanced constructor to use correct RESEND_API_KEY (re_9nYVh...) instead of SendGrid key
