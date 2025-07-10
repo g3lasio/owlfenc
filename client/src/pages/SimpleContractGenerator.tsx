@@ -34,6 +34,13 @@ export default function SimpleContractGenerator() {
   const [historyFilter, setHistoryFilter] = useState<'all' | 'draft' | 'completed' | 'processing'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Auto-save state
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [currentContractId, setCurrentContractId] = useState<string | null>(null);
+  const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
+  
   // Editable fields state
   const [editableData, setEditableData] = useState({
     clientName: "",
@@ -132,10 +139,170 @@ export default function SimpleContractGenerator() {
     }
   }, [currentUser?.uid, toast]);
 
+  // CRITICAL: Helper function to get correct project total (prioritizes display values over raw values in centavos)
+  const getCorrectProjectTotal = useCallback((project: any) => {
+    if (!project) {
+      console.warn("⚠️ getCorrectProjectTotal called with null/undefined project");
+      return 0;
+    }
+    
+    console.log("💰 Financial data analysis:", {
+      displaySubtotal: project.displaySubtotal,
+      displayTotal: project.displayTotal,
+      totalPrice: project.totalPrice,
+      estimateAmount: project.estimateAmount,
+      total: project.total,
+      totalAmount: project.totalAmount
+    });
+    
+    // Priority order: display values first (already in dollars), then convert centavos if needed
+    const result = project.displaySubtotal || 
+                   project.displayTotal || 
+                   project.totalPrice || 
+                   project.estimateAmount || 
+                   (project.total && project.total > 10000 ? project.total / 100 : project.total) ||
+                   (project.totalAmount && project.totalAmount > 10000 ? project.totalAmount / 100 : project.totalAmount) ||
+                   0;
+    
+    console.log("💰 Final calculated total:", result);
+    
+    // Data integrity check - warn if result seems corrupted
+    if (result > 1000000) {
+      console.warn("⚠️ POTENTIAL DATA CORRUPTION: Total amount exceeds $1M:", result);
+      console.warn("⚠️ Original project data:", project);
+    }
+    
+    return result;
+  }, []);
+
+  // Auto-save function with debounce
+  const performAutoSave = useCallback(async () => {
+    if (!currentUser?.uid || !selectedProject || !editableData.clientName) {
+      console.log("🔄 Auto-save skipped: missing required data");
+      return;
+    }
+
+    try {
+      setIsAutoSaving(true);
+      setAutoSaveStatus('saving');
+      
+      console.log("💾 [AUTO-SAVE] Starting auto-save...");
+      
+      // Build comprehensive contract data for auto-save
+      const autoSaveContractData = {
+        userId: currentUser.uid,
+        contractId: currentContractId || `CNT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        clientName: editableData.clientName,
+        projectType: selectedProject.projectType || 'Construction',
+        status: 'draft' as const,
+        contractData: {
+          client: {
+            name: editableData.clientName,
+            email: editableData.clientEmail,
+            phone: editableData.clientPhone,
+            address: editableData.clientAddress,
+          },
+          contractor: {
+            name: profile?.company || profile?.ownerName || "Company Name",
+            company: profile?.company || "Company Name",
+            address: `${profile?.address || ""} ${profile?.city || ""} ${profile?.state || ""} ${profile?.zipCode || ""}`.trim(),
+            phone: profile?.phone || profile?.mobilePhone || "",
+            email: profile?.email || "",
+            license: profile?.license || "",
+          },
+          project: {
+            type: selectedProject.projectType || 'Construction',
+            description: selectedProject.projectDescription || selectedProject.description || "",
+            location: editableData.clientAddress || selectedProject.clientAddress || "",
+            scope: selectedProject.projectDescription || "",
+          },
+          financials: {
+            total: getCorrectProjectTotal(selectedProject),
+            subtotal: getCorrectProjectTotal(selectedProject),
+            tax: 0,
+            materials: 0,
+            labor: 0,
+            permits: 0,
+            other: 0,
+          },
+          timeline: {
+            startDate: editableData.startDate,
+            completionDate: editableData.completionDate,
+            estimatedDuration: "As specified in project details"
+          },
+          protections: selectedClauses.map(clauseId => ({
+            id: clauseId,
+            category: 'legal',
+            clause: suggestedClauses.find(c => c.id === clauseId)?.title || clauseId
+          })),
+          formFields: {
+            permitResponsibility: editableData.permitResponsibility,
+            warrantyYears: editableData.warrantyYears,
+            startDate: editableData.startDate,
+            completionDate: editableData.completionDate,
+          },
+          paymentTerms: editableData.paymentMilestones,
+          materials: selectedProject.materials || [],
+          terms: {
+            warranty: editableData.warrantyYears,
+            permits: editableData.permitResponsibility,
+          }
+        }
+      };
+
+      // Save contract using existing service
+      const savedContractId = await contractHistoryService.saveContract(autoSaveContractData);
+      
+      // Update current contract ID if this is the first save
+      if (!currentContractId) {
+        setCurrentContractId(savedContractId);
+      }
+      
+      setLastAutoSave(new Date());
+      setAutoSaveStatus('saved');
+      
+      console.log("✅ [AUTO-SAVE] Contract auto-saved successfully:", savedContractId);
+      
+      // Clear saved status after 3 seconds
+      setTimeout(() => {
+        setAutoSaveStatus('idle');
+      }, 3000);
+      
+    } catch (error) {
+      console.error("❌ [AUTO-SAVE] Error auto-saving contract:", error);
+      setAutoSaveStatus('error');
+      
+      // Clear error status after 5 seconds
+      setTimeout(() => {
+        setAutoSaveStatus('idle');
+      }, 5000);
+    } finally {
+      setIsAutoSaving(false);
+    }
+  }, [currentUser?.uid, selectedProject, editableData, currentContractId, selectedClauses, suggestedClauses, profile, getCorrectProjectTotal]);
+
+  // Debounced auto-save trigger
+  const triggerAutoSave = useCallback(() => {
+    // Clear existing timer
+    if (autoSaveTimer) {
+      clearTimeout(autoSaveTimer);
+    }
+    
+    // Set new timer for 2 seconds after the last change
+    const newTimer = setTimeout(() => {
+      performAutoSave();
+    }, 2000);
+    
+    setAutoSaveTimer(newTimer);
+  }, [autoSaveTimer, performAutoSave]);
+
   // Load contract from history and resume editing
   const loadContractFromHistory = useCallback(async (contract: ContractHistoryEntry) => {
     try {
       console.log("🔄 Loading contract from history:", contract.id);
+      
+      // Set current contract ID for auto-save updates
+      setCurrentContractId(contract.id || null);
       
       // Extract contract data
       const contractDataFromHistory = contract.contractData;
@@ -165,22 +332,23 @@ export default function SimpleContractGenerator() {
         clientEmail: contractDataFromHistory.client?.email || "",
         clientPhone: contractDataFromHistory.client?.phone || "",
         clientAddress: contractDataFromHistory.client?.address || "",
-        startDate: contractDataFromHistory.timeline?.startDate || "",
-        completionDate: contractDataFromHistory.timeline?.completionDate || "",
-        permitResponsibility: contractDataFromHistory.permits?.responsibility || "contractor",
-        warrantyYears: contractDataFromHistory.warranty?.years || "1",
-        paymentMilestones: contractDataFromHistory.payment?.milestones || [
+        startDate: contractDataFromHistory.formFields?.startDate || contractDataFromHistory.timeline?.startDate || "",
+        completionDate: contractDataFromHistory.formFields?.completionDate || contractDataFromHistory.timeline?.completionDate || "",
+        permitResponsibility: contractDataFromHistory.formFields?.permitResponsibility || "contractor",
+        warrantyYears: contractDataFromHistory.formFields?.warrantyYears || "1",
+        paymentMilestones: contractDataFromHistory.paymentTerms || [
           { id: 1, description: "Initial deposit", percentage: 50, amount: (contractDataFromHistory.financials?.total || 0) * 0.5 },
           { id: 2, description: "Project completion", percentage: 50, amount: (contractDataFromHistory.financials?.total || 0) * 0.5 }
-        ],
-        suggestedClauses: contractDataFromHistory.clauses?.suggested || [],
-        selectedClauses: contractDataFromHistory.clauses?.selected || [],
-        customClauses: contractDataFromHistory.clauses?.custom || []
+        ]
       });
 
       // Set clauses from history
-      setSuggestedClauses(contractDataFromHistory.clauses?.suggested || []);
-      setSelectedClauses(contractDataFromHistory.clauses?.selected || []);
+      setSuggestedClauses(contractDataFromHistory.protections?.map(p => ({
+        id: p.id,
+        title: p.clause,
+        category: p.category
+      })) || []);
+      setSelectedClauses(contractDataFromHistory.protections?.map(p => p.id) || []);
       
       // Switch to contract view and go to step 2 (review)
       setCurrentView('contracts');
@@ -647,42 +815,6 @@ export default function SimpleContractGenerator() {
     }
   }, [currentUser?.uid, toast]);
 
-  // CRITICAL: Helper function to get correct project total (prioritizes display values over raw values in centavos)
-  const getCorrectProjectTotal = useCallback((project: any) => {
-    if (!project) {
-      console.warn("⚠️ getCorrectProjectTotal called with null/undefined project");
-      return 0;
-    }
-    
-    console.log("💰 Financial data analysis:", {
-      displaySubtotal: project.displaySubtotal,
-      displayTotal: project.displayTotal,
-      totalPrice: project.totalPrice,
-      estimateAmount: project.estimateAmount,
-      total: project.total,
-      totalAmount: project.totalAmount
-    });
-    
-    // Priority order: display values first (already in dollars), then convert centavos if needed
-    const result = project.displaySubtotal || 
-                   project.displayTotal || 
-                   project.totalPrice || 
-                   project.estimateAmount || 
-                   (project.total && project.total > 10000 ? project.total / 100 : project.total) ||
-                   (project.totalAmount && project.totalAmount > 10000 ? project.totalAmount / 100 : project.totalAmount) ||
-                   0;
-    
-    console.log("💰 Final calculated total:", result);
-    
-    // Data integrity check - warn if result seems corrupted
-    if (result > 1000000) {
-      console.warn("⚠️ POTENTIAL DATA CORRUPTION: Total amount exceeds $1M:", result);
-      console.warn("⚠️ Original project data:", project);
-    }
-    
-    return result;
-  }, []);
-
   // Direct PDF download function - uses working PDF endpoint
   const handleDownloadPDF = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid) return;
@@ -1091,6 +1223,38 @@ export default function SimpleContractGenerator() {
 
   // Contractor name handling moved to LegalComplianceWorkflow component
 
+  // Auto-save trigger when editableData changes
+  useEffect(() => {
+    // Only trigger auto-save if we have a selected project and user is editing
+    if (selectedProject && currentUser?.uid && currentStep === 2) {
+      triggerAutoSave();
+    }
+  }, [
+    editableData.clientName,
+    editableData.clientEmail,
+    editableData.clientPhone,
+    editableData.clientAddress,
+    editableData.startDate,
+    editableData.completionDate,
+    editableData.permitResponsibility,
+    editableData.warrantyYears,
+    editableData.paymentMilestones,
+    selectedClauses,
+    selectedProject,
+    currentUser?.uid,
+    currentStep,
+    triggerAutoSave
+  ]);
+
+  // Cleanup auto-save timer on component unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+      }
+    };
+  }, [autoSaveTimer]);
+
   // Load contract history on component mount
   useEffect(() => {
     if (currentUser?.uid) {
@@ -1267,6 +1431,43 @@ export default function SimpleContractGenerator() {
                 <Eye className="h-5 w-5" />
                 Step 2: Review & Customize Contract
               </CardTitle>
+              
+              {/* Auto-save Status Indicator */}
+              <div className="flex items-center justify-between mt-2 text-sm">
+                <div className="flex items-center gap-2">
+                  {autoSaveStatus === 'saving' && (
+                    <>
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                      <span className="text-yellow-400">Saving changes...</span>
+                    </>
+                  )}
+                  {autoSaveStatus === 'saved' && (
+                    <>
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-green-400">
+                        Changes saved {lastAutoSave && `at ${lastAutoSave.toLocaleTimeString()}`}
+                      </span>
+                    </>
+                  )}
+                  {autoSaveStatus === 'error' && (
+                    <>
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      <span className="text-red-400">Error saving changes</span>
+                    </>
+                  )}
+                  {autoSaveStatus === 'idle' && (
+                    <>
+                      <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                      <span className="text-gray-400">Auto-save enabled</span>
+                    </>
+                  )}
+                </div>
+                {currentContractId && (
+                  <span className="text-xs text-gray-500 font-mono">
+                    ID: {currentContractId.slice(-8)}
+                  </span>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
