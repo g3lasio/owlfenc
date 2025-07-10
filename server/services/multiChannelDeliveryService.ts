@@ -11,6 +11,7 @@
  */
 
 import { MailService } from '@sendgrid/mail';
+import { DualSignatureService } from './dualSignatureService';
 
 interface ContractData {
   contractorName: string;
@@ -60,6 +61,7 @@ interface DeliveryResult {
 
 class MultiChannelDeliveryService {
   private mailService: MailService;
+  private dualSignatureService: DualSignatureService;
 
   constructor() {
     // Initialize SendGrid service
@@ -67,21 +69,12 @@ class MultiChannelDeliveryService {
     if (process.env.SENDGRID_API_KEY) {
       this.mailService.setApiKey(process.env.SENDGRID_API_KEY);
     }
+    
+    // Initialize DualSignatureService for contract storage
+    this.dualSignatureService = new DualSignatureService();
   }
 
-  /**
-   * Generate secure contract URLs for signing
-   */
-  private generateSecureUrls(contractId: string) {
-    const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-      ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-      : 'http://localhost:3000';
-    
-    return {
-      contractorSignUrl: `${baseUrl}/sign/${contractId}/contractor`,
-      clientSignUrl: `${baseUrl}/sign/${contractId}/client`
-    };
-  }
+
 
   /**
    * Send professional email with contract
@@ -269,11 +262,29 @@ class MultiChannelDeliveryService {
    */
   async initiateSecureDelivery(payload: SecureDeliveryPayload): Promise<DeliveryResult> {
     try {
-      // Generate unique contract ID
-      const contractId = `MCN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      console.log('🔐 [MULTI-CHANNEL] Starting secure delivery with contract storage...');
       
-      // Generate secure URLs
-      const { contractorSignUrl, clientSignUrl } = this.generateSecureUrls(contractId);
+      // Use DualSignatureService to save contract to database
+      const dualSignatureRequest = {
+        userId: payload.userId,
+        contractHTML: payload.contractHTML,
+        contractData: payload.contractData
+      };
+      
+      console.log('💾 [MULTI-CHANNEL] Saving contract to database...');
+      const signatureResult = await this.dualSignatureService.initiateDualSignature(dualSignatureRequest);
+      
+      if (!signatureResult.success) {
+        throw new Error(`Failed to save contract: ${signatureResult.message}`);
+      }
+      
+      const contractId = signatureResult.contractId!;
+      const contractorSignUrl = signatureResult.contractorSignUrl!;
+      const clientSignUrl = signatureResult.clientSignUrl!;
+      
+      console.log('✅ [MULTI-CHANNEL] Contract saved successfully:', contractId);
+      console.log('🔗 [MULTI-CHANNEL] Contractor URL:', contractorSignUrl);
+      console.log('🔗 [MULTI-CHANNEL] Client URL:', clientSignUrl);
       
       const deliveryResults: DeliveryResult['deliveryResults'] = {};
       
