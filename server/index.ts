@@ -404,35 +404,8 @@ app.get('/sign/:contractId/:party', async (req, res) => {
             </div>
 
             <div class="content">
-              <!-- Contract Information -->
-              <div class="section">
-                <h2>Contract Information</h2>
-                <div class="contract-info">
-                  <div class="info-card">
-                    <div class="label">Contractor</div>
-                    <div>${contract.contractorName}</div>
-                    <div style="font-size: 14px; color: #94a3b8;">${contract.contractorEmail}</div>
-                    <div style="font-size: 14px; color: #94a3b8;">${contract.contractorCompany}</div>
-                  </div>
-                  <div class="info-card">
-                    <div class="label">Client</div>
-                    <div>${contract.clientName}</div>
-                    <div style="font-size: 14px; color: #94a3b8;">${contract.clientEmail}</div>
-                  </div>
-                  <div class="info-card">
-                    <div class="label">Project</div>
-                    <div>${contract.projectDescription}</div>
-                  </div>
-                  <div class="info-card">
-                    <div class="label">Amount</div>
-                    <div style="font-size: 18px; font-weight: bold;">$${parseFloat(contract.totalAmount).toLocaleString()}</div>
-                  </div>
-                </div>
-              </div>
-
               <!-- Professional Contract Content -->
               <div class="section">
-                <h2>Complete Contract Document</h2>
                 <div class="professional-contract-display">
                   ${professionalContractHTML}
                 </div>
@@ -453,13 +426,11 @@ app.get('/sign/:contractId/:party', async (req, res) => {
 
                 <!-- Name Input -->
                 <div class="form-group">
-                  <label for="fullName">Full Legal Name</label>
                   <input type="text" id="fullName" value="${party === 'contractor' ? contract.contractorName : contract.clientName}" />
                 </div>
 
                 <!-- Signature Type -->
                 <div class="form-group">
-                  <label>Signature Method</label>
                   <div class="signature-type">
                     <button type="button" id="cursiveBtn" class="active">Type Name</button>
                     <button type="button" id="drawBtn">Draw Signature</button>
