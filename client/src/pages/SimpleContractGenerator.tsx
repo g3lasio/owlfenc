@@ -16,6 +16,20 @@ import { collection, query, where, onSnapshot, orderBy } from "firebase/firestor
 import { db } from "@/lib/firebase";
 import { contractHistoryService, ContractHistoryEntry } from "@/services/contractHistoryService";
 
+// Interface for completed contracts
+interface CompletedContract {
+  contractId: string;
+  clientName: string;
+  totalAmount: number;
+  isCompleted: boolean;
+  isDownloadable: boolean;
+  contractorSigned: boolean;
+  clientSigned: boolean;
+  contractorSignedAt?: Date;
+  clientSignedAt?: Date;
+  createdAt: Date;
+  signedPdfPath?: string;
+}
 
 // Simple 3-step contract generator without complex state management
 export default function SimpleContractGenerator() {
@@ -28,11 +42,15 @@ export default function SimpleContractGenerator() {
   const [isLoadingClauses, setIsLoadingClauses] = useState(false);
   
   // History management state
-  const [currentView, setCurrentView] = useState<'contracts' | 'history'>('contracts');
+  const [currentView, setCurrentView] = useState<'contracts' | 'history' | 'completed'>('contracts');
   const [contractHistory, setContractHistory] = useState<ContractHistoryEntry[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'draft' | 'completed' | 'processing'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Completed contracts state
+  const [completedContracts, setCompletedContracts] = useState<any[]>([]);
+  const [isLoadingCompleted, setIsLoadingCompleted] = useState(false);
   
   // Auto-save state
   const [isAutoSaving, setIsAutoSaving] = useState(false);
@@ -147,6 +165,76 @@ export default function SimpleContractGenerator() {
       setIsLoadingHistory(false);
     }
   }, [currentUser?.uid, toast]);
+
+  // Load completed contracts
+  const loadCompletedContracts = useCallback(async () => {
+    if (!currentUser?.uid) return;
+    
+    setIsLoadingCompleted(true);
+    try {
+      console.log("📋 Loading completed contracts for user:", currentUser.uid);
+      const response = await fetch(`/api/dual-signature/completed/${currentUser.uid}`);
+      
+      if (!response.ok) throw new Error('Failed to load completed contracts');
+      
+      const data = await response.json();
+      setCompletedContracts(data.contracts || []);
+      console.log("✅ Completed contracts loaded:", data.total, "contracts");
+    } catch (error) {
+      console.error("❌ Error loading completed contracts:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load completed contracts",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingCompleted(false);
+    }
+  }, [currentUser?.uid, toast]);
+
+  // Download signed PDF
+  const downloadSignedPdf = useCallback(async (contractId: string, clientName: string) => {
+    try {
+      console.log("📥 Downloading signed PDF for contract:", contractId);
+      
+      const response = await fetch(`/api/dual-signature/download/${contractId}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to download PDF');
+      }
+      
+      // Get the PDF blob
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `Contract-${clientName}-${contractId}.pdf`;
+      
+      // Trigger download
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      console.log("✅ PDF downloaded successfully");
+      toast({
+        title: "Download Complete",
+        description: "Contract PDF has been downloaded successfully",
+      });
+    } catch (error) {
+      console.error("❌ Error downloading PDF:", error);
+      toast({
+        title: "Download Error",
+        description: "Failed to download contract PDF",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
 
   // CRITICAL: Helper function to get correct project total (prioritizes display values over raw values in centavos)
   const getCorrectProjectTotal = useCallback((project: any) => {
@@ -1383,8 +1471,9 @@ export default function SimpleContractGenerator() {
   useEffect(() => {
     if (currentUser?.uid) {
       loadContractHistory();
+      loadCompletedContracts();
     }
-  }, [currentUser?.uid, loadContractHistory]);
+  }, [currentUser?.uid, loadContractHistory, loadCompletedContracts]);
 
   return (
     <div className="min-h-screen bg-black text-white p-4">
@@ -1395,7 +1484,7 @@ export default function SimpleContractGenerator() {
 
         {/* View Navigation */}
         <div className="flex justify-center mb-6">
-          <div className="bg-gray-900 border border-gray-700 rounded-lg p-1 flex gap-1">
+          <div className="bg-gray-900 border border-gray-700 rounded-lg p-1 flex gap-1 flex-wrap">
             <Button
               variant={currentView === 'contracts' ? 'default' : 'ghost'}
               size="sm"
@@ -1424,6 +1513,27 @@ export default function SimpleContractGenerator() {
               {contractHistory.length > 0 && (
                 <Badge className="bg-cyan-600 text-white ml-1 px-1.5 py-0.5 text-xs">
                   {contractHistory.length}
+                </Badge>
+              )}
+            </Button>
+            <Button
+              variant={currentView === 'completed' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => {
+                setCurrentView('completed');
+                loadCompletedContracts(); // Refresh on click
+              }}
+              className={`flex items-center gap-2 px-4 py-2 ${
+                currentView === 'completed'
+                  ? 'bg-green-400 text-black hover:bg-green-300'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-800'
+              }`}
+            >
+              <Download className="h-4 w-4" />
+              Completed
+              {completedContracts.length > 0 && (
+                <Badge className="bg-green-600 text-white ml-1 px-1.5 py-0.5 text-xs">
+                  {completedContracts.filter(c => c.isCompleted).length}
                 </Badge>
               )}
             </Button>
@@ -2647,6 +2757,191 @@ export default function SimpleContractGenerator() {
                           Clear Filters
                         </Button>
                       )}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Completed Contracts View */}
+        {currentView === 'completed' && (
+          <div className="space-y-6">
+            {/* Completed Contracts Header */}
+            <Card className="bg-gray-900 border border-green-400">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-400">
+                  <Download className="h-5 w-5" />
+                  <Lock className="h-4 w-4" />
+                  Completed Contracts - CLASSIFIED
+                  <Badge className="bg-green-600 text-white ml-2">
+                    {completedContracts.filter(c => c.isCompleted).length} signed
+                  </Badge>
+                </CardTitle>
+                <p className="text-sm text-green-300 mt-2">
+                  Digitally signed contracts with secure document delivery system
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Refresh Button */}
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={loadCompletedContracts}
+                      disabled={isLoadingCompleted}
+                      className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black"
+                    >
+                      <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingCompleted ? 'animate-spin' : ''}`} />
+                      Refresh Status
+                    </Button>
+                  </div>
+
+                  {/* Contract List */}
+                  {isLoadingCompleted ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400 mx-auto"></div>
+                      <p className="mt-2 text-gray-400">Loading completed contracts...</p>
+                    </div>
+                  ) : completedContracts.length > 0 ? (
+                    <div className="space-y-3">
+                      {completedContracts.map((contract) => (
+                        <div
+                          key={contract.contractId}
+                          className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 hover:border-green-400 hover:bg-gray-800/80 transition-all duration-200 relative"
+                        >
+                          {/* Security Frame Corners */}
+                          <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-green-400"></div>
+                          <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-green-400"></div>
+                          <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-green-400"></div>
+                          <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-green-400"></div>
+                          
+                          <div className="space-y-3">
+                            {/* Header Row */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="text-base font-bold text-white truncate">
+                                    {contract.clientName}
+                                  </h3>
+                                  <Badge 
+                                    className={`text-xs px-2 py-1 ${
+                                      contract.isCompleted 
+                                        ? 'bg-green-600 text-white' 
+                                        : 'bg-yellow-600 text-white'
+                                    }`}
+                                  >
+                                    {contract.isCompleted && <CheckCircle className="h-3 w-3 mr-1" />}
+                                    {contract.isCompleted ? 'COMPLETED' : 'PENDING'}
+                                  </Badge>
+                                  {contract.isDownloadable && (
+                                    <Badge className="bg-cyan-600 text-white text-xs px-2 py-1">
+                                      <Download className="h-3 w-3 mr-1" />
+                                      READY
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-green-400 font-semibold text-sm">
+                                  ${(contract.totalAmount || 0).toLocaleString()}
+                                </p>
+                              </div>
+                              <div className="flex gap-2 shrink-0">
+                                {contract.isDownloadable && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => downloadSignedPdf(contract.contractId, contract.clientName)}
+                                    className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs px-3"
+                                  >
+                                    <Download className="h-3 w-3 mr-1" />
+                                    Download
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Signature Status */}
+                            <div className="bg-gray-700/50 rounded-lg px-3 py-2">
+                              <div className="grid grid-cols-2 gap-4 text-xs">
+                                <div className="flex items-center gap-2">
+                                  <UserCheck className="h-3 w-3 text-gray-400" />
+                                  <span className="text-gray-400">Contractor:</span>
+                                  <Badge className={`text-xs px-2 py-1 ${
+                                    contract.contractorSigned ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-300'
+                                  }`}>
+                                    {contract.contractorSigned ? 'SIGNED' : 'PENDING'}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <UserCheck className="h-3 w-3 text-gray-400" />
+                                  <span className="text-gray-400">Client:</span>
+                                  <Badge className={`text-xs px-2 py-1 ${
+                                    contract.clientSigned ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-300'
+                                  }`}>
+                                    {contract.clientSigned ? 'SIGNED' : 'PENDING'}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Contract Details */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                              <div className="flex items-center gap-1">
+                                <FileText className="h-3 w-3 text-gray-500" />
+                                <span className="text-gray-400">Contract ID:</span>
+                                <span className="text-gray-300 font-mono text-xs">
+                                  {contract.contractId?.slice(-8) || 'N/A'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3 text-gray-500" />
+                                <span className="text-gray-400">Created:</span>
+                                <span className="text-gray-300">
+                                  {contract.createdAt ? new Date(contract.createdAt).toLocaleDateString() : 'Unknown'}
+                                </span>
+                              </div>
+                              {contract.contractorSignedAt && (
+                                <div className="flex items-center gap-1">
+                                  <PenTool className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-400">Contractor:</span>
+                                  <span className="text-gray-300">
+                                    {new Date(contract.contractorSignedAt).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              )}
+                              {contract.clientSignedAt && (
+                                <div className="flex items-center gap-1">
+                                  <PenTool className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-400">Client:</span>
+                                  <span className="text-gray-300">
+                                    {new Date(contract.clientSignedAt).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Security Badge */}
+                            <div className="flex items-center justify-center pt-2 border-t border-gray-700">
+                              <div className="flex items-center gap-2 text-xs">
+                                <Shield className="h-3 w-3 text-green-400" />
+                                <span className="text-green-400 font-mono">256-BIT ENCRYPTED</span>
+                                <Lock className="h-3 w-3 text-green-400" />
+                                <span className="text-green-400 font-mono">SECURE DELIVERY</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Shield className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                      <p className="text-gray-400 mb-2">No completed contracts found</p>
+                      <p className="text-sm text-gray-500">
+                        Signed contracts will appear here for secure download
+                      </p>
                     </div>
                   )}
                 </div>

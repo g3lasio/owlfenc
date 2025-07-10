@@ -62,6 +62,171 @@ class PremiumPdfService {
     });
   }
 
+  /**
+   * Generar PDF con firmas integradas
+   */
+  async generateContractWithSignatures(data: {
+    contractHTML: string;
+    contractorSignature: {
+      name: string;
+      signatureData: string;
+      typedName?: string;
+      signedAt: Date;
+    };
+    clientSignature: {
+      name: string;
+      signatureData: string;
+      typedName?: string;
+      signedAt: Date;
+    };
+  }): Promise<Buffer> {
+    let browser;
+    try {
+      console.log('📄 [PDF-SIGNATURES] Starting PDF generation with integrated signatures...');
+
+      // Modify HTML to include actual signatures
+      const htmlWithSignatures = this.integrateSignatures(data.contractHTML, data.contractorSignature, data.clientSignature);
+
+      // Launch browser and generate PDF
+      browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      });
+
+      const page = await browser.newPage();
+      await page.setContent(htmlWithSignatures, { waitUntil: 'networkidle0' });
+
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '1in',
+          right: '1in',
+          bottom: '1in',
+          left: '1in'
+        }
+      });
+
+      console.log('✅ [PDF-SIGNATURES] PDF generated successfully with signatures');
+      return pdfBuffer;
+
+    } catch (error) {
+      console.error('❌ [PDF-SIGNATURES] Error generating PDF with signatures:', error);
+      throw new Error(`Failed to generate signed PDF: ${error.message}`);
+    } finally {
+      if (browser) {
+        await browser.close();
+      }
+    }
+  }
+
+  /**
+   * Integrar firmas en el HTML del contrato
+   */
+  private integrateSignatures(
+    contractHTML: string, 
+    contractorSignature: any, 
+    clientSignature: any
+  ): string {
+    try {
+      console.log('🖊️ [PDF-SIGNATURES] Integrating signatures into contract HTML...');
+
+      // Create signature sections
+      const contractorSignatureHtml = this.createSignatureHtml(contractorSignature, 'Contractor');
+      const clientSignatureHtml = this.createSignatureHtml(clientSignature, 'Client');
+
+      // Replace signature placeholder sections or add at the end
+      let modifiedHTML = contractHTML;
+
+      // Look for existing signature sections and replace them
+      const signatureSectionRegex = /<div class="signature-section">[\s\S]*?<\/div>/gi;
+      
+      if (signatureSectionRegex.test(modifiedHTML)) {
+        // Replace existing signature section
+        modifiedHTML = modifiedHTML.replace(signatureSectionRegex, `
+          <div class="signature-section" style="margin-top: 50px; page-break-inside: avoid;">
+            <h3 style="text-align: center; margin-bottom: 40px; font-family: 'Times New Roman', serif;">SIGNATURES</h3>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 40px;">
+              ${contractorSignatureHtml}
+              ${clientSignatureHtml}
+            </div>
+            <div style="text-align: center; margin-top: 30px; font-size: 10pt; color: #666;">
+              <p>This contract has been digitally signed by both parties on the dates indicated above.</p>
+              <p>Digital signatures are legally binding and verified by the Legal Defense System.</p>
+            </div>
+          </div>
+        `);
+      } else {
+        // Add signature section at the end
+        const signatureSection = `
+          <div class="signature-section" style="margin-top: 50px; page-break-inside: avoid;">
+            <h3 style="text-align: center; margin-bottom: 40px; font-family: 'Times New Roman', serif;">SIGNATURES</h3>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 40px;">
+              ${contractorSignatureHtml}
+              ${clientSignatureHtml}
+            </div>
+            <div style="text-align: center; margin-top: 30px; font-size: 10pt; color: #666;">
+              <p>This contract has been digitally signed by both parties on the dates indicated above.</p>
+              <p>Digital signatures are legally binding and verified by the Legal Defense System.</p>
+            </div>
+          </div>
+        `;
+        
+        // Insert before closing body tag
+        modifiedHTML = modifiedHTML.replace('</body>', `${signatureSection}</body>`);
+      }
+
+      console.log('✅ [PDF-SIGNATURES] Signatures integrated successfully');
+      return modifiedHTML;
+
+    } catch (error) {
+      console.error('❌ [PDF-SIGNATURES] Error integrating signatures:', error);
+      throw new Error(`Failed to integrate signatures: ${error.message}`);
+    }
+  }
+
+  /**
+   * Crear HTML para una firma individual
+   */
+  private createSignatureHtml(signature: any, role: string): string {
+    const signedDate = new Date(signature.signedAt).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    return `
+      <div style="flex: 1; text-align: center; padding: 20px; border: 2px solid #000; margin: 10px;">
+        <h4 style="margin: 0 0 20px 0; font-family: 'Times New Roman', serif;">${role.toUpperCase()}</h4>
+        
+        <div style="margin: 20px 0; min-height: 60px; border-bottom: 2px solid #000; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;">
+          ${signature.signatureData ? 
+            `<img src="${signature.signatureData}" alt="${role} Signature" style="max-height: 50px; max-width: 200px;">` 
+            : 
+            `<span style="font-family: 'Amsterdam Four', cursive; font-size: 24px;">${signature.typedName || signature.name}</span>`
+          }
+        </div>
+        
+        <p style="margin: 10px 0 5px 0; font-weight: bold; font-family: 'Times New Roman', serif;">
+          ${signature.name}
+        </p>
+        
+        <p style="margin: 5px 0; font-size: 10pt; color: #666;">
+          Digitally signed on<br>
+          ${signedDate}
+        </p>
+        
+        <div style="margin-top: 15px; font-size: 8pt; color: #999; text-align: center;">
+          <p style="margin: 2px 0;">✓ Digital Signature Verified</p>
+          <p style="margin: 2px 0;">✓ Timestamp Authenticated</p>
+          <p style="margin: 2px 0;">✓ Legal Defense System</p>
+        </div>
+      </div>
+    `;
+  }
+
   generateProfessionalLegalContractHTML(data: ContractPdfData): string {
     const currentDate = new Date().toLocaleDateString('en-US', {
       year: 'numeric',

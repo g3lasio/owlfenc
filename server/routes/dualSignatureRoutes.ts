@@ -199,6 +199,101 @@ router.get('/status/:contractId', async (req, res) => {
 });
 
 /**
+ * GET /api/dual-signature/download/:contractId
+ * Descargar PDF firmado completado
+ */
+router.get('/download/:contractId', async (req, res) => {
+  try {
+    const { contractId } = req.params;
+    
+    console.log('📥 [API] PDF download requested:', contractId);
+    
+    const result = await dualSignatureService.getSignedPdf(contractId);
+    
+    if (result.success && result.pdfBuffer && result.filename) {
+      console.log('✅ [API] Serving signed PDF for download');
+      
+      // Set headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+      res.setHeader('Content-Length', result.pdfBuffer.length);
+      
+      // Send PDF buffer
+      res.send(result.pdfBuffer);
+    } else {
+      console.error('❌ [API] PDF not available:', result.message);
+      res.status(404).json({
+        success: false,
+        message: result.message,
+      });
+    }
+  } catch (error: any) {
+    console.error('❌ [API] Error in /download/:contractId:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/dual-signature/completed/:userId
+ * Obtener todos los contratos completados de un usuario
+ */
+router.get('/completed/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    console.log('📋 [API] Getting completed contracts for user:', userId);
+    
+    // Import database here to avoid circular dependencies
+    const { db } = await import('../../shared/db');
+    const { digitalContracts } = await import('../../shared/schema');
+    const { eq } = await import('drizzle-orm');
+    
+    const completedContracts = await db.select()
+      .from(digitalContracts)
+      .where(eq(digitalContracts.userId, userId))
+      .orderBy(digitalContracts.updatedAt);
+    
+    console.log(`✅ [API] Found ${completedContracts.length} contracts for user`);
+    
+    // Transform data for frontend
+    const contractsForFrontend = completedContracts.map(contract => ({
+      contractId: contract.contractId,
+      status: contract.status,
+      contractorName: contract.contractorName,
+      clientName: contract.clientName,
+      totalAmount: contract.totalAmount,
+      contractorSigned: contract.contractorSigned,
+      clientSigned: contract.clientSigned,
+      contractorSignedAt: contract.contractorSignedAt,
+      clientSignedAt: contract.clientSignedAt,
+      createdAt: contract.createdAt,
+      updatedAt: contract.updatedAt,
+      signedPdfPath: contract.signedPdfPath,
+      isCompleted: contract.status === 'completed',
+      isDownloadable: contract.status === 'completed' && contract.signedPdfPath,
+    }));
+    
+    res.json({
+      success: true,
+      contracts: contractsForFrontend,
+      total: contractsForFrontend.length,
+    });
+    
+  } catch (error: any) {
+    console.error('❌ [API] Error in /completed/:userId:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+});
+
+/**
  * GET /api/dual-signature/test
  * Health check endpoint
  */
