@@ -245,20 +245,37 @@ app.get('/sign/:contractId/:party', async (req, res) => {
               margin-bottom: 5px; 
             }
             .professional-contract-display { 
-              background: white; 
-              color: #1e293b; 
+              background: white !important; 
+              color: #1e293b !important; 
               border-radius: 8px; 
               margin: 20px 0; 
               border: 2px solid #e2e8f0;
               /* Remove height limitation to show full content */
             }
+            .professional-contract-display * {
+              background: white !important;
+              color: #000 !important;
+            }
+            .professional-contract-display .party-box {
+              background: white !important;
+              color: #000 !important;
+              border: 2px solid #000 !important;
+            }
             .professional-contract-display .container {
               padding: 20px;
+              background: white !important;
             }
             .professional-contract-display .page-break {
               border-top: 2px dashed #e2e8f0;
               margin: 30px 0;
               padding-top: 30px;
+            }
+            .professional-contract-display .section-title {
+              color: #000 !important;
+              font-weight: bold !important;
+            }
+            .professional-contract-display .legal-text {
+              color: #000 !important;
             }
             .signature-section { 
               background: #334155; 
