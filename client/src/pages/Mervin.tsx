@@ -3,6 +3,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Client } from "@/lib/clientFirebase";
 import { useAuth } from "@/contexts/AuthContext";
+import { MaterialInventoryService } from "../../src/services/materialInventoryService";
+import { db } from "@/lib/firebase";
 
 import {
   getClients as getFirebaseClients,
@@ -37,9 +39,17 @@ type EstimateStep1ChatFlowStep =
   | "enter-new-client"
   | "client-added"
   | "awaiting-project-description"
-  | "awaiting-project-items"
+  | "select-inventory"
   | null;
 
+interface Material {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  unit: string;
+  category: string;
+}
 // Botones de acción principales con iconos
 const actionButtons = [
   {
@@ -77,14 +87,75 @@ const actionButtons = [
 export default function Mervin() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
+  const [inventoryItems, setInventoryItems] = useState<
+    { material: Material; quantity: number }[]
+  >([]);
+
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [materials, setMaterials] = useState<Material[]>([]);
   const [caseType, setCaseType] = useState<"Estimates" | "Contract" | "">("");
   const { toast } = useToast();
+  const [projectDescription, setProjectDescription] = useState<string>("");
   const [chatFlowStep, setChatFlowStep] =
     useState<EstimateStep1ChatFlowStep>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const { currentUser } = useAuth();
+  const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
+
+  const loadMaterials = async () => {
+    if (!currentUser) return;
+    const { collection, query, where, getDocs, addDoc, updateDoc, doc } =
+      await import("firebase/firestore");
+    try {
+      setIsLoadingMaterials(true);
+      const materialsRef = collection(db, "materials");
+      const q = query(materialsRef, where("userId", "==", currentUser.uid));
+      const querySnapshot = await getDocs(q);
+
+      const materialsData: Material[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data() as Omit<Material, "id">;
+
+        // CÁLCULOS SEGUROS: Normalizar precios inflados al cargar desde DB
+        let normalizedPrice = typeof data.price === "number" ? data.price : 0;
+        if (normalizedPrice > 1000) {
+          normalizedPrice = Number((normalizedPrice / 100).toFixed(2));
+          console.log(
+            `💰 NORMALIZED PRICE: ${data.name} - ${data.price} → ${normalizedPrice}`,
+          );
+        }
+
+        const material: Material = {
+          id: doc.id,
+          ...data,
+          price: normalizedPrice, // CÁLCULOS SEGUROS: usar precio normalizado
+        };
+        materialsData.push(material);
+      });
+
+      setMaterials(materialsData);
+
+      // CÁLCULOS SEGUROS: Corregir automáticamente precios inflados en la base de datos
+      try {
+        console.log("🔧 AUTO-CORRECTING INFLATED PRICES...");
+        await MaterialInventoryService.fixInflatedPricesInDatabase(
+          currentUser.uid,
+        );
+      } catch (error) {
+        console.error("Error during automatic price correction:", error);
+      }
+    } catch (error) {
+      console.error("Error loading materials from Firebase:", error);
+      toast({
+        title: "Error",
+        description: "Could not load materials",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingMaterials(false);
+    }
+  };
 
   // Inicializar con mensaje de bienvenida
   useEffect(() => {
@@ -98,6 +169,12 @@ export default function Mervin() {
 
     setMessages([welcomeMessage]);
   }, []);
+  const [visibleCount, setVisibleCount] = useState(3);
+  const [materialSearchTerm, setMaterialSearchTerm] = useState("");
+
+  const filteredMaterials = materials.filter((material) =>
+    material.name.toLowerCase().includes(materialSearchTerm.toLowerCase()),
+  );
 
   // Manejar envío de mensajes
   // const handleSendMessage = () => {
@@ -133,7 +210,7 @@ export default function Mervin() {
   //   }, 1500);
   // };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (inputValue.trim() === "" || isLoading) return;
 
     const userMessage: Message = {
@@ -149,6 +226,7 @@ export default function Mervin() {
     if (caseType === "Estimates") {
       handleEstimateFlow(inputValue.trim().toLowerCase());
       setInputValue("");
+      await loadMaterials();
       return;
     }
 
@@ -435,6 +513,24 @@ export default function Mervin() {
           },
         ]);
       }
+    } else if (chatFlowStep === "awaiting-project-description") {
+      setProjectDescription(userInput);
+      setChatFlowStep("select-inventory");
+
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        content:
+          "Por favor selecciona los materiales necesarios para este proyecto.",
+        sender: "assistant",
+        state: "none",
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    } else {
     }
   };
 
@@ -534,6 +630,87 @@ export default function Mervin() {
               )}
             </div>
           ))}
+
+          {chatFlowStep === "select-inventory" && (
+            <div className="mt-4 space-y-3">
+              {/* 🔍 Search Field */}
+              <input
+                type="text"
+                placeholder="Buscar material..."
+                value={materialSearchTerm}
+                onChange={(e) => {
+                  setMaterialSearchTerm(e.target.value);
+                  setVisibleCount(3); // Reset count when searching
+                }}
+                className="w-full bg-gray-800 text-white px-3 py-2 rounded border border-cyan-900/50"
+              />
+
+              {/* 🔁 Scrollable list */}
+              <div
+                className="max-h-64 overflow-y-auto grid grid-cols-2 gap-3 pr-2"
+                onScroll={(e) => {
+                  const { scrollTop, scrollHeight, clientHeight } =
+                    e.currentTarget;
+                  if (scrollTop + clientHeight >= scrollHeight - 10) {
+                    setVisibleCount((prev) => prev + 3); // Load 3 more on scroll bottom
+                  }
+                }}
+              >
+                {filteredMaterials.slice(0, visibleCount).map((material) => (
+                  <div
+                    key={material.id}
+                    className="bg-cyan-900/20 p-3 rounded-lg text-white space-y-2"
+                  >
+                    <div className="font-semibold">{material.name}</div>
+                    <div className="text-sm opacity-80">
+                      {material.description}
+                    </div>
+                    <div className="text-sm">
+                      Precio: ${material.price} / {material.unit}
+                    </div>
+                    <input
+                      type="number"
+                      min={1}
+                      placeholder="Cantidad"
+                      className="w-full bg-gray-800 text-white px-3 py-1 rounded"
+                      onChange={(e) => {
+                        const qty = parseInt(e.target.value);
+                        if (!isNaN(qty)) {
+                          const existing = inventoryItems.find(
+                            (item) => item.material.id === material.id,
+                          );
+                          if (existing) {
+                            setInventoryItems((prev) =>
+                              prev.map((item) =>
+                                item.material.id === material.id
+                                  ? { ...item, quantity: qty }
+                                  : item,
+                              ),
+                            );
+                          } else {
+                            setInventoryItems((prev) => [
+                              ...prev,
+                              { material, quantity: qty },
+                            ]);
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* ➕ Add New Material */}
+              <div className="text-center mt-3">
+                <button
+                  onClick={() => setChatFlowStep("add-new-material")}
+                  className="text-cyan-300 underline"
+                >
+                  ➕ Agregar nuevo material
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Mensaje de carga */}
           {isLoading && (

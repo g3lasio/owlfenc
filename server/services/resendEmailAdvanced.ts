@@ -39,6 +39,10 @@ export class ResendEmailAdvanced {
     if (!process.env.RESEND_API_KEY) {
       throw new Error('RESEND_API_KEY is required');
     }
+    
+    console.log('🔑 [RESEND-CONFIG] Using RESEND_API_KEY for initialization');
+    console.log('🔑 [RESEND-CONFIG] API Key prefix:', process.env.RESEND_API_KEY?.substring(0, 8) + '...');
+    
     this.resend = new Resend(process.env.RESEND_API_KEY);
   }
 
@@ -58,19 +62,34 @@ export class ResendEmailAdvanced {
   }
 
   /**
-   * Get appropriate recipient - always direct delivery with verified domain
+   * Get appropriate recipient - handle Resend test mode limitations
    */
   private getRecipient(originalEmail: string, recipientType: 'client' | 'contractor' | 'system' = 'client'): string {
-    // With verified owlfenc.com domain, always send directly
-    console.log(`📧 [OWLFENC-VERIFIED] Sending directly to: ${originalEmail}`);
+    // Check if Resend is in test mode (can only send to verified email)
+    const testModeEmail = 'gelasio@chyrris.com';
+    
+    if (!this.isProductionMode()) {
+      console.log(`📧 [RESEND-TEST-MODE] Redirecting ${originalEmail} to ${testModeEmail}`);
+      console.log(`📧 [RESEND-TEST-MODE] Original intended recipient: ${originalEmail}`);
+      return testModeEmail;
+    }
+    
+    // In production, send directly (requires domain verification)
+    console.log(`📧 [PRODUCTION-MODE] Sending directly to: ${originalEmail}`);
     return originalEmail;
   }
 
   /**
-   * Generate verified from email address using owlfenc.com institutional domain
+   * Generate from email address - handle test mode limitations
    */
   private generateFromEmail(emailType: 'contracts' | 'notifications' | 'system' = 'contracts'): string {
-    // Use verified owlfenc.com domain for institutional delivery
+    // In test mode, use Resend's default sending domain
+    if (!this.isProductionMode()) {
+      console.log(`📧 [RESEND-TEST-MODE] Using default Resend domain for ${emailType}`);
+      return 'onboarding@resend.dev';
+    }
+    
+    // In production, use verified owlfenc.com domain
     switch (emailType) {
       case 'contracts':
         return this.legalEmail; // legal@owlfenc.com
@@ -118,14 +137,15 @@ export class ResendEmailAdvanced {
    * Add development mode banner to email content
    */
   private addDevelopmentBanner(htmlContent: string, originalRecipient: string): string {
-    if (this.isDomainVerified()) return htmlContent;
+    if (this.isProductionMode()) return htmlContent;
 
     const banner = `
       <div style="background: #e3f2fd; border: 2px solid #2196f3; padding: 15px; margin-bottom: 20px; border-radius: 8px; text-align: center;">
-        <h3 style="color: #1565c0; margin: 0 0 10px 0;">🔧 Development Environment - Owl Fence</h3>
+        <h3 style="color: #1565c0; margin: 0 0 10px 0;">🔧 Resend Test Mode - Owl Fence</h3>
         <p style="color: #0d47a1; margin: 0; font-size: 14px;">
           <strong>Original Recipient:</strong> ${originalRecipient}<br>
-          Email routed through ${this.platformDomain} testing system for development purposes.
+          <strong>Test Mode:</strong> Resend can only send to gelasio@chyrris.com until domain is verified<br>
+          This email was intended for ${originalRecipient} but routed for testing.
         </p>
       </div>
     `;
