@@ -124,67 +124,494 @@ app.get('/sign/:contractId/:party', async (req, res) => {
       `);
     }
     
-    // In development, redirect to the frontend with the route
-    // This ensures the React app loads properly with all its assets
-    const frontendUrl = `http://localhost:5000/sign/${contractId}/${party}`;
+    // Get contract data to display directly
+    const contractData = await response.json();
     
-    // Serve a redirect page that will load the React app
+    if (!contractData.success) {
+      return res.status(404).send(`
+        <html>
+          <head><title>Contract Not Found</title></head>
+          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+            <h1>Contract Not Found</h1>
+            <p>The contract you're looking for doesn't exist or has expired.</p>
+            <p>Contract ID: ${contractId}</p>
+          </body>
+        </html>
+      `);
+    }
+
+    const contract = contractData.contract;
+    const partyName = party === 'contractor' ? 'Contractor' : 'Client';
+    const partyColor = party === 'contractor' ? '#3b82f6' : '#10b981';
+
+    // Create complete standalone signature page with contract content
     const html = `
       <!DOCTYPE html>
       <html lang="en">
         <head>
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>Contract Signature - Owl Fence</title>
+          <title>Contract Signature - ${partyName}</title>
           <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
             body { 
-              margin: 0; 
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-              background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-              min-height: 100vh;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            }
-            .loading-container {
-              text-align: center;
-              color: white;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+              background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+              color: #f8fafc;
+              line-height: 1.6;
               padding: 20px;
             }
-            .spinner {
-              border: 4px solid rgba(255,255,255,0.3);
-              border-top: 4px solid white;
-              border-radius: 50%;
-              width: 50px;
-              height: 50px;
-              animation: spin 1s linear infinite;
-              margin: 0 auto 20px;
+            .container { 
+              max-width: 800px; 
+              margin: 0 auto; 
+              background: #1e293b;
+              border-radius: 12px;
+              box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+              overflow: hidden;
             }
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
+            .header { 
+              background: ${partyColor}; 
+              color: white; 
+              padding: 20px; 
+              text-align: center; 
+            }
+            .header h1 { font-size: 24px; margin-bottom: 5px; }
+            .header .party { font-size: 18px; opacity: 0.9; }
+            .content { padding: 30px; }
+            .section { margin-bottom: 30px; }
+            .section h2 { 
+              color: ${partyColor}; 
+              margin-bottom: 15px; 
+              font-size: 20px;
+              border-bottom: 2px solid ${partyColor};
+              padding-bottom: 5px;
+            }
+            .contract-info { 
+              display: grid; 
+              grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+              gap: 20px; 
+              margin-bottom: 30px; 
+            }
+            .info-card { 
+              background: #334155; 
+              padding: 15px; 
+              border-radius: 8px; 
+              border-left: 4px solid ${partyColor};
+            }
+            .info-card .label { 
+              font-weight: bold; 
+              color: ${partyColor}; 
+              margin-bottom: 5px; 
+            }
+            .contract-content { 
+              background: white; 
+              color: #1e293b; 
+              padding: 30px; 
+              border-radius: 8px; 
+              margin: 20px 0; 
+              max-height: 400px; 
+              overflow-y: auto;
+              border: 2px solid #e2e8f0;
+            }
+            .signature-section { 
+              background: #334155; 
+              padding: 25px; 
+              border-radius: 8px; 
+              margin-top: 20px; 
+            }
+            .checkbox-container { 
+              display: flex; 
+              align-items: flex-start; 
+              gap: 10px; 
+              margin: 20px 0; 
+            }
+            .checkbox-container input[type="checkbox"] { 
+              width: 18px; 
+              height: 18px; 
+              margin-top: 2px;
+            }
+            .form-group { margin: 15px 0; }
+            .form-group label { 
+              display: block; 
+              margin-bottom: 5px; 
+              font-weight: bold; 
+              color: ${partyColor}; 
+            }
+            .form-group input, .form-group textarea { 
+              width: 100%; 
+              padding: 10px; 
+              border: 2px solid #475569; 
+              border-radius: 6px; 
+              background: #1e293b; 
+              color: white; 
+              font-size: 16px;
+            }
+            .form-group input:focus, .form-group textarea:focus { 
+              outline: none; 
+              border-color: ${partyColor}; 
+            }
+            .signature-type { 
+              display: flex; 
+              gap: 10px; 
+              margin: 15px 0; 
+            }
+            .signature-type button { 
+              padding: 10px 20px; 
+              border: 2px solid #475569; 
+              background: #1e293b; 
+              color: white; 
+              border-radius: 6px; 
+              cursor: pointer; 
+              transition: all 0.3s;
+            }
+            .signature-type button.active { 
+              background: ${partyColor}; 
+              border-color: ${partyColor}; 
+            }
+            .signature-canvas { 
+              border: 2px dashed #475569; 
+              border-radius: 6px; 
+              background: white; 
+              cursor: crosshair; 
+              display: block; 
+              margin: 10px 0; 
+            }
+            .signature-cursive { 
+              background: white; 
+              color: #1e293b; 
+              border: 2px dashed #475569; 
+              border-radius: 6px; 
+              padding: 20px; 
+              text-align: center; 
+              font-family: 'Brush Script MT', cursive; 
+              font-size: 24px; 
+              min-height: 80px; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center;
+            }
+            .button { 
+              background: ${partyColor}; 
+              color: white; 
+              border: none; 
+              padding: 12px 24px; 
+              border-radius: 6px; 
+              cursor: pointer; 
+              font-size: 16px; 
+              font-weight: bold; 
+              transition: all 0.3s;
+              margin: 5px;
+            }
+            .button:hover { 
+              opacity: 0.9; 
+              transform: translateY(-1px); 
+            }
+            .button:disabled { 
+              opacity: 0.5; 
+              cursor: not-allowed; 
+            }
+            .button.secondary { 
+              background: #475569; 
+            }
+            .status { 
+              text-align: center; 
+              padding: 20px; 
+              border-radius: 8px; 
+              margin: 20px 0; 
+            }
+            .status.success { 
+              background: #065f46; 
+              color: #d1fae5; 
+            }
+            .hidden { display: none; }
+            @media (max-width: 600px) {
+              .container { margin: 10px; }
+              .content { padding: 20px; }
+              .contract-info { grid-template-columns: 1fr; }
             }
           </style>
         </head>
         <body>
-          <div class="loading-container">
-            <div class="spinner"></div>
-            <h2>Loading Contract Signature</h2>
-            <p>Please wait while we load your contract...</p>
-            <p><small>Contract ID: ${contractId}</small></p>
+          <div class="container">
+            <div class="header">
+              <h1>Contract Signature</h1>
+              <div class="party">${partyName} Review & Signature</div>
+              <div style="font-size: 14px; opacity: 0.8; margin-top: 5px;">Contract ID: ${contractId}</div>
+            </div>
+
+            <div class="content">
+              <!-- Contract Information -->
+              <div class="section">
+                <h2>Contract Information</h2>
+                <div class="contract-info">
+                  <div class="info-card">
+                    <div class="label">Contractor</div>
+                    <div>${contract.contractorName}</div>
+                    <div style="font-size: 14px; color: #94a3b8;">${contract.contractorEmail}</div>
+                    <div style="font-size: 14px; color: #94a3b8;">${contract.contractorCompany}</div>
+                  </div>
+                  <div class="info-card">
+                    <div class="label">Client</div>
+                    <div>${contract.clientName}</div>
+                    <div style="font-size: 14px; color: #94a3b8;">${contract.clientEmail}</div>
+                  </div>
+                  <div class="info-card">
+                    <div class="label">Project</div>
+                    <div>${contract.projectDescription}</div>
+                  </div>
+                  <div class="info-card">
+                    <div class="label">Amount</div>
+                    <div style="font-size: 18px; font-weight: bold;">$${parseFloat(contract.totalAmount).toLocaleString()}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Contract Content -->
+              <div class="section">
+                <h2>Contract Terms & Conditions</h2>
+                <div class="contract-content">
+                  ${contract.contractHtml}
+                </div>
+              </div>
+
+              <!-- Signature Section -->
+              <div class="signature-section">
+                <h2 style="color: white; border-bottom: 2px solid white; margin-bottom: 20px;">Electronic Signature</h2>
+                
+                <!-- Confirmation Checkbox -->
+                <div class="checkbox-container">
+                  <input type="checkbox" id="confirmRead" />
+                  <label for="confirmRead" style="color: white; font-weight: normal;">
+                    I have carefully read and reviewed the entire contract above. I understand all terms and conditions 
+                    and agree to be legally bound by this agreement.
+                  </label>
+                </div>
+
+                <!-- Name Input -->
+                <div class="form-group">
+                  <label for="fullName">Full Legal Name</label>
+                  <input type="text" id="fullName" value="${party === 'contractor' ? contract.contractorName : contract.clientName}" />
+                </div>
+
+                <!-- Signature Type -->
+                <div class="form-group">
+                  <label>Signature Method</label>
+                  <div class="signature-type">
+                    <button type="button" id="cursiveBtn" class="active">Type Name</button>
+                    <button type="button" id="drawBtn">Draw Signature</button>
+                  </div>
+                </div>
+
+                <!-- Cursive Signature -->
+                <div id="cursiveSignature" class="signature-cursive">
+                  Your name will appear here
+                </div>
+
+                <!-- Canvas Signature -->
+                <canvas id="signatureCanvas" class="signature-canvas hidden" width="400" height="150"></canvas>
+
+                <!-- Action Buttons -->
+                <div style="text-align: center; margin-top: 25px;">
+                  <button type="button" id="clearBtn" class="button secondary">Clear Signature</button>
+                  <button type="button" id="submitBtn" class="button">Submit Signature</button>
+                </div>
+
+                <!-- Status Message -->
+                <div id="statusMessage" class="hidden"></div>
+              </div>
+            </div>
           </div>
+
           <script>
-            // Set signature data for the React app
-            window.__SIGNATURE_DATA__ = {
-              contractId: "${contractId}",
-              party: "${party}"
-            };
-            
-            // Load the React app properly by navigating to the main app
-            // The React router will handle the /sign route
-            setTimeout(() => {
-              window.location.href = '/#/sign/${contractId}/${party}';
-            }, 1000);
+            let signatureType = 'cursive';
+            let isDrawing = false;
+            let canvas = document.getElementById('signatureCanvas');
+            let ctx = canvas ? canvas.getContext('2d') : null;
+
+            // Initialize canvas
+            if (ctx) {
+              ctx.strokeStyle = '#1e40af';
+              ctx.lineWidth = 2;
+              ctx.lineCap = 'round';
+              ctx.lineJoin = 'round';
+            }
+
+            // Elements
+            const confirmCheckbox = document.getElementById('confirmRead');
+            const fullNameInput = document.getElementById('fullName');
+            const cursiveBtn = document.getElementById('cursiveBtn');
+            const drawBtn = document.getElementById('drawBtn');
+            const cursiveDiv = document.getElementById('cursiveSignature');
+            const submitBtn = document.getElementById('submitBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const statusDiv = document.getElementById('statusMessage');
+
+            // Update cursive signature display
+            function updateCursiveSignature() {
+              const name = fullNameInput.value || 'Your name will appear here';
+              cursiveDiv.textContent = name;
+            }
+
+            // Signature type switching
+            cursiveBtn.addEventListener('click', () => {
+              signatureType = 'cursive';
+              cursiveBtn.classList.add('active');
+              drawBtn.classList.remove('active');
+              cursiveDiv.classList.remove('hidden');
+              canvas.classList.add('hidden');
+              updateCursiveSignature();
+            });
+
+            drawBtn.addEventListener('click', () => {
+              signatureType = 'drawing';
+              drawBtn.classList.add('active');
+              cursiveBtn.classList.remove('active');
+              cursiveDiv.classList.add('hidden');
+              canvas.classList.remove('hidden');
+            });
+
+            // Name input handler
+            fullNameInput.addEventListener('input', updateCursiveSignature);
+
+            // Canvas drawing
+            function getMousePos(e) {
+              const rect = canvas.getBoundingClientRect();
+              const scaleX = canvas.width / rect.width;
+              const scaleY = canvas.height / rect.height;
+              return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+              };
+            }
+
+            function getTouchPos(e) {
+              const rect = canvas.getBoundingClientRect();
+              const scaleX = canvas.width / rect.width;
+              const scaleY = canvas.height / rect.height;
+              return {
+                x: (e.touches[0].clientX - rect.left) * scaleX,
+                y: (e.touches[0].clientY - rect.top) * scaleY
+              };
+            }
+
+            // Mouse events
+            canvas.addEventListener('mousedown', (e) => {
+              isDrawing = true;
+              const pos = getMousePos(e);
+              ctx.beginPath();
+              ctx.moveTo(pos.x, pos.y);
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+              if (!isDrawing) return;
+              const pos = getMousePos(e);
+              ctx.lineTo(pos.x, pos.y);
+              ctx.stroke();
+            });
+
+            canvas.addEventListener('mouseup', () => {
+              isDrawing = false;
+            });
+
+            // Touch events
+            canvas.addEventListener('touchstart', (e) => {
+              e.preventDefault();
+              isDrawing = true;
+              const pos = getTouchPos(e);
+              ctx.beginPath();
+              ctx.moveTo(pos.x, pos.y);
+            });
+
+            canvas.addEventListener('touchmove', (e) => {
+              e.preventDefault();
+              if (!isDrawing) return;
+              const pos = getTouchPos(e);
+              ctx.lineTo(pos.x, pos.y);
+              ctx.stroke();
+            });
+
+            canvas.addEventListener('touchend', (e) => {
+              e.preventDefault();
+              isDrawing = false;
+            });
+
+            // Clear signature
+            clearBtn.addEventListener('click', () => {
+              if (signatureType === 'drawing') {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+              } else {
+                fullNameInput.value = '${party === 'contractor' ? contract.contractorName : contract.clientName}';
+                updateCursiveSignature();
+              }
+            });
+
+            // Submit signature
+            submitBtn.addEventListener('click', async () => {
+              if (!confirmCheckbox.checked) {
+                alert('Please confirm that you have read the contract before signing.');
+                return;
+              }
+
+              const name = fullNameInput.value.trim();
+              if (!name) {
+                alert('Please enter your full name.');
+                return;
+              }
+
+              let signatureData = '';
+              if (signatureType === 'drawing') {
+                signatureData = canvas.toDataURL();
+                if (!signatureData || signatureData === 'data:,') {
+                  alert('Please draw your signature.');
+                  return;
+                }
+              } else {
+                signatureData = name;
+              }
+
+              submitBtn.disabled = true;
+              submitBtn.textContent = 'Submitting...';
+
+              try {
+                const response = await fetch('/api/dual-signature/sign', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    contractId: '${contractId}',
+                    party: '${party}',
+                    signatureData,
+                    signatureType,
+                    fullName: name
+                  })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                  statusDiv.className = 'status success';
+                  statusDiv.innerHTML = \`
+                    <h3>✅ Signature Submitted Successfully</h3>
+                    <p>\${result.message}</p>
+                    \${result.bothSigned ? '<p><strong>Both parties have signed! Final PDF will be sent shortly.</strong></p>' : '<p>Waiting for the other party to sign.</p>'}
+                  \`;
+                  statusDiv.classList.remove('hidden');
+                  
+                  // Hide form elements
+                  document.querySelector('.signature-section').style.display = 'none';
+                } else {
+                  alert('Error: ' + result.message);
+                }
+              } catch (error) {
+                alert('Network error. Please try again.');
+                console.error('Signature submission error:', error);
+              } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Signature';
+              }
+            });
+
+            // Initialize
+            updateCursiveSignature();
           </script>
         </body>
       </html>
