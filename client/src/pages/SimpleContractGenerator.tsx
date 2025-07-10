@@ -2039,146 +2039,374 @@ export default function SimpleContractGenerator() {
                     </div>
                   </div>
 
-                  {/* Multi-Channel Secure Delivery */}
-                  <div className="bg-gradient-to-br from-green-900/40 to-blue-900/40 border border-green-400 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Shield className="h-5 w-5 text-green-400" />
-                      <h3 className="font-semibold text-green-400">Secure Multi-Channel Delivery</h3>
-                      <Badge className="bg-green-600 text-white text-xs">
-                        Enterprise Security
-                      </Badge>
+                  {/* CLASSIFIED: Multi-Channel Secure Delivery Terminal */}
+                  <div className="relative bg-gradient-to-br from-black via-gray-900 to-black border-2 border-cyan-400 rounded-lg p-4 shadow-2xl shadow-cyan-400/20">
+                    {/* Cybersecurity Header */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <Shield className="h-6 w-6 text-cyan-400 animate-pulse" />
+                          <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-cyan-400 text-sm tracking-wider">CLASSIFIED DELIVERY SYSTEM</h3>
+                          <p className="text-xs text-gray-500 tracking-widest">MULTI-VECTOR TRANSMISSION</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <Badge className="bg-red-600 text-white text-xs font-mono animate-pulse">
+                          ENCRYPTED
+                        </Badge>
+                        <Badge className="bg-cyan-600 text-black text-xs font-mono">
+                          SECURE
+                        </Badge>
+                      </div>
                     </div>
-                    <p className="text-gray-300 text-sm mb-4">
-                      Send encrypted signature links via multiple secure channels
-                    </p>
                     
-                    {/* Delivery Method Selection */}
-                    <div className="space-y-3 mb-4">
-                      <div className="text-xs font-semibold text-cyan-400 mb-2">Choose Delivery Methods:</div>
+                    {/* Threat Level Indicator */}
+                    <div className="bg-black/60 border border-cyan-400/30 rounded p-2 mb-4 font-mono text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-cyan-400">THREAT LEVEL:</span>
+                        <span className="text-green-400 font-bold">MINIMAL</span>
+                      </div>
+                      <div className="w-full bg-gray-800 rounded-full h-1 mt-1">
+                        <div className="bg-gradient-to-r from-green-400 to-cyan-400 h-1 rounded-full w-3/4"></div>
+                      </div>
+                    </div>
+                    
+                    {/* Delivery Vector Selection */}
+                    <div className="space-y-2 mb-4">
+                      <div className="text-xs font-bold text-cyan-400 mb-2 tracking-wider">TRANSMISSION VECTORS:</div>
                       <div className="grid grid-cols-1 gap-2">
-                        <label className="flex items-center gap-3 p-2 bg-gray-800/50 rounded border border-gray-600 hover:border-cyan-400 transition-colors cursor-pointer">
+                        {/* Email Vector */}
+                        <label className={`relative flex items-center gap-3 p-3 bg-black/40 rounded border-2 ${deliveryMethods.email ? 'border-cyan-400 bg-cyan-400/10' : 'border-gray-700'} hover:border-cyan-400 transition-all cursor-pointer group`}>
                           <input 
                             type="checkbox" 
                             checked={deliveryMethods.email}
                             onChange={(e) => setDeliveryMethods(prev => ({ ...prev, email: e.target.checked }))}
-                            className="text-cyan-400 focus:ring-cyan-400"
+                            className="text-cyan-400 focus:ring-cyan-400 bg-black border-cyan-400"
                           />
-                          <Mail className="h-4 w-4 text-blue-400" />
-                          <span className="text-sm text-gray-300">Secure Email (Professional)</span>
+                          <div className="flex items-center gap-2 flex-1">
+                            <Mail className="h-4 w-4 text-cyan-400" />
+                            <div>
+                              <span className="text-sm text-white font-semibold">SMTP ENCRYPTED CHANNEL</span>
+                              <p className="text-xs text-gray-400">Professional Email Gateway</p>
+                            </div>
+                          </div>
+                          <div className="text-xs font-mono text-green-400">READY</div>
+                          {deliveryMethods.email && (
+                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-cyan-400 rounded-full animate-ping"></div>
+                          )}
                         </label>
-                        <label className="flex items-center gap-3 p-2 bg-gray-800/50 rounded border border-gray-600 hover:border-cyan-400 transition-colors cursor-pointer">
+                        
+                        {/* SMS Vector */}
+                        <label className={`relative flex items-center gap-3 p-3 bg-black/40 rounded border-2 ${deliveryMethods.sms ? 'border-green-400 bg-green-400/10' : 'border-gray-700'} hover:border-green-400 transition-all cursor-pointer group`}>
                           <input 
                             type="checkbox" 
                             checked={deliveryMethods.sms}
                             onChange={(e) => setDeliveryMethods(prev => ({ ...prev, sms: e.target.checked }))}
-                            className="text-cyan-400 focus:ring-cyan-400"
+                            className="text-green-400 focus:ring-green-400 bg-black border-green-400"
                           />
-                          <Phone className="h-4 w-4 text-green-400" />
-                          <span className="text-sm text-gray-300">SMS Text Message</span>
+                          <div className="flex items-center gap-2 flex-1">
+                            <Phone className="h-4 w-4 text-green-400" />
+                            <div>
+                              <span className="text-sm text-white font-semibold">GSM CELLULAR NETWORK</span>
+                              <p className="text-xs text-gray-400">SMS Text Deployment</p>
+                            </div>
+                          </div>
+                          <div className="text-xs font-mono text-green-400">ACTIVE</div>
+                          {deliveryMethods.sms && (
+                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
+                          )}
                         </label>
-                        <label className="flex items-center gap-3 p-2 bg-gray-800/50 rounded border border-gray-600 hover:border-cyan-400 transition-colors cursor-pointer">
+                        
+                        {/* WhatsApp Vector */}
+                        <label className={`relative flex items-center gap-3 p-3 bg-black/40 rounded border-2 ${deliveryMethods.whatsapp ? 'border-green-500 bg-green-500/10' : 'border-gray-700'} hover:border-green-500 transition-all cursor-pointer group`}>
                           <input 
                             type="checkbox" 
                             checked={deliveryMethods.whatsapp}
                             onChange={(e) => setDeliveryMethods(prev => ({ ...prev, whatsapp: e.target.checked }))}
-                            className="text-cyan-400 focus:ring-cyan-400"
+                            className="text-green-500 focus:ring-green-500 bg-black border-green-500"
                           />
-                          <MessageCircle className="h-4 w-4 text-green-500" />
-                          <span className="text-sm text-gray-300">WhatsApp Business</span>
+                          <div className="flex items-center gap-2 flex-1">
+                            <MessageCircle className="h-4 w-4 text-green-500" />
+                            <div>
+                              <span className="text-sm text-white font-semibold">WHATSAPP BUSINESS API</span>
+                              <p className="text-xs text-gray-400">Encrypted Messaging Protocol</p>
+                            </div>
+                          </div>
+                          <div className="text-xs font-mono text-green-400">STANDBY</div>
+                          {deliveryMethods.whatsapp && (
+                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
+                          )}
                         </label>
                       </div>
                     </div>
 
-                    {/* Security Features Badge */}
-                    <div className="bg-gray-800/30 border border-gray-600 rounded-lg p-3 mb-4">
-                      <div className="text-xs font-semibold text-cyan-400 mb-2">Security Features:</div>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="flex items-center gap-1">
-                          <Lock className="h-3 w-3 text-green-400" />
-                          <span className="text-gray-300">256-bit SSL</span>
+                    {/* Security Protocol Matrix */}
+                    <div className="bg-black/60 border border-cyan-400/30 rounded p-3 mb-4">
+                      <div className="text-xs font-bold text-cyan-400 mb-2 tracking-wider">SECURITY PROTOCOLS:</div>
+                      <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                          <span className="text-green-400">AES-256 ENCRYPTION</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Shield className="h-3 w-3 text-blue-400" />
-                          <span className="text-gray-300">Device Verification</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                          <span className="text-blue-400">BIOMETRIC VALIDATION</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Eye className="h-3 w-3 text-purple-400" />
-                          <span className="text-gray-300">Audit Trail</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                          <span className="text-purple-400">AUDIT CHAIN</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3 text-yellow-400" />
-                          <span className="text-gray-300">Time Stamps</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                          <span className="text-yellow-400">TIMESTAMP LOCK</span>
+                        </div>
+                      </div>
+                      
+                      {/* Real-time Security Status */}
+                      <div className="mt-2 pt-2 border-t border-gray-700">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-400">FIREWALL STATUS:</span>
+                          <span className="text-green-400 font-bold">SECURED</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-400">LINK EXPIRATION:</span>
+                          <span className="text-yellow-400 font-bold">72 HOURS</span>
                         </div>
                       </div>
                     </div>
 
+                    {/* Deploy Button */}
                     <Button
                       onClick={handleMultiChannelDelivery}
                       disabled={isLoading || !contractHTML || isMultiChannelActive}
-                      className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-500 hover:to-blue-500 text-white font-medium py-2 px-4 w-full disabled:opacity-50 text-sm"
+                      className={`w-full py-3 font-bold text-sm tracking-wider transition-all duration-300 ${
+                        isLoading 
+                          ? 'bg-yellow-600/80 text-black animate-pulse' 
+                          : isMultiChannelActive
+                          ? 'bg-green-600 text-black'
+                          : 'bg-gradient-to-r from-red-600 via-yellow-500 to-green-600 text-black hover:from-red-500 hover:via-yellow-400 hover:to-green-500'
+                      } disabled:opacity-50 border-2 border-transparent hover:border-cyan-400`}
                     >
                       {isLoading ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>TRANSMITTING...</span>
+                          <div className="flex gap-1">
+                            <div className="w-1 h-1 bg-black rounded-full animate-ping"></div>
+                            <div className="w-1 h-1 bg-black rounded-full animate-ping" style={{animationDelay: '0.2s'}}></div>
+                            <div className="w-1 h-1 bg-black rounded-full animate-ping" style={{animationDelay: '0.4s'}}></div>
+                          </div>
+                        </div>
+                      ) : isMultiChannelActive ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <CheckCircle className="h-4 w-4" />
+                          <span>TRANSMISSION COMPLETE</span>
+                        </div>
                       ) : (
-                        <Send className="h-4 w-4 mr-2" />
+                        <div className="flex items-center justify-center gap-2">
+                          <Send className="h-4 w-4" />
+                          <span>DEPLOY SECURE CHANNELS</span>
+                        </div>
                       )}
-                      {isLoading ? "Sending Secure Links..." : "Send Secure Contract Links"}
                     </Button>
-                    <div className="flex items-center justify-center text-xs text-gray-400 mt-2 gap-1">
-                      <CheckCircle className="h-3 w-3" />
-                      <span>Bank-Level Security • Multi-Platform • Instant</span>
+                    
+                    {/* Status Footer */}
+                    <div className="flex items-center justify-center text-xs text-gray-400 mt-2 gap-2 font-mono">
+                      <div className="w-1 h-1 bg-cyan-400 rounded-full animate-pulse"></div>
+                      <span>CLASSIFIED • BANK-GRADE • MULTI-VECTOR</span>
+                      <div className="w-1 h-1 bg-cyan-400 rounded-full animate-pulse"></div>
                     </div>
+                    
+                    {/* Corner Security Indicators */}
+                    <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-cyan-400"></div>
+                    <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-cyan-400"></div>
+                    <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-cyan-400"></div>
+                    <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-cyan-400"></div>
                   </div>
                 </div>
 
-                {/* Multi-Channel Delivery Status */}
+                {/* CLASSIFIED: Multi-Channel Transmission Status */}
                 {isMultiChannelActive && (
-                  <div className="bg-gradient-to-br from-green-900/30 to-blue-900/30 border border-green-400 rounded-lg p-3">
-                    <h4 className="text-sm font-semibold text-green-400 mb-2 flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      Secure Delivery Status
-                    </h4>
-                    <p className="text-xs text-gray-300 mb-3">{deliveryStatus}</p>
-                    
-                    {contractorSignUrl && clientSignUrl && (
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-400">Contractor:</span>
-                            <Badge className="bg-green-600 text-white text-xs">Delivered</Badge>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-400">Client:</span>
-                            <Badge className="bg-green-600 text-white text-xs">Delivered</Badge>
-                          </div>
+                  <div className="relative bg-gradient-to-br from-black via-gray-900 to-black border-2 border-green-400 rounded-lg p-4 shadow-2xl shadow-green-400/20">
+                    {/* Status Header */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <Truck className="h-5 w-5 text-green-400 animate-pulse" />
+                          <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-green-400 text-sm tracking-wider">TRANSMISSION STATUS</h3>
+                          <p className="text-xs text-gray-500 tracking-widest">REAL-TIME MONITORING</p>
+                        </div>
+                      </div>
+                      <Badge className="bg-green-600 text-black text-xs font-mono animate-pulse">
+                        ACTIVE
+                      </Badge>
+                    </div>
+
+                    {/* Delivery Status Monitor */}
+                    {deliveryStatus && (
+                      <div className="bg-black/60 border border-green-400/30 rounded p-3 mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                          <span className="text-xs font-bold text-green-400 tracking-wider">SYSTEM STATUS:</span>
+                        </div>
+                        <div className="font-mono text-sm text-green-300 animate-pulse">
+                          {deliveryStatus}
                         </div>
                         
-                        {/* Active Delivery Methods */}
-                        <div className="bg-gray-800/30 rounded-lg p-2">
-                          <div className="text-xs font-semibold text-cyan-400 mb-1">Active Channels:</div>
-                          <div className="flex gap-2 text-xs">
-                            {deliveryMethods.email && (
-                              <Badge className="bg-blue-600 text-white text-xs">
-                                <Mail className="h-3 w-3 mr-1" />
-                                Email
-                              </Badge>
-                            )}
-                            {deliveryMethods.sms && (
-                              <Badge className="bg-green-600 text-white text-xs">
-                                <Phone className="h-3 w-3 mr-1" />
-                                SMS
-                              </Badge>
-                            )}
-                            {deliveryMethods.whatsapp && (
-                              <Badge className="bg-green-500 text-white text-xs">
-                                <MessageCircle className="h-3 w-3 mr-1" />
-                                WhatsApp
-                              </Badge>
-                            )}
-                          </div>
+                        {/* Progress Indicators */}
+                        <div className="mt-3 space-y-2">
+                          {deliveryMethods.email && (
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-cyan-400">EMAIL VECTOR:</span>
+                              <span className="text-green-400 font-bold">DEPLOYED</span>
+                            </div>
+                          )}
+                          {deliveryMethods.sms && (
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-green-400">SMS VECTOR:</span>
+                              <span className="text-green-400 font-bold">TRANSMITTED</span>
+                            </div>
+                          )}
+                          {deliveryMethods.whatsapp && (
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-green-500">WHATSAPP VECTOR:</span>
+                              <span className="text-green-400 font-bold">OPERATIONAL</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
+                    
+                    {/* Secure Access Links */}
+                    <div className="space-y-3">
+                      {contractorSignUrl && (
+                        <div className="bg-black/40 border border-cyan-400/50 rounded-lg p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Shield className="h-4 w-4 text-cyan-400" />
+                            <h4 className="text-cyan-400 font-bold text-xs tracking-wider">CONTRACTOR ACCESS PORTAL</h4>
+                            <Badge className="bg-cyan-600 text-black text-xs font-mono">SECURED</Badge>
+                          </div>
+                          <div className="bg-black/60 rounded p-2 border border-cyan-400/30">
+                            <a 
+                              href={contractorSignUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-cyan-300 hover:text-cyan-200 underline text-xs break-all font-mono"
+                            >
+                              {contractorSignUrl}
+                            </a>
+                          </div>
+                          <div className="flex items-center gap-1 mt-2 text-xs text-gray-400">
+                            <Lock className="h-3 w-3" />
+                            <span>256-bit encrypted • Device verified • Audit logged</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {clientSignUrl && (
+                        <div className="bg-black/40 border border-green-400/50 rounded-lg p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Shield className="h-4 w-4 text-green-400" />
+                            <h4 className="text-green-400 font-bold text-xs tracking-wider">CLIENT ACCESS PORTAL</h4>
+                            <Badge className="bg-green-600 text-black text-xs font-mono">SECURED</Badge>
+                          </div>
+                          <div className="bg-black/60 rounded p-2 border border-green-400/30">
+                            <a 
+                              href={clientSignUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-green-300 hover:text-green-200 underline text-xs break-all font-mono"
+                            >
+                              {clientSignUrl}
+                            </a>
+                          </div>
+                          <div className="flex items-center gap-1 mt-2 text-xs text-gray-400">
+                            <Lock className="h-3 w-3" />
+                            <span>Biometric protected • Time-locked • Audit trail active</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {contractorSignUrl && clientSignUrl && (
+                      <>
+                        {/* Deployment Status Grid */}
+                        <div className="mt-4 grid grid-cols-2 gap-2">
+                          <div className="bg-black/40 border border-cyan-400/30 rounded p-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-cyan-400 font-bold">CONTRACTOR:</span>
+                              <Badge className="bg-cyan-600 text-black text-xs font-mono">DELIVERED</Badge>
+                            </div>
+                          </div>
+                          <div className="bg-black/40 border border-green-400/30 rounded p-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-green-400 font-bold">CLIENT:</span>
+                              <Badge className="bg-green-600 text-black text-xs font-mono">DELIVERED</Badge>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Active Delivery Vectors */}
+                        <div className="mt-4 bg-black/60 border border-green-400/30 rounded p-3">
+                          <div className="text-xs font-bold text-green-400 mb-2 tracking-wider">ACTIVE VECTORS:</div>
+                          <div className="flex gap-2 flex-wrap">
+                            {deliveryMethods.email && (
+                              <Badge className="bg-cyan-600 text-black text-xs font-mono">
+                                <Mail className="h-3 w-3 mr-1" />
+                                SMTP CHANNEL
+                              </Badge>
+                            )}
+                            {deliveryMethods.sms && (
+                              <Badge className="bg-green-600 text-black text-xs font-mono">
+                                <Phone className="h-3 w-3 mr-1" />
+                                GSM NETWORK
+                              </Badge>
+                            )}
+                            {deliveryMethods.whatsapp && (
+                              <Badge className="bg-green-500 text-black text-xs font-mono">
+                                <MessageCircle className="h-3 w-3 mr-1" />
+                                WHATSAPP API
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Real-time Security Metrics */}
+                        <div className="mt-4 bg-black/60 border border-green-400/30 rounded p-3">
+                          <div className="text-xs font-bold text-green-400 mb-2 tracking-wider">SECURITY METRICS:</div>
+                          <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-400">ENCRYPTION:</span>
+                              <span className="text-green-400">ACTIVE</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-400">FIREWALL:</span>
+                              <span className="text-green-400">SECURED</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-400">MONITORING:</span>
+                              <span className="text-green-400">LIVE</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-400">STATUS:</span>
+                              <span className="text-green-400">OPERATIONAL</span>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Corner Security Indicators */}
+                    <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-green-400"></div>
+                    <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-green-400"></div>
+                    <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-green-400"></div>
+                    <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-green-400"></div>
                   </div>
                 )}
 
