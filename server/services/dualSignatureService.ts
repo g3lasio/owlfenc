@@ -449,8 +449,64 @@ export class DualSignatureService {
       const remainingParty = signedParty === 'contractor' ? 'client' : 'contractor';
       console.log(`📧 [DUAL-SIGNATURE] Notifying ${remainingParty} that ${signedParty} has signed`);
       
-      // TODO: Implement notification to remaining party
-      // This could be email, SMS, or push notification
+      // Get contract data from database
+      const [contract] = await db.select()
+        .from(digitalContracts)
+        .where(eq(digitalContracts.contractId, contractId))
+        .limit(1);
+        
+      if (!contract) {
+        console.error('❌ [DUAL-SIGNATURE] Contract not found for notification:', contractId);
+        return;
+      }
+      
+      const contractData = contract.contractData as any;
+      
+      if (remainingParty === 'contractor') {
+        // Notify contractor that client has signed
+        const contractorSignUrl = `https://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}/sign/${contractId}/contractor`;
+        
+        await this.emailService.sendContractEmail({
+          to: contractData.contractorEmail,
+          toName: contractData.contractorName,
+          contractorEmail: contractData.contractorEmail,
+          contractorName: contractData.contractorName,
+          contractorCompany: contractData.contractorCompany,
+          subject: `✅ Client Signed! Your Signature Needed - ${contractData.clientName}`,
+          htmlContent: this.generateContractorNotificationHTML({
+            contractorName: contractData.contractorName,
+            clientName: contractData.clientName,
+            signUrl: contractorSignUrl,
+            contractId: contractId,
+            notificationType: 'client_signed'
+          })
+        });
+        
+        console.log('✅ [DUAL-SIGNATURE] Contractor notification sent:', contractData.contractorEmail);
+        
+      } else {
+        // Notify client that contractor has signed
+        const clientSignUrl = `https://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}/sign/${contractId}/client`;
+        
+        await this.emailService.sendContractEmail({
+          to: contractData.clientEmail,
+          toName: contractData.clientName,
+          contractorEmail: contractData.contractorEmail,
+          contractorName: contractData.contractorName,
+          contractorCompany: contractData.contractorCompany,
+          subject: `✅ Contractor Signed! Your Signature Needed - ${contractData.contractorCompany}`,
+          htmlContent: this.generateClientNotificationHTML({
+            clientName: contractData.clientName,
+            contractorName: contractData.contractorName,
+            contractorCompany: contractData.contractorCompany,
+            signUrl: clientSignUrl,
+            contractId: contractId,
+            notificationType: 'contractor_signed'
+          })
+        });
+        
+        console.log('✅ [DUAL-SIGNATURE] Client notification sent:', contractData.clientEmail);
+      }
       
     } catch (error: any) {
       console.error('❌ [DUAL-SIGNATURE] Error notifying remaining party:', error);
@@ -520,6 +576,127 @@ export class DualSignatureService {
     } catch (error: any) {
       console.error('❌ [DUAL-SIGNATURE] Error sending dual notifications:', error);
     }
+  }
+
+  /**
+   * Generar HTML del email de notificación para el contratista
+   */
+  private generateContractorNotificationHTML(params: {
+    contractorName: string;
+    clientName: string;
+    signUrl: string;
+    contractId: string;
+    notificationType: 'client_signed';
+  }): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Client Has Signed - Your Signature Required</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">✅ Great News! Client Has Signed</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Your signature is now required to complete the contract</p>
+          </div>
+          
+          <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e2e8f0;">
+            <h2 style="color: #059669; margin-top: 0;">Hello ${params.contractorName},</h2>
+            
+            <p><strong>${params.clientName}</strong> has successfully signed the contract! The contract is now ready for your signature to complete the process.</p>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981; margin: 20px 0;">
+              <h3 style="margin: 0 0 10px 0; color: #059669;">🎉 Contract Status Update</h3>
+              <p><strong>Client:</strong> ${params.clientName} ✅ <span style="color: #10b981;">SIGNED</span></p>
+              <p><strong>Contractor:</strong> ${params.contractorName} ⏳ <span style="color: #f59e0b;">PENDING</span></p>
+              <p><strong>Contract ID:</strong> ${params.contractId}</p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${params.signUrl}" 
+                 style="display: inline-block; background: #10b981; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                🖊️ Complete Your Signature
+              </a>
+            </div>
+            
+            <div style="background: #d1fae5; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; margin: 20px 0;">
+              <h4 style="margin: 0 0 10px 0; color: #059669;">⚡ Quick Action Required</h4>
+              <p style="margin: 0; color: #065f46;">Click the button above to review and sign the contract. Once you sign, both parties will receive the completed contract automatically.</p>
+            </div>
+            
+            <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin-top: 20px;">
+              <p style="margin: 0; font-size: 12px; color: #6b7280;">
+                This email was sent because ${params.clientName} completed their signature on contract ${params.contractId}. 
+                Please sign within 48 hours to finalize the agreement.
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+  }
+
+  /**
+   * Generar HTML del email de notificación para el cliente
+   */
+  private generateClientNotificationHTML(params: {
+    clientName: string;
+    contractorName: string;
+    contractorCompany: string;
+    signUrl: string;
+    contractId: string;
+    notificationType: 'contractor_signed';
+  }): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Contractor Has Signed - Your Signature Required</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">✅ Contractor Has Signed</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Your signature is now required to complete the contract</p>
+          </div>
+          
+          <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e2e8f0;">
+            <h2 style="color: #1d4ed8; margin-top: 0;">Hello ${params.clientName},</h2>
+            
+            <p><strong>${params.contractorCompany}</strong> has successfully signed the contract! The contract is now ready for your signature to complete the process.</p>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0;">
+              <h3 style="margin: 0 0 10px 0; color: #1d4ed8;">🎉 Contract Status Update</h3>
+              <p><strong>Contractor:</strong> ${params.contractorName} ✅ <span style="color: #10b981;">SIGNED</span></p>
+              <p><strong>Client:</strong> ${params.clientName} ⏳ <span style="color: #f59e0b;">PENDING</span></p>
+              <p><strong>Contract ID:</strong> ${params.contractId}</p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${params.signUrl}" 
+                 style="display: inline-block; background: #3b82f6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                🖊️ Complete Your Signature
+              </a>
+            </div>
+            
+            <div style="background: #dbeafe; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0;">
+              <h4 style="margin: 0 0 10px 0; color: #1d4ed8;">⚡ Final Step</h4>
+              <p style="margin: 0; color: #1e3a8a;">Click the button above to review and sign the contract. Once you sign, both parties will receive the completed contract automatically.</p>
+            </div>
+            
+            <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin-top: 20px;">
+              <p style="margin: 0; font-size: 12px; color: #6b7280;">
+                This email was sent because ${params.contractorCompany} completed their signature on contract ${params.contractId}. 
+                Please sign within 48 hours to finalize the agreement.
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
   }
 
   /**
