@@ -137,6 +137,15 @@ Owl Fence is a comprehensive SaaS platform designed for contractors in the const
 ## Changelog
 ```
 Changelog:
+- July 10, 2025. ✅ SUBSCRIPTION PLANS OVERHAUL COMPLETED: Updated all subscription plans with comprehensive new feature structures:
+  * PRIMO CHAMBEADOR - FREE PLAN: Changed from $29.99 to $0/month with 10 basic estimates, 3 AI estimates, 3 contracts (all watermarked), basic features only
+  * ENHANCED FEATURE BREAKDOWN: Added detailed specifications for Invoices, Payment Tracker, Owl Funding, Owl Academy, AI Project Manager, and Mervin AI versions
+  * MERO PATRÓN UPDATES: Unlimited basic estimates, 50 AI estimates/month, complete access to invoicing and payment tracking, Mervin AI 7.0
+  * MASTER CONTRACTOR ENHANCEMENTS: Complete management features including automated reminders, QuickBooks integration, predictive analysis capabilities
+  * VISUAL IMPROVEMENTS: Updated pricing card to display "GRATIS" instead of $0.00 for free plan with green highlighting
+  * BACKEND INTEGRATION: All plan updates reflected in /api/subscription/plans endpoint with accurate pricing and feature lists
+  * FEATURE CATEGORIZATION: Clear distinction between access levels for each service (View Only → Basic → Pro → Complete)
+Changelog:
 - July 10, 2025. ✅ COMPLETED CONTRACTS MANAGEMENT SYSTEM FULLY IMPLEMENTED: Added comprehensive in-platform contract download and management capabilities:
   * COMPLETED CONTRACTS INTERFACE: Added new "Completed" tab in SimpleContractGenerator with dedicated interface for viewing signed contracts
   * DOWNLOAD FUNCTIONALITY: Implemented downloadSignedPdf() function for secure PDF download with proper authentication and validation

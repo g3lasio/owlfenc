@@ -77,8 +77,14 @@ export function PricingCard({
         </CardHeader>
         <CardContent className="pb-2">
           <div className="mb-6 text-center">
-            <span className="text-3xl font-bold">${currentPrice}</span>
-            <span className="text-muted-foreground ml-1">{period}</span>
+            {currentPrice === 0 ? (
+              <span className="text-3xl font-bold text-green-500">GRATIS</span>
+            ) : (
+              <>
+                <span className="text-3xl font-bold">${currentPrice}</span>
+                <span className="text-muted-foreground ml-1">{period}</span>
+              </>
+            )}
           </div>
           
           <div className="mb-6 text-center relative">
