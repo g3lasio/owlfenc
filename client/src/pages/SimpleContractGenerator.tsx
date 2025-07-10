@@ -67,6 +67,15 @@ export default function SimpleContractGenerator() {
   const [contractorSignUrl, setContractorSignUrl] = useState<string>("");
   const [clientSignUrl, setClientSignUrl] = useState<string>("");
   
+  // Multi-Channel Delivery State
+  const [deliveryMethods, setDeliveryMethods] = useState({
+    email: true,
+    sms: true,
+    whatsapp: false
+  });
+  const [isMultiChannelActive, setIsMultiChannelActive] = useState(false);
+  const [deliveryStatus, setDeliveryStatus] = useState<string>("");
+  
   const [suggestedClauses, setSuggestedClauses] = useState<any[]>([]);
   const [selectedClauses, setSelectedClauses] = useState<string[]>([]);
   
@@ -1227,6 +1236,110 @@ export default function SimpleContractGenerator() {
     }
   }, [selectedProject, currentUser, contractHTML, profile, editableData, getCorrectProjectTotal, toast]);
 
+  // Multi-Channel Secure Delivery Handler - Send via Email, SMS, and WhatsApp
+  const handleMultiChannelDelivery = useCallback(async () => {
+    if (!selectedProject || !currentUser?.uid || !contractHTML) {
+      toast({
+        title: "Error",
+        description: "Contract must be generated before sending secure links",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if at least one delivery method is selected
+    const selectedMethods = Object.entries(deliveryMethods).filter(([_, enabled]) => enabled);
+    if (selectedMethods.length === 0) {
+      toast({
+        title: "No Delivery Method Selected",
+        description: "Please select at least one delivery method",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setIsMultiChannelActive(true);
+    setDeliveryStatus("Initiating secure multi-channel delivery...");
+
+    try {
+      // Prepare contract data for secure delivery
+      const secureDeliveryPayload = {
+        userId: currentUser.uid,
+        contractHTML: contractHTML,
+        deliveryMethods: deliveryMethods,
+        contractData: {
+          contractorName: profile?.company || profile?.ownerName || "Contractor Name",
+          contractorEmail: profile?.email || currentUser.email || "",
+          contractorPhone: profile?.phone || profile?.mobilePhone || "",
+          contractorCompany: profile?.company || "Company Name",
+          clientName: editableData.clientName || selectedProject.clientName,
+          clientEmail: editableData.clientEmail || selectedProject.clientEmail || "",
+          clientPhone: editableData.clientPhone || selectedProject.clientPhone || "",
+          clientAddress: editableData.clientAddress || selectedProject.clientAddress || "",
+          projectDescription: selectedProject.projectDescription || selectedProject.projectType || "Construction Project",
+          totalAmount: getCorrectProjectTotal(selectedProject),
+          startDate: editableData.startDate || new Date().toISOString().split('T')[0],
+          completionDate: editableData.completionDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        },
+        securityFeatures: {
+          encryption: "256-bit SSL",
+          verification: true,
+          auditTrail: true,
+          timeStamps: true
+        }
+      };
+
+      console.log("🔐 [MULTI-CHANNEL] Initiating secure delivery:", secureDeliveryPayload);
+
+      const response = await fetch('/api/multi-channel/initiate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentUser.uid}`,
+        },
+        body: JSON.stringify(secureDeliveryPayload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Multi-channel delivery failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      setContractorSignUrl(result.contractorSignUrl || "");
+      setClientSignUrl(result.clientSignUrl || "");
+      
+      // Create status message based on selected delivery methods
+      const methodNames = selectedMethods.map(([method, _]) => {
+        switch(method) {
+          case 'email': return 'Secure Email';
+          case 'sms': return 'SMS';
+          case 'whatsapp': return 'WhatsApp Business';
+          default: return method;
+        }
+      });
+      
+      setDeliveryStatus(`Secure links sent via: ${methodNames.join(', ')}`);
+
+      toast({
+        title: "Secure Links Sent",
+        description: `Contract delivered via ${methodNames.length} secure channel${methodNames.length > 1 ? 's' : ''}. Contract ID: ${result.contractId}`,
+      });
+
+    } catch (error) {
+      console.error("❌ [MULTI-CHANNEL] Error:", error);
+      setDeliveryStatus("Failed to send secure contract links");
+      toast({
+        title: "Delivery Error",
+        description: `Failed to send secure links: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedProject, currentUser, contractHTML, profile, editableData, deliveryMethods, getCorrectProjectTotal, toast]);
+
   // Legal Compliance Workflow - No manual signature handlers needed
   // All signature handling is now done through LegalComplianceWorkflow component
 
@@ -1926,36 +2039,151 @@ export default function SimpleContractGenerator() {
                     </div>
                   </div>
 
-                  {/* Dual Signature */}
-                  <div className="bg-green-900/30 border border-green-400 rounded-lg p-4">
+                  {/* Multi-Channel Secure Delivery */}
+                  <div className="bg-gradient-to-br from-green-900/40 to-blue-900/40 border border-green-400 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <PenTool className="h-5 w-5 text-green-400" />
-                      <h3 className="font-semibold text-green-400">Dual Signature</h3>
+                      <Shield className="h-5 w-5 text-green-400" />
+                      <h3 className="font-semibold text-green-400">Secure Multi-Channel Delivery</h3>
+                      <Badge className="bg-green-600 text-white text-xs">
+                        Enterprise Security
+                      </Badge>
                     </div>
                     <p className="text-gray-300 text-sm mb-4">
-                      Send signature links to both parties
+                      Send encrypted signature links via multiple secure channels
                     </p>
+                    
+                    {/* Delivery Method Selection */}
+                    <div className="space-y-3 mb-4">
+                      <div className="text-xs font-semibold text-cyan-400 mb-2">Choose Delivery Methods:</div>
+                      <div className="grid grid-cols-1 gap-2">
+                        <label className="flex items-center gap-3 p-2 bg-gray-800/50 rounded border border-gray-600 hover:border-cyan-400 transition-colors cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={deliveryMethods.email}
+                            onChange={(e) => setDeliveryMethods(prev => ({ ...prev, email: e.target.checked }))}
+                            className="text-cyan-400 focus:ring-cyan-400"
+                          />
+                          <Mail className="h-4 w-4 text-blue-400" />
+                          <span className="text-sm text-gray-300">Secure Email (Professional)</span>
+                        </label>
+                        <label className="flex items-center gap-3 p-2 bg-gray-800/50 rounded border border-gray-600 hover:border-cyan-400 transition-colors cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={deliveryMethods.sms}
+                            onChange={(e) => setDeliveryMethods(prev => ({ ...prev, sms: e.target.checked }))}
+                            className="text-cyan-400 focus:ring-cyan-400"
+                          />
+                          <Phone className="h-4 w-4 text-green-400" />
+                          <span className="text-sm text-gray-300">SMS Text Message</span>
+                        </label>
+                        <label className="flex items-center gap-3 p-2 bg-gray-800/50 rounded border border-gray-600 hover:border-cyan-400 transition-colors cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={deliveryMethods.whatsapp}
+                            onChange={(e) => setDeliveryMethods(prev => ({ ...prev, whatsapp: e.target.checked }))}
+                            className="text-cyan-400 focus:ring-cyan-400"
+                          />
+                          <MessageCircle className="h-4 w-4 text-green-500" />
+                          <span className="text-sm text-gray-300">WhatsApp Business</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Security Features Badge */}
+                    <div className="bg-gray-800/30 border border-gray-600 rounded-lg p-3 mb-4">
+                      <div className="text-xs font-semibold text-cyan-400 mb-2">Security Features:</div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex items-center gap-1">
+                          <Lock className="h-3 w-3 text-green-400" />
+                          <span className="text-gray-300">256-bit SSL</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Shield className="h-3 w-3 text-blue-400" />
+                          <span className="text-gray-300">Device Verification</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Eye className="h-3 w-3 text-purple-400" />
+                          <span className="text-gray-300">Audit Trail</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-yellow-400" />
+                          <span className="text-gray-300">Time Stamps</span>
+                        </div>
+                      </div>
+                    </div>
+
                     <Button
-                      onClick={handleDualSignature}
-                      disabled={isLoading || !contractHTML || isDualSignatureActive}
-                      className="bg-green-600 hover:bg-green-500 text-white font-medium py-2 px-4 w-full disabled:opacity-50 text-sm"
+                      onClick={handleMultiChannelDelivery}
+                      disabled={isLoading || !contractHTML || isMultiChannelActive}
+                      className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-500 hover:to-blue-500 text-white font-medium py-2 px-4 w-full disabled:opacity-50 text-sm"
                     >
                       {isLoading ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       ) : (
-                        <Mail className="h-4 w-4 mr-2" />
+                        <Send className="h-4 w-4 mr-2" />
                       )}
-                      {isLoading ? "Sending..." : "Send Links"}
+                      {isLoading ? "Sending Secure Links..." : "Send Secure Contract Links"}
                     </Button>
                     <div className="flex items-center justify-center text-xs text-gray-400 mt-2 gap-1">
                       <CheckCircle className="h-3 w-3" />
-                      <span>Mobile • Auto Delivery</span>
+                      <span>Bank-Level Security • Multi-Platform • Instant</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Signature Status */}
-                {isDualSignatureActive && (
+                {/* Multi-Channel Delivery Status */}
+                {isMultiChannelActive && (
+                  <div className="bg-gradient-to-br from-green-900/30 to-blue-900/30 border border-green-400 rounded-lg p-3">
+                    <h4 className="text-sm font-semibold text-green-400 mb-2 flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Secure Delivery Status
+                    </h4>
+                    <p className="text-xs text-gray-300 mb-3">{deliveryStatus}</p>
+                    
+                    {contractorSignUrl && clientSignUrl && (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-400">Contractor:</span>
+                            <Badge className="bg-green-600 text-white text-xs">Delivered</Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-400">Client:</span>
+                            <Badge className="bg-green-600 text-white text-xs">Delivered</Badge>
+                          </div>
+                        </div>
+                        
+                        {/* Active Delivery Methods */}
+                        <div className="bg-gray-800/30 rounded-lg p-2">
+                          <div className="text-xs font-semibold text-cyan-400 mb-1">Active Channels:</div>
+                          <div className="flex gap-2 text-xs">
+                            {deliveryMethods.email && (
+                              <Badge className="bg-blue-600 text-white text-xs">
+                                <Mail className="h-3 w-3 mr-1" />
+                                Email
+                              </Badge>
+                            )}
+                            {deliveryMethods.sms && (
+                              <Badge className="bg-green-600 text-white text-xs">
+                                <Phone className="h-3 w-3 mr-1" />
+                                SMS
+                              </Badge>
+                            )}
+                            {deliveryMethods.whatsapp && (
+                              <Badge className="bg-green-500 text-white text-xs">
+                                <MessageCircle className="h-3 w-3 mr-1" />
+                                WhatsApp
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Legacy Signature Status (fallback) */}
+                {isDualSignatureActive && !isMultiChannelActive && (
                   <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-3">
                     <h4 className="text-sm font-semibold text-green-400 mb-2">Signature Status</h4>
                     <p className="text-xs text-gray-300 mb-2">{dualSignatureStatus}</p>

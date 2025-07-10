@@ -62,6 +62,7 @@ import unifiedContractRoutes from "./routes/unifiedContractRoutes"; // Import Un
 import pdfContractProcessorRoutes from "./routes/pdf-contract-processor"; // Import PDF Contract Processor routes
 import centralizedEmailRoutes from "./routes/centralized-email-routes"; // Import Centralized Email routes
 import dualSignatureRoutes from "./routes/dualSignatureRoutes"; // Import Dual Signature routes
+import multiChannelRoutes from "./routes/multiChannelRoutes"; // Import Multi-Channel Delivery routes
 import express from "express"; // Import express to use express.raw
 
 // Initialize OpenAI API
@@ -1384,6 +1385,9 @@ Output must be between 200-900 characters in English.`;
 
   // Registrar rutas de firma dual automática
   app.use("/api/dual-signature", dualSignatureRoutes);
+
+  // Registrar rutas de entrega multi-canal segura
+  app.use("/api/multi-channel", multiChannelRoutes);
 
   // Registrar rutas de importación inteligente
   app.use("/api/import", aiImportRoutes);
