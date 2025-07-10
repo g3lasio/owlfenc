@@ -474,6 +474,9 @@ export class DualSignatureService {
   }): Promise<void> {
     try {
       console.log('📧 [DUAL-SIGNATURE] Sending dual notifications...');
+      console.log('📧 [EMAIL-DEBUG] Contractor email:', params.contractorEmail);
+      console.log('📧 [EMAIL-DEBUG] Client email:', params.clientEmail);
+      console.log('📧 [EMAIL-DEBUG] Are emails the same?', params.contractorEmail === params.clientEmail);
 
       // Send to contractor
       await this.emailService.sendContractEmail({

@@ -1031,7 +1031,7 @@ export default function SimpleContractGenerator() {
         contractHTML: contractHTML,
         contractData: {
           contractorName: profile?.company || profile?.ownerName || "Contractor Name",
-          contractorEmail: currentUser.email || profile?.email || "",
+          contractorEmail: profile?.email || currentUser.email || "",
           contractorPhone: profile?.phone || profile?.mobilePhone || "",
           contractorCompany: profile?.company || "Company Name",
           clientName: editableData.clientName || selectedProject.clientName,
