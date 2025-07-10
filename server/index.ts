@@ -144,6 +144,47 @@ app.get('/sign/:contractId/:party', async (req, res) => {
     const partyName = party === 'contractor' ? 'Contractor' : 'Client';
     const partyColor = party === 'contractor' ? '#3b82f6' : '#10b981';
 
+    // Generate professional contract HTML using the same service as PDF generation
+    let professionalContractHTML = '';
+    try {
+      const { default: PremiumPdfService } = await import('./services/premiumPdfService');
+      const premiumPdfService = PremiumPdfService.getInstance();
+      
+      // Use the same data structure as PDF generation
+      const contractPdfData = {
+        client: {
+          name: contract.clientName,
+          address: contract.clientAddress || 'Address not provided',
+          phone: contract.clientPhone || 'Phone not provided',
+          email: contract.clientEmail
+        },
+        contractor: {
+          name: contract.contractorName,
+          address: contract.contractorAddress || 'Address not provided', 
+          phone: contract.contractorPhone || 'Phone not provided',
+          email: contract.contractorEmail
+        },
+        project: {
+          type: contract.projectType || 'construction',
+          description: contract.projectDescription,
+          location: contract.clientAddress || 'Property address'
+        },
+        financials: {
+          total: parseFloat(contract.totalAmount) || 0
+        },
+        protectionClauses: contract.protectionClauses || [],
+        timeline: contract.timeline || {},
+        warranties: contract.warranties || {},
+        permitInfo: contract.permitInfo || {}
+      };
+      
+      // Generate the exact same professional HTML as the PDF
+      professionalContractHTML = premiumPdfService.generateProfessionalLegalContractHTML(contractPdfData);
+    } catch (error) {
+      console.error('❌ [SIGN-PAGE] Error generating professional contract HTML:', error);
+      professionalContractHTML = '<p>Error loading contract content. Please try again.</p>';
+    }
+
     // Create complete standalone signature page with contract content
     const html = `
       <!DOCTYPE html>
@@ -203,15 +244,21 @@ app.get('/sign/:contractId/:party', async (req, res) => {
               color: ${partyColor}; 
               margin-bottom: 5px; 
             }
-            .contract-content { 
+            .professional-contract-display { 
               background: white; 
               color: #1e293b; 
-              padding: 30px; 
               border-radius: 8px; 
               margin: 20px 0; 
-              max-height: 400px; 
-              overflow-y: auto;
               border: 2px solid #e2e8f0;
+              /* Remove height limitation to show full content */
+            }
+            .professional-contract-display .container {
+              padding: 20px;
+            }
+            .professional-contract-display .page-break {
+              border-top: 2px dashed #e2e8f0;
+              margin: 30px 0;
+              padding-top: 30px;
             }
             .signature-section { 
               background: #334155; 
@@ -366,11 +413,11 @@ app.get('/sign/:contractId/:party', async (req, res) => {
                 </div>
               </div>
 
-              <!-- Contract Content -->
+              <!-- Professional Contract Content -->
               <div class="section">
-                <h2>Contract Terms & Conditions</h2>
-                <div class="contract-content">
-                  ${contract.contractHtml}
+                <h2>Complete Contract Document</h2>
+                <div class="professional-contract-display">
+                  ${professionalContractHTML}
                 </div>
               </div>
 
