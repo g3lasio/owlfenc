@@ -98,6 +98,9 @@ function Router() {
       <Route path="/auth-diagnostic" component={AuthDiagnostic} />
       <Route path="/apple-auth-test" component={AppleAuthTest} />
       <Route path="/about-owlfenc" component={AboutOwlFence} />
+      
+      {/* Public signature routes */}
+      <Route path="/sign/:contractId/:party" component={ContractSignature} />
       <Route path="/about-mervin" component={AboutMervin} />
       <Route path="/legal-policy" component={LegalPolicy} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />

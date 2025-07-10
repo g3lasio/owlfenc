@@ -107,10 +107,32 @@ export class DualSignatureService {
       const [savedContract] = await db.insert(digitalContracts).values(contractRecord).returning();
       console.log('💾 [DUAL-SIGNATURE] Contract saved to database:', savedContract.contractId);
 
-      // Generate signature URLs
-      const baseUrl = process.env.NODE_ENV === 'production' 
-        ? 'https://owlfenc.replit.app' 
-        : 'http://localhost:5000';
+      // Generate signature URLs using Replit domain
+      const getBaseUrl = () => {
+        // Debug logging
+        console.log('🔍 [URL-DEBUG] REPLIT_DEV_DOMAIN:', process.env.REPLIT_DEV_DOMAIN);
+        console.log('🔍 [URL-DEBUG] NODE_ENV:', process.env.NODE_ENV);
+        
+        // Always use HTTPS Replit domain when available
+        const replitDomain = process.env.REPLIT_DEV_DOMAIN;
+        if (replitDomain) {
+          console.log('✅ [URL-DEBUG] Using Replit domain:', replitDomain);
+          return `https://${replitDomain}`;
+        }
+        
+        // Fallback for production
+        if (process.env.NODE_ENV === 'production') {
+          console.log('✅ [URL-DEBUG] Using production URL');
+          return 'https://owlfenc.replit.app';
+        }
+        
+        // Local development fallback
+        console.log('⚠️ [URL-DEBUG] Using localhost fallback');
+        return 'http://localhost:5000';
+      };
+      
+      const baseUrl = getBaseUrl();
+      console.log('🌍 [DUAL-SIGNATURE] Base URL for signature links:', baseUrl);
       
       const contractorSignUrl = `${baseUrl}/sign/${contractId}/contractor`;
       const clientSignUrl = `${baseUrl}/sign/${contractId}/client`;
