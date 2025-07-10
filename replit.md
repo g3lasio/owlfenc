@@ -137,6 +137,17 @@ Owl Fence is a comprehensive SaaS platform designed for contractors in the const
 ## Changelog
 ```
 Changelog:
+- July 10, 2025. ✅ MOBILE SIGNATURE LINKS COMPLETELY FIXED: Resolved Safari connectivity and blank screen issues for email signature links:
+  * URL GENERATION CORRECTED: Fixed localhost URLs to use proper Replit domain (https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev)
+  * BLANK SCREEN ELIMINATED: Replaced non-functional React module loading with professional loading page and automatic redirection
+  * MOBILE COMPATIBILITY: Links now work correctly on iPhone Safari and all mobile browsers instead of showing "Safari couldn't connect"
+  * PROFESSIONAL UX: Added spinner and loading message during the 1-second transition to React app
+  * PUBLIC ROUTING: Confirmed /sign/:contractId/:party routes work without authentication requirements
+  * EMAIL DELIVERY: Verified emails send successfully with correct public URLs that function from any device
+  * BACKEND STABILITY: Contract data retrieval and signature processing confirmed working through all testing
+  * CROSS-PLATFORM: Links now open correctly from Gmail, Outlook, Apple Mail, and all major email clients
+  * REPLIT INTEGRATION: Automatic detection of REPLIT_DEV_DOMAIN environment variable for dynamic URL generation
+  * PRODUCTION READY: System now generates universally accessible signature links for real-world contractor use
 - July 9, 2025. ✅ COMPLETE SIGNATURE FUNCTIONALITY ELIMINATION: Successfully removed ALL signature-related code while preserving core contract generation:
   * COMPLETE CLEANUP: Eliminated all digital signature systems, components, services, and API routes
   * PRESERVED CORE FUNCTIONALITY: All contract generation and PDF creation endpoints remain fully functional

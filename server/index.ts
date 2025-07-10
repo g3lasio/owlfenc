@@ -124,8 +124,11 @@ app.get('/sign/:contractId/:party', async (req, res) => {
       `);
     }
     
-    // Servir la aplicación React con los parámetros de firma
-    // La aplicación React detectará la ruta y mostrará el componente de firma correspondiente
+    // In development, redirect to the frontend with the route
+    // This ensures the React app loads properly with all its assets
+    const frontendUrl = `http://localhost:5000/sign/${contractId}/${party}`;
+    
+    // Serve a redirect page that will load the React app
     const html = `
       <!DOCTYPE html>
       <html lang="en">
@@ -133,24 +136,55 @@ app.get('/sign/:contractId/:party', async (req, res) => {
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           <title>Contract Signature - Owl Fence</title>
-          <script type="module" crossorigin src="/src/main.tsx"></script>
           <style>
             body { 
               margin: 0; 
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
               background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
               min-height: 100vh;
+              display: flex;
+              align-items: center;
+              justify-content: center;
             }
-            #root { min-height: 100vh; }
+            .loading-container {
+              text-align: center;
+              color: white;
+              padding: 20px;
+            }
+            .spinner {
+              border: 4px solid rgba(255,255,255,0.3);
+              border-top: 4px solid white;
+              border-radius: 50%;
+              width: 50px;
+              height: 50px;
+              animation: spin 1s linear infinite;
+              margin: 0 auto 20px;
+            }
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
           </style>
         </head>
         <body>
-          <div id="root"></div>
+          <div class="loading-container">
+            <div class="spinner"></div>
+            <h2>Loading Contract Signature</h2>
+            <p>Please wait while we load your contract...</p>
+            <p><small>Contract ID: ${contractId}</small></p>
+          </div>
           <script>
+            // Set signature data for the React app
             window.__SIGNATURE_DATA__ = {
               contractId: "${contractId}",
               party: "${party}"
             };
+            
+            // Load the React app properly by navigating to the main app
+            // The React router will handle the /sign route
+            setTimeout(() => {
+              window.location.href = '/#/sign/${contractId}/${party}';
+            }, 1000);
           </script>
         </body>
       </html>
