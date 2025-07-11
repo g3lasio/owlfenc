@@ -2342,192 +2342,122 @@ export default function SimpleContractGenerator() {
                     </div>
                   </div>
 
-                  {/* CLASSIFIED: Multi-Channel Secure Delivery Terminal */}
-                  <div className="relative bg-gradient-to-br from-black via-gray-900 to-black border-2 border-cyan-400 rounded-lg p-4 shadow-2xl shadow-cyan-400/20">
-                    {/* Cybersecurity Header */}
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="relative">
-                          <Shield className="h-6 w-6 text-cyan-400 animate-pulse" />
-                          <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-cyan-400 text-sm tracking-wider">CLASSIFIED DELIVERY SYSTEM</h3>
-                          <p className="text-xs text-gray-500 tracking-widest">MULTI-VECTOR TRANSMISSION</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-1">
-                        <Badge className="bg-red-600 text-white text-xs font-mono animate-pulse">
-                          ENCRYPTED
-                        </Badge>
-                        <Badge className="bg-cyan-600 text-black text-xs font-mono">
-                          SECURE
-                        </Badge>
-                      </div>
+                  {/* Digital Signature Delivery */}
+                  <div className="bg-cyan-900/20 border border-cyan-400 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Send className="h-5 w-5 text-cyan-400" />
+                      <h3 className="font-semibold text-cyan-400">Send for Signature</h3>
+                      <Badge className="bg-cyan-600 text-white text-xs">Secure</Badge>
                     </div>
+                    <p className="text-gray-300 text-sm mb-4">
+                      Send contract to both parties for digital signature
+                    </p>
                     
-                    {/* Threat Level Indicator */}
-                    <div className="bg-black/60 border border-cyan-400/30 rounded p-2 mb-4 font-mono text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="text-cyan-400">THREAT LEVEL:</span>
-                        <span className="text-green-400 font-bold">MINIMAL</span>
-                      </div>
-                      <div className="w-full bg-gray-800 rounded-full h-1 mt-1">
-                        <div className="bg-gradient-to-r from-green-400 to-cyan-400 h-1 rounded-full w-3/4"></div>
-                      </div>
-                    </div>
-                    
-                    {/* Delivery Vector Selection */}
-                    <div className="space-y-2 mb-4">
-                      <div className="text-xs font-bold text-cyan-400 mb-2 tracking-wider">TRANSMISSION VECTORS:</div>
-                      <div className="grid grid-cols-1 gap-2">
-                        {/* Email Vector */}
-                        <label className={`relative flex items-center gap-3 p-3 bg-black/40 rounded border-2 ${deliveryMethods.email ? 'border-cyan-400 bg-cyan-400/10' : 'border-gray-700'} hover:border-cyan-400 transition-all cursor-pointer group`}>
-                          <input 
-                            type="checkbox" 
-                            checked={deliveryMethods.email}
-                            onChange={(e) => setDeliveryMethods(prev => ({ ...prev, email: e.target.checked }))}
-                            className="text-cyan-400 focus:ring-cyan-400 bg-black border-cyan-400"
-                          />
-                          <div className="flex items-center gap-2 flex-1">
-                            <Mail className="h-4 w-4 text-cyan-400" />
-                            <div>
-                              <span className="text-sm text-white font-semibold">SMTP ENCRYPTED CHANNEL</span>
-                              <p className="text-xs text-gray-400">Professional Email Gateway</p>
-                            </div>
-                          </div>
-                          <div className="text-xs font-mono text-green-400">READY</div>
-                          {deliveryMethods.email && (
-                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-cyan-400 rounded-full animate-ping"></div>
-                          )}
-                        </label>
-                        
-                        {/* SMS Vector */}
-                        <label className={`relative flex items-center gap-3 p-3 bg-black/40 rounded border-2 ${deliveryMethods.sms ? 'border-green-400 bg-green-400/10' : 'border-gray-700'} hover:border-green-400 transition-all cursor-pointer group`}>
-                          <input 
-                            type="checkbox" 
-                            checked={deliveryMethods.sms}
-                            onChange={(e) => setDeliveryMethods(prev => ({ ...prev, sms: e.target.checked }))}
-                            className="text-green-400 focus:ring-green-400 bg-black border-green-400"
-                          />
-                          <div className="flex items-center gap-2 flex-1">
-                            <Phone className="h-4 w-4 text-green-400" />
-                            <div>
-                              <span className="text-sm text-white font-semibold">GSM CELLULAR NETWORK</span>
-                              <p className="text-xs text-gray-400">SMS Text Deployment</p>
-                            </div>
-                          </div>
-                          <div className="text-xs font-mono text-green-400">ACTIVE</div>
-                          {deliveryMethods.sms && (
-                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
-                          )}
-                        </label>
-                        
-                        {/* WhatsApp Vector */}
-                        <label className={`relative flex items-center gap-3 p-3 bg-black/40 rounded border-2 ${deliveryMethods.whatsapp ? 'border-green-500 bg-green-500/10' : 'border-gray-700'} hover:border-green-500 transition-all cursor-pointer group`}>
-                          <input 
-                            type="checkbox" 
-                            checked={deliveryMethods.whatsapp}
-                            onChange={(e) => setDeliveryMethods(prev => ({ ...prev, whatsapp: e.target.checked }))}
-                            className="text-green-500 focus:ring-green-500 bg-black border-green-500"
-                          />
-                          <div className="flex items-center gap-2 flex-1">
-                            <MessageCircle className="h-4 w-4 text-green-500" />
-                            <div>
-                              <span className="text-sm text-white font-semibold">WHATSAPP BUSINESS API</span>
-                              <p className="text-xs text-gray-400">Encrypted Messaging Protocol</p>
-                            </div>
-                          </div>
-                          <div className="text-xs font-mono text-green-400">STANDBY</div>
-                          {deliveryMethods.whatsapp && (
-                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
-                          )}
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Security Protocol Matrix */}
-                    <div className="bg-black/60 border border-cyan-400/30 rounded p-3 mb-4">
-                      <div className="text-xs font-bold text-cyan-400 mb-2 tracking-wider">SECURITY PROTOCOLS:</div>
-                      <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                          <span className="text-green-400">AES-256 ENCRYPTION</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                          <span className="text-blue-400">BIOMETRIC VALIDATION</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-                          <span className="text-purple-400">AUDIT CHAIN</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-                          <span className="text-yellow-400">TIMESTAMP LOCK</span>
-                        </div>
-                      </div>
+                    {/* Delivery Methods */}
+                    <div className="space-y-3 mb-4">
+                      <div className="text-sm font-medium text-cyan-400 mb-2">Delivery Methods:</div>
                       
-                      {/* Real-time Security Status */}
-                      <div className="mt-2 pt-2 border-t border-gray-700">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-400">FIREWALL STATUS:</span>
-                          <span className="text-green-400 font-bold">SECURED</span>
+                      {/* Email Option */}
+                      <label className={`flex items-center gap-3 p-3 rounded border-2 cursor-pointer transition-all ${
+                        deliveryMethods.email 
+                          ? 'border-cyan-400 bg-cyan-400/10' 
+                          : 'border-gray-600 hover:border-cyan-400'
+                      }`}>
+                        <input 
+                          type="checkbox" 
+                          checked={deliveryMethods.email}
+                          onChange={(e) => setDeliveryMethods(prev => ({ ...prev, email: e.target.checked }))}
+                          className="text-cyan-400 focus:ring-cyan-400"
+                        />
+                        <Mail className="h-4 w-4 text-cyan-400" />
+                        <div className="flex-1">
+                          <span className="text-white font-medium">Email</span>
+                          <p className="text-xs text-gray-400">Professional email delivery</p>
                         </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-400">LINK EXPIRATION:</span>
-                          <span className="text-yellow-400 font-bold">72 HOURS</span>
+                        {deliveryMethods.email && (
+                          <CheckCircle className="h-4 w-4 text-green-400" />
+                        )}
+                      </label>
+                      
+                      {/* SMS Option */}
+                      <label className={`flex items-center gap-3 p-3 rounded border-2 cursor-pointer transition-all ${
+                        deliveryMethods.sms 
+                          ? 'border-green-400 bg-green-400/10' 
+                          : 'border-gray-600 hover:border-green-400'
+                      }`}>
+                        <input 
+                          type="checkbox" 
+                          checked={deliveryMethods.sms}
+                          onChange={(e) => setDeliveryMethods(prev => ({ ...prev, sms: e.target.checked }))}
+                          className="text-green-400 focus:ring-green-400"
+                        />
+                        <Phone className="h-4 w-4 text-green-400" />
+                        <div className="flex-1">
+                          <span className="text-white font-medium">SMS Text</span>
+                          <p className="text-xs text-gray-400">Direct mobile delivery</p>
                         </div>
-                      </div>
+                        {deliveryMethods.sms && (
+                          <CheckCircle className="h-4 w-4 text-green-400" />
+                        )}
+                      </label>
+                      
+                      {/* WhatsApp Option */}
+                      <label className={`flex items-center gap-3 p-3 rounded border-2 cursor-pointer transition-all ${
+                        deliveryMethods.whatsapp 
+                          ? 'border-green-500 bg-green-500/10' 
+                          : 'border-gray-600 hover:border-green-500'
+                      }`}>
+                        <input 
+                          type="checkbox" 
+                          checked={deliveryMethods.whatsapp}
+                          onChange={(e) => setDeliveryMethods(prev => ({ ...prev, whatsapp: e.target.checked }))}
+                          className="text-green-500 focus:ring-green-500"
+                        />
+                        <MessageCircle className="h-4 w-4 text-green-500" />
+                        <div className="flex-1">
+                          <span className="text-white font-medium">WhatsApp</span>
+                          <p className="text-xs text-gray-400">Business messaging</p>
+                        </div>
+                        {deliveryMethods.whatsapp && (
+                          <CheckCircle className="h-4 w-4 text-green-400" />
+                        )}
+                      </label>
                     </div>
 
-                    {/* Deploy Button */}
+                    {/* Send Button */}
                     <Button
                       onClick={handleMultiChannelDelivery}
                       disabled={isLoading || !contractHTML || isMultiChannelActive}
-                      className={`w-full py-3 font-bold text-sm tracking-wider transition-all duration-300 ${
+                      className={`w-full py-3 font-medium transition-all ${
                         isLoading 
-                          ? 'bg-yellow-600/80 text-black animate-pulse' 
+                          ? 'bg-yellow-600 text-black' 
                           : isMultiChannelActive
-                          ? 'bg-green-600 text-black'
-                          : 'bg-gradient-to-r from-red-600 via-yellow-500 to-green-600 text-black hover:from-red-500 hover:via-yellow-400 hover:to-green-500'
-                      } disabled:opacity-50 border-2 border-transparent hover:border-cyan-400`}
+                          ? 'bg-green-600 text-white'
+                          : 'bg-cyan-600 hover:bg-cyan-500 text-white'
+                      }`}
                     >
                       {isLoading ? (
                         <div className="flex items-center justify-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>TRANSMITTING...</span>
-                          <div className="flex gap-1">
-                            <div className="w-1 h-1 bg-black rounded-full animate-ping"></div>
-                            <div className="w-1 h-1 bg-black rounded-full animate-ping" style={{animationDelay: '0.2s'}}></div>
-                            <div className="w-1 h-1 bg-black rounded-full animate-ping" style={{animationDelay: '0.4s'}}></div>
-                          </div>
+                          <span>Sending...</span>
                         </div>
                       ) : isMultiChannelActive ? (
                         <div className="flex items-center justify-center gap-2">
                           <CheckCircle className="h-4 w-4" />
-                          <span>TRANSMISSION COMPLETE</span>
+                          <span>Sent Successfully</span>
                         </div>
                       ) : (
                         <div className="flex items-center justify-center gap-2">
                           <Send className="h-4 w-4" />
-                          <span>DEPLOY SECURE CHANNELS</span>
+                          <span>Send for Signature</span>
                         </div>
                       )}
                     </Button>
                     
-                    {/* Status Footer */}
-                    <div className="flex items-center justify-center text-xs text-gray-400 mt-2 gap-2 font-mono">
-                      <div className="w-1 h-1 bg-cyan-400 rounded-full animate-pulse"></div>
-                      <span>CLASSIFIED • BANK-GRADE • MULTI-VECTOR</span>
-                      <div className="w-1 h-1 bg-cyan-400 rounded-full animate-pulse"></div>
+                    <div className="flex items-center justify-center text-xs text-gray-400 mt-2 gap-1">
+                      <Shield className="h-3 w-3" />
+                      <span>Encrypted • Secure • Professional</span>
                     </div>
-                    
-                    {/* Corner Security Indicators */}
-                    <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-cyan-400"></div>
-                    <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-cyan-400"></div>
-                    <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-cyan-400"></div>
-                    <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-cyan-400"></div>
                   </div>
                 </div>
 
