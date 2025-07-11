@@ -248,7 +248,7 @@ router.get('/completed/:userId', async (req, res) => {
     console.log('📋 [API] Getting completed contracts for user:', userId);
     
     // Import database here to avoid circular dependencies
-    const { db } = await import('../../shared/db');
+    const { db } = await import('../db');
     const { digitalContracts } = await import('../../shared/schema');
     const { eq } = await import('drizzle-orm');
     

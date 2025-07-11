@@ -430,43 +430,54 @@ export class DualSignatureService {
 
       console.log('📄 [DUAL-SIGNATURE] Generating signed PDF with integrated signatures...');
 
-      // Import PDF service
-      const { default: PremiumPdfService } = await import('./premiumPdfService');
-      const pdfService = new PremiumPdfService();
+      let pdfBuffer: Buffer | null = null;
+      let signedPdfPath: string | null = null;
 
-      // Generate PDF with signatures integrated
-      const pdfBuffer = await pdfService.generateContractWithSignatures({
-        contractHTML: contract.contractHtml || '',
-        contractorSignature: {
-          name: contract.contractorName,
-          signatureData: contract.contractorSignatureData || '',
-          typedName: contract.contractorSignatureType === 'typed' ? contract.contractorName : undefined,
-          signedAt: contract.contractorSignedAt || new Date()
-        },
-        clientSignature: {
-          name: contract.clientName,
-          signatureData: contract.clientSignatureData || '',
-          typedName: contract.clientSignatureType === 'typed' ? contract.clientName : undefined,
-          signedAt: contract.clientSignedAt || new Date()
+      try {
+        // Import PDF service
+        const { default: PremiumPdfService } = await import('./premiumPdfService');
+        const pdfService = new PremiumPdfService();
+
+        // Generate PDF with signatures integrated
+        pdfBuffer = await pdfService.generateContractWithSignatures({
+          contractHTML: contract.contractHtml || '',
+          contractorSignature: {
+            name: contract.contractorName,
+            signatureData: contract.contractorSignatureData || '',
+            typedName: contract.contractorSignatureType === 'typed' ? contract.contractorName : undefined,
+            signedAt: contract.contractorSignedAt || new Date()
+          },
+          clientSignature: {
+            name: contract.clientName,
+            signatureData: contract.clientSignatureData || '',
+            typedName: contract.clientSignatureType === 'typed' ? contract.clientName : undefined,
+            signedAt: contract.clientSignedAt || new Date()
+          }
+        });
+
+        // Save PDF to file system
+        const fs = await import('fs');
+        const path = await import('path');
+        signedPdfPath = `signed_contracts/contract_${contractId}_signed.pdf`;
+        const fullPath = path.join(process.cwd(), signedPdfPath);
+        
+        // Ensure directory exists
+        const dir = path.dirname(fullPath);
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
         }
-      });
+        
+        fs.writeFileSync(fullPath, pdfBuffer);
+        console.log('💾 [DUAL-SIGNATURE] Signed PDF saved to:', signedPdfPath);
 
-      // Save PDF to file system
-      const fs = await import('fs');
-      const path = await import('path');
-      const signedPdfPath = `signed_contracts/contract_${contractId}_signed.pdf`;
-      const fullPath = path.join(process.cwd(), signedPdfPath);
-      
-      // Ensure directory exists
-      const dir = path.dirname(fullPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+      } catch (pdfError: any) {
+        console.error('⚠️ [DUAL-SIGNATURE] PDF generation failed, completing contract without PDF:', pdfError.message);
+        // Contract will still be marked as completed but without PDF
+        pdfBuffer = null;
+        signedPdfPath = null;
       }
-      
-      fs.writeFileSync(fullPath, pdfBuffer);
-      console.log('💾 [DUAL-SIGNATURE] Signed PDF saved to:', signedPdfPath);
 
-      // Update database with signed PDF path
+      // Update database with completion status (with or without PDF)
       await db.update(digitalContracts)
         .set({ 
           status: 'completed',
@@ -477,7 +488,7 @@ export class DualSignatureService {
 
       console.log('📧 [DUAL-SIGNATURE] Sending completed contract to both parties...');
 
-      // Send completion emails with PDF attachment
+      // Send completion emails (with or without PDF attachment)
       await this.sendCompletionEmails(contract, pdfBuffer);
 
       console.log('✅ [DUAL-SIGNATURE] Contract completion workflow finished successfully');
@@ -488,14 +499,15 @@ export class DualSignatureService {
   }
 
   /**
-   * Enviar emails de finalización con PDF adjunto
+   * Enviar emails de finalización con PDF adjunto (opcional)
    */
-  private async sendCompletionEmails(contract: any, pdfBuffer: Buffer): Promise<void> {
+  private async sendCompletionEmails(contract: any, pdfBuffer: Buffer | null): Promise<void> {
     try {
-      console.log('📧 [DUAL-SIGNATURE] Sending completion emails with PDF attachment...');
+      const hasPdf = pdfBuffer !== null;
+      console.log(`📧 [DUAL-SIGNATURE] Sending completion emails ${hasPdf ? 'with PDF attachment' : 'without PDF (generation failed)'}...`);
 
       const contractData = contract.contractData as any;
-      const downloadUrl = `https://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}/api/dual-signature/download/${contract.contractId}`;
+      const downloadUrl = hasPdf ? `https://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}/api/dual-signature/download/${contract.contractId}` : null;
 
       // Send to contractor
       await this.emailService.sendContractEmail({
@@ -516,7 +528,8 @@ export class DualSignatureService {
           totalAmount: contractData?.totalAmount || contract.totalAmount,
           downloadUrl: downloadUrl,
           contractorSignedAt: contract.contractorSignedAt,
-          clientSignedAt: contract.clientSignedAt
+          clientSignedAt: contract.clientSignedAt,
+          hasPdf: hasPdf
         })
       });
 
@@ -539,7 +552,8 @@ export class DualSignatureService {
           totalAmount: contractData?.totalAmount || contract.totalAmount,
           downloadUrl: downloadUrl,
           contractorSignedAt: contract.contractorSignedAt,
-          clientSignedAt: contract.clientSignedAt
+          clientSignedAt: contract.clientSignedAt,
+          hasPdf: hasPdf
         })
       });
 
@@ -562,9 +576,10 @@ export class DualSignatureService {
     contractorCompany: string;
     projectDescription: string;
     totalAmount: number;
-    downloadUrl: string;
+    downloadUrl: string | null;
     contractorSignedAt: Date;
     clientSignedAt: Date;
+    hasPdf: boolean;
   }): string {
     const contractorDate = new Date(params.contractorSignedAt).toLocaleDateString('en-US', {
       year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -623,12 +638,23 @@ export class DualSignatureService {
               </div>
             </div>
             
+            ${params.hasPdf ? `
             <div style="text-align: center; margin: 40px 0;">
               <a href="${params.downloadUrl}" 
                  style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px 40px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 18px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
                 📄 Download Signed Contract PDF
               </a>
             </div>
+            ` : `
+            <div style="background: #fef2f2; padding: 25px; border-radius: 12px; border-left: 6px solid #ef4444; margin: 25px 0; text-align: center;">
+              <h4 style="margin: 0 0 15px 0; color: #dc2626;">⚠️ PDF Generation Notice</h4>
+              <p style="margin: 0; color: #991b1b; font-size: 16px;">
+                While your contract has been successfully signed by both parties and is legally binding, 
+                the PDF generation service is temporarily unavailable. Your contract details and digital 
+                signatures are securely stored in our system. Please contact support if you need the PDF document.
+              </p>
+            </div>
+            `}
 
             <div style="background: #eff6ff; padding: 20px; border-radius: 12px; border-left: 6px solid #3b82f6; margin: 25px 0;">
               <h4 style="margin: 0 0 10px 0; color: #1e40af;">🔐 Security & Authenticity</h4>
