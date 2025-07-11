@@ -223,9 +223,10 @@ export class DualSignatureService {
         : contract.clientSigned;
 
       if (alreadySigned) {
-        console.log(`⚠️ [DUAL-SIGNATURE] ${party} has already signed this contract`);
+        console.log(`⚠️ [DUAL-SIGNATURE] ${party} has already signed this contract - returning completed status`);
         return {
-          success: false,
+          success: true,
+          contract,
           message: `This contract has already been signed by the ${party}`
         };
       }

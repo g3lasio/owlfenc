@@ -183,6 +183,18 @@ class PremiumPdfService {
     // Insert signature section before closing body tag
     return contractHTML.replace('</body>', `${signatureSection}</body>`);
   }
+
+  /**
+   * Generate PDF with embedded signatures
+   */
+  async generateSignedPDF(data: {
+    contractHTML: string;
+    contractorSignature: {
+      name: string;
+      signatureData: string;
+      typedName?: string;
+      signedAt: Date;
+    };
     clientSignature: {
       name: string;
       signatureData: string;
