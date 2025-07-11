@@ -252,9 +252,49 @@ export default function EstimatesWizardFixed() {
   // Email dialog states
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showEmailPreview, setShowEmailPreview] = useState(false);
+  const [emailData, setEmailData] = useState({
+    toEmail: "",
+    subject: "",
+    message: "",
+    sendCopy: true,
+  });
 
   // Client editing state for preview step
   const [isEditingClient, setIsEditingClient] = useState(false);
+
+  // Initialize email data when dialog opens
+  useEffect(() => {
+    if (showEmailDialog && estimate.client && profile) {
+      setEmailData({
+        toEmail: estimate.client.email || "",
+        subject: `Professional Estimate - ${estimate.title || "Your Project"}`,
+        message: `Dear ${estimate.client.name || "Valued Client"},
+
+We are pleased to provide you with a professional estimate for your project. Please find all details in the attached estimate.
+
+Project Summary:
+• ${estimate.title || "Construction Project"}
+• Location: ${estimate.client.address || "Project Location"}
+• Total Investment: $${estimate.total?.toFixed(2) || "0.00"}
+
+Our team is ready to transform your vision into reality! Contact us today for any questions or to schedule your project start date.
+
+Best regards,
+${profile?.company || profile?.name || "Your Company"}
+📞 ${profile?.phone || "Phone Number"}
+📧 ${profile?.email || "Email Address"}
+${profile?.website ? `🌐 ${profile.website}` : ""}
+
+**Next steps:**
+✅ Review the attached estimate carefully
+✅ Contact us for any questions
+✅ Schedule your project start date as soon as possible!
+
+*"Your project, our passion. Quality guaranteed."*`,
+        sendCopy: true, // Default: always send copy to contractor
+      });
+    }
+  }, [showEmailDialog, estimate.client, profile]);
 
   // Función para evaluar la calidad de la descripción
   const evaluateProjectDescription = (description: string) => {
@@ -557,12 +597,7 @@ export default function EstimatesWizardFixed() {
       setAiProgress(0);
     }
   };
-  const [emailData, setEmailData] = useState({
-    toEmail: "",
-    subject: "",
-    message: "",
-    sendCopy: true,
-  });
+  
   const [editableCompany, setEditableCompany] = useState({
     company: "",
     address: "",
