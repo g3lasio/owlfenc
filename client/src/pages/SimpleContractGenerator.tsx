@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
 import { Database, Eye, FileText, CheckCircle, Plus, Trash2, Edit2, Sparkles, Shield, AlertCircle, DollarSign, Calendar, Wrench, FileCheck, Loader2, Brain, RefreshCw, History, Clock, UserCheck, Search, Filter, PenTool, Download, Mail, Phone, MessageCircle, Send, Lock, Truck, Share2, ExternalLink, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
+import { collection, query, where, onSnapshot, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { contractHistoryService, ContractHistoryEntry } from "@/services/contractHistoryService";
 
@@ -49,6 +49,7 @@ export default function SimpleContractGenerator() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'draft' | 'completed' | 'processing'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAllProjects, setShowAllProjects] = useState(false);
   
   // Completed contracts state
   const [completedContracts, setCompletedContracts] = useState<any[]>([]);
@@ -221,6 +222,179 @@ export default function SimpleContractGenerator() {
       });
     } finally {
       setIsLoadingInProgress(false);
+    }
+  }, [currentUser?.uid, toast]);
+
+  // Load projects from Firebase (same logic as ProjectToContractSelector)
+  const loadProjectsFromFirebase = useCallback(async () => {
+    if (!currentUser?.uid) return;
+
+    try {
+      setIsLoading(true);
+      console.log("🔥 Loading projects from Firebase for Legal Defense...");
+
+      let allEstimates = [];
+
+      // Load from projects collection (same as EstimatesWizard)
+      try {
+        const projectsQuery = query(
+          collection(db, "projects"),
+          where("firebaseUserId", "==", currentUser.uid),
+        );
+
+        const projectsSnapshot = await getDocs(projectsQuery);
+        const projectEstimates = projectsSnapshot.docs
+          .filter((doc) => {
+            const data = doc.data();
+            return data.status === "estimate" || data.estimateNumber;
+          })
+          .map((doc) => {
+            const data = doc.data();
+
+            const clientName =
+              data.clientInformation?.name ||
+              data.clientName ||
+              data.client?.name ||
+              "Cliente sin nombre";
+
+            const clientEmail =
+              data.clientInformation?.email ||
+              data.clientEmail ||
+              data.client?.email ||
+              "";
+
+            const clientPhone =
+              data.clientInformation?.phone ||
+              data.clientPhone ||
+              data.client?.phone ||
+              "";
+
+            // Total calculation with multiple paths
+            let totalValue =
+              data.projectTotalCosts?.totalSummary?.finalTotal ||
+              data.projectTotalCosts?.total ||
+              data.total ||
+              data.estimateAmount ||
+              0;
+
+            const displayTotal = totalValue;
+
+            const projectTitle =
+              data.projectDetails?.name ||
+              data.projectName ||
+              data.title ||
+              `Estimado para ${clientName}`;
+
+            const address =
+              data.clientInformation?.address ||
+              data.clientAddress ||
+              data.client?.address ||
+              data.address ||
+              "";
+
+            return {
+              id: doc.id,
+              estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
+              title: projectTitle,
+              clientName: clientName,
+              clientEmail: clientEmail,
+              clientPhone: clientPhone,
+              totalAmount: displayTotal,
+              totalPrice: displayTotal,
+              displaySubtotal: displayTotal,
+              status: data.status || "draft",
+              estimateDate: data.createdAt
+                ? data.createdAt.toDate?.() || new Date(data.createdAt)
+                : new Date(),
+              items: data.projectTotalCosts?.materialCosts?.items || data.items || [],
+              projectType: data.projectType || data.projectDetails?.type || "fence",
+              address: address,
+              projectDescription: data.projectDescription || data.description || "",
+              originalData: data,
+            };
+          });
+
+        allEstimates = [...allEstimates, ...projectEstimates];
+        console.log(`📊 Loaded ${projectEstimates.length} projects from projects collection`);
+      } catch (projectError) {
+        console.warn("Could not load from projects collection:", projectError);
+      }
+
+      // Load from estimates collection
+      try {
+        const estimatesQuery = query(
+          collection(db, "estimates"),
+          where("firebaseUserId", "==", currentUser.uid),
+        );
+
+        const estimatesSnapshot = await getDocs(estimatesQuery);
+        const firebaseEstimates = estimatesSnapshot.docs.map((doc) => {
+          const data = doc.data();
+
+          const clientName = data.clientName || data.client?.name || "Cliente sin nombre";
+          const clientEmail = data.clientEmail || data.client?.email || "";
+          const clientPhone = data.clientPhone || data.client?.phone || "";
+
+          let totalValue = data.total || data.estimateAmount || 0;
+          const displayTotal = totalValue;
+
+          const projectTitle = data.title || `Estimado para ${clientName}`;
+          const address = data.address || data.clientAddress || "";
+
+          return {
+            id: doc.id,
+            estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
+            title: projectTitle,
+            clientName: clientName,
+            clientEmail: clientEmail,
+            clientPhone: clientPhone,
+            totalAmount: displayTotal,
+            totalPrice: displayTotal,
+            displaySubtotal: displayTotal,
+            status: data.status || "estimate",
+            estimateDate: data.createdAt
+              ? data.createdAt.toDate?.() || new Date(data.createdAt)
+              : new Date(),
+            items: data.items || [],
+            projectType: data.projectType || "fence",
+            address: address,
+            projectDescription: data.description || "",
+            originalData: data,
+          };
+        });
+
+        allEstimates = [...allEstimates, ...firebaseEstimates];
+        console.log(`📋 Loaded ${firebaseEstimates.length} additional estimates`);
+      } catch (estimatesError) {
+        console.warn("Could not load from estimates collection:", estimatesError);
+      }
+
+      // Remove duplicates and filter eligible projects
+      const uniqueProjects = allEstimates.filter((project, index, self) => 
+        index === self.findIndex(p => 
+          p.id === project.id || 
+          (p.clientName === project.clientName && p.address === project.address)
+        )
+      );
+
+      const eligibleProjects = uniqueProjects.filter(project => {
+        const hasRequiredData = project.clientName && 
+                               project.totalAmount > 0 &&
+                               (project.address || project.projectType);
+        return hasRequiredData;
+      });
+
+      setProjects(eligibleProjects);
+      console.log(`✅ Total: ${eligibleProjects.length} unique projects loaded for Legal Defense`);
+    } catch (error) {
+      console.error("Error loading projects:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load projects",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   }, [currentUser?.uid, toast]);
 
@@ -1730,6 +1904,13 @@ export default function SimpleContractGenerator() {
     }
   }, [historyTab, currentUser?.uid, loadInProgressContracts]);
 
+  // Load projects from Firebase when component mounts
+  useEffect(() => {
+    if (currentUser?.uid) {
+      loadProjectsFromFirebase();
+    }
+  }, [currentUser?.uid, loadProjectsFromFirebase]);
+
   return (
     <div className="min-h-screen bg-black text-white p-4">
       <div className="max-w-4xl mx-auto">
@@ -1822,6 +2003,29 @@ export default function SimpleContractGenerator() {
               </CardTitle>
             </CardHeader>
             <CardContent>
+              {/* Search and Refresh Controls */}
+              <div className="flex items-center gap-4 mb-6">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search projects by client name, type, or description..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadProjectsFromFirebase}
+                  disabled={isLoading}
+                  className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
+
               <div className="space-y-4">
                 {isLoading ? (
                   <div className="text-center py-8">
@@ -1830,58 +2034,129 @@ export default function SimpleContractGenerator() {
                   </div>
                 ) : projects.length > 0 ? (
                   <div className="space-y-3">
-                    {projects.slice(0, 10).map((project) => (
-                      <div
-                        key={project.id}
-                        className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 hover:border-cyan-400 hover:bg-gray-800/80 cursor-pointer transition-all duration-200"
-                        onClick={() => handleProjectSelect(project)}
-                      >
-                        {/* Contenido principal del card */}
-                        <div className="space-y-3">
-                          {/* Cliente y monto - Línea principal */}
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-base font-bold text-white truncate">
-                                {project.clientName || project.client?.name || project.client || `Project ${project.estimateNumber || project.id}`}
-                              </h3>
-                              <p className="text-cyan-400 font-semibold text-sm mt-1">
-                                ${(project.totalAmount || project.totalPrice || project.displaySubtotal || 0).toLocaleString()}
+                    {(() => {
+                      // Filter projects based on search term
+                      const filteredProjects = projects.filter(project => {
+                        if (!searchTerm.trim()) return true;
+                        
+                        const searchLower = searchTerm.toLowerCase();
+                        const clientName = (project.clientName || '').toLowerCase();
+                        const projectType = (project.projectType || '').toLowerCase();
+                        const description = (project.projectDescription || '').toLowerCase();
+                        const address = (project.address || '').toLowerCase();
+                        
+                        return clientName.includes(searchLower) || 
+                               projectType.includes(searchLower) || 
+                               description.includes(searchLower) || 
+                               address.includes(searchLower);
+                      });
+                      
+                      // Show only 2-3 projects by default (unless searching or showing all)
+                      const displayProjects = searchTerm.trim() || showAllProjects 
+                        ? filteredProjects 
+                        : filteredProjects.slice(0, 3);
+                      
+                      return (
+                        <>
+                          {displayProjects.map((project) => (
+                            <div
+                              key={project.id}
+                              className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 hover:border-cyan-400 hover:bg-gray-800/80 cursor-pointer transition-all duration-200"
+                              onClick={() => handleProjectSelect(project)}
+                            >
+                              {/* Project content */}
+                              <div className="space-y-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="text-base font-bold text-white truncate">
+                                      {project.clientName || project.client?.name || project.client || `Project ${project.estimateNumber || project.id}`}
+                                    </h3>
+                                    <p className="text-cyan-400 font-semibold text-sm mt-1">
+                                      ${(project.totalAmount || project.totalPrice || project.displaySubtotal || 0).toLocaleString()}
+                                    </p>
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
+                                  >
+                                    Select
+                                  </Button>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  <div className="flex items-center gap-1">
+                                    <Wrench className="h-3 w-3 text-gray-400" />
+                                    <span className="text-gray-400">{project.projectType || 'Construction'}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3 text-gray-400" />
+                                    <span className="text-gray-400">
+                                      {new Date(project.estimateDate || project.createdAt || Date.now()).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                </div>
+                                
+                                {project.address && (
+                                  <p className="text-xs text-gray-400 truncate">
+                                    📍 {project.address}
+                                  </p>
+                                )}
+                                
+                                {project.projectDescription && (
+                                  <p className="text-xs text-gray-300 line-clamp-2">
+                                    {project.projectDescription}
+                                  </p>
+                                )}
+                                
+                                <div className="flex items-center justify-between pt-2 border-t border-gray-700">
+                                  <Badge variant="outline" className="text-xs">
+                                    {project.estimateNumber || `EST-${project.id.slice(-6)}`}
+                                  </Badge>
+                                  <div className="flex items-center gap-1 text-xs text-gray-400">
+                                    <Shield className="h-3 w-3" />
+                                    <span>Ready for Contract</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          
+                          {/* Show More/Less Button */}
+                          {!searchTerm.trim() && filteredProjects.length > 3 && (
+                            <div className="text-center pt-4">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowAllProjects(!showAllProjects)}
+                                className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
+                              >
+                                {showAllProjects ? (
+                                  <>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    Show Less ({filteredProjects.length - 3} hidden)
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Show All ({filteredProjects.length} total)
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          )}
+                          
+                          {/* Search Results Info */}
+                          {searchTerm.trim() && (
+                            <div className="text-center py-4">
+                              <p className="text-sm text-cyan-400">
+                                {filteredProjects.length} project{filteredProjects.length !== 1 ? 's' : ''} found for "{searchTerm}"
                               </p>
                             </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black shrink-0 text-xs px-3"
-                            >
-                              Select
-                            </Button>
-                          </div>
-                          
-                          {/* Tipo de proyecto */}
-                          <div className="bg-gray-700/50 rounded-lg px-3 py-2">
-                            <span className="text-gray-300 text-sm">
-                              {project.projectType || project.description || "Construction Project"}
-                            </span>
-                          </div>
-                          
-                          {/* Información de contacto compacta */}
-                          <div className="grid grid-cols-1 gap-1 text-xs">
-                            <div className="flex items-center gap-2">
-                              <span className="text-gray-500 min-w-0 w-12 shrink-0">Email:</span>
-                              <span className="text-gray-300 truncate">
-                                {project.clientEmail || project.client?.email || "Not provided"}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-gray-500 min-w-0 w-12 shrink-0">Phone:</span>
-                              <span className="text-gray-300">
-                                {project.clientPhone || project.client?.phone || "Not provided"}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 ) : (
                   <div className="text-center py-8">
