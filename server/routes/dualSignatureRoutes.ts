@@ -291,9 +291,12 @@ router.get('/in-progress/:userId', async (req, res) => {
       .where(eq(digitalContracts.userId, userId))
       .orderBy(digitalContracts.createdAt);
     
-    // Filter for contracts that are not completed
+    // Filter for contracts that are not completed (missing signatures OR missing PDF)
     const filteredContracts = inProgressContracts.filter(contract => 
-      contract.status !== 'completed' || (!contract.contractorSigned || !contract.clientSigned)
+      contract.status !== 'completed' || 
+      !contract.contractorSigned || 
+      !contract.clientSigned ||
+      !contract.signedPdfPath  // CRITICAL: Include signed contracts without PDF in "in progress"
     );
     
     console.log(`✅ [API] Found ${filteredContracts.length} in-progress contracts for user`);
@@ -357,12 +360,17 @@ router.get('/completed/:userId', async (req, res) => {
     
     console.log(`✅ [API] Found ${completedContracts.length} contracts for user`);
     
-    // Filter for only truly completed contracts (both signed)
+    // Filter for only truly completed contracts (both signed AND PDF generated)
     const fullyCompletedContracts = completedContracts.filter(contract => 
-      contract.status === 'completed' && contract.contractorSigned && contract.clientSigned
+      contract.status === 'completed' && 
+      contract.contractorSigned && 
+      contract.clientSigned &&
+      contract.signedPdfPath  // CRITICAL: Only completed if PDF exists
     );
 
-    // Transform data for frontend - all completed contracts are downloadable
+    console.log(`🔍 [API] Filtered to ${fullyCompletedContracts.length} truly completed contracts (with PDFs)`);
+
+    // Transform data for frontend - only contracts with actual PDFs
     const contractsForFrontend = fullyCompletedContracts.map(contract => ({
       contractId: contract.contractId,
       status: contract.status,
@@ -377,7 +385,7 @@ router.get('/completed/:userId', async (req, res) => {
       updatedAt: contract.updatedAt,
       signedPdfPath: contract.signedPdfPath,
       isCompleted: true,
-      isDownloadable: true, // All completed contracts are downloadable - PDF generated on demand
+      isDownloadable: true, // Only contracts with actual generated PDFs are downloadable
     }));
     
     res.json({

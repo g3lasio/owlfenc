@@ -280,7 +280,6 @@ export default function SimpleContractGenerator() {
     try {
       console.log("📥 Downloading signed PDF for contract:", contractId);
       
-      const currentUser = auth.currentUser;
       if (!currentUser) {
         toast({
           title: "Authentication Required",
@@ -339,7 +338,6 @@ export default function SimpleContractGenerator() {
     try {
       console.log("📤 Sharing contract:", contractId);
       
-      const currentUser = auth.currentUser;
       if (!currentUser) {
         toast({
           title: "Authentication Required",
@@ -443,7 +441,6 @@ export default function SimpleContractGenerator() {
     try {
       console.log("👀 Opening contract for viewing:", contractId);
       
-      const currentUser = auth.currentUser;
       if (!currentUser) {
         toast({
           title: "Authentication Required",
