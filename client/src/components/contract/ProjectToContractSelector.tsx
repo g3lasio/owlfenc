@@ -179,22 +179,27 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
         
         // 4. Filtrar proyectos elegibles para contratos
         const eligibleProjects = uniqueProjects.filter(project => {
-          const isEligible = project.hasBasicInfo && 
-                           project.clientName && 
-                           project.totalPrice > 0;
+          const hasRequiredData = project.clientName && 
+                                 project.totalPrice > 0 &&
+                                 (project.address || project.projectType);
+          
+          // Un proyecto es elegible si tiene los datos básicos necesarios
+          // No importa el estado - cualquier estimado puede convertirse en contrato
+          const isEligible = hasRequiredData;
           
           console.log('🔍 Evaluando proyecto:', {
             clientName: project.clientName,
             address: project.address,
+            totalPrice: project.totalPrice,
             status: project.status,
             projectProgress: project.projectProgress,
-            hasBasicInfo: project.hasBasicInfo
+            hasRequiredData: hasRequiredData
           });
           
           if (isEligible) {
-            console.log('✅ Proyecto', project.clientName + ':', 'elegible=' + project.address);
+            console.log('✅ Proyecto', project.clientName + ':', 'elegible para contrato');
           } else {
-            console.log('❌ Proyecto', project.clientName + ':', 'elegible=' + project.hasBasicInfo);
+            console.log('❌ Proyecto', project.clientName + ':', 'datos insuficientes');
           }
           
           return isEligible;
@@ -210,8 +215,11 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
         // Aplicar filtros específicos
         return eligibleProjects.filter((project: any) => {
           if (filterStatus === 'approved') {
+            // Incluir proyectos aprobados Y estimados listos para convertir en contrato
             return project.status === 'client_approved' || project.status === 'approved' || 
-                   project.projectProgress === 'approved' || project.projectProgress === 'completed';
+                   project.projectProgress === 'approved' || project.projectProgress === 'completed' ||
+                   project.status === 'draft' || project.status === 'estimate' ||
+                   project.projectProgress === 'estimate_created';
           }
           if (filterStatus === 'pending') {
             return project.status === 'pending' || project.projectProgress === 'pending' ||
@@ -235,19 +243,27 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'client_approved': return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'client_approved': 
+      case 'approved': return <CheckCircle className="w-4 h-4 text-green-500" />;
       case 'estimate_sent': return <FileText className="w-4 h-4 text-blue-500" />;
       case 'contract_needed': return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
+      case 'draft':
+      case 'estimate':
+      case 'estimate_created': return <Shield className="w-4 h-4 text-cyan-500" />;
       default: return <FileText className="w-4 h-4 text-gray-500" />;
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'client_approved': return 'Client Approved';
+      case 'client_approved': 
+      case 'approved': return 'Client Approved';
       case 'estimate_sent': return 'Estimate Sent';
       case 'contract_needed': return 'Contract Needed';
-      default: return status;
+      case 'draft': return 'Ready for Contract';
+      case 'estimate': return 'Ready for Contract';
+      case 'estimate_created': return 'Ready for Contract';
+      default: return status || 'Ready for Contract';
     }
   };
 
@@ -330,7 +346,7 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
             <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium mb-2">No Projects Available</h3>
             <p className="text-muted-foreground mb-6">
-              No projects found that need contracts with current filters
+              No estimates or projects found that can be converted to contracts. Create an estimate first with client name, address, and total amount.
             </p>
             
             {/* Alternative: Upload External Estimate PDF */}
