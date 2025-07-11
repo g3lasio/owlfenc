@@ -22,9 +22,10 @@ export interface EmailData {
 }
 
 export class ResendEmailService {
-  private platformDomain = 'resend.dev'; // Dominio de la plataforma
-  private noReplyPrefix = 'noreply'; // Prefijo para emails no-reply
-  private defaultFromEmail = `onboarding@${this.platformDomain}`;
+  private platformDomain = 'owlfenc.com'; // Dominio profesional de Owl Fence
+  private fallbackDomain = 'resend.dev'; // Dominio de respaldo para desarrollo
+  private noReplyEmail = `noreply@${this.platformDomain}`; // Email principal no-reply
+  private defaultFromEmail = `noreply@${this.platformDomain}`;
   private supportEmail = `support@${this.platformDomain}`;
   private testModeEmail = 'gelasio@chyrris.com'; // Email autorizado en modo test
 
@@ -54,18 +55,12 @@ export class ResendEmailService {
   }
 
   /**
-   * Generar email no-reply específico para cada contratista
+   * Generar email no-reply profesional usando dominio owlfenc.com
    */
   private generateContractorNoReplyEmail(contractorEmail: string, contractorCompany: string): string {
-    // Extraer dominio del email del contratista o usar nombre de empresa
-    const emailDomain = contractorEmail.split('@')[1] || 'contractor';
-    const companySlug = contractorCompany.toLowerCase()
-      .replace(/[^a-z0-9]/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
-    
-    // Formato: noreply-{company}@{platform-domain}
-    return `${this.noReplyPrefix}-${companySlug}@${this.platformDomain}`;
+    // Usar siempre noreply@owlfenc.com para máxima profesionalidad
+    // Los clients verán emails desde el dominio oficial de Owl Fence
+    return this.noReplyEmail;
   }
 
   /**

@@ -2914,12 +2914,23 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     if (!emailData.toEmail || !emailData.subject || !emailData.message) {
       toast({
         title: "Error",
-        description:
-          "Por favor complete todos los campos antes de previsualizar",
+        description: "Por favor complete todos los campos antes de previsualizar",
         variant: "destructive",
       });
       return;
     }
+    
+    // Generate the preview HTML using existing function
+    console.log("🔍 PREVIEW DEBUG - Current estimate state:", {
+      client: estimate.client,
+      clientExists: !!estimate.client,
+      itemsCount: estimate.items.length,
+      items: estimate.items,
+      profile: profile
+    });
+    
+    const html = generateEstimatePreview();
+    setPreviewHtml(html);
     setShowEmailPreview(true);
   };
 
