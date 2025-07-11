@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { useQuery } from "@tanstack/react-query";
 import { Project } from "@shared/schema";
-import { Search, FileText, Shield, AlertTriangle, CheckCircle, Upload } from "lucide-react";
+import { Search, FileText, Shield, AlertTriangle, CheckCircle, Upload, RefreshCw } from "lucide-react";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ProjectToContractSelectorProps {
   onProjectSelected: (project: Project) => void;
@@ -17,9 +19,182 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
   onProjectSelected,
   onCancel
 }) => {
+  const { currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Cargar proyectos desde Firebase (replica la lógica exacta de EstimatesWizard)
+  const loadProjectsFromFirebase = async () => {
+    if (!currentUser?.uid) return;
+
+    try {
+      setIsLoading(true);
+      console.log("🔥 Loading projects from Firebase for Legal Defense...");
+
+      let allEstimates = [];
+
+      // Cargar desde colección "projects" (igual que EstimatesWizard)
+      try {
+        const projectsQuery = query(
+          collection(db, "projects"),
+          where("firebaseUserId", "==", currentUser.uid),
+        );
+
+        const projectsSnapshot = await getDocs(projectsQuery);
+        const projectEstimates = projectsSnapshot.docs
+          .filter((doc) => {
+            const data = doc.data();
+            return data.status === "estimate" || data.estimateNumber;
+          })
+          .map((doc) => {
+            const data = doc.data();
+
+            const clientName =
+              data.clientInformation?.name ||
+              data.clientName ||
+              data.client?.name ||
+              "Cliente sin nombre";
+
+            const clientEmail =
+              data.clientInformation?.email ||
+              data.clientEmail ||
+              data.client?.email ||
+              "";
+
+            // Total calculation with multiple paths
+            let totalValue =
+              data.projectTotalCosts?.totalSummary?.finalTotal ||
+              data.projectTotalCosts?.total ||
+              data.total ||
+              data.estimateAmount ||
+              0;
+
+            const displayTotal = totalValue;
+
+            const projectTitle =
+              data.projectDetails?.name ||
+              data.projectName ||
+              data.title ||
+              `Estimado para ${clientName}`;
+
+            const address =
+              data.clientInformation?.address ||
+              data.clientAddress ||
+              data.client?.address ||
+              data.address ||
+              "";
+
+            return {
+              id: doc.id,
+              estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
+              title: projectTitle,
+              clientName: clientName,
+              clientEmail: clientEmail,
+              total: displayTotal,
+              status: data.status || "draft",
+              estimateDate: data.createdAt
+                ? data.createdAt.toDate?.() || new Date(data.createdAt)
+                : new Date(),
+              items: data.projectTotalCosts?.materialCosts?.items || data.items || [],
+              projectType: data.projectType || data.projectDetails?.type || "fence",
+              address: address,
+              originalData: data,
+            };
+          });
+
+        allEstimates = [...allEstimates, ...projectEstimates];
+        console.log(`📊 Loaded ${projectEstimates.length} projects from projects collection`);
+      } catch (projectError) {
+        console.warn("Could not load from projects collection:", projectError);
+      }
+
+      // Cargar desde colección "estimates" (igual que EstimatesWizard)
+      try {
+        const estimatesQuery = query(
+          collection(db, "estimates"),
+          where("firebaseUserId", "==", currentUser.uid),
+        );
+
+        const estimatesSnapshot = await getDocs(estimatesQuery);
+        const firebaseEstimates = estimatesSnapshot.docs.map((doc) => {
+          const data = doc.data();
+
+          const clientName = data.clientName || data.client?.name || "Cliente sin nombre";
+          const clientEmail = data.clientEmail || data.client?.email || "";
+
+          let totalValue = data.total || data.estimateAmount || 0;
+          const displayTotal = totalValue;
+
+          const address = data.clientAddress || data.client?.address || data.address || "";
+
+          return {
+            id: doc.id,
+            estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
+            title: data.title || data.projectName || `Estimado para ${clientName}`,
+            clientName: clientName,
+            clientEmail: clientEmail,
+            total: displayTotal,
+            status: data.status || "estimate",
+            estimateDate: data.createdAt
+              ? data.createdAt.toDate?.() || new Date(data.createdAt)
+              : new Date(),
+            items: data.items || [],
+            projectType: data.projectType || data.fenceType || "fence",
+            address: address,
+            originalData: data,
+          };
+        });
+
+        allEstimates = [...allEstimates, ...firebaseEstimates];
+        console.log(`📋 Loaded ${firebaseEstimates.length} additional estimates`);
+      } catch (estimatesError) {
+        console.warn("Could not load from estimates collection:", estimatesError);
+      }
+
+      // Deduplicar y ordenar (igual que EstimatesWizard)
+      const uniqueEstimates = allEstimates
+        .filter(
+          (estimate, index, self) =>
+            index ===
+            self.findIndex((e) => e.estimateNumber === estimate.estimateNumber),
+        )
+        .sort(
+          (a, b) =>
+            new Date(b.estimateDate).getTime() -
+            new Date(a.estimateDate).getTime(),
+        );
+
+      // Convertir a formato Project para compatibility
+      const formattedProjects: Project[] = uniqueEstimates.map((estimate) => ({
+        id: estimate.id,
+        clientName: estimate.clientName,
+        clientEmail: estimate.clientEmail,
+        total: estimate.total,
+        status: estimate.status,
+        projectType: estimate.projectType,
+        address: estimate.address,
+        estimateNumber: estimate.estimateNumber,
+        originalData: estimate.originalData,
+      }));
+
+      setProjects(formattedProjects);
+      console.log(`✅ Total: ${uniqueEstimates.length} unique projects loaded for Legal Defense`);
+    } catch (error) {
+      console.error("Error loading projects from Firebase:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Cargar al montar el componente
+  useEffect(() => {
+    if (currentUser?.uid) {
+      loadProjectsFromFirebase();
+    }
+  }, [currentUser?.uid]);
 
   // Función para manejar la subida de PDF de estimado externo
   const handleUploadEstimate = () => {
@@ -80,166 +255,20 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
     }
   };
 
-  // Cargar proyectos que pueden convertirse a contrato
-  const { data: projects = [], isLoading } = useQuery({
-    queryKey: ['projects-for-contracts', filterStatus],
-    queryFn: async () => {
-      try {
-        console.log('🔄 Cargando proyectos para contratos...');
-        
-        // Cargar desde múltiples fuentes para obtener datos completos
-        let allProjects = [];
-        
-        // 1. Intentar cargar proyectos desde el endpoint principal
-        try {
-          const projectsResponse = await fetch('/api/projects');
-          if (projectsResponse.ok) {
-            const projects = await projectsResponse.json();
-            console.log('📊 Proyectos cargados desde /api/projects:', projects.length);
-            allProjects = [...allProjects, ...projects];
-          }
-        } catch (error) {
-          console.warn('⚠️ Error cargando desde /api/projects:', error);
-        }
-        
-        // 2. Cargar estimados con datos estructurados completos
-        try {
-          const estimatesResponse = await fetch('/api/estimates');
-          if (estimatesResponse.ok) {
-            const estimates = await estimatesResponse.json();
-            console.log('💰 Estimados cargados desde /api/estimates:', estimates.length);
-            
-            // Convertir estimates con datos estructurados a formato de proyecto
-            const estimateProjects = estimates.map((est: any) => {
-              // Extraer datos de las estructuras organizadas que creamos
-              const clientInfo = est.clientInformation || {};
-              const projectCosts = est.projectTotalCosts || {};
-              const contractInfo = est.contractInformation || {};
-              
-              return {
-                id: est.id || est.estimateNumber,
-                projectId: est.projectId || est.estimateNumber,
-                clientName: clientInfo.name || est.clientName || 'Cliente no especificado',
-                clientEmail: clientInfo.email || est.clientEmail || '',
-                clientPhone: clientInfo.phone || est.clientPhone || '',
-                address: clientInfo.fullAddress || clientInfo.address || est.address || 'Dirección no especificada',
-                city: clientInfo.city || est.city || '',
-                state: clientInfo.state || est.state || '',
-                zipCode: clientInfo.zipCode || est.zipCode || '',
-                projectType: est.projectType || 'fence',
-                description: est.projectDescription || est.description || `Proyecto de ${est.projectType || 'construcción'}`,
-                status: est.status || 'estimate',
-                projectProgress: est.status || 'estimate_created',
-                
-                // Información financiera completa desde projectTotalCosts
-                totalPrice: projectCosts.totalSummary?.finalTotal || 
-                           (est.total && typeof est.total === 'number' ? est.total : 
-                           (est.total && typeof est.total === 'string' ? parseFloat(est.total) : 
-                           (est.totalCents ? est.totalCents / 100 : 0))),
-                           
-                subtotal: projectCosts.totalSummary?.subtotal || 
-                         (est.subtotal && typeof est.subtotal === 'number' ? est.subtotal :
-                         (est.subtotalCents ? est.subtotalCents / 100 : 0)),
-                         
-                taxAmount: projectCosts.totalSummary?.tax || 
-                          (est.taxAmount && typeof est.taxAmount === 'number' ? est.taxAmount :
-                          (est.taxAmountCents ? est.taxAmountCents / 100 : 0)),
-                
-                // Información del contratista
-                contractorInfo: contractInfo,
-                
-                // Datos completos para referencia
-                clientInformation: clientInfo,
-                projectTotalCosts: projectCosts,
-                contractInformation: contractInfo,
-                
-                createdAt: est.createdAt || new Date(),
-                estimateNumber: est.estimateNumber,
-                
-                // Verificar si tiene información básica completa
-                hasBasicInfo: !!(clientInfo.name && (projectCosts.totalSummary?.finalTotal || est.total))
-              };
-            });
-            
-            allProjects = [...allProjects, ...estimateProjects];
-          }
-        } catch (error) {
-          console.warn('⚠️ Error cargando desde /api/estimates:', error);
-        }
-        
-        // 3. Eliminar duplicados basado en ID o nombre del cliente
-        const uniqueProjects = allProjects.filter((project, index, self) => 
-          index === self.findIndex(p => 
-            p.id === project.id || 
-            (p.clientName === project.clientName && p.address === project.address)
-          )
-        );
-        
-        console.log('✅ Total proyectos únicos cargados:', uniqueProjects.length);
-        
-        // 4. Filtrar proyectos elegibles para contratos
-        const eligibleProjects = uniqueProjects.filter(project => {
-          const hasRequiredData = project.clientName && 
-                                 project.totalPrice > 0 &&
-                                 (project.address || project.projectType);
-          
-          // Un proyecto es elegible si tiene los datos básicos necesarios
-          // No importa el estado - cualquier estimado puede convertirse en contrato
-          const isEligible = hasRequiredData;
-          
-          console.log('🔍 Evaluando proyecto:', {
-            clientName: project.clientName,
-            address: project.address,
-            totalPrice: project.totalPrice,
-            status: project.status,
-            projectProgress: project.projectProgress,
-            hasRequiredData: hasRequiredData
-          });
-          
-          if (isEligible) {
-            console.log('✅ Proyecto', project.clientName + ':', 'elegible para contrato');
-          } else {
-            console.log('❌ Proyecto', project.clientName + ':', 'datos insuficientes');
-          }
-          
-          return isEligible;
-        });
-        
-        console.log('✅ Proyectos elegibles para contrato:', eligibleProjects.length);
-        
-        // Filtrar según el estado seleccionado
-        if (filterStatus === 'all') {
-          return eligibleProjects;
-        }
-        
-        // Aplicar filtros específicos
-        return eligibleProjects.filter((project: any) => {
-          if (filterStatus === 'approved') {
-            // Incluir proyectos aprobados Y estimados listos para convertir en contrato
-            return project.status === 'client_approved' || project.status === 'approved' || 
-                   project.projectProgress === 'approved' || project.projectProgress === 'completed' ||
-                   project.status === 'draft' || project.status === 'estimate' ||
-                   project.projectProgress === 'estimate_created';
-          }
-          if (filterStatus === 'pending') {
-            return project.status === 'pending' || project.projectProgress === 'pending' ||
-                   project.status === 'estimate_sent';
-          }
-          return true;
-        });
-      } catch (error) {
-        console.error('Error loading projects:', error);
-        return [];
-      }
-    }
-  });
+  // Los proyectos se cargan directamente desde Firebase usando loadProjectsFromFirebase
+  // No necesitamos el useQuery ya que replicamos la lógica exacta de EstimatesWizard
 
   // Filtrar proyectos según búsqueda
-  const filteredProjects = projects.filter((project: Project) => 
-    project.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.projectType?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProjects = projects.filter((project: Project) => {
+    const matchesSearch = project.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      project.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      project.projectType?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    console.log(`🔍 Filtering project ${project.clientName}: matches search = ${matchesSearch}`);
+    return matchesSearch;
+  });
+  
+  console.log(`📊 Debug - Projects loaded: ${projects.length}, Filtered: ${filteredProjects.length}`);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -299,7 +328,7 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
         </Button>
       </div>
 
-      {/* Filtros */}
+      {/* Filtros y controles */}
       <div className="flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center">
         <div className="flex-1">
           <div className="relative">
@@ -322,6 +351,16 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
             <SelectItem value="pending">Pending Approval</SelectItem>
           </SelectContent>
         </Select>
+        
+        <Button 
+          onClick={loadProjectsFromFirebase} 
+          variant="outline" 
+          disabled={isLoading}
+          className="w-full md:w-auto"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          {isLoading ? 'Loading...' : 'Refresh'}
+        </Button>
       </div>
 
       {/* Lista de Proyectos */}
