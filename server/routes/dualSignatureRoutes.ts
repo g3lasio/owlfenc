@@ -357,13 +357,18 @@ router.get('/completed/:userId', async (req, res) => {
     
     console.log(`✅ [API] Found ${completedContracts.length} contracts for user`);
     
-    // Transform data for frontend
-    const contractsForFrontend = completedContracts.map(contract => ({
+    // Filter for only truly completed contracts (both signed)
+    const fullyCompletedContracts = completedContracts.filter(contract => 
+      contract.status === 'completed' && contract.contractorSigned && contract.clientSigned
+    );
+
+    // Transform data for frontend - all completed contracts are downloadable
+    const contractsForFrontend = fullyCompletedContracts.map(contract => ({
       contractId: contract.contractId,
       status: contract.status,
       contractorName: contract.contractorName,
       clientName: contract.clientName,
-      totalAmount: contract.totalAmount,
+      totalAmount: parseFloat(contract.totalAmount || '0'),
       contractorSigned: contract.contractorSigned,
       clientSigned: contract.clientSigned,
       contractorSignedAt: contract.contractorSignedAt,
@@ -371,8 +376,8 @@ router.get('/completed/:userId', async (req, res) => {
       createdAt: contract.createdAt,
       updatedAt: contract.updatedAt,
       signedPdfPath: contract.signedPdfPath,
-      isCompleted: contract.status === 'completed',
-      isDownloadable: contract.status === 'completed' && contract.signedPdfPath,
+      isCompleted: true,
+      isDownloadable: true, // All completed contracts are downloadable - PDF generated on demand
     }));
     
     res.json({

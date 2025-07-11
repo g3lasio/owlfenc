@@ -438,6 +438,55 @@ export default function SimpleContractGenerator() {
     }
   }, [toast]);
 
+  // View contract in new window/tab
+  const viewContract = useCallback(async (contractId: string, clientName: string) => {
+    try {
+      console.log("👀 Opening contract for viewing:", contractId);
+      
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to view contracts",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Open the contract PDF in a new window/tab for viewing
+      const downloadUrl = `/api/dual-signature/download/${contractId}`;
+      const viewUrl = `${downloadUrl}?view=true&userId=${currentUser.uid}`;
+      
+      // Open in new window with PDF viewer
+      const newWindow = window.open(viewUrl, '_blank');
+      
+      if (newWindow) {
+        // Focus the new window
+        newWindow.focus();
+        
+        toast({
+          title: "Contract Opened",
+          description: `Viewing signed contract for ${clientName}`,
+        });
+      } else {
+        // If popup blocked, show alternative
+        toast({
+          title: "Popup Blocked",
+          description: "Please allow popups to view contracts, or use Download instead",
+          variant: "destructive",
+        });
+      }
+      
+    } catch (error: any) {
+      console.error("❌ Error viewing contract:", error);
+      toast({
+        title: "View Error",
+        description: error.message || "Failed to open contract for viewing",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
   // CRITICAL: Helper function to get correct project total (prioritizes display values over raw values in centavos)
   const getCorrectProjectTotal = useCallback((project: any) => {
     if (!project) {
@@ -3016,7 +3065,16 @@ export default function SimpleContractGenerator() {
                             {contract.isDownloadable && (
                               <div className="bg-green-900/30 border border-green-700 rounded-lg p-3">
                                 <h4 className="text-green-400 font-semibold text-sm mb-2">Signed Contract:</h4>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 flex-wrap">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => viewContract(contract.contractId, contract.clientName)}
+                                    className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black text-xs"
+                                  >
+                                    <Eye className="h-3 w-3 mr-1" />
+                                    View
+                                  </Button>
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -3024,7 +3082,7 @@ export default function SimpleContractGenerator() {
                                     className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs"
                                   >
                                     <Download className="h-3 w-3 mr-1" />
-                                    Download PDF
+                                    Download
                                   </Button>
                                   <Button
                                     size="sm"
