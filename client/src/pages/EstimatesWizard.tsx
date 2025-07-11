@@ -6771,8 +6771,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       {/* Enhanced Email Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-        <DialogContent className="w-[95vw] max-w-2xl mx-auto h-[90vh] flex flex-col bg-white p-0">
-          <DialogHeader className="px-6 py-4 border-b bg-white flex-shrink-0">
+        <DialogContent className="w-[95vw] max-w-4xl mx-auto h-[90vh] flex flex-col bg-white">
+          <DialogHeader className="px-6 py-4 border-b bg-white">
             <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
               <Mail className="h-5 w-5 text-blue-600" />
               Send Professional Estimate
@@ -6782,10 +6782,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-              {/* Client Information Card */}
-              {estimate.client && (
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {/* Client Information Card */}
+            {estimate.client && (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
                   <div className="p-4 border-b border-gray-100">
                     <h4 className="font-semibold text-gray-900 flex items-center gap-2">
@@ -6995,6 +6994,18 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     </p>
                   </div>
 
+                  {/* Preview Email Button */}
+                  <div className="flex justify-center pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={showEmailPreviewDialog}
+                      disabled={!emailData.toEmail || !emailData.subject || !emailData.message}
+                      className="flex items-center gap-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 px-6 py-2"
+                    >
+                      <Eye className="h-4 w-4" />
+                      Preview Email
+                    </Button>
+                  </div>
 
                 </div>
               </div>
@@ -7067,7 +7078,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   </div>
                 </div>
               </div>
-            </div>
           </div>
 
           <DialogFooter className="px-6 py-4 bg-white border-t border-gray-200 flex-shrink-0">
