@@ -30,7 +30,9 @@ type Message = {
   sender: MessageSender;
   state?: MessageState;
   action?: string;
-  clients?: Client[]; // ✅ new field
+  clients?: Client[]; // for searchable + scrollable UI
+  materialList?: Material[]; // ✅ NEW - show inventory inside chat like clients
+  selectedMaterials?: { material: Material; quantity: number }[]; // ✅ NEW - confirmed selections
 };
 
 type EstimateStep1ChatFlowStep =
@@ -40,6 +42,9 @@ type EstimateStep1ChatFlowStep =
   | "client-added"
   | "awaiting-project-description"
   | "select-inventory"
+  | "awaiting-new-material"
+  | "awaiting-discount"
+  | "awaiting-tax"
   | null;
 
 interface Material {
@@ -103,10 +108,12 @@ export default function Mervin() {
   const { currentUser } = useAuth();
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
 
-  const loadMaterials = async () => {
-    if (!currentUser) return;
-    const { collection, query, where, getDocs, addDoc, updateDoc, doc } =
-      await import("firebase/firestore");
+  const loadMaterials = async (): Promise<Material[]> => {
+    if (!currentUser) return [];
+
+    const { collection, query, where, getDocs } = await import(
+      "firebase/firestore"
+    );
     try {
       setIsLoadingMaterials(true);
       const materialsRef = collection(db, "materials");
@@ -117,7 +124,6 @@ export default function Mervin() {
       querySnapshot.forEach((doc) => {
         const data = doc.data() as Omit<Material, "id">;
 
-        // CÁLCULOS SEGUROS: Normalizar precios inflados al cargar desde DB
         let normalizedPrice = typeof data.price === "number" ? data.price : 0;
         if (normalizedPrice > 1000) {
           normalizedPrice = Number((normalizedPrice / 100).toFixed(2));
@@ -129,22 +135,13 @@ export default function Mervin() {
         const material: Material = {
           id: doc.id,
           ...data,
-          price: normalizedPrice, // CÁLCULOS SEGUROS: usar precio normalizado
+          price: normalizedPrice,
         };
         materialsData.push(material);
       });
 
       setMaterials(materialsData);
-
-      // CÁLCULOS SEGUROS: Corregir automáticamente precios inflados en la base de datos
-      try {
-        console.log("🔧 AUTO-CORRECTING INFLATED PRICES...");
-        await MaterialInventoryService.fixInflatedPricesInDatabase(
-          currentUser.uid,
-        );
-      } catch (error) {
-        console.error("Error during automatic price correction:", error);
-      }
+      return materialsData;
     } catch (error) {
       console.error("Error loading materials from Firebase:", error);
       toast({
@@ -152,6 +149,7 @@ export default function Mervin() {
         description: "Could not load materials",
         variant: "destructive",
       });
+      return [];
     } finally {
       setIsLoadingMaterials(false);
     }
@@ -447,7 +445,7 @@ export default function Mervin() {
       try {
         const clientData = {
           clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-          userId: currentUser.uid,
+          userId: currentUser.uid as string,
           name,
           email,
           phone,
@@ -517,19 +515,196 @@ export default function Mervin() {
       setProjectDescription(userInput);
       setChatFlowStep("select-inventory");
 
-      const assistantMessage: Message = {
-        id: `assistant-${Date.now()}`,
-        content:
-          "Por favor selecciona los materiales necesarios para este proyecto.",
-        sender: "assistant",
-        state: "none",
-      };
+      // 🔧 Load materials BEFORE creating message
+      const updatedMaterials = await loadMaterials();
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content:
+            "Material agregado. Ahora puedes seleccionar de la lista actualizada:",
+          sender: "assistant",
+          materialList: updatedMaterials,
+        },
+      ]);
 
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 100);
+    } else if (chatFlowStep === "awaiting-new-material") {
+      const parts = userInput.split(",");
+      if (parts.length < 5) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "Formato incorrecto. Asegúrate de incluir: Nombre, Descripción, Precio, Unidad, Categoría",
+            sender: "assistant",
+          },
+        ]);
+        return;
+      }
+
+      const [name, description, priceStr, unit, category] = parts.map((p) =>
+        p.trim(),
+      );
+      const price = parseFloat(priceStr);
+
+      if (isNaN(price)) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content: "El precio debe ser un número válido.",
+            sender: "assistant",
+          },
+        ]);
+        return;
+      }
+
+      try {
+        const { collection, addDoc } = await import("firebase/firestore");
+        const materialsRef = collection(db, "materials");
+
+        const docRef = await addDoc(materialsRef, {
+          name,
+          description,
+          price,
+          unit,
+          category,
+          userId: currentUser.uid,
+        });
+
+        const newMaterial: Material = {
+          id: docRef.id,
+          name,
+          description,
+          price,
+          unit,
+          category,
+        };
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content: `✅ Material "${name}" agregado exitosamente.`,
+            sender: "assistant",
+          },
+        ]);
+
+        // 🔁 Re-load updated materials and render again as new message
+        const updatedMaterials = await loadMaterials();
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "Material agregado. Ahora puedes seleccionar de la lista actualizada:",
+            sender: "assistant",
+            materialList: updatedMaterials,
+          },
+        ]);
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, 100);
+
+        setChatFlowStep("select-inventory");
+      } catch (error) {
+        console.error("❌ Error al guardar material:", error);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "Ocurrió un error al guardar el material. Intenta nuevamente.",
+            sender: "assistant",
+          },
+        ]);
+      }
+
+      return;
+    } else if (chatFlowStep === "awaiting-discount") {
+      const value = userInput.trim();
+      let discount: string | null = null;
+
+      if (value.toLowerCase() !== "skip") {
+        const isPercentage = value.endsWith("%");
+        const numeric = isPercentage ? value.slice(0, -1) : value;
+
+        if (isNaN(Number(numeric))) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `assistant-${Date.now()}`,
+              content:
+                "Formato inválido para el descuento. Usa un número o porcentaje (ej: `100` o `10%`).",
+              sender: "assistant",
+            },
+          ]);
+          return;
+        }
+
+        discount = isPercentage
+          ? `${parseFloat(numeric)}%`
+          : `${parseFloat(numeric)}`;
+      }
+
+      // Save discount if needed...
+      console.log("✅ Discount:", discount);
+
+      // Ask for tax
+      setChatFlowStep("awaiting-tax");
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content:
+            "¿Deseas aplicar algún **impuesto**? Ingresa un valor numérico o porcentaje (ej: `50` o `13%`). Escribe `skip` para omitir.",
+          sender: "assistant",
+        },
+      ]);
+    } else if (chatFlowStep === "awaiting-tax") {
+      const value = userInput.trim();
+      let tax: string | null = null;
+
+      if (value.toLowerCase() !== "skip") {
+        const isPercentage = value.endsWith("%");
+        const numeric = isPercentage ? value.slice(0, -1) : value;
+
+        if (isNaN(Number(numeric))) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `assistant-${Date.now()}`,
+              content:
+                "Formato inválido para el impuesto. Usa un número o porcentaje (ej: `50` o `13%`).",
+              sender: "assistant",
+            },
+          ]);
+          return;
+        }
+
+        tax = isPercentage
+          ? `${parseFloat(numeric)}%`
+          : `${parseFloat(numeric)}`;
+      }
+
+      console.log("✅ Tax:", tax);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content: `✅ Gracias. El estimado será generado con los valores ingresados.`,
+          sender: "assistant",
+        },
+      ]);
+
+      setChatFlowStep(null); // reset
     } else {
     }
   };
@@ -585,26 +760,154 @@ export default function Mervin() {
               )}
 
               {message.clients && message.clients.length > 0 && (
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  {message.clients.map((client) => (
-                    <button
-                      key={client.id}
-                      onClick={() => handleClientSelect(client)}
-                      className="bg-cyan-800 hover:bg-cyan-700 text-white px-3 py-2 rounded text-sm text-left"
-                    >
-                      <div className="font-semibold">{client.name}</div>
-                      <div className="text-xs opacity-80">
-                        {client.email || "Sin email"}
-                      </div>
-                    </button>
-                  ))}
+                <div className="mt-2 space-y-3">
+                  {/* 🔍 Search bar */}
+                  <input
+                    type="text"
+                    placeholder="Buscar cliente..."
+                    value={materialSearchTerm} // you can rename this to clientSearchTerm if needed
+                    onChange={(e) => {
+                      setMaterialSearchTerm(e.target.value); // reuse this state or separate one
+                      setVisibleCount(3);
+                    }}
+                    className="w-full bg-gray-800 text-white px-3 py-2 rounded border border-cyan-900/50"
+                  />
 
-                  <button
-                    onClick={() => handleClientSelect(null)}
-                    className="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm text-center col-span-2"
+                  <div
+                    className="max-h-64 overflow-y-auto grid grid-cols-2 gap-2 pr-2"
+                    onScroll={(e) => {
+                      const { scrollTop, scrollHeight, clientHeight } =
+                        e.currentTarget;
+                      if (scrollTop + clientHeight >= scrollHeight - 10) {
+                        setVisibleCount((prev) => prev + 3);
+                      }
+                    }}
                   >
-                    ➕ Nuevo Cliente
-                  </button>
+                    {message.clients
+                      .filter((client) =>
+                        client.name
+                          .toLowerCase()
+                          .includes(materialSearchTerm.toLowerCase()),
+                      )
+                      .slice(0, visibleCount)
+                      .map((client) => (
+                        <button
+                          key={client.id}
+                          onClick={() => handleClientSelect(client)}
+                          className="bg-cyan-800 hover:bg-cyan-700 text-white px-3 py-2 rounded text-sm text-left"
+                        >
+                          <div className="font-semibold">{client.name}</div>
+                          <div className="text-xs opacity-80">
+                            {client.email || "Sin email"}
+                          </div>
+                        </button>
+                      ))}
+
+                    <button
+                      onClick={() => handleClientSelect(null)}
+                      className="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm text-center col-span-2"
+                    >
+                      ➕ Nuevo Cliente
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {message.materialList && message.materialList.length > 0 && (
+                <div className="mt-2 space-y-3">
+                  {/* Search bar for materials in chat */}
+                  <input
+                    type="text"
+                    placeholder="Buscar material..."
+                    value={materialSearchTerm}
+                    onChange={(e) => {
+                      setMaterialSearchTerm(e.target.value);
+                      setVisibleCount(3); // Reset pagination on search
+                    }}
+                    className="w-full bg-gray-800 text-white px-3 py-2 rounded border border-cyan-900/50"
+                  />
+
+                  <div
+                    className="max-h-64 overflow-y-auto grid grid-cols-2 gap-3 pr-2"
+                    onScroll={(e) => {
+                      const { scrollTop, scrollHeight, clientHeight } =
+                        e.currentTarget;
+                      if (scrollTop + clientHeight >= scrollHeight - 10) {
+                        setVisibleCount((prev) => prev + 3); // Load more on scroll
+                      }
+                    }}
+                  >
+                    {message.materialList
+                      .filter((material) =>
+                        material.name
+                          .toLowerCase()
+                          .includes(materialSearchTerm.toLowerCase()),
+                      )
+                      .slice(0, visibleCount)
+                      .map((material) => (
+                        <div
+                          key={material.id}
+                          className="bg-cyan-900/20 p-3 rounded-lg text-white space-y-2"
+                        >
+                          <div className="font-semibold">{material.name}</div>
+                          <div className="text-sm opacity-80">
+                            {material.description}
+                          </div>
+                          <div className="text-sm">
+                            Precio: ${material.price} / {material.unit}
+                          </div>
+                          <input
+                            type="number"
+                            min={1}
+                            placeholder="Cantidad"
+                            className="w-full bg-gray-800 text-white px-3 py-1 rounded"
+                            onChange={(e) => {
+                              const qty = parseInt(e.target.value);
+                              if (!isNaN(qty)) {
+                                const existing = inventoryItems.find(
+                                  (item) => item.material.id === material.id,
+                                );
+                                if (existing) {
+                                  setInventoryItems((prev) =>
+                                    prev.map((item) =>
+                                      item.material.id === material.id
+                                        ? { ...item, quantity: qty }
+                                        : item,
+                                    ),
+                                  );
+                                } else {
+                                  setInventoryItems((prev) => [
+                                    ...prev,
+                                    { material, quantity: qty },
+                                  ]);
+                                }
+                              }
+                            }}
+                          />
+                        </div>
+                      ))}
+                  </div>
+
+                  {/* ➕ Add new material */}
+                  <div className="text-center mt-3">
+                    <button
+                      onClick={() => {
+                        setChatFlowStep("awaiting-new-material");
+                        setMessages((prev) => [
+                          ...prev,
+                          {
+                            id: `assistant-${Date.now()}`,
+                            content:
+                              "Por favor ingresa los detalles del nuevo material en el siguiente formato:\n\nNombre, Descripción, Precio, Unidad, Categoría",
+                            sender: "assistant",
+                          },
+                        ]);
+                      }}
+                      className="text-cyan-300 underline"
+                    >
+                      ➕ Agregar nuevo material
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -630,87 +933,6 @@ export default function Mervin() {
               )}
             </div>
           ))}
-
-          {chatFlowStep === "select-inventory" && (
-            <div className="mt-4 space-y-3">
-              {/* 🔍 Search Field */}
-              <input
-                type="text"
-                placeholder="Buscar material..."
-                value={materialSearchTerm}
-                onChange={(e) => {
-                  setMaterialSearchTerm(e.target.value);
-                  setVisibleCount(3); // Reset count when searching
-                }}
-                className="w-full bg-gray-800 text-white px-3 py-2 rounded border border-cyan-900/50"
-              />
-
-              {/* 🔁 Scrollable list */}
-              <div
-                className="max-h-64 overflow-y-auto grid grid-cols-2 gap-3 pr-2"
-                onScroll={(e) => {
-                  const { scrollTop, scrollHeight, clientHeight } =
-                    e.currentTarget;
-                  if (scrollTop + clientHeight >= scrollHeight - 10) {
-                    setVisibleCount((prev) => prev + 3); // Load 3 more on scroll bottom
-                  }
-                }}
-              >
-                {filteredMaterials.slice(0, visibleCount).map((material) => (
-                  <div
-                    key={material.id}
-                    className="bg-cyan-900/20 p-3 rounded-lg text-white space-y-2"
-                  >
-                    <div className="font-semibold">{material.name}</div>
-                    <div className="text-sm opacity-80">
-                      {material.description}
-                    </div>
-                    <div className="text-sm">
-                      Precio: ${material.price} / {material.unit}
-                    </div>
-                    <input
-                      type="number"
-                      min={1}
-                      placeholder="Cantidad"
-                      className="w-full bg-gray-800 text-white px-3 py-1 rounded"
-                      onChange={(e) => {
-                        const qty = parseInt(e.target.value);
-                        if (!isNaN(qty)) {
-                          const existing = inventoryItems.find(
-                            (item) => item.material.id === material.id,
-                          );
-                          if (existing) {
-                            setInventoryItems((prev) =>
-                              prev.map((item) =>
-                                item.material.id === material.id
-                                  ? { ...item, quantity: qty }
-                                  : item,
-                              ),
-                            );
-                          } else {
-                            setInventoryItems((prev) => [
-                              ...prev,
-                              { material, quantity: qty },
-                            ]);
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              {/* ➕ Add New Material */}
-              <div className="text-center mt-3">
-                <button
-                  onClick={() => setChatFlowStep("add-new-material")}
-                  className="text-cyan-300 underline"
-                >
-                  ➕ Agregar nuevo material
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Mensaje de carga */}
           {isLoading && (
@@ -740,6 +962,27 @@ export default function Mervin() {
           {/* Elemento para scroll automático */}
           <div ref={messagesEndRef} />
         </div>
+        {chatFlowStep === "select-inventory" && inventoryItems.length > 0 && (
+          <div className="text-center mt-4">
+            <button
+              className="bg-cyan-700 hover:bg-cyan-600 text-white px-4 py-2 rounded-lg font-medium"
+              onClick={() => {
+                setChatFlowStep("awaiting-discount");
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: "assistant-" + Date.now(),
+                    content:
+                      "¿Quieres aplicar algún **descuento**? Ingresa un valor numérico o porcentaje (ej: 100 o 10%). Escribe skip para omitir.",
+                    sender: "assistant",
+                  },
+                ]);
+              }}
+            >
+              📄 Generar Estimado
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Área de input FIJA en la parte inferior, fuera del scroll */}
