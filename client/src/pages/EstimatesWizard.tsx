@@ -5414,22 +5414,22 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen bg-slate-900">
       {/* Cyberpunk Header */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/20 via-blue-900/20 to-purple-900/20" />
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/30 via-slate-900/50 to-blue-900/30" />
         <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-8">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-4">
+              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-300 bg-clip-text text-transparent mb-4">
                 Professional Estimates Generator
               </h1>
             </div>
             
             {/* Navigation Buttons */}
             <div className="flex justify-center mb-8">
-              <div className="flex bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700/50 overflow-hidden">
-                <button className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold flex items-center gap-2 border-r border-gray-700/50">
+              <div className="flex bg-gray-900/50 backdrop-blur-sm rounded-lg border border-cyan-400/30 overflow-hidden">
+                <button className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold flex items-center gap-2 border-r border-cyan-400/30">
                   <FileText className="h-5 w-5" />
                   New Estimate
                 </button>
@@ -5438,12 +5438,12 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     setShowEstimatesHistory(true);
                     loadSavedEstimates();
                   }}
-                  className="px-6 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 transition-all duration-200 flex items-center gap-2 relative"
+                  className="px-6 py-3 text-cyan-300 hover:text-white hover:bg-blue-900/30 transition-all duration-200 flex items-center gap-2 relative"
                 >
                   <Clock className="h-5 w-5" />
                   History
                   {savedEstimates.length > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-cyan-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
+                    <span className="absolute -top-2 -right-2 bg-cyan-400 text-slate-900 text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
                       {savedEstimates.length}
                     </span>
                   )}
@@ -5456,9 +5456,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700/50 p-6">
+        <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg border border-cyan-400/30 p-6">
           <div className="mb-6">
-            <p className="text-gray-300 text-center">
+            <p className="text-cyan-300 text-center">
               {isEditMode
                 ? "Edita tu estimado existente y guarda los cambios"
                 : "Sigue los pasos para crear un estimado profesional para tu cliente"}
@@ -5480,10 +5480,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         <div
                           className={`flex items-center justify-center w-12 h-12 rounded-full border-2 mb-2 transition-all duration-300 ${
                             isActive
-                              ? "border-cyan-400 bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg scale-110"
+                              ? "border-cyan-400 bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25 scale-110"
                               : isCompleted
-                                ? "border-green-400 bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md"
-                                : "border-gray-600 bg-gray-800 text-gray-400"
+                                ? "border-cyan-400 bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-500/20"
+                                : "border-blue-400/30 bg-gray-900/80 text-blue-300"
                           }`}
                         >
                           {isCompleted ? (
@@ -5497,8 +5497,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                             isActive
                               ? "text-cyan-400 font-semibold"
                               : isCompleted
-                                ? "text-green-400"
-                                : "text-gray-400"
+                                ? "text-cyan-300"
+                                : "text-blue-300"
                           }`}
                         >
                           {step.title}
@@ -5509,8 +5509,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           <div
                             className={`w-full h-1 rounded-full transition-all duration-500 ${
                               isCompleted
-                                ? "bg-gradient-to-r from-green-500 to-emerald-500"
-                                : "bg-gray-700"
+                                ? "bg-gradient-to-r from-cyan-400 to-blue-400"
+                                : "bg-blue-900/30"
                             }`}
                           />
                         </div>
@@ -5531,7 +5531,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               variant="outline"
               onClick={prevStep}
               disabled={currentStep === 0}
-              className="w-full sm:w-auto order-2 sm:order-1 bg-gray-700 hover:bg-gray-600 text-gray-300 border-gray-600"
+              className="w-full sm:w-auto order-2 sm:order-1 bg-gray-900/50 hover:bg-blue-900/30 text-cyan-300 border-blue-400/30 hover:border-cyan-400/50"
             >
               <ChevronLeft className="h-4 w-4 mr-2" />
               Anterior
@@ -5542,7 +5542,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 <Button
                   onClick={handleDownload}
                   disabled={!estimate.client || estimate.items.length === 0}
-                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 w-full sm:w-auto"
+                  className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 w-full sm:w-auto shadow-lg shadow-cyan-500/25"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Finalizar y </span>Descargar
@@ -5551,7 +5551,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 <Button
                   onClick={nextStep}
                   disabled={!canProceedToNext()}
-                  className="w-full sm:w-auto bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700"
+                  className="w-full sm:w-auto bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-lg shadow-cyan-500/25"
                 >
                   Siguiente
                   <ChevronRight className="h-4 w-4 ml-2" />
