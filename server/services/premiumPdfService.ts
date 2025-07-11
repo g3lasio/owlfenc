@@ -1,4 +1,5 @@
 import puppeteer from 'puppeteer';
+import crypto from 'crypto';
 
 export interface ContractPdfData {
   client: {
@@ -73,6 +74,115 @@ class PremiumPdfService {
       typedName?: string;
       signedAt: Date;
     };
+    clientSignature: {
+      name: string;
+      signatureData: string;
+      typedName?: string;
+      signedAt: Date;
+    };
+  }): Promise<Buffer> {
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+
+    try {
+      const page = await browser.newPage();
+      
+      // Create enhanced HTML with embedded signatures
+      const enhancedHTML = this.embedSignaturesInHTML(
+        data.contractHTML,
+        data.contractorSignature,
+        data.clientSignature
+      );
+      
+      await page.setContent(enhancedHTML, { waitUntil: 'networkidle0' });
+      
+      // Generate PDF with signatures
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '20mm',
+          right: '15mm',
+          bottom: '20mm',
+          left: '15mm'
+        }
+      });
+
+      console.log('✅ [PDF-SERVICE] Signed PDF generated successfully');
+      return pdfBuffer;
+
+    } finally {
+      await browser.close();
+    }
+  }
+
+  /**
+   * Embed signatures directly into contract HTML
+   */
+  private embedSignaturesInHTML(
+    contractHTML: string,
+    contractorSignature: {
+      name: string;
+      signatureData: string;
+      typedName?: string;
+      signedAt: Date;
+    },
+    clientSignature: {
+      name: string;
+      signatureData: string;
+      typedName?: string;
+      signedAt: Date;
+    }
+  ): string {
+    const signatureSection = `
+      <div style="margin-top: 40px; page-break-inside: avoid;">
+        <h3 style="color: #2c5530; border-bottom: 2px solid #2c5530; padding-bottom: 10px;">
+          DIGITAL SIGNATURES
+        </h3>
+        
+        <div style="display: flex; justify-content: space-between; margin-top: 30px;">
+          <!-- Contractor Signature -->
+          <div style="width: 45%; border: 1px solid #ccc; padding: 20px; border-radius: 8px;">
+            <h4 style="margin: 0 0 15px 0; color: #2c5530;">CONTRACTOR SIGNATURE</h4>
+            ${contractorSignature.signatureData.startsWith('data:image') 
+              ? `<img src="${contractorSignature.signatureData}" style="max-width: 200px; height: 60px; border: 1px solid #ddd;">` 
+              : `<div style="font-family: 'Brush Script MT', cursive; font-size: 24px; height: 60px; line-height: 60px; border: 1px solid #ddd; padding: 0 10px;">${contractorSignature.typedName || contractorSignature.name}</div>`
+            }
+            <div style="margin-top: 10px; font-size: 12px; color: #666;">
+              <strong>Name:</strong> ${contractorSignature.name}<br>
+              <strong>Date Signed:</strong> ${contractorSignature.signedAt.toLocaleDateString()}<br>
+              <strong>Time:</strong> ${contractorSignature.signedAt.toLocaleTimeString()}
+            </div>
+          </div>
+
+          <!-- Client Signature -->
+          <div style="width: 45%; border: 1px solid #ccc; padding: 20px; border-radius: 8px;">
+            <h4 style="margin: 0 0 15px 0; color: #2c5530;">CLIENT SIGNATURE</h4>
+            ${clientSignature.signatureData.startsWith('data:image') 
+              ? `<img src="${clientSignature.signatureData}" style="max-width: 200px; height: 60px; border: 1px solid #ddd;">` 
+              : `<div style="font-family: 'Brush Script MT', cursive; font-size: 24px; height: 60px; line-height: 60px; border: 1px solid #ddd; padding: 0 10px;">${clientSignature.typedName || clientSignature.name}</div>`
+            }
+            <div style="margin-top: 10px; font-size: 12px; color: #666;">
+              <strong>Name:</strong> ${clientSignature.name}<br>
+              <strong>Date Signed:</strong> ${clientSignature.signedAt.toLocaleDateString()}<br>
+              <strong>Time:</strong> ${clientSignature.signedAt.toLocaleTimeString()}
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; text-align: center; font-size: 11px; color: #666; border-top: 1px solid #eee; padding-top: 15px;">
+          <strong>DOCUMENT AUTHENTICATION</strong><br>
+          This document has been digitally signed and is legally binding.<br>
+          Generated on: ${new Date().toLocaleString()} | Document ID: ${crypto.randomUUID().substring(0, 8).toUpperCase()}
+        </div>
+      </div>
+    `;
+
+    // Insert signature section before closing body tag
+    return contractHTML.replace('</body>', `${signatureSection}</body>`);
+  }
     clientSignature: {
       name: string;
       signatureData: string;

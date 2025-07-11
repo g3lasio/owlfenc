@@ -358,6 +358,82 @@ export class DualSignatureService {
   }
 
   /**
+   * Download signed PDF
+   */
+  async downloadSignedPdf(contractId: string, requestingUserId?: string): Promise<{
+    success: boolean;
+    pdfBuffer?: Buffer;
+    message: string;
+  }> {
+    try {
+      console.log('📥 [DUAL-SIGNATURE] Download request for contract:', contractId);
+      
+      const [contract] = await db.select()
+        .from(digitalContracts)
+        .where(eq(digitalContracts.contractId, contractId))
+        .limit(1);
+
+      if (!contract) {
+        return {
+          success: false,
+          message: 'Contract not found'
+        };
+      }
+
+      // Security check - optional for public contracts
+      if (requestingUserId && contract.userId !== requestingUserId) {
+        console.error(`🚫 [SECURITY-VIOLATION] User ${requestingUserId} attempted to download contract ${contractId} owned by ${contract.userId}`);
+        return {
+          success: false,
+          message: 'Unauthorized access to contract'
+        };
+      }
+
+      if (contract.status !== 'completed') {
+        return {
+          success: false,
+          message: 'Contract is not completed yet'
+        };
+      }
+
+      if (!contract.signedPdfPath) {
+        return {
+          success: false,
+          message: 'Signed PDF not available'
+        };
+      }
+
+      // Read PDF file
+      const fs = await import('fs');
+      const path = await import('path');
+      const fullPath = path.join(process.cwd(), contract.signedPdfPath);
+      
+      if (!fs.existsSync(fullPath)) {
+        return {
+          success: false,
+          message: 'Signed PDF file not found'
+        };
+      }
+
+      const pdfBuffer = fs.readFileSync(fullPath);
+      console.log('✅ [DUAL-SIGNATURE] PDF downloaded successfully');
+
+      return {
+        success: true,
+        pdfBuffer,
+        message: 'PDF downloaded successfully'
+      };
+
+    } catch (error: any) {
+      console.error('❌ [DUAL-SIGNATURE] Error downloading PDF:', error);
+      return {
+        success: false,
+        message: `Error downloading PDF: ${error.message}`
+      };
+    }
+  }
+
+  /**
    * Obtener el estado del contrato para el dashboard del contratista
    */
   async getContractStatus(contractId: string): Promise<{

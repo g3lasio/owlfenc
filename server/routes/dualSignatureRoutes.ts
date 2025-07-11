@@ -165,6 +165,40 @@ router.post('/sign', async (req, res) => {
 });
 
 /**
+ * GET /api/dual-signature/download/:contractId
+ * Download signed PDF contract
+ */
+router.get('/download/:contractId', async (req, res) => {
+  try {
+    const { contractId } = req.params;
+    const requestingUserId = req.headers['x-user-id'] as string;
+    
+    console.log('📥 [API] Download request for contract:', contractId);
+    console.log('👤 [API] Requesting user:', requestingUserId || 'No user ID');
+    
+    const result = await dualSignatureService.downloadSignedPdf(contractId, requestingUserId);
+    
+    if (result.success && result.pdfBuffer) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="contract_${contractId}_signed.pdf"`);
+      res.send(result.pdfBuffer);
+    } else {
+      res.status(404).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error: any) {
+    console.error('❌ [API] Error in /download/:contractId:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+});
+
+/**
  * GET /api/dual-signature/status/:contractId
  * Obtener estado del contrato
  */

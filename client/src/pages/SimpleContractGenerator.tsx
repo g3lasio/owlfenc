@@ -275,15 +275,30 @@ export default function SimpleContractGenerator() {
     }
   }, [toast]);
 
-  // Download signed PDF
+  // Download signed PDF with authentication
   const downloadSignedPdf = useCallback(async (contractId: string, clientName: string) => {
     try {
       console.log("📥 Downloading signed PDF for contract:", contractId);
       
-      const response = await fetch(`/api/dual-signature/download/${contractId}`);
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to download contracts",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const response = await fetch(`/api/dual-signature/download/${contractId}`, {
+        headers: {
+          'x-user-id': currentUser.uid
+        }
+      });
       
       if (!response.ok) {
-        throw new Error('Failed to download PDF');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to download PDF');
       }
       
       // Get the PDF blob
@@ -294,7 +309,7 @@ export default function SimpleContractGenerator() {
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      a.download = `Contract-${clientName}-${contractId}.pdf`;
+      a.download = `contract_${clientName.replace(/\s+/g, '_')}_signed.pdf`;
       
       // Trigger download
       document.body.appendChild(a);
@@ -307,45 +322,96 @@ export default function SimpleContractGenerator() {
       console.log("✅ PDF downloaded successfully");
       toast({
         title: "Download Complete",
-        description: "Contract PDF has been downloaded successfully",
+        description: `Signed contract for ${clientName} downloaded successfully`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Error downloading PDF:", error);
       toast({
         title: "Download Error",
-        description: "Failed to download contract PDF",
+        description: error.message || "Failed to download contract PDF",
         variant: "destructive",
       });
     }
   }, [toast]);
 
-  // Share contract function
+  // Share contract function with enhanced mobile app support
   const shareContract = useCallback(async (contractId: string, clientName: string) => {
     try {
-      // Generate download link
-      const downloadUrl = `/api/dual-signature/download/${contractId}`;
-      const fullUrl = `${window.location.origin}${downloadUrl}`;
+      console.log("📤 Sharing contract:", contractId);
       
-      // Check if Web Share API is available
-      if (navigator.share) {
-        await navigator.share({
-          title: `Contract - ${clientName}`,
-          text: `Signed contract for ${clientName}`,
-          url: fullUrl,
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to share contracts",
+          variant: "destructive"
         });
+        return;
+      }
+
+      // Check if Web Share API is available (mobile devices)
+      if (navigator.share) {
+        try {
+          // First try to share the actual PDF file for mobile apps
+          const response = await fetch(`/api/dual-signature/download/${contractId}`, {
+            headers: {
+              'x-user-id': currentUser.uid
+            }
+          });
+          
+          if (response.ok) {
+            const blob = await response.blob();
+            const file = new File([blob], `contract_${clientName.replace(/\s+/g, '_')}_signed.pdf`, {
+              type: 'application/pdf'
+            });
+            
+            // Try to share the file directly (works with most mobile apps)
+            await navigator.share({
+              title: `Signed Contract - ${clientName}`,
+              text: `Signed contract for ${clientName} project`,
+              files: [file]
+            });
+            
+            toast({
+              title: "Shared Successfully", 
+              description: `Contract shared via mobile app`,
+            });
+          } else {
+            throw new Error('Failed to load contract for sharing');
+          }
+        } catch (shareError: any) {
+          // Fallback to URL sharing if file sharing fails
+          const downloadUrl = `/api/dual-signature/download/${contractId}`;
+          const fullUrl = `${window.location.origin}${downloadUrl}`;
+          
+          await navigator.share({
+            title: `Signed Contract - ${clientName}`,
+            text: `Signed contract for ${clientName} project`,
+            url: fullUrl
+          });
+          
+          toast({
+            title: "Share Link Sent",
+            description: `Contract download link shared`,
+          });
+        }
       } else {
-        // Fallback to clipboard
+        // Fallback for desktop - copy download link to clipboard
+        const downloadUrl = `/api/dual-signature/download/${contractId}`;
+        const fullUrl = `${window.location.origin}${downloadUrl}`;
+        
         await navigator.clipboard.writeText(fullUrl);
         toast({
           title: "Link Copied",
-          description: "Contract download link copied to clipboard",
+          description: `Download link copied to clipboard - share it with anyone who needs the signed contract`,
         });
       }
-    } catch (error) {
+      
+    } catch (error: any) {
       console.error("❌ Error sharing contract:", error);
       toast({
-        title: "Error",
-        description: "Failed to share contract",
+        title: "Share Failed",
+        description: error.message || "Failed to share contract",
         variant: "destructive",
       });
     }
