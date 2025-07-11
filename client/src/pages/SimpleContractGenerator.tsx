@@ -7,10 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
-import { Database, Eye, FileText, CheckCircle, Plus, Trash2, Edit2, Sparkles, Shield, AlertCircle, DollarSign, Calendar, Wrench, FileCheck, Loader2, Brain, RefreshCw, History, Clock, UserCheck, Search, Filter, PenTool, Download, Mail, Phone, MessageCircle, Send, Lock, Truck } from "lucide-react";
+import { Database, Eye, FileText, CheckCircle, Plus, Trash2, Edit2, Sparkles, Shield, AlertCircle, DollarSign, Calendar, Wrench, FileCheck, Loader2, Brain, RefreshCw, History, Clock, UserCheck, Search, Filter, PenTool, Download, Mail, Phone, MessageCircle, Send, Lock, Truck, Share2, ExternalLink, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -42,7 +43,8 @@ export default function SimpleContractGenerator() {
   const [isLoadingClauses, setIsLoadingClauses] = useState(false);
   
   // History management state
-  const [currentView, setCurrentView] = useState<'contracts' | 'history' | 'completed'>('contracts');
+  const [currentView, setCurrentView] = useState<'contracts' | 'history'>('contracts');
+  const [historyTab, setHistoryTab] = useState<'drafts' | 'completed'>('drafts');
   const [contractHistory, setContractHistory] = useState<ContractHistoryEntry[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'draft' | 'completed' | 'processing'>('all');
@@ -231,6 +233,59 @@ export default function SimpleContractGenerator() {
       toast({
         title: "Download Error",
         description: "Failed to download contract PDF",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  // Share contract function
+  const shareContract = useCallback(async (contractId: string, clientName: string) => {
+    try {
+      // Generate download link
+      const downloadUrl = `/api/dual-signature/download/${contractId}`;
+      const fullUrl = `${window.location.origin}${downloadUrl}`;
+      
+      // Check if Web Share API is available
+      if (navigator.share) {
+        await navigator.share({
+          title: `Contract - ${clientName}`,
+          text: `Signed contract for ${clientName}`,
+          url: fullUrl,
+        });
+      } else {
+        // Fallback to clipboard
+        await navigator.clipboard.writeText(fullUrl);
+        toast({
+          title: "Link Copied",
+          description: "Contract download link copied to clipboard",
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error sharing contract:", error);
+      toast({
+        title: "Error",
+        description: "Failed to share contract",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  // Copy contract link to clipboard
+  const copyContractLink = useCallback(async (contractId: string, clientName: string) => {
+    try {
+      const downloadUrl = `/api/dual-signature/download/${contractId}`;
+      const fullUrl = `${window.location.origin}${downloadUrl}`;
+      
+      await navigator.clipboard.writeText(fullUrl);
+      toast({
+        title: "Link Copied",
+        description: `Contract link for ${clientName} copied to clipboard`,
+      });
+    } catch (error) {
+      console.error("❌ Error copying link:", error);
+      toast({
+        title: "Error",
+        description: "Failed to copy link",
         variant: "destructive",
       });
     }
@@ -1501,7 +1556,11 @@ export default function SimpleContractGenerator() {
             <Button
               variant={currentView === 'history' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setCurrentView('history')}
+              onClick={() => {
+                setCurrentView('history');
+                loadContractHistory();
+                loadCompletedContracts();
+              }}
               className={`flex items-center gap-2 px-4 py-2 ${
                 currentView === 'history'
                   ? 'bg-cyan-400 text-black hover:bg-cyan-300'
@@ -1510,33 +1569,13 @@ export default function SimpleContractGenerator() {
             >
               <History className="h-4 w-4" />
               History
-              {contractHistory.length > 0 && (
+              {(contractHistory.length > 0 || completedContracts.length > 0) && (
                 <Badge className="bg-cyan-600 text-white ml-1 px-1.5 py-0.5 text-xs">
-                  {contractHistory.length}
+                  {contractHistory.length + completedContracts.length}
                 </Badge>
               )}
             </Button>
-            <Button
-              variant={currentView === 'completed' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => {
-                setCurrentView('completed');
-                loadCompletedContracts(); // Refresh on click
-              }}
-              className={`flex items-center gap-2 px-4 py-2 ${
-                currentView === 'completed'
-                  ? 'bg-green-400 text-black hover:bg-green-300'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-800'
-              }`}
-            >
-              <Download className="h-4 w-4" />
-              Completed
-              {completedContracts.length > 0 && (
-                <Badge className="bg-green-600 text-white ml-1 px-1.5 py-0.5 text-xs">
-                  {completedContracts.filter(c => c.isCompleted).length}
-                </Badge>
-              )}
-            </Button>
+
           </div>
         </div>
 
@@ -2561,7 +2600,7 @@ export default function SimpleContractGenerator() {
           </>
         )}
 
-        {/* History View */}
+        {/* Unified History View with Tabs */}
         {currentView === 'history' && (
           <div className="space-y-6">
             {/* History Header */}
@@ -2569,94 +2608,111 @@ export default function SimpleContractGenerator() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-cyan-400">
                   <History className="h-5 w-5" />
-                  Contract History
+                  Contract Management
                   <Badge className="bg-cyan-600 text-white ml-2">
-                    {contractHistory.length} contracts
+                    {contractHistory.length + completedContracts.length} total
                   </Badge>
                 </CardTitle>
+                <p className="text-sm text-cyan-300 mt-2">
+                  Manage draft contracts and view completed signed documents
+                </p>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {/* Search and Filter Controls */}
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <Input
-                          placeholder="Search by client name, project type, or description..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
-                        />
+                <Tabs value={historyTab} onValueChange={(value: any) => setHistoryTab(value)}>
+                  <TabsList className="grid w-full grid-cols-2 bg-gray-800 border-gray-700">
+                    <TabsTrigger 
+                      value="drafts" 
+                      className="data-[state=active]:bg-cyan-600 data-[state=active]:text-black"
+                    >
+                      <Clock className="h-4 w-4 mr-2" />
+                      Drafts ({contractHistory.filter(c => c.status !== 'completed').length})
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="completed" 
+                      className="data-[state=active]:bg-green-600 data-[state=active]:text-black"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Completed ({completedContracts.filter(c => c.isCompleted).length})
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* Drafts Tab */}
+                  <TabsContent value="drafts" className="space-y-4 mt-6">
+                    {/* Search and Filter Controls */}
+                    <div className="flex flex-col md:flex-row gap-4">
+                      <div className="flex-1">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <Input
+                            placeholder="Search drafts by client name, project type..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Select value={historyFilter} onValueChange={(value: any) => setHistoryFilter(value)}>
+                          <SelectTrigger className="w-40 bg-gray-800 border-gray-600 text-white">
+                            <Filter className="h-4 w-4 mr-2" />
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-gray-800 border-gray-600">
+                            <SelectItem value="all" className="text-white hover:bg-gray-700">All Status</SelectItem>
+                            <SelectItem value="draft" className="text-white hover:bg-gray-700">Draft</SelectItem>
+                            <SelectItem value="processing" className="text-white hover:bg-gray-700">Processing</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={loadContractHistory}
+                          disabled={isLoadingHistory}
+                          className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                        >
+                          <RefreshCw className={`h-4 w-4 ${isLoadingHistory ? 'animate-spin' : ''}`} />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Select value={historyFilter} onValueChange={(value: any) => setHistoryFilter(value)}>
-                        <SelectTrigger className="w-40 bg-gray-800 border-gray-600 text-white">
-                          <Filter className="h-4 w-4 mr-2" />
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-800 border-gray-600">
-                          <SelectItem value="all" className="text-white hover:bg-gray-700">All Status</SelectItem>
-                          <SelectItem value="draft" className="text-white hover:bg-gray-700">Draft</SelectItem>
-                          <SelectItem value="completed" className="text-white hover:bg-gray-700">Completed</SelectItem>
-                          <SelectItem value="processing" className="text-white hover:bg-gray-700">Processing</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={loadContractHistory}
-                        disabled={isLoadingHistory}
-                        className="border-gray-600 text-gray-300 hover:bg-gray-800"
-                      >
-                        <RefreshCw className={`h-4 w-4 ${isLoadingHistory ? 'animate-spin' : ''}`} />
-                      </Button>
-                    </div>
-                  </div>
 
-                  {/* Contract List */}
-                  {isLoadingHistory ? (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto"></div>
-                      <p className="mt-2 text-gray-400">Loading contract history...</p>
-                    </div>
-                  ) : filteredContracts.length > 0 ? (
-                    <div className="space-y-3">
-                      {filteredContracts.map((contract) => (
-                        <div
-                          key={contract.id}
-                          className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 hover:border-cyan-400 hover:bg-gray-800/80 transition-all duration-200"
-                        >
-                          <div className="space-y-3">
-                            {/* Header Row */}
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="text-base font-bold text-white truncate">
-                                    {contract.clientName}
-                                  </h3>
-                                  <Badge 
-                                    className={`text-xs px-2 py-1 ${
-                                      contract.status === 'completed' 
-                                        ? 'bg-green-600 text-white' 
-                                        : contract.status === 'draft'
-                                        ? 'bg-yellow-600 text-white'
-                                        : 'bg-blue-600 text-white'
-                                    }`}
-                                  >
-                                    {contract.status === 'completed' && <CheckCircle className="h-3 w-3 mr-1" />}
-                                    {contract.status === 'draft' && <Clock className="h-3 w-3 mr-1" />}
-                                    {contract.status === 'processing' && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-                                    {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
-                                  </Badge>
+                    {/* Draft Contracts List */}
+                    {isLoadingHistory ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto"></div>
+                        <p className="mt-2 text-gray-400">Loading contract drafts...</p>
+                      </div>
+                    ) : filteredContracts.filter(c => c.status !== 'completed').length > 0 ? (
+                      <div className="space-y-3">
+                        {filteredContracts.filter(c => c.status !== 'completed').map((contract) => (
+                          <div
+                            key={contract.id}
+                            className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 hover:border-cyan-400 hover:bg-gray-800/80 transition-all duration-200"
+                          >
+                            <div className="space-y-3">
+                              {/* Header Row */}
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="text-base font-bold text-white truncate">
+                                      {contract.clientName}
+                                    </h3>
+                                    <Badge 
+                                      className={`text-xs px-2 py-1 ${
+                                        contract.status === 'draft'
+                                          ? 'bg-yellow-600 text-white'
+                                          : 'bg-blue-600 text-white'
+                                      }`}
+                                    >
+                                      {contract.status === 'draft' && <Clock className="h-3 w-3 mr-1" />}
+                                      {contract.status === 'processing' && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                                      {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-cyan-400 font-semibold text-sm">
+                                    ${(contract.contractData.financials?.total || 0).toLocaleString()}
+                                  </p>
                                 </div>
-                                <p className="text-cyan-400 font-semibold text-sm">
-                                  ${(contract.contractData.financials?.total || 0).toLocaleString()}
-                                </p>
-                              </div>
-                              <div className="flex gap-2 shrink-0">
-                                {contract.status !== 'completed' && (
+                                <div className="flex gap-2 shrink-0">
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -2666,289 +2722,289 @@ export default function SimpleContractGenerator() {
                                     <Edit2 className="h-3 w-3 mr-1" />
                                     Resume
                                   </Button>
-                                )}
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => loadContractFromHistory(contract)}
-                                  className="border-gray-500 text-gray-300 hover:bg-gray-700 text-xs px-3"
-                                >
-                                  <Eye className="h-3 w-3 mr-1" />
-                                  View
-                                </Button>
-                              </div>
-                            </div>
-                            
-                            {/* Project Type and Description */}
-                            <div className="bg-gray-700/50 rounded-lg px-3 py-2">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Wrench className="h-3 w-3 text-gray-400" />
-                                <span className="text-gray-300 text-sm font-medium">
-                                  {contract.projectType}
-                                </span>
-                              </div>
-                              {contract.contractData.project?.description && (
-                                <p className="text-gray-400 text-xs mt-1 line-clamp-2">
-                                  {contract.contractData.project.description}
-                                </p>
-                              )}
-                            </div>
-                            
-                            {/* Contract Details */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                              <div className="flex items-center gap-1">
-                                <UserCheck className="h-3 w-3 text-gray-500" />
-                                <span className="text-gray-400">Client:</span>
-                                <span className="text-gray-300 truncate">
-                                  {contract.contractData.client?.email || 'No email'}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3 text-gray-500" />
-                                <span className="text-gray-400">Created:</span>
-                                <span className="text-gray-300">
-                                  {contract.createdAt ? new Date(contract.createdAt).toLocaleDateString() : 'Unknown'}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <FileText className="h-3 w-3 text-gray-500" />
-                                <span className="text-gray-400">ID:</span>
-                                <span className="text-gray-300 font-mono text-xs">
-                                  {contract.contractId?.slice(-8) || contract.id?.slice(-8) || 'N/A'}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3 text-gray-500" />
-                                <span className="text-gray-400">Updated:</span>
-                                <span className="text-gray-300">
-                                  {contract.updatedAt ? new Date(contract.updatedAt).toLocaleDateString() : 'Unknown'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <History className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                      <p className="text-gray-400 mb-2">
-                        {searchTerm || historyFilter !== 'all' 
-                          ? 'No contracts match your filters' 
-                          : 'No contract history found'
-                        }
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {searchTerm || historyFilter !== 'all'
-                          ? 'Try adjusting your search or filter settings'
-                          : 'Generated contracts will appear here for easy access and editing'
-                        }
-                      </p>
-                      {(searchTerm || historyFilter !== 'all') && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSearchTerm('');
-                            setHistoryFilter('all');
-                          }}
-                          className="mt-4 border-gray-600 text-gray-300 hover:bg-gray-800"
-                        >
-                          Clear Filters
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Completed Contracts View */}
-        {currentView === 'completed' && (
-          <div className="space-y-6">
-            {/* Completed Contracts Header */}
-            <Card className="bg-gray-900 border border-green-400">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-400">
-                  <Download className="h-5 w-5" />
-                  <Lock className="h-4 w-4" />
-                  Completed Contracts - CLASSIFIED
-                  <Badge className="bg-green-600 text-white ml-2">
-                    {completedContracts.filter(c => c.isCompleted).length} signed
-                  </Badge>
-                </CardTitle>
-                <p className="text-sm text-green-300 mt-2">
-                  Digitally signed contracts with secure document delivery system
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Refresh Button */}
-                  <div className="flex justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={loadCompletedContracts}
-                      disabled={isLoadingCompleted}
-                      className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black"
-                    >
-                      <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingCompleted ? 'animate-spin' : ''}`} />
-                      Refresh Status
-                    </Button>
-                  </div>
-
-                  {/* Contract List */}
-                  {isLoadingCompleted ? (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400 mx-auto"></div>
-                      <p className="mt-2 text-gray-400">Loading completed contracts...</p>
-                    </div>
-                  ) : completedContracts.length > 0 ? (
-                    <div className="space-y-3">
-                      {completedContracts.map((contract) => (
-                        <div
-                          key={contract.contractId}
-                          className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 hover:border-green-400 hover:bg-gray-800/80 transition-all duration-200 relative"
-                        >
-                          {/* Security Frame Corners */}
-                          <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-green-400"></div>
-                          <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-green-400"></div>
-                          <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-green-400"></div>
-                          <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-green-400"></div>
-                          
-                          <div className="space-y-3">
-                            {/* Header Row */}
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="text-base font-bold text-white truncate">
-                                    {contract.clientName}
-                                  </h3>
-                                  <Badge 
-                                    className={`text-xs px-2 py-1 ${
-                                      contract.isCompleted 
-                                        ? 'bg-green-600 text-white' 
-                                        : 'bg-yellow-600 text-white'
-                                    }`}
-                                  >
-                                    {contract.isCompleted && <CheckCircle className="h-3 w-3 mr-1" />}
-                                    {contract.isCompleted ? 'COMPLETED' : 'PENDING'}
-                                  </Badge>
-                                  {contract.isDownloadable && (
-                                    <Badge className="bg-cyan-600 text-white text-xs px-2 py-1">
-                                      <Download className="h-3 w-3 mr-1" />
-                                      READY
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="text-green-400 font-semibold text-sm">
-                                  ${(contract.totalAmount || 0).toLocaleString()}
-                                </p>
-                              </div>
-                              <div className="flex gap-2 shrink-0">
-                                {contract.isDownloadable && (
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => downloadSignedPdf(contract.contractId, contract.clientName)}
-                                    className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs px-3"
+                                    onClick={() => loadContractFromHistory(contract)}
+                                    className="border-gray-500 text-gray-300 hover:bg-gray-700 text-xs px-3"
                                   >
-                                    <Download className="h-3 w-3 mr-1" />
-                                    Download
+                                    <Eye className="h-3 w-3 mr-1" />
+                                    View
                                   </Button>
+                                </div>
+                              </div>
+                              
+                              {/* Project Type and Description */}
+                              <div className="bg-gray-700/50 rounded-lg px-3 py-2">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Wrench className="h-3 w-3 text-gray-400" />
+                                  <span className="text-gray-300 text-sm font-medium">
+                                    {contract.projectType}
+                                  </span>
+                                </div>
+                                {contract.contractData.project?.description && (
+                                  <p className="text-gray-400 text-xs mt-1 line-clamp-2">
+                                    {contract.contractData.project.description}
+                                  </p>
                                 )}
                               </div>
-                            </div>
-                            
-                            {/* Signature Status */}
-                            <div className="bg-gray-700/50 rounded-lg px-3 py-2">
-                              <div className="grid grid-cols-2 gap-4 text-xs">
-                                <div className="flex items-center gap-2">
-                                  <UserCheck className="h-3 w-3 text-gray-400" />
-                                  <span className="text-gray-400">Contractor:</span>
-                                  <Badge className={`text-xs px-2 py-1 ${
-                                    contract.contractorSigned ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-300'
-                                  }`}>
-                                    {contract.contractorSigned ? 'SIGNED' : 'PENDING'}
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <UserCheck className="h-3 w-3 text-gray-400" />
-                                  <span className="text-gray-400">Client:</span>
-                                  <Badge className={`text-xs px-2 py-1 ${
-                                    contract.clientSigned ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-300'
-                                  }`}>
-                                    {contract.clientSigned ? 'SIGNED' : 'PENDING'}
-                                  </Badge>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Contract Details */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                              <div className="flex items-center gap-1">
-                                <FileText className="h-3 w-3 text-gray-500" />
-                                <span className="text-gray-400">Contract ID:</span>
-                                <span className="text-gray-300 font-mono text-xs">
-                                  {contract.contractId?.slice(-8) || 'N/A'}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3 text-gray-500" />
-                                <span className="text-gray-400">Created:</span>
-                                <span className="text-gray-300">
-                                  {contract.createdAt ? new Date(contract.createdAt).toLocaleDateString() : 'Unknown'}
-                                </span>
-                              </div>
-                              {contract.contractorSignedAt && (
+                              
+                              {/* Contract Details */}
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                                 <div className="flex items-center gap-1">
-                                  <PenTool className="h-3 w-3 text-gray-500" />
-                                  <span className="text-gray-400">Contractor:</span>
-                                  <span className="text-gray-300">
-                                    {new Date(contract.contractorSignedAt).toLocaleDateString()}
+                                  <UserCheck className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-400">Client:</span>
+                                  <span className="text-gray-300 truncate">
+                                    {contract.contractData.client?.email || 'No email'}
                                   </span>
                                 </div>
-                              )}
-                              {contract.clientSignedAt && (
                                 <div className="flex items-center gap-1">
-                                  <PenTool className="h-3 w-3 text-gray-500" />
-                                  <span className="text-gray-400">Client:</span>
+                                  <Calendar className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-400">Created:</span>
                                   <span className="text-gray-300">
-                                    {new Date(contract.clientSignedAt).toLocaleDateString()}
+                                    {contract.createdAt ? new Date(contract.createdAt).toLocaleDateString() : 'Unknown'}
                                   </span>
                                 </div>
-                              )}
-                            </div>
-
-                            {/* Security Badge */}
-                            <div className="flex items-center justify-center pt-2 border-t border-gray-700">
-                              <div className="flex items-center gap-2 text-xs">
-                                <Shield className="h-3 w-3 text-green-400" />
-                                <span className="text-green-400 font-mono">256-BIT ENCRYPTED</span>
-                                <Lock className="h-3 w-3 text-green-400" />
-                                <span className="text-green-400 font-mono">SECURE DELIVERY</span>
+                                <div className="flex items-center gap-1">
+                                  <FileText className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-400">ID:</span>
+                                  <span className="text-gray-300 font-mono text-xs">
+                                    {contract.contractId?.slice(-8) || contract.id?.slice(-8) || 'N/A'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-400">Updated:</span>
+                                  <span className="text-gray-300">
+                                    {contract.updatedAt ? new Date(contract.updatedAt).toLocaleDateString() : 'Unknown'}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <Shield className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                      <p className="text-gray-400 mb-2">No completed contracts found</p>
-                      <p className="text-sm text-gray-500">
-                        Signed contracts will appear here for secure download
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <History className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                        <p className="text-gray-400 mb-2">
+                          {searchTerm || historyFilter !== 'all' 
+                            ? 'No draft contracts match your filters' 
+                            : 'No draft contracts found'
+                          }
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Draft contracts will appear here for easy access and editing
+                        </p>
+                        {(searchTerm || historyFilter !== 'all') && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSearchTerm('');
+                              setHistoryFilter('all');
+                            }}
+                            className="mt-4 border-gray-600 text-gray-300 hover:bg-gray-800"
+                          >
+                            Clear Filters
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Completed Contracts Tab */}
+                  <TabsContent value="completed" className="space-y-4 mt-6">
+                    {/* Refresh Button */}
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm text-green-300">
+                        Digitally signed contracts with secure document delivery
                       </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={loadCompletedContracts}
+                        disabled={isLoadingCompleted}
+                        className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black"
+                      >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingCompleted ? 'animate-spin' : ''}`} />
+                        Refresh
+                      </Button>
                     </div>
-                  )}
-                </div>
+
+                    {/* Completed Contracts List */}
+                    {isLoadingCompleted ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400 mx-auto"></div>
+                        <p className="mt-2 text-gray-400">Loading completed contracts...</p>
+                      </div>
+                    ) : completedContracts.length > 0 ? (
+                      <div className="space-y-3">
+                        {completedContracts.map((contract) => (
+                          <div
+                            key={contract.contractId}
+                            className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 hover:border-green-400 hover:bg-gray-800/80 transition-all duration-200 relative"
+                          >
+                            {/* Security Frame Corners */}
+                            <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-green-400"></div>
+                            <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-green-400"></div>
+                            <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-green-400"></div>
+                            <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-green-400"></div>
+                            
+                            <div className="space-y-3">
+                              {/* Header Row */}
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="text-base font-bold text-white truncate">
+                                      {contract.clientName}
+                                    </h3>
+                                    <Badge 
+                                      className={`text-xs px-2 py-1 ${
+                                        contract.isCompleted 
+                                          ? 'bg-green-600 text-white' 
+                                          : 'bg-yellow-600 text-white'
+                                      }`}
+                                    >
+                                      {contract.isCompleted && <CheckCircle className="h-3 w-3 mr-1" />}
+                                      {contract.isCompleted ? 'COMPLETED' : 'PENDING'}
+                                    </Badge>
+                                    {contract.isDownloadable && (
+                                      <Badge className="bg-cyan-600 text-white text-xs px-2 py-1">
+                                        <Download className="h-3 w-3 mr-1" />
+                                        READY
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-green-400 font-semibold text-sm">
+                                    ${(contract.totalAmount || 0).toLocaleString()}
+                                  </p>
+                                </div>
+                                <div className="flex gap-2 shrink-0">
+                                  {contract.isDownloadable && (
+                                    <>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => downloadSignedPdf(contract.contractId, contract.clientName)}
+                                        className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs px-3"
+                                      >
+                                        <Download className="h-3 w-3 mr-1" />
+                                        Download
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => shareContract(contract.contractId, contract.clientName)}
+                                        className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs px-3"
+                                      >
+                                        <Share2 className="h-3 w-3 mr-1" />
+                                        Share
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => copyContractLink(contract.contractId, contract.clientName)}
+                                        className="border-gray-500 text-gray-300 hover:bg-gray-700 text-xs px-3"
+                                      >
+                                        <Copy className="h-3 w-3 mr-1" />
+                                        Copy
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Signature Status */}
+                              <div className="bg-gray-700/50 rounded-lg px-3 py-2">
+                                <div className="grid grid-cols-2 gap-4 text-xs">
+                                  <div className="flex items-center gap-2">
+                                    <UserCheck className="h-3 w-3 text-gray-400" />
+                                    <span className="text-gray-400">Contractor:</span>
+                                    <Badge className={`text-xs px-2 py-1 ${
+                                      contract.contractorSigned ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-300'
+                                    }`}>
+                                      {contract.contractorSigned ? 'SIGNED' : 'PENDING'}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <UserCheck className="h-3 w-3 text-gray-400" />
+                                    <span className="text-gray-400">Client:</span>
+                                    <Badge className={`text-xs px-2 py-1 ${
+                                      contract.clientSigned ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-300'
+                                    }`}>
+                                      {contract.clientSigned ? 'SIGNED' : 'PENDING'}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Contract Details */}
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                                <div className="flex items-center gap-1">
+                                  <FileText className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-400">Contract ID:</span>
+                                  <span className="text-gray-300 font-mono text-xs">
+                                    {contract.contractId?.slice(-8) || 'N/A'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-400">Created:</span>
+                                  <span className="text-gray-300">
+                                    {contract.createdAt ? new Date(contract.createdAt).toLocaleDateString() : 'Unknown'}
+                                  </span>
+                                </div>
+                                {contract.contractorSignedAt && (
+                                  <div className="flex items-center gap-1">
+                                    <PenTool className="h-3 w-3 text-gray-500" />
+                                    <span className="text-gray-400">Contractor:</span>
+                                    <span className="text-gray-300">
+                                      {new Date(contract.contractorSignedAt).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                )}
+                                {contract.clientSignedAt && (
+                                  <div className="flex items-center gap-1">
+                                    <PenTool className="h-3 w-3 text-gray-500" />
+                                    <span className="text-gray-400">Client:</span>
+                                    <span className="text-gray-300">
+                                      {new Date(contract.clientSignedAt).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Security Badge */}
+                              <div className="flex items-center justify-center pt-2 border-t border-gray-700">
+                                <div className="flex items-center gap-2 text-xs">
+                                  <Shield className="h-3 w-3 text-green-400" />
+                                  <span className="text-green-400 font-mono">256-BIT ENCRYPTED</span>
+                                  <Lock className="h-3 w-3 text-green-400" />
+                                  <span className="text-green-400 font-mono">SECURE DELIVERY</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Shield className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                        <p className="text-gray-400 mb-2">No completed contracts found</p>
+                        <p className="text-sm text-gray-500">
+                          Signed contracts will appear here for secure download and sharing
+                        </p>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </div>
         )}
+
+
       </div>
     </div>
   );
