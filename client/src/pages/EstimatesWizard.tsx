@@ -73,6 +73,7 @@ import {
   Edit,
   Mail,
   Phone,
+  Clock,
   MapPin,
   X,
   Smartphone,
@@ -5413,127 +5414,151 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
   };
 
   return (
-    <div className="md:container md:mx-auto mt-10 md:mt-0 px-4 sm:px-4 py-4 sm:py-8  md:max-w-6xl">
-      <div className="mb-6 sm:mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-2xl  md:text-3xl font-bold mb-2 truncate">
-              {isEditMode ? "Editar Estimado" : "Crear Nuevo Estimado"}
-            </h1>
-            <p className="text-muted-foreground text-sm sm:text-base">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      {/* Cyberpunk Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/20 via-blue-900/20 to-purple-900/20" />
+        <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-4">
+                Professional Estimates Generator
+              </h1>
+            </div>
+            
+            {/* Navigation Buttons */}
+            <div className="flex justify-center mb-8">
+              <div className="flex bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700/50 overflow-hidden">
+                <button className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold flex items-center gap-2 border-r border-gray-700/50">
+                  <FileText className="h-5 w-5" />
+                  New Estimate
+                </button>
+                <button
+                  onClick={() => {
+                    setShowEstimatesHistory(true);
+                    loadSavedEstimates();
+                  }}
+                  className="px-6 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 transition-all duration-200 flex items-center gap-2 relative"
+                >
+                  <Clock className="h-5 w-5" />
+                  History
+                  {savedEstimates.length > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-cyan-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
+                      {savedEstimates.length}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700/50 p-6">
+          <div className="mb-6">
+            <p className="text-gray-300 text-center">
               {isEditMode
                 ? "Edita tu estimado existente y guarda los cambios"
                 : "Sigue los pasos para crear un estimado profesional para tu cliente"}
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowEstimatesHistory(true);
-                loadSavedEstimates();
-              }}
-              className="border-blue-300 text-blue-600 hover:bg-blue-50 w-full sm:w-auto shrink-0"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Mis </span>Estimados
-            </Button>
-          </div>
-        </div>
-      </div>
 
-      {/* Progress Steps */}
-      <div className="mb-6 sm:mb-8">
-        <div className="flex items-center justify-center max-w-4xl mx-auto px-4">
-          <div className="flex items-center w-full max-w-2xl">
-            {STEPS.map((step, index) => {
-              const Icon = step.icon;
-              const isActive = index === currentStep;
-              const isCompleted = index < currentStep;
+          {/* Progress Steps */}
+          <div className="mb-8">
+            <div className="flex items-center justify-center">
+              <div className="flex items-center w-full max-w-2xl">
+                {STEPS.map((step, index) => {
+                  const Icon = step.icon;
+                  const isActive = index === currentStep;
+                  const isCompleted = index < currentStep;
 
-              return (
-                <div key={step.id} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center w-full">
-                    <div
-                      className={`flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 mb-2 transition-all duration-300 ${
-                        isActive
-                          ? "border-primary bg-primary text-primary-foreground shadow-lg scale-110"
-                          : isCompleted
-                            ? "border-green-600 bg-green-600 text-white shadow-md"
-                            : "border-muted-foreground/40 bg-background"
-                      }`}
-                    >
-                      {isCompleted ? (
-                        <Check className="h-4 w-4 sm:h-6 sm:w-6" />
-                      ) : (
-                        <Icon className="h-4 w-4 sm:h-6 sm:w-6" />
+                  return (
+                    <div key={step.id} className="flex items-center flex-1">
+                      <div className="flex flex-col items-center w-full">
+                        <div
+                          className={`flex items-center justify-center w-12 h-12 rounded-full border-2 mb-2 transition-all duration-300 ${
+                            isActive
+                              ? "border-cyan-400 bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg scale-110"
+                              : isCompleted
+                                ? "border-green-400 bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md"
+                                : "border-gray-600 bg-gray-800 text-gray-400"
+                          }`}
+                        >
+                          {isCompleted ? (
+                            <Check className="h-6 w-6" />
+                          ) : (
+                            <span className="text-lg font-bold">{index + 1}</span>
+                          )}
+                        </div>
+                        <span
+                          className={`text-sm font-medium text-center transition-colors duration-300 ${
+                            isActive
+                              ? "text-cyan-400 font-semibold"
+                              : isCompleted
+                                ? "text-green-400"
+                                : "text-gray-400"
+                          }`}
+                        >
+                          {step.title}
+                        </span>
+                      </div>
+                      {index < STEPS.length - 1 && (
+                        <div className="flex-1 flex items-center px-4">
+                          <div
+                            className={`w-full h-1 rounded-full transition-all duration-500 ${
+                              isCompleted
+                                ? "bg-gradient-to-r from-green-500 to-emerald-500"
+                                : "bg-gray-700"
+                            }`}
+                          />
+                        </div>
                       )}
                     </div>
-                    <span
-                      className={`text-xs sm:text-sm font-medium text-center transition-colors duration-300 ${
-                        isActive
-                          ? "text-primary font-semibold"
-                          : isCompleted
-                            ? "text-green-600"
-                            : "text-muted-foreground"
-                      }`}
-                    >
-                      {step.title}
-                    </span>
-                  </div>
-                  {index < STEPS.length - 1 && (
-                    <div className="flex-1 flex items-center px-2 sm:px-4">
-                      <div
-                        className={`w-full h-1 rounded-full transition-all duration-500 ${
-                          isCompleted
-                            ? "bg-green-600"
-                            : "bg-muted-foreground/20"
-                        }`}
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Current Step Content */}
-      <div className="mb-8">{renderCurrentStep()}</div>
+          {/* Current Step Content */}
+          <div className="mb-8">{renderCurrentStep()}</div>
 
-      {/* Navigation Buttons */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:justify-between">
-        <Button
-          variant="outline"
-          onClick={prevStep}
-          disabled={currentStep === 0}
-          className="w-full sm:w-auto order-2 sm:order-1"
-        >
-          <ChevronLeft className="h-4 w-4 mr-2" />
-          Anterior
-        </Button>
-
-        <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
-          {currentStep === STEPS.length - 1 ? (
+          {/* Navigation Buttons */}
+          <div className="flex flex-col sm:flex-row gap-2 sm:justify-between">
             <Button
-              onClick={handleDownload}
-              disabled={!estimate.client || estimate.items.length === 0}
-              className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+              variant="outline"
+              onClick={prevStep}
+              disabled={currentStep === 0}
+              className="w-full sm:w-auto order-2 sm:order-1 bg-gray-700 hover:bg-gray-600 text-gray-300 border-gray-600"
             >
-              <Download className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Finalizar y </span>Descargar
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              Anterior
             </Button>
-          ) : (
-            <Button
-              onClick={nextStep}
-              disabled={!canProceedToNext()}
-              className="w-full sm:w-auto"
-            >
-              Siguiente
-              <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
-          )}
+
+            <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
+              {currentStep === STEPS.length - 1 ? (
+                <Button
+                  onClick={handleDownload}
+                  disabled={!estimate.client || estimate.items.length === 0}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 w-full sm:w-auto"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Finalizar y </span>Descargar
+                </Button>
+              ) : (
+                <Button
+                  onClick={nextStep}
+                  disabled={!canProceedToNext()}
+                  className="w-full sm:w-auto bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700"
+                >
+                  Siguiente
+                  <ChevronRight className="h-4 w-4 ml-2" />
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
