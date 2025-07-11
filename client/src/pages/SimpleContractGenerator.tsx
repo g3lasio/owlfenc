@@ -44,7 +44,7 @@ export default function SimpleContractGenerator() {
   
   // History management state
   const [currentView, setCurrentView] = useState<'contracts' | 'history'>('contracts');
-  const [historyTab, setHistoryTab] = useState<'drafts' | 'completed'>('drafts');
+  const [historyTab, setHistoryTab] = useState<'drafts' | 'in-progress' | 'completed'>('drafts');
   const [contractHistory, setContractHistory] = useState<ContractHistoryEntry[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'draft' | 'completed' | 'processing'>('all');
@@ -53,6 +53,10 @@ export default function SimpleContractGenerator() {
   // Completed contracts state
   const [completedContracts, setCompletedContracts] = useState<any[]>([]);
   const [isLoadingCompleted, setIsLoadingCompleted] = useState(false);
+
+  // In-progress contracts state
+  const [inProgressContracts, setInProgressContracts] = useState<any[]>([]);
+  const [isLoadingInProgress, setIsLoadingInProgress] = useState(false);
   
   // Auto-save state
   const [isAutoSaving, setIsAutoSaving] = useState(false);
@@ -193,6 +197,83 @@ export default function SimpleContractGenerator() {
       setIsLoadingCompleted(false);
     }
   }, [currentUser?.uid, toast]);
+
+  // Load in-progress contracts
+  const loadInProgressContracts = useCallback(async () => {
+    if (!currentUser?.uid) return;
+    
+    setIsLoadingInProgress(true);
+    try {
+      console.log("📋 Loading in-progress contracts for user:", currentUser.uid);
+      const response = await fetch(`/api/dual-signature/in-progress/${currentUser.uid}`);
+      
+      if (!response.ok) throw new Error('Failed to load in-progress contracts');
+      
+      const data = await response.json();
+      setInProgressContracts(data.contracts || []);
+      console.log("✅ In-progress contracts loaded:", data.contracts?.length || 0, "contracts");
+    } catch (error) {
+      console.error("❌ Error loading in-progress contracts:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load in-progress contracts",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingInProgress(false);
+    }
+  }, [currentUser?.uid, toast]);
+
+  // Resend signature links
+  const resendSignatureLinks = useCallback(async (contractId: string, methods: string[]) => {
+    try {
+      console.log("📱 Resending signature links for contract:", contractId, "via:", methods);
+      
+      const response = await fetch('/api/dual-signature/resend-links', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contractId,
+          methods
+        }),
+      });
+      
+      if (!response.ok) throw new Error('Failed to resend signature links');
+      
+      const data = await response.json();
+      
+      // Show success message and handle specific delivery methods
+      toast({
+        title: "Links Sent Successfully",
+        description: `Contract signature links sent via ${methods.join(', ')}`,
+      });
+      
+      // Handle specific delivery methods that need direct user action
+      if (methods.includes('sms') || methods.includes('whatsapp')) {
+        data.results.forEach((result: string) => {
+          if (result.includes('SMS link generated:')) {
+            const smsLink = result.replace('SMS link generated: ', '');
+            window.open(smsLink, '_blank');
+          }
+          if (result.includes('WhatsApp link generated:')) {
+            const whatsappLink = result.replace('WhatsApp link generated: ', '');
+            window.open(whatsappLink, '_blank');
+          }
+        });
+      }
+      
+      return data;
+    } catch (error) {
+      console.error("❌ Error resending signature links:", error);
+      toast({
+        title: "Error",
+        description: "Failed to resend signature links",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
 
   // Download signed PDF
   const downloadSignedPdf = useCallback(async (contractId: string, clientName: string) => {
@@ -1530,6 +1611,13 @@ export default function SimpleContractGenerator() {
     }
   }, [currentUser?.uid, loadContractHistory, loadCompletedContracts]);
 
+  // Load in-progress contracts when switching to in-progress tab
+  useEffect(() => {
+    if (historyTab === 'in-progress' && currentUser?.uid) {
+      loadInProgressContracts();
+    }
+  }, [historyTab, currentUser?.uid, loadInProgressContracts]);
+
   return (
     <div className="min-h-screen bg-black text-white p-4">
       <div className="max-w-4xl mx-auto">
@@ -2619,13 +2707,20 @@ export default function SimpleContractGenerator() {
               </CardHeader>
               <CardContent>
                 <Tabs value={historyTab} onValueChange={(value: any) => setHistoryTab(value)}>
-                  <TabsList className="grid w-full grid-cols-2 bg-gray-800 border-gray-700">
+                  <TabsList className="grid w-full grid-cols-3 bg-gray-800 border-gray-700">
                     <TabsTrigger 
                       value="drafts" 
                       className="data-[state=active]:bg-cyan-600 data-[state=active]:text-black"
                     >
                       <Clock className="h-4 w-4 mr-2" />
                       Drafts ({contractHistory.filter(c => c.status !== 'completed').length})
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="in-progress" 
+                      className="data-[state=active]:bg-yellow-600 data-[state=active]:text-black"
+                    >
+                      <FileCheck className="h-4 w-4 mr-2" />
+                      In Progress ({inProgressContracts.length})
                     </TabsTrigger>
                     <TabsTrigger 
                       value="completed" 
@@ -2809,6 +2904,168 @@ export default function SimpleContractGenerator() {
                             Clear Filters
                           </Button>
                         )}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* In Progress Contracts Tab */}
+                  <TabsContent value="in-progress" className="space-y-4 mt-6">
+                    {/* Refresh Button */}
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm text-yellow-300">
+                        Contracts pending signature from contractor or client
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={loadInProgressContracts}
+                        disabled={isLoadingInProgress}
+                        className="border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black"
+                      >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingInProgress ? 'animate-spin' : ''}`} />
+                        Refresh
+                      </Button>
+                    </div>
+
+                    {/* In Progress Contracts List */}
+                    {isLoadingInProgress ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400 mx-auto"></div>
+                        <p className="mt-2 text-gray-400">Loading in-progress contracts...</p>
+                      </div>
+                    ) : inProgressContracts.length > 0 ? (
+                      <div className="space-y-3">
+                        {inProgressContracts.map((contract) => (
+                          <div
+                            key={contract.id}
+                            className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 hover:border-yellow-400 hover:bg-gray-800/80 transition-all duration-200 relative"
+                          >
+                            {/* Security Frame Corners */}
+                            <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-yellow-400"></div>
+                            <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-yellow-400"></div>
+                            <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-yellow-400"></div>
+                            <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-yellow-400"></div>
+                            
+                            <div className="space-y-3">
+                              {/* Header Row */}
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="text-base font-bold text-white truncate">
+                                      {contract.clientName}
+                                    </h3>
+                                    <Badge className="bg-yellow-600 text-black text-xs px-2 py-1">
+                                      <Clock className="h-3 w-3 mr-1" />
+                                      IN PROGRESS
+                                    </Badge>
+                                  </div>
+                                  <p className="text-yellow-400 font-semibold text-sm">
+                                    ${(contract.totalAmount || 0).toLocaleString()}
+                                  </p>
+                                </div>
+                                <div className="flex gap-2 shrink-0">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => resendSignatureLinks(contract.id, ['email'])}
+                                    className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
+                                  >
+                                    <Mail className="h-3 w-3 mr-1" />
+                                    Email
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => resendSignatureLinks(contract.id, ['sms'])}
+                                    className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black"
+                                  >
+                                    <Phone className="h-3 w-3 mr-1" />
+                                    SMS
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => resendSignatureLinks(contract.id, ['whatsapp'])}
+                                    className="border-green-500 text-green-500 hover:bg-green-500 hover:text-black"
+                                  >
+                                    <MessageCircle className="h-3 w-3 mr-1" />
+                                    WhatsApp
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              {/* Signature Status */}
+                              <div className="bg-gray-700/50 rounded-lg p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <PenTool className="h-4 w-4 text-yellow-400" />
+                                  <span className="text-yellow-400 font-semibold text-sm">Signature Status</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 text-xs">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-gray-400">Contractor:</span>
+                                    <Badge className={`text-xs px-2 py-1 ${
+                                      contract.contractorSigned 
+                                        ? 'bg-green-600 text-white' 
+                                        : 'bg-red-600 text-white'
+                                    }`}>
+                                      {contract.contractorSigned ? 'SIGNED' : 'PENDING'}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-gray-400">Client:</span>
+                                    <Badge className={`text-xs px-2 py-1 ${
+                                      contract.clientSigned 
+                                        ? 'bg-green-600 text-white' 
+                                        : 'bg-red-600 text-white'
+                                    }`}>
+                                      {contract.clientSigned ? 'SIGNED' : 'PENDING'}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Contract Details */}
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                                <div className="flex items-center gap-1">
+                                  <UserCheck className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-400">Contract ID:</span>
+                                  <span className="text-gray-300 font-mono text-xs truncate">
+                                    {contract.id?.slice(-8) || 'N/A'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-400">Created:</span>
+                                  <span className="text-gray-300">
+                                    {contract.createdAt ? new Date(contract.createdAt).toLocaleDateString() : 'Unknown'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Mail className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-400">Client Email:</span>
+                                  <span className="text-gray-300 truncate">
+                                    {contract.clientEmail || 'No email'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-400">Client Phone:</span>
+                                  <span className="text-gray-300">
+                                    {contract.clientPhone || 'No phone'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <FileCheck className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                        <p className="text-gray-400 mb-2">No contracts in progress</p>
+                        <p className="text-sm text-gray-500">
+                          Contracts awaiting signatures will appear here with resend options
+                        </p>
                       </div>
                     )}
                   </TabsContent>

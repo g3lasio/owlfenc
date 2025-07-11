@@ -238,6 +238,70 @@ router.get('/download/:contractId', async (req, res) => {
 });
 
 /**
+ * GET /api/dual-signature/in-progress/:userId
+ * Obtener todos los contratos en progreso (pendientes de firma) de un usuario
+ */
+router.get('/in-progress/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    console.log('📋 [API] Getting in-progress contracts for user:', userId);
+    
+    // Import database here to avoid circular dependencies
+    const { db } = await import('../db');
+    const { digitalContracts } = await import('../../shared/schema');
+    const { eq, ne } = await import('drizzle-orm');
+    
+    const inProgressContracts = await db.select()
+      .from(digitalContracts)
+      .where(eq(digitalContracts.userId, userId))
+      .orderBy(digitalContracts.createdAt);
+    
+    // Filter for contracts that are not completed
+    const filteredContracts = inProgressContracts.filter(contract => 
+      contract.status !== 'completed' || (!contract.contractorSigned || !contract.clientSigned)
+    );
+    
+    console.log(`✅ [API] Found ${filteredContracts.length} in-progress contracts for user`);
+    
+    // Transform data for frontend
+    const contractsForFrontend = filteredContracts.map(contract => ({
+      contractId: contract.contractId,
+      status: contract.status,
+      contractorName: contract.contractorName,
+      clientName: contract.clientName,
+      totalAmount: parseFloat(contract.totalAmount),
+      contractorSigned: contract.contractorSigned,
+      clientSigned: contract.clientSigned,
+      contractorSignedAt: contract.contractorSignedAt,
+      clientSignedAt: contract.clientSignedAt,
+      contractorEmail: contract.contractorEmail,
+      clientEmail: contract.clientEmail,
+      contractorPhone: contract.contractorPhone,
+      clientPhone: contract.clientPhone,
+      createdAt: contract.createdAt,
+      updatedAt: contract.updatedAt,
+      isCompleted: false,
+      needsAction: !contract.contractorSigned || !contract.clientSigned,
+      contractorSignUrl: `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/sign/${contract.contractId}/contractor`,
+      clientSignUrl: `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/sign/${contract.contractId}/client`
+    }));
+    
+    res.json({
+      success: true,
+      contracts: contractsForFrontend
+    });
+    
+  } catch (error: any) {
+    console.error('❌ [API] Error getting in-progress contracts:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+/**
  * GET /api/dual-signature/completed/:userId
  * Obtener todos los contratos completados de un usuario
  */
@@ -303,6 +367,109 @@ router.get('/test', (req, res) => {
     message: 'Dual Signature API is working',
     timestamp: new Date().toISOString(),
   });
+});
+
+/**
+ * POST /api/dual-signature/resend-links
+ * Reenviar links de firma para un contrato existente
+ */
+router.post('/resend-links', async (req, res) => {
+  try {
+    const { contractId, methods } = req.body;
+    
+    console.log('📱 [API] Resending signature links for contract:', contractId, 'methods:', methods);
+    
+    // Import database here to avoid circular dependencies
+    const { db } = await import('../db');
+    const { digitalContracts } = await import('../../shared/schema');
+    const { eq } = await import('drizzle-orm');
+    
+    // Get contract data
+    const [contract] = await db.select()
+      .from(digitalContracts)
+      .where(eq(digitalContracts.contractId, contractId))
+      .limit(1);
+    
+    if (!contract) {
+      return res.status(404).json({
+        success: false,
+        error: 'Contract not found'
+      });
+    }
+    
+    // Generate signature URLs
+    const contractorSignUrl = `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/sign/${contract.contractId}/contractor`;
+    const clientSignUrl = `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/sign/${contract.contractId}/client`;
+    
+    const results = [];
+    
+    // Send via email if requested
+    if (methods.includes('email')) {
+      try {
+        const { ResendEmailAdvanced } = await import('../services/resendEmailAdvanced');
+        const emailService = new ResendEmailAdvanced();
+        
+        // Send to contractor if not signed
+        if (!contract.contractorSigned) {
+          await emailService.sendContractForSigning({
+            to: contract.contractorEmail,
+            contractorName: contract.contractorName,
+            clientName: contract.clientName,
+            projectDescription: contract.projectDescription,
+            totalAmount: parseFloat(contract.totalAmount),
+            signUrl: contractorSignUrl,
+            party: 'contractor'
+          });
+          results.push('Email sent to contractor');
+        }
+        
+        // Send to client if not signed
+        if (!contract.clientSigned) {
+          await emailService.sendContractForSigning({
+            to: contract.clientEmail,
+            contractorName: contract.contractorName,
+            clientName: contract.clientName,
+            projectDescription: contract.projectDescription,
+            totalAmount: parseFloat(contract.totalAmount),
+            signUrl: clientSignUrl,
+            party: 'client'
+          });
+          results.push('Email sent to client');
+        }
+      } catch (emailError) {
+        console.error('❌ Error sending emails:', emailError);
+        results.push('Email sending failed');
+      }
+    }
+    
+    // Generate SMS/WhatsApp links if requested
+    if (methods.includes('sms') || methods.includes('whatsapp')) {
+      const smsMessage = `🔒 CONTRATO DIGITAL PENDIENTE\n\nHola ${contract.clientName},\n\nTu contrato para "${contract.projectDescription}" está listo para firma.\n\nMonto: $${parseFloat(contract.totalAmount).toLocaleString()}\n\n👆 Firmar: ${clientSignUrl}\n\n📧 Owl Fence - Contratos Seguros`;
+      
+      if (methods.includes('sms')) {
+        results.push(`SMS link generated: sms:${contract.clientPhone}?body=${encodeURIComponent(smsMessage)}`);
+      }
+      
+      if (methods.includes('whatsapp')) {
+        results.push(`WhatsApp link generated: https://wa.me/${contract.clientPhone?.replace(/\D/g, '')}?text=${encodeURIComponent(smsMessage)}`);
+      }
+    }
+    
+    res.json({
+      success: true,
+      results,
+      contractorSignUrl: !contract.contractorSigned ? contractorSignUrl : null,
+      clientSignUrl: !contract.clientSigned ? clientSignUrl : null,
+      message: 'Links resent successfully'
+    });
+    
+  } catch (error: any) {
+    console.error('❌ [API] Error resending signature links:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
 });
 
 export default router;
