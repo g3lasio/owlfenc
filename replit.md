@@ -137,6 +137,16 @@ Owl Fence is a comprehensive SaaS platform designed for contractors in the const
 ## Changelog
 ```
 Changelog:
+- July 12, 2025. ✅ EDITABLE COMPANY INFORMATION IN ESTIMATE PREVIEW COMPLETED: Successfully implemented editable company information in the final step of the estimate generator:
+  * EDITABLE COMPANY DATA: Added comprehensive edit functionality for company information in the preview step (company name, address, city, state, zip code, phone, email, website, license)
+  * ENHANCED USER EXPERIENCE: Added "Editar" button to switch between view and edit modes for company information
+  * REAL-TIME PREVIEW UPDATES: Company information changes immediately reflect in the HTML preview for accurate PDF generation
+  * PROFESSIONAL FORM STYLING: Editable fields use cyberpunk-themed styling consistent with the application design
+  * AUTOMATIC INITIALIZATION: Company information automatically loads from user profile when entering preview step
+  * PDF GENERATION INTEGRATION: Updated generateEstimatePreview function to use edited company information instead of profile data
+  * FLEXIBLE WORKFLOW: Users can now modify company information on a per-estimate basis without changing their profile
+  * COMPLETE FORM COVERAGE: All company fields are editable including logo, contact details, and licensing information
+  * SEAMLESS INTEGRATION: Changes integrate with existing PDF generation and email systems without breaking functionality
 - July 11, 2025. ✅ SIMPLIFIED SIGNATURE CARD DESIGN COMPLETED: Successfully simplified complex cyberpunk card into clean, user-friendly interface:
   * COMPLEXITY REDUCTION: Eliminated overwhelming cyberpunk elements, threat indicators, security matrices, and excessive animations that could confuse users
   * MAINTAINED FUNCTIONALITY: Preserved all delivery method selections (Email, SMS, WhatsApp), send button states, and backend integration

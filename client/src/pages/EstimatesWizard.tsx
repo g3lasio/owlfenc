@@ -261,6 +261,39 @@ export default function EstimatesWizardFixed() {
 
   // Client editing state for preview step
   const [isEditingClient, setIsEditingClient] = useState(false);
+  
+  // Company editing state for preview step
+  const [isEditingCompany, setIsEditingCompany] = useState(false);
+  const [editableCompanyInfo, setEditableCompanyInfo] = useState({
+    company: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    phone: "",
+    email: "",
+    website: "",
+    license: "",
+    logo: "",
+  });
+
+  // Initialize editable company info when profile loads
+  useEffect(() => {
+    if (profile && !isEditingCompany) {
+      setEditableCompanyInfo({
+        company: profile.company || "",
+        address: profile.address || "",
+        city: profile.city || "",
+        state: profile.state || "",
+        zipCode: profile.zipCode || "",
+        phone: profile.phone || "",
+        email: profile.email || "",
+        website: profile.website || "",
+        license: profile.license || "",
+        logo: profile.logo || "",
+      });
+    }
+  }, [profile, isEditingCompany]);
 
   // Initialize email data when dialog opens
   useEffect(() => {
@@ -2506,15 +2539,15 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         <!-- Header with Company Info and Logo -->
         <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
           <div style="flex: 1;">
-            ${profile?.logo ? `<img src="${profile.logo}" alt="Company Logo" style="max-width: 120px; max-height: 80px; margin-bottom: 10px;" />` : `<div style="width: 120px; height: 80px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; color: #666; font-size: 14px;">Logo</div>`}
-            <h2 style="margin: 0; color: #2563eb; font-size: 1.5em;">${profile?.company || ""}</h2>
+            ${editableCompanyInfo.logo ? `<img src="${editableCompanyInfo.logo}" alt="Company Logo" style="max-width: 120px; max-height: 80px; margin-bottom: 10px;" />` : `<div style="width: 120px; height: 80px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; color: #666; font-size: 14px;">Logo</div>`}
+            <h2 style="margin: 0; color: #2563eb; font-size: 1.5em;">${editableCompanyInfo.company || ""}</h2>
             <p style="margin: 5px 0; color: #666;">
-              ${profile?.address ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}` : ""}<br>
-              ${profile?.phone || ""}<br>
-              ${profile?.email || ""}
+              ${editableCompanyInfo.address ? `${editableCompanyInfo.address}${editableCompanyInfo.city ? ", " + editableCompanyInfo.city : ""}${editableCompanyInfo.state ? ", " + editableCompanyInfo.state : ""}${editableCompanyInfo.zipCode ? " " + editableCompanyInfo.zipCode : ""}` : ""}<br>
+              ${editableCompanyInfo.phone || ""}<br>
+              ${editableCompanyInfo.email || ""}
             </p>
-            ${profile?.website ? `<p style="margin: 5px 0; color: #2563eb;">${profile.website}</p>` : ""}
-            ${profile?.license ? `<p style="margin: 5px 0; font-size: 0.9em; color: #666;">License: ${profile.license}</p>` : ""}
+            ${editableCompanyInfo.website ? `<p style="margin: 5px 0; color: #2563eb;">${editableCompanyInfo.website}</p>` : ""}
+            ${editableCompanyInfo.license ? `<p style="margin: 5px 0; font-size: 0.9em; color: #666;">License: ${editableCompanyInfo.license}</p>` : ""}
           </div>
           
           <div style="text-align: right;">
@@ -4935,21 +4968,32 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Contratista */}
                       <div className="space-y-2">
-                        <h4 className="text-xs font-medium text-cyan-400 mb-2">
-                          CONTRATISTA
-                        </h4>
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-medium text-cyan-400 mb-2">
+                            CONTRATISTA
+                          </h4>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsEditingCompany(!isEditingCompany)}
+                            className="text-xs h-6 px-2 border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10"
+                          >
+                            <Edit className="h-3 w-3 mr-1" />
+                            {isEditingCompany ? "Guardar" : "Editar"}
+                          </Button>
+                        </div>
                         <div className="text-sm text-gray-300">
                           {/* Company Logo */}
-                          {profile?.logo ? (
+                          {editableCompanyInfo.logo ? (
                             <div className="mb-3">
                               <img
-                                src={profile.logo}
-                                alt={`${profile.company || "Company"} Logo`}
+                                src={editableCompanyInfo.logo}
+                                alt={`${editableCompanyInfo.company || "Company"} Logo`}
                                 className="h-12 w-auto max-w-24 object-contain bg-white rounded p-1 border border-gray-600"
                                 onError={(e) => {
                                   console.warn(
                                     "Logo failed to load:",
-                                    profile.logo,
+                                    editableCompanyInfo.logo,
                                   );
                                   e.currentTarget.style.display = "none";
                                 }}
@@ -4964,31 +5008,140 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                               </div>
                             </div>
                           )}
-                          <p className="font-medium">
-                            {profile?.company || "Sin nombre de empresa"}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {profile?.address || "Sin dirección"}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {profile?.city || "Sin ciudad"},{" "}
-                            {profile?.state || "CA"} {profile?.zipCode || ""}
-                          </p>
-                          <p className="text-xs text-cyan-400">
-                            {profile?.phone || "Sin teléfono"}
-                          </p>
-                          <p className="text-xs text-cyan-400">
-                            {profile?.email || "Sin email"}
-                          </p>
-                          {profile?.website && (
-                            <p className="text-xs text-cyan-400">
-                              {profile.website}
-                            </p>
-                          )}
-                          {profile?.licenseNumber && (
-                            <p className="text-xs text-gray-400">
-                              Licencia: {profile.licenseNumber}
-                            </p>
+                          
+                          {isEditingCompany ? (
+                            <div className="space-y-2">
+                              <Input
+                                placeholder="Nombre de la empresa"
+                                value={editableCompanyInfo.company}
+                                onChange={(e) =>
+                                  setEditableCompanyInfo((prev) => ({
+                                    ...prev,
+                                    company: e.target.value,
+                                  }))
+                                }
+                                className="h-8 text-xs bg-gray-800 border-gray-600 text-white"
+                              />
+                              <Input
+                                placeholder="Dirección"
+                                value={editableCompanyInfo.address}
+                                onChange={(e) =>
+                                  setEditableCompanyInfo((prev) => ({
+                                    ...prev,
+                                    address: e.target.value,
+                                  }))
+                                }
+                                className="h-8 text-xs bg-gray-800 border-gray-600 text-white"
+                              />
+                              <div className="grid grid-cols-3 gap-2">
+                                <Input
+                                  placeholder="Ciudad"
+                                  value={editableCompanyInfo.city}
+                                  onChange={(e) =>
+                                    setEditableCompanyInfo((prev) => ({
+                                      ...prev,
+                                      city: e.target.value,
+                                    }))
+                                  }
+                                  className="h-8 text-xs bg-gray-800 border-gray-600 text-white"
+                                />
+                                <Input
+                                  placeholder="Estado"
+                                  value={editableCompanyInfo.state}
+                                  onChange={(e) =>
+                                    setEditableCompanyInfo((prev) => ({
+                                      ...prev,
+                                      state: e.target.value,
+                                    }))
+                                  }
+                                  className="h-8 text-xs bg-gray-800 border-gray-600 text-white"
+                                />
+                                <Input
+                                  placeholder="Código Postal"
+                                  value={editableCompanyInfo.zipCode}
+                                  onChange={(e) =>
+                                    setEditableCompanyInfo((prev) => ({
+                                      ...prev,
+                                      zipCode: e.target.value,
+                                    }))
+                                  }
+                                  className="h-8 text-xs bg-gray-800 border-gray-600 text-white"
+                                />
+                              </div>
+                              <Input
+                                placeholder="Teléfono"
+                                value={editableCompanyInfo.phone}
+                                onChange={(e) =>
+                                  setEditableCompanyInfo((prev) => ({
+                                    ...prev,
+                                    phone: e.target.value,
+                                  }))
+                                }
+                                className="h-8 text-xs bg-gray-800 border-gray-600 text-white"
+                              />
+                              <Input
+                                placeholder="Email"
+                                value={editableCompanyInfo.email}
+                                onChange={(e) =>
+                                  setEditableCompanyInfo((prev) => ({
+                                    ...prev,
+                                    email: e.target.value,
+                                  }))
+                                }
+                                className="h-8 text-xs bg-gray-800 border-gray-600 text-white"
+                              />
+                              <Input
+                                placeholder="Sitio web"
+                                value={editableCompanyInfo.website}
+                                onChange={(e) =>
+                                  setEditableCompanyInfo((prev) => ({
+                                    ...prev,
+                                    website: e.target.value,
+                                  }))
+                                }
+                                className="h-8 text-xs bg-gray-800 border-gray-600 text-white"
+                              />
+                              <Input
+                                placeholder="Licencia"
+                                value={editableCompanyInfo.license}
+                                onChange={(e) =>
+                                  setEditableCompanyInfo((prev) => ({
+                                    ...prev,
+                                    license: e.target.value,
+                                  }))
+                                }
+                                className="h-8 text-xs bg-gray-800 border-gray-600 text-white"
+                              />
+                            </div>
+                          ) : (
+                            <div>
+                              <p className="font-medium">
+                                {editableCompanyInfo.company || "Sin nombre de empresa"}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                {editableCompanyInfo.address || "Sin dirección"}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                {editableCompanyInfo.city || "Sin ciudad"},{" "}
+                                {editableCompanyInfo.state || "CA"} {editableCompanyInfo.zipCode || ""}
+                              </p>
+                              <p className="text-xs text-cyan-400">
+                                {editableCompanyInfo.phone || "Sin teléfono"}
+                              </p>
+                              <p className="text-xs text-cyan-400">
+                                {editableCompanyInfo.email || "Sin email"}
+                              </p>
+                              {editableCompanyInfo.website && (
+                                <p className="text-xs text-cyan-400">
+                                  {editableCompanyInfo.website}
+                                </p>
+                              )}
+                              {editableCompanyInfo.license && (
+                                <p className="text-xs text-gray-400">
+                                  Licencia: {editableCompanyInfo.license}
+                                </p>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
