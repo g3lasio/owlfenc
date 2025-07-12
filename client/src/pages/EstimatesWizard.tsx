@@ -680,9 +680,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         localStorage.setItem("contractorProfile", JSON.stringify(companyData));
         localStorage.setItem(`userProfile_${userId}`, JSON.stringify(companyData));
         
-        // Update the profile state
-        setProfile(companyData);
-        
         // Exit edit mode
         setIsEditingCompany(false);
         
