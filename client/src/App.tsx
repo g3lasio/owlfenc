@@ -156,10 +156,10 @@ function Router() {
         {() => <ProtectedRoute component={PricingSettings} />}
       </Route>
       <Route path="/subscription">
-        {() => <ProtectedRoute component={Subscription} />}
-      </Route>
-      <Route path="/subscription-test">
         {() => <ProtectedRoute component={SubscriptionTest} />}
+      </Route>
+      <Route path="/subscription-original">
+        {() => <ProtectedRoute component={Subscription} />}
       </Route>
 
       <Route path="/billing">
