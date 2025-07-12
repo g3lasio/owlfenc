@@ -5038,15 +5038,35 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           <h4 className="text-xs font-medium text-cyan-400 mb-2">
                             CONTRATISTA
                           </h4>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleSaveCompanyInfo()}
-                            className="text-xs h-6 px-2 border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10"
-                          >
-                            <Edit className="h-3 w-3 mr-1" />
-                            {isEditingCompany ? "Guardar" : "Editar"}
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            {isEditingCompany && (
+                              <Badge variant="secondary" className="text-xs px-2 py-1 bg-yellow-400/10 text-yellow-400 border-yellow-400/20">
+                                Editando
+                              </Badge>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleSaveCompanyInfo()}
+                              className={`text-xs h-8 px-3 font-medium transition-all duration-200 ${
+                                isEditingCompany 
+                                  ? "border-green-400 text-green-400 hover:bg-green-400/10 shadow-sm shadow-green-400/20" 
+                                  : "border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10"
+                              }`}
+                            >
+                              {isEditingCompany ? (
+                                <>
+                                  <Check className="h-3 w-3 mr-1" />
+                                  Guardar
+                                </>
+                              ) : (
+                                <>
+                                  <Edit className="h-3 w-3 mr-1" />
+                                  Editar
+                                </>
+                              )}
+                            </Button>
+                          </div>
                         </div>
                         <div className="text-sm text-gray-300">
                           {/* Company Logo */}
