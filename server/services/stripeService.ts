@@ -125,46 +125,64 @@ class StripeService {
         throw new Error('No se pudo establecer conexión con Stripe. Verifique las credenciales API.');
       }
 
-      const plan = await storage.getSubscriptionPlan(options.planId);
+      // Use hardcoded plans instead of database
+      const subscriptionPlans = [
+        {
+          id: 1,
+          name: "Primo Chambeador",
+          price: 0,
+          interval: "monthly",
+          code: "primo-chambeador",
+          description: "Plan básico con funcionalidades esenciales"
+        },
+        {
+          id: 2,
+          name: "Mero Patrón",
+          price: 4999, // $49.99 in cents
+          interval: "monthly",
+          code: "mero-patron",
+          description: "Plan avanzado para contratistas profesionales"
+        },
+        {
+          id: 3,
+          name: "Master Contractor",
+          price: 9999, // $99.99 in cents
+          interval: "monthly",
+          code: "master-contractor",
+          description: "Plan completo con todas las funcionalidades"
+        }
+      ];
+
+      const plan = subscriptionPlans.find(p => p.id === options.planId);
       if (!plan) {
         throw new Error(`Plan con ID ${options.planId} no encontrado`);
       }
 
       console.log(`[${new Date().toISOString()}] Plan encontrado: ${plan.name} (${plan.code})`);
 
+      // Handle free plan separately
+      if (plan.price === 0) {
+        console.log(`[${new Date().toISOString()}] Plan gratuito seleccionado, redirigiendo a success`);
+        return options.successUrl;
+      }
+
       try {
-        // Asegurarse de que el plan existe en Stripe
-        await this.createOrUpdateStripePlan(plan);
-
-        // Obtener el precio correspondiente al plan y ciclo de facturación
-        const prices = await stripe.prices.list({
-          active: true,
-          limit: 100
-        });
-
-        console.log(`[${new Date().toISOString()}] Se encontraron ${prices.data.length} precios activos en Stripe`);
-
-        const price = prices.data.find(p =>
-          p.metadata && p.metadata.plan_code === plan.code &&
-          p.metadata.billing_cycle === options.billingCycle
-        );
-
-        if (!price) {
-          console.error(`[${new Date().toISOString()}] No se encontró precio para plan ${plan.code} con ciclo ${options.billingCycle}`);
-          console.log('[${new Date().toISOString()}] Precios disponibles:',
-            prices.data.map(p => `${p.id}: ${p.metadata?.plan_code || 'sin código'} - ${p.metadata?.billing_cycle || 'sin ciclo'}`).join(', ')
-          );
-          throw new Error(`Precio no encontrado para el plan ${plan.name} con ciclo ${options.billingCycle}`);
-        }
-
-        console.log(`[${new Date().toISOString()}] Precio encontrado: ${price.id} para plan ${plan.name} (${options.billingCycle})`);
-
-        // Crear sesión de checkout
+        // Create checkout session with inline price data
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ['card'],
           line_items: [
             {
-              price: price.id,
+              price_data: {
+                currency: 'usd',
+                product_data: {
+                  name: plan.name,
+                  description: plan.description,
+                },
+                unit_amount: plan.price,
+                recurring: {
+                  interval: options.billingCycle === 'yearly' ? 'year' : 'month',
+                },
+              },
               quantity: 1,
             },
           ],
