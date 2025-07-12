@@ -652,6 +652,72 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     loadContractorProfile();
   }, [currentUser]);
 
+  // Save company information to Firebase
+  const handleSaveCompanyInfo = async () => {
+    if (!currentUser?.uid) {
+      toast({
+        title: "❌ Error",
+        description: "Usuario no autenticado",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isEditingCompany) {
+      // Save mode - save the editable company info
+      try {
+        const companyData = {
+          userId: currentUser.uid,
+          company: editableCompanyInfo.company,
+          address: editableCompanyInfo.address,
+          city: editableCompanyInfo.city,
+          state: editableCompanyInfo.state,
+          zipCode: editableCompanyInfo.zipCode,
+          phone: editableCompanyInfo.phone,
+          email: editableCompanyInfo.email,
+          website: editableCompanyInfo.website,
+          license: editableCompanyInfo.license,
+          logo: editableCompanyInfo.logo,
+        };
+
+        const response = await fetch('/api/company-information', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(companyData),
+        });
+
+        if (response.ok) {
+          toast({
+            title: "✅ Información guardada",
+            description: "La información de la empresa se ha guardado correctamente en Firebase",
+          });
+          setIsEditingCompany(false);
+          
+          // Update the profile with the saved data
+          const updatedProfile = { ...profile, ...companyData };
+          setProfile(updatedProfile);
+          
+          // Also update localStorage for PDF generation
+          localStorage.setItem("contractorProfile", JSON.stringify(updatedProfile));
+        } else {
+          throw new Error('Error saving company information');
+        }
+      } catch (error) {
+        console.error('Error saving company information:', error);
+        toast({
+          title: "❌ Error al guardar",
+          description: "No se pudo guardar la información de la empresa",
+          variant: "destructive",
+        });
+      }
+    } else {
+      // Edit mode - just toggle to editing
+      setIsEditingCompany(true);
+    }
+  };
+
   // Handle Deepsearch Materials button functionality
   const handleDeepsearchToggle = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -4975,7 +5041,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setIsEditingCompany(!isEditingCompany)}
+                            onClick={() => handleSaveCompanyInfo()}
                             className="text-xs h-6 px-2 border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10"
                           >
                             <Edit className="h-3 w-3 mr-1" />
