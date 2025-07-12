@@ -70,6 +70,78 @@ import contractManagementRoutes from './routes/contract-management';
 // 🖊️ DUAL SIGNATURE SYSTEM - Contract Signing Workflow
 import dualSignatureRoutes from './routes/dualSignatureRoutes';
 
+// Company Information API endpoints
+app.get('/api/company-information/:userId', async (req, res) => {
+  console.log('📋 Getting company information for user:', req.params.userId);
+  
+  try {
+    const { userId } = req.params;
+    
+    // Import necessary modules
+    const { eq } = await import('drizzle-orm');
+    const { db } = await import('./db');
+    const { companyInformation } = await import('@shared/schema');
+    
+    // Get company information from database
+    const companyInfo = await db.select()
+      .from(companyInformation)
+      .where(eq(companyInformation.userId, userId))
+      .limit(1);
+    
+    if (companyInfo.length === 0) {
+      return res.status(404).json({ error: 'Company information not found' });
+    }
+    
+    res.json(companyInfo[0]);
+  } catch (error) {
+    console.error('❌ Error getting company information:', error);
+    res.status(500).json({ error: 'Failed to get company information' });
+  }
+});
+
+app.post('/api/company-information', async (req, res) => {
+  console.log('💾 Saving company information...');
+  
+  try {
+    const companyData = req.body;
+    
+    // Import necessary modules
+    const { eq } = await import('drizzle-orm');
+    const { db } = await import('./db');
+    const { companyInformation } = await import('@shared/schema');
+    
+    // Check if company info already exists for this user
+    const existingCompany = await db.select()
+      .from(companyInformation)
+      .where(eq(companyInformation.userId, companyData.userId))
+      .limit(1);
+    
+    let result;
+    
+    if (existingCompany.length > 0) {
+      // Update existing company information
+      result = await db.update(companyInformation)
+        .set({
+          ...companyData,
+          updatedAt: new Date()
+        })
+        .where(eq(companyInformation.userId, companyData.userId))
+        .returning();
+    } else {
+      // Create new company information
+      result = await db.insert(companyInformation)
+        .values(companyData)
+        .returning();
+    }
+    
+    console.log('✅ Company information saved successfully');
+    res.json(result[0]);
+  } catch (error) {
+    console.error('❌ Error saving company information:', error);
+    res.status(500).json({ error: 'Failed to save company information' });
+  }
+});
+
 // Registrar rutas de pagos
 app.use('/api', paymentRoutes);
 app.use('/api', emailRoutes);

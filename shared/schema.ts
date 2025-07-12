@@ -315,6 +315,24 @@ export const notifications = pgTable('notifications', {
   readAt: timestamp('read_at'),
 });
 
+// Company Information table for editable company data
+export const companyInformation = pgTable('company_information', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(), // Firebase UID
+  company: text('company'),
+  address: text('address'),
+  city: text('city'),
+  state: text('state'),
+  zipCode: text('zip_code'),
+  phone: text('phone'),
+  email: text('email'),
+  website: text('website'),
+  license: text('license'),
+  logo: text('logo'), // Base64 or URL
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Simple Digital Contracts table for streamlined signature workflow  
 export const digitalContracts = pgTable('digital_contracts', {
   id: text('id').primaryKey(),
@@ -366,6 +384,12 @@ export const digitalContracts = pgTable('digital_contracts', {
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
+});
+
+export const insertCompanyInformationSchema = createInsertSchema(companyInformation).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
 export const insertDigitalContractSchema = createInsertSchema(digitalContracts).omit({
@@ -489,6 +513,9 @@ export type EstimateAdjustment = typeof estimateAdjustments.$inferSelect;
 export type InsertEstimateAdjustment = z.infer<typeof insertEstimateAdjustmentSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type CompanyInformation = typeof companyInformation.$inferSelect;
+export type InsertCompanyInformation = z.infer<typeof insertCompanyInformationSchema>;
+
 export type DigitalContract = typeof digitalContracts.$inferSelect;
 export type InsertDigitalContract = z.infer<typeof insertDigitalContractSchema>;
 
