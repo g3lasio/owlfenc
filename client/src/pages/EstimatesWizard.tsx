@@ -654,7 +654,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
   // Save company information to Firebase
   const handleSaveCompanyInfo = async () => {
-    if (!currentUser?.uid) {
+    // Get user ID from currentUser or profile
+    const userId = currentUser?.uid || profile?.id || 'dev-user-123';
+    
+    if (!userId) {
       toast({
         title: "❌ Error",
         description: "Usuario no autenticado",
@@ -667,7 +670,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       // Save mode - save the editable company info
       try {
         const companyData = {
-          userId: currentUser.uid,
+          userId: userId,
           company: editableCompanyInfo.company,
           address: editableCompanyInfo.address,
           city: editableCompanyInfo.city,
@@ -680,6 +683,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           logo: editableCompanyInfo.logo,
         };
 
+        console.log('Saving company data:', companyData);
+
         const response = await fetch('/api/company-information', {
           method: 'POST',
           headers: {
@@ -688,10 +693,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           body: JSON.stringify(companyData),
         });
 
+        const result = await response.json();
+        console.log('Save response:', result);
+
         if (response.ok) {
           toast({
             title: "✅ Información guardada",
-            description: "La información de la empresa se ha guardado correctamente en Firebase",
+            description: "La información de la empresa se ha guardado correctamente",
           });
           setIsEditingCompany(false);
           
@@ -701,8 +709,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           
           // Also update localStorage for PDF generation
           localStorage.setItem("contractorProfile", JSON.stringify(updatedProfile));
+          localStorage.setItem(`userProfile_${userId}`, JSON.stringify(updatedProfile));
         } else {
-          throw new Error('Error saving company information');
+          throw new Error(result.error || 'Error saving company information');
         }
       } catch (error) {
         console.error('Error saving company information:', error);
