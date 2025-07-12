@@ -384,147 +384,126 @@ export default function Mervin() {
   const generateEstimatePreview = () => {
     // USAR EXACTAMENTE LOS MISMOS CAMPOS QUE EL PDF
     // Validación usando profile.company (no companyName)
- 
 
     // Si falta información crítica, mostrar alerta
-    if (missingData.length > 0) {
-      const alertHtml = `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #fff; border: 3px solid #f59e0b;">
-          <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-            <h3 style="color: #92400e; margin: 0 0 10px 0;">
-              ⚠️ Preview Incompleto - Información Faltante
-            </h3>
-            <p style="color: #92400e; margin: 10px 0;">Para generar un preview completo del PDF, necesitas completar:</p>
-            <ul style="color: #92400e; margin: 10px 0; padding-left: 20px;">
-              ${missingData.map((item) => `<li style="margin: 5px 0;">${item}</li>`).join("")}
-            </ul>
-            <p style="color: #92400e; margin: 10px 0; font-weight: bold;">
-              Completa tu perfil para ver el preview exacto del PDF.
-            </p>
-          </div>
-          ${generateBasicPreview()}
-        </div>
-      `;
-      setPreviewHtml(alertHtml);
-      return alertHtml;
-    }
 
     // Generar estimado completo
     const estimateNumber = `EST-${Date.now()}`;
     const estimateDate = new Date().toLocaleDateString();
 
-    const html = `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+    //   const html = `
+    //     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
 
-        <!-- Header with Company Info and Logo -->
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
-          <div style="flex: 1;">
-            ${profile?.logo ? `<img src="${profile.logo}" alt="Company Logo" style="max-width: 120px; max-height: 80px; margin-bottom: 10px;" />` : `<div style="width: 120px; height: 80px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; color: #666; font-size: 14px;">Logo</div>`}
-            <h2 style="margin: 0; color: #2563eb; font-size: 1.5em;">${profile?.company || ""}</h2>
-            <p style="margin: 5px 0; color: #666;">
-              ${profile?.address ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}` : ""}<br>
-              ${profile?.phone || ""}<br>
-              ${profile?.email || ""}
-            </p>
-            ${profile?.website ? `<p style="margin: 5px 0; color: #2563eb;">${profile.website}</p>` : ""}
-            ${profile?.license ? `<p style="margin: 5px 0; font-size: 0.9em; color: #666;">License: ${profile.license}</p>` : ""}
-          </div>
+    //       <!-- Header with Company Info and Logo -->
+    //       <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
+    //         <div style="flex: 1;">
 
-          <div style="text-align: right;">
-            <h1 style="margin: 0; color: #2563eb; font-size: 2.2em;">PROFESSIONAL ESTIMATE</h1>
-            <p style="margin: 10px 0; font-size: 1.1em;"><strong>Estimate #:</strong> ${estimateNumber}</p>
-            <p style="margin: 5px 0;"><strong>Date:</strong> ${estimateDate}</p>
-          </div>
-        </div>
+    //           <h2 style="margin: 0; color: #2563eb; font-size: 1.5em;">${selectedClient?.company || ""}</h2>
+    //           <p style="margin: 5px 0; color: #666;">
+    //             ${selectedClient?.address ? `${selectedClient.address}${selectedClient.city ? ", " + selectedClient.city : ""}${selectedClient.state ? ", " + selectedClient.state : ""}${selectedClient.zipCode ? " " + selectedClient.zipCode : ""}` : ""}<br>
+    //             ${selectedClient?.phone || ""}<br>
+    //             ${selectedClient?.email || ""}
+    //           </p>
+    //           ${selectedClient?.website ? `<p style="margin: 5px 0; color: #2563eb;">${profile.website}</p>` : ""}
+    //           ${selectedClient?.license ? `<p style="margin: 5px 0; font-size: 0.9em; color: #666;">License: ${v.license}</p>` : ""}
+    //         </div>
 
-        <!-- Client Information -->
-        <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
-          <div style="flex: 1; padding-right: 20px;">
-            <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">BILL TO:</h3>
-            <p style="margin: 5px 0; font-size: 1.1em; color: #000000;"><strong>${estimate.client?.name || "Client not specified"}</strong></p>
-            <p style="margin: 5px 0; color: #000000;">${estimate.client?.email || ""}</p>
-            <p style="margin: 5px 0; color: #000000;">${estimate.client?.phone || ""}</p>
-            <p style="margin: 5px 0; color: #000000;">${estimate.client?.address || ""}</p>
-            <p style="margin: 5px 0; color: #000000;">${estimate.client?.city ? `${estimate.client.city}, ` : ""}${estimate.client?.state || ""} ${estimate.client?.zipCode || ""}</p>
-          </div>
-        </div>
+    //         <div style="text-align: right;">
+    //           <h1 style="margin: 0; color: #2563eb; font-size: 2.2em;">PROFESSIONAL ESTIMATE</h1>
+    //           <p style="margin: 10px 0; font-size: 1.1em;"><strong>Estimate #:</strong> ${estimateNumber}</p>
+    //           <p style="margin: 5px 0;"><strong>Date:</strong> ${estimateDate}</p>
+    //         </div>
+    //       </div>
 
-        <!-- Project Details -->
-        <div style="margin-bottom: 30px;">
-          <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">MATERIALS AND SERVICES:</h3>
-          <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb; line-height: 1.6;">
-            ${estimate.projectDetails.replace(/\n/g, "<br>")}
-          </div>
-        </div>
+    //       <!-- Client Information -->
+    //       <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+    //         <div style="flex: 1; padding-right: 20px;">
+    //           <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">BILL TO:</h3>
+    //           <p style="margin: 5px 0; font-size: 1.1em; color: #000000;"><strong>${estimate.client?.name || "Client not specified"}</strong></p>
+    //           <p style="margin: 5px 0; color: #000000;">${estimate.client?.email || ""}</p>
+    //           <p style="margin: 5px 0; color: #000000;">${estimate.client?.phone || ""}</p>
+    //           <p style="margin: 5px 0; color: #000000;">${estimate.client?.address || ""}</p>
+    //           <p style="margin: 5px 0; color: #000000;">${estimate.client?.city ? `${estimate.client.city}, ` : ""}${estimate.client?.state || ""} ${estimate.client?.zipCode || ""}</p>
+    //         </div>
+    //       </div>
 
-        <!-- Materials & Labor Table -->
-        <table style="width: 100%; border-collapse: collapse; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px;">
-          <thead>
-            <tr style="background: #2563eb; color: white;">
-              <th style="border: 1px solid #2563eb; padding: 12px; text-align: left; font-weight: bold;">Description</th>
-              <th style="border: 1px solid #2563eb; padding: 12px; text-align: center; font-weight: bold;">Qty.</th>
-              <th style="border: 1px solid #2563eb; padding: 12px; text-align: center; font-weight: bold;">Unit</th>
-              <th style="border: 1px solid #2563eb; padding: 12px; text-align: right; font-weight: bold;">Unit Price</th>
-              <th style="border: 1px solid #2563eb; padding: 12px; text-align: right; font-weight: bold;">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${estimate.items
-              .map(
-                (item, index) => `
-              <tr style="background: ${index % 2 === 0 ? "#f8fafc" : "#ffffff"};">
-                <td style="border: 1px solid #ddd; padding: 12px; color: #000000;">
-                  <strong>${item.name}</strong>
-                  ${item.description ? `<br><small style="color: #333333;">${item.description}</small>` : ""}
-                </td>
-                <td style="border: 1px solid #ddd; padding: 12px; text-align: center; color: #000000;">${item.quantity}</td>
-                <td style="border: 1px solid #ddd; padding: 12px; text-align: center; color: #000000;">${item.unit}</td>
-                <td style="border: 1px solid #ddd; padding: 12px; text-align: right; color: #000000;">$${item.price.toFixed(2)}</td>
-                <td style="border: 1px solid #ddd; padding: 12px; text-align: right; font-weight: bold; color: #000000;">$${item.total.toFixed(2)}</td>
-              </tr>
-            `,
-              )
-              .join("")}
-          </tbody>
-        </table>
+    //       <!-- Project Details -->
+    //       <div style="margin-bottom: 30px;">
+    //         <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">MATERIALS AND SERVICES:</h3>
+    //         <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb; line-height: 1.6;">
+    //           ${estimate.projectDetails.replace(/\n/g, "<br>")}
+    //         </div>
+    //       </div>
 
-        <!-- Totals -->
-        <div style="text-align: right; margin-top: 30px; background: #f8fafc; padding: 20px; border-radius: 8px; border: 2px solid #e5e7eb;">
-          <div style="margin-bottom: 10px; font-size: 1.1em; color: #000000;">
-            <span style="margin-right: 40px; color: #000000;"><strong>Subtotal:</strong></span>
-            <span style="font-weight: bold; color: #000000;">$${estimate.subtotal.toFixed(2)}</span>
-          </div>
-          ${
-            estimate.discountAmount > 0
-              ? `
-            <div style="margin-bottom: 10px; font-size: 1.1em; color: #22c55e;">
-              <span style="margin-right: 40px; color: #22c55e;"><strong>Discount ${estimate.discountName ? "(" + estimate.discountName + ")" : ""} (${estimate.discountType === "percentage" ? estimate.discountValue + "%" : "Fixed"}):</strong></span>
-              <span style="font-weight: bold; color: #22c55e;">-$${estimate.discountAmount.toFixed(2)}</span>
-            </div>
-          `
-              : ""
-          }
-          <div style="margin-bottom: 15px; font-size: 1.1em; color: #000000;">
-            <span style="margin-right: 40px; color: #000000;"><strong>Tax (${estimate.taxRate}%):</strong></span>
-            <span style="font-weight: bold; color: #000000;">$${estimate.tax.toFixed(2)}</span>
-          </div>
-          <div style="border-top: 2px solid #2563eb; padding-top: 15px; font-size: 1.3em; color: #2563eb;">
-            <span style="margin-right: 40px; color: #2563eb;"><strong>TOTAL:</strong></span>
-            <span style="font-weight: bold; font-size: 1.2em; color: #2563eb;">$${estimate.total.toFixed(2)}</span>
-          </div>
-        </div>
+    //       <!-- Materials & Labor Table -->
+    //       <table style="width: 100%; border-collapse: collapse; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px;">
+    //         <thead>
+    //           <tr style="background: #2563eb; color: white;">
+    //             <th style="border: 1px solid #2563eb; padding: 12px; text-align: left; font-weight: bold;">Description</th>
+    //             <th style="border: 1px solid #2563eb; padding: 12px; text-align: center; font-weight: bold;">Qty.</th>
+    //             <th style="border: 1px solid #2563eb; padding: 12px; text-align: center; font-weight: bold;">Unit</th>
+    //             <th style="border: 1px solid #2563eb; padding: 12px; text-align: right; font-weight: bold;">Unit Price</th>
+    //             <th style="border: 1px solid #2563eb; padding: 12px; text-align: right; font-weight: bold;">Total</th>
+    //           </tr>
+    //         </thead>
+    //         <tbody>
+    //           ${estimate.items
+    //             .map(
+    //               (item, index) => `
+    //             <tr style="background: ${index % 2 === 0 ? "#f8fafc" : "#ffffff"};">
+    //               <td style="border: 1px solid #ddd; padding: 12px; color: #000000;">
+    //                 <strong>${item.name}</strong>
+    //                 ${item.description ? `<br><small style="color: #333333;">${item.description}</small>` : ""}
+    //               </td>
+    //               <td style="border: 1px solid #ddd; padding: 12px; text-align: center; color: #000000;">${item.quantity}</td>
+    //               <td style="border: 1px solid #ddd; padding: 12px; text-align: center; color: #000000;">${item.unit}</td>
+    //               <td style="border: 1px solid #ddd; padding: 12px; text-align: right; color: #000000;">$${item.price.toFixed(2)}</td>
+    //               <td style="border: 1px solid #ddd; padding: 12px; text-align: right; font-weight: bold; color: #000000;">$${item.total.toFixed(2)}</td>
+    //             </tr>
+    //           `,
+    //             )
+    //             .join("")}
+    //         </tbody>
+    //       </table>
 
-        <!-- Footer -->
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e7eb; text-align: center; color: #666; font-size: 0.9em;">
-          <p style="margin: 10px 0;"><strong>This estimate is valid for 30 days from the date shown above.</strong></p>
-          <p style="margin: 10px 0;">Thank you for considering ${profile?.company || "our company"} for your project!</p>
-          ${profile?.insurancePolicy ? `<p style="margin: 5px 0;">Fully Insured - Policy #: ${profile.insurancePolicy}</p>` : ""}
-        </div>
-      </div>
-    `;
+    //       <!-- Totals -->
+    //       <div style="text-align: right; margin-top: 30px; background: #f8fafc; padding: 20px; border-radius: 8px; border: 2px solid #e5e7eb;">
+    //         <div style="margin-bottom: 10px; font-size: 1.1em; color: #000000;">
+    //           <span style="margin-right: 40px; color: #000000;"><strong>Subtotal:</strong></span>
+    //           <span style="font-weight: bold; color: #000000;">$${estimate.subtotal.toFixed(2)}</span>
+    //         </div>
+    //         ${
+    //           estimate.discountAmount > 0
+    //             ? `
+    //           <div style="margin-bottom: 10px; font-size: 1.1em; color: #22c55e;">
+    //             <span style="margin-right: 40px; color: #22c55e;"><strong>Discount ${estimate.discountName ? "(" + estimate.discountName + ")" : ""} (${estimate.discountType === "percentage" ? estimate.discountValue + "%" : "Fixed"}):</strong></span>
+    //             <span style="font-weight: bold; color: #22c55e;">-$${estimate.discountAmount.toFixed(2)}</span>
+    //           </div>
+    //         `
+    //             : ""
+    //         }
+    //         <div style="margin-bottom: 15px; font-size: 1.1em; color: #000000;">
+    //           <span style="margin-right: 40px; color: #000000;"><strong>Tax (${estimate.taxRate}%):</strong></span>
+    //           <span style="font-weight: bold; color: #000000;">$${estimate.tax.toFixed(2)}</span>
+    //         </div>
+    //         <div style="border-top: 2px solid #2563eb; padding-top: 15px; font-size: 1.3em; color: #2563eb;">
+    //           <span style="margin-right: 40px; color: #2563eb;"><strong>TOTAL:</strong></span>
+    //           <span style="font-weight: bold; font-size: 1.2em; color: #2563eb;">$${estimate.total.toFixed(2)}</span>
+    //         </div>
+    //       </div>
 
-    setPreviewHtml(html);
-    return html;
+    //       <!-- Footer -->
+    //       <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e7eb; text-align: center; color: #666; font-size: 0.9em;">
+    //         <p style="margin: 10px 0;"><strong>This estimate is valid for 30 days from the date shown above.</strong></p>
+    //         <p style="margin: 10px 0;">Thank you for considering ${profile?.company || "our company"} for your project!</p>
+    //         ${profile?.insurancePolicy ? `<p style="margin: 5px 0;">Fully Insured - Policy #: ${profile.insurancePolicy}</p>` : ""}
+    //       </div>
+    //     </div>
+    //   `;
+
+    //   setPreviewHtml(html);
+    //   return html;
+    // };
   };
   const handleEstimateFlow = async (userInput: string) => {
     if (chatFlowStep === "awaiting-client-choice") {
@@ -877,6 +856,7 @@ export default function Mervin() {
       handleSendMessage();
     }
   };
+  console.log(currentUser);
 
   return (
     <div className="flex flex-col h-full  bg-black text-white ">

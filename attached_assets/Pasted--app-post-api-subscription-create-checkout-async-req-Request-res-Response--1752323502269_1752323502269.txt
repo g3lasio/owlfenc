@@ -1,0 +1,91 @@
+ app.post(
+    "/api/subscription/create-checkout",
+    async (req: Request, res: Response) => {
+      console.log(
+        `[${new Date().toISOString()}] Iniciando creación de checkout`,
+      );
+      try {
+        console.log("Solicitud de creación de checkout recibida:", req.body);
+
+        // Validar los parámetros de la solicitud
+        const schema = z.object({
+          planId: z.number(),
+          billingCycle: z.enum(["monthly", "yearly"]),
+          successUrl: z.string(),
+          cancelUrl: z.string(),
+        });
+
+        const validationResult = schema.safeParse(req.body);
+
+        if (!validationResult.success) {
+          console.error("Error de validación:", validationResult.error);
+          return res.status(400).json({
+            message: "Datos de solicitud inválidos",
+            errors: validationResult.error.format(),
+          });
+        }
+
+        const { planId, billingCycle, successUrl, cancelUrl } =
+          validationResult.data;
+
+        // Verificar que el plan existe
+        const plan = await storage.getSubscriptionPlan(planId);
+        if (!plan) {
+          console.error(`Plan con ID ${planId} no encontrado`);
+          return res
+            .status(404)
+            .json({ message: "Plan de suscripción no encontrado" });
+        }
+
+        // En una app real, obtendríamos el userId y la información del usuario de la sesión
+        const userId = 1;
+        const user = await storage.getUser(userId);
+
+        if (!user) {
+          console.error(`Usuario con ID ${userId} no encontrado`);
+          return res.status(404).json({ message: "Usuario no encontrado" });
+        }
+
+        console.log(
+          `Creando sesión de checkout para plan: ${plan.name}, ciclo: ${billingCycle}`,
+        );
+
+        try {
+          const checkoutUrl = await stripeService.createSubscriptionCheckout({
+            planId,
+            userId,
+            email: user.email || "cliente@example.com",
+            name: user.company || "Cliente",
+            billingCycle,
+            successUrl,
+            cancelUrl,
+          });
+
+          if (!checkoutUrl) {
+            throw new Error("No se recibió URL de checkout válida");
+          }
+
+          console.log(
+            "Sesión de checkout creada exitosamente, URL:",
+            checkoutUrl.substring(0, 60) + "...",
+          );
+          res.json({ url: checkoutUrl });
+        } catch (stripeError: any) {
+          console.error(
+            "Error específico de Stripe:",
+            stripeError.message || stripeError,
+          );
+          res.status(502).json({
+            message: "Error al comunicarse con el servicio de pagos",
+            details: stripeError.message || "Error desconocido",
+          });
+        }
+      } catch (error: any) {
+        console.error("Error general al crear sesión de checkout:", error);
+        res.status(500).json({
+          message: "Error al crear sesión de checkout",
+          details: error.message || "Error desconocido",
+        });
+      }
+    },
+  );

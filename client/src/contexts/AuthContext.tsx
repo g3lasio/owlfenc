@@ -1,16 +1,26 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, updateProfile, getRedirectResult } from 'firebase/auth';
-import { 
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import {
+  onAuthStateChanged,
+  updateProfile,
+  getRedirectResult,
+} from "firebase/auth";
+import {
   auth,
-  loginUser, 
-  registerUser, 
+  loginUser,
+  registerUser,
   logoutUser,
   loginWithGoogle,
   loginWithApple,
   sendEmailLink,
   resetPassword,
-  devMode
-} from '../lib/firebase';
+  devMode,
+} from "../lib/firebase";
 
 type User = {
   uid: string;
@@ -27,7 +37,11 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<User>;
-  register: (email: string, password: string, displayName: string) => Promise<User>;
+  register: (
+    email: string,
+    password: string,
+    displayName: string,
+  ) => Promise<User>;
   logout: () => Promise<boolean>;
   loginWithGoogle: () => Promise<User | null>; // Puede ser null en caso de redirección
   loginWithApple: () => Promise<User | null>; // Puede ser null en caso de redirección
@@ -42,7 +56,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth debe ser usado dentro de un AuthProvider');
+    throw new Error("useAuth debe ser usado dentro de un AuthProvider");
   }
   return context;
 };
@@ -65,9 +79,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         console.log("Verificando resultado de redirección...");
         const result = await getRedirectResult(auth);
-        
+
         if (result && result.user) {
-          console.log("Resultado de redirección procesado exitosamente:", result.user);
+          console.log(
+            "Resultado de redirección procesado exitosamente:",
+            result.user,
+          );
           // No necesitamos hacer nada más, onAuthStateChanged capturará este login
         }
       } catch (error) {
@@ -75,10 +92,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // No seteamos el error aquí, para evitar confusión al usuario
       }
     };
-    
+
     // Ejecutamos inmediatamente
     checkRedirectResult();
-    
+
     // Escuchar cambios en la autenticación
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -91,7 +108,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           photoURL: user.photoURL,
           phoneNumber: user.phoneNumber,
           emailVerified: user.emailVerified,
-          getIdToken: () => user.getIdToken()
+          getIdToken: () => user.getIdToken(),
         };
         setCurrentUser(appUser);
       } else {
@@ -99,7 +116,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       setLoading(false);
     });
-    
+
     // Escuchamos el evento personalizado para el modo de desarrollo
     const handleDevAuthChange = (event: any) => {
       const { user } = event.detail;
@@ -113,20 +130,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
           photoURL: user.photoURL,
           phoneNumber: user.phoneNumber,
           emailVerified: user.emailVerified,
-          getIdToken: () => user.getIdToken()
+          getIdToken: () => user.getIdToken(),
         };
         setCurrentUser(appUser);
       }
       setLoading(false);
     };
-    
+
     // Registrar el evento personalizado
-    window.addEventListener('dev-auth-change', handleDevAuthChange);
+    window.addEventListener("dev-auth-change", handleDevAuthChange);
 
     // Limpiar las suscripciones al desmontar
     return () => {
       unsubscribe();
-      window.removeEventListener('dev-auth-change', handleDevAuthChange);
+      window.removeEventListener("dev-auth-change", handleDevAuthChange);
     };
   }, []);
 
@@ -138,7 +155,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const user = await loginUser(email, password);
 
       if (!user) {
-        throw new Error('No se pudo iniciar sesión');
+        throw new Error("No se pudo iniciar sesión");
       }
 
       const appUser: User = {
@@ -148,12 +165,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         photoURL: user.photoURL,
         phoneNumber: user.phoneNumber,
         emailVerified: user.emailVerified,
-        getIdToken: () => user.getIdToken()
+        getIdToken: () => user.getIdToken(),
       };
 
       return appUser;
     } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión');
+      setError(err.message || "Error al iniciar sesión");
       throw err;
     } finally {
       setLoading(false);
@@ -161,7 +178,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   // Registrar nuevo usuario
-  const register = async (email: string, password: string, displayName: string) => {
+  const register = async (
+    email: string,
+    password: string,
+    displayName: string,
+  ) => {
     try {
       setLoading(true);
       setError(null);
@@ -170,7 +191,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Para Firebase, actualizamos el displayName después del registro
       if (user && displayName) {
         await updateProfile(auth.currentUser!, {
-          displayName: displayName
+          displayName: displayName,
         });
       }
 
@@ -181,35 +202,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
         photoURL: user.photoURL,
         phoneNumber: user.phoneNumber,
         emailVerified: user.emailVerified,
-        getIdToken: () => user.getIdToken()
+        getIdToken: () => user.getIdToken(),
       };
 
       // Enviar correo de bienvenida
       try {
         // Importamos de forma dinámica para evitar problemas de dependencia circular
-        const emailService = await import('../services/emailService');
-        
+        const emailService = await import("../services/emailService");
+
         // Enviamos el correo de bienvenida en segundo plano
-        emailService.sendWelcomeEmail(
-          email,
-          displayName || ''
-        ).then(success => {
-          if (success) {
-            console.log('Correo de bienvenida enviado con éxito');
-          } else {
-            console.error('No se pudo enviar el correo de bienvenida');
-          }
-        }).catch(error => {
-          console.error('Error al enviar correo de bienvenida:', error);
-        });
+        emailService
+          .sendWelcomeEmail(email, displayName || "")
+          .then((success) => {
+            if (success) {
+              console.log("Correo de bienvenida enviado con éxito");
+            } else {
+              console.error("No se pudo enviar el correo de bienvenida");
+            }
+          })
+          .catch((error) => {
+            console.error("Error al enviar correo de bienvenida:", error);
+          });
       } catch (emailError) {
         // No bloqueamos el registro si falla el envío del correo
-        console.error('Error al cargar servicio de correo:', emailError);
+        console.error("Error al cargar servicio de correo:", emailError);
       }
 
       return appUser;
     } catch (err: any) {
-      setError(err.message || 'Error al registrar usuario');
+      setError(err.message || "Error al registrar usuario");
       throw err;
     } finally {
       setLoading(false);
@@ -230,7 +251,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log("AuthContext: Tipo de error:", error.name);
       console.log("AuthContext: Mensaje de error:", error.message);
       console.log("AuthContext: Stack trace:", error.stack);
-      setError(error.message || 'Error al cerrar sesión');
+      setError(error.message || "Error al cerrar sesión");
       throw error;
     } finally {
       setLoading(false);
@@ -243,7 +264,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       setError(null);
       const user = await loginWithGoogle();
-      
+
       // Si el usuario es null (redirección), retornar null
       if (!user) {
         console.log("Redirección iniciada con Google");
@@ -258,12 +279,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         photoURL: user.photoURL,
         phoneNumber: user.phoneNumber,
         emailVerified: user.emailVerified,
-        getIdToken: () => user.getIdToken()
+        getIdToken: () => user.getIdToken(),
       };
 
       return appUser;
     } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión con Google');
+      setError(err.message || "Error al iniciar sesión con Google");
       throw err;
     } finally {
       setLoading(false);
@@ -277,13 +298,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setError(null);
       // loginWithApple siempre devuelve null porque usamos redirección directa
       await loginWithApple();
-      
+
       console.log("Redirección a Apple iniciada, no hay usuario inmediato");
       // Siempre retornamos null porque redireccionamos
       return null;
     } catch (err: any) {
       console.error("Error detallado en appleLogin:", err);
-      setError(err.message || 'Error al iniciar sesión con Apple');
+      setError(err.message || "Error al iniciar sesión con Apple");
       throw err;
     } finally {
       setLoading(false);
@@ -300,7 +321,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await resetPassword(email);
       return true;
     } catch (err: any) {
-      setError(err.message || 'Error al enviar email de recuperación');
+      setError(err.message || "Error al enviar email de recuperación");
       throw err;
     } finally {
       setLoading(false);
@@ -315,7 +336,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await sendEmailLink(email);
       return true;
     } catch (err: any) {
-      setError(err.message || 'Error al enviar enlace de inicio de sesión');
+      setError(err.message || "Error al enviar enlace de inicio de sesión");
       throw err;
     } finally {
       setLoading(false);
@@ -337,12 +358,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loginWithApple: appleLogin,
     sendPasswordResetEmail,
     sendEmailLoginLink,
-    clearError
+    clearError,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
