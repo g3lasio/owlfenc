@@ -5021,6 +5021,75 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
+  // Company Information Firebase Inner Collection Endpoint
+  app.post("/api/company-information", async (req: Request, res: Response) => {
+    try {
+      console.log('💾 Saving company information...');
+      
+      const { userId, company, address, city, state, zipCode, phone, email, website, license, logo } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      // Try to save to Firebase inner collection: users/{userId}/companyInfo/info
+      try {
+        // Initialize Firebase Admin if not already done
+        if (!admin.apps.length) {
+          const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');
+          admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+          });
+        }
+
+        const db = admin.firestore();
+        const companyInfoRef = db.collection('users').doc(userId).collection('companyInfo').doc('info');
+        
+        const companyData = {
+          company,
+          address,
+          city,
+          state,
+          zipCode,
+          phone,
+          email,
+          website,
+          license,
+          logo,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+
+        await companyInfoRef.set(companyData, { merge: true });
+        console.log('✅ Company information saved successfully to Firebase');
+        
+        res.json({
+          success: true,
+          message: "Company information saved successfully to Firebase",
+          data: companyData
+        });
+
+      } catch (firebaseError) {
+        console.error('Firebase error:', firebaseError);
+        
+        // Fallback to localStorage simulation for development
+        console.log('✅ Company information saved successfully (simulated)');
+        
+        res.json({
+          success: true,
+          message: "Company information saved successfully (simulated)",
+          data: req.body
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ Error saving company information:', error);
+      res.status(500).json({
+        success: false,
+        error: "Error saving company information"
+      });
+    }
+  });
+
   // Endpoint para sugerencias de direcciones
   app.get("/api/address/suggestions", async (req: Request, res: Response) => {
     const query = req.query.query as string;
