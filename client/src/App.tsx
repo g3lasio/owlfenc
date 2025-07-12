@@ -25,6 +25,7 @@ import Mervin from "@/pages/Mervin";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import PricingSettings from "@/pages/PricingSettings";
 import Subscription from "@/pages/Subscription";
+import SubscriptionTest from "@/pages/SubscriptionTest";
 
 import Billing from "./pages/Billing";
 import History from "@/pages/History";
@@ -156,6 +157,9 @@ function Router() {
       </Route>
       <Route path="/subscription">
         {() => <ProtectedRoute component={Subscription} />}
+      </Route>
+      <Route path="/subscription-test">
+        {() => <ProtectedRoute component={SubscriptionTest} />}
       </Route>
 
       <Route path="/billing">
