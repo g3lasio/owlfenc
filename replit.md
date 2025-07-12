@@ -149,8 +149,9 @@ Changelog:
   * MONTHLY/YEARLY BILLING: Toggle between monthly and yearly billing cycles for testing
   * TEST ENVIRONMENT SAFETY: Complete test environment setup ensuring no real charges during testing
   * PRODUCTION READY: System prepared for easy switch to live API key when ready for production
-  * MAIN ROUTE UPDATED: /subscription route now uses test environment by default for safe testing
-  * ORIGINAL PRESERVED: Original subscription component moved to /subscription-original for backup access
+  * MAIN ROUTE RESTORED: /subscription route now uses original subscription component with proper validation fields
+  * BACKEND COMPATIBILITY: Original subscription component includes required successUrl and cancelUrl fields for backend validation
+  * TEST ENVIRONMENT READY: System configured to work with test API keys, can be switched to live keys in backend when ready
 - July 12, 2025. ✅ CRITICAL SETPROFILE ERROR FIXED - COMPANY INFORMATION SAVE FULLY OPERATIONAL: Successfully resolved runtime error and completed all company information management requirements:
   * SETPROFILE ERROR RESOLVED: Fixed "setProfile is not defined" error by removing problematic setProfile call that was incompatible with useProfile hook
   * JSX SYNTAX ERROR FIXED: Added missing closing tag in logo upload section preventing compilation

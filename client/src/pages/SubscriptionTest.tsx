@@ -57,7 +57,11 @@ export default function SubscriptionTest() {
   // Create checkout session mutation
   const createCheckoutMutation = useMutation({
     mutationFn: (planData: { planId: number; billingCycle: 'monthly' | 'yearly' }) =>
-      apiRequest('POST', '/api/subscription/create-checkout', planData),
+      apiRequest('POST', '/api/subscription/create-checkout', {
+        ...planData,
+        successUrl: window.location.origin + "/subscription?success=true",
+        cancelUrl: window.location.origin + "/subscription?canceled=true",
+      }),
     onSuccess: (data) => {
       if (data.checkoutUrl) {
         toast({
