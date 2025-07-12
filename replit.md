@@ -145,7 +145,9 @@ Changelog:
   * AUTOMATIC INITIALIZATION: Company information automatically loads from user profile when entering preview step
   * PDF GENERATION INTEGRATION: Updated generateEstimatePreview function to use edited company information instead of profile data
   * FLEXIBLE WORKFLOW: Users can now modify company information on a per-estimate basis without changing their profile
-  * COMPLETE FORM COVERAGE: All company fields are editable including logo, contact details, and licensing information
+  * COMPLETE LOGO SELECTION: Added file upload functionality (max 2MB) with validation, URL input option, preview, and removal features
+  * LOGO UPLOAD VALIDATION: Comprehensive file size (2MB limit) and type validation with toast notifications for success/error cases
+  * DUAL LOGO OPTIONS: Users can upload logo files or enter existing hosted logo URLs for maximum flexibility
   * SEAMLESS INTEGRATION: Changes integrate with existing PDF generation and email systems without breaking functionality
 - July 11, 2025. ✅ SIMPLIFIED SIGNATURE CARD DESIGN COMPLETED: Successfully simplified complex cyberpunk card into clean, user-friendly interface:
   * COMPLEXITY REDUCTION: Eliminated overwhelming cyberpunk elements, threat indicators, security matrices, and excessive animations that could confuse users

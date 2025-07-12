@@ -5011,6 +5011,100 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           
                           {isEditingCompany ? (
                             <div className="space-y-2">
+                              {/* Logo Upload */}
+                              <div className="space-y-2">
+                                <Label className="text-xs text-cyan-400">
+                                  LOGO DE LA EMPRESA
+                                </Label>
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="file"
+                                      accept="image/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        // Validate file size (max 2MB)
+                                        if (file.size > 2 * 1024 * 1024) {
+                                          toast({
+                                            title: "❌ Archivo muy grande",
+                                            description: "El logo debe ser menor a 2MB",
+                                            variant: "destructive",
+                                          });
+                                          return;
+                                        }
+
+                                        // Validate file type
+                                        if (!file.type.startsWith('image/')) {
+                                          toast({
+                                            title: "❌ Tipo de archivo inválido",
+                                            description: "Solo se permiten archivos de imagen",
+                                            variant: "destructive",
+                                          });
+                                          return;
+                                        }
+
+                                        // Convert to base64
+                                        const reader = new FileReader();
+                                        reader.onload = (event) => {
+                                          const base64 = event.target?.result as string;
+                                          setEditableCompanyInfo((prev) => ({
+                                            ...prev,
+                                            logo: base64,
+                                          }));
+                                          
+                                          toast({
+                                            title: "✅ Logo actualizado",
+                                            description: "El logo se ha cargado correctamente",
+                                          });
+                                        };
+                                        reader.readAsDataURL(file);
+                                      }
+                                    }}
+                                    className="h-8 text-xs bg-gray-800 border-gray-600 text-white file:mr-2 file:rounded file:border-0 file:bg-cyan-600 file:px-2 file:py-1 file:text-xs file:text-white"
+                                  />
+                                  {editableCompanyInfo.logo && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        setEditableCompanyInfo((prev) => ({
+                                          ...prev,
+                                          logo: "",
+                                        }))
+                                      }
+                                      className="h-8 text-xs border-red-500/50 text-red-400 hover:bg-red-500/10"
+                                    >
+                                      Eliminar
+                                    </Button>
+                                  )}
+                                </div>
+                                {editableCompanyInfo.logo && (
+                                  <div className="mt-2">
+                                    <img
+                                      src={editableCompanyInfo.logo}
+                                      alt="Logo preview"
+                                      className="h-16 w-auto max-w-32 object-contain bg-white rounded p-1 border border-gray-600"
+                                    />
+                                  </div>
+                                )}
+                                </div>
+                                <div className="text-xs text-gray-400 text-center">O</div>
+                                <Input
+                                  placeholder="URL del logo"
+                                  value=""
+                                  onChange={(e) => {
+                                    const url = e.target.value;
+                                    if (url) {
+                                      setEditableCompanyInfo((prev) => ({
+                                        ...prev,
+                                        logo: url,
+                                      }));
+                                    }
+                                  }}
+                                  className="h-8 text-xs bg-gray-800 border-gray-600 text-white"
+                                />
+                              </div>
                               <Input
                                 placeholder="Nombre de la empresa"
                                 value={editableCompanyInfo.company}
