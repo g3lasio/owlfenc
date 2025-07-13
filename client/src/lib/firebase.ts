@@ -55,8 +55,16 @@ const isReplitDev = window.location.hostname.includes('.replit.dev') ||
 // Opción para forzar el uso de Firebase real incluso en entorno de desarrollo
 const useRealFirebase = localStorage.getItem('useRealFirebase') === 'true';
 
-// Forzamos Firebase real para acceder a los contactos guardados
-export const devMode = false; // Cambiado para usar Firebase real
+// FIXED: Usar localStorage para desarrollar, Firebase real para producción
+export const devMode = isReplitDev && !useRealFirebase;
+
+// Debug: Verificar modo de desarrollo
+console.log("🔧 FIREBASE MODE CONFIG:", { 
+  isReplitDev, 
+  useRealFirebase, 
+  devMode, 
+  hostname: window.location.hostname 
+});
 
 // Auto login en modo desarrollo
 if (devMode) {
