@@ -179,47 +179,116 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
           })}
         </div>
 
-        {/* Interactive Progress Bar */}
+        {/* Interactive Progress Bar - FUTURISTIC NEURAL INTERFACE */}
         <div className="relative px-2">
+          {/* Holographic Grid Background */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(6,182,212,0.05)_0%,_transparent_70%)] rounded-lg animate-pulse"></div>
+          
+          {/* Energy Wave Effect */}
+          <div className="absolute inset-0">
+            <div className="absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent animate-pulse"></div>
+            <div className="absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-400/20 to-transparent animate-pulse delay-150"></div>
+            <div className="absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-400/20 to-transparent animate-pulse delay-300"></div>
+          </div>
+          
           <div 
             ref={timelineRef}
-            className="relative h-2 bg-gray-700/50 rounded-full border border-cyan-400/20 cursor-pointer shadow-inner"
+            className="relative h-3 bg-gray-900/80 rounded-full border border-cyan-400/30 cursor-pointer shadow-inner backdrop-blur-sm"
             style={{ userSelect: 'none' }}
           >
-            {/* Progress Fill */}
+            {/* Neural Background Pattern */}
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,_transparent_0%,_rgba(6,182,212,0.1)_25%,_transparent_50%,_rgba(6,182,212,0.1)_75%,_transparent_100%)] rounded-full animate-pulse"></div>
+            
+            {/* Progress Fill - ADVANCED NEURAL STREAM */}
             <div 
-              className="absolute left-0 top-0 h-full rounded-full transition-all duration-500 ease-out"
+              className="absolute left-0 top-0 h-full rounded-full transition-all duration-700 ease-out overflow-hidden"
               style={{ 
                 width: `${isDragging ? dragPosition : progressPercentage}%`,
-                background: 'linear-gradient(90deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%)',
-                boxShadow: '0 0 10px rgba(6, 182, 212, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                background: 'linear-gradient(90deg, #06b6d4 0%, #3b82f6 30%, #8b5cf6 60%, #06b6d4 100%)',
+                boxShadow: '0 0 20px rgba(6, 182, 212, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 30px rgba(59, 130, 246, 0.4)',
+                filter: 'brightness(1.2) contrast(1.1)'
               }}
             >
-              {/* Animated Glow Effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-300/40 to-blue-400/40 rounded-full animate-pulse"></div>
-              {/* Scanning Light Effect */}
-              <div className="absolute top-0 right-0 w-2 h-full bg-white/60 rounded-full animate-pulse"></div>
+              {/* Flowing Energy Particles */}
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-300/60 to-blue-400/60 rounded-full animate-pulse"></div>
+              
+              {/* Neural Network Scanning Effect */}
+              <div className="absolute top-0 right-0 w-4 h-full bg-gradient-to-l from-white/80 via-cyan-200/60 to-transparent rounded-full animate-pulse shadow-lg"></div>
+              
+              {/* Electromagnetic Wave */}
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,_transparent_0%,_rgba(255,255,255,0.4)_10%,_transparent_20%,_rgba(255,255,255,0.2)_30%,_transparent_40%)] rounded-full animate-pulse"></div>
+              
+              {/* Energy Stream Animation */}
+              <div className="absolute top-0 left-0 w-full h-full rounded-full overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse transform skew-x-12"></div>
+                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-cyan-200/30 to-transparent animate-pulse delay-200 transform -skew-x-12"></div>
+              </div>
             </div>
 
-            {/* Draggable Handle */}
+            {/* Holographic Progress Indicators */}
+            <div className="absolute inset-0 flex items-center justify-evenly">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-0.5 h-0.5 rounded-full transition-all duration-300 ${
+                    (i / 6) * 100 <= (isDragging ? dragPosition : progressPercentage)
+                      ? 'bg-cyan-300 shadow-lg shadow-cyan-400/50 animate-pulse'
+                      : 'bg-gray-600/50'
+                  }`}
+                  style={{
+                    filter: (i / 6) * 100 <= (isDragging ? dragPosition : progressPercentage) 
+                      ? 'drop-shadow(0 0 4px rgba(6, 182, 212, 0.8))' 
+                      : 'none'
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* NEURAL CONTROL HANDLE */}
             <div 
-              className={`absolute top-1/2 transform -translate-y-1/2 w-5 h-5 md:w-6 md:h-6 rounded-full cursor-grab transition-all duration-200 ${
-                isDragging ? 'cursor-grabbing scale-125' : 'hover:scale-110'
+              className={`absolute top-1/2 transform -translate-y-1/2 w-6 h-6 md:w-8 md:h-8 rounded-full cursor-grab transition-all duration-300 ${
+                isDragging ? 'cursor-grabbing scale-150' : 'hover:scale-125'
               } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
               style={{ 
-                left: `calc(${isDragging ? dragPosition : progressPercentage}% - 10px)`,
-                background: 'radial-gradient(circle, #22d3ee 0%, #0891b2 70%, #164e63 100%)',
+                left: `calc(${isDragging ? dragPosition : progressPercentage}% - 12px)`,
+                background: 'radial-gradient(circle, #22d3ee 0%, #0891b2 40%, #164e63 80%, #0f172a 100%)',
                 boxShadow: isDragging 
-                  ? '0 0 15px rgba(34, 211, 238, 0.8), 0 0 25px rgba(34, 211, 238, 0.4)' 
-                  : '0 2px 8px rgba(34, 211, 238, 0.6)',
-                border: '2px solid rgba(255, 255, 255, 0.3)'
+                  ? '0 0 25px rgba(34, 211, 238, 1), 0 0 50px rgba(34, 211, 238, 0.6), 0 0 75px rgba(34, 211, 238, 0.3)' 
+                  : '0 0 15px rgba(34, 211, 238, 0.8), 0 4px 12px rgba(34, 211, 238, 0.4)',
+                border: '2px solid rgba(255, 255, 255, 0.5)',
+                filter: isDragging ? 'brightness(1.4) contrast(1.2)' : 'brightness(1.1)'
               }}
               onMouseDown={handleMouseDown}
             >
-              <div className="w-full h-full rounded-full border border-white/10 flex items-center justify-center">
-                <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-white shadow-sm"></div>
+              {/* Inner Neural Core */}
+              <div className="w-full h-full rounded-full border border-white/20 flex items-center justify-center relative overflow-hidden">
+                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-white shadow-sm animate-pulse"></div>
+                
+                {/* Rotating Energy Ring */}
+                <div className="absolute inset-0 rounded-full border border-cyan-300/60 animate-spin" style={{ animationDuration: '3s' }}></div>
+                
+                {/* Pulsing Core */}
+                <div className="absolute inset-1 rounded-full bg-gradient-to-r from-cyan-400/30 to-blue-500/30 animate-pulse"></div>
+                
+                {/* Energy Particles */}
+                {isDragging && (
+                  <div className="absolute inset-0">
+                    <div className="absolute top-0 left-1/2 w-1 h-1 bg-cyan-300 rounded-full animate-ping"></div>
+                    <div className="absolute bottom-0 right-1/2 w-1 h-1 bg-blue-300 rounded-full animate-ping delay-150"></div>
+                    <div className="absolute left-0 top-1/2 w-1 h-1 bg-purple-300 rounded-full animate-ping delay-300"></div>
+                    <div className="absolute right-0 bottom-1/2 w-1 h-1 bg-cyan-300 rounded-full animate-ping delay-450"></div>
+                  </div>
+                )}
               </div>
             </div>
+            
+            {/* Electromagnetic Field Effect */}
+            {isDragging && (
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-1/2 left-0 w-full h-full bg-gradient-to-r from-transparent via-cyan-400/10 to-transparent animate-pulse transform -translate-y-1/2"></div>
+                <div className="absolute top-1/2 left-0 w-full h-8 bg-gradient-to-r from-transparent via-blue-400/10 to-transparent animate-pulse transform -translate-y-1/2 delay-150"></div>
+              </div>
+            )}
           </div>
         </div>
       </div>

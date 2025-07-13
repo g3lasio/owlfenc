@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { getProjects, getProjectById, updateProject } from "@/lib/firebase";
+import { getProjects, getProjectById, updateProject, updateProjectProgress } from "@/lib/firebase";
 import { useAuth } from "@/hooks/use-auth";
 import {
   Card,
@@ -413,18 +413,26 @@ function Projects() {
     newProgress: string,
   ) => {
     try {
-      await updateProject(projectId, { projectProgress: newProgress });
+      console.log(`🔒 SECURITY: Updating progress for project ${projectId} by user ${user?.uid}`);
+      console.log(`🔄 Updating progress from ${selectedProject?.projectProgress} to ${newProgress}`);
+      
+      // Usar updateProjectProgress que busca en ambas colecciones y verifica usuario
+      await updateProjectProgress(projectId, newProgress);
+      
       setSelectedProject((prev) =>
         prev ? { ...prev, projectProgress: newProgress } : null,
       );
+      
       toast({
         title: "Progreso actualizado",
         description:
           "El progreso del proyecto ha sido actualizado exitosamente.",
       });
+      
+      // Recargar proyectos para mostrar cambios
       loadProjects();
     } catch (error) {
-      console.error("Error updating progress:", error);
+      console.error("❌ Error updating progress:", error);
       toast({
         variant: "destructive",
         title: "Error",

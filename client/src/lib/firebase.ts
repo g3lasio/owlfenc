@@ -410,21 +410,36 @@ export const updateProject = async (id: string, projectData: any) => {
 export const updateProjectProgress = async (id: string, progress: string) => {
   try {
     if (devMode) {
-      console.log("Actualizando progreso del proyecto con ID:", id, progress);
+      console.log("🔄 Actualizando progreso del proyecto con ID:", id, progress);
       
-      // Obtener los proyectos de localStorage
+      // Buscar en ambas colecciones: projects y estimates
       const savedProjectsStr = localStorage.getItem('owlFenceProjects');
+      const savedEstimatesStr = localStorage.getItem('owlFenceEstimates');
+      
       let allProjects = savedProjectsStr ? JSON.parse(savedProjectsStr) : [];
+      let allEstimates = savedEstimatesStr ? JSON.parse(savedEstimatesStr) : [];
       
-      // Buscar el proyecto en la lista
-      const projectIndex = allProjects.findIndex((p: any) => p.id === id);
+      // Buscar el proyecto en la lista de proyectos
+      let projectIndex = allProjects.findIndex((p: any) => p.id === id);
+      let foundInProjects = projectIndex !== -1;
       
-      if (projectIndex === -1) {
-        throw new Error(`Project with ID ${id} not found`);
+      // Si no se encuentra en proyectos, buscar en estimados
+      if (!foundInProjects) {
+        projectIndex = allEstimates.findIndex((p: any) => p.id === id);
+        foundInProjects = false;
       }
       
-      // Actualizar el proyecto
-      const currentProject = allProjects[projectIndex];
+      if (projectIndex === -1) {
+        console.error("🔍 Proyecto no encontrado en ninguna colección. ID:", id);
+        console.log("📋 Proyectos disponibles:", allProjects.map(p => ({ id: p.id, name: p.clientName })));
+        console.log("📋 Estimados disponibles:", allEstimates.map(p => ({ id: p.id, name: p.clientName })));
+        throw new Error(`Project with ID ${id} not found in any collection`);
+      }
+      
+      // Actualizar el proyecto en la colección correcta
+      const targetCollection = foundInProjects ? allProjects : allEstimates;
+      const currentProject = targetCollection[projectIndex];
+      
       const updatedProject = {
         ...currentProject,
         projectProgress: progress,
@@ -433,12 +448,17 @@ export const updateProjectProgress = async (id: string, progress: string) => {
           { toDate: () => new Date(), toMillis: () => Date.now() }
       };
       
-      // Actualizar en la lista
-      allProjects[projectIndex] = updatedProject;
+      // Actualizar en la lista correcta
+      targetCollection[projectIndex] = updatedProject;
       
       // Guardar la lista actualizada en localStorage
-      localStorage.setItem('owlFenceProjects', JSON.stringify(allProjects));
+      if (foundInProjects) {
+        localStorage.setItem('owlFenceProjects', JSON.stringify(allProjects));
+      } else {
+        localStorage.setItem('owlFenceEstimates', JSON.stringify(allEstimates));
+      }
       
+      console.log("✅ Progreso actualizado exitosamente:", progress);
       return updatedProject;
     } else {
       // Código para Firebase en producción
@@ -453,7 +473,7 @@ export const updateProjectProgress = async (id: string, progress: string) => {
       return { id, ...updatedDocSnap.data() };
     }
   } catch (error) {
-    console.error("Error updating project progress:", error);
+    console.error("❌ Error updating project progress:", error);
     throw error;
   }
 };
