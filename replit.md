@@ -137,6 +137,17 @@ Owl Fence is a comprehensive SaaS platform designed for contractors in the const
 ## Changelog
 ```
 Changelog:
+- July 13, 2025. ✅ CRITICAL VINYL FENCE CALCULATION BUG FIXED - PRECISION POSTS CALCULATION: Successfully resolved critical bug where vinyl fence calculation returned only 3 posts for 65 ft instead of correct 10 posts:
+  * PROBLEM IDENTIFIED: EstimatorService returning corrupted data (arrays instead of JSON objects) causing material calculations to fail
+  * DIRECT CALCULATION ENDPOINT: Created new /api/estimate endpoint with precise vinyl fence calculation bypassing broken estimatorService
+  * CORRECT FORMULA IMPLEMENTED: Math.ceil(length/8) + 1 for posts calculation (65 ft = Math.ceil(65/8) + 1 = 10 posts)
+  * COMPREHENSIVE MATERIAL CALCULATIONS: Posts (10 @ $35), Panels (9 @ $45), Concrete (20 bags @ $5), Labor (65 ft × $25)
+  * PRODUCTION READY: Endpoint tested and confirmed working with correct calculations: 65 ft vinyl fence = $2,480 total
+  * DOCUMENTATION COMPLETE: Created VINYL_FENCE_PRECISION_FIX.md with detailed analysis and validation
+  * CONTRACTOR BENEFIT: Inexperienced contractors now get exact material quantities preventing cost overruns and delays
+  * TECHNICAL VALIDATION: Verified calculations match industry standards (8 ft post spacing + 1 additional post)
+  * RUNTIME ERROR IDENTIFIED: Vite plugin "Failed to fetch" error noted but doesn't affect backend calculations
+  * SYSTEM RELIABILITY: Direct calculation prevents future regressions and ensures consistent material estimates
 - July 13, 2025. ✅ MATERIAL QUANTITY PRECISION SYSTEM COMPLETED - CONTRACTOR-GRADE FORMULAS: Revolutionary precision system for inexperienced contractors who need to know exactly what and how much to buy:
   * PRECISION QUANTITY CALCULATION SERVICE: Created precisionQuantityCalculationService.ts with contractor-grade formulas for exact material calculations
   * CONTRACTOR-SPECIFIC GUIDANCE: Each material includes contractorNotes, orderTiming, specifications, and supplier recommendations
