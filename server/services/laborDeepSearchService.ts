@@ -19,6 +19,8 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { enhancedLocationPricingService } from './enhancedLocationPricingService';
+import { advancedLaborPricingService, AdvancedLaborPricingService } from './advancedLaborPricingService';
 
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24
 const anthropic = new Anthropic({
@@ -64,6 +66,19 @@ export class LaborDeepSearchService {
     try {
       console.log('🔧 Labor DeepSearch: Iniciando análisis de labor para:', { projectDescription, location, projectType });
 
+      // ENHANCED PRECISION: Usar sistema avanzado de pricing geográfico
+      if (location && location.trim().length > 0) {
+        console.log('🎯 Using Enhanced Location Pricing for:', location);
+        try {
+          const enhancedResult = await this.analyzeWithEnhancedPricing(projectDescription, location, projectType);
+          console.log('✅ Enhanced Labor Analysis completed with', enhancedResult.laborItems.length, 'items');
+          return enhancedResult;
+        } catch (enhancedError) {
+          console.warn('⚠️ Enhanced pricing failed, falling back to standard analysis:', enhancedError);
+        }
+      }
+
+      // FALLBACK: Usar sistema original con Claude
       const prompt = this.buildLaborAnalysisPrompt(projectDescription, location, projectType);
       
       const response = await anthropic.messages.create({
@@ -95,6 +110,160 @@ export class LaborDeepSearchService {
       console.error('❌ Labor DeepSearch Error:', error);
       throw new Error(`Error en análisis de labor: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
+  }
+
+  /**
+   * Análisis avanzado con sistema de pricing geográfico mejorado
+   */
+  private async analyzeWithEnhancedPricing(
+    projectDescription: string,
+    location: string,
+    projectType?: string
+  ): Promise<LaborAnalysisResult> {
+    
+    // 1. Obtener tareas de labor específicas del proyecto
+    const laborTasks = AdvancedLaborPricingService.getProjectLaborTasks(projectDescription);
+    
+    // 2. Calcular costos precisos por ubicación
+    const preciseCosts = await advancedLaborPricingService.calculatePreciseLaborCosts(
+      projectDescription,
+      location,
+      laborTasks
+    );
+    
+    // 3. Convertir a formato compatible con el sistema existente
+    const laborItems: LaborItem[] = preciseCosts.map(cost => ({
+      id: cost.taskId,
+      name: cost.name,
+      description: cost.description,
+      category: this.mapTaskTypeToCategory(cost.taskId),
+      quantity: cost.quantity,
+      unit: cost.unit,
+      unitPrice: cost.adjustedRate,
+      totalCost: cost.totalCost,
+      skillLevel: this.extractSkillLevel(cost.taskId),
+      complexity: this.extractComplexity(cost.taskId),
+      estimatedTime: this.calculateEstimatedTime(cost.totalCost, cost.adjustedRate),
+      includes: [cost.description]
+    }));
+    
+    // 4. Calcular métricas generales
+    const totalLaborCost = laborItems.reduce((sum, item) => sum + item.totalCost, 0);
+    const totalHours = laborItems.reduce((sum, item) => sum + (item.totalCost / item.unitPrice), 0);
+    const averageRate = totalLaborCost / totalHours;
+    
+    // 5. Determinar complejidad del proyecto
+    const projectComplexity = this.determineProjectComplexity(projectDescription, laborItems);
+    
+    // 6. Generar recomendaciones específicas
+    const specialRequirements = this.generateSpecialRequirements(projectDescription, location);
+    const safetyConsiderations = this.generateSafetyConsiderations(projectDescription);
+    
+    return {
+      laborItems,
+      totalHours,
+      totalLaborCost,
+      estimatedDuration: this.calculateProjectDuration(totalHours, averageRate),
+      crewSize: this.calculateCrewSize(laborItems),
+      projectComplexity,
+      specialRequirements,
+      safetyConsiderations
+    };
+  }
+
+  /**
+   * Métodos auxiliares para el sistema avanzado
+   */
+  private mapTaskTypeToCategory(taskId: string): string {
+    if (taskId.includes('roofing')) return 'installation';
+    if (taskId.includes('concrete')) return 'installation';
+    if (taskId.includes('landscaping')) return 'installation';
+    if (taskId.includes('framing')) return 'installation';
+    if (taskId.includes('electrical')) return 'specialty';
+    if (taskId.includes('plumbing')) return 'specialty';
+    if (taskId.includes('remove')) return 'demolition';
+    if (taskId.includes('cleanup')) return 'cleanup';
+    if (taskId.includes('prepare')) return 'preparation';
+    return 'installation';
+  }
+
+  private extractSkillLevel(taskId: string): string {
+    if (taskId.includes('electrical') || taskId.includes('plumbing')) return 'specialist';
+    if (taskId.includes('concrete') || taskId.includes('framing')) return 'skilled';
+    if (taskId.includes('cleanup') || taskId.includes('prepare')) return 'helper';
+    return 'skilled';
+  }
+
+  private extractComplexity(taskId: string): string {
+    if (taskId.includes('electrical') || taskId.includes('plumbing')) return 'high';
+    if (taskId.includes('concrete') || taskId.includes('framing')) return 'high';
+    if (taskId.includes('roofing')) return 'medium';
+    if (taskId.includes('landscaping')) return 'medium';
+    if (taskId.includes('cleanup')) return 'low';
+    return 'medium';
+  }
+
+  private calculateEstimatedTime(totalCost: number, rate: number): string {
+    const hours = totalCost / rate;
+    if (hours < 8) return `${Math.round(hours)} hours`;
+    const days = Math.ceil(hours / 8);
+    return `${days} day${days > 1 ? 's' : ''}`;
+  }
+
+  private determineProjectComplexity(description: string, laborItems: LaborItem[]): 'low' | 'medium' | 'high' {
+    const highComplexityTasks = laborItems.filter(item => item.complexity === 'high').length;
+    const totalTasks = laborItems.length;
+    
+    if (highComplexityTasks / totalTasks > 0.5) return 'high';
+    if (highComplexityTasks > 0) return 'medium';
+    return 'low';
+  }
+
+  private generateSpecialRequirements(description: string, location: string): string[] {
+    const requirements: string[] = [];
+    
+    if (description.includes('electrical')) requirements.push('Licensed electrician required');
+    if (description.includes('plumbing')) requirements.push('Licensed plumber required');
+    if (description.includes('concrete')) requirements.push('Concrete mixer and equipment');
+    if (description.includes('roofing')) requirements.push('Safety harnesses and fall protection');
+    if (description.includes('1200') || description.includes('large')) requirements.push('Building permits required');
+    
+    // Location-specific requirements
+    if (location.toLowerCase().includes('california')) {
+      requirements.push('California contractor license required');
+    }
+    
+    return requirements;
+  }
+
+  private generateSafetyConsiderations(description: string): string[] {
+    const safety: string[] = [];
+    
+    if (description.includes('roofing')) safety.push('Fall protection required');
+    if (description.includes('electrical')) safety.push('Electrical safety protocols');
+    if (description.includes('concrete')) safety.push('Proper lifting techniques');
+    if (description.includes('demolition')) safety.push('Dust and debris protection');
+    
+    return safety;
+  }
+
+  private calculateProjectDuration(totalHours: number, averageRate: number): string {
+    const workingHoursPerDay = 8;
+    const days = Math.ceil(totalHours / workingHoursPerDay);
+    
+    if (days <= 1) return '1 day';
+    if (days <= 7) return `${days} days`;
+    
+    const weeks = Math.ceil(days / 5);
+    return `${weeks} week${weeks > 1 ? 's' : ''}`;
+  }
+
+  private calculateCrewSize(laborItems: LaborItem[]): number {
+    const specialistTasks = laborItems.filter(item => item.skillLevel === 'specialist').length;
+    const skilledTasks = laborItems.filter(item => item.skillLevel === 'skilled').length;
+    const helperTasks = laborItems.filter(item => item.skillLevel === 'helper').length;
+    
+    return Math.max(2, Math.ceil((specialistTasks + skilledTasks + helperTasks) / 3));
   }
 
   /**
