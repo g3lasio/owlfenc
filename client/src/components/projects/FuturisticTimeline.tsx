@@ -98,9 +98,9 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
   }, [isDragging, dragPosition, currentProgress]);
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-2 md:px-4 py-2 md:py-3">
+    <div className="w-full max-w-4xl mx-auto px-2 md:px-4 py-2 md:py-3">
       {/* Header - Centered */}
-      <div className="text-center mb-3 md:mb-6">
+      <div className="text-center mb-3 md:mb-4">
         <h3 className="text-lg md:text-xl font-bold text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text mb-1">
           Project Timeline
         </h3>
@@ -108,110 +108,119 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
       </div>
 
       {/* Compact Timeline Container */}
-      <div className="relative bg-gray-900/50 rounded-xl border border-cyan-400/20 p-2 md:p-4 backdrop-blur-sm">
-        {/* Sleek Main Timeline Track */}
-        <div 
-          ref={timelineRef}
-          className="relative h-2 bg-gray-700/50 rounded-full border border-cyan-400/20  cursor-pointer shadow-inner"
-          style={{ userSelect: 'none' }}
-        >
-          {/* Futuristic Progress Fill */}
-          <div 
-            className="absolute left-0 top-0 h-full rounded-full transition-all duration-500 ease-out"
-            style={{ 
-              width: `${isDragging ? dragPosition : progressPercentage}%`,
-              background: 'linear-gradient(90deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%)',
-              boxShadow: '0 0 10px rgba(6, 182, 212, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
-            }}
-          >
-            {/* Animated Glow Effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-300/40 to-blue-400/40 rounded-full animate-pulse"></div>
-            {/* Scanning Light Effect */}
-            <div className="absolute top-0 right-0 w-2 h-full bg-white/60 rounded-full animate-pulse"></div>
-          </div>
-
-          {/* Responsive Draggable Handle */}
-          <div 
-            className={`absolute top-1/2 transform -translate-y-1/2 w-5 h-5 md:w-6 md:h-6 rounded-full cursor-grab transition-all duration-200 ${
-              isDragging ? 'cursor-grabbing scale-125' : 'hover:scale-110'
-            } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
-            style={{ 
-              left: `calc(${isDragging ? dragPosition : progressPercentage}% - ${window.innerWidth < 768 ? '10px' : '12px'})`,
-              background: 'radial-gradient(circle, #22d3ee 0%, #0891b2 70%, #164e63 100%)',
-              boxShadow: isDragging 
-                ? '0 0 15px rgba(34, 211, 238, 0.8), 0 0 25px rgba(34, 211, 238, 0.4)' 
-                : '0 2px 8px rgba(34, 211, 238, 0.6)',
-              border: '2px solid rgba(255, 255, 255, 0.3)'
-            }}
-            onMouseDown={handleMouseDown}
-          >
-            <div className="w-full h-full rounded-full border border-white/10 flex items-center justify-center">
-              <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-white shadow-sm"></div>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile-Responsive Stage Flags */}
-        <div className="relative mt-2 md:mt-4 min-h-[60px] md:min-h-[70px]">
+      <div className="relative bg-gray-900/50 rounded-xl border border-cyan-400/20 p-3 md:p-4 backdrop-blur-sm overflow-hidden">
+        {/* Stage Icons Row - Flexbox Layout */}
+        <div className="flex items-center justify-between gap-1 md:gap-2 mb-3 px-2">
           {timelineStages.map((stage, index) => {
-            const position = (index / (timelineStages.length - 1)) * 100;
             const isActive = index <= validCurrentIndex;
             const isCurrent = index === validCurrentIndex;
             
             return (
-              <div 
-                key={stage.key}
-                className="absolute transform -translate-x-1/2"
-                style={{ left: `${position}%` }}
-              >
-                {/* Responsive Flag Pole */}
-                <div className={`w-px h-3 md:h-6 mx-auto transition-all duration-300 ${
-                  isActive ? 'bg-gradient-to-b from-cyan-400/80 to-cyan-600/40' : 'bg-gray-500/30'
-                }`}></div>
-                
-                {/* Mobile-Optimized Flag */}
-                <div className={`relative mt-0.5 md:mt-1 transition-all duration-300 ${
-                  isCurrent ? 'scale-105' : 'scale-100'
-                }`}>
-                  <div 
-                    className={`px-1 md:px-2 py-0.5 md:py-1 rounded text-center transition-all duration-300 border backdrop-blur-sm ${
-                      isActive 
-                        ? 'bg-gradient-to-t from-cyan-500/15 to-blue-600/10 border-cyan-400/40 text-cyan-200 shadow-sm' 
-                        : 'bg-gray-800/30 border-gray-600/20 text-gray-500'
-                    } ${isCurrent ? 'shadow-md shadow-cyan-400/25 ring-1 ring-cyan-400/30' : ''}`}
-                    style={{
-                      minWidth: window.innerWidth < 768 ? '40px' : '60px',
-                      background: isActive 
-                        ? `linear-gradient(135deg, ${stage.color}15, ${stage.color}05)` 
-                        : undefined
-                    }}
-                  >
-                    <div className="flex flex-col items-center">
-                      <i className={`${stage.icon} text-xs md:text-sm mb-0 md:mb-0.5 ${
-                        isActive ? 'text-cyan-300' : 'text-gray-500'
-                      }`}></i>
-                      <span className={`text-[10px] md:text-xs font-medium leading-tight ${
-                        isActive ? 'text-cyan-100' : 'text-gray-400'
-                      } hidden sm:block`}>
-                        {stage.label}
-                      </span>
-                      {/* Mobile: Show only first 3 characters */}
-                      <span className={`text-[9px] font-medium leading-tight ${
-                        isActive ? 'text-cyan-100' : 'text-gray-400'
-                      } block sm:hidden`}>
-                        {stage.label.substring(0, 3)}
-                      </span>
-                    </div>
-                  </div>
+              <div key={stage.key} className="flex flex-col items-center flex-1 min-w-0">
+                {/* Stage Icon */}
+                <div 
+                  className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-300 relative ${
+                    isActive 
+                      ? 'bg-gradient-to-br from-cyan-400/20 to-blue-600/20 border-2 border-cyan-400/60 shadow-lg' 
+                      : 'bg-gray-800/50 border-2 border-gray-600/30'
+                  } ${isCurrent ? 'ring-2 ring-cyan-400/50 ring-offset-2 ring-offset-gray-900 scale-110' : ''}`}
+                  style={{
+                    backgroundColor: isActive ? `${stage.color}20` : undefined,
+                    borderColor: isActive ? `${stage.color}60` : undefined,
+                  }}
+                >
+                  <i className={`${stage.icon} text-sm md:text-lg transition-all duration-300 ${
+                    isActive ? 'text-cyan-200' : 'text-gray-500'
+                  }`}></i>
                   
-                  {/* Responsive Flag Arrow */}
-                  {isActive && (
-                    <div className="absolute top-0 -right-0.5 md:-right-1 w-0 h-0 border-l-[3px] md:border-l-[4px] border-t-[6px] md:border-t-[8px] border-b-[6px] md:border-b-[8px] border-l-cyan-500/20 border-t-transparent border-b-transparent"></div>
+                  {/* Current Stage Pulse */}
+                  {isCurrent && (
+                    <div className="absolute inset-0 rounded-full animate-ping bg-cyan-400/20"></div>
                   )}
                 </div>
+                
+                {/* Stage Label */}
+                <span className={`text-xs md:text-sm font-medium mt-1 transition-all duration-300 text-center leading-tight ${
+                  isActive ? 'text-cyan-100' : 'text-gray-400'
+                } hidden sm:block`}>
+                  {stage.label}
+                </span>
+                
+                {/* Mobile: Abbreviated Label */}
+                <span className={`text-[10px] font-medium mt-1 transition-all duration-300 text-center leading-tight ${
+                  isActive ? 'text-cyan-100' : 'text-gray-400'
+                } block sm:hidden`}>
+                  {stage.label.substring(0, 3)}
+                </span>
               </div>
             );
           })}
+        </div>
+        
+        {/* Connection Lines */}
+        <div className="flex items-center justify-between px-6 md:px-8 mb-4">
+          {timelineStages.slice(0, -1).map((stage, index) => {
+            const isActive = index < validCurrentIndex;
+            return (
+              <div 
+                key={`line-${stage.key}`}
+                className={`flex-1 h-0.5 transition-all duration-500 ${
+                  isActive 
+                    ? 'bg-gradient-to-r from-cyan-400/60 to-blue-500/60' 
+                    : 'bg-gray-700/50'
+                }`}
+                style={{
+                  background: isActive 
+                    ? `linear-gradient(90deg, ${stage.color}60, ${timelineStages[index + 1].color}60)` 
+                    : undefined
+                }}
+              />
+            );
+          })}
+        </div>
+
+        {/* Interactive Progress Bar */}
+        <div className="relative px-2">
+          <div 
+            ref={timelineRef}
+            className="relative h-2 bg-gray-700/50 rounded-full border border-cyan-400/20 cursor-pointer shadow-inner"
+            style={{ userSelect: 'none' }}
+          >
+            {/* Progress Fill */}
+            <div 
+              className="absolute left-0 top-0 h-full rounded-full transition-all duration-500 ease-out"
+              style={{ 
+                width: `${isDragging ? dragPosition : progressPercentage}%`,
+                background: 'linear-gradient(90deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%)',
+                boxShadow: '0 0 10px rgba(6, 182, 212, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+              }}
+            >
+              {/* Animated Glow Effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-300/40 to-blue-400/40 rounded-full animate-pulse"></div>
+              {/* Scanning Light Effect */}
+              <div className="absolute top-0 right-0 w-2 h-full bg-white/60 rounded-full animate-pulse"></div>
+            </div>
+
+            {/* Draggable Handle */}
+            <div 
+              className={`absolute top-1/2 transform -translate-y-1/2 w-5 h-5 md:w-6 md:h-6 rounded-full cursor-grab transition-all duration-200 ${
+                isDragging ? 'cursor-grabbing scale-125' : 'hover:scale-110'
+              } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+              style={{ 
+                left: `calc(${isDragging ? dragPosition : progressPercentage}% - 10px)`,
+                background: 'radial-gradient(circle, #22d3ee 0%, #0891b2 70%, #164e63 100%)',
+                boxShadow: isDragging 
+                  ? '0 0 15px rgba(34, 211, 238, 0.8), 0 0 25px rgba(34, 211, 238, 0.4)' 
+                  : '0 2px 8px rgba(34, 211, 238, 0.6)',
+                border: '2px solid rgba(255, 255, 255, 0.3)'
+              }}
+              onMouseDown={handleMouseDown}
+            >
+              <div className="w-full h-full rounded-full border border-white/10 flex items-center justify-center">
+                <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-white shadow-sm"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
