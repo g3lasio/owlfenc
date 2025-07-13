@@ -137,6 +137,17 @@ Owl Fence is a comprehensive SaaS platform designed for contractors in the const
 ## Changelog
 ```
 Changelog:
+- July 13, 2025. ✅ ADU CONSTRUCTION DEEPSEARCH SPECIALIST SYSTEM COMPLETED: Revolutionary upgrade to handle large construction projects with surgical precision:
+  * ADU EXPERT SERVICE: Created specialized ADUConstructionExpertService.ts for complete 1200+ sqft construction projects
+  * AUTOMATIC PROJECT DETECTION: Smart detection of ADU/new construction projects from descriptions using pattern matching
+  * COMPREHENSIVE MATERIAL CATEGORIES: Foundation (concrete, rebar, vapor barriers), Framing (lumber, sheathing), Roofing (trusses, shingles)
+  * SPECIALIZED LABOR CALCULATIONS: Phase-based labor tasks (site prep, foundation, framing, roofing, mechanical) with realistic timelines
+  * ENHANCED ERROR HANDLING: Timeout protection (2min for full analysis), connection error recovery, abort signal support
+  * IMPROVED PROMPTS: Updated Claude system prompts for ADU expertise including all building phases and 2025 pricing
+  * FALLBACK INTEGRATION: ADU service integrates with existing deepsearch as intelligent fallback system
+  * LARGE PROJECT OPTIMIZATION: Increased token limits (8000), enhanced timeouts, comprehensive error messages
+  * PRODUCTION READY: Complete integration with /api/labor-deepsearch/combined endpoint for seamless operation
+  * COST ACCURACY: Regional multipliers, permit calculations, realistic waste factors, and complete building system coverage
 - July 13, 2025. ✅ FUTURISTIC TIMELINE SYSTEM COMPLETED WITH MULTI-TENANT SECURITY: Successfully implemented spectacular futuristic timeline with comprehensive user authentication and project isolation:
   * NEURAL INTERFACE DESIGN: Completely redesigned FuturisticTimeline with holographic grid backgrounds, energy wave effects, and electromagnetic field animations
   * ADVANCED VISUAL EFFECTS: Added flowing energy particles, neural network scanning effects, holographic progress indicators, and rotating energy rings

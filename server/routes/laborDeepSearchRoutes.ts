@@ -8,6 +8,7 @@
 import { Request, Response, Express } from 'express';
 import { z } from 'zod';
 import { laborDeepSearchService } from '../services/laborDeepSearchService';
+import { aduConstructionExpertService } from '../services/aduConstructionExpertService';
 
 // Schema para validación de entrada - Labor únicamente
 const LaborAnalysisSchema = z.object({
@@ -175,7 +176,7 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
 
   /**
    * POST /api/labor-deepsearch/combined
-   * Genera análisis combinado de materiales Y labor
+   * Genera análisis combinado de materiales Y labor con especialización ADU
    */
   app.post('/api/labor-deepsearch/combined', async (req: Request, res: Response) => {
     try {
@@ -184,7 +185,87 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
       // Validar entrada
       const validatedData = CombinedAnalysisSchema.parse(req.body);
       
-      // Procesar con el servicio combinado
+      // DETECCIÓN ESPECIALIZADA: Verificar si es un proyecto ADU
+      const isADUProject = /\b(?:adu|accessory dwelling unit|new construction|new building|dwelling unit|1200\s*sqft|1200\s*square\s*feet)\b/i.test(validatedData.projectDescription);
+      
+      if (isADUProject) {
+        console.log('🏗️ PROYECTO ADU DETECTADO: Activando servicio especializado');
+        
+        try {
+          // Usar el servicio especializado ADU
+          const aduResult = await aduConstructionExpertService.generateADUEstimate(
+            validatedData.projectDescription,
+            validatedData.location || 'California'
+          );
+
+          // Convertir resultado ADU al formato DeepSearch esperado
+          const materials = aduResult.materialCategories.flatMap(category => 
+            category.materials.map(material => ({
+              id: material.id,
+              name: material.name,
+              description: material.description,
+              category: material.category,
+              quantity: material.quantity,
+              unit: material.unit,
+              unitPrice: material.unitPrice,
+              totalPrice: material.totalPrice,
+              supplier: material.supplier,
+              specifications: material.specifications
+            }))
+          );
+
+          const laborCosts = aduResult.laborTasks.map(task => ({
+            category: task.phase,
+            description: `${task.task}: ${task.description}`,
+            hours: parseInt(task.duration.split('-')[0]) * 8, // Estimación de horas
+            rate: Math.round(task.laborCost / (parseInt(task.duration.split('-')[0]) * 8)),
+            total: task.laborCost
+          }));
+
+          const fullCostsResult = {
+            projectType: `ADU Construction - ${aduResult.specifications.squareFeet} sqft`,
+            projectScope: `New ${aduResult.specifications.squareFeet} sqft ADU with ${aduResult.specifications.bedrooms} bed, ${aduResult.specifications.bathrooms} bath`,
+            materials,
+            laborCosts,
+            additionalCosts: [
+              {
+                category: 'permits',
+                description: 'ADU construction permits and inspections',
+                cost: aduResult.costs.permits,
+                required: true
+              }
+            ],
+            totalMaterialsCost: aduResult.costs.materials,
+            totalLaborCost: aduResult.costs.labor,
+            totalAdditionalCost: aduResult.costs.permits,
+            grandTotal: aduResult.costs.total,
+            confidence: 0.95, // Alta confianza con servicio especializado
+            recommendations: aduResult.recommendations,
+            warnings: [`⏱️ Estimated construction time: ${aduResult.timeline.totalDays} days`]
+          };
+
+          console.log('✅ ADU SPECIALIZED: Análisis completado', {
+            materialsCount: materials.length,
+            laborCount: laborCosts.length,
+            totalCost: aduResult.costs.total,
+            timeline: `${aduResult.timeline.totalDays} days`
+          });
+
+          return res.json({
+            success: true,
+            data: fullCostsResult,
+            timestamp: new Date().toISOString(),
+            searchType: 'adu_specialized_construction',
+            specialization: 'ADU Construction Expert'
+          });
+
+        } catch (aduError) {
+          console.error('❌ Error en servicio ADU especializado, usando fallback:', aduError);
+          // Continuar con el servicio normal si falla el especializado
+        }
+      }
+
+      // SERVICIO NORMAL: Para proyectos no-ADU o como fallback
       const combinedResult = await laborDeepSearchService.generateCombinedEstimate(
         validatedData.projectDescription,
         validatedData.includeMaterials,

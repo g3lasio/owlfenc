@@ -792,6 +792,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       }, 800);
 
       console.log("🔍 NEW DEEPSEARCH - Making request to:", endpoint);
+      
+      // Enhanced error handling with timeout for large projects
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, searchType === "full" ? 120000 : 60000); // 2 min for full, 1 min for single
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -804,18 +811,33 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           location: estimate.client?.address || "Estados Unidos",
           projectType: "construction",
         }),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
       clearInterval(progressInterval);
+      
       console.log("🔍 NEW DEEPSEARCH - Response status:", response.status);
       console.log("🔍 NEW DEEPSEARCH - Response ok:", response.ok);
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error("🔍 NEW DEEPSEARCH - Response error:", errorText);
-        throw new Error(
-          `HTTP error! status: ${response.status}, message: ${errorText}`,
-        );
+        console.error("🔍 NEW DEEPSEARCH - Error details:", { status: response.status, statusText: response.statusText });
+        
+        // Enhanced error messages for common issues
+        let userMessage = "Error generating estimate";
+        if (response.status === 404) {
+          userMessage = "Service temporarily unavailable. Please try again.";
+        } else if (response.status === 500) {
+          userMessage = "Internal server error. The system may be processing a large project.";
+        } else if (response.status === 503) {
+          userMessage = "Service unavailable. AI services may be temporarily down.";
+        } else if (errorText.includes("couldn't reach this app")) {
+          userMessage = "Connection error. Please check your internet connection and try again.";
+        }
+        
+        throw new Error(userMessage);
       }
 
       const data = await response.json();
@@ -961,12 +983,28 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         console.error("🔍 NEW DEEPSEARCH - No items found in response:", data);
         throw new Error("No items found in the response");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("🔍 NEW DEEPSEARCH - Error details:", error);
+      
+      let errorMessage = "Unable to process your request. Please try again or add materials manually.";
+      let errorTitle = "AI Search Failed";
+      
+      if (error.name === 'AbortError') {
+        errorTitle = "Analysis Timeout";
+        errorMessage = "The analysis is taking longer than expected. For large projects like ADU construction, this may be normal. Please try again or contact support.";
+      } else if (error.message?.includes("connection") || error.message?.includes("reach")) {
+        errorTitle = "Connection Error";
+        errorMessage = "Unable to connect to AI services. Please check your internet connection and try again.";
+      } else if (error.message?.includes("server error")) {
+        errorTitle = "Server Error";
+        errorMessage = "The server is processing a complex project. This is normal for large construction projects. Please wait a moment and try again.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: "AI Search Failed",
-        description:
-          "Unable to process your request. Please try again or add materials manually.",
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
