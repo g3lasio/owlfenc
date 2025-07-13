@@ -55,15 +55,16 @@ const isReplitDev = window.location.hostname.includes('.replit.dev') ||
 // Opción para forzar el uso de Firebase real incluso en entorno de desarrollo
 const useRealFirebase = localStorage.getItem('useRealFirebase') === 'true';
 
-// FIXED: Usar localStorage para desarrollar, Firebase real para producción
-export const devMode = isReplitDev && !useRealFirebase;
+// FIXED: Usar Firebase real siempre - no más localStorage para proyectos
+export const devMode = false; // FORZADO: Usar Firebase real para proyectos siempre
 
 // Debug: Verificar modo de desarrollo
 console.log("🔧 FIREBASE MODE CONFIG:", { 
   isReplitDev, 
   useRealFirebase, 
-  devMode, 
-  hostname: window.location.hostname 
+  devMode: false, 
+  hostname: window.location.hostname,
+  note: "FORCING FIREBASE REAL MODE FOR PROJECTS"
 });
 
 // Auto login en modo desarrollo
@@ -417,71 +418,59 @@ export const updateProject = async (id: string, projectData: any) => {
 // Update project progress stage
 export const updateProjectProgress = async (id: string, progress: string) => {
   try {
-    if (devMode) {
-      console.log("🔄 Actualizando progreso del proyecto con ID:", id, progress);
-      
-      // Buscar en ambas colecciones: projects y estimates
-      const savedProjectsStr = localStorage.getItem('owlFenceProjects');
-      const savedEstimatesStr = localStorage.getItem('owlFenceEstimates');
-      
-      let allProjects = savedProjectsStr ? JSON.parse(savedProjectsStr) : [];
-      let allEstimates = savedEstimatesStr ? JSON.parse(savedEstimatesStr) : [];
-      
-      // Buscar el proyecto en la lista de proyectos
-      let projectIndex = allProjects.findIndex((p: any) => p.id === id);
-      let foundInProjects = projectIndex !== -1;
-      
-      // Si no se encuentra en proyectos, buscar en estimados
-      if (!foundInProjects) {
-        projectIndex = allEstimates.findIndex((p: any) => p.id === id);
-        foundInProjects = false;
-      }
-      
-      if (projectIndex === -1) {
-        console.error("🔍 Proyecto no encontrado en ninguna colección. ID:", id);
-        console.log("📋 Proyectos disponibles:", allProjects.map(p => ({ id: p.id, name: p.clientName })));
-        console.log("📋 Estimados disponibles:", allEstimates.map(p => ({ id: p.id, name: p.clientName })));
-        throw new Error(`Project with ID ${id} not found in any collection`);
-      }
-      
-      // Actualizar el proyecto en la colección correcta
-      const targetCollection = foundInProjects ? allProjects : allEstimates;
-      const currentProject = targetCollection[projectIndex];
-      
-      const updatedProject = {
-        ...currentProject,
-        projectProgress: progress,
-        updatedAt: typeof Timestamp.now === 'function' ? 
-          Timestamp.now() : 
-          { toDate: () => new Date(), toMillis: () => Date.now() }
-      };
-      
-      // Actualizar en la lista correcta
-      targetCollection[projectIndex] = updatedProject;
-      
-      // Guardar la lista actualizada en localStorage
-      if (foundInProjects) {
-        localStorage.setItem('owlFenceProjects', JSON.stringify(allProjects));
-      } else {
-        localStorage.setItem('owlFenceEstimates', JSON.stringify(allEstimates));
-      }
-      
-      console.log("✅ Progreso actualizado exitosamente:", progress);
-      return updatedProject;
-    } else {
-      // Código para Firebase en producción
-      const docRef = doc(db, "projects", id);
-      await updateDoc(docRef, {
-        projectProgress: progress,
-        updatedAt: Timestamp.now()
-      });
-      
-      // Get updated project
-      const updatedDocSnap = await getDoc(docRef);
-      return { id, ...updatedDocSnap.data() };
+    console.log("🔄 [FIREBASE REAL] Actualizando progreso del proyecto con ID:", id, progress);
+    
+    // Obtener usuario actual
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("Usuario no autenticado");
     }
+    
+    // Buscar en ambas colecciones de Firebase: owlFenceProjects y owlFenceEstimates
+    const collectionsToSearch = ["owlFenceProjects", "owlFenceEstimates"];
+    let projectDoc = null;
+    let collectionName = null;
+    
+    for (const collectionNameToCheck of collectionsToSearch) {
+      console.log(`🔍 [FIREBASE REAL] Buscando en colección: ${collectionNameToCheck}`);
+      
+      const projectDocRef = doc(db, collectionNameToCheck, id);
+      const projectDocSnap = await getDoc(projectDocRef);
+      
+      if (projectDocSnap.exists()) {
+        const projectData = projectDocSnap.data();
+        
+        // Verificar que el proyecto pertenece al usuario autenticado
+        if (projectData.userId === currentUser.uid) {
+          projectDoc = projectDocSnap;
+          collectionName = collectionNameToCheck;
+          console.log(`✅ [FIREBASE REAL] Proyecto encontrado en colección: ${collectionNameToCheck}`);
+          break;
+        } else {
+          console.log(`🔒 [FIREBASE REAL] Proyecto encontrado pero no pertenece al usuario`);
+        }
+      }
+    }
+    
+    if (!projectDoc) {
+      console.error("🔍 [FIREBASE REAL] Proyecto no encontrado en ninguna colección. ID:", id);
+      throw new Error(`Project with ID ${id} not found in any collection`);
+    }
+    
+    // Actualizar el proyecto en la colección correcta
+    const docRef = doc(db, collectionName, id);
+    await updateDoc(docRef, {
+      projectProgress: progress,
+      updatedAt: Timestamp.now()
+    });
+    
+    console.log("✅ [FIREBASE REAL] Progreso actualizado exitosamente:", progress);
+    
+    // Get updated project
+    const updatedDocSnap = await getDoc(docRef);
+    return { id, ...updatedDocSnap.data() };
   } catch (error) {
-    console.error("❌ Error updating project progress:", error);
+    console.error("❌ [FIREBASE REAL] Error updating project progress:", error);
     throw error;
   }
 };

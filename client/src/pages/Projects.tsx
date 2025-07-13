@@ -827,8 +827,8 @@ function Projects() {
       </div>
       {isDialogOpen && selectedProject && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="dialog-content p-0 max-w-7xl w-[98vw] h-[95vh]">
-            <div className="fixed-header p-2 border-b border-cyan-400/30 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 relative">
+          <DialogContent className="dialog-content p-0 max-w-7xl w-[98vw] h-[95vh] flex flex-col">
+            <div className="fixed-header p-2 border-b border-cyan-400/30 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 relative flex-shrink-0">
               <div className="absolute top-0 left-0 w-3 h-3 border-l border-t border-cyan-400"></div>
               <div className="absolute top-0 right-0 w-3 h-3 border-r border-t border-cyan-400"></div>
               <div className="absolute bottom-0 left-0 w-3 h-3 border-l border-b border-cyan-400"></div>
@@ -842,8 +842,8 @@ function Projects() {
               </DialogTitle>
             </div>
 
-            <div className="dialog-body bg-gray-900">
-              <div className="fixed-header p-4 pb-4 bg-gray-900 border-b-2 border-cyan-400/20 shadow-lg">
+            <div className="dialog-body bg-gray-900 flex-1 overflow-y-auto dialog-scroll-container">
+              <div className="fixed-header p-4 pb-4 bg-gray-900 border-b-2 border-cyan-400/20 shadow-lg sticky top-0 z-10">
                 <FuturisticTimeline
                   projectId={selectedProject.id}
                   currentProgress={
@@ -855,8 +855,8 @@ function Projects() {
 
               <div className="h-8 bg-gray-900 border-b border-gray-700/30"></div>
 
-              <div className="flex-1 px-4 pb-4 bg-gray-900 pt-4  flex flex-col">
-                <div className="flex-shrink-0">
+              <div className="px-4 pb-4 bg-gray-900 pt-4 min-h-0">
+                <div className="mb-4">
                   <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-lg border border-cyan-400/30 shadow-xl backdrop-blur-sm">
                     <button
                       onClick={() => setDashboardTab("details")}
@@ -894,8 +894,8 @@ function Projects() {
                   </div>
                 </div>
 
-                <div className="flex-1 bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm shadow-2xl ">
-                  <div className="h-full  p-4">
+                <div className="bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm shadow-2xl">
+                  <div className="p-4 max-h-[60vh] overflow-y-auto dialog-scroll-container">
                     {dashboardTab === "details" && (
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4 text-sm">
