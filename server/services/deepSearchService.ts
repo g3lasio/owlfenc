@@ -15,6 +15,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { smartMaterialCacheService } from './smartMaterialCacheService';
 import { expertContractorService } from './expertContractorService';
 import { MultiIndustryExpertService } from './multiIndustryExpertService';
+import { precisionQuantityCalculationService } from './precisionQuantityCalculationService';
 
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const anthropic = new Anthropic({
@@ -71,11 +72,27 @@ export class DeepSearchService {
 
   /**
    * Analiza una descripción de proyecto y genera una lista completa de materiales
-   * Ahora con sistema inteligente de cache y reutilización
+   * Ahora con sistema inteligente de cache y reutilización + precisión mejorada
    */
   async analyzeProject(projectDescription: string, location?: string): Promise<DeepSearchResult> {
     try {
       console.log('🔍 DeepSearch: Analizando proyecto...', { projectDescription, location });
+
+      // ENHANCED PRECISION: Usar cálculo de precisión para proyectos ADU/construcción nueva
+      if (this.isNewConstructionProject(projectDescription)) {
+        console.log('🎯 Using Precision Calculation for new construction project');
+        try {
+          const precisionResult = await precisionQuantityCalculationService.calculateADUQuantities(
+            projectDescription, 
+            location || 'California'
+          );
+          
+          return this.convertPrecisionResultToDeepSearchResult(precisionResult);
+          
+        } catch (precisionError) {
+          console.warn('⚠️ Precision calculation failed, falling back to standard analysis:', precisionError);
+        }
+      }
 
       // 1. BUSCAR EN CACHE PRIMERO - Verificar existencia previa
       const projectType = this.extractProjectType(projectDescription);
@@ -604,6 +621,69 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
       supplier: material.supplier,
       specifications: material.specifications
     }));
+  }
+
+  /**
+   * Detecta si es un proyecto de construcción nueva que requiere precisión
+   */
+  private isNewConstructionProject(description: string): boolean {
+    const keywords = [
+      'adu', 'accessory dwelling unit', 'new construction', 'construction nueva',
+      'construir', 'construccion', 'building', 'dwelling', 'house', 'home',
+      '1200', 'sqft', 'square feet', 'bedroom', 'bathroom', 'kitchen'
+    ];
+    
+    const text = description.toLowerCase();
+    const keywordMatches = keywords.filter(keyword => text.includes(keyword)).length;
+    
+    return keywordMatches >= 3; // Si tiene 3 o más keywords, es construcción nueva
+  }
+
+  /**
+   * Convierte resultado de precisión a formato DeepSearchResult
+   */
+  private convertPrecisionResultToDeepSearchResult(precisionResult: any): DeepSearchResult {
+    const materials: MaterialItem[] = [];
+    
+    // Convertir cada categoría a materiales individuales
+    Object.entries(precisionResult.materialsByCategory).forEach(([category, categoryMaterials]: [string, any]) => {
+      categoryMaterials.forEach((material: any) => {
+        materials.push({
+          id: material.materialId,
+          name: material.name,
+          description: material.description,
+          category: material.category,
+          quantity: material.finalQuantity,
+          unit: material.unit,
+          unitPrice: material.unitPrice,
+          totalPrice: material.totalPrice,
+          specifications: material.specifications,
+          supplier: material.supplier
+        });
+      });
+    });
+
+    const totalMaterialsCost = materials.reduce((sum, material) => sum + material.totalPrice, 0);
+
+    return {
+      projectType: precisionResult.projectType,
+      projectScope: 'Precision calculated quantities for new construction',
+      materials,
+      laborCosts: [], // Se calcularía por separado
+      additionalCosts: [],
+      totalMaterialsCost,
+      totalLaborCost: 0,
+      totalAdditionalCost: 0,
+      grandTotal: totalMaterialsCost,
+      confidence: precisionResult.confidence,
+      recommendations: [
+        'Quantities calculated with precision contractor formulas',
+        'Waste factors included for all materials',
+        'Order timing guidance provided',
+        ...precisionResult.contractorGuidance.professionalTips
+      ],
+      warnings: precisionResult.contractorGuidance.commonMistakes
+    };
   }
 
   /**
