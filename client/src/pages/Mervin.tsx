@@ -1028,12 +1028,12 @@ export default function Mervin() {
     <div className="flex flex-col h-full  bg-black text-white ">
       {/* Edit Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-gray-900 border-cyan-900/50">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[80vh] bg-gray-900 border-cyan-900/50 flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="text-cyan-400">Editar Recomendaciones de DeepSearch AI</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-6">
+          <div className="flex-1 overflow-y-auto space-y-6 pr-2">
             {/* Materials Section */}
             {(deepSearchOption === "materials-only" || deepSearchOption === "materials-labor") && (
               <div>
@@ -1042,7 +1042,7 @@ export default function Mervin() {
                   <span>Materiales</span>
                 </h3>
                 
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                   {editingMaterials.map((material, index) => (
                     <div key={index} className="bg-gray-800 rounded-lg p-4 space-y-3">
                       <div className="grid grid-cols-2 gap-4">
@@ -1162,7 +1162,7 @@ export default function Mervin() {
                   <span>Mano de Obra</span>
                 </h3>
                 
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                   {editingLaborCosts.map((labor, index) => (
                     <div key={index} className="bg-gray-800 rounded-lg p-4 space-y-3">
                       <div className="grid grid-cols-2 gap-4">
@@ -1273,7 +1273,7 @@ export default function Mervin() {
             )}
           </div>
           
-          <DialogFooter>
+          <DialogFooter className="flex-shrink-0 border-t border-gray-700 pt-4 mt-4">
             <Button
               onClick={() => setShowEditModal(false)}
               variant="outline"
