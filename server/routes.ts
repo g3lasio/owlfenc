@@ -3962,12 +3962,69 @@ Output must be between 200-900 characters in English.`;
     },
   );
 
+  // Test webhook endpoint (for debugging)
+  app.post("/api/subscription/webhook-test", (req: Request, res: Response) => {
+    console.log(`🔧 [WEBHOOK-TEST] Test webhook called at ${new Date().toISOString()}`);
+    console.log(`🔧 [WEBHOOK-TEST] Headers:`, req.headers);
+    console.log(`🔧 [WEBHOOK-TEST] Body:`, req.body);
+    res.json({ status: "test webhook received" });
+  });
+
+  // Manual subscription update endpoint for testing
+  app.post("/api/subscription/manual-update", async (req: Request, res: Response) => {
+    try {
+      const { email, planId } = req.body;
+      console.log(`🔧 [MANUAL-UPDATE] Updating subscription for email: ${email}, plan: ${planId}`);
+      
+      // Find user by email using Firebase auth
+      const userRecord = await getFirebaseUserByEmail(email);
+      
+      if (!userRecord) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      console.log(`🔧 [MANUAL-UPDATE] Found user: ${userRecord.uid}`);
+      
+      // Create subscription data
+      const subscriptionData = {
+        id: `manual_${Date.now()}`,
+        status: 'active' as const,
+        planId: planId,
+        stripeSubscriptionId: `sub_manual_${Date.now()}`,
+        stripeCustomerId: `cus_manual_${Date.now()}`,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        cancelAtPeriodEnd: false,
+        billingCycle: 'monthly' as const,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      await firebaseSubscriptionService.createOrUpdateSubscription(userRecord.uid, subscriptionData);
+      
+      console.log(`✅ [MANUAL-UPDATE] Subscription updated for user ${userRecord.uid}`);
+      
+      res.json({ 
+        success: true, 
+        message: "Subscription updated manually",
+        userId: userRecord.uid,
+        planId: planId
+      });
+      
+    } catch (error) {
+      console.error("❌ [MANUAL-UPDATE] Error:", error);
+      res.status(500).json({ error: "Failed to update subscription" });
+    }
+  });
+
   // Webhook endpoint for Stripe events
   app.post(
     "/api/subscription/webhook",
     express.raw({ type: "application/json" }),
     async (req: Request, res: Response) => {
-      console.log(`[${new Date().toISOString()}] Stripe webhook received`);
+      console.log(`🔔 [WEBHOOK] Stripe webhook received at ${new Date().toISOString()}`);
+      console.log(`🔔 [WEBHOOK] Headers:`, req.headers);
+      console.log(`🔔 [WEBHOOK] Body length:`, req.body.length);
       
       let event: Stripe.Event;
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
@@ -3975,19 +4032,26 @@ Output must be between 200-900 characters in English.`;
       });
 
       try {
-        // Verify webhook signature
-        const sig = req.headers["stripe-signature"];
-        event = stripe.webhooks.constructEvent(
-          req.body,
-          sig as string,
-          process.env.STRIPE_WEBHOOK_SECRET || ""
-        );
+        // In test mode, skip signature verification for debugging
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🔔 [WEBHOOK] Development mode - parsing event directly`);
+          event = JSON.parse(req.body.toString());
+        } else {
+          // Verify webhook signature
+          const sig = req.headers["stripe-signature"];
+          event = stripe.webhooks.constructEvent(
+            req.body,
+            sig as string,
+            process.env.STRIPE_WEBHOOK_SECRET || ""
+          );
+        }
       } catch (err: any) {
-        console.error("Webhook signature verification failed:", err.message);
+        console.error("❌ [WEBHOOK] Error parsing event:", err.message);
         return res.status(400).send(`Webhook Error: ${err.message}`);
       }
 
-      console.log("Event type:", event.type);
+      console.log(`🔔 [WEBHOOK] Event type: ${event.type}`);
+      console.log(`🔔 [WEBHOOK] Event data:`, JSON.stringify(event.data, null, 2));
 
       // Handle the event
       switch (event.type) {
@@ -4007,7 +4071,7 @@ Output must be between 200-900 characters in English.`;
           await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
           break;
         default:
-          console.log(`Unhandled event type: ${event.type}`);
+          console.log(`🔔 [WEBHOOK] Unhandled event type: ${event.type}`);
       }
 
       res.json({ received: true });

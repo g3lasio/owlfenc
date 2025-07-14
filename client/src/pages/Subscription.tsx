@@ -66,6 +66,53 @@ export default function Subscription() {
       throwOnError: false,
     });
 
+  // Manual subscription update function
+  const manualUpdateSubscription = async (planId: number) => {
+    console.log("Iniciando actualización manual de suscripción para plan:", planId);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/subscription/manual-update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          planId: planId
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      toast({
+        title: "Suscripción actualizada",
+        description: `Tu suscripción ha sido actualizada manualmente al plan ${planId}`,
+        variant: "default",
+      });
+
+      // Invalidar y refrescar las consultas
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/user-subscription"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/plans"] });
+
+      console.log("Actualización manual exitosa:", result);
+      
+    } catch (error) {
+      console.error("Error en actualización manual:", error);
+      toast({
+        title: "Error en actualización manual",
+        description: "No se pudo actualizar la suscripción manualmente",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Crea sesión de checkout para un plan seleccionado
   const createCheckoutSession = async (planId: number) => {
     console.log("Iniciando creación de sesión de checkout para plan:", planId);
@@ -342,6 +389,36 @@ export default function Subscription() {
           onToggle={setIsYearly}
           className="mb-6"
         />
+      </div>
+
+      {/* Manual Update Debug Section */}
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-10 text-center">
+        <h3 className="text-lg font-medium mb-2 text-red-800">🔧 Manual Subscription Update</h3>
+        <p className="text-red-700 mb-4">
+          If you purchased a plan but it's not showing as active, use this manual update button:
+        </p>
+        <div className="flex gap-2 justify-center">
+          <button
+            onClick={() => manualUpdateSubscription(2)}
+            disabled={isLoading}
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+            ) : null}
+            Activate Mero Patrón
+          </button>
+          <button
+            onClick={() => manualUpdateSubscription(3)}
+            disabled={isLoading}
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+            ) : null}
+            Activate Master Contractor
+          </button>
+        </div>
       </div>
 
       {/* Mostrar información de la suscripción actual si no es gratuita */}
