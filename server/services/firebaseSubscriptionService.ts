@@ -2,23 +2,7 @@
 // In production, this would use Firebase Admin SDK with proper credentials
 const subscriptionStorage = new Map<string, any>();
 
-// Add a test subscription for demonstration - realistic 30-day billing cycle
-const subscriptionDate = new Date('2025-07-10'); // Subscribed 4 days ago
-const thirtyDaysLater = new Date(subscriptionDate.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days from subscription
-
-subscriptionStorage.set('test-user-id', {
-  id: 'test-subscription-123',
-  status: 'active',
-  planId: 2,
-  stripeSubscriptionId: 'sub_test_123',
-  stripeCustomerId: 'cus_test_123',
-  currentPeriodStart: subscriptionDate,
-  currentPeriodEnd: thirtyDaysLater, // August 9, 2025 (30 days from July 10)
-  cancelAtPeriodEnd: false,
-  billingCycle: 'monthly',
-  createdAt: subscriptionDate,
-  updatedAt: subscriptionDate
-});
+// Default subscription storage - will be updated via API
 
 export interface SubscriptionData {
   id: string;
@@ -188,6 +172,40 @@ export class FirebaseSubscriptionService {
     };
 
     return planMapping[priceId] || 1; // Default to free plan
+  }
+
+  /**
+   * Create subscription with current date - API method
+   */
+  async createCurrentSubscription(userId: string, planId: number): Promise<void> {
+    try {
+      console.log(`📧 [FIREBASE-SUBSCRIPTION] Creating current subscription for user: ${userId}, plan: ${planId}`);
+      
+      const currentDate = new Date();
+      const nextMonth = new Date(currentDate);
+      nextMonth.setMonth(currentDate.getMonth() + 1); // Same day next month
+      
+      const subscriptionData = {
+        id: `sub_${Date.now()}`,
+        status: 'active' as const,
+        planId: planId,
+        stripeSubscriptionId: `sub_test_${Date.now()}`,
+        stripeCustomerId: `cus_test_${Date.now()}`,
+        currentPeriodStart: currentDate,
+        currentPeriodEnd: nextMonth,
+        cancelAtPeriodEnd: false,
+        billingCycle: 'monthly' as const,
+        createdAt: currentDate,
+        updatedAt: currentDate
+      };
+
+      subscriptionStorage.set(userId, subscriptionData);
+      
+      console.log(`✅ [FIREBASE-SUBSCRIPTION] Current subscription created - expires: ${nextMonth.toISOString()}`);
+    } catch (error) {
+      console.error('❌ [FIREBASE-SUBSCRIPTION] Error creating current subscription:', error);
+      throw error;
+    }
   }
 }
 

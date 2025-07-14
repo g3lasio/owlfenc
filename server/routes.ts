@@ -3724,6 +3724,45 @@ Output must be between 200-900 characters in English.`;
     },
   );
 
+  // API endpoint to create current subscription with real dates
+  app.post(
+    "/api/subscription/create-current",
+    async (req: Request, res: Response) => {
+      try {
+        const { userId, planId } = req.body;
+        
+        if (!userId || !planId) {
+          return res.status(400).json({ error: 'userId and planId are required' });
+        }
+        
+        // Create subscription with current date
+        await firebaseSubscriptionService.createCurrentSubscription(userId, planId);
+        
+        // Return the created subscription
+        const subscription = await firebaseSubscriptionService.getUserSubscription(userId);
+        const plan = {
+          id: subscription?.planId,
+          name: subscription?.planId === 2 ? "Mero Patrón" : "Master Contractor",
+          price: subscription?.planId === 2 ? 4999 : 9999,
+          interval: subscription?.billingCycle,
+          features: subscription?.planId === 2 ? 
+            ["Unlimited basic estimates", "50 AI estimates/month", "Complete invoicing", "Mervin AI 7.0"] :
+            ["Complete management features", "Automated reminders", "QuickBooks integration", "Predictive analysis"]
+        };
+        
+        res.json({
+          success: true,
+          message: 'Subscription created with current date',
+          subscription: subscription,
+          plan: plan
+        });
+      } catch (error) {
+        console.error('Error creating current subscription:', error);
+        res.status(500).json({ error: 'Error creating subscription' });
+      }
+    }
+  );
+
   app.post(
     "/api/subscription/create-checkout",
     async (req: Request, res: Response) => {
