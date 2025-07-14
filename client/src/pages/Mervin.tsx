@@ -502,6 +502,14 @@ export default function Mervin() {
   const performDeepSearchAI = async (option: DeepSearchOption, description: string): Promise<DeepSearchRecommendation> => {
     setIsDeepSearchProcessing(true);
     
+    // Create AbortController for request cancellation
+    const controller = new AbortController();
+    
+    // Set timeout for the request (3 minutes)
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 180000); // 3 minutes
+    
     try {
       const response = await fetch('/api/deepsearch-ai', {
         method: 'POST',
@@ -513,7 +521,11 @@ export default function Mervin() {
           projectDescription: description,
           clientInfo: selectedClient,
         }),
+        signal: controller.signal,
       });
+      
+      // Clear timeout if request completes
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -522,8 +534,20 @@ export default function Mervin() {
       const result = await response.json();
       return result;
     } catch (error) {
-      console.error('Error in DeepSearch AI:', error);
-      throw error;
+      // Clear timeout in case of error
+      clearTimeout(timeoutId);
+      
+      // Handle different error types
+      if (error.name === 'AbortError') {
+        console.error('DeepSearch AI request was aborted (timeout)');
+        throw new Error('La solicitud excedió el tiempo límite. Por favor intenta nuevamente.');
+      } else if (error.code === 'ECONNABORTED') {
+        console.error('DeepSearch AI request was aborted');
+        throw new Error('La conexión fue interrumpida. Por favor intenta nuevamente.');
+      } else {
+        console.error('Error in DeepSearch AI:', error);
+        throw error;
+      }
     } finally {
       setIsDeepSearchProcessing(false);
     }
@@ -543,6 +567,11 @@ export default function Mervin() {
     };
     
     setMessages((prev) => [...prev, processingMessage]);
+    
+    // Scroll to bottom after processing message
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
     
     try {
       const recommendation = await performDeepSearchAI(option, projectDescription);
@@ -564,7 +593,14 @@ export default function Mervin() {
       setMessages((prev) => [...prev, resultsMessage]);
       setChatFlowStep("deepsearch-results");
       
+      // Scroll to bottom after results message
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+      
     } catch (error) {
+      console.error('DeepSearch AI Error:', error);
+      
       // Remove processing message
       setMessages((prev) => prev.filter((m) => m.id !== processingMessage.id));
       
@@ -577,6 +613,11 @@ export default function Mervin() {
       
       setMessages((prev) => [...prev, errorMessage]);
       setChatFlowStep("awaiting-deepsearch-choice");
+      
+      // Scroll to bottom after error message
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
     }
   };
 
