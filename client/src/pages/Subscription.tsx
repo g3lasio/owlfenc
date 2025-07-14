@@ -304,14 +304,24 @@ export default function Subscription() {
     );
   }
 
-  // Comprobar si el usuario ya tiene una suscripción activa
-  const hasActiveSubscription =
-    userSubscription &&
-    userSubscription.active &&
-    userSubscription.subscription &&
-    userSubscription.subscription.status &&
-    ["active", "trialing"].includes(userSubscription.subscription.status) &&
-    userSubscription.subscription.planId;
+  // Obtener el plan activo del usuario
+  const getActivePlanId = () => {
+    if (userSubscription?.active && userSubscription?.subscription?.planId) {
+      return userSubscription.subscription.planId;
+    }
+    return 1; // Plan gratuito por defecto
+  };
+
+  // Obtener fecha de expiración
+  const getExpirationDate = () => {
+    if (userSubscription?.subscription?.currentPeriodEnd) {
+      return new Date(userSubscription.subscription.currentPeriodEnd);
+    }
+    return null;
+  };
+
+  const activePlanId = getActivePlanId();
+  const expirationDate = getExpirationDate();
 
   return (
     <div className="container max-w-6xl p-4 mx-auto py-12">
@@ -334,19 +344,23 @@ export default function Subscription() {
         />
       </div>
 
-      {/* Mostrar información de la suscripción actual si existe */}
-      {hasActiveSubscription && (
+      {/* Mostrar información de la suscripción actual si no es gratuita */}
+      {activePlanId !== 1 && (
         <div className="bg-muted/50 rounded-lg p-6 mb-10 text-center">
           <h3 className="text-lg font-medium mb-2">Suscripción Actual</h3>
           <p className="mb-4">
             Actualmente tienes el plan{" "}
             <span className="font-bold">
-              {plans?.find((p) => p.id === userSubscription.subscription.planId)?.name ||
-                userSubscription.plan?.name ||
-                "Desconocido"}
-            </span>{" "}
-            con renovación{" "}
-            {userSubscription.subscription.billingCycle === "yearly" ? "anual" : "mensual"}.
+              {plans?.find((p) => p.id === activePlanId)?.name || "Desconocido"}
+            </span>
+            {expirationDate && (
+              <>
+                {" "}válido hasta el{" "}
+                <span className="font-bold">
+                  {expirationDate.toLocaleDateString()}
+                </span>
+              </>
+            )}
           </p>
           <button
             onClick={createCustomerPortal}
@@ -361,52 +375,30 @@ export default function Subscription() {
         </div>
       )}
 
-      {/* Mostrar las tarjetas de planes solo si NO hay suscripción activa */}
-      {!hasActiveSubscription && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-10">
-          {plans
-            ?.filter((plan) => plan.isActive)
-            .map((plan) => (
-              <PricingCard
-                key={plan.id}
-                name={plan.name}
-                description={plan.description}
-                price={plan.price}
-                yearlyPrice={plan.yearlyPrice}
-                features={plan.features as string[]}
-                isYearly={isYearly}
-                motto={plan.motto}
-                isMostPopular={getIsMostPopular(plan.code)}
-                onSelectPlan={createCheckoutSession}
-                planId={plan.id}
-                isLoading={isLoading}
-                code={plan.code}
-              />
-            ))}
-        </div>
-      )}
-
-      {/* Mostrar mensaje cuando ya tiene suscripción activa */}
-      {hasActiveSubscription && (
-        <div className="mt-8 text-center">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6 max-w-md mx-auto">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-            </div>
-            <h3 className="text-lg font-medium text-green-800 mb-2">
-              ¡Ya tienes una suscripción activa!
-            </h3>
-            <p className="text-green-700 text-sm">
-              Estás utilizando el plan <strong>{userSubscription.plan?.name}</strong>. 
-              Puedes administrar tu suscripción desde el botón de arriba.
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Mostrar las tarjetas de planes */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-10">
+        {plans
+          ?.filter((plan) => plan.isActive)
+          .map((plan) => (
+            <PricingCard
+              key={plan.id}
+              name={plan.name}
+              description={plan.description}
+              price={plan.price}
+              yearlyPrice={plan.yearlyPrice}
+              features={plan.features as string[]}
+              isYearly={isYearly}
+              motto={plan.motto}
+              isMostPopular={getIsMostPopular(plan.code)}
+              onSelectPlan={createCheckoutSession}
+              planId={plan.id}
+              isLoading={isLoading}
+              code={plan.code}
+              isActive={plan.id === activePlanId}
+              expirationDate={plan.id === activePlanId ? expirationDate : undefined}
+            />
+          ))}
+      </div>
 
       {/* Información adicional */}
       <div className="mt-16 text-center">

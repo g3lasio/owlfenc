@@ -148,6 +148,18 @@ Changelog:
   * PRODUCTION READY: Users with active subscriptions now see correct subscription status instead of being prompted to purchase again
   * BILLING CYCLE DISPLAY: Fixed billing cycle display to show "anual" or "mensual" from nested subscription data
   * COMPREHENSIVE FIX: Eliminates duplicate purchases and provides clear subscription management interface
+- July 14, 2025. ✅ FIREBASE SUBSCRIPTION STORAGE SYSTEM IMPLEMENTED: Successfully migrated Stripe webhook storage to Firebase subcollection system for enhanced reliability and scalability:
+  * FIREBASE SUBCOLLECTION STORAGE: Created firebaseSubscriptionService.ts with complete Firebase Admin SDK integration for user/{userId}/subscription/info storage
+  * STRIPE WEBHOOK INTEGRATION: Updated all webhook endpoints to use Firebase subcollection instead of PostgreSQL for subscription persistence
+  * ENHANCED SECURITY MODEL: Each user's subscription data isolated in Firebase subcollection ensuring complete data privacy and security
+  * ROBUST ERROR HANDLING: Comprehensive error handling with detailed logging for Firebase operations and Stripe webhook processing
+  * SUBSCRIPTION STATUS TRACKING: Complete subscription lifecycle management including creation, updates, payments, and cancellation
+  * BACKEND ENDPOINT MIGRATION: Updated /api/subscription/user-subscription to fetch from Firebase instead of hardcoded responses
+  * ACTIVE PLAN DISPLAY: Updated subscription page to show "ACTIVADO" status for active plans with expiration dates
+  * FALLBACK SYSTEM: Free plan (Primo Chambeador) automatically activated for users without paid subscriptions
+  * WEBHOOK RELIABILITY: Enhanced webhook handlers to find users by email and update Firebase subcollection data
+  * BIOMETRIC PAYMENT MAPPING: Stripe price IDs mapped to internal plan IDs for seamless subscription management
+  * PRODUCTION READY: Complete Firebase subcollection system ready for production deployment with user data isolation
 - July 13, 2025. ✅ CRITICAL VINYL FENCE CALCULATION BUG FIXED - PRECISION POSTS CALCULATION: Successfully resolved critical bug where vinyl fence calculation returned only 3 posts for 65 ft instead of correct 10 posts:
   * PROBLEM IDENTIFIED: EstimatorService returning corrupted data (arrays instead of JSON objects) causing material calculations to fail
   * DIRECT CALCULATION ENDPOINT: Created new /api/estimate endpoint with precise vinyl fence calculation bypassing broken estimatorService

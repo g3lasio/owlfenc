@@ -31,6 +31,7 @@ import { permitService } from "./services/permitService";
 import admin from "firebase-admin";
 import { searchService } from "./services/searchService";
 import { sendEmail } from "./services/emailService";
+import { firebaseSubscriptionService } from "./services/firebaseSubscriptionService";
 import {
   estimatorService,
   validateProjectInput,
@@ -3664,27 +3665,58 @@ Output must be between 200-900 characters in English.`;
     "/api/subscription/user-subscription",
     async (req: Request, res: Response) => {
       try {
-        // For now, return a default free plan response
-        // In a real app, we would get user ID from session and check Firebase
-        const defaultPlan = {
-          id: 1,
-          name: "Primo Chambeador",
-          price: 0,
-          interval: "monthly",
-          features: ["10 basic estimates", "3 AI estimates", "3 contracts (watermarked)", "Basic features"]
-        };
+        // For development, use dev-user-id
+        const userId = 'dev-user-id';
+        
+        // Get subscription from Firebase
+        const subscription = await firebaseSubscriptionService.getUserSubscription(userId);
+        
+        if (subscription) {
+          // User has a paid subscription
+          const defaultPlan = {
+            id: subscription.planId,
+            name: subscription.planId === 2 ? "Mero Patrón" : "Master Contractor",
+            price: subscription.planId === 2 ? 4999 : 9999,
+            interval: subscription.billingCycle,
+            features: subscription.planId === 2 ? 
+              ["Unlimited basic estimates", "50 AI estimates/month", "Complete invoicing", "Mervin AI 7.0"] :
+              ["Complete management features", "Automated reminders", "QuickBooks integration", "Predictive analysis"]
+          };
 
-        res.json({
-          active: true,
-          subscription: {
-            id: 'free-plan',
-            status: 'active',
-            planId: 1,
-            currentPeriodStart: new Date(),
-            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
-          },
-          plan: defaultPlan,
-        });
+          res.json({
+            active: true,
+            subscription: {
+              id: subscription.id,
+              status: subscription.status,
+              planId: subscription.planId,
+              currentPeriodStart: subscription.currentPeriodStart,
+              currentPeriodEnd: subscription.currentPeriodEnd,
+              billingCycle: subscription.billingCycle
+            },
+            plan: defaultPlan,
+          });
+        } else {
+          // User has no paid subscription - return free plan
+          const defaultPlan = {
+            id: 1,
+            name: "Primo Chambeador",
+            price: 0,
+            interval: "monthly",
+            features: ["10 basic estimates", "3 AI estimates", "3 contracts (watermarked)", "Basic features"]
+          };
+
+          res.json({
+            active: true,
+            subscription: {
+              id: 'free-plan',
+              status: 'active',
+              planId: 1,
+              currentPeriodStart: new Date(),
+              currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+            },
+            plan: defaultPlan,
+          });
+        }
       } catch (error) {
         console.error("Error al obtener suscripción del usuario:", error);
         res.status(500).json({ message: "Error al obtener suscripción" });
@@ -3939,91 +3971,37 @@ Output must be between 200-900 characters in English.`;
     }
   );
 
-  // Firebase subscription service functions
-  const firebaseSubscriptionService = {
-    async storeSubscription(userId: string, subscriptionData: any) {
-      try {
-        console.log(`Storing subscription for user: ${userId}`);
-        
-        // Use Firebase Admin SDK to store subscription as subcollection
-        const userRef = admin.firestore().collection('users').doc(userId);
-        const subscriptionRef = userRef.collection('subscriptions').doc(subscriptionData.id);
-        
-        await subscriptionRef.set({
-          ...subscriptionData,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-        
-        console.log(`✅ Subscription stored for user ${userId}`);
-        return subscriptionData;
-      } catch (error) {
-        console.error('Error storing subscription:', error);
-        throw error;
-      }
-    },
-
-    async updateSubscriptionStatus(subscriptionId: string, status: string, metadata?: any) {
-      try {
-        console.log(`Updating subscription ${subscriptionId} status to: ${status}`);
-        
-        // Find subscription across all users (since we need to locate it by Stripe ID)
-        const usersCollection = admin.firestore().collection('users');
-        const usersSnapshot = await usersCollection.get();
-        
-        for (const userDoc of usersSnapshot.docs) {
-          const subscriptionRef = userDoc.ref.collection('subscriptions').doc(subscriptionId);
-          const subscriptionDoc = await subscriptionRef.get();
-          
-          if (subscriptionDoc.exists) {
-            await subscriptionRef.update({
-              status,
-              ...(metadata && metadata),
-              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
-            console.log(`✅ Subscription ${subscriptionId} updated to ${status}`);
-            return;
-          }
-        }
-        
-        console.warn(`Subscription ${subscriptionId} not found in Firebase`);
-      } catch (error) {
-        console.error('Error updating subscription status:', error);
-        throw error;
-      }
-    },
-
-    async getUserByEmail(email: string) {
-      try {
-        console.log(`Looking up user by email: ${email}`);
-        
-        const userRecord = await admin.auth().getUserByEmail(email);
-        return userRecord;
-      } catch (error) {
-        console.error('Error finding user by email:', error);
-        return null;
-      }
+  // Firebase subscription handlers for webhooks
+  async function getFirebaseUserByEmail(email: string) {
+    try {
+      console.log(`[WEBHOOK] Looking up user by email: ${email}`);
+      
+      const userRecord = await admin.auth().getUserByEmail(email);
+      return userRecord;
+    } catch (error) {
+      console.error('Error finding user by email:', error);
+      return null;
     }
-  };
+  }
 
   // Webhook event handlers
   async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-    console.log('Processing checkout session completed:', session.id);
+    console.log('[WEBHOOK] Processing checkout session completed:', session.id);
     
     try {
       // Get customer email from session
       const customerEmail = session.customer_email || session.customer_details?.email;
       
       if (!customerEmail) {
-        console.error('No customer email found in session');
+        console.error('[WEBHOOK] No customer email found in session');
         return;
       }
       
       // Find user by email
-      const userRecord = await firebaseSubscriptionService.getUserByEmail(customerEmail);
+      const userRecord = await getFirebaseUserByEmail(customerEmail);
       
       if (!userRecord) {
-        console.error(`No user found for email: ${customerEmail}`);
+        console.error(`[WEBHOOK] No user found for email: ${customerEmail}`);
         return;
       }
       
@@ -4031,7 +4009,7 @@ Output must be between 200-900 characters in English.`;
       const subscriptionId = session.subscription as string;
       
       if (!subscriptionId) {
-        console.error('No subscription ID found in session');
+        console.error('[WEBHOOK] No subscription ID found in session');
         return;
       }
       
@@ -4042,105 +4020,119 @@ Output must be between 200-900 characters in English.`;
       
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       
-      // Store subscription in Firebase
-      await firebaseSubscriptionService.storeSubscription(userRecord.uid, {
-        id: subscription.id,
-        customerId: subscription.customer,
-        status: subscription.status,
-        planId: session.metadata?.planId || 'unknown',
-        priceId: subscription.items.data[0]?.price.id,
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-        billingCycle: subscription.items.data[0]?.price.recurring?.interval || 'monthly',
-        amount: subscription.items.data[0]?.price.unit_amount || 0,
-        currency: subscription.items.data[0]?.price.currency || 'usd',
-        sessionId: session.id,
-        userEmail: customerEmail,
-        startDate: new Date(subscription.start_date * 1000),
-      });
+      // Store subscription in Firebase user subcollection
+      await firebaseSubscriptionService.updateSubscriptionFromStripe(
+        userRecord.uid,
+        subscriptionId,
+        subscription
+      );
       
-      console.log(`✅ Subscription ${subscriptionId} stored for user ${userRecord.uid}`);
+      console.log(`✅ [WEBHOOK] Subscription ${subscriptionId} stored for user ${userRecord.uid}`);
       
     } catch (error) {
-      console.error('Error handling checkout session completed:', error);
+      console.error('[WEBHOOK] Error handling checkout session completed:', error);
     }
   }
 
   async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
-    console.log('Processing invoice payment succeeded:', invoice.id);
+    console.log('[WEBHOOK] Processing invoice payment succeeded:', invoice.id);
     
     try {
       const subscriptionId = invoice.subscription as string;
       
       if (subscriptionId) {
-        await firebaseSubscriptionService.updateSubscriptionStatus(
-          subscriptionId,
-          'active',
-          {
-            lastPaymentDate: new Date(invoice.status_transitions.paid_at! * 1000),
-            lastInvoiceId: invoice.id,
+        // Get the subscription from Stripe
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        
+        // Find customer email
+        const customer = await stripe.customers.retrieve(subscription.customer as string);
+        const customerEmail = (customer as any).email;
+        
+        if (customerEmail) {
+          const userRecord = await getFirebaseUserByEmail(customerEmail);
+          if (userRecord) {
+            await firebaseSubscriptionService.updateSubscriptionFromStripe(
+              userRecord.uid,
+              subscriptionId,
+              subscription
+            );
           }
-        );
+        }
       }
     } catch (error) {
-      console.error('Error handling invoice payment succeeded:', error);
+      console.error('[WEBHOOK] Error handling invoice payment succeeded:', error);
     }
   }
 
   async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
-    console.log('Processing invoice payment failed:', invoice.id);
+    console.log('[WEBHOOK] Processing invoice payment failed:', invoice.id);
     
     try {
       const subscriptionId = invoice.subscription as string;
       
       if (subscriptionId) {
-        await firebaseSubscriptionService.updateSubscriptionStatus(
-          subscriptionId,
-          'past_due',
-          {
-            lastFailedPaymentDate: new Date(),
-            lastFailedInvoiceId: invoice.id,
+        // Get the subscription from Stripe
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        
+        // Find customer email
+        const customer = await stripe.customers.retrieve(subscription.customer as string);
+        const customerEmail = (customer as any).email;
+        
+        if (customerEmail) {
+          const userRecord = await getFirebaseUserByEmail(customerEmail);
+          if (userRecord) {
+            await firebaseSubscriptionService.updateSubscriptionFromStripe(
+              userRecord.uid,
+              subscriptionId,
+              subscription
+            );
           }
-        );
+        }
       }
     } catch (error) {
-      console.error('Error handling invoice payment failed:', error);
+      console.error('[WEBHOOK] Error handling invoice payment failed:', error);
     }
   }
 
   async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-    console.log('Processing subscription updated:', subscription.id);
+    console.log('[WEBHOOK] Processing subscription updated:', subscription.id);
     
     try {
-      await firebaseSubscriptionService.updateSubscriptionStatus(
-        subscription.id,
-        subscription.status,
-        {
-          currentPeriodStart: new Date(subscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-          amount: subscription.items.data[0]?.price.unit_amount || 0,
-          currency: subscription.items.data[0]?.price.currency || 'usd',
+      // Find customer email
+      const customer = await stripe.customers.retrieve(subscription.customer as string);
+      const customerEmail = (customer as any).email;
+      
+      if (customerEmail) {
+        const userRecord = await getFirebaseUserByEmail(customerEmail);
+        if (userRecord) {
+          await firebaseSubscriptionService.updateSubscriptionFromStripe(
+            userRecord.uid,
+            subscription.id,
+            subscription
+          );
         }
-      );
+      }
     } catch (error) {
-      console.error('Error handling subscription updated:', error);
+      console.error('[WEBHOOK] Error handling subscription updated:', error);
     }
   }
 
   async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-    console.log('Processing subscription deleted:', subscription.id);
+    console.log('[WEBHOOK] Processing subscription deleted:', subscription.id);
     
     try {
-      await firebaseSubscriptionService.updateSubscriptionStatus(
-        subscription.id,
-        'canceled',
-        {
-          canceledAt: new Date(),
-          cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      // Find customer email
+      const customer = await stripe.customers.retrieve(subscription.customer as string);
+      const customerEmail = (customer as any).email;
+      
+      if (customerEmail) {
+        const userRecord = await getFirebaseUserByEmail(customerEmail);
+        if (userRecord) {
+          await firebaseSubscriptionService.cancelSubscription(userRecord.uid);
         }
-      );
+      }
     } catch (error) {
-      console.error('Error handling subscription deleted:', error);
+      console.error('[WEBHOOK] Error handling subscription deleted:', error);
     }
   }
 

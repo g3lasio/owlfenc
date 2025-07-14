@@ -17,6 +17,8 @@ interface PricingCardProps {
   planId: number;
   isLoading?: boolean;
   code?: string;
+  isActive?: boolean;
+  expirationDate?: Date;
 }
 
 export function PricingCard({
@@ -32,6 +34,8 @@ export function PricingCard({
   planId,
   isLoading = false,
   code = '',
+  isActive = false,
+  expirationDate,
 }: PricingCardProps) {
   const currentPrice = isYearly ? yearlyPrice / 100 : price / 100;
   const period = isYearly ? "/año" : "/mes";
@@ -132,14 +136,31 @@ export function PricingCard({
         </CardContent>
       </div>
       <CardFooter>
-        <Button 
-          className="w-full" 
-          variant={isMostPopular ? "default" : "outline"}
-          onClick={() => onSelectPlan(planId)}
-          disabled={isLoading}
-        >
-          {isLoading ? "Procesando..." : "Seleccionar Plan"}
-        </Button>
+        {isActive ? (
+          <div className="w-full">
+            <Button 
+              className="w-full mb-2" 
+              variant="default"
+              disabled
+            >
+              ✓ ACTIVADO
+            </Button>
+            {expirationDate && (
+              <p className="text-xs text-center text-muted-foreground">
+                Válido hasta: {expirationDate.toLocaleDateString()}
+              </p>
+            )}
+          </div>
+        ) : (
+          <Button 
+            className="w-full" 
+            variant={isMostPopular ? "default" : "outline"}
+            onClick={() => onSelectPlan(planId)}
+            disabled={isLoading}
+          >
+            {isLoading ? "Procesando..." : "Seleccionar Plan"}
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
