@@ -3669,8 +3669,11 @@ Output must be between 200-900 characters in English.`;
     "/api/subscription/user-subscription",
     async (req: Request, res: Response) => {
       try {
-        // For development, use test-user-id to demo active subscription
-        const userId = 'test-user-id';
+        // Get email from query parameter or use default for testing
+        const email = req.query.email as string || "shkwahab60@gmail.com";
+        const userId = `user_${email.replace(/[@.]/g, '_')}`;
+        
+        console.log(`👤 [SUBSCRIPTION-USER] Getting subscription for: ${userId}`);
         
         // Get subscription from Firebase
         const subscription = await firebaseSubscriptionService.getUserSubscription(userId);
@@ -3976,35 +3979,10 @@ Output must be between 200-900 characters in English.`;
       const { email, planId } = req.body;
       console.log(`🔧 [SIMULATE-CHECKOUT] Simulating checkout completion for email: ${email}, plan: ${planId}`);
       
-      // Find user by email using Firebase auth
-      const userRecord = await getFirebaseUserByEmail(email);
+      // For development, use email as user ID (skip Firebase Auth dependency)
+      const userId = `user_${email.replace(/[@.]/g, '_')}`;
       
-      if (!userRecord) {
-        return res.status(404).json({ error: "User not found" });
-      }
-      
-      console.log(`🔧 [SIMULATE-CHECKOUT] Found user: ${userRecord.uid}`);
-      
-      // Create a mock checkout session completed event
-      const mockEvent = {
-        type: "checkout.session.completed",
-        data: {
-          object: {
-            id: `cs_test_${Date.now()}`,
-            object: "checkout.session",
-            customer: `cus_test_${Date.now()}`,
-            customer_email: email,
-            subscription: `sub_test_${Date.now()}`,
-            metadata: {
-              userId: "1", // This will be looked up by email
-              planId: planId.toString(),
-              billingCycle: "monthly"
-            }
-          }
-        }
-      };
-      
-      console.log(`🔧 [SIMULATE-CHECKOUT] Created mock event:`, JSON.stringify(mockEvent, null, 2));
+      console.log(`🔧 [SIMULATE-CHECKOUT] Using user ID: ${userId}`);
       
       // Create subscription data directly in Firebase
       const subscriptionData = {
@@ -4021,14 +3999,14 @@ Output must be between 200-900 characters in English.`;
         updatedAt: new Date()
       };
       
-      await firebaseSubscriptionService.createOrUpdateSubscription(userRecord.uid, subscriptionData);
+      await firebaseSubscriptionService.createOrUpdateSubscription(userId, subscriptionData);
       
-      console.log(`✅ [SIMULATE-CHECKOUT] Subscription created for user ${userRecord.uid}`);
+      console.log(`✅ [SIMULATE-CHECKOUT] Subscription created for user ${userId}`);
       
       res.json({ 
         success: true, 
         message: "Checkout completion simulated successfully",
-        userId: userRecord.uid,
+        userId: userId,
         planId: planId
       });
       
@@ -4557,27 +4535,44 @@ Output must be between 200-900 characters in English.`;
     "/api/user/subscription",
     async (req: Request, res: Response) => {
       try {
-        // For now, return a default free plan response
-        // In a real app, we would get user ID from session and check Firebase
-        const defaultPlan = {
-          id: 1,
-          name: "Primo Chambeador",
-          price: 0,
-          interval: "monthly",
-          features: ["10 basic estimates", "3 AI estimates", "3 contracts (watermarked)", "Basic features"]
-        };
+        // Get email from query parameter or use default for testing
+        const email = req.query.email as string || "shkwahab60@gmail.com";
+        const userId = `user_${email.replace(/[@.]/g, '_')}`;
+        
+        console.log(`👤 [USER-SUBSCRIPTION] Getting subscription for: ${userId}`);
+        
+        // Get subscription from Firebase
+        const subscription = await firebaseSubscriptionService.getUserSubscription(userId);
+        
+        if (subscription) {
+          console.log(`✅ [USER-SUBSCRIPTION] Found subscription: Plan ${subscription.planId}, Status: ${subscription.status}`);
+          res.json({
+            active: true,
+            subscription: subscription
+          });
+        } else {
+          console.log(`📭 [USER-SUBSCRIPTION] No subscription found, returning free plan`);
+          // Return free plan as default
+          const defaultPlan = {
+            id: 1,
+            name: "Primo Chambeador",
+            price: 0,
+            interval: "monthly",
+            features: ["10 basic estimates", "3 AI estimates", "3 contracts (watermarked)", "Basic features"]
+          };
 
-        res.json({
-          active: true,
-          subscription: {
-            id: 'free-plan',
-            status: 'active',
-            planId: 1,
-            currentPeriodStart: new Date(),
-            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
-          },
-          plan: defaultPlan,
-        });
+          res.json({
+            active: true,
+            subscription: {
+              id: 'free-plan',
+              status: 'active',
+              planId: 1,
+              currentPeriodStart: new Date(),
+              currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+            },
+            plan: defaultPlan,
+          });
+        }
       } catch (error) {
         console.error("Error al obtener suscripción del usuario:", error);
         res.status(500).json({ message: "Error al obtener suscripción" });

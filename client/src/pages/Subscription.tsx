@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PricingToggle } from "@/components/ui/pricing-toggle";
 import { PricingCard } from "@/components/ui/pricing-card";
@@ -25,6 +25,49 @@ export default function Subscription() {
   const queryClient = useQueryClient();
   const { currentUser } = useAuth();
   const userEmail = currentUser?.email || "";
+
+  // Automatic subscription activation when returning from successful payment
+  useEffect(() => {
+    const checkSuccessRedirect = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const success = urlParams.get("success");
+      const planId = urlParams.get("planId");
+      
+      if (success === "true" && planId && userEmail) {
+        console.log("✅ Successful payment detected, activating subscription...");
+        try {
+          // Activate subscription automatically
+          const response = await fetch("/api/subscription/simulate-checkout", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: userEmail,
+              planId: parseInt(planId),
+            }),
+          });
+          
+          if (response.ok) {
+            toast({
+              title: "¡Suscripción activada!",
+              description: "Tu suscripción ha sido activada correctamente.",
+              variant: "default",
+            });
+            // Refresh subscription data
+            queryClient.invalidateQueries({ queryKey: ["/api/subscription/user-subscription", userEmail] });
+          }
+        } catch (error) {
+          console.error("Error activating subscription:", error);
+        }
+        
+        // Clean up URL parameters
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    };
+    
+    checkSuccessRedirect();
+  }, [userEmail, toast, queryClient]);
 
   // Obtenemos los planes disponibles
   const {
@@ -62,7 +105,14 @@ export default function Subscription() {
   // Obtenemos la información de la suscripción actual del usuario
   const { data: userSubscription, isLoading: isLoadingUserSubscription } =
     useQuery({
-      queryKey: ["/api/subscription/user-subscription"],
+      queryKey: ["/api/subscription/user-subscription", userEmail],
+      queryFn: async () => {
+        if (!userEmail) throw new Error("User email is required");
+        const response = await fetch(`/api/subscription/user-subscription?email=${encodeURIComponent(userEmail)}`);
+        if (!response.ok) throw new Error("Failed to fetch subscription");
+        return response.json();
+      },
+      enabled: !!userEmail,
       throwOnError: false,
     });
 
@@ -79,7 +129,7 @@ export default function Subscription() {
         userEmail,
         planId,
         billingCycle: isYearly ? "yearly" : "monthly",
-        successUrl: window.location.origin + "/subscription?success=true",
+        successUrl: window.location.origin + "/subscription?success=true&planId=" + planId,
         cancelUrl: window.location.origin + "/subscription?canceled=true",
       };
 

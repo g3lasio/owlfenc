@@ -1,0 +1,71 @@
+-07-14T19:51:54.787Z] Iniciando petición: GET /subscription/plans
+7:51:54 PM [express] GET /subscription/plans 304 in 1ms :: [{"id":1,"name":"Primo Chambeador","descr…
+[2025-07-14T19:51:54.789Z] Iniciando petición: GET /subscription/user-subscription
+📧 [FIREBASE-SUBSCRIPTION] Obteniendo suscripción para usuario: test-user-id
+📭 [FIREBASE-SUBSCRIPTION] No se encontró suscripción para usuario: test-user-id
+7:51:54 PM [express] GET /subscription/user-subscription 200 in 1ms :: {"active":true,"subscription"…
+[2025-07-14T19:51:54.886Z] Iniciando petición: POST /subscription/simulate-checkout
+🔧 [SIMULATE-CHECKOUT] Simulating checkout completion for email: shkwahab60@gmail.com, plan: 2
+[WEBHOOK] Looking up user by email: shkwahab60@gmail.com
+Error finding user by email: FirebaseAppError: The default Firebase app does not exist. Make sure you call initializeApp() before using any of the Firebase services.
+    at AppStore.getApp (/home/runner/workspace/node_modules/firebase-admin/lib/app/lifecycle.js:69:19)
+    at FirebaseNamespaceInternals.app (/home/runner/workspace/node_modules/firebase-admin/lib/app/firebase-namespace.js:54:35)
+    at FirebaseNamespace.app (/home/runner/workspace/node_modules/firebase-admin/lib/app/firebase-namespace.js:256:30)
+    at FirebaseNamespace.ensureApp (/home/runner/workspace/node_modules/firebase-admin/lib/app/firebase-namespace.js:266:24)
+    at FirebaseNamespace.fn (/home/runner/workspace/node_modules/firebase-admin/lib/app/firebase-namespace.js:92:25)
+    at getFirebaseUserByEmail (/home/runner/workspace/server/routes.ts:4095:38)
+    at <anonymous> (/home/runner/workspace/server/routes.ts:3980:32)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:646:15
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:265:14)
+    at Function.handle (/home/runner/workspace/node_modules/express/lib/router/index.js:175:3)
+    at router (/home/runner/workspace/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:646:15
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:265:14)
+    at Function.handle (/home/runner/workspace/node_modules/express/lib/router/index.js:175:3)
+    at router (/home/runner/workspace/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at urlencodedParser (/home/runner/workspace/node_modules/body-parser/lib/types/urlencoded.js:85:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/home/runner/workspace/node_modules/body-parser/lib/types/json.js:104:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:646:15
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:265:14)
+    at Function.handle (/home/runner/workspace/node_modules/express/lib/router/index.js:175:3)
+    at router (/home/runner/workspace/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13) {
+  errorInfo: {
+    code: 'app/no-app',
+    message: 'The default Firebase app does not exist. Make sure you call initializeApp() before using any of the Firebase services.'
+  },
+  codePrefix: 'app'
+}
+7:51:55 PM [express] POST /subscription/simulate-checkout 404 in 305ms :: {"error":"User not found"}
+[2025-07-14T19:51:55.478Z] Iniciando petición: GET /subscription/user-subscription
+📧 [FIREBASE-SUBSCRIPTION] Obteniendo suscripción para usuario: test-user-id
+📭 [FIREBASE-SUBSCRIPTION] No se encontró suscripción para usuario: test-user-id
+7:51:55 PM [express] GET /subscription/user-subscription 200 in 1ms :: {"active":true,"subscription"…
