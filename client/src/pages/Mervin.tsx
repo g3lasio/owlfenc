@@ -22,6 +22,7 @@ import {
   Edit3,
   Trash2,
   Plus,
+  Minus,
   Check,
   X,
   Search,
@@ -29,6 +30,7 @@ import {
   Brain,
   Wrench,
   DollarSign,
+  ShoppingCart,
 } from "lucide-react";
 
 // Tipos para los mensajes
@@ -220,10 +222,74 @@ export default function Mervin() {
   }, []);
   const [visibleCount, setVisibleCount] = useState(3);
   const [materialSearchTerm, setMaterialSearchTerm] = useState("");
+  const [shoppingCart, setShoppingCart] = useState<{material: Material, quantity: number}[]>([]);
+  const [showCart, setShowCart] = useState(false);
 
   const filteredMaterials = materials.filter((material) =>
     material.name.toLowerCase().includes(materialSearchTerm.toLowerCase()),
   );
+
+  // Shopping cart helper functions
+  const addToCart = (material: Material, quantity: number = 1) => {
+    setShoppingCart(prev => {
+      const existingItem = prev.find(item => item.material.id === material.id);
+      if (existingItem) {
+        return prev.map(item =>
+          item.material.id === material.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        );
+      }
+      return [...prev, { material, quantity }];
+    });
+  };
+
+  const removeFromCart = (materialId: string) => {
+    setShoppingCart(prev => prev.filter(item => item.material.id !== materialId));
+  };
+
+  const updateCartQuantity = (materialId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(materialId);
+      return;
+    }
+    setShoppingCart(prev => 
+      prev.map(item =>
+        item.material.id === materialId
+          ? { ...item, quantity }
+          : item
+      )
+    );
+  };
+
+  const getCartTotal = () => {
+    return shoppingCart.reduce((total, item) => total + (item.material.price * item.quantity), 0);
+  };
+
+  const getCartItemCount = () => {
+    return shoppingCart.reduce((total, item) => total + item.quantity, 0);
+  };
+
+  const addCartToInventory = () => {
+    setInventoryItems(prev => {
+      const newItems = [...prev];
+      shoppingCart.forEach(cartItem => {
+        const existingIndex = newItems.findIndex(item => item.material.id === cartItem.material.id);
+        if (existingIndex >= 0) {
+          newItems[existingIndex].quantity += cartItem.quantity;
+        } else {
+          newItems.push(cartItem);
+        }
+      });
+      return newItems;
+    });
+    setShoppingCart([]);
+    setShowCart(false);
+    toast({
+      title: "Materiales añadidos",
+      description: `Se añadieron ${getCartItemCount()} materiales al inventario.`,
+    });
+  };
 
   // Manejar envío de mensajes
   // const handleSendMessage = () => {
@@ -1416,81 +1482,179 @@ export default function Mervin() {
 
               {message.materialList && message.materialList.length > 0 && (
                 <div className="mt-2 space-y-3">
-                  {/* Search bar for materials in chat */}
+                  {/* Shopping Cart Header */}
+                  <div className="flex items-center justify-between bg-gradient-to-r from-cyan-900/30 to-blue-900/30 p-3 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <ShoppingCart className="w-5 h-5 text-cyan-400" />
+                      <h3 className="text-cyan-400 font-semibold">Catálogo de Materiales</h3>
+                    </div>
+                    <button
+                      onClick={() => setShowCart(!showCart)}
+                      className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      Carrito ({getCartItemCount()})
+                    </button>
+                  </div>
+
+                  {/* Search bar for materials */}
                   <input
                     type="text"
-                    placeholder="Buscar material..."
+                    placeholder="🔍 Buscar materiales..."
                     value={materialSearchTerm}
                     onChange={(e) => {
                       setMaterialSearchTerm(e.target.value);
-                      setVisibleCount(3); // Reset pagination on search
+                      setVisibleCount(6);
                     }}
-                    className="w-full bg-gray-800 text-white px-3 py-2 rounded border border-cyan-900/50"
+                    className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg border border-cyan-900/50 focus:border-cyan-600 focus:outline-none"
                   />
 
-                  <div
-                    className="max-h-64 overflow-y-auto grid grid-cols-2 gap-3 pr-2"
-                    onScroll={(e) => {
-                      const { scrollTop, scrollHeight, clientHeight } =
-                        e.currentTarget;
-                      if (scrollTop + clientHeight >= scrollHeight - 10) {
-                        setVisibleCount((prev) => prev + 3); // Load more on scroll
-                      }
-                    }}
-                  >
-                    {message.materialList
-                      .filter((material) =>
-                        material.name
-                          .toLowerCase()
-                          .includes(materialSearchTerm.toLowerCase()),
-                      )
-                      .slice(0, visibleCount)
-                      .map((material) => (
-                        <div
-                          key={material.id}
-                          className="bg-cyan-900/20 p-3 rounded-lg text-white space-y-2"
-                        >
-                          <div className="font-semibold">{material.name}</div>
-                          <div className="text-sm opacity-80">
-                            {material.description}
-                          </div>
-                          <div className="text-sm">
-                            Precio: ${material.price} / {material.unit}
-                          </div>
-                          <input
-                            type="number"
-                            min={1}
-                            placeholder="Cantidad"
-                            className="w-full bg-gray-800 text-white px-3 py-1 rounded"
-                            onChange={(e) => {
-                              const qty = parseInt(e.target.value);
-                              if (!isNaN(qty)) {
-                                const existing = inventoryItems.find(
-                                  (item) => item.material.id === material.id,
-                                );
-                                if (existing) {
-                                  setInventoryItems((prev) =>
-                                    prev.map((item) =>
-                                      item.material.id === material.id
-                                        ? { ...item, quantity: qty }
-                                        : item,
-                                    ),
-                                  );
-                                } else {
-                                  setInventoryItems((prev) => [
-                                    ...prev,
-                                    { material, quantity: qty },
-                                  ]);
-                                }
-                              }
-                            }}
-                          />
+                  <div className="flex gap-4">
+                    {/* Product Catalog */}
+                    <div className={`${showCart ? 'w-2/3' : 'w-full'} transition-all duration-300`}>
+                      <div
+                        className="max-h-96 overflow-y-auto grid grid-cols-1 gap-3 pr-2"
+                        onScroll={(e) => {
+                          const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+                          if (scrollTop + clientHeight >= scrollHeight - 10) {
+                            setVisibleCount((prev) => prev + 6);
+                          }
+                        }}
+                      >
+                        {message.materialList
+                          .filter((material) =>
+                            material.name.toLowerCase().includes(materialSearchTerm.toLowerCase())
+                          )
+                          .slice(0, visibleCount)
+                          .map((material) => (
+                            <div
+                              key={material.id}
+                              className="bg-gradient-to-r from-gray-800 to-gray-900 p-4 rounded-lg border border-gray-700 hover:border-cyan-600 transition-all duration-200 hover:shadow-lg hover:shadow-cyan-500/20"
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="font-semibold text-white text-lg mb-1">{material.name}</div>
+                                  <div className="text-sm text-gray-300 mb-2">{material.description}</div>
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <span className="text-cyan-400 font-bold text-lg">${material.price}</span>
+                                    <span className="text-gray-400 text-sm">por {material.unit}</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    defaultValue={1}
+                                    className="w-16 bg-gray-700 text-white px-2 py-1 rounded text-center border border-gray-600 focus:border-cyan-500 focus:outline-none"
+                                    id={`qty-${material.id}`}
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const qtyInput = document.getElementById(`qty-${material.id}`) as HTMLInputElement;
+                                      const qty = parseInt(qtyInput?.value || '1');
+                                      if (!isNaN(qty) && qty > 0) {
+                                        addToCart(material, qty);
+                                        qtyInput.value = '1';
+                                        toast({
+                                          title: "Material añadido",
+                                          description: `${qty} ${material.unit} de ${material.name} añadido al carrito.`,
+                                        });
+                                      }
+                                    }}
+                                    className="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1 rounded transition-colors flex items-center gap-1"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                    Añadir
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Shopping Cart Sidebar */}
+                    {showCart && (
+                      <div className="w-1/3 bg-gray-800 rounded-lg p-4 border border-cyan-900/50">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-cyan-400 font-semibold flex items-center gap-2">
+                            <ShoppingCart className="w-4 h-4" />
+                            Carrito de Compras
+                          </h3>
+                          <button
+                            onClick={() => setShowCart(false)}
+                            className="text-gray-400 hover:text-white"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
                         </div>
-                      ))}
+
+                        <div className="max-h-64 overflow-y-auto space-y-2 mb-4">
+                          {shoppingCart.length === 0 ? (
+                            <div className="text-center text-gray-400 py-8">
+                              <ShoppingCart className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                              <p>Tu carrito está vacío</p>
+                            </div>
+                          ) : (
+                            shoppingCart.map((item) => (
+                              <div key={item.material.id} className="bg-gray-700 p-3 rounded-lg">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex-1">
+                                    <div className="font-semibold text-white text-sm">{item.material.name}</div>
+                                    <div className="text-xs text-gray-300">${item.material.price} / {item.material.unit}</div>
+                                  </div>
+                                  <button
+                                    onClick={() => removeFromCart(item.material.id)}
+                                    className="text-red-400 hover:text-red-300"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => updateCartQuantity(item.material.id, item.quantity - 1)}
+                                      className="w-6 h-6 bg-gray-600 hover:bg-gray-500 text-white rounded flex items-center justify-center"
+                                    >
+                                      <Minus className="w-3 h-3" />
+                                    </button>
+                                    <span className="w-8 text-center text-white font-semibold">{item.quantity}</span>
+                                    <button
+                                      onClick={() => updateCartQuantity(item.material.id, item.quantity + 1)}
+                                      className="w-6 h-6 bg-gray-600 hover:bg-gray-500 text-white rounded flex items-center justify-center"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                  <div className="text-cyan-400 font-bold">
+                                    ${(item.material.price * item.quantity).toFixed(2)}
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+
+                        {shoppingCart.length > 0 && (
+                          <div className="border-t border-gray-700 pt-4">
+                            <div className="flex justify-between items-center mb-3">
+                              <span className="text-white font-semibold">Total:</span>
+                              <span className="text-cyan-400 font-bold text-lg">${getCartTotal().toFixed(2)}</span>
+                            </div>
+                            <button
+                              onClick={addCartToInventory}
+                              className="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2 rounded-lg font-semibold transition-colors"
+                            >
+                              Añadir al Inventario
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  {/* ➕ Add new material */}
-                  <div className="text-center mt-3">
+                  {/* Add new material */}
+                  <div className="text-center mt-4">
                     <button
                       onClick={() => {
                         setChatFlowStep("awaiting-new-material");
@@ -1498,15 +1662,15 @@ export default function Mervin() {
                           ...prev,
                           {
                             id: `assistant-${Date.now()}`,
-                            content:
-                              "Por favor ingresa los detalles del nuevo material en el siguiente formato:\n\nNombre, Descripción, Precio, Unidad, Categoría",
+                            content: "Por favor ingresa los detalles del nuevo material en el siguiente formato:\n\nNombre, Descripción, Precio, Unidad, Categoría",
                             sender: "assistant",
                           },
                         ]);
                       }}
-                      className="text-cyan-300 underline"
+                      className="text-cyan-300 hover:text-cyan-200 underline flex items-center gap-2 mx-auto"
                     >
-                      ➕ Agregar nuevo material
+                      <Plus className="w-4 h-4" />
+                      Agregar nuevo material
                     </button>
                   </div>
                 </div>
