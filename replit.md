@@ -137,6 +137,19 @@ Owl Fence is a comprehensive SaaS platform designed for contractors in the const
 ## Changelog
 ```
 Changelog:
+- July 14, 2025. ✅ DEEPSEARCH AI RECOMMENDATION SYSTEM COMPLETED: Successfully implemented comprehensive AI-powered material and labor cost recommendation system in Mervin chatbot:
+  * OPENAI INTEGRATION: Created complete OpenAI API integration with GPT-4o model for intelligent construction project analysis
+  * THREE-OPTION SELECTION: Implemented Spanish interface with three DeepSearch options (materials + labor cost, materials only, labor only)
+  * BACKEND API ENDPOINT: Created /api/deepsearch-ai endpoint with comprehensive project analysis, material recommendations, and labor cost calculations
+  * INTERACTIVE EDIT MODAL: Built full-featured modal interface allowing users to edit, add, remove, and modify AI recommendations with real-time calculations
+  * DYNAMIC CHAT FLOW: Enhanced Mervin chatbot with new chat flow steps (awaiting-deepsearch-choice, deepsearch-processing, deepsearch-results)
+  * INTELLIGENT MATERIAL CONVERSION: AI recommendations automatically convert to inventory items for seamless estimate generation workflow
+  * MANUAL SELECTION SUPPORT: Labor-only option provides manual material selection while using AI for labor cost calculations
+  * COMPREHENSIVE VALIDATION: Full input validation, error handling, and user feedback with toast notifications
+  * RESPONSIVE UI DESIGN: Beautiful gradient-themed option buttons with icons (Brain, Wrench, DollarSign) and professional styling
+  * LOOP-BASED EDITING: Users can edit previous selections and recommendations through interactive modal with add/remove functionality
+  * PRODUCTION READY: Complete integration with existing estimate generation workflow and Firebase authentication
+  * SPANISH LOCALIZATION: All interfaces, prompts, and responses in Spanish for optimal user experience
 - July 14, 2025. ✅ DYNAMIC SUBSCRIPTION DATE TRACKING SYSTEM IMPLEMENTED: Successfully created API endpoint for dynamic subscription date management:
   * API ENDPOINT CREATED: Added /api/subscription/create-current endpoint for dynamic subscription creation using current dates
   * MONTHLY BILLING CORRECTED: Fixed billing cycle to use "same day next month" instead of exactly 30 days (July 14 → August 14)

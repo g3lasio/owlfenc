@@ -5,6 +5,7 @@ import { Client } from "@/lib/clientFirebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { MaterialInventoryService } from "../../src/services/materialInventoryService";
 import { db } from "@/lib/firebase";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 import {
   getClients as getFirebaseClients,
@@ -18,6 +19,16 @@ import {
   ClipboardCheck,
   Building,
   BarChart4,
+  Edit3,
+  Trash2,
+  Plus,
+  Check,
+  X,
+  Search,
+  Zap,
+  Brain,
+  Wrench,
+  DollarSign,
 } from "lucide-react";
 
 // Tipos para los mensajes
@@ -41,11 +52,40 @@ type EstimateStep1ChatFlowStep =
   | "enter-new-client"
   | "client-added"
   | "awaiting-project-description"
+  | "awaiting-deepsearch-choice"
+  | "deepsearch-processing"
+  | "deepsearch-results"
   | "select-inventory"
   | "awaiting-new-material"
   | "awaiting-discount"
   | "awaiting-tax"
   | null;
+
+type DeepSearchOption = "materials-labor" | "materials-only" | "labor-only";
+
+type DeepSearchRecommendation = {
+  materials: {
+    name: string;
+    description: string;
+    quantity: number;
+    unit: string;
+    estimatedPrice: number;
+    category: string;
+    reason: string;
+  }[];
+  laborCosts: {
+    task: string;
+    description: string;
+    estimatedHours: number;
+    hourlyRate: number;
+    totalCost: number;
+    category: string;
+  }[];
+  totalMaterialCost: number;
+  totalLaborCost: number;
+  totalProjectCost: number;
+  recommendations: string[];
+};
 
 interface Material {
   id: string;
@@ -108,6 +148,16 @@ export default function Mervin() {
   const [clients, setClients] = useState<Client[]>([]);
   const { currentUser } = useAuth();
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
+  
+  // DeepSearch AI states
+  const [deepSearchOption, setDeepSearchOption] = useState<DeepSearchOption | null>(null);
+  const [deepSearchRecommendation, setDeepSearchRecommendation] = useState<DeepSearchRecommendation | null>(null);
+  const [isDeepSearchProcessing, setIsDeepSearchProcessing] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingMaterials, setEditingMaterials] = useState<DeepSearchRecommendation["materials"]>([]);
+  const [editingLaborCosts, setEditingLaborCosts] = useState<DeepSearchRecommendation["laborCosts"]>([]);
+  const [canEditClient, setCanEditClient] = useState(false);
+  const [canEditMaterials, setCanEditMaterials] = useState(false);
 
   const loadMaterials = async (): Promise<Material[]> => {
     if (!currentUser) return [];
@@ -381,6 +431,125 @@ export default function Mervin() {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
   };
+
+  // OpenAI DeepSearch AI function
+  const performDeepSearchAI = async (option: DeepSearchOption, description: string): Promise<DeepSearchRecommendation> => {
+    setIsDeepSearchProcessing(true);
+    
+    try {
+      const response = await fetch('/api/deepsearch-ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          option,
+          projectDescription: description,
+          clientInfo: selectedClient,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Error in DeepSearch AI:', error);
+      throw error;
+    } finally {
+      setIsDeepSearchProcessing(false);
+    }
+  };
+
+  // Handle DeepSearch option selection
+  const handleDeepSearchOptionSelect = async (option: DeepSearchOption) => {
+    setDeepSearchOption(option);
+    setChatFlowStep("deepsearch-processing");
+    
+    // Show processing message
+    const processingMessage: Message = {
+      id: `assistant-${Date.now()}`,
+      content: "🧠 Procesando con DeepSearch AI... Esto puede tomar unos momentos.",
+      sender: "assistant",
+      state: "analyzing",
+    };
+    
+    setMessages((prev) => [...prev, processingMessage]);
+    
+    try {
+      const recommendation = await performDeepSearchAI(option, projectDescription);
+      setDeepSearchRecommendation(recommendation);
+      setEditingMaterials(recommendation.materials);
+      setEditingLaborCosts(recommendation.laborCosts);
+      
+      // Remove processing message
+      setMessages((prev) => prev.filter((m) => m.id !== processingMessage.id));
+      
+      // Show results
+      const resultsMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        content: generateDeepSearchResultsMessage(recommendation, option),
+        sender: "assistant",
+        action: "deepsearch-results",
+      };
+      
+      setMessages((prev) => [...prev, resultsMessage]);
+      setChatFlowStep("deepsearch-results");
+      
+    } catch (error) {
+      // Remove processing message
+      setMessages((prev) => prev.filter((m) => m.id !== processingMessage.id));
+      
+      // Show error message
+      const errorMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        content: "❌ Error al procesar la recomendación de DeepSearch AI. Por favor intenta nuevamente.",
+        sender: "assistant",
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+      setChatFlowStep("awaiting-deepsearch-choice");
+    }
+  };
+
+  // Generate DeepSearch results message
+  const generateDeepSearchResultsMessage = (recommendation: DeepSearchRecommendation, option: DeepSearchOption): string => {
+    let message = "✨ **Recomendación de DeepSearch AI completada**\n\n";
+    
+    if (option === "materials-only" || option === "materials-labor") {
+      message += "📦 **Materiales Recomendados:**\n";
+      recommendation.materials.forEach((material, index) => {
+        message += `${index + 1}. ${material.name} - ${material.quantity} ${material.unit}\n`;
+        message += `   Precio estimado: $${material.estimatedPrice.toFixed(2)}\n`;
+        message += `   Razón: ${material.reason}\n\n`;
+      });
+      message += `💰 **Costo total de materiales: $${recommendation.totalMaterialCost.toFixed(2)}**\n\n`;
+    }
+    
+    if (option === "labor-only" || option === "materials-labor") {
+      message += "⚡ **Costos de Mano de Obra:**\n";
+      recommendation.laborCosts.forEach((labor, index) => {
+        message += `${index + 1}. ${labor.task} - ${labor.estimatedHours} horas\n`;
+        message += `   Tarifa: $${labor.hourlyRate.toFixed(2)}/hora\n`;
+        message += `   Costo total: $${labor.totalCost.toFixed(2)}\n\n`;
+      });
+      message += `💼 **Costo total de mano de obra: $${recommendation.totalLaborCost.toFixed(2)}**\n\n`;
+    }
+    
+    message += `🎯 **Costo total del proyecto: $${recommendation.totalProjectCost.toFixed(2)}**\n\n`;
+    
+    if (recommendation.recommendations.length > 0) {
+      message += "💡 **Recomendaciones adicionales:**\n";
+      recommendation.recommendations.forEach((rec, index) => {
+        message += `• ${rec}\n`;
+      });
+    }
+    
+    return message;
+  };
+
   const generateEstimatePreview = () => {
     // USAR EXACTAMENTE LOS MISMOS CAMPOS QUE EL PDF
     // Validación usando profile.company (no companyName)
@@ -639,19 +808,16 @@ export default function Mervin() {
       }
     } else if (chatFlowStep === "awaiting-project-description") {
       setProjectDescription(userInput);
-      setChatFlowStep("select-inventory");
+      setChatFlowStep("awaiting-deepsearch-choice");
 
-      // 🔧 Load materials BEFORE creating message
-      const updatedMaterials = await loadMaterials();
-
+      // Ask DeepSearch AI question
       setMessages((prev) => [
         ...prev,
         {
           id: `assistant-${Date.now()}`,
-          content:
-            "Material agregado. Ahora puedes seleccionar de la lista actualizada:",
+          content: "¿Le gustaría realizar una recomendación de DeepSearch AI (materiales + costo de mano de obra, solo materiales o solo mano de obra)?",
           sender: "assistant",
-          materialList: updatedMaterials,
+          action: "deepsearch-options",
         },
       ]);
 
@@ -860,6 +1026,300 @@ export default function Mervin() {
 
   return (
     <div className="flex flex-col h-full  bg-black text-white ">
+      {/* Edit Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-gray-900 border-cyan-900/50">
+          <DialogHeader>
+            <DialogTitle className="text-cyan-400">Editar Recomendaciones de DeepSearch AI</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Materials Section */}
+            {(deepSearchOption === "materials-only" || deepSearchOption === "materials-labor") && (
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
+                  <Wrench className="w-5 h-5 text-blue-400" />
+                  <span>Materiales</span>
+                </h3>
+                
+                <div className="space-y-3">
+                  {editingMaterials.map((material, index) => (
+                    <div key={index} className="bg-gray-800 rounded-lg p-4 space-y-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1">Nombre</label>
+                          <input
+                            type="text"
+                            value={material.name}
+                            onChange={(e) => {
+                              const updated = [...editingMaterials];
+                              updated[index].name = e.target.value;
+                              setEditingMaterials(updated);
+                            }}
+                            className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-cyan-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1">Cantidad</label>
+                          <input
+                            type="number"
+                            value={material.quantity}
+                            onChange={(e) => {
+                              const updated = [...editingMaterials];
+                              updated[index].quantity = parseFloat(e.target.value) || 0;
+                              setEditingMaterials(updated);
+                            }}
+                            className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-cyan-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1">Unidad</label>
+                          <input
+                            type="text"
+                            value={material.unit}
+                            onChange={(e) => {
+                              const updated = [...editingMaterials];
+                              updated[index].unit = e.target.value;
+                              setEditingMaterials(updated);
+                            }}
+                            className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-cyan-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1">Precio Estimado</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={material.estimatedPrice}
+                            onChange={(e) => {
+                              const updated = [...editingMaterials];
+                              updated[index].estimatedPrice = parseFloat(e.target.value) || 0;
+                              setEditingMaterials(updated);
+                            }}
+                            className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-cyan-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Descripción</label>
+                        <textarea
+                          value={material.description}
+                          onChange={(e) => {
+                            const updated = [...editingMaterials];
+                            updated[index].description = e.target.value;
+                            setEditingMaterials(updated);
+                          }}
+                          className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-cyan-500 focus:outline-none"
+                          rows={2}
+                        />
+                      </div>
+                      
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => {
+                            const updated = editingMaterials.filter((_, i) => i !== index);
+                            setEditingMaterials(updated);
+                          }}
+                          className="bg-red-900/30 hover:bg-red-800/50 text-red-400 px-3 py-1 rounded text-sm flex items-center space-x-1"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Eliminar</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <button
+                    onClick={() => {
+                      setEditingMaterials([...editingMaterials, {
+                        name: "",
+                        description: "",
+                        quantity: 1,
+                        unit: "",
+                        estimatedPrice: 0,
+                        category: "",
+                        reason: "",
+                      }]);
+                    }}
+                    className="bg-blue-900/30 hover:bg-blue-800/50 text-blue-400 px-4 py-2 rounded flex items-center space-x-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Agregar Material</span>
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* Labor Costs Section */}
+            {(deepSearchOption === "labor-only" || deepSearchOption === "materials-labor") && (
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
+                  <DollarSign className="w-5 h-5 text-green-400" />
+                  <span>Mano de Obra</span>
+                </h3>
+                
+                <div className="space-y-3">
+                  {editingLaborCosts.map((labor, index) => (
+                    <div key={index} className="bg-gray-800 rounded-lg p-4 space-y-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1">Tarea</label>
+                          <input
+                            type="text"
+                            value={labor.task}
+                            onChange={(e) => {
+                              const updated = [...editingLaborCosts];
+                              updated[index].task = e.target.value;
+                              setEditingLaborCosts(updated);
+                            }}
+                            className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-cyan-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1">Horas Estimadas</label>
+                          <input
+                            type="number"
+                            value={labor.estimatedHours}
+                            onChange={(e) => {
+                              const updated = [...editingLaborCosts];
+                              updated[index].estimatedHours = parseFloat(e.target.value) || 0;
+                              updated[index].totalCost = updated[index].estimatedHours * updated[index].hourlyRate;
+                              setEditingLaborCosts(updated);
+                            }}
+                            className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-cyan-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1">Tarifa por Hora</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={labor.hourlyRate}
+                            onChange={(e) => {
+                              const updated = [...editingLaborCosts];
+                              updated[index].hourlyRate = parseFloat(e.target.value) || 0;
+                              updated[index].totalCost = updated[index].estimatedHours * updated[index].hourlyRate;
+                              setEditingLaborCosts(updated);
+                            }}
+                            className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-cyan-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1">Costo Total</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={labor.totalCost}
+                            readOnly
+                            className="w-full bg-gray-600 text-gray-300 px-3 py-2 rounded border border-gray-600 cursor-not-allowed"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Descripción</label>
+                        <textarea
+                          value={labor.description}
+                          onChange={(e) => {
+                            const updated = [...editingLaborCosts];
+                            updated[index].description = e.target.value;
+                            setEditingLaborCosts(updated);
+                          }}
+                          className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-cyan-500 focus:outline-none"
+                          rows={2}
+                        />
+                      </div>
+                      
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => {
+                            const updated = editingLaborCosts.filter((_, i) => i !== index);
+                            setEditingLaborCosts(updated);
+                          }}
+                          className="bg-red-900/30 hover:bg-red-800/50 text-red-400 px-3 py-1 rounded text-sm flex items-center space-x-1"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Eliminar</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <button
+                    onClick={() => {
+                      setEditingLaborCosts([...editingLaborCosts, {
+                        task: "",
+                        description: "",
+                        estimatedHours: 0,
+                        hourlyRate: 0,
+                        totalCost: 0,
+                        category: "",
+                      }]);
+                    }}
+                    className="bg-green-900/30 hover:bg-green-800/50 text-green-400 px-4 py-2 rounded flex items-center space-x-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Agregar Tarea</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button
+              onClick={() => setShowEditModal(false)}
+              variant="outline"
+              className="border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                // Update the recommendation with edited values
+                if (deepSearchRecommendation) {
+                  const updatedRecommendation: DeepSearchRecommendation = {
+                    ...deepSearchRecommendation,
+                    materials: editingMaterials,
+                    laborCosts: editingLaborCosts,
+                    totalMaterialCost: editingMaterials.reduce((sum, m) => sum + (m.estimatedPrice * m.quantity), 0),
+                    totalLaborCost: editingLaborCosts.reduce((sum, l) => sum + l.totalCost, 0),
+                    totalProjectCost: editingMaterials.reduce((sum, m) => sum + (m.estimatedPrice * m.quantity), 0) + editingLaborCosts.reduce((sum, l) => sum + l.totalCost, 0),
+                  };
+                  
+                  setDeepSearchRecommendation(updatedRecommendation);
+                  
+                  // Update the last message with new results
+                  setMessages((prev) => {
+                    const updated = [...prev];
+                    const lastMessageIndex = updated.length - 1;
+                    if (updated[lastMessageIndex].action === "deepsearch-results") {
+                      updated[lastMessageIndex].content = generateDeepSearchResultsMessage(updatedRecommendation, deepSearchOption!);
+                    }
+                    return updated;
+                  });
+                }
+                
+                setShowEditModal(false);
+                toast({
+                  title: "Cambios guardados",
+                  description: "Las recomendaciones han sido actualizadas exitosamente.",
+                });
+              }}
+              className="bg-cyan-600 hover:bg-cyan-700 text-white"
+            >
+              Guardar Cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* Contenedor de mensajes (scrollable) */}
       <div className="flex-1  pb-24">
         <div className="p-4 space-y-4">
@@ -1070,6 +1530,104 @@ export default function Mervin() {
                       {button.text}
                     </button>
                   ))}
+                </div>
+              )}
+
+              {/* DeepSearch AI Options */}
+              {message.action === "deepsearch-options" && (
+                <div className="grid grid-cols-1 gap-3 mt-4">
+                  <button
+                    onClick={() => handleDeepSearchOptionSelect("materials-labor")}
+                    className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 hover:from-purple-800/50 hover:to-blue-800/50 text-white rounded-lg p-4 text-sm font-medium transition-all duration-200 flex items-center justify-center space-x-3"
+                  >
+                    <Brain className="w-5 h-5 text-purple-400" />
+                    <Wrench className="w-5 h-5 text-blue-400" />
+                    <DollarSign className="w-5 h-5 text-green-400" />
+                    <span>Materiales + Costo de Mano de Obra</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => handleDeepSearchOptionSelect("materials-only")}
+                    className="bg-gradient-to-r from-green-900/30 to-teal-900/30 hover:from-green-800/50 hover:to-teal-800/50 text-white rounded-lg p-4 text-sm font-medium transition-all duration-200 flex items-center justify-center space-x-3"
+                  >
+                    <Brain className="w-5 h-5 text-green-400" />
+                    <Wrench className="w-5 h-5 text-teal-400" />
+                    <span>Solo Materiales</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => handleDeepSearchOptionSelect("labor-only")}
+                    className="bg-gradient-to-r from-orange-900/30 to-red-900/30 hover:from-orange-800/50 hover:to-red-800/50 text-white rounded-lg p-4 text-sm font-medium transition-all duration-200 flex items-center justify-center space-x-3"
+                  >
+                    <Brain className="w-5 h-5 text-orange-400" />
+                    <DollarSign className="w-5 h-5 text-red-400" />
+                    <span>Solo Mano de Obra</span>
+                  </button>
+                </div>
+              )}
+
+              {/* DeepSearch Results with Edit Options */}
+              {message.action === "deepsearch-results" && deepSearchRecommendation && (
+                <div className="mt-4 space-y-3">
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowEditModal(true)}
+                      className="bg-blue-900/30 hover:bg-blue-800/50 text-blue-400 rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-200 flex items-center space-x-2"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      <span>Editar Selección</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        // Continue with current selection
+                        if (deepSearchOption === "labor-only") {
+                          // Go to manual material selection
+                          setChatFlowStep("select-inventory");
+                          loadMaterials().then((updatedMaterials) => {
+                            setMessages((prev) => [
+                              ...prev,
+                              {
+                                id: `assistant-${Date.now()}`,
+                                content: "Ahora selecciona materiales manualmente:",
+                                sender: "assistant",
+                                materialList: updatedMaterials,
+                              },
+                            ]);
+                          });
+                        } else {
+                          // Convert AI recommendations to inventory items
+                          const convertedItems = deepSearchRecommendation.materials.map((material) => ({
+                            material: {
+                              id: `ai-${material.name.toLowerCase().replace(/\s+/g, '-')}`,
+                              name: material.name,
+                              description: material.description,
+                              price: material.estimatedPrice,
+                              unit: material.unit,
+                              category: material.category,
+                            },
+                            quantity: material.quantity,
+                          }));
+                          
+                          setInventoryItems(convertedItems);
+                          setChatFlowStep("select-inventory");
+                          
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content: "✅ Recomendaciones aplicadas al inventario. Puedes continuar con el descuento.",
+                              sender: "assistant",
+                            },
+                          ]);
+                        }
+                      }}
+                      className="bg-green-900/30 hover:bg-green-800/50 text-green-400 rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-200 flex items-center space-x-2"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>Continuar con Selección</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
