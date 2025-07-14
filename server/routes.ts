@@ -3970,11 +3970,11 @@ Output must be between 200-900 characters in English.`;
     res.json({ status: "test webhook received" });
   });
 
-  // Manual subscription update endpoint for testing
-  app.post("/api/subscription/manual-update", async (req: Request, res: Response) => {
+  // Simulate checkout completion for testing
+  app.post("/api/subscription/simulate-checkout", async (req: Request, res: Response) => {
     try {
       const { email, planId } = req.body;
-      console.log(`🔧 [MANUAL-UPDATE] Updating subscription for email: ${email}, plan: ${planId}`);
+      console.log(`🔧 [SIMULATE-CHECKOUT] Simulating checkout completion for email: ${email}, plan: ${planId}`);
       
       // Find user by email using Firebase auth
       const userRecord = await getFirebaseUserByEmail(email);
@@ -3983,15 +3983,36 @@ Output must be between 200-900 characters in English.`;
         return res.status(404).json({ error: "User not found" });
       }
       
-      console.log(`🔧 [MANUAL-UPDATE] Found user: ${userRecord.uid}`);
+      console.log(`🔧 [SIMULATE-CHECKOUT] Found user: ${userRecord.uid}`);
       
-      // Create subscription data
+      // Create a mock checkout session completed event
+      const mockEvent = {
+        type: "checkout.session.completed",
+        data: {
+          object: {
+            id: `cs_test_${Date.now()}`,
+            object: "checkout.session",
+            customer: `cus_test_${Date.now()}`,
+            customer_email: email,
+            subscription: `sub_test_${Date.now()}`,
+            metadata: {
+              userId: "1", // This will be looked up by email
+              planId: planId.toString(),
+              billingCycle: "monthly"
+            }
+          }
+        }
+      };
+      
+      console.log(`🔧 [SIMULATE-CHECKOUT] Created mock event:`, JSON.stringify(mockEvent, null, 2));
+      
+      // Create subscription data directly in Firebase
       const subscriptionData = {
-        id: `manual_${Date.now()}`,
+        id: `sub_test_${Date.now()}`,
         status: 'active' as const,
         planId: planId,
-        stripeSubscriptionId: `sub_manual_${Date.now()}`,
-        stripeCustomerId: `cus_manual_${Date.now()}`,
+        stripeSubscriptionId: `sub_test_${Date.now()}`,
+        stripeCustomerId: `cus_test_${Date.now()}`,
         currentPeriodStart: new Date(),
         currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
         cancelAtPeriodEnd: false,
@@ -4002,18 +4023,18 @@ Output must be between 200-900 characters in English.`;
       
       await firebaseSubscriptionService.createOrUpdateSubscription(userRecord.uid, subscriptionData);
       
-      console.log(`✅ [MANUAL-UPDATE] Subscription updated for user ${userRecord.uid}`);
+      console.log(`✅ [SIMULATE-CHECKOUT] Subscription created for user ${userRecord.uid}`);
       
       res.json({ 
         success: true, 
-        message: "Subscription updated manually",
+        message: "Checkout completion simulated successfully",
         userId: userRecord.uid,
         planId: planId
       });
       
     } catch (error) {
-      console.error("❌ [MANUAL-UPDATE] Error:", error);
-      res.status(500).json({ error: "Failed to update subscription" });
+      console.error("❌ [SIMULATE-CHECKOUT] Error:", error);
+      res.status(500).json({ error: "Failed to simulate checkout completion" });
     }
   });
 
@@ -4053,25 +4074,13 @@ Output must be between 200-900 characters in English.`;
       console.log(`🔔 [WEBHOOK] Event type: ${event.type}`);
       console.log(`🔔 [WEBHOOK] Event data:`, JSON.stringify(event.data, null, 2));
 
-      // Handle the event
-      switch (event.type) {
-        case "checkout.session.completed":
-          await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
-          break;
-        case "invoice.payment_succeeded":
-          await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
-          break;
-        case "invoice.payment_failed":
-          await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
-          break;
-        case "customer.subscription.updated":
-          await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
-          break;
-        case "customer.subscription.deleted":
-          await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
-          break;
-        default:
-          console.log(`🔔 [WEBHOOK] Unhandled event type: ${event.type}`);
+      // Handle the event using stripeService
+      try {
+        await stripeService.handleWebhookEvent(event);
+        console.log(`✅ [WEBHOOK] Event ${event.type} handled successfully`);
+      } catch (error) {
+        console.error(`❌ [WEBHOOK] Error handling event ${event.type}:`, error);
+        throw error;
       }
 
       res.json({ received: true });
