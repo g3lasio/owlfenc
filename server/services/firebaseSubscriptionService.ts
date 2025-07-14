@@ -2,19 +2,22 @@
 // In production, this would use Firebase Admin SDK with proper credentials
 const subscriptionStorage = new Map<string, any>();
 
-// Add a test subscription for demonstration
+// Add a test subscription for demonstration - realistic 30-day billing cycle
+const subscriptionDate = new Date('2025-07-10'); // Subscribed 4 days ago
+const thirtyDaysLater = new Date(subscriptionDate.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days from subscription
+
 subscriptionStorage.set('test-user-id', {
   id: 'test-subscription-123',
   status: 'active',
   planId: 2,
   stripeSubscriptionId: 'sub_test_123',
   stripeCustomerId: 'cus_test_123',
-  currentPeriodStart: new Date('2025-01-01'),
-  currentPeriodEnd: new Date('2025-02-01'),
+  currentPeriodStart: subscriptionDate,
+  currentPeriodEnd: thirtyDaysLater, // August 9, 2025 (30 days from July 10)
   cancelAtPeriodEnd: false,
   billingCycle: 'monthly',
-  createdAt: new Date('2025-01-01'),
-  updatedAt: new Date('2025-01-01')
+  createdAt: subscriptionDate,
+  updatedAt: subscriptionDate
 });
 
 export interface SubscriptionData {
