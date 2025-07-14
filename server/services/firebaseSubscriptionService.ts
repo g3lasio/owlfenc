@@ -77,19 +77,22 @@ export class FirebaseSubscriptionService {
   ): Promise<void> {
     try {
       console.log(`🔄 [FIREBASE-SUBSCRIPTION] Actualizando desde Stripe webhook para usuario: ${userId}`);
+      console.log(`🔄 [FIREBASE-SUBSCRIPTION] Stripe data:`, JSON.stringify(stripeData, null, 2));
       
       const subscriptionData: Partial<SubscriptionData> = {
         id: stripeSubscriptionId,
         stripeSubscriptionId: stripeSubscriptionId,
         stripeCustomerId: stripeData.customer,
         status: this.mapStripeStatus(stripeData.status),
-        planId: this.mapStripePlanToPlanId(stripeData.items.data[0].price.id),
+        planId: this.mapStripePlanToPlanId(stripeData.items.data[0].price.id, stripeData),
         currentPeriodStart: new Date(stripeData.current_period_start * 1000),
         currentPeriodEnd: new Date(stripeData.current_period_end * 1000),
         cancelAtPeriodEnd: stripeData.cancel_at_period_end,
         billingCycle: stripeData.items.data[0].price.recurring.interval === 'year' ? 'yearly' : 'monthly'
       };
 
+      console.log(`🔄 [FIREBASE-SUBSCRIPTION] Subscription data to save:`, JSON.stringify(subscriptionData, null, 2));
+      
       await this.createOrUpdateSubscription(userId, subscriptionData);
       
       console.log(`✅ [FIREBASE-SUBSCRIPTION] Suscripción actualizada desde Stripe`);
@@ -158,20 +161,42 @@ export class FirebaseSubscriptionService {
   }
 
   /**
-   * Mapear precio de Stripe a ID de plan
+   * Mapear precio de Stripe a ID de plan usando metadata
    */
-  private mapStripePlanToPlanId(priceId: string): number {
-    // Mapear los price IDs de Stripe a nuestros plan IDs
-    // Estos deben coincidir con los configurados en Stripe
-    const planMapping: { [key: string]: number } = {
-      'price_1234567890': 1, // Primo Chambeador
-      'price_mero_patron_monthly': 2, // Mero Patrón Monthly
-      'price_mero_patron_yearly': 2, // Mero Patrón Yearly
-      'price_master_contractor_monthly': 3, // Master Contractor Monthly
-      'price_master_contractor_yearly': 3, // Master Contractor Yearly
-    };
-
-    return planMapping[priceId] || 1; // Default to free plan
+  private mapStripePlanToPlanId(priceId: string, stripeData?: any): number {
+    console.log(`🔄 [FIREBASE-SUBSCRIPTION] Mapping price ID: ${priceId}`);
+    
+    // Si tenemos datos de Stripe, usar los items para obtener metadata
+    if (stripeData && stripeData.items && stripeData.items.data && stripeData.items.data.length > 0) {
+      const priceItem = stripeData.items.data[0];
+      console.log(`🔄 [FIREBASE-SUBSCRIPTION] Price item:`, JSON.stringify(priceItem, null, 2));
+      
+      if (priceItem.price && priceItem.price.metadata) {
+        const planCode = priceItem.price.metadata.plan_code;
+        console.log(`🔄 [FIREBASE-SUBSCRIPTION] Plan code from metadata: ${planCode}`);
+        
+        // Mapear usando plan_code del metadata
+        const planMapping: { [key: string]: number } = {
+          'primo_chambeador': 1,
+          'mero_patron': 2,
+          'master_contractor': 3,
+        };
+        
+        const planId = planMapping[planCode] || 1;
+        console.log(`🔄 [FIREBASE-SUBSCRIPTION] Mapped to plan ID: ${planId}`);
+        return planId;
+      }
+    }
+    
+    // Fallback: mapear usando nombres conocidos en el price ID
+    if (priceId.includes('patron')) {
+      return 2; // Mero Patrón
+    } else if (priceId.includes('master') || priceId.includes('contractor')) {
+      return 3; // Master Contractor
+    }
+    
+    console.log(`🔄 [FIREBASE-SUBSCRIPTION] Using default plan ID: 1`);
+    return 1; // Default to free plan
   }
 
   /**

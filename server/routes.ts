@@ -4030,6 +4030,7 @@ Output must be between 200-900 characters in English.`;
   // Webhook event handlers
   async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
     console.log('[WEBHOOK] Processing checkout session completed:', session.id);
+    console.log('[WEBHOOK] Session data:', JSON.stringify(session, null, 2));
     
     try {
       // Get customer email from session
@@ -4040,6 +4041,8 @@ Output must be between 200-900 characters in English.`;
         return;
       }
       
+      console.log(`[WEBHOOK] Customer email: ${customerEmail}`);
+      
       // Find user by email
       const userRecord = await getFirebaseUserByEmail(customerEmail);
       
@@ -4047,6 +4050,8 @@ Output must be between 200-900 characters in English.`;
         console.error(`[WEBHOOK] No user found for email: ${customerEmail}`);
         return;
       }
+      
+      console.log(`[WEBHOOK] Found user: ${userRecord.uid}`);
       
       // Get subscription ID from session
       const subscriptionId = session.subscription as string;
@@ -4062,6 +4067,7 @@ Output must be between 200-900 characters in English.`;
       });
       
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      console.log('[WEBHOOK] Subscription from Stripe:', JSON.stringify(subscription, null, 2));
       
       // Store subscription in Firebase user subcollection
       await firebaseSubscriptionService.updateSubscriptionFromStripe(
