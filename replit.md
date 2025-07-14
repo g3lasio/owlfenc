@@ -137,6 +137,17 @@ Owl Fence is a comprehensive SaaS platform designed for contractors in the const
 ## Changelog
 ```
 Changelog:
+- July 14, 2025. ✅ SUBSCRIPTION RE-SELECTION BUG FIXED - ACTIVE SUBSCRIPTION DETECTION: Successfully resolved critical bug where users with active "Mero Patrón" subscription were asked to select plan again:
+  * ROOT CAUSE IDENTIFIED: API response structure mismatch - subscription data nested under "subscription" property but frontend expected direct access
+  * DATA STRUCTURE CORRECTED: Fixed hasActiveSubscription logic to properly access userSubscription.subscription.status instead of userSubscription.status
+  * CONDITIONAL RENDERING ENHANCED: Added proper conditional rendering - plan selection only shows when no active subscription exists
+  * PLAN NAME DISPLAY FIXED: Updated plan name display to use userSubscription.subscription.planId and added fallback to userSubscription.plan?.name
+  * IMPROVED UX: Added green success message with checkmark icon when user already has active subscription
+  * USER FEEDBACK INTEGRATION: Shows clear message "¡Ya tienes una suscripción activa!" instead of confusing plan re-selection
+  * SUBSCRIPTION MANAGEMENT: Properly displays current subscription status and "Administrar suscripción" button for active users
+  * PRODUCTION READY: Users with active subscriptions now see correct subscription status instead of being prompted to purchase again
+  * BILLING CYCLE DISPLAY: Fixed billing cycle display to show "anual" or "mensual" from nested subscription data
+  * COMPREHENSIVE FIX: Eliminates duplicate purchases and provides clear subscription management interface
 - July 13, 2025. ✅ CRITICAL VINYL FENCE CALCULATION BUG FIXED - PRECISION POSTS CALCULATION: Successfully resolved critical bug where vinyl fence calculation returned only 3 posts for 65 ft instead of correct 10 posts:
   * PROBLEM IDENTIFIED: EstimatorService returning corrupted data (arrays instead of JSON objects) causing material calculations to fail
   * DIRECT CALCULATION ENDPOINT: Created new /api/estimate endpoint with precise vinyl fence calculation bypassing broken estimatorService

@@ -9,6 +9,7 @@ import { storage } from "../storage";
 // Verificar que la clave secreta de Stripe esté configurada
 // FORZAR MODO DE PRUEBA - usar solo la clave de test
 const stripeKey = process.env.STRIPE_API_TEST_KEY;
+console.log(stripeKey);
 
 if (!stripeKey) {
   console.warn(
