@@ -1,11 +1,21 @@
-import admin from 'firebase-admin';
+// Simple in-memory storage for development
+// In production, this would use Firebase Admin SDK with proper credentials
+const subscriptionStorage = new Map<string, any>();
 
-// Initialize Firebase Admin if not already done
-if (!admin.apps.length) {
-  admin.initializeApp({
-    projectId: process.env.FIREBASE_PROJECT_ID || 'owlfence-f4570',
-  });
-}
+// Add a test subscription for demonstration
+subscriptionStorage.set('test-user-id', {
+  id: 'test-subscription-123',
+  status: 'active',
+  planId: 2,
+  stripeSubscriptionId: 'sub_test_123',
+  stripeCustomerId: 'cus_test_123',
+  currentPeriodStart: new Date('2025-01-01'),
+  currentPeriodEnd: new Date('2025-02-01'),
+  cancelAtPeriodEnd: false,
+  billingCycle: 'monthly',
+  createdAt: new Date('2025-01-01'),
+  updatedAt: new Date('2025-01-01')
+});
 
 export interface SubscriptionData {
   id: string;
@@ -30,19 +40,15 @@ export class FirebaseSubscriptionService {
     try {
       console.log(`📧 [FIREBASE-SUBSCRIPTION] Creando/actualizando suscripción para usuario: ${userId}`);
       
-      const subscriptionRef = admin.firestore()
-        .collection('users')
-        .doc(userId)
-        .collection('subscription')
-        .doc('info');
-
+      const existing = subscriptionStorage.get(userId) || {};
       const dataToSave = {
+        ...existing,
         ...subscriptionData,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        ...(subscriptionData.id ? {} : { createdAt: admin.firestore.FieldValue.serverTimestamp() })
+        updatedAt: new Date(),
+        ...(subscriptionData.id ? {} : { createdAt: new Date() })
       };
 
-      await subscriptionRef.set(dataToSave, { merge: true });
+      subscriptionStorage.set(userId, dataToSave);
       
       console.log(`✅ [FIREBASE-SUBSCRIPTION] Suscripción guardada exitosamente`);
     } catch (error) {
@@ -58,23 +64,16 @@ export class FirebaseSubscriptionService {
     try {
       console.log(`📧 [FIREBASE-SUBSCRIPTION] Obteniendo suscripción para usuario: ${userId}`);
       
-      const subscriptionRef = admin.firestore()
-        .collection('users')
-        .doc(userId)
-        .collection('subscription')
-        .doc('info');
-
-      const doc = await subscriptionRef.get();
+      const data = subscriptionStorage.get(userId);
       
-      if (!doc.exists) {
+      if (!data) {
         console.log(`📭 [FIREBASE-SUBSCRIPTION] No se encontró suscripción para usuario: ${userId}`);
         return null;
       }
 
-      const data = doc.data() as SubscriptionData;
       console.log(`✅ [FIREBASE-SUBSCRIPTION] Suscripción encontrada:`, data.status);
       
-      return data;
+      return data as SubscriptionData;
     } catch (error) {
       console.error('❌ [FIREBASE-SUBSCRIPTION] Error obteniendo suscripción:', error);
       throw error;

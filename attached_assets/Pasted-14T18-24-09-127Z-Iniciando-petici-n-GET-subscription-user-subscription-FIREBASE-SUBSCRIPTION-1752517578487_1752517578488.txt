@@ -1,0 +1,314 @@
+14T18:24:09.127Z] Iniciando petición: GET /subscription/user-subscription
+📧 [FIREBASE-SUBSCRIPTION] Obteniendo suscripción para usuario: dev-user-id
+[2025-07-14T18:24:09.435Z] Iniciando petición: GET /subscription/plans
+6:24:09 PM [express] GET /subscription/plans 304 in 1ms :: [{"id":1,"name":"Primo Chambeador","descr…
+❌ [FIREBASE-SUBSCRIPTION] Error obteniendo suscripción: Error: 2 UNKNOWN: Getting metadata from plugin failed with error: Could not refresh access token: request to http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token?scopes=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform%2Chttps%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdatastore failed, reason: connect ECONNREFUSED 169.254.169.254:80
+    at callErrorFromStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/call.ts:82:17)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/client.ts:612:51)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/client-interceptors.ts:419:48)
+    at <anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/resolving-call.ts:169:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/client.ts:595:42)
+    at ServiceClientImpl.<anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/make-client.ts:189:15)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:237:29
+    at <anonymous> (/home/runner/workspace/node_modules/google-gax/src/streamingCalls/streamingApiCaller.ts:59:19)
+    at <anonymous> (/home/runner/workspace/node_modules/google-gax/src/normalCalls/timeout.ts:54:13)
+    at Object.request (/home/runner/workspace/node_modules/google-gax/src/streamingCalls/streaming.ts:331:28)
+    at Timeout.makeRequest [as _onTimeout] (/home/runner/workspace/node_modules/retry-request/index.js:159:28)
+    at listOnTimeout (node:internal/timers:581:17)
+    at process.processTimers (node:internal/timers:519:7)
+Caused by: Error
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/src/context/NoopContextManager.ts:31:15)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/src/api/context.ts:77:42)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/src/trace/NoopTracer.ts:98:27)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/src/trace/ProxyTracer.ts:51:20)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/src/context/NoopContextManager.ts:31:15)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/src/api/context.ts:77:42)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/src/trace/NoopTracer.ts:98:27)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/src/trace/ProxyTracer.ts:51:20)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at DocumentReference.get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:181:43)
+    at FirebaseSubscriptionService.getUserSubscription (/home/runner/workspace/server/services/firebaseSubscriptionService.ts:67:41)
+    at <anonymous> (/home/runner/workspace/server/routes.ts:3672:64)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:646:15
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:265:14)
+    at Function.handle (/home/runner/workspace/node_modules/express/lib/router/index.js:175:3)
+    at router (/home/runner/workspace/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at urlencodedParser (/home/runner/workspace/node_modules/body-parser/lib/types/urlencoded.js:94:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/home/runner/workspace/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:646:15
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:265:14)
+    at Function.handle (/home/runner/workspace/node_modules/express/lib/router/index.js:175:3)
+    at router (/home/runner/workspace/node_modules/express/lib/router/index.js:47:12) {
+  code: 2,
+  details: 'Getting metadata from plugin failed with error: Could not refresh access token: request to http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token?scopes=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform%2Chttps%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdatastore failed, reason: connect ECONNREFUSED 169.254.169.254:80',
+  metadata: Metadata { internalRepr: Map(0) {}, options: {} }
+}
+Error al obtener suscripción del usuario: Error: 2 UNKNOWN: Getting metadata from plugin failed with error: Could not refresh access token: request to http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token?scopes=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform%2Chttps%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdatastore failed, reason: connect ECONNREFUSED 169.254.169.254:80
+    at callErrorFromStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/call.ts:82:17)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/client.ts:612:51)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/client-interceptors.ts:419:48)
+    at <anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/resolving-call.ts:169:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/client.ts:595:42)
+    at ServiceClientImpl.<anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/make-client.ts:189:15)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:237:29
+    at <anonymous> (/home/runner/workspace/node_modules/google-gax/src/streamingCalls/streamingApiCaller.ts:59:19)
+    at <anonymous> (/home/runner/workspace/node_modules/google-gax/src/normalCalls/timeout.ts:54:13)
+    at Object.request (/home/runner/workspace/node_modules/google-gax/src/streamingCalls/streaming.ts:331:28)
+    at Timeout.makeRequest [as _onTimeout] (/home/runner/workspace/node_modules/retry-request/index.js:159:28)
+    at listOnTimeout (node:internal/timers:581:17)
+    at process.processTimers (node:internal/timers:519:7)
+Caused by: Error
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/src/context/NoopContextManager.ts:31:15)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/src/api/context.ts:77:42)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/src/trace/NoopTracer.ts:98:27)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/src/trace/ProxyTracer.ts:51:20)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/src/context/NoopContextManager.ts:31:15)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/src/api/context.ts:77:42)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/src/trace/NoopTracer.ts:98:27)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/src/trace/ProxyTracer.ts:51:20)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at DocumentReference.get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:181:43)
+    at FirebaseSubscriptionService.getUserSubscription (/home/runner/workspace/server/services/firebaseSubscriptionService.ts:67:41)
+    at <anonymous> (/home/runner/workspace/server/routes.ts:3672:64)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:646:15
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:265:14)
+    at Function.handle (/home/runner/workspace/node_modules/express/lib/router/index.js:175:3)
+    at router (/home/runner/workspace/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at urlencodedParser (/home/runner/workspace/node_modules/body-parser/lib/types/urlencoded.js:94:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/home/runner/workspace/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:646:15
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:265:14)
+    at Function.handle (/home/runner/workspace/node_modules/express/lib/router/index.js:175:3)
+    at router (/home/runner/workspace/node_modules/express/lib/router/index.js:47:12) {
+  code: 2,
+  details: 'Getting metadata from plugin failed with error: Could not refresh access token: request to http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token?scopes=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform%2Chttps%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdatastore failed, reason: connect ECONNREFUSED 169.254.169.254:80',
+  metadata: Metadata { internalRepr: Map(0) {}, options: {} }
+}
+6:24:23 PM [express] GET /subscription/user-subscription 500 in 14285ms :: {"message":"Error al obte…
+[2025-07-14T18:25:01.316Z] Iniciando petición: POST /subscription/create-checkout
+[2025-07-14T18:25:01.316Z] Iniciando creación de checkout
+Solicitud de creación de checkout recibida: {
+  userEmail: 'shkwahab60@gmail.com',
+  planId: 2,
+  billingCycle: 'monthly',
+  successUrl: 'https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev/subscription?success=true',
+  cancelUrl: 'https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev/subscription?canceled=true'
+}
+Creando sesión de checkout para plan: Mero Patrón, ciclo: monthly
+[2025-07-14T18:25:01.319Z] Iniciando checkout - Plan ID: 2, Ciclo: monthly
+[2025-07-14T18:25:01.319Z] Verificando conexión con Stripe
+[2025-07-14T18:25:01.573Z] Conexión con Stripe exitosa
+[2025-07-14T18:25:01.574Z] Plan encontrado: Mero Patrón (mero-patron)
+[2025-07-14T18:25:01.953Z] Sesión de checkout creada correctamente con ID: cs_test_a1e33poKTjgflMKvOC88zWAh8Z427zTpkMCpxh8Ok0uj1VIGMIwRHEwcDH
+[2025-07-14T18:25:01.953Z] Checkout completado en 634ms
+Sesión de checkout creada exitosamente, URL: https://checkout.stripe.com/c/pay/cs_test_a1e33poKTjgflMKvOC...
+6:25:01 PM [express] POST /subscription/create-checkout 200 in 638ms :: {"url":"https://checkout.str…
+[2025-07-14T18:25:38.561Z] Iniciando petición: GET /user/subscription
+6:25:38 PM [express] GET /user/subscription 200 in 1ms :: {"active":true,"subscription":{"id":"free-…
+[2025-07-14T18:25:38.571Z] Iniciando petición: GET /subscription/plans
+6:25:38 PM [express] GET /subscription/plans 304 in 2ms :: [{"id":1,"name":"Primo Chambeador","descr…
+[2025-07-14T18:25:38.576Z] Iniciando petición: GET /subscription/user-subscription
+📧 [FIREBASE-SUBSCRIPTION] Obteniendo suscripción para usuario: dev-user-id
+❌ [FIREBASE-SUBSCRIPTION] Error obteniendo suscripción: Error: 2 UNKNOWN: Getting metadata from plugin failed with error: Could not refresh access token: request to http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token?scopes=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform%2Chttps%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdatastore failed, reason: connect ECONNREFUSED 169.254.169.254:80
+    at callErrorFromStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/call.ts:82:17)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/client.ts:612:51)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/client-interceptors.ts:419:48)
+    at <anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/resolving-call.ts:169:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/client.ts:595:42)
+    at ServiceClientImpl.<anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/make-client.ts:189:15)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:237:29
+    at <anonymous> (/home/runner/workspace/node_modules/google-gax/src/streamingCalls/streamingApiCaller.ts:59:19)
+    at <anonymous> (/home/runner/workspace/node_modules/google-gax/src/normalCalls/timeout.ts:54:13)
+    at Object.request (/home/runner/workspace/node_modules/google-gax/src/streamingCalls/streaming.ts:331:28)
+    at Timeout.makeRequest [as _onTimeout] (/home/runner/workspace/node_modules/retry-request/index.js:159:28)
+    at listOnTimeout (node:internal/timers:581:17)
+    at process.processTimers (node:internal/timers:519:7)
+Caused by: Error
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/src/context/NoopContextManager.ts:31:15)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/src/api/context.ts:77:42)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/src/trace/NoopTracer.ts:98:27)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/src/trace/ProxyTracer.ts:51:20)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/src/context/NoopContextManager.ts:31:15)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/src/api/context.ts:77:42)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/src/trace/NoopTracer.ts:98:27)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/src/trace/ProxyTracer.ts:51:20)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at DocumentReference.get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:181:43)
+    at FirebaseSubscriptionService.getUserSubscription (/home/runner/workspace/server/services/firebaseSubscriptionService.ts:67:41)
+    at <anonymous> (/home/runner/workspace/server/routes.ts:3672:64)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:646:15
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:265:14)
+    at Function.handle (/home/runner/workspace/node_modules/express/lib/router/index.js:175:3)
+    at router (/home/runner/workspace/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at urlencodedParser (/home/runner/workspace/node_modules/body-parser/lib/types/urlencoded.js:94:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/home/runner/workspace/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:646:15
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:265:14)
+    at Function.handle (/home/runner/workspace/node_modules/express/lib/router/index.js:175:3)
+    at router (/home/runner/workspace/node_modules/express/lib/router/index.js:47:12) {
+  code: 2,
+  details: 'Getting metadata from plugin failed with error: Could not refresh access token: request to http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token?scopes=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform%2Chttps%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdatastore failed, reason: connect ECONNREFUSED 169.254.169.254:80',
+  metadata: Metadata { internalRepr: Map(0) {}, options: {} }
+}
+Error al obtener suscripción del usuario: Error: 2 UNKNOWN: Getting metadata from plugin failed with error: Could not refresh access token: request to http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token?scopes=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform%2Chttps%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdatastore failed, reason: connect ECONNREFUSED 169.254.169.254:80
+    at callErrorFromStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/call.ts:82:17)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/client.ts:612:51)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/client-interceptors.ts:419:48)
+    at <anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/resolving-call.ts:169:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/client.ts:595:42)
+    at ServiceClientImpl.<anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/src/make-client.ts:189:15)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:237:29
+    at <anonymous> (/home/runner/workspace/node_modules/google-gax/src/streamingCalls/streamingApiCaller.ts:59:19)
+    at <anonymous> (/home/runner/workspace/node_modules/google-gax/src/normalCalls/timeout.ts:54:13)
+    at Object.request (/home/runner/workspace/node_modules/google-gax/src/streamingCalls/streaming.ts:331:28)
+    at Timeout.makeRequest [as _onTimeout] (/home/runner/workspace/node_modules/retry-request/index.js:159:28)
+    at listOnTimeout (node:internal/timers:581:17)
+    at process.processTimers (node:internal/timers:519:7)
+Caused by: Error
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/src/context/NoopContextManager.ts:31:15)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/src/api/context.ts:77:42)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/src/trace/NoopTracer.ts:98:27)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/src/trace/ProxyTracer.ts:51:20)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/src/context/NoopContextManager.ts:31:15)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/src/api/context.ts:77:42)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/src/trace/NoopTracer.ts:98:27)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/src/trace/ProxyTracer.ts:51:20)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at DocumentReference.get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:181:43)
+    at FirebaseSubscriptionService.getUserSubscription (/home/runner/workspace/server/services/firebaseSubscriptionService.ts:67:41)
+    at <anonymous> (/home/runner/workspace/server/routes.ts:3672:64)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:646:15
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:265:14)
+    at Function.handle (/home/runner/workspace/node_modules/express/lib/router/index.js:175:3)
+    at router (/home/runner/workspace/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at urlencodedParser (/home/runner/workspace/node_modules/body-parser/lib/types/urlencoded.js:94:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/home/runner/workspace/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:646:15
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:265:14)
+    at Function.handle (/home/runner/workspace/node_modules/express/lib/router/index.js:175:3)
+    at router (/home/runner/workspace/node_modules/express/lib/router/index.js:47:12) {
+  code: 2,
+  details: 'Getting metadata from plugin failed with error: Could not refresh access token: request to http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token?scopes=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform%2Chttps%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdatastore failed, reason: connect ECONNREFUSED 169.254.169.254:80',
+  metadata: Metadata { internalRepr: Map(0) {}, options: {} }
+}
+6:25:51 PM [express] GET /subscription/user-subscription 500 in 12853ms :: {"message":"Error al obte…

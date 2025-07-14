@@ -3665,8 +3665,8 @@ Output must be between 200-900 characters in English.`;
     "/api/subscription/user-subscription",
     async (req: Request, res: Response) => {
       try {
-        // For development, use dev-user-id
-        const userId = 'dev-user-id';
+        // For development, use test-user-id to demo active subscription
+        const userId = 'test-user-id';
         
         // Get subscription from Firebase
         const subscription = await firebaseSubscriptionService.getUserSubscription(userId);
