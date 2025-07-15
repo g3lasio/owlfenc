@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import AddressAutocomplete from "@/components/ui/address-autocomplete";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import EstimatePreviewWidget from "@/components/estimates/EstimatePreviewWidget";
 import {
   Dialog,
   DialogContent,
@@ -261,7 +262,7 @@ export default function EstimatesWizardFixed() {
 
   // Client editing state for preview step
   const [isEditingClient, setIsEditingClient] = useState(false);
-  
+
   // Company editing state for preview step
   const [isEditingCompany, setIsEditingCompany] = useState(false);
   const [editableCompanyInfo, setEditableCompanyInfo] = useState({
@@ -630,7 +631,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       setAiProgress(0);
     }
   };
-  
+
   const [editableCompany, setEditableCompany] = useState({
     company: "",
     address: "",
@@ -657,8 +658,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     if (isEditingCompany) {
       // Save mode - save the editable company info
       try {
-        const userId = currentUser?.uid || profile?.id || 'dev-user-123';
-        
+        const userId = currentUser?.uid || profile?.id || "dev-user-123";
+
         // Create the updated company data
         const companyData = {
           userId: userId,
@@ -674,44 +675,54 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           logo: editableCompanyInfo.logo,
         };
 
-        console.log('💾 Saving company data:', companyData);
+        console.log("💾 Saving company data:", companyData);
 
         // Save to localStorage immediately (this always works)
         localStorage.setItem("contractorProfile", JSON.stringify(companyData));
-        localStorage.setItem(`userProfile_${userId}`, JSON.stringify(companyData));
-        
+        localStorage.setItem(
+          `userProfile_${userId}`,
+          JSON.stringify(companyData),
+        );
+
         // Exit edit mode
         setIsEditingCompany(false);
-        
+
         // Show success message
         toast({
           title: "✅ Información guardada",
-          description: "La información de la empresa se ha guardado correctamente",
+          description:
+            "La información de la empresa se ha guardado correctamente",
         });
-        
-        console.log('✅ Company information saved successfully to localStorage');
-        
+
+        console.log(
+          "✅ Company information saved successfully to localStorage",
+        );
+
         // Save to Firebase backend
         try {
-          const response = await fetch('/api/company-information', {
-            method: 'POST',
+          const response = await fetch("/api/company-information", {
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
             body: JSON.stringify(companyData),
           });
-          
+
           if (response.ok) {
-            console.log('✅ Also saved to Firebase backend');
+            console.log("✅ Also saved to Firebase backend");
           } else {
-            console.log('⚠️ Firebase save failed, but localStorage save succeeded');
+            console.log(
+              "⚠️ Firebase save failed, but localStorage save succeeded",
+            );
           }
         } catch (backendError) {
-          console.log('⚠️ Firebase save failed, but localStorage save succeeded', backendError);
+          console.log(
+            "⚠️ Firebase save failed, but localStorage save succeeded",
+            backendError,
+          );
         }
-        
       } catch (error) {
-        console.error('❌ Error saving company information:', error);
+        console.error("❌ Error saving company information:", error);
         toast({
           title: "❌ Error al guardar",
           description: "No se pudo guardar la información de la empresa",
@@ -721,7 +732,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     } else {
       // Edit mode - just toggle to editing
       setIsEditingCompany(true);
-      console.log('📝 Entering edit mode');
+      console.log("📝 Entering edit mode");
     }
   };
 
@@ -792,12 +803,15 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       }, 800);
 
       console.log("🔍 NEW DEEPSEARCH - Making request to:", endpoint);
-      
+
       // Enhanced error handling with timeout for large projects
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-      }, searchType === "full" ? 120000 : 60000); // 2 min for full, 1 min for single
+      const timeoutId = setTimeout(
+        () => {
+          controller.abort();
+        },
+        searchType === "full" ? 120000 : 60000,
+      ); // 2 min for full, 1 min for single
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -816,27 +830,33 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       clearTimeout(timeoutId);
       clearInterval(progressInterval);
-      
+
       console.log("🔍 NEW DEEPSEARCH - Response status:", response.status);
       console.log("🔍 NEW DEEPSEARCH - Response ok:", response.ok);
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error("🔍 NEW DEEPSEARCH - Response error:", errorText);
-        console.error("🔍 NEW DEEPSEARCH - Error details:", { status: response.status, statusText: response.statusText });
-        
+        console.error("🔍 NEW DEEPSEARCH - Error details:", {
+          status: response.status,
+          statusText: response.statusText,
+        });
+
         // Enhanced error messages for common issues
         let userMessage = "Error generating estimate";
         if (response.status === 404) {
           userMessage = "Service temporarily unavailable. Please try again.";
         } else if (response.status === 500) {
-          userMessage = "Internal server error. The system may be processing a large project.";
+          userMessage =
+            "Internal server error. The system may be processing a large project.";
         } else if (response.status === 503) {
-          userMessage = "Service unavailable. AI services may be temporarily down.";
+          userMessage =
+            "Service unavailable. AI services may be temporarily down.";
         } else if (errorText.includes("couldn't reach this app")) {
-          userMessage = "Connection error. Please check your internet connection and try again.";
+          userMessage =
+            "Connection error. Please check your internet connection and try again.";
         }
-        
+
         throw new Error(userMessage);
       }
 
@@ -985,23 +1005,30 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       }
     } catch (error: any) {
       console.error("🔍 NEW DEEPSEARCH - Error details:", error);
-      
-      let errorMessage = "Unable to process your request. Please try again or add materials manually.";
+
+      let errorMessage =
+        "Unable to process your request. Please try again or add materials manually.";
       let errorTitle = "AI Search Failed";
-      
-      if (error.name === 'AbortError') {
+
+      if (error.name === "AbortError") {
         errorTitle = "Analysis Timeout";
-        errorMessage = "The analysis is taking longer than expected. For large projects like ADU construction, this may be normal. Please try again or contact support.";
-      } else if (error.message?.includes("connection") || error.message?.includes("reach")) {
+        errorMessage =
+          "The analysis is taking longer than expected. For large projects like ADU construction, this may be normal. Please try again or contact support.";
+      } else if (
+        error.message?.includes("connection") ||
+        error.message?.includes("reach")
+      ) {
         errorTitle = "Connection Error";
-        errorMessage = "Unable to connect to AI services. Please check your internet connection and try again.";
+        errorMessage =
+          "Unable to connect to AI services. Please check your internet connection and try again.";
       } else if (error.message?.includes("server error")) {
         errorTitle = "Server Error";
-        errorMessage = "The server is processing a complex project. This is normal for large construction projects. Please wait a moment and try again.";
+        errorMessage =
+          "The server is processing a complex project. This is normal for large construction projects. Please wait a moment and try again.";
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       toast({
         title: errorTitle,
         description: errorMessage,
@@ -1032,17 +1059,17 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
     console.log("🔍 TOTALS CALCULATION DEBUG", {
       itemsCount: estimate.items.length,
-      itemsData: estimate.items.map(item => ({
+      itemsData: estimate.items.map((item) => ({
         name: item.name,
         price: item.price,
         quantity: item.quantity,
         total: item.total,
-        calculation: `${item.price} × ${item.quantity} = ${item.total}`
+        calculation: `${item.price} × ${item.quantity} = ${item.total}`,
       })),
       subtotal,
       taxRate: estimate.taxRate,
       discountValue: estimate.discountValue,
-      discountType: estimate.discountType
+      discountType: estimate.discountType,
     });
 
     // Calculate discount amount
@@ -1067,7 +1094,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       discountAmount,
       subtotalAfterDiscount,
       tax,
-      total
+      total,
     });
 
     setEstimate((prev) => ({
@@ -1103,7 +1130,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     estimate.tax,
     estimate.total,
     estimate.client,
-    estimate.projectDetails
+    estimate.projectDetails,
   ]);
 
   // Función de autoguardado que actualiza el proyecto existente
@@ -1120,18 +1147,18 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       const estimateData = {
         firebaseUserId: currentUser.uid,
         estimateNumber,
-        
+
         // Información completa del cliente
         clientName: estimate.client.name,
         clientEmail: estimate.client.email || "",
         clientPhone: estimate.client.phone || "",
         clientAddress: estimate.client.address || "",
         clientInformation: estimate.client,
-        
+
         // Detalles del proyecto
         projectDescription: estimate.projectDetails,
         projectType: "construction",
-        
+
         // Items completos - VALORES DIRECTOS SIN CONVERSIONES
         items: estimate.items.map((item, index) => ({
           id: item.id,
@@ -1153,14 +1180,14 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         taxRate: estimate.taxRate,
         taxAmount: estimate.tax,
         tax: estimate.tax, // Agregar tax directo
-        
+
         // DESCUENTOS DIRECTOS - SIN CONVERSIONES
         discount: estimate.discountAmount || 0,
         discountType: estimate.discountType || "percentage",
         discountValue: estimate.discountValue || 0,
         discountAmount: estimate.discountAmount || 0,
         discountName: estimate.discountName || "",
-        
+
         total: estimate.total,
 
         // Display-friendly totals (mismos valores)
@@ -1178,13 +1205,14 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       };
 
       // Buscar proyecto existente para el mismo cliente
-      const { collection, query, where, getDocs, addDoc, updateDoc, doc } = await import("firebase/firestore");
+      const { collection, query, where, getDocs, addDoc, updateDoc, doc } =
+        await import("firebase/firestore");
       const { db } = await import("@/lib/firebase");
 
       const existingQuery = query(
         collection(db, "estimates"),
         where("firebaseUserId", "==", currentUser.uid),
-        where("clientName", "==", estimate.client.name)
+        where("clientName", "==", estimate.client.name),
       );
 
       const querySnapshot = await getDocs(existingQuery);
@@ -1200,7 +1228,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         const docRef = await addDoc(collection(db, "estimates"), estimateData);
         console.log("✅ AUTOGUARDADO: Nuevo proyecto creado:", docRef.id);
       }
-      
     } catch (error) {
       console.error("❌ AUTOGUARDADO: Error:", error);
       // Silenciar errores de autoguardado para no interrumpir al usuario
@@ -1336,14 +1363,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       const materialsData: Material[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data() as Omit<Material, "id">;
-        
+
         // CÁLCULOS SEGUROS: Normalizar precios inflados al cargar desde DB
         let normalizedPrice = typeof data.price === "number" ? data.price : 0;
         if (normalizedPrice > 1000) {
           normalizedPrice = Number((normalizedPrice / 100).toFixed(2));
-          console.log(`💰 NORMALIZED PRICE: ${data.name} - ${data.price} → ${normalizedPrice}`);
+          console.log(
+            `💰 NORMALIZED PRICE: ${data.name} - ${data.price} → ${normalizedPrice}`,
+          );
         }
-        
+
         const material: Material = {
           id: doc.id,
           ...data,
@@ -1353,13 +1382,15 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       });
 
       setMaterials(materialsData);
-      
+
       // CÁLCULOS SEGUROS: Corregir automáticamente precios inflados en la base de datos
       try {
-        console.log('🔧 AUTO-CORRECTING INFLATED PRICES...');
-        await MaterialInventoryService.fixInflatedPricesInDatabase(currentUser.uid);
+        console.log("🔧 AUTO-CORRECTING INFLATED PRICES...");
+        await MaterialInventoryService.fixInflatedPricesInDatabase(
+          currentUser.uid,
+        );
       } catch (error) {
-        console.error('Error during automatic price correction:', error);
+        console.error("Error during automatic price correction:", error);
       }
     } catch (error) {
       console.error("Error loading materials from Firebase:", error);
@@ -1702,7 +1733,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       );
       const { db } = await import("../lib/firebase");
 
-      console.log("🔍 Buscando proyecto con ID:", projectId);
+      console.log(" ��� Buscando proyecto con ID:", projectId);
 
       // First try to get from projects collection
       let projectData = null;
@@ -1822,7 +1853,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               // CÁLCULOS SEGUROS: Usar valores directos sin conversiones
               let price = rawPrice;
               let total = rawTotal;
-              
+
               // Si no hay total, calcularlo correctamente
               if (!total || total === 0) {
                 total = price * quantity;
@@ -1855,11 +1886,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             // NORMALIZAR PRECIOS: Aplicar conversión inteligente
             let price = rawPrice;
             let total = rawTotal;
-            
+
             // CÁLCULOS SEGUROS: Usar precio directo sin conversiones
-            
+
             // CÁLCULOS SEGUROS: Usar total directo sin conversiones
-            
+
             // Si no hay total, calcularlo correctamente
             if (!total || total === 0) {
               total = price * quantity;
@@ -2167,14 +2198,14 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         subtotal: estimate.subtotal, // CÁLCULOS SEGUROS: valores directos
         taxRate: estimate.taxRate || 10, // CÁLCULOS SEGUROS: valores directos
         taxAmount: estimate.tax, // CÁLCULOS SEGUROS: valores directos
-        
+
         // CRÍTICO: Guardar información completa de descuentos
         discount: estimate.discountAmount || 0, // CÁLCULOS SEGUROS: valores directos
         discountType: estimate.discountType || "percentage",
         discountValue: estimate.discountValue || 0,
         discountAmount: estimate.discountAmount || 0, // CÁLCULOS SEGUROS: valores directos
         discountName: estimate.discountName || "",
-        
+
         total: estimate.total, // CÁLCULOS SEGUROS: valores directos
 
         // Display-friendly totals (for dashboard compatibility)
@@ -2558,9 +2589,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             newQuantity,
             oldTotal: item.total,
             newTotal,
-            calculation: `${item.price} × ${newQuantity} = ${newTotal}`
+            calculation: `${item.price} × ${newQuantity} = ${newTotal}`,
           });
-          
+
           return { ...item, quantity: newQuantity, total: newTotal };
         }
         return item;
@@ -3058,21 +3089,22 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     if (!emailData.toEmail || !emailData.subject || !emailData.message) {
       toast({
         title: "Error",
-        description: "Por favor complete todos los campos antes de previsualizar",
+        description:
+          "Por favor complete todos los campos antes de previsualizar",
         variant: "destructive",
       });
       return;
     }
-    
+
     // Generate the preview HTML using existing function
     console.log("🔍 PREVIEW DEBUG - Current estimate state:", {
       client: estimate.client,
       clientExists: !!estimate.client,
       itemsCount: estimate.items.length,
       items: estimate.items,
-      profile: profile
+      profile: profile,
     });
-    
+
     const html = generateEstimatePreview();
     setPreviewHtml(html);
     setShowEmailPreview(true);
@@ -3581,14 +3613,14 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         },
         // Add contractor data from profile
         contractor: {
-          name: profile?.company || profile?.ownerName || '',
-          company: profile?.company || '',
-          address: profile?.address || '',
-          phone: profile?.phone || '',
-          email: profile?.email || currentUser?.email || '',
-          website: profile?.website || '',
-          logo: profile?.logo || ''
-        }
+          name: profile?.company || profile?.ownerName || "",
+          company: profile?.company || "",
+          address: profile?.address || "",
+          phone: profile?.phone || "",
+          email: profile?.email || currentUser?.email || "",
+          website: profile?.website || "",
+          logo: profile?.logo || "",
+        },
       };
 
       console.log("📤 Sending payload to PDF service:", payload);
@@ -5085,7 +5117,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           </h4>
                           <div className="flex items-center gap-2">
                             {isEditingCompany && (
-                              <Badge variant="secondary" className="text-xs px-2 py-1 bg-yellow-400/10 text-yellow-400 border-yellow-400/20">
+                              <Badge
+                                variant="secondary"
+                                className="text-xs px-2 py-1 bg-yellow-400/10 text-yellow-400 border-yellow-400/20"
+                              >
                                 Editando
                               </Badge>
                             )}
@@ -5094,8 +5129,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                               size="sm"
                               onClick={() => handleSaveCompanyInfo()}
                               className={`text-xs h-8 px-3 font-medium transition-all duration-200 ${
-                                isEditingCompany 
-                                  ? "border-green-400 text-green-400 hover:bg-green-400/10 shadow-sm shadow-green-400/20" 
+                                isEditingCompany
+                                  ? "border-green-400 text-green-400 hover:bg-green-400/10 shadow-sm shadow-green-400/20"
                                   : "border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10"
                               }`}
                             >
@@ -5139,7 +5174,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                               </div>
                             </div>
                           )}
-                          
+
                           {isEditingCompany ? (
                             <div className="space-y-2">
                               {/* Logo Upload */}
@@ -5152,74 +5187,79 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                     <Input
                                       type="file"
                                       accept="image/*"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (file) {
-                                        // Validate file size (max 2MB)
-                                        if (file.size > 2 * 1024 * 1024) {
-                                          toast({
-                                            title: "❌ Archivo muy grande",
-                                            description: "El logo debe ser menor a 2MB",
-                                            variant: "destructive",
-                                          });
-                                          return;
-                                        }
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          // Validate file size (max 2MB)
+                                          if (file.size > 2 * 1024 * 1024) {
+                                            toast({
+                                              title: "❌ Archivo muy grande",
+                                              description:
+                                                "El logo debe ser menor a 2MB",
+                                              variant: "destructive",
+                                            });
+                                            return;
+                                          }
 
-                                        // Validate file type
-                                        if (!file.type.startsWith('image/')) {
-                                          toast({
-                                            title: "❌ Tipo de archivo inválido",
-                                            description: "Solo se permiten archivos de imagen",
-                                            variant: "destructive",
-                                          });
-                                          return;
-                                        }
+                                          // Validate file type
+                                          if (!file.type.startsWith("image/")) {
+                                            toast({
+                                              title:
+                                                "❌ Tipo de archivo inválido",
+                                              description:
+                                                "Solo se permiten archivos de imagen",
+                                              variant: "destructive",
+                                            });
+                                            return;
+                                          }
 
-                                        // Convert to base64
-                                        const reader = new FileReader();
-                                        reader.onload = (event) => {
-                                          const base64 = event.target?.result as string;
+                                          // Convert to base64
+                                          const reader = new FileReader();
+                                          reader.onload = (event) => {
+                                            const base64 = event.target
+                                              ?.result as string;
+                                            setEditableCompanyInfo((prev) => ({
+                                              ...prev,
+                                              logo: base64,
+                                            }));
+
+                                            toast({
+                                              title: "✅ Logo actualizado",
+                                              description:
+                                                "El logo se ha cargado correctamente",
+                                            });
+                                          };
+                                          reader.readAsDataURL(file);
+                                        }
+                                      }}
+                                      className="h-8 text-xs bg-gray-800 border-gray-600 text-white file:mr-2 file:rounded file:border-0 file:bg-cyan-600 file:px-2 file:py-1 file:text-xs file:text-white"
+                                    />
+                                    {editableCompanyInfo.logo && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
                                           setEditableCompanyInfo((prev) => ({
                                             ...prev,
-                                            logo: base64,
-                                          }));
-                                          
-                                          toast({
-                                            title: "✅ Logo actualizado",
-                                            description: "El logo se ha cargado correctamente",
-                                          });
-                                        };
-                                        reader.readAsDataURL(file);
-                                      }
-                                    }}
-                                    className="h-8 text-xs bg-gray-800 border-gray-600 text-white file:mr-2 file:rounded file:border-0 file:bg-cyan-600 file:px-2 file:py-1 file:text-xs file:text-white"
-                                  />
+                                            logo: "",
+                                          }))
+                                        }
+                                        className="h-8 text-xs border-red-500/50 text-red-400 hover:bg-red-500/10"
+                                      >
+                                        Eliminar
+                                      </Button>
+                                    )}
+                                  </div>
                                   {editableCompanyInfo.logo && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() =>
-                                        setEditableCompanyInfo((prev) => ({
-                                          ...prev,
-                                          logo: "",
-                                        }))
-                                      }
-                                      className="h-8 text-xs border-red-500/50 text-red-400 hover:bg-red-500/10"
-                                    >
-                                      Eliminar
-                                    </Button>
+                                    <div className="mt-2">
+                                      <img
+                                        src={editableCompanyInfo.logo}
+                                        alt="Logo preview"
+                                        className="h-16 w-auto max-w-32 object-contain bg-white rounded p-1 border border-gray-600"
+                                      />
+                                    </div>
                                   )}
                                 </div>
-                                {editableCompanyInfo.logo && (
-                                  <div className="mt-2">
-                                    <img
-                                      src={editableCompanyInfo.logo}
-                                      alt="Logo preview"
-                                      className="h-16 w-auto max-w-32 object-contain bg-white rounded p-1 border border-gray-600"
-                                    />
-                                  </div>
-                                )}
-                              </div>
                               </div>
                               <Input
                                 placeholder="Nombre de la empresa"
@@ -5326,14 +5366,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           ) : (
                             <div>
                               <p className="font-medium">
-                                {editableCompanyInfo.company || "Sin nombre de empresa"}
+                                {editableCompanyInfo.company ||
+                                  "Sin nombre de empresa"}
                               </p>
                               <p className="text-xs text-gray-400">
                                 {editableCompanyInfo.address || "Sin dirección"}
                               </p>
                               <p className="text-xs text-gray-400">
                                 {editableCompanyInfo.city || "Sin ciudad"},{" "}
-                                {editableCompanyInfo.state || "CA"} {editableCompanyInfo.zipCode || ""}
+                                {editableCompanyInfo.state || "CA"}{" "}
+                                {editableCompanyInfo.zipCode || ""}
                               </p>
                               <p className="text-xs text-cyan-400">
                                 {editableCompanyInfo.phone || "Sin teléfono"}
@@ -5834,7 +5876,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 Professional Estimates Generator
               </h1>
             </div>
-            
+
             {/* Navigation Buttons */}
             <div className="flex justify-center mb-8">
               <div className="flex bg-gray-900/50 backdrop-blur-sm rounded-lg border border-cyan-400/30 overflow-hidden">
@@ -5898,7 +5940,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           {isCompleted ? (
                             <Check className="h-6 w-6" />
                           ) : (
-                            <span className="text-lg font-bold">{index + 1}</span>
+                            <span className="text-lg font-bold">
+                              {index + 1}
+                            </span>
                           )}
                         </div>
                         <span
@@ -5954,7 +5998,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 w-full sm:w-auto shadow-lg shadow-cyan-500/25"
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Finalizar y </span>Descargar
+                  <span className="hidden sm:inline">Finalizar y </span>
+                  Descargar
                 </Button>
               ) : (
                 <Button
@@ -6845,268 +6890,91 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       </Dialog>
 
       {/* Complete PDF Preview Dialog */}
+
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-6xl max-h-[95vh] ">
-          <DialogHeader className="border-b border-gray-200 pb-4">
-            <DialogTitle className="flex items-center gap-3 text-xl">
+        <DialogContent className="max-w-6xl max-h-[75vh] p-4 flex flex-col overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex pb-20 items-center gap-3 text-xl">
               <div className="p-2 bg-blue-100 rounded-lg">
                 <Eye className="h-6 w-6 text-blue-600" />
               </div>
-              Professional Estimate Preview
+              Estimate Preview
             </DialogTitle>
-            <DialogDescription className="text-gray-600 mt-2">
-              Complete preview of your professional estimate as it will appear
-              in the PDF
-            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
-            {/* Complete PDF Preview */}
-            <div className="bg-white border border-gray-200 rounded-xl ">
-              <div
-                className="p-8 bg-white"
-                style={{
-                  fontFamily: "Arial, sans-serif",
-                  lineHeight: "1.6",
-                  color: "#333",
-                }}
-              >
-                {/* Header with Company Logo and Info */}
-                <div className="flex justify-between items-start mb-8">
-                  <div className="flex items-center gap-4">
-                    {profile?.logo ? (
-                      <img
-                        src={profile.logo}
-                        alt="Company Logo"
-                        className="h-16 w-16 object-contain"
-                      />
-                    ) : (
-                      <div className="h-16 w-16 border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500 text-xs">
-                        Logo
-                      </div>
-                    )}
-                    <div>
-                      <h1 className="text-2xl font-bold text-blue-900">
-                        {profile?.company || "Your Company"}
-                      </h1>
-                      <p className="text-gray-600">
-                        {profile?.address || "Company Address"}
-                      </p>
-                      <p className="text-gray-600">
-                        {profile?.city}, {profile?.state} {profile?.zipCode}
-                      </p>
-                      <p className="text-gray-600">
-                        Phone: {profile?.phone || "Phone Number"}
-                      </p>
-                      <p className="text-gray-600">
-                        Email: {profile?.email || "Email Address"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <h2 className="text-xl font-bold text-gray-800">
-                      PROFESSIONAL ESTIMATE
-                    </h2>
-                    <p className="text-gray-600">
-                      Date: {new Date().toLocaleDateString()}
-                    </p>
-                    <p className="text-gray-600">
-                      Estimate #: EST-{new Date().getFullYear()}-
-                      {String(Date.now()).slice(-4)}
-                    </p>
-                  </div>
-                </div>
+          {/* Scrollable content */}
+          <div className=" overflow-y-auto mt-4">
+            <EstimatePreviewWidget
+              estimate={{
+                id: `EST-${Date.now()}`,
+                number: `EST-${Date.now()}`,
+                date: new Date().toLocaleDateString(),
+                validUntil: new Date(
+                  Date.now() + 30 * 24 * 60 * 60 * 1000,
+                ).toLocaleDateString(),
+                client: {
+                  name: estimate.client?.name || "Client Name",
+                  address: estimate.client?.address || "Client Address",
+                  phone: estimate.client?.phone || "Client Phone",
+                  email: estimate.client?.email || "client@example.com",
+                },
+                contractorInfo: editableCompanyInfo
+                  ? {
+                      name:
+                        editableCompanyInfo.company ||
+                        editableCompanyInfo.name ||
+                        "",
+                      address: editableCompanyInfo.address ?? "",
+                      phone: editableCompanyInfo.phone ?? "",
+                      email: editableCompanyInfo.email ?? "contractor@mail.com",
+                      license: editableCompanyInfo.license ?? "",
+                      logo: editableCompanyInfo.logo ?? "",
+                    }
+                  : {
+                      name: "",
+                      address: "",
+                      phone: "",
+                      email: "contractor@mail.com",
+                      license: "",
+                      logo: "",
+                    },
 
-                {/* Client Information */}
-                <div className="mb-8 p-4 bg-gray-50 rounded-lg">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800">
-                    Bill To:
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="font-medium">
-                        {estimate.client?.name || "Client Name"}
-                      </p>
-                      <p className="text-gray-600">
-                        {estimate.client?.address || "Client Address"}
-                      </p>
-                      <p className="text-gray-600">
-                        {estimate.client?.city}, {estimate.client?.state}{" "}
-                        {estimate.client?.zipCode}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600">
-                        Phone: {estimate.client?.phone || "Phone Number"}
-                      </p>
-                      <p className="text-gray-600">
-                        Email: {estimate.client?.email || "Email Address"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Project Details */}
-                {estimate.projectDetails && (
-                  <div className="mb-8">
-                    <h3 className="text-lg font-semibold mb-3 text-gray-800">
-                      Project Description:
-                    </h3>
-                    <p className="text-gray-700 bg-blue-50 p-4 rounded-lg">
-                      {estimate.projectDetails}
-                    </p>
-                  </div>
-                )}
-
-                {/* Items Table */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold mb-4 text-gray-800">
-                    Items & Services:
-                  </h3>
-                  <table className="w-full border-collapse border border-gray-300">
-                    <thead>
-                      <tr className="bg-blue-600 text-white">
-                        <th className="border border-gray-300 p-3 text-left">
-                          Description
-                        </th>
-                        <th className="border border-gray-300 p-3 text-center">
-                          Quantity
-                        </th>
-                        <th className="border border-gray-300 p-3 text-center">
-                          Unit
-                        </th>
-                        <th className="border border-gray-300 p-3 text-right">
-                          Unit Price
-                        </th>
-                        <th className="border border-gray-300 p-3 text-right">
-                          Total
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {estimate.items.map((item, index) => (
-                        <tr
-                          key={index}
-                          className={
-                            index % 2 === 0 ? "bg-gray-50" : "bg-white"
-                          }
-                        >
-                          <td className="border border-gray-300 p-3">
-                            <div>
-                              <div className="font-medium">{item.name}</div>
-                              {item.description && (
-                                <div className="text-sm text-gray-600 mt-1">
-                                  {item.description}
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                          <td className="border border-gray-300 p-3 text-center">
-                            {item.quantity}
-                          </td>
-                          <td className="border border-gray-300 p-3 text-center">
-                            {item.unit}
-                          </td>
-                          <td className="border border-gray-300 p-3 text-right">
-                            ${item.price.toFixed(2)}
-                          </td>
-                          <td className="border border-gray-300 p-3 text-right font-medium">
-                            ${item.total.toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Totals Section */}
-                <div className="mb-8">
-                  <div className="flex justify-end">
-                    <div className="w-80">
-                      <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-gray-700">Subtotal:</span>
-                          <span className="font-medium">
-                            ${estimate.subtotal.toFixed(2)}
-                          </span>
-                        </div>
-
-                        {estimate.discountAmount > 0 && (
-                          <div className="flex justify-between text-green-600">
-                            <span>
-                              Discount ({estimate.discountName || "Discount"}):
-                            </span>
-                            <span>-${estimate.discountAmount.toFixed(2)}</span>
-                          </div>
-                        )}
-
-                        <div className="flex justify-between">
-                          <span className="text-gray-700">
-                            Tax ({estimate.taxRate}%):
-                          </span>
-                          <span className="font-medium">
-                            ${estimate.tax.toFixed(2)}
-                          </span>
-                        </div>
-
-                        <div className="border-t border-gray-300 pt-2">
-                          <div className="flex justify-between text-lg font-bold text-blue-900">
-                            <span>Total:</span>
-                            <span>${estimate.total.toFixed(2)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Terms and Conditions */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800">
-                    Terms & Conditions:
-                  </h3>
-                  <div className="text-sm text-gray-700 space-y-2 bg-gray-50 p-4 rounded-lg">
-                    <p>
-                      • This estimate is valid for 30 days from the date issued.
-                    </p>
-                    <p>• A 50% deposit is required to begin work.</p>
-                    <p>
-                      • Final payment is due upon completion of the project.
-                    </p>
-                    <p>
-                      • All materials and workmanship are guaranteed for one
-                      year.
-                    </p>
-                    <p>
-                      • Changes to the scope of work may affect the final price.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="text-center pt-6 border-t border-gray-300">
-                  <p className="text-gray-600">
-                    Thank you for choosing {profile?.company || "our services"}!
-                  </p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    For questions about this estimate, please contact us at{" "}
-                    {profile?.phone || "phone"} or {profile?.email || "email"}
-                  </p>
-                </div>
-              </div>
-            </div>
+                project: {
+                  description: estimate.projectDetails || "Project description",
+                },
+                items: estimate.items.map((item, index) => ({
+                  id: item.id || `item-${index}`, // provide id or fallback
+                  name: item.name,
+                  description: item.description,
+                  quantity: item.quantity,
+                  unit: item.unit || "pcs", // default unit if not provided
+                  unitPrice: item.price,
+                  total: item.quantity * item.price,
+                })),
+                subtotal: estimate.subtotal,
+                taxRate: estimate.taxRate,
+                taxAmount: estimate.tax,
+                total: estimate.total,
+                discount: estimate.discountAmount,
+                terms: [
+                  "Payment is due within 30 days of receipt of invoice.",
+                  "Late payments are subject to a 1.5% monthly interest charge.",
+                  "This estimate is valid for 30 days from the date of issue.",
+                ],
+              }}
+            />
           </div>
 
-          <DialogFooter className="border-t border-gray-200 pt-4 flex justify-between">
+          <DialogFooter className="pt-4 flex justify-between border-t border-gray-200 mt-4">
             <Button
               variant="outline"
               onClick={() => setShowPreview(false)}
-              className="flex items-center gap-2"
+              className="flex items-center my-4 gap-2"
             >
               <X className="h-4 w-4" />
               Close Preview
             </Button>
-            <div className="flex gap-2">
+            <div className="flex gap-2 justify-end">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -7138,61 +7006,90 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           <DialogHeader>
             <DialogTitle>Send Email</DialogTitle>
           </DialogHeader>
-          
+
           <div className="py-4">
-            <p className="text-red-600 font-bold">TEST: Can you see this text?</p>
+            <p className="text-red-600 font-bold">
+              TEST: Can you see this text?
+            </p>
             <p>Client: {estimate?.client?.name}</p>
             <p>Items: {estimate?.items?.length}</p>
-            
+
             <div className="mt-4 space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Email:</label>
-                <input 
+                <input
                   type="email"
                   value={emailData.toEmail}
-                  onChange={(e) => setEmailData(prev => ({...prev, toEmail: e.target.value}))}
+                  onChange={(e) =>
+                    setEmailData((prev) => ({
+                      ...prev,
+                      toEmail: e.target.value,
+                    }))
+                  }
                   className="w-full p-2 border border-gray-300 rounded"
                   placeholder="client@email.com"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium mb-2">Subject:</label>
-                <input 
+                <label className="block text-sm font-medium mb-2">
+                  Subject:
+                </label>
+                <input
                   type="text"
                   value={emailData.subject}
-                  onChange={(e) => setEmailData(prev => ({...prev, subject: e.target.value}))}
+                  onChange={(e) =>
+                    setEmailData((prev) => ({
+                      ...prev,
+                      subject: e.target.value,
+                    }))
+                  }
                   className="w-full p-2 border border-gray-300 rounded"
                   placeholder="Professional Estimate"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium mb-2">Message:</label>
-                <textarea 
+                <label className="block text-sm font-medium mb-2">
+                  Message:
+                </label>
+                <textarea
                   value={emailData.message}
-                  onChange={(e) => setEmailData(prev => ({...prev, message: e.target.value}))}
+                  onChange={(e) =>
+                    setEmailData((prev) => ({
+                      ...prev,
+                      message: e.target.value,
+                    }))
+                  }
                   className="w-full p-2 border border-gray-300 rounded h-20"
                   placeholder="Your message..."
                 />
               </div>
-              
+
               <div className="flex items-center gap-2">
-                <input 
+                <input
                   type="checkbox"
                   checked={emailData.sendCopy}
-                  onChange={(e) => setEmailData(prev => ({...prev, sendCopy: e.target.checked}))}
+                  onChange={(e) =>
+                    setEmailData((prev) => ({
+                      ...prev,
+                      sendCopy: e.target.checked,
+                    }))
+                  }
                 />
                 <label className="text-sm">Send me a copy</label>
               </div>
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEmailDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={sendEstimateEmail} disabled={!emailData.toEmail || !emailData.subject}>
+            <Button
+              onClick={sendEstimateEmail}
+              disabled={!emailData.toEmail || !emailData.subject}
+            >
               Send Email
             </Button>
           </DialogFooter>
