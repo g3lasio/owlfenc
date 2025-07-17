@@ -1,5 +1,6 @@
 import { Building2, CheckCircle } from "lucide-react";
 import { z } from "zod";
+import React from "react";
 
 const estimateItemSchema = z.object({
   id: z.string(),

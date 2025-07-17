@@ -1,8 +1,8 @@
 import puppeteer from "puppeteer";
 import path from "path";
-import ReactDOMServer from "react-dom/server";
-import EstimatePreviewWidget from "@/components/estimates/EstimatePreviewWidget";
-import React from "react";
+import handlebars from "handlebars";
+import fs from "fs/promises";
+import { fileURLToPath } from "url";
 
 interface EstimateData {
   company: {
@@ -12,6 +12,7 @@ interface EstimateData {
     email?: string;
     website?: string;
     logo?: string;
+    license?: string;
   };
   estimate: {
     number?: string;
@@ -40,15 +41,16 @@ interface EstimateData {
 }
 
 export class PuppeteerPdfService {
-  constructor() {}
-
-  async generatePdf(data: EstimateData): Promise<Buffer> {
-    console.log("🔄 Starting PDF generation with Puppeteer...");
+  async generatePdf(data: EstimateData): Promise<Uint8Array> {
+    console.log("🔄 Starting PDF generation...");
 
     let browser;
+
     try {
       const executablePath =
         "/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium";
+
+      const html = await this.renderHtmlFromTemplate(data);
 
       browser = await puppeteer.launch({
         headless: true,
@@ -68,13 +70,12 @@ export class PuppeteerPdfService {
       });
 
       const page = await browser.newPage();
+
       await page.setViewport({
         width: 1200,
         height: 1600,
         deviceScaleFactor: 2,
       });
-
-      const html = this.renderReactToHtml(data);
 
       await page.setContent(html, {
         waitUntil: ["networkidle0", "domcontentloaded"],
@@ -82,7 +83,7 @@ export class PuppeteerPdfService {
       });
 
       const pdfBuffer = await page.pdf({
-        format: "Letter",
+        width: "1200",
         margin: {
           top: "0.75in",
           right: "0.75in",
@@ -94,81 +95,71 @@ export class PuppeteerPdfService {
         displayHeaderFooter: false,
       });
 
-      console.log(`✅ PDF generated successfully - Size: ${pdfBuffer.length} bytes`);
+      console.log(`✅ PDF generated - Size: ${pdfBuffer.length} bytes`);
       return pdfBuffer;
     } catch (error) {
       console.error("❌ PDF generation failed:", error);
-      throw new Error(`PDF generation failed: ${error.message}`);
+      throw new Error(`PDF generation failed: ${(error as Error).message}`);
     } finally {
-      if (browser) {
-        await browser.close();
-      }
+      if (browser) await browser.close();
     }
   }
 
-  private renderReactToHtml(data: EstimateData): string {
-    const html = ReactDOMServer.renderToStaticMarkup(
-      <EstimatePreviewWidget
-        estimate={{
-          id: data.estimate.number || `EST-${Date.now()}`,
-          number: data.estimate.number || `EST-${Date.now()}`,
-          date: data.estimate.date || new Date().toLocaleDateString(),
-          validUntil:
-            data.estimate.valid_until ||
-            new Date(Date.now() + 30 * 86400000).toLocaleDateString(),
-          client: {
-            name: data.client.name || "",
-            address: data.client.address || "",
-            phone: data.client.phone || "",
-            email: data.client.email || "",
-          },
-          contractorInfo: {
-            name: data.company.name || "",
-            address: data.company.address || "",
-            phone: data.company.phone || "",
-            email: data.company.email || "",
-            license: "", // Optional
-            logo: data.company.logo || "",
-          },
-          project: {
-            description: data.estimate.project_description || "",
-          },
-          items: data.estimate.items.map((item, i) => ({
-            id: item.code || `item-${i}`,
-            name: item.code,
-            description: item.description,
-            quantity: Number(item.qty),
-            unit: "pcs",
-            unitPrice: item.unit_price,
-            total: item.total,
-          })),
-          subtotal: data.estimate.subtotal || "0.00",
-          taxRate: data.estimate.tax_rate || 0,
-          taxAmount: data.estimate.tax_amount || "0.00",
-          total: data.estimate.total || "0.00",
-          discount: data.estimate.discounts || "0.00",
-          terms: [
-            "Payment due in 30 days.",
-            "This estimate is valid for 30 days from issue date.",
-          ],
-        }}
-      />
-    );
+  private async renderHtmlFromTemplate(data: EstimateData): Promise<string> {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
 
-    return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Estimate PDF</title>
-  <style>
-    * { font-family: 'Arial', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
-    body { padding: 20px; background: white; }
-  </style>
-</head>
-<body>
-  ${html}
-</body>
-</html>`;
+    const templatePath = path.join(
+      __dirname,
+      "../client/src/components/templates/estimate-template.html",
+    );
+    const html = await fs.readFile(templatePath, "utf-8");
+
+    const template = handlebars.compile(html);
+
+    const mappedData = {
+      number: data.estimate.number || `EST-${Date.now()}`,
+      date: data.estimate.date || new Date().toLocaleDateString(),
+      validUntil:
+        data.estimate.valid_until ||
+        new Date(Date.now() + 30 * 86400000).toLocaleDateString(),
+      client: {
+        name: data.client.name || "",
+        address: data.client.address || "",
+        phone: data.client.phone || "",
+        email: data.client.email || "",
+      },
+      contractorInfo: {
+        name: data.company.name || "",
+        address: data.company.address || "",
+        phone: data.company.phone || "",
+        email: data.company.email || "",
+        license: data.company.license || "",
+        logo: data.company.logo || "",
+      },
+      project: {
+        description: data.estimate.project_description || "",
+      },
+      items: data.estimate.items.map((item) => ({
+        name: item.code,
+        description: item.description,
+        quantity: item.qty,
+        unitPrice: item.unit_price,
+        total: item.total,
+      })),
+      subtotal: data.estimate.subtotal || "0",
+      discount: data.estimate.discounts || "0",
+      taxRate: data.estimate.tax_rate || 0,
+      taxAmount: data.estimate.tax_amount || "0",
+      total: data.estimate.total || "0",
+      terms: [
+        "Payment is due within 30 days of receipt of invoice.",
+        "Late payments are subject to a 1.5% monthly interest charge.",
+        "This estimate is valid for 30 days from the date of issue.",
+      ],
+    };
+
+    return template(mappedData);
   }
 }
 

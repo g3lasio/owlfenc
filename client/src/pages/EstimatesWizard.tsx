@@ -3620,6 +3620,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           email: profile?.email || currentUser?.email || "",
           website: profile?.website || "",
           logo: profile?.logo || "",
+          license: profile?.license || "",
         },
       };
 
