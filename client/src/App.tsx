@@ -49,6 +49,7 @@ import AITestingPage from "@/pages/AITestingPage";
 import DeepSearchDemo from "@/pages/DeepSearchDemo";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { SidebarProvider } from "@/contexts/SidebarContext";
 import AuthDiagnostic from './pages/AuthDiagnostic';
 import AppleAuthTest from './pages/AppleAuthTest';
 import { lazy } from 'react';
@@ -237,10 +238,12 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
         <AuthProvider>
-          <AppLayout>
-            <Router />
-          </AppLayout>
-          <Toaster />
+          <SidebarProvider>
+            <AppLayout>
+              <Router />
+            </AppLayout>
+            <Toaster />
+          </SidebarProvider>
         </AuthProvider>
       </LanguageProvider>
     </QueryClientProvider>

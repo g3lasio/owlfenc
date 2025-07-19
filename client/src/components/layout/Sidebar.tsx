@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useSidebar } from "@/contexts/SidebarContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -56,8 +57,14 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
   const { currentUser, logout } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [isSidebarExpanded, setSidebarExpanded] = useState(false);
-  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { 
+    isSidebarExpanded, 
+    isMobileMenuOpen, 
+    toggleSidebar, 
+    toggleMobileMenu,
+    setSidebarExpanded,
+    setMobileMenuOpen 
+  } = useSidebar();
   const { t } = useTranslation();
   const { language } = useLanguage();
 
@@ -93,13 +100,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
     }
   };
 
-  const toggleSidebar = () => {
-    setSidebarExpanded(!isSidebarExpanded);
-  };
 
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!isMobileMenuOpen);
-  };
 
   // Función para cerrar el sidebar automáticamente al hacer clic en elementos del menú
   const handleMenuItemClick = () => {
@@ -120,18 +121,6 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile Hamburger Button */}
-      <button
-        onClick={toggleMobileMenu}
-        className="md:hidden fixed top-8 right-4 z-[999999]   transition-all duration-200"
-        aria-label="Toggle mobile menu"
-      >
-        {isMobileMenuOpen ? (
-          <X className="h-6 w-6 text-white" />
-        ) : (
-          <Menu className="h-6 w-6 text-white" />
-        )}
-      </button>
 
       {/* Mobile Backdrop */}
       {isMobileMenuOpen && (

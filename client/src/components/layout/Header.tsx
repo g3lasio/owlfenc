@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 // No usamos useAuth en este componente, así que removemos la importación innecesaria
 import { useToast } from "@/hooks/use-toast";
+import { useSidebar } from "@/contexts/SidebarContext";
 
 // Componente del ícono hexagonal futurista
 const HexagonalMenuIcon = ({ onClick }: { onClick?: () => void }) => {
@@ -194,6 +195,7 @@ const HexagonalMenuIcon = ({ onClick }: { onClick?: () => void }) => {
 export default function Header() {
   const [path] = useLocation();
   const [glowPulse, setGlowPulse] = useState(false);
+  const { toggleSidebar, toggleMobileMenu } = useSidebar();
 
   // Efecto para animar el pulso del logo
   useEffect(() => {
@@ -206,8 +208,12 @@ export default function Header() {
 
   // Función de manejo del clic del menú hexagonal
   const handleMenuClick = () => {
-    console.log('Menú hexagonal clicked - funcionalidad por implementar');
-    // Aquí se puede agregar la lógica del menú cuando sea necesario
+    // Detectar si es móvil o desktop y usar la función apropiada
+    if (window.innerWidth < 768) {
+      toggleMobileMenu();
+    } else {
+      toggleSidebar();
+    }
   };
 
   // Verificar si estamos en la página de Materials para evitar duplicación de header
