@@ -336,15 +336,18 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
     <>
       {/* ÍCONO HEXAGONAL SIEMPRE VISIBLE - ABSOLUTA PRIORIDAD */}
       <div 
-        className="fixed top-0 left-0 flex items-center justify-center bg-transparent pointer-events-auto"
+        className="fixed top-0 left-0 flex items-center justify-center pointer-events-auto"
         style={{
           height: '80px',
           width: '64px',
           minHeight: '80px',
-          zIndex: 9999,  // Máximo z-index para que NUNCA se oculte
-          display: 'flex',  // Forzar visibilidad
-          visibility: 'visible',  // Forzar visibilidad
-          opacity: 1  // Forzar opacidad
+          zIndex: 9999,
+          display: 'flex',
+          visibility: 'visible',
+          opacity: 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.9)', // Fondo sólido para separación visual
+          borderBottom: '2px solid rgba(0, 255, 255, 0.4)', // Línea separadora distintiva
+          boxShadow: '0 2px 12px rgba(0, 255, 255, 0.3)' // Sombra para elevación visual
         }}
       >
         <HexagonalMenuIcon onClick={toggleSidebar} />
@@ -371,15 +374,37 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
           `}
           style={{
             height: "100vh",
-            paddingTop: isPhone ? "80px" : "0px", // Solo phones necesitan padding para el ícono hexagonal
+            paddingTop: "80px", // Todos los dispositivos necesitan padding para el ícono hexagonal
             maxHeight: "100vh",
             overflow: "hidden",
             flexShrink: 0,
-            boxShadow: "none", // Eliminar cualquier sombra que pueda causar líneas
-            border: "none", // Eliminar cualquier borde
+            boxShadow: "none",
+            border: "none",
           }}
         >
 
+
+          {/* Separador visual entre hexagonal icon y navegación */}
+          <div
+            className="flex-shrink-0"
+            style={{
+              height: "16px", // Espacio más compacto
+              marginBottom: "8px",
+              position: "relative"
+            }}
+          >
+            {/* Línea separadora sutil */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: "0",
+                left: "12px",
+                right: "12px",
+                height: "1px",
+                background: "linear-gradient(90deg, transparent 0%, rgba(0, 255, 255, 0.3) 50%, transparent 100%)"
+              }}
+            ></div>
+          </div>
 
           {/* Área de navegación con scroll interno */}
           <div
