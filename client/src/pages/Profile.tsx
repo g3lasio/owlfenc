@@ -533,47 +533,10 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white font-mono">
-      {/* Cyberpunk Header */}
-      <div className="border-b border-cyan-900/30 bg-gray-900/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-            {/* Logo and Title */}
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 relative">
-                <svg viewBox="0 0 64 64" className="w-full h-full">
-                  <defs>
-                    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#00ffff" />
-                      <stop offset="100%" stopColor="#0080ff" />
-                    </linearGradient>
-                  </defs>
-                  <polygon
-                    points="32,8 48,16 48,32 32,40 16,32 16,16"
-                    fill="none"
-                    stroke="url(#logoGrad)"
-                    strokeWidth="2"
-                    className="animate-pulse"
-                  />
-                  <circle cx="32" cy="24" r="8" fill="url(#logoGrad)" opacity="0.6" />
-                </svg>
-              </div>
-              <div>
-                <h1 className="text-2xl lg:text-3xl font-bold text-white tracking-wider">
-                  OWL FENCE
-                </h1>
-                <p className="text-cyan-400 text-sm tracking-widest">
-                  The AI Force Crafting the Future Skyline
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 py-6">
+    <div className="page-container">
+      <div className="scrollable-content">
         {/* User Profile Banner */}
-        <div className="border border-cyan-900/30 rounded-lg bg-gray-900/50 backdrop-blur-sm p-6 mb-8">
+        <div className="bg-card border border-border rounded-lg p-4 mb-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
             <div className="flex-shrink-0 relative">
               <input
@@ -582,6 +545,8 @@ export default function Profile() {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
+                    // Here you would typically upload the file to your storage
+                    // For now we'll just create an object URL
                     const imageUrl = URL.createObjectURL(file);
                     setCompanyInfo((prev) => ({
                       ...prev,
@@ -594,22 +559,20 @@ export default function Profile() {
               />
               <label
                 htmlFor="profile-photo-input"
-                className="cursor-pointer group relative block w-24 h-24 rounded-full border-2 border-cyan-400/30 hover:border-cyan-400 transition-colors"
+                className="cursor-pointer group relative block w-24 h-24 rounded-full "
               >
                 {companyInfo.profilePhoto ? (
                   <img
                     src={companyInfo.profilePhoto}
                     alt="Profile"
-                    className="w-full h-full object-cover rounded-full"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gray-800 text-cyan-400 flex items-center justify-center rounded-full">
-                    <span className="text-3xl font-medium font-['Quantico']">
-                      {companyInfo.ownerName ? companyInfo.ownerName.charAt(0) : "JC"}
-                    </span>
+                  <div className="w-full h-full bg-primary/20 text-primary flex items-center justify-center">
+                    <span className="text-3xl font-medium">JC</span>
                   </div>
                 )}
-                <div className="absolute inset-0 bg-black/50 group-hover:flex items-center justify-center hidden text-cyan-400 rounded-full">
+                <div className="absolute inset-0 bg-black/50 group-hover:flex items-center justify-center hidden text-white">
                   <Upload className="w-6 h-6" />
                 </div>
               </label>
@@ -617,16 +580,24 @@ export default function Profile() {
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
                 <div>
-                  <h1 className="text-2xl font-bold text-white font-['Quantico']">
-                    {companyInfo.ownerName || "Gelasio Sanchez"}
+                  <h1 className="text-2xl font-bold">
+                    {companyInfo.ownerName || "John Contractor"}
                   </h1>
-                  <p className="text-gray-400 mt-1">
-                    {companyInfo.company || "Contractor"}
-                  </p>
                 </div>
                 <div className="mt-2 sm:mt-0">
-                  <div className="bg-gradient-to-r from-emerald-500 to-lime-600 text-black px-4 py-2 rounded-full font-medium text-sm inline-flex items-center">
-                    <CheckCircle className="h-4 w-4 mr-1" />
+                  <div className="bg-gradient-to-r from-emerald-500 to-lime-600 text-white px-4 py-2 rounded-full font-medium text-sm inline-flex items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-1"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
                     El Mero Patrón
                   </div>
                 </div>
@@ -635,142 +606,123 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Header with Save Button */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-white font-['Quantico']">Company Profile</h2>
-            <p className="text-gray-400 mt-1">
+            <h1 className="text-2xl font-bold">Company Profile</h1>
+            <p className="text-muted-foreground">
               Manage your fencing company information
             </p>
           </div>
           <Button
+            className="mb-8"
             onClick={handleSave}
             disabled={loading}
-            className="bg-cyan-400 hover:bg-cyan-300 text-black font-medium px-6 py-2 rounded-lg transition-colors"
+            size="lg"
           >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              "Save Changes"
-            )}
+            {loading ? "Saving..." : "Save Changes"}
           </Button>
         </div>
 
-        <Tabs defaultValue="info" className="space-y-8">
-          <div className="border border-gray-700 rounded-lg bg-gray-900/50 p-1">
-            <TabsList className="w-full bg-transparent grid grid-cols-3 gap-1">
-              <TabsTrigger 
-                value="info" 
-                className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300"
-              >
-                General Information
-              </TabsTrigger>
-              <TabsTrigger 
-                value="legal" 
-                className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300"
-              >
-                Documentation
-              </TabsTrigger>
-              <TabsTrigger 
-                value="specialties"
-                className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300"
-              >
-                Specialties
-              </TabsTrigger>
-            </TabsList>
-          </div>
+        <Tabs defaultValue="info" className="space-y-6">
+          <TabsList className="w-full border-b flex flex-wrap justify-start md:justify-center p-0 h-auto">
+            <TabsTrigger value="info" className="flex-grow md:flex-grow-0">
+              General Information
+            </TabsTrigger>
+            <TabsTrigger value="legal" className="flex-grow md:flex-grow-0">
+              Documentation
+            </TabsTrigger>
+            <TabsTrigger
+              value="specialties"
+              className="flex-grow md:flex-grow-0"
+            >
+              Specialties
+            </TabsTrigger>
+          </TabsList>
 
           {/* GENERAL INFORMATION TAB */}
-          <TabsContent value="info" className="space-y-6">
-            <Card className="border-gray-700 bg-gray-900">
+          <TabsContent value="info" className="space-y-4">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-cyan-400">General Information and Contact</CardTitle>
-                <CardDescription className="text-gray-400">
+                <CardTitle>General Information and Contact</CardTitle>
+                <CardDescription>
                   Main details about your company for estimates and contracts.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Company basic information */}
                 <div>
-                  <h3 className="text-lg font-medium mb-4 text-cyan-400">Company Details</h3>
+                  <h3 className="text-lg font-medium mb-4">Company Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="company" className="text-gray-300">Company Name</Label>
+                      <Label htmlFor="company">Company Name</Label>
                       <Input
                         id="company"
                         name="company"
                         value={companyInfo.company}
                         onChange={handleChange}
                         placeholder="Your Company Inc."
-                        className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="businessType" className="text-gray-300">Business Type</Label>
+                      <Label htmlFor="businessType">Business Type</Label>
                       <Select
                         value={companyInfo.businessType}
                         onValueChange={(value) =>
                           handleSelectChange("businessType", value)
                         }
                       >
-                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white focus:border-cyan-400 focus:ring-cyan-400">
+                        <SelectTrigger>
                           <SelectValue placeholder="Select business type" />
                         </SelectTrigger>
-                        <SelectContent className="bg-gray-800 border-gray-600">
-                          <SelectItem value="LLC" className="text-white hover:bg-gray-700">LLC</SelectItem>
-                          <SelectItem value="Sole Proprietorship" className="text-white hover:bg-gray-700">
+                        <SelectContent>
+                          <SelectItem value="LLC">LLC</SelectItem>
+                          <SelectItem value="Sole Proprietorship">
                             Sole Proprietorship
                           </SelectItem>
-                          <SelectItem value="Corporation" className="text-white hover:bg-gray-700">
+                          <SelectItem value="Corporation">
                             Corporation
                           </SelectItem>
-                          <SelectItem value="Partnership" className="text-white hover:bg-gray-700">
+                          <SelectItem value="Partnership">
                             Partnership
                           </SelectItem>
-                          <SelectItem value="S-Corporation" className="text-white hover:bg-gray-700">
+                          <SelectItem value="S-Corporation">
                             S-Corporation
                           </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="ownerName" className="text-gray-300">Owner Name</Label>
+                      <Label htmlFor="ownerName">Owner Name</Label>
                       <Input
                         id="ownerName"
                         name="ownerName"
                         value={companyInfo.ownerName}
                         onChange={handleChange}
                         placeholder="John Smith"
-                        className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="role" className="text-gray-300">Role in Company</Label>
+                      <Label htmlFor="role">Role in Company</Label>
                       <Input
                         id="role"
                         name="role"
                         value={companyInfo.role}
                         onChange={handleChange}
                         placeholder="Owner, Manager, etc."
-                        className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="yearEstablished" className="text-gray-300">Year Established</Label>
+                      <Label htmlFor="yearEstablished">Year Established</Label>
                       <Input
                         id="yearEstablished"
                         name="yearEstablished"
                         value={companyInfo.yearEstablished}
                         onChange={handleChange}
                         placeholder="2010"
-                        className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="website" className="text-gray-300">Website</Label>
+                      <Label htmlFor="website">Website</Label>
                       <Input
                         id="website"
                         name="website"
@@ -778,12 +730,11 @@ export default function Profile() {
                         value={companyInfo.website}
                         onChange={handleChange}
                         placeholder="https://www.yourcompany.com"
-                        className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                       />
                     </div>
                   </div>
                   <div className="space-y-2 mt-4">
-                    <Label htmlFor="description" className="text-gray-300">Company Description</Label>
+                    <Label htmlFor="description">Company Description</Label>
                     <Textarea
                       id="description"
                       name="description"
@@ -791,16 +742,15 @@ export default function Profile() {
                       onChange={handleChange}
                       placeholder="Describe your company and main services..."
                       rows={4}
-                      className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                     />
                   </div>
                 </div>
 
                 {/* Logo Section */}
-                <div className="border-t border-gray-700 pt-4">
-                  <h3 className="text-lg font-medium mb-4 text-cyan-400">Company Logo</h3>
+                <div className="border-t pt-4">
+                  <h3 className="text-lg font-medium mb-4">Company Logo</h3>
                   <div className="flex flex-col md:flex-row items-center gap-6">
-                    <div className="w-40 h-40 border border-gray-600 rounded-lg flex items-center justify-center bg-gray-800">
+                    <div className="w-40 h-40 border rounded-lg flex items-center justify-center bg-muted ">
                       {companyInfo.logo ? (
                         <img
                           src={companyInfo.logo}
@@ -808,14 +758,14 @@ export default function Profile() {
                           className="max-w-full max-h-full object-contain"
                         />
                       ) : (
-                        <div className="flex flex-col items-center justify-center text-gray-400">
+                        <div className="flex flex-col items-center justify-center text-muted-foreground">
                           <Globe className="w-12 h-12 mb-2" />
                           <span>No logo</span>
                         </div>
                       )}
                     </div>
                     <div className="space-y-3">
-                      <p className="text-sm text-gray-400">
+                      <p className="text-sm text-muted-foreground">
                         Your logo will appear on your estimates, contracts, and
                         client communications.
                       </p>
@@ -830,12 +780,12 @@ export default function Profile() {
                         <Button
                           variant="outline"
                           onClick={() => logoInputRef.current?.click()}
-                          className="flex items-center gap-2 bg-gray-800 border-gray-600 text-white hover:bg-gray-700 hover:border-gray-500"
+                          className="flex items-center gap-2"
                         >
                           <Upload className="w-4 h-4" />
                           Upload Logo
                         </Button>
-                        <p className="text-xs text-gray-400 mt-2">
+                        <p className="text-xs text-muted-foreground mt-2">
                           Allowed formats: PNG, JPG. Maximum size: 2MB
                         </p>
                       </div>
@@ -844,13 +794,13 @@ export default function Profile() {
                 </div>
 
                 {/* Contact Information */}
-                <div className="border-t border-gray-700 pt-4">
-                  <h3 className="text-lg font-medium mb-4 text-cyan-400">
+                <div className="border-t pt-4">
+                  <h3 className="text-lg font-medium mb-4">
                     Contact Information
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="email" className="text-gray-300">Email Address</Label>
+                      <Label htmlFor="email">Email Address</Label>
                       <Input
                         id="email"
                         name="email"
@@ -858,17 +808,16 @@ export default function Profile() {
                         value={companyInfo.email}
                         onChange={handleChange}
                         placeholder="contact@yourcompany.com"
-                        className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                       />
                       {/* Email Verification Status */}
                       {companyInfo.email && (
-                        <div className="mt-2 p-3 rounded-lg border border-gray-600 bg-gray-800/50">
+                        <div className="mt-2 p-3 rounded-lg border">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               {emailVerificationStatus === "checking" && (
                                 <>
-                                  <Loader2 className="h-4 w-4 animate-spin text-cyan-400" />
-                                  <span className="text-sm text-gray-400">
+                                  <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                                  <span className="text-sm text-muted-foreground">
                                     Checking verification status...
                                   </span>
                                 </>
@@ -876,7 +825,7 @@ export default function Profile() {
                               {emailVerificationStatus === "verified" && (
                                 <>
                                   <CheckCircle className="h-4 w-4 text-green-500" />
-                                  <span className="text-sm text-green-400 font-medium">
+                                  <span className="text-sm text-green-600 font-medium">
                                     Email verified
                                   </span>
                                 </>
@@ -884,7 +833,7 @@ export default function Profile() {
                               {emailVerificationStatus === "pending" && (
                                 <>
                                   <AlertCircle className="h-4 w-4 text-yellow-500" />
-                                  <span className="text-sm text-yellow-400 font-medium">
+                                  <span className="text-sm text-yellow-600 font-medium">
                                     Verification pending
                                   </span>
                                 </>
@@ -892,7 +841,7 @@ export default function Profile() {
                               {emailVerificationStatus === "unverified" && (
                                 <>
                                   <AlertCircle className="h-4 w-4 text-red-500" />
-                                  <span className="text-sm text-red-400 font-medium">
+                                  <span className="text-sm text-red-600 font-medium">
                                     Email not verified
                                   </span>
                                 </>
@@ -906,7 +855,6 @@ export default function Profile() {
                                   disabled={isVerifying || !companyInfo.email}
                                   size="sm"
                                   variant="outline"
-                                  className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700 hover:border-gray-500"
                                 >
                                   {isVerifying ? (
                                     <>
@@ -923,7 +871,7 @@ export default function Profile() {
                               )}
                           </div>
 
-                          <div className="mt-2 text-xs text-gray-400">
+                          <div className="mt-2 text-xs text-muted-foreground">
                             {emailVerificationStatus === "verified" &&
                               "You can now send professional emails to clients using this address."}
                             {emailVerificationStatus === "pending" &&
@@ -935,7 +883,7 @@ export default function Profile() {
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="phone" className="text-gray-300">Office Phone</Label>
+                      <Label htmlFor="phone">Office Phone</Label>
                       <Input
                         id="phone"
                         name="phone"
@@ -943,11 +891,10 @@ export default function Profile() {
                         value={companyInfo.phone}
                         onChange={handleChange}
                         placeholder="(123) 456-7890"
-                        className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="mobilePhone" className="text-gray-300">Mobile Phone</Label>
+                      <Label htmlFor="mobilePhone">Mobile Phone</Label>
                       <Input
                         id="mobilePhone"
                         name="mobilePhone"
@@ -955,7 +902,6 @@ export default function Profile() {
                         value={companyInfo.mobilePhone}
                         onChange={handleChange}
                         placeholder="(123) 456-7890"
-                        className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                       />
                     </div>
                   </div>
@@ -978,7 +924,7 @@ export default function Profile() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="city" className="text-gray-300">City</Label>
+                      <Label htmlFor="city">City</Label>
                       <Input
                         id="city"
                         name="city"
@@ -986,11 +932,10 @@ export default function Profile() {
                         onChange={handleChange}
                         placeholder="Portland"
                         readOnly
-                        className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="state" className="text-gray-300">State</Label>
+                      <Label htmlFor="state">State</Label>
                       <Input
                         id="state"
                         name="state"
@@ -998,11 +943,10 @@ export default function Profile() {
                         onChange={handleChange}
                         placeholder="Oregon"
                         readOnly
-                        className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="zipCode" className="text-gray-300">Zip Code</Label>
+                      <Label htmlFor="zipCode">Zip Code</Label>
                       <Input
                         id="zipCode"
                         name="zipCode"
@@ -1010,16 +954,15 @@ export default function Profile() {
                         onChange={handleChange}
                         placeholder="97204"
                         readOnly
-                        className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                       />
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-gray-700">
-                    <h3 className="text-lg font-medium mb-4 text-cyan-400">Social Media</h3>
+                  <div className="mt-4 pt-4">
+                    <h3 className="text-lg font-medium mb-4">Social Media</h3>
                     <div className="grid grid-cols-1 gap-4">
                       <div className="flex items-center gap-3">
-                        <Facebook className="w-5 h-5 text-blue-400" />
+                        <Facebook className="w-5 h-5 text-blue-600" />
                         <Input
                           name="facebook"
                           value={companyInfo.socialMedia.facebook || ""}
@@ -1027,11 +970,10 @@ export default function Profile() {
                             handleSocialMediaChange("facebook", e.target.value)
                           }
                           placeholder="https://facebook.com/yourcompany"
-                          className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                         />
                       </div>
                       <div className="flex items-center gap-3">
-                        <Instagram className="w-5 h-5 text-pink-400" />
+                        <Instagram className="w-5 h-5 text-pink-600" />
                         <Input
                           name="instagram"
                           value={companyInfo.socialMedia.instagram || ""}
@@ -1039,11 +981,10 @@ export default function Profile() {
                             handleSocialMediaChange("instagram", e.target.value)
                           }
                           placeholder="https://instagram.com/yourcompany"
-                          className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                         />
                       </div>
                       <div className="flex items-center gap-3">
-                        <Linkedin className="w-5 h-5 text-blue-400" />
+                        <Linkedin className="w-5 h-5 text-blue-800" />
                         <Input
                           name="linkedin"
                           value={companyInfo.socialMedia.linkedin || ""}
@@ -1051,7 +992,6 @@ export default function Profile() {
                             handleSocialMediaChange("linkedin", e.target.value)
                           }
                           placeholder="https://linkedin.com/company/yourcompany"
-                          className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                         />
                       </div>
                     </div>
@@ -1062,53 +1002,50 @@ export default function Profile() {
           </TabsContent>
 
           {/* DOCUMENTATION TAB */}
-          <TabsContent value="legal" className="space-y-6">
-            <Card className="border-gray-700 bg-gray-900">
+          <TabsContent value="legal" className="space-y-4">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-cyan-400">Legal Documentation</CardTitle>
-                <CardDescription className="text-gray-400">
+                <CardTitle>Legal Documentation</CardTitle>
+                <CardDescription>
                   Legal information and important company documents.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="license" className="text-gray-300">License Number</Label>
+                    <Label htmlFor="license">License Number</Label>
                     <Input
                       id="license"
                       name="license"
                       value={companyInfo.license}
                       onChange={handleChange}
                       placeholder="CCB #123456"
-                      className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="ein" className="text-gray-300">EIN (Tax ID)</Label>
+                    <Label htmlFor="ein">EIN (Tax ID)</Label>
                     <Input
                       id="ein"
                       name="ein"
                       value={companyInfo.ein}
                       onChange={handleChange}
                       placeholder="12-3456789"
-                      className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="insurancePolicy" className="text-gray-300">Insurance Policy</Label>
+                    <Label htmlFor="insurancePolicy">Insurance Policy</Label>
                     <Input
                       id="insurancePolicy"
                       name="insurancePolicy"
                       value={companyInfo.insurancePolicy}
                       onChange={handleChange}
                       placeholder="INS-9876543"
-                      className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                     />
                   </div>
                 </div>
 
-                <div className="border-t border-gray-700 pt-4 mt-4">
-                  <h3 className="text-lg font-medium mb-4 text-cyan-400">
+                <div className="border-t pt-4 mt-4">
+                  <h3 className="text-lg font-medium mb-4">
                     Company Documents
                   </h3>
                   <input
@@ -1123,18 +1060,18 @@ export default function Profile() {
                   />
 
                   <Accordion type="single" collapsible className="w-full">
-                    <AccordionItem value="licenses" className="border-gray-700">
-                      <AccordionTrigger className="text-cyan-400 hover:text-cyan-300">Licenses and Permits</AccordionTrigger>
+                    <AccordionItem value="licenses">
+                      <AccordionTrigger>Licenses and Permits</AccordionTrigger>
                       <AccordionContent>
                         <div className="grid gap-4">
-                          <div className="border border-gray-600 bg-gray-800/50 rounded-md p-4 flex justify-between items-center">
+                          <div className="border rounded-md p-4 flex justify-between items-center">
                             <div className="flex items-center gap-3">
-                              <FileText className="text-cyan-400" />
+                              <FileText className="text-blue-500" />
                               <div>
-                                <p className="font-medium text-white">
+                                <p className="font-medium">
                                   Contractor License
                                 </p>
-                                <p className="text-sm text-gray-400">
+                                <p className="text-sm text-muted-foreground">
                                   {companyInfo.documents?.licenseDocument
                                     ? "Document uploaded"
                                     : "No document"}
@@ -1148,7 +1085,6 @@ export default function Profile() {
                                 setActiveDocumentSection("licenseDocument");
                                 fileInputRef.current?.click();
                               }}
-                              className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700 hover:border-gray-500"
                             >
                               <Upload className="w-4 h-4 mr-2" />
                               Upload
@@ -1311,11 +1247,11 @@ export default function Profile() {
           </TabsContent>
 
           {/* SPECIALTIES TAB */}
-          <TabsContent value="specialties" className="space-y-6">
-            <Card className="border-gray-700 bg-gray-900">
+          <TabsContent value="specialties" className="space-y-4">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-cyan-400">Specialties and Services</CardTitle>
-                <CardDescription className="text-gray-400">
+                <CardTitle>Specialties and Services</CardTitle>
+                <CardDescription>
                   Indicate the types of fences and services you offer.
                 </CardDescription>
               </CardHeader>
@@ -1325,20 +1261,20 @@ export default function Profile() {
                     <Badge
                       key={index}
                       variant="secondary"
-                      className="px-3 py-1 text-sm bg-gray-800 border-gray-600 text-cyan-400 hover:bg-gray-700"
+                      className="px-3 py-1 text-sm"
                     >
                       {specialty}
                       <button
                         type="button"
                         onClick={() => removeSpecialty(specialty)}
-                        className="ml-2 text-gray-400 hover:text-red-400 transition-colors"
+                        className="ml-2 text-muted-foreground hover:text-foreground"
                       >
                         <X className="w-3 h-3" />
                       </button>
                     </Badge>
                   ))}
                   {companyInfo.specialties.length === 0 && (
-                    <p className="text-gray-400 text-sm">
+                    <p className="text-muted-foreground text-sm">
                       No specialties added.
                     </p>
                   )}
@@ -1355,14 +1291,12 @@ export default function Profile() {
                         addSpecialty();
                       }
                     }}
-                    className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                   />
                   <Button
                     type="button"
                     onClick={addSpecialty}
                     variant="outline"
                     size="icon"
-                    className="bg-gray-800 border-gray-600 text-cyan-400 hover:bg-gray-700 hover:border-cyan-400 hover:text-cyan-300"
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
@@ -1515,42 +1449,6 @@ export default function Profile() {
             </Card>
           </TabsContent>
         </Tabs>
-
-        {/* Cyberpunk Footer */}
-        <div className="mt-12 border-t border-cyan-900/30 bg-gray-900/50 backdrop-blur-sm">
-          <div className="container mx-auto px-4 py-6">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-8 h-8">
-                  <svg viewBox="0 0 32 32" className="w-full h-full">
-                    <defs>
-                      <linearGradient id="footerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#00ffff" />
-                        <stop offset="100%" stopColor="#0080ff" />
-                      </linearGradient>
-                    </defs>
-                    <polygon
-                      points="16,4 24,8 24,16 16,20 8,16 8,8"
-                      fill="none"
-                      stroke="url(#footerGrad)"
-                      strokeWidth="1"
-                      className="animate-pulse"
-                    />
-                    <circle cx="16" cy="12" r="4" fill="url(#footerGrad)" opacity="0.6" />
-                  </svg>
-                </div>
-                <div className="text-sm text-gray-400">
-                  <span className="text-cyan-400 font-medium">OWL FENCE</span> © {new Date().getFullYear()} — Professional Contractor Management
-                </div>
-              </div>
-              <div className="flex items-center gap-4 text-xs text-gray-500">
-                <span>AI-Powered Legal Defense System</span>
-                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                <span>Secure Firebase Integration</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
