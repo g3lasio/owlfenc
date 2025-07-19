@@ -319,7 +319,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
       // Mobile: 0 width when hidden, full width when expanded
       width = isSidebarExpanded ? 288 : 0;
     } else {
-      // Large screens: always full width (persistent sidebar)
+      // Large screens: always full width (persistent sidebar always visible)
       width = 288;
     }
     onWidthChange?.(width);
@@ -354,10 +354,10 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
       <TooltipProvider>
         <aside
           className={`
-            flex flex-col transition-all duration-300 
+            flex flex-col transition-all duration-300 w-72 border-r border-border bg-card
             ${isMobile 
-              ? (isSidebarExpanded ? "w-72 border-r border-border bg-card" : "hidden") 
-              : "w-72 border-r border-border bg-card"
+              ? (isSidebarExpanded ? "block" : "hidden")  // Mobile: hidden by default, visible when expanded
+              : "block"  // Large screens: always visible (never hidden)
             }
             fixed left-0 top-0 z-40 translate-x-0
             md:relative
@@ -384,9 +384,8 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
               flexDirection: "column",
             }}
           >
-            {(isSidebarExpanded || !isMobile) ? (
-              // Vista expandida con scroll (always on large screens, on mobile only when expanded)
-              <div
+            {/* SIEMPRE mostrar vista expandida cuando el sidebar esté visible */}
+            <div
                 className="custom-scroll"
                 style={{
                   height: "100%",
@@ -557,36 +556,33 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                   </div>
                 ))}
               </div>
-            )}
           </div>
 
-          {/* Footer fijo - posicionado absolutamente */}
-          {(isSidebarExpanded || !isMobile) && (
-            <div
-              className="absolute bottom-0 left-0 right-0 p-2 border-t border-border bg-card"
-              style={{ zIndex: 50 }}
-            >
-              <div className="flex items-center justify-between space-x-2">
-                <Button
-                  variant="ghost"
-                  className="flex-1 justify-start text-destructive hover:bg-destructive/10 hover:text-destructive text-xs font-normal h-8"
-                  onClick={handleLogout}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <i className="ri-loader-2-line animate-spin mr-2"></i>
-                  ) : (
-                    <LogOut className="h-3 w-3 mr-2" />
-                  )}
-                  {t("general.logout")}
-                </Button>
+          {/* Footer fijo - siempre visible cuando el sidebar esté visible */}
+          <div
+            className="absolute bottom-0 left-0 right-0 p-2 border-t border-border bg-card"
+            style={{ zIndex: 50 }}
+          >
+            <div className="flex items-center justify-between space-x-2">
+              <Button
+                variant="ghost"
+                className="flex-1 justify-start text-destructive hover:bg-destructive/10 hover:text-destructive text-xs font-normal h-8"
+                onClick={handleLogout}
+                disabled={loading}
+              >
+                {loading ? (
+                  <i className="ri-loader-2-line animate-spin mr-2"></i>
+                ) : (
+                  <LogOut className="h-3 w-3 mr-2" />
+                )}
+                {t("general.logout")}
+              </Button>
 
-                <div className="flex-shrink-0">
-                  <LanguageSwitch />
-                </div>
+              <div className="flex-shrink-0">
+                <LanguageSwitch />
               </div>
             </div>
-          )}
+          </div>
         </aside>
       </TooltipProvider>
     </>
