@@ -336,18 +336,21 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
     <>
       {/* ÍCONO HEXAGONAL SIEMPRE VISIBLE - ABSOLUTA PRIORIDAD */}
       <div 
-        className="fixed top-0 left-0 flex items-center justify-center pointer-events-auto"
+        className="fixed flex items-center justify-center pointer-events-auto"
         style={{
-          height: '80px',
-          width: '64px',
-          minHeight: '80px',
-          zIndex: 9999,
+          top: isPhone ? '16px' : '0px', // Más espacio desde arriba en mobile
+          left: isPhone ? '16px' : '0px', // Más margen para no cubrir logo
+          height: isPhone ? '40px' : '64px', // Más pequeño en mobile
+          width: isPhone ? '40px' : '64px', // Más pequeño en mobile
+          minHeight: isPhone ? '40px' : '64px',
+          zIndex: 100, // Reducido para no interferir con header
           display: 'flex',
           visibility: 'visible',
-          opacity: 1,
-          backgroundColor: 'rgba(0, 0, 0, 0.9)', // Fondo sólido para separación visual
-          borderBottom: '2px solid rgba(0, 255, 255, 0.4)', // Línea separadora distintiva
-          boxShadow: '0 2px 12px rgba(0, 255, 255, 0.3)' // Sombra para elevación visual
+          opacity: isPhone ? 0.9 : 1, // Ligeramente transparente en mobile
+          backgroundColor: 'transparent',
+          borderRadius: isPhone ? '50%' : '0px', // Circular en mobile
+          border: isPhone ? '2px solid rgba(0, 255, 255, 0.5)' : 'none',
+          backdropFilter: isPhone ? 'blur(4px)' : 'none' // Efecto glassmorphism en mobile
         }}
       >
         <HexagonalMenuIcon onClick={toggleSidebar} />
@@ -374,7 +377,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
           `}
           style={{
             height: "100vh",
-            paddingTop: "80px", // Todos los dispositivos necesitan padding para el ícono hexagonal
+            paddingTop: isPhone ? "72px" : "64px", // Espacio para el ícono reposicionado
             maxHeight: "100vh",
             overflow: "hidden",
             flexShrink: 0,
