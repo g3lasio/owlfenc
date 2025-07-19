@@ -206,12 +206,13 @@ export default function Header() {
     return () => clearInterval(interval);
   }, []);
 
-  // Función de manejo del clic del menú hexagonal
+  // Función de manejo del clic del menú hexagonal - igual que el botón del sidebar
   const handleMenuClick = () => {
-    // Detectar si es móvil o desktop y usar la función apropiada
+    // En móviles (menos de 768px): toggle del menú móvil
     if (window.innerWidth < 768) {
       toggleMobileMenu();
     } else {
+      // En tablets y desktop (768px+): toggle del sidebar (expandir/colapsar)
       toggleSidebar();
     }
   };

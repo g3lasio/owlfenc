@@ -135,8 +135,8 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
           className={`
             flex flex-col bg-card transition-all duration-300
             ${isSidebarExpanded ? "w-72 border-r border-border" : "w-16"}
-            ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-            md:relative fixed left-0 top-0 z-40
+            ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
+            md:translate-x-0 md:relative fixed left-0 top-0 z-40
           `}
           style={{
             height: "100vh",

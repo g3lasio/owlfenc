@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 interface SidebarContextType {
   isSidebarExpanded: boolean;
@@ -15,12 +15,37 @@ export const SidebarProvider = ({ children }: { children: ReactNode }) => {
   const [isSidebarExpanded, setSidebarExpanded] = useState(false);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Efecto para manejar el redimensionado de ventana
+  useEffect(() => {
+    const handleResize = () => {
+      // En tablets y desktop, asegurar que el sidebar sea visible como iconos
+      if (window.innerWidth >= 768) {
+        setMobileMenuOpen(false); // Cerrar menú móvil si está abierto
+      } else {
+        // En móviles, cerrar sidebar expandido si está abierto
+        setSidebarExpanded(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    // Ejecutar una vez al cargar
+    handleResize();
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const toggleSidebar = () => {
-    setSidebarExpanded(!isSidebarExpanded);
+    // En tablets y desktop (768px+), alternar entre iconos y expandido
+    if (window.innerWidth >= 768) {
+      setSidebarExpanded(!isSidebarExpanded);
+    }
   };
 
   const toggleMobileMenu = () => {
-    setMobileMenuOpen(!isMobileMenuOpen);
+    // Solo en móviles (menos de 768px)
+    if (window.innerWidth < 768) {
+      setMobileMenuOpen(!isMobileMenuOpen);
+    }
   };
 
   const value = {
