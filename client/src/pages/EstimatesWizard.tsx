@@ -5941,9 +5941,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           {isCompleted ? (
                             <Check className="h-6 w-6" />
                           ) : (
-                            <span className="text-lg font-bold">
-                              {index + 1}
-                            </span>
+                            (() => {
+                              const IconComponent = step.icon;
+                              return <IconComponent className="h-6 w-6" />;
+                            })()
                           )}
                         </div>
                         <span
