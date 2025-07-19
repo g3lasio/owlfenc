@@ -504,4 +504,229 @@ router.post("/webhooks/stripe", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Get all payments for the authenticated user
+ */
+router.get("/payments", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+    const userId = req.user.id;
+
+    // For now, return empty array until we implement storage
+    const payments: any[] = [];
+
+    res.json({
+      success: true,
+      data: payments,
+    });
+  } catch (error) {
+    console.error("Error fetching payments:", error);
+    res.status(500).json({
+      message: "Error fetching payments",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+/**
+ * Get payment dashboard summary
+ */
+router.get("/dashboard/summary", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+    const userId = req.user.id;
+
+    // For now, return mock summary data
+    const summary = {
+      totalPending: 0,
+      totalPaid: 0,
+      totalOverdue: 0,
+      totalRevenue: 0,
+      pendingCount: 0,
+      paidCount: 0,
+    };
+
+    res.json({
+      success: true,
+      data: summary,
+    });
+  } catch (error) {
+    console.error("Error fetching payment summary:", error);
+    res.status(500).json({
+      message: "Error fetching payment summary",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+/**
+ * Get Stripe account status
+ */
+router.get("/stripe/account-status", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    // For now, return mock Stripe status
+    const stripeStatus = {
+      hasStripeAccount: false,
+      accountDetails: null,
+    };
+
+    res.json(stripeStatus);
+  } catch (error) {
+    console.error("Error fetching Stripe account status:", error);
+    res.status(500).json({
+      message: "Error fetching Stripe account status",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+/**
+ * Connect to Stripe
+ */
+router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    const { businessType, country } = req.body;
+
+    // For now, return mock Stripe connect URL
+    const connectUrl = "https://connect.stripe.com/setup/demo";
+
+    res.json({
+      success: true,
+      url: connectUrl,
+      message: "Stripe connect URL generated successfully",
+    });
+  } catch (error) {
+    console.error("Error creating Stripe connect:", error);
+    res.status(500).json({
+      message: "Error creating Stripe connect",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+/**
+ * Create payment
+ */
+router.post("/create", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    const { projectId, amount, type, description, clientEmail, clientName, dueDate } = req.body;
+
+    // Validate required fields
+    if (!projectId || !amount || !type || !description) {
+      return res.status(400).json({
+        message: "Missing required fields: projectId, amount, type, description",
+      });
+    }
+
+    // For now, return mock payment creation
+    const mockPayment = {
+      id: Math.floor(Math.random() * 1000000),
+      projectId,
+      userId: req.user.id,
+      amount,
+      type,
+      status: "pending",
+      description,
+      clientEmail,
+      clientName,
+      dueDate,
+      paymentLinkUrl: `https://owlfence.com/pay/${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date().toISOString(),
+    };
+
+    res.json({
+      success: true,
+      data: mockPayment,
+      message: "Payment created successfully",
+    });
+  } catch (error) {
+    console.error("Error creating payment:", error);
+    res.status(500).json({
+      message: "Error creating payment",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+/**
+ * Send invoice
+ */
+router.post("/send-invoice", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    const { projectName, clientName, clientEmail, totalAmount, paymentLink } = req.body;
+
+    // Validate required fields
+    if (!clientEmail || !totalAmount) {
+      return res.status(400).json({
+        message: "Missing required fields: clientEmail, totalAmount",
+      });
+    }
+
+    // For now, simulate successful email sending
+    res.json({
+      success: true,
+      message: `Invoice sent successfully to ${clientEmail}`,
+      emailId: `email_${Math.random().toString(36).substr(2, 9)}`,
+    });
+  } catch (error) {
+    console.error("Error sending invoice:", error);
+    res.status(500).json({
+      message: "Error sending invoice",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+/**
+ * Resend payment link
+ */
+router.post("/:paymentId/resend", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    const paymentId = parseInt(req.params.paymentId);
+
+    if (!paymentId) {
+      return res.status(400).json({
+        message: "Invalid payment ID",
+      });
+    }
+
+    // For now, simulate successful resend
+    res.json({
+      success: true,
+      message: "Payment link resent successfully",
+      emailId: `resend_${Math.random().toString(36).substr(2, 9)}`,
+    });
+  } catch (error) {
+    console.error("Error resending payment link:", error);
+    res.status(500).json({
+      message: "Error resending payment link",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
 export default router;

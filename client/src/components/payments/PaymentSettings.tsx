@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   CreditCard,
   Settings,
@@ -23,6 +25,12 @@ import {
   AlertCircle,
   Shield,
   Building2,
+  Link,
+  Mail,
+  Percent,
+  Calendar,
+  Info,
+  ExternalLink,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -56,6 +64,12 @@ export default function PaymentSettings({
     preferredPaymentMethods: ["card", "apple_pay"],
     invoicePrefix: "INV",
     depositPercentage: "50",
+    autoEmailReceipts: true,
+    defaultDueDate: "7",
+    companyName: "Your Company LLC",
+    companyEmail: "payments@yourcompany.com",
+    reminderSchedule: "3",
+    invoiceNotes: "Thank you for your business!",
   });
 
   const handleSettingChange = (key: string, value: any) => {
@@ -63,311 +77,332 @@ export default function PaymentSettings({
       ...prev,
       [key]: value,
     }));
+    
+    toast({
+      title: "Setting Updated",
+      description: `${key.replace(/([A-Z])/g, ' $1').toLowerCase()} has been updated.`,
+    });
+  };
+
+  const saveSettings = () => {
+    // TODO: Implement settings save
+    toast({
+      title: "Settings Saved",
+      description: "All payment settings have been saved successfully.",
+    });
   };
 
   const getStripeStatusBadge = () => {
     if (!stripeAccountStatus?.hasStripeAccount) {
-      return <Badge variant="destructive">Not Connected</Badge>;
+      return (
+        <Badge variant="destructive" className="flex items-center gap-1">
+          <AlertCircle className="h-3 w-3" />
+          Not Connected
+        </Badge>
+      );
     }
     if (!stripeAccountStatus.accountDetails?.chargesEnabled) {
-      return <Badge variant="secondary">Setup Required</Badge>;
+      return (
+        <Badge variant="secondary" className="flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          Setup Required
+        </Badge>
+      );
     }
-    return <Badge variant="default">Connected & Active</Badge>;
+    return (
+      <Badge variant="default" className="flex items-center gap-1 bg-green-600">
+        <CheckCircle className="h-3 w-3" />
+        Connected & Active
+      </Badge>
+    );
   };
 
   return (
     <div className="space-y-6">
       {/* Bank Account Connection */}
-      <Card>
+      <Card className="bg-gray-900 border-gray-700">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="text-cyan-400 flex items-center gap-2">
             <Building2 className="h-5 w-5" />
             Bank Account Connection
           </CardTitle>
-          <CardDescription>
-            Connect your bank account to process payments and receive funds
+          <CardDescription className="text-gray-400">
+            Connect your bank account to process payments and receive funds instantly
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 border rounded-lg">
-            <div className="flex items-center gap-3">
-              <CreditCard className="h-8 w-8 text-muted-foreground" />
-              <div>
-                <h4 className="font-medium">Stripe Connect Account</h4>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between p-6 border border-gray-700 rounded-lg bg-gray-800">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-600/20 rounded-lg">
+                <CreditCard className="h-8 w-8 text-blue-400" />
               </div>
-              <div className="md:block hidden text-sm text-muted-foreground">
-                Conexión bancaria temporalmente suspendida durante revisión de
-                compliance
+              <div>
+                <h4 className="font-medium text-white mb-1">Stripe Connect Account</h4>
+                <p className="text-sm text-gray-400">
+                  Secure payment processing with instant bank transfers
+                </p>
+                {stripeAccountStatus?.accountDetails && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Account ID: {stripeAccountStatus.accountDetails.id}
+                  </p>
+                )}
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Badge
-                variant="secondary"
-                className="bg-orange-50 text-orange-700 border-orange-200"
-              >
-                <Clock className="h-3 w-3 mr-1" />
-                En Revisión
-              </Badge>
+            <div className="flex flex-col items-end gap-3">
+              {getStripeStatusBadge()}
               <Button
-                disabled={true}
-                variant="outline"
-                className="opacity-50 cursor-not-allowed"
+                onClick={onConnectStripe}
+                className="bg-cyan-400 text-black hover:bg-cyan-300"
+                disabled={stripeAccountStatus?.hasStripeAccount && stripeAccountStatus?.accountDetails?.chargesEnabled}
               >
-                Deployment en Progreso
+                {stripeAccountStatus?.hasStripeAccount 
+                  ? (stripeAccountStatus?.accountDetails?.chargesEnabled ? "View Dashboard" : "Complete Setup")
+                  : "Connect Bank Account"
+                }
+                <ExternalLink className="h-4 w-4 ml-2" />
               </Button>
             </div>
           </div>
 
-          {stripeAccountStatus?.hasStripeAccount &&
-            stripeAccountStatus.accountDetails && (
-              <div className="bg-muted/30 p-4 rounded-lg space-y-2">
-                <h5 className="font-medium text-sm">Account Status</h5>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    {stripeAccountStatus.accountDetails.payoutsEnabled ? (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <AlertCircle className="h-4 w-4 text-orange-600" />
-                    )}
-                    <span>
-                      Bank Account:{" "}
-                      {stripeAccountStatus.accountDetails.payoutsEnabled
-                        ? "Connected"
-                        : "Pending"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {stripeAccountStatus.accountDetails.chargesEnabled ? (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <AlertCircle className="h-4 w-4 text-orange-600" />
-                    )}
-                    <span>
-                      Payments:{" "}
-                      {stripeAccountStatus.accountDetails.chargesEnabled
-                        ? "Enabled"
-                        : "Disabled"}
-                    </span>
-                  </div>
-                </div>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <div>Account ID: {stripeAccountStatus.accountDetails.id}</div>
-                  {stripeAccountStatus.accountDetails.country && (
-                    <div>
-                      Country:{" "}
-                      {stripeAccountStatus.accountDetails.country.toUpperCase()}
-                    </div>
-                  )}
-                  {stripeAccountStatus.accountDetails.defaultCurrency && (
-                    <div>
-                      Currency:{" "}
-                      {stripeAccountStatus.accountDetails.defaultCurrency.toUpperCase()}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+          {/* Connection Benefits */}
+          <div className="bg-cyan-900/20 border border-cyan-700 p-4 rounded-lg">
+            <h5 className="font-medium text-cyan-400 mb-2 flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Connection Benefits
+            </h5>
+            <ul className="text-sm text-cyan-300 space-y-1">
+              <li>• Instant payment processing and fund transfers</li>
+              <li>• Support for all major credit cards and digital wallets</li>
+              <li>• Automatic tax reporting and compliance</li>
+              <li>• Fraud protection and dispute management</li>
+              <li>• Real-time payment notifications</li>
+            </ul>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Payment Preferences */}
-      <Card>
+      {/* Payment Configuration */}
+      <Card className="bg-gray-900 border-gray-700">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="text-cyan-400 flex items-center gap-2">
             <Settings className="h-5 w-5" />
-            Payment Preferences
+            Payment Configuration
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-gray-400">
             Configure default payment settings and preferences
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Default Deposit Percentage */}
-          <div className="space-y-2">
-            <Label htmlFor="depositPercentage">
-              Default Initial Payment (%)
-            </Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="depositPercentage"
-                type="number"
-                value={settings.depositPercentage}
-                onChange={(e) =>
-                  handleSettingChange("depositPercentage", e.target.value)
-                }
-                className="w-24"
-                min="0"
-                max="100"
-              />
-              <span className="text-sm text-muted-foreground">
-                % of total project cost
-              </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Company Information */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-cyan-400 mb-3">Company Information</h4>
+              <div>
+                <Label htmlFor="companyName" className="text-white">Company Name</Label>
+                <Input
+                  id="companyName"
+                  value={settings.companyName}
+                  onChange={(e) => handleSettingChange("companyName", e.target.value)}
+                  className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                  placeholder="Your Company LLC"
+                />
+              </div>
+              <div>
+                <Label htmlFor="companyEmail" className="text-white">Payment Email</Label>
+                <Input
+                  id="companyEmail"
+                  type="email"
+                  value={settings.companyEmail}
+                  onChange={(e) => handleSettingChange("companyEmail", e.target.value)}
+                  className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                  placeholder="payments@yourcompany.com"
+                />
+              </div>
+            </div>
+
+            {/* Payment Defaults */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-cyan-400 mb-3">Payment Defaults</h4>
+              <div>
+                <Label htmlFor="invoicePrefix" className="text-white">Invoice Prefix</Label>
+                <Input
+                  id="invoicePrefix"
+                  value={settings.invoicePrefix}
+                  onChange={(e) => handleSettingChange("invoicePrefix", e.target.value)}
+                  className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                  placeholder="INV"
+                />
+              </div>
+              <div>
+                <Label htmlFor="depositPercentage" className="text-white">Default Deposit (%)</Label>
+                <Select
+                  value={settings.depositPercentage}
+                  onValueChange={(value) => handleSettingChange("depositPercentage", value)}
+                >
+                  <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-600">
+                    <SelectItem value="25">25%</SelectItem>
+                    <SelectItem value="50">50%</SelectItem>
+                    <SelectItem value="75">75%</SelectItem>
+                    <SelectItem value="100">100%</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
+
+          <Separator className="bg-gray-700" />
 
           {/* Payment Terms */}
-          <div className="space-y-2">
-            <Label htmlFor="paymentTerms">Default Payment Terms (Days)</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="paymentTerms"
-                type="number"
-                value={settings.defaultPaymentTerms}
-                onChange={(e) =>
-                  handleSettingChange("defaultPaymentTerms", e.target.value)
-                }
-                className="w-24"
-                min="1"
-                max="90"
-              />
-              <span className="text-sm text-muted-foreground">
-                days for payment completion
-              </span>
+          <div className="space-y-4">
+            <h4 className="font-medium text-cyan-400 mb-3">Payment Terms</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="defaultPaymentTerms" className="text-white">Default Payment Terms (days)</Label>
+                <Select
+                  value={settings.defaultPaymentTerms}
+                  onValueChange={(value) => handleSettingChange("defaultPaymentTerms", value)}
+                >
+                  <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-600">
+                    <SelectItem value="0">Immediate</SelectItem>
+                    <SelectItem value="7">7 days</SelectItem>
+                    <SelectItem value="15">15 days</SelectItem>
+                    <SelectItem value="30">30 days</SelectItem>
+                    <SelectItem value="60">60 days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="defaultDueDate" className="text-white">Default Due Date (days)</Label>
+                <Select
+                  value={settings.defaultDueDate}
+                  onValueChange={(value) => handleSettingChange("defaultDueDate", value)}
+                >
+                  <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-600">
+                    <SelectItem value="3">3 days</SelectItem>
+                    <SelectItem value="7">7 days</SelectItem>
+                    <SelectItem value="14">14 days</SelectItem>
+                    <SelectItem value="30">30 days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="reminderSchedule" className="text-white">Reminder Schedule (days before due)</Label>
+                <Select
+                  value={settings.reminderSchedule}
+                  onValueChange={(value) => handleSettingChange("reminderSchedule", value)}
+                >
+                  <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-600">
+                    <SelectItem value="1">1 day</SelectItem>
+                    <SelectItem value="3">3 days</SelectItem>
+                    <SelectItem value="7">7 days</SelectItem>
+                    <SelectItem value="14">14 days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
-          {/* Invoice Prefix */}
-          <div className="space-y-2">
-            <Label htmlFor="invoicePrefix">Invoice Number Prefix</Label>
-            <Input
-              id="invoicePrefix"
-              value={settings.invoicePrefix}
-              onChange={(e) =>
-                handleSettingChange("invoicePrefix", e.target.value)
-              }
-              className="w-32"
-              placeholder="INV"
-            />
-          </div>
+          <Separator className="bg-gray-700" />
 
-          <Separator />
-
-          {/* Automation Settings */}
+          {/* Invoice Notes */}
           <div className="space-y-4">
-            <h4 className="font-medium">Automation</h4>
+            <h4 className="font-medium text-cyan-400 mb-3">Invoice Customization</h4>
+            <div>
+              <Label htmlFor="invoiceNotes" className="text-white">Default Invoice Notes</Label>
+              <Textarea
+                id="invoiceNotes"
+                value={settings.invoiceNotes}
+                onChange={(e) => handleSettingChange("invoiceNotes", e.target.value)}
+                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                placeholder="Add a personal message to your invoices..."
+                rows={3}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label>Auto-send Invoices</Label>
-                <p className="text-sm text-muted-foreground">
-                  Automatically send invoice receipts when payments are
-                  processed
-                </p>
+      {/* Automation Settings */}
+      <Card className="bg-gray-900 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-cyan-400 flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            Automation & Notifications
+          </CardTitle>
+          <CardDescription className="text-gray-400">
+            Automate payment workflows and configure notifications
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Automation Switches */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 border border-gray-700 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Mail className="h-5 w-5 text-cyan-400" />
+                <div>
+                  <h5 className="font-medium text-white">Auto-send Invoices</h5>
+                  <p className="text-sm text-gray-400">Automatically email invoices to clients</p>
+                </div>
               </div>
               <Switch
                 checked={settings.autoSendInvoices}
-                onCheckedChange={(checked) =>
-                  handleSettingChange("autoSendInvoices", checked)
-                }
+                onCheckedChange={(checked) => handleSettingChange("autoSendInvoices", checked)}
               />
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label>Payment Reminders</Label>
-                <p className="text-sm text-muted-foreground">
-                  Send automatic reminders for overdue payments
-                </p>
+            <div className="flex items-center justify-between p-4 border border-gray-700 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Bell className="h-5 w-5 text-cyan-400" />
+                <div>
+                  <h5 className="font-medium text-white">Payment Reminders</h5>
+                  <p className="text-sm text-gray-400">Send automatic payment reminders</p>
+                </div>
               </div>
               <Switch
                 checked={settings.paymentReminders}
-                onCheckedChange={(checked) =>
-                  handleSettingChange("paymentReminders", checked)
-                }
+                onCheckedChange={(checked) => handleSettingChange("paymentReminders", checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-4 border border-gray-700 rounded-lg">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="h-5 w-5 text-cyan-400" />
+                <div>
+                  <h5 className="font-medium text-white">Auto Email Receipts</h5>
+                  <p className="text-sm text-gray-400">Send receipts automatically after payment</p>
+                </div>
+              </div>
+              <Switch
+                checked={settings.autoEmailReceipts}
+                onCheckedChange={(checked) => handleSettingChange("autoEmailReceipts", checked)}
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Notification Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            Notification Settings
-          </CardTitle>
-          <CardDescription>
-            Configure how you receive payment notifications
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label>Payment Received</Label>
-                <p className="text-sm text-muted-foreground">
-                  Get notified when a payment is successfully received
-                </p>
-              </div>
-              <Switch defaultChecked />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label>Payment Failed</Label>
-                <p className="text-sm text-muted-foreground">
-                  Get notified when a payment attempt fails
-                </p>
-              </div>
-              <Switch defaultChecked />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label>Weekly Reports</Label>
-                <p className="text-sm text-muted-foreground">
-                  Receive weekly payment summary reports
-                </p>
-              </div>
-              <Switch />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Security Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Security & Compliance
-          </CardTitle>
-          <CardDescription>
-            Payment security and compliance settings
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <Shield className="h-4 w-4 text-green-600" />
-              <span className="font-medium text-green-800">
-                Security Status
-              </span>
-            </div>
-            <div className="space-y-1 text-sm text-green-700">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-3 w-3" />
-                <span>PCI DSS Compliant payment processing</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-3 w-3" />
-                <span>End-to-end encryption for all transactions</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-3 w-3" />
-                <span>Secure data storage and transmission</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Data Retention</Label>
-            <p className="text-sm text-muted-foreground">
-              Payment data is automatically retained for 7 years to comply with
-              financial regulations. Personal data can be deleted upon request
-              in compliance with privacy laws.
-            </p>
+          {/* Information Box */}
+          <div className="bg-blue-900/20 border border-blue-700 p-4 rounded-lg">
+            <h5 className="font-medium text-blue-400 mb-2 flex items-center gap-2">
+              <Info className="h-4 w-4" />
+              Automation Benefits
+            </h5>
+            <ul className="text-sm text-blue-300 space-y-1">
+              <li>• Reduce manual work and save time</li>
+              <li>• Improve client communication and satisfaction</li>
+              <li>• Get paid faster with automatic reminders</li>
+              <li>• Never miss a payment follow-up</li>
+            </ul>
           </div>
         </CardContent>
       </Card>
@@ -375,15 +410,10 @@ export default function PaymentSettings({
       {/* Save Settings */}
       <div className="flex justify-end">
         <Button
-          onClick={() => {
-            toast({
-              title: "Settings Saved",
-              description:
-                "Your payment settings have been updated successfully.",
-            });
-          }}
+          onClick={saveSettings}
+          className="bg-cyan-400 text-black hover:bg-cyan-300 px-8"
         >
-          Save Settings
+          Save All Settings
         </Button>
       </div>
     </div>

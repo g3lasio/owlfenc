@@ -21,6 +21,12 @@ import {
   History,
   Workflow,
   AlertCircle,
+  Building2,
+  Users,
+  Calculator,
+  Send,
+  Eye,
+  RefreshCw,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -447,91 +453,113 @@ const ProjectPayments: React.FC = () => {
   const hasDataErrors = projectsError || paymentsError;
 
   return (
-    <div className="md:container p-4 md:mx-auto py-8 mb-40 ">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Payment Management</h1>
-          <p className="text-muted-foreground">
-            Simplified payment workflow with guided steps and complete tracking
-          </p>
+    <div className="bg-black min-h-screen font-['Quantico'] text-white">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header Section */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-cyan-400 mb-2">
+              Payment Management
+            </h1>
+            <p className="text-gray-400 text-lg">
+              Simplified payment workflow with guided steps and complete tracking
+            </p>
+          </div>
+          <Button
+            onClick={refreshData}
+            variant="outline"
+            className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
         </div>
-      </div>
 
-      {/* Futuristic Dashboard */}
-      {paymentSummary && (
-        <div className="mb-8">
-          <FuturisticPaymentDashboard
-            paymentSummary={paymentSummary}
-            isLoading={summaryLoading}
-          />
-        </div>
-      )}
+        {/* Futuristic Dashboard */}
+        {paymentSummary && (
+          <div className="mb-8">
+            <FuturisticPaymentDashboard
+              paymentSummary={paymentSummary}
+              isLoading={summaryLoading}
+            />
+          </div>
+        )}
 
-      {/* Error State */}
-      {hasDataErrors && (
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3 text-orange-600">
-              <AlertCircle className="h-5 w-5" />
-              <div>
-                <h4 className="font-medium">Data Loading Issues</h4>
-                <p className="text-sm">
-                  Some data could not be loaded. The system will continue with
-                  available information.
-                </p>
+        {/* Error State */}
+        {hasDataErrors && (
+          <Card className="mb-6 bg-gray-900 border-gray-700">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 text-orange-400">
+                <AlertCircle className="h-5 w-5" />
+                <div>
+                  <h4 className="font-medium text-orange-400">Data Loading Issues</h4>
+                  <p className="text-sm text-gray-400">
+                    Some data could not be loaded. The system will continue with
+                    available information.
+                  </p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="workflow" className="flex items-center gap-2">
-            <Workflow className="h-4 w-4" />
-            Payment Workflow
-          </TabsTrigger>
-          <TabsTrigger value="history" className="flex items-center gap-2">
-            <History className="h-4 w-4" />
-            Payment History
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Settings
-          </TabsTrigger>
-        </TabsList>
+        {/* Main Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 bg-gray-900 border-gray-700">
+            <TabsTrigger
+              value="workflow"
+              className="flex items-center gap-2 data-[state=active]:bg-cyan-400 data-[state=active]:text-black"
+            >
+              <Workflow className="h-4 w-4" />
+              Payment Workflow
+            </TabsTrigger>
+            <TabsTrigger
+              value="history"
+              className="flex items-center gap-2 data-[state=active]:bg-cyan-400 data-[state=active]:text-black"
+            >
+              <History className="h-4 w-4" />
+              Payment History
+            </TabsTrigger>
+            <TabsTrigger
+              value="settings"
+              className="flex items-center gap-2 data-[state=active]:bg-cyan-400 data-[state=active]:text-black"
+            >
+              <Settings className="h-4 w-4" />
+              Settings
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Simplified Payment Workflow Tab */}
-        <TabsContent value="workflow" className="space-y-6">
-          <ProjectPaymentWorkflow
-            projects={projects}
-            payments={payments}
-            onCreatePayment={createPaymentMutation.mutate}
-            onSendInvoice={sendInvoiceMutation.mutate}
-            isCreatingPayment={createPaymentMutation.isPending}
-          />
-        </TabsContent>
+          {/* Simplified Payment Workflow Tab */}
+          <TabsContent value="workflow" className="space-y-6">
+            <ProjectPaymentWorkflow
+              projects={projects}
+              payments={payments}
+              onCreatePayment={createPaymentMutation.mutate}
+              onSendInvoice={sendInvoiceMutation.mutate}
+              isCreatingPayment={createPaymentMutation.isPending}
+            />
+          </TabsContent>
 
-        {/* Payment History Tab */}
-        <TabsContent value="history" className="space-y-6">
-          <PaymentHistory
-            payments={payments}
-            projects={projects}
-            isLoading={paymentsLoading}
-            onResendPaymentLink={resendPaymentLinkMutation.mutate}
-            onRefresh={refreshData}
-          />
-        </TabsContent>
+          {/* Payment History Tab */}
+          <TabsContent value="history" className="space-y-6">
+            <PaymentHistory
+              payments={payments}
+              projects={projects}
+              isLoading={paymentsLoading}
+              onResendPaymentLink={resendPaymentLinkMutation.mutate}
+              onRefresh={refreshData}
+            />
+          </TabsContent>
 
-        {/* Settings Tab */}
-        <TabsContent value="settings" className="space-y-6">
-          <PaymentSettings
-            stripeAccountStatus={stripeAccountStatus}
-            onConnectStripe={connectToStripe}
-          />
-        </TabsContent>
-      </Tabs>
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-6">
+            <PaymentSettings
+              stripeAccountStatus={stripeAccountStatus}
+              onConnectStripe={connectToStripe}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };

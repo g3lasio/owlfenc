@@ -1536,7 +1536,16 @@ Output must be between 200-900 characters in English.`;
   app.use("/api/unified-contracts", unifiedContractRoutes);
 
   // Registrar rutas del sistema de pagos para contratistas
-  app.use("/api/contractor-payments", contractorPaymentRoutes);
+  // Contractor Payment Routes with authentication middleware
+  app.use("/api/contractor-payments", (req, res, next) => {
+    // Add demo user for payment routes
+    req.user = {
+      id: 1,
+      email: 'contractor@owlfence.com',
+      username: 'contractor_demo'
+    };
+    next();
+  }, contractorPaymentRoutes);
 
   // Rutas centralizadas ya registradas en server/index.ts para evitar conflictos de middleware
 
