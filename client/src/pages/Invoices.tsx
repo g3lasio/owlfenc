@@ -660,10 +660,10 @@ const Invoices: React.FC = () => {
       case 1:
         return (
           <div className="space-y-6">
-            <Card>
+            <Card className="bg-gray-900 border-gray-700">
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg">Seleccionar Estimado</CardTitle>
-                <CardDescription className="text-sm">
+                <CardTitle className="text-lg text-cyan-400">Seleccionar Estimado</CardTitle>
+                <CardDescription className="text-sm text-gray-400">
                   Seleccione el estimado desde el cual desea generar la factura
                 </CardDescription>
               </CardHeader>
@@ -671,13 +671,13 @@ const Invoices: React.FC = () => {
                 {/* Search bar */}
                 <div className="mb-6">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input
                       type="text"
                       placeholder="Buscar por cliente o tipo de proyecto..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
                     />
                   </div>
                 </div>
@@ -685,10 +685,10 @@ const Invoices: React.FC = () => {
                 {/* Estimates list */}
                 {loadingEstimates ? (
                   <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto"></div>
                   </div>
                 ) : filteredEstimates.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
+                  <div className="text-center py-8 text-gray-400">
                     <FileText className="mx-auto h-12 w-12 mb-4" />
                     <p>No se encontraron estimados</p>
                   </div>
@@ -697,10 +697,10 @@ const Invoices: React.FC = () => {
                     {filteredEstimates.slice(0, 3).map((estimate) => (
                       <Card
                         key={estimate.id}
-                        className={`cursor-pointer transition-all ${
+                        className={`cursor-pointer transition-all bg-gray-800 border-gray-600 ${
                           selectedEstimate?.id === estimate.id
-                            ? "border-primary ring-2 ring-primary ring-offset-2"
-                            : "hover:border-primary/50"
+                            ? "border-cyan-400 ring-2 ring-cyan-400 ring-offset-2 ring-offset-black"
+                            : "hover:border-cyan-400/50"
                         }`}
                         onClick={() => {
                           setSelectedEstimate(estimate);
@@ -804,39 +804,39 @@ const Invoices: React.FC = () => {
         const amounts = calculateAmounts();
         return (
           <div className="space-y-6">
-            <Card>
+            <Card className="bg-gray-900 border-gray-700">
               <CardHeader>
-                <CardTitle>Ajustes de Pago</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-cyan-400">Ajustes de Pago</CardTitle>
+                <CardDescription className="text-gray-400">
                   Configure los detalles de pago y balance de la factura
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Selected estimate summary */}
                 {selectedEstimate && (
-                  <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-                    <h4 className="font-medium">
+                  <div className="bg-gray-800 p-4 rounded-lg space-y-2">
+                    <h4 className="font-medium text-cyan-400">
                       {selectedEstimate.clientName}
                     </h4>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-gray-400">
                       {selectedEstimate.projectType}
                     </p>
                     <div className="grid grid-cols-3 gap-4 mt-4">
                       <div>
-                        <p className="text-sm text-muted-foreground">Total</p>
-                        <p className="font-semibold">
+                        <p className="text-sm text-gray-400">Total</p>
+                        <p className="font-semibold text-cyan-400">
                           ${amounts.total.toFixed(2)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Pagado</p>
-                        <p className="font-semibold text-green-600">
+                        <p className="text-sm text-gray-400">Pagado</p>
+                        <p className="font-semibold text-green-400">
                           ${amounts.paid.toFixed(2)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Balance</p>
-                        <p className="font-semibold text-orange-600">
+                        <p className="text-sm text-gray-400">Balance</p>
+                        <p className="font-semibold text-orange-400">
                           ${amounts.balance.toFixed(2)}
                         </p>
                       </div>
@@ -847,7 +847,7 @@ const Invoices: React.FC = () => {
                 {/* Payment configuration */}
                 <div className="grid gap-4">
                   <div>
-                    <Label htmlFor="paidAmount">Monto Pagado</Label>
+                    <Label htmlFor="paidAmount" className="text-cyan-400">Monto Pagado</Label>
                     <Input
                       id="paidAmount"
                       type="number"
@@ -862,14 +862,15 @@ const Invoices: React.FC = () => {
                       step="0.01"
                       min="0"
                       max={selectedEstimate?.total || 0}
+                      className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
                     />
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-sm text-gray-400 mt-1">
                       Ingrese el monto que ya ha sido pagado por el cliente
                     </p>
                   </div>
 
                   <div>
-                    <Label htmlFor="paymentTerms">
+                    <Label htmlFor="paymentTerms" className="text-cyan-400">
                       Términos de Pago (días)
                     </Label>
                     <select
@@ -881,7 +882,7 @@ const Invoices: React.FC = () => {
                           paymentTerms: parseInt(e.target.value),
                         }))
                       }
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border rounded-md bg-gray-800 border-gray-600 text-white"
                     >
                       <option value={0}>Al recibir</option>
                       <option value={15}>15 días</option>
@@ -892,7 +893,7 @@ const Invoices: React.FC = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="notes">Notas adicionales (opcional)</Label>
+                    <Label htmlFor="notes" className="text-cyan-400">Notas adicionales (opcional)</Label>
                     <Textarea
                       id="notes"
                       value={invoiceConfig.notes}
@@ -904,13 +905,14 @@ const Invoices: React.FC = () => {
                       }
                       placeholder="Agregue cualquier nota o mensaje para el cliente..."
                       rows={3}
+                      className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
                     />
                   </div>
                 </div>
 
                 {/* Quick payment buttons */}
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">Opciones rápidas:</p>
+                  <p className="text-sm font-medium text-cyan-400">Opciones rápidas:</p>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -921,6 +923,7 @@ const Invoices: React.FC = () => {
                           paidAmount: 0,
                         }))
                       }
+                      className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
                     >
                       Sin pago
                     </Button>
@@ -933,6 +936,7 @@ const Invoices: React.FC = () => {
                           paidAmount: (selectedEstimate?.total || 0) * 0.5,
                         }))
                       }
+                      className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
                     >
                       50% pagado
                     </Button>
@@ -945,6 +949,7 @@ const Invoices: React.FC = () => {
                           paidAmount: selectedEstimate?.total || 0,
                         }))
                       }
+                      className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
                     >
                       Pagado completo
                     </Button>
@@ -958,23 +963,23 @@ const Invoices: React.FC = () => {
       case 3:
         return (
           <div className="space-y-6">
-            <Card>
+            <Card className="bg-gray-900 border-gray-700">
               <CardHeader>
-                <CardTitle>Enviar y Descargar</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-cyan-400">Enviar y Descargar</CardTitle>
+                <CardDescription className="text-gray-400">
                   Elija cómo desea entregar la factura al cliente
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Invoice preview */}
                 {selectedEstimate && (
-                  <div className="bg-muted/50 p-6 rounded-lg space-y-4">
+                  <div className="bg-gray-800 p-6 rounded-lg space-y-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="text-lg font-semibold">
+                        <h3 className="text-lg font-semibold text-cyan-400">
                           Factura #{generateInvoiceNumber()}
                         </h3>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-gray-400">
                           Fecha: {new Date().toLocaleDateString()}
                         </p>
                       </div>
@@ -995,25 +1000,25 @@ const Invoices: React.FC = () => {
                       </Badge>
                     </div>
 
-                    <div className="border-t pt-4">
-                      <p className="font-medium mb-2">
+                    <div className="border-t border-gray-600 pt-4">
+                      <p className="font-medium mb-2 text-cyan-400">
                         {selectedEstimate.clientName}
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-gray-400">
                         {selectedEstimate.projectType}
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                    <div className="grid grid-cols-2 gap-4 border-t border-gray-600 pt-4">
                       <div>
-                        <p className="text-sm text-muted-foreground">Total</p>
-                        <p className="font-semibold">
+                        <p className="text-sm text-gray-400">Total</p>
+                        <p className="font-semibold text-cyan-400">
                           ${calculateAmounts().total.toFixed(2)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Balance</p>
-                        <p className="font-semibold text-orange-600">
+                        <p className="text-sm text-gray-400">Balance</p>
+                        <p className="font-semibold text-orange-400">
                           ${calculateAmounts().balance.toFixed(2)}
                         </p>
                       </div>
@@ -1036,14 +1041,14 @@ const Invoices: React.FC = () => {
                       }
                       className="h-4 w-4"
                     />
-                    <Label htmlFor="sendEmail" className="cursor-pointer">
+                    <Label htmlFor="sendEmail" className="cursor-pointer text-cyan-400">
                       Enviar por email al cliente
                     </Label>
                   </div>
 
                   {invoiceConfig.sendEmail && (
                     <div>
-                      <Label htmlFor="recipientEmail">
+                      <Label htmlFor="recipientEmail" className="text-cyan-400">
                         Email del destinatario
                       </Label>
                       <Input
@@ -1057,6 +1062,7 @@ const Invoices: React.FC = () => {
                           }))
                         }
                         placeholder="cliente@ejemplo.com"
+                        className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
                       />
                     </div>
                   )}
@@ -1064,7 +1070,10 @@ const Invoices: React.FC = () => {
 
                 {/* Action buttons */}
                 <div className="flex gap-3">
-                  <Button onClick={handleGenerateInvoice} className="flex-1">
+                  <Button 
+                    onClick={handleGenerateInvoice} 
+                    className="flex-1 bg-cyan-400 text-black hover:bg-cyan-300"
+                  >
                     <Download className="mr-2 h-4 w-4" />
                     Generar Factura
                   </Button>
@@ -1073,7 +1082,7 @@ const Invoices: React.FC = () => {
                       setEmailPreviewContent(generateEmailPreview());
                       setShowEmailPreview(true);
                     }}
-                    className="flex-1"
+                    className="flex-1 bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
                     variant="outline"
                   >
                     <Mail className="mr-2 h-4 w-4" />
@@ -1081,7 +1090,7 @@ const Invoices: React.FC = () => {
                   </Button>
                 </div>
 
-                <p className="text-sm text-muted-foreground text-center">
+                <p className="text-sm text-gray-400 text-center">
                   Puede descargar la factura como PDF o enviarla directamente
                   por email al cliente
                 </p>
@@ -1097,13 +1106,13 @@ const Invoices: React.FC = () => {
 
   return (
     <>
-      <div className="page-container">
-        <div className="scrollable-content space-y-6">
+      <div className="min-h-screen bg-black text-white font-quantico">
+        <div className="max-w-7xl mx-auto p-4 space-y-6">
           {/* Header */}
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold">Sistema de Facturación</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-2xl md:text-3xl font-bold text-cyan-400">Sistema de Facturación</h1>
+              <p className="text-gray-400">
                 Genere facturas profesionales desde sus estimados guardados
               </p>
             </div>
@@ -1111,12 +1120,12 @@ const Invoices: React.FC = () => {
 
           {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="wizard" className="flex items-center gap-2">
+            <TabsList className="grid w-full grid-cols-2 bg-gray-900 border-gray-700">
+              <TabsTrigger value="wizard" className="flex items-center gap-2 data-[state=active]:bg-cyan-400 data-[state=active]:text-black">
                 <FileText className="h-4 w-4" />
                 Generar Factura
               </TabsTrigger>
-              <TabsTrigger value="history" className="flex items-center gap-2">
+              <TabsTrigger value="history" className="flex items-center gap-2 data-[state=active]:bg-cyan-400 data-[state=active]:text-black">
                 <History className="h-4 w-4" />
                 Historial de Facturas
               </TabsTrigger>
@@ -1139,10 +1148,10 @@ const Invoices: React.FC = () => {
                             flex items-center justify-center w-10 h-10 rounded-full
                             ${
                               isActive
-                                ? "bg-primary text-primary-foreground"
+                                ? "bg-cyan-400 text-black"
                                 : isCompleted
                                   ? "bg-green-600 text-white"
-                                  : "bg-muted text-muted-foreground"
+                                  : "bg-gray-700 text-gray-400"
                             }
                           `}
                           >
@@ -1154,7 +1163,7 @@ const Invoices: React.FC = () => {
                           </div>
                           <span
                             className={`
-                          text-sm mt-2 ${isActive ? "font-medium" : "text-muted-foreground"}
+                          text-sm mt-2 ${isActive ? "font-medium text-cyan-400" : "text-gray-400"}
                         `}
                           >
                             {step.title}
@@ -1163,7 +1172,7 @@ const Invoices: React.FC = () => {
                         {index < WIZARD_STEPS.length - 1 && (
                           <div
                             className={`
-                          flex-1 h-1 mx-4 ${isCompleted ? "bg-green-600" : "bg-muted"}
+                          flex-1 h-1 mx-4 ${isCompleted ? "bg-green-600" : "bg-gray-700"}
                         `}
                           />
                         )}
@@ -1182,13 +1191,18 @@ const Invoices: React.FC = () => {
                   variant="outline"
                   onClick={prevStep}
                   disabled={currentStep === 1}
+                  className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
                 >
                   <ChevronLeft className="mr-2 h-4 w-4" />
                   Anterior
                 </Button>
 
                 {currentStep < WIZARD_STEPS.length && (
-                  <Button onClick={nextStep} disabled={!canProceedToNext()}>
+                  <Button 
+                    onClick={nextStep} 
+                    disabled={!canProceedToNext()}
+                    className="bg-cyan-400 text-black hover:bg-cyan-300"
+                  >
                     Siguiente
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -1197,19 +1211,19 @@ const Invoices: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="history" className="space-y-6">
-              <Card>
+              <Card className="bg-gray-900 border-gray-700">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-lg">
+                  <CardTitle className="text-lg text-cyan-400">
                     Historial de Facturas
                   </CardTitle>
-                  <CardDescription className="text-sm">
+                  <CardDescription className="text-sm text-gray-400">
                     Todas las facturas generadas están disponibles aquí para
                     descargar
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {invoiceHistory.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
+                    <div className="text-center py-8 text-gray-400">
                       <History className="mx-auto h-12 w-12 mb-4" />
                       <p>No hay facturas generadas aún</p>
                     </div>
