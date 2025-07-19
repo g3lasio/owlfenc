@@ -321,8 +321,8 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
       <TooltipProvider>
         <aside
           className={`
-            flex flex-col bg-card transition-all duration-300 
-            ${isSidebarExpanded ? "w-72 border-r border-border" : "w-12 md:w-16"}
+            flex flex-col transition-all duration-300 
+            ${isSidebarExpanded ? "w-72 border-r border-border bg-card" : "w-12 md:w-16 md:bg-card"}
             fixed left-0 top-0 z-40 translate-x-0
             md:relative
           `}
