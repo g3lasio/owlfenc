@@ -321,7 +321,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
       <TooltipProvider>
         <aside
           className={`
-            flex flex-col bg-card transition-all duration-300
+            flex flex-col bg-card transition-all duration-300 relative
             ${isSidebarExpanded ? "w-72 border-r border-border" : "w-16"}
             ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
             md:translate-x-0 md:relative fixed left-0 top-0 z-40
@@ -334,12 +334,12 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             flexShrink: 0,
           }}
         >
-          {/* Ícono hexagonal alineado con el logo del header */}
+          {/* Ícono hexagonal posicionado absolutamente a la misma altura del logo */}
           <div 
-            className="flex-shrink-0 flex items-center justify-center px-2"
+            className="absolute top-0 left-0 w-full flex items-center justify-center z-50"
             style={{
-              height: 'var(--header-height)',
-              minHeight: 'var(--header-height)'
+              height: '80px',
+              minHeight: '80px'
             }}
           >
             <HexagonalMenuIcon onClick={toggleSidebar} />
