@@ -334,11 +334,14 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             flexShrink: 0,
           }}
         >
-          {/* Header con ícono hexagonal toggle */}
-          <div
-            className={`flex-shrink-0 flex items-center justify-center ${isSidebarExpanded ? "p-3 border-b border-border" : "p-2"}`}
-          >
+          {/* Ícono hexagonal en la parte superior */}
+          <div className="flex-shrink-0 flex items-center justify-center pt-4 pb-2 px-2">
             <HexagonalMenuIcon onClick={toggleSidebar} />
+          </div>
+
+          {/* Separador visual para distinguir el control del sidebar */}
+          <div className="flex-shrink-0 px-3 pb-2">
+            <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent"></div>
           </div>
 
           {/* Área de navegación con scroll interno */}
