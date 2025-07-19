@@ -4015,9 +4015,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       case 1: // Project Details
         return (
-          <Card>
+          <Card className="bg-gray-900 border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-cyan-400">
                 <FileText className="h-5 w-5" />
                 Detalles del Proyecto
               </CardTitle>
@@ -4035,7 +4035,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   <Button
                     onClick={enhanceProjectWithAI}
                     disabled={isAIProcessing || !estimate.projectDetails.trim()}
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 w-full sm:w-auto"
+                    className="bg-cyan-400 text-black hover:bg-cyan-300 w-full sm:w-auto"
                     size="sm"
                   >
                     {isAIProcessing ? (
@@ -4296,9 +4296,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       case 2: // Materials Selection
         return (
-          <Card>
+          <Card className="bg-gray-900 border-gray-700">
             <CardHeader>
-              <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-cyan-400">
                 <div className="flex items-center gap-2">
                   <Package className="h-5 w-5" />
                   Add Materials ({estimate.items.length})
@@ -5873,7 +5873,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-8">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-bold text-cyan-400 mb-4">
+              <h1 className="text-2xl md:text-3xl font-bold text-cyan-400 mb-4">
                 Professional Estimates Generator
               </h1>
             </div>
