@@ -533,13 +533,45 @@ export default function Profile() {
   };
 
   return (
-    <div className="page-container bg-black text-white font-mono">
-      <div className="scrollable-content">
-        {/* Page Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-cyan-400 mb-2">Company Profile</h1>
-          <p className="text-gray-400">Manage your fencing company information</p>
+    <div className="min-h-screen bg-black text-white font-mono">
+      {/* Cyberpunk Header */}
+      <div className="border-b border-cyan-900/30 bg-gray-900/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+            {/* Logo and Title */}
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 relative">
+                <svg viewBox="0 0 64 64" className="w-full h-full">
+                  <defs>
+                    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#00ffff" />
+                      <stop offset="100%" stopColor="#0080ff" />
+                    </linearGradient>
+                  </defs>
+                  <polygon
+                    points="32,8 48,16 48,32 32,40 16,32 16,16"
+                    fill="none"
+                    stroke="url(#logoGrad)"
+                    strokeWidth="2"
+                    className="animate-pulse"
+                  />
+                  <circle cx="32" cy="24" r="8" fill="url(#logoGrad)" opacity="0.6" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-2xl lg:text-3xl font-bold text-white tracking-wider">
+                  OWL FENCE
+                </h1>
+                <p className="text-cyan-400 text-sm tracking-widest">
+                  The AI Force Crafting the Future Skyline
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-6">
         {/* User Profile Banner */}
         <div className="border border-cyan-900/30 rounded-lg bg-gray-900/50 backdrop-blur-sm p-6 mb-8">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
@@ -603,8 +635,14 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Save Button */}
-        <div className="flex justify-end mb-6">
+        {/* Header with Save Button */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div>
+            <h2 className="text-2xl font-bold text-white font-['Quantico']">Company Profile</h2>
+            <p className="text-gray-400 mt-1">
+              Manage your fencing company information
+            </p>
+          </div>
           <Button
             onClick={handleSave}
             disabled={loading}
@@ -1477,6 +1515,42 @@ export default function Profile() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Cyberpunk Footer */}
+        <div className="mt-12 border-t border-cyan-900/30 bg-gray-900/50 backdrop-blur-sm">
+          <div className="container mx-auto px-4 py-6">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-8 h-8">
+                  <svg viewBox="0 0 32 32" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="footerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#00ffff" />
+                        <stop offset="100%" stopColor="#0080ff" />
+                      </linearGradient>
+                    </defs>
+                    <polygon
+                      points="16,4 24,8 24,16 16,20 8,16 8,8"
+                      fill="none"
+                      stroke="url(#footerGrad)"
+                      strokeWidth="1"
+                      className="animate-pulse"
+                    />
+                    <circle cx="16" cy="12" r="4" fill="url(#footerGrad)" opacity="0.6" />
+                  </svg>
+                </div>
+                <div className="text-sm text-gray-400">
+                  <span className="text-cyan-400 font-medium">OWL FENCE</span> © {new Date().getFullYear()} — Professional Contractor Management
+                </div>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-gray-500">
+                <span>AI-Powered Legal Defense System</span>
+                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                <span>Secure Firebase Integration</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
