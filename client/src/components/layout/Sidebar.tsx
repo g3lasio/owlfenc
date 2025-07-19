@@ -310,21 +310,21 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
   return (
     <>
 
-      {/* Mobile Backdrop */}
-      {isMobileMenuOpen && (
+      {/* Mobile Backdrop - Solo se muestra cuando el sidebar está expandido en móvil */}
+      {isSidebarExpanded && window.innerWidth < 768 && (
         <div
-          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
-          onClick={() => setMobileMenuOpen(false)}
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30 transition-opacity duration-300"
+          onClick={() => setSidebarExpanded(false)}
         />
       )}
 
       <TooltipProvider>
         <aside
           className={`
-            flex flex-col bg-card transition-all duration-300 relative
+            flex flex-col bg-card transition-all duration-300 
             ${isSidebarExpanded ? "w-72 border-r border-border" : "w-16"}
-            ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
-            md:translate-x-0 md:relative fixed left-0 top-0 z-40
+            fixed left-0 top-0 z-40 translate-x-0
+            md:relative
           `}
           style={{
             height: "100vh",
