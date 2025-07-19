@@ -897,50 +897,41 @@ export const loginWithGoogle = async () => {
       prompt: 'select_account'
     });
     
-    // Intentar con popup primero con timeout
+    // Intentar con popup SIN timeout para dominios autorizados
     try {
-      console.log("Intentando autenticación con popup de Google...");
-      
-      // Timeout para el popup
-      const popupPromise = signInWithPopup(auth, googleProvider);
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('POPUP_TIMEOUT')), 10000); // 10 segundos
-      });
-      
-      const result = await Promise.race([popupPromise, timeoutPromise]);
+      console.log("Intentando autenticación con popup de Google (dominio autorizado)...");
+      const result = await signInWithPopup(auth, googleProvider);
       console.log("¡Autenticación con Google popup exitosa!");
       return result.user;
       
     } catch (popupError: any) {
       console.log("Popup de Google falló:", popupError.code || popupError.message, "- Evaluando alternativas...");
       
-      // Para entorno Replit, usar autenticación de desarrollo inmediatamente
-      if (isReplitDev && (
-          popupError.code === 'auth/popup-closed-by-user' ||
-          popupError.code === 'auth/popup-blocked' ||
-          popupError.code === 'auth/unauthorized-domain' ||
-          popupError.message === 'POPUP_TIMEOUT' ||
-          popupError.message?.includes('domain not authorized')
-      )) {
-        console.log("Replit detectado - usando autenticación de desarrollo para Google");
-        const devUser = createDevUser();
-        
-        setTimeout(() => {
-          const event = new CustomEvent('dev-auth-change', { detail: { user: devUser } });
-          window.dispatchEvent(event);
-        }, 500);
-        
-        return devUser;
-      }
-      
-      // Para producción, intentar redirección solo si no es problema de dominio
-      if (!isReplitDev && (
-          popupError.code === 'auth/popup-blocked' || 
-          popupError.code === 'auth/popup-closed-by-user'
-      )) {
-        console.log("Iniciando redirección a Google...");
+      // Si el popup es cerrado por el usuario, intentar redirección
+      if (popupError.code === 'auth/popup-closed-by-user') {
+        console.log("Usuario cerró popup - intentando redirección a Google...");
         await signInWithRedirect(auth, googleProvider);
         return null; // La redirección manejará el resultado
+      }
+      
+      // Si hay bloqueo de popup, usar redirección directamente
+      if (popupError.code === 'auth/popup-blocked') {
+        console.log("Popup bloqueado - usando redirección directa a Google...");
+        await signInWithRedirect(auth, googleProvider);
+        return null;
+      }
+      
+      // Para otros errores, intentar redirección como última opción
+      if (popupError.code === 'auth/network-request-failed' || 
+          popupError.code === 'auth/internal-error') {
+        console.log("Error de red/interno - intentando redirección a Google...");
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return null;
+        } catch (redirectError) {
+          console.error("Redirección también falló:", redirectError);
+          throw new Error("No se pudo conectar con Google. Verifica tu conexión a internet.");
+        }
       }
       
       throw popupError;
@@ -949,26 +940,17 @@ export const loginWithGoogle = async () => {
   } catch (error: any) {
     console.error("Error iniciando sesión con Google:", error);
     
-    // Para Replit, usar autenticación de desarrollo
-    if (isReplitDev) {
-      console.log("Error en Replit - usando autenticación de desarrollo");
-      const devUser = createDevUser();
-      
-      setTimeout(() => {
-        const event = new CustomEvent('dev-auth-change', { detail: { user: devUser } });
-        window.dispatchEvent(event);
-      }, 500);
-      
-      return devUser;
-    }
-    
-    // Mapear errores para producción
+    // Mapear errores específicos
     if (error.code === 'auth/unauthorized-domain') {
       throw new Error("Este dominio no está autorizado para Google Sign-In. Contacta al administrador.");
     } else if (error.code === 'auth/network-request-failed') {
       throw new Error("Error de conexión. Verifica tu internet e intenta nuevamente.");
     } else if (error.code === 'auth/invalid-oauth-provider') {
       throw new Error("Google Sign-In no está configurado correctamente en Firebase.");
+    } else if (error.code === 'auth/popup-closed-by-user') {
+      throw new Error("Ventana de Google cerrada. Por favor, intenta nuevamente.");
+    } else if (error.code === 'auth/popup-blocked') {
+      throw new Error("Popup bloqueado por el navegador. Permite ventanas emergentes para esta página.");
     }
     
     throw error;
@@ -1074,56 +1056,41 @@ export const loginWithApple = async () => {
     provider.addScope('email');
     provider.addScope('name');
     
-    // Intentar con popup con timeout
+    // Intentar con popup SIN timeout para dominios autorizados
     try {
-      console.log("Intentando autenticación con popup...");
-      
-      // Timeout para el popup
-      const popupPromise = signInWithPopup(auth, provider);
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('POPUP_TIMEOUT')), 10000); // 10 segundos
-      });
-      
-      const result = await Promise.race([popupPromise, timeoutPromise]);
-      console.log("¡Autenticación con popup exitosa!");
+      console.log("Intentando autenticación con popup de Apple (dominio autorizado)...");
+      const result = await signInWithPopup(auth, provider);
+      console.log("¡Autenticación con Apple popup exitosa!");
       return result.user;
       
     } catch (popupError: any) {
-      console.log("Popup falló:", popupError.code || popupError.message, "- Evaluando alternativas...");
+      console.log("Popup de Apple falló:", popupError.code || popupError.message, "- Evaluando alternativas...");
       
-      // Para entorno Replit, usar autenticación de desarrollo inmediatamente
-      if (isReplitDev && (
-          popupError.code === 'auth/popup-closed-by-user' ||
-          popupError.code === 'auth/popup-blocked' ||
-          popupError.code === 'auth/unauthorized-domain' ||
-          popupError.message === 'POPUP_TIMEOUT' ||
-          popupError.message?.includes('domain not authorized')
-      )) {
-        console.log("Replit detectado - usando autenticación de desarrollo para Apple");
-        try {
-          return await initReplAuth();
-        } catch (replError) {
-          console.error("Error en fallback de Repl Auth:", replError);
-          // Usar createDevUser como último recurso
-          const devUser = createDevUser();
-          
-          setTimeout(() => {
-            const event = new CustomEvent('dev-auth-change', { detail: { user: devUser } });
-            window.dispatchEvent(event);
-          }, 500);
-          
-          return devUser;
-        }
-      }
-      
-      // Para producción, intentar redirección solo si no es problema de dominio
-      if (!isReplitDev && (
-          popupError.code === 'auth/popup-blocked' || 
-          popupError.code === 'auth/popup-closed-by-user'
-      )) {
-        console.log("Iniciando redirección a Apple...");
+      // Si el popup es cerrado por el usuario, intentar redirección
+      if (popupError.code === 'auth/popup-closed-by-user') {
+        console.log("Usuario cerró popup - intentando redirección a Apple...");
         await signInWithRedirect(auth, provider);
         return null; // La redirección manejará el resultado
+      }
+      
+      // Si hay bloqueo de popup, usar redirección directamente
+      if (popupError.code === 'auth/popup-blocked') {
+        console.log("Popup bloqueado - usando redirección directa a Apple...");
+        await signInWithRedirect(auth, provider);
+        return null;
+      }
+      
+      // Para otros errores, intentar redirección como última opción
+      if (popupError.code === 'auth/network-request-failed' || 
+          popupError.code === 'auth/internal-error') {
+        console.log("Error de red/interno - intentando redirección a Apple...");
+        try {
+          await signInWithRedirect(auth, provider);
+          return null;
+        } catch (redirectError) {
+          console.error("Redirección también falló:", redirectError);
+          throw new Error("No se pudo conectar con Apple. Verifica tu conexión a internet.");
+        }
       }
       
       throw popupError;
@@ -1132,26 +1099,7 @@ export const loginWithApple = async () => {
   } catch (error: any) {
     console.error("Error en Apple Sign-In:", error);
     
-    // Para Replit, usar autenticación de desarrollo
-    if (isReplitDev) {
-      console.log("Error en Replit - usando autenticación de desarrollo para Apple");
-      try {
-        return await initReplAuth();
-      } catch (replError) {
-        console.error("Error en fallback de Repl Auth:", replError);
-        // Usar createDevUser como último recurso
-        const devUser = createDevUser();
-        
-        setTimeout(() => {
-          const event = new CustomEvent('dev-auth-change', { detail: { user: devUser } });
-          window.dispatchEvent(event);
-        }, 500);
-        
-        return devUser;
-      }
-    }
-    
-    // Mapear errores para producción
+    // Mapear errores específicos
     if (error.code === 'auth/unauthorized-domain') {
       throw new Error("Este dominio no está autorizado para Apple Sign-In. Contacta al administrador.");
     } else if (error.code === 'auth/invalid-oauth-provider') {
@@ -1160,6 +1108,10 @@ export const loginWithApple = async () => {
       throw new Error("Error de conexión. Verifica tu internet e intenta nuevamente.");
     } else if (error.code === 'auth/internal-error') {
       throw new Error("Error interno de Firebase. Intenta con otro método de autenticación.");
+    } else if (error.code === 'auth/popup-closed-by-user') {
+      throw new Error("Ventana de Apple cerrada. Por favor, intenta nuevamente.");
+    } else if (error.code === 'auth/popup-blocked') {
+      throw new Error("Popup bloqueado por el navegador. Permite ventanas emergentes para esta página.");
     }
     
     // Error genérico
