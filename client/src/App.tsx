@@ -121,6 +121,9 @@ function Router() {
       <Route path="/project-payments">
         {() => <ProtectedRoute component={ProjectPayments} />}
       </Route>
+      <Route path="/payments">
+        {() => <ProtectedRoute component={ProjectPayments} />}
+      </Route>
       <Route path="/invoices">
         {() => <ProtectedRoute component={Invoices} />}
       </Route>
