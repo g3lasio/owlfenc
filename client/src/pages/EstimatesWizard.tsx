@@ -431,9 +431,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               name: material.name,
               description: material.description || "",
               quantity: material.quantity,
-              price: material.price,
+              price: Number(Number(material.price).toFixed(2)),
               unit: material.unit,
-              total: material.total,
+              total: Number(Number(material.total).toFixed(2)),
             });
           });
 
@@ -3602,11 +3602,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         client: estimate.client || {},
         items: estimate.items || [],
         projectTotalCosts: {
-          subtotal: estimate.subtotal || 0,
-          discount: estimate.discountAmount || 0,
-          taxRate: estimate.taxRate || 10,
-          tax: estimate.tax || 0,
-          total: estimate.total || 0,
+          subtotal: Number(Number(estimate.subtotal).toFixed(2)) || 0,
+          discount: Number(Number(estimate.discountAmount).toFixed(2)) || 0,
+          taxRate: Number(Number(estimate.taxRate.toFixed(2)).toFixed(2)) || 0,
+          tax: Number(Number(estimate.tax.toFixed(2))) || 0,
+          total: Number(Number(estimate.total.toFixed(2))) || 0,
         },
         originalData: {
           projectDescription: estimate.projectDetails || "",
