@@ -324,7 +324,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             flex flex-col bg-card transition-all duration-300 relative
             ${isSidebarExpanded ? "w-72 border-r border-border" : "w-16"}
             ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
-            md:translate-x-0 md:relative fixed left-0 top-0 z-40
+            md:translate-x-0 md:relative fixed left-0 top-0 z-50
           `}
           style={{
             height: "100vh",
@@ -332,6 +332,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             maxHeight: "100vh",
             overflow: "hidden",
             flexShrink: 0,
+            backgroundColor: "#0f172a", // Ensure visibility
           }}
         >
           {/* Ícono hexagonal posicionado absolutamente a la misma altura del logo */}
