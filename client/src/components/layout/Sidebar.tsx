@@ -367,17 +367,15 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
           className={`
             flex flex-col transition-all duration-300 border-r border-border bg-card
             ${isPhone 
-              ? (isSidebarExpanded ? "w-72 block" : "hidden")  // Phone: hidden by default, full width when expanded
+              ? (isSidebarExpanded ? "w-72 block fixed left-0 top-0 z-40" : "hidden")  // Phone: hidden by default, fixed when expanded
               : isTabletOrDesktop 
-                ? (isSidebarExpanded ? "w-72" : "w-16")  // Tablet/Desktop: icons-only by default, full width when expanded
-                : "w-16"  // fallback
+                ? (isSidebarExpanded ? "w-72 relative" : "w-16 relative")  // Tablet/Desktop: relative position, not fixed
+                : "w-16 relative"  // fallback
             }
-            fixed left-0 top-0 z-40 translate-x-0
-            sm:relative sm:block
           `}
           style={{
             height: "100vh",
-            paddingTop: "80px",
+            paddingTop: isPhone ? "80px" : "0px", // Solo phones necesitan padding para el ícono hexagonal
             maxHeight: "100vh",
             overflow: "hidden",
             flexShrink: 0,
@@ -480,13 +478,14 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
               <div
                 className="custom-scroll"
                 style={{
-                  height: "100%",
+                  height: "calc(100vh - 120px)", // Ajustado para tablets/desktop sin padding superior
+                  maxHeight: "calc(100vh - 120px)",
                   overflowY: "auto",
                   overflowX: "hidden",
                   paddingTop: "12px",
                   paddingLeft: "8px",
                   paddingRight: "8px",
-                  paddingBottom: "80px",
+                  paddingBottom: "20px",
                 }}
               >
                 {navigationGroups.map((group, groupIndex) => (
