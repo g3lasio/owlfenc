@@ -617,9 +617,9 @@ export default function Profile() {
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
                 <div>
-                  <h2 className="text-2xl font-bold text-white font-['Quantico']">
+                  <h1 className="text-2xl font-bold text-white font-['Quantico']">
                     {companyInfo.ownerName || "Gelasio Sanchez"}
-                  </h2>
+                  </h1>
                   <p className="text-gray-400 mt-1">
                     {companyInfo.company || "Contractor"}
                   </p>

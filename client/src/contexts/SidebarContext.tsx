@@ -15,7 +15,7 @@ export const SidebarProvider = ({ children }: { children: ReactNode }) => {
   const [isSidebarExpanded, setSidebarExpanded] = useState(false);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Efecto para manejar el redimensionado de ventana y eventos del header
+  // Efecto para manejar el redimensionado de ventana
   useEffect(() => {
     const handleResize = () => {
       // En tablets y desktop, asegurar que el sidebar sea visible como iconos
@@ -27,21 +27,11 @@ export const SidebarProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    // Manejar eventos del botón de menú móvil del header
-    const handleToggleMobileSidebar = (event: CustomEvent) => {
-      setMobileMenuOpen(event.detail.isOpen);
-    };
-
     window.addEventListener('resize', handleResize);
-    window.addEventListener('toggleMobileSidebar', handleToggleMobileSidebar as EventListener);
-    
     // Ejecutar una vez al cargar
     handleResize();
 
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('toggleMobileSidebar', handleToggleMobileSidebar as EventListener);
-    };
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const toggleSidebar = () => {

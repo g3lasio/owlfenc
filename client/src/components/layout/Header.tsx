@@ -1,7 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+// No usamos useAuth en este componente, así que removemos la importación innecesaria
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -9,7 +8,6 @@ import { useToast } from "@/hooks/use-toast";
 export default function Header() {
   const [path] = useLocation();
   const [glowPulse, setGlowPulse] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Efecto para animar el pulso del logo
   useEffect(() => {
@@ -71,24 +69,6 @@ export default function Header() {
             The AI Force Crafting the Future Skyline
           </p>
         </Link>
-      </div>
-
-      {/* Botón de menú móvil */}
-      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 md:hidden">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            setIsMobileMenuOpen(!isMobileMenuOpen);
-            // Dispatch event to notify sidebar
-            window.dispatchEvent(new CustomEvent('toggleMobileSidebar', { 
-              detail: { isOpen: !isMobileMenuOpen } 
-            }));
-          }}
-          className="text-cyan-400 hover:text-cyan-300 hover:bg-gray-800"
-        >
-          {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </Button>
       </div>
 
       {/* Espacio derecho para mantener el balance visual */}

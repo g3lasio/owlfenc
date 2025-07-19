@@ -321,10 +321,10 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
       <TooltipProvider>
         <aside
           className={`
-            flex flex-col transition-all duration-300 
-            ${isSidebarExpanded ? "w-72 border-r border-gray-700" : "w-16"}
+            flex flex-col bg-card transition-all duration-300 relative
+            ${isSidebarExpanded ? "w-72 border-r border-border" : "w-16"}
             ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
-            md:translate-x-0 md:relative fixed left-0 top-0
+            md:translate-x-0 md:relative fixed left-0 top-0 z-40
           `}
           style={{
             height: "100vh",
@@ -332,9 +332,6 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             maxHeight: "100vh",
             overflow: "hidden",
             flexShrink: 0,
-            backgroundColor: "#111827",
-            zIndex: 9999,
-            position: "fixed",
           }}
         >
           {/* Ícono hexagonal posicionado absolutamente a la misma altura del logo */}
