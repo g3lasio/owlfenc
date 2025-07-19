@@ -365,7 +365,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
       <TooltipProvider>
         <aside
           className={`
-            flex flex-col transition-all duration-300 border-r border-border bg-card
+            flex flex-col transition-all duration-300 bg-card
             ${isPhone 
               ? (isSidebarExpanded ? "w-72 block fixed left-0 top-0 z-40" : "hidden")  // Phone: hidden by default, fixed when expanded
               : isTabletOrDesktop 
@@ -381,10 +381,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             flexShrink: 0,
           }}
         >
-          {/* Separador visual para distinguir el control del sidebar */}
-          <div className="flex-shrink-0 px-3 pb-2">
-            <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent"></div>
-          </div>
+
 
           {/* Área de navegación con scroll interno */}
           <div
@@ -493,17 +490,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                     key={`group-${groupIndex}`}
                     style={{ marginBottom: "16px" }}
                   >
-                    {/* Separador visual sutil entre grupos */}
-                    {groupIndex > 0 && (
-                      <div
-                        style={{
-                          height: "1px",
-                          background: "rgba(255,255,255,0.08)",
-                          margin: "12px 6px",
-                          borderRadius: "1px",
-                        }}
-                      ></div>
-                    )}
+
 
                     <div
                       style={{
@@ -577,7 +564,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
 
           {/* Footer fijo - adaptivo según el ancho */}
           <div
-            className="absolute bottom-0 left-0 right-0 border-t border-border bg-card"
+            className="absolute bottom-0 left-0 right-0 bg-card"
             style={{ zIndex: 50 }}
           >
             {isPhone || (isTabletOrDesktop && isSidebarExpanded) ? (
