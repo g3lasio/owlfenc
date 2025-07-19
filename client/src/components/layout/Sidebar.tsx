@@ -333,7 +333,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
         <aside
           className={`
             flex flex-col transition-all duration-300 
-            ${isSidebarExpanded ? "w-72 border-r border-border bg-card" : "w-16 md:bg-card"}
+            ${isSidebarExpanded ? "w-72 border-r border-border bg-card" : "w-16 bg-card/95 md:bg-card"}
             fixed left-0 top-0 z-40 translate-x-0
             md:relative
           `}
@@ -345,14 +345,14 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             flexShrink: 0,
           }}
         >
-          {/* Separador visual para distinguir el control del sidebar - Oculto en móviles si no está expandido */}
-          <div className={`flex-shrink-0 px-3 pb-2 ${!isSidebarExpanded ? "hidden md:block" : "block"}`}>
+          {/* Separador visual para distinguir el control del sidebar */}
+          <div className="flex-shrink-0 px-3 pb-2">
             <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent"></div>
           </div>
 
-          {/* Área de navegación con scroll interno - Oculta en móviles si no está expandido */}
+          {/* Área de navegación con scroll interno */}
           <div
-            className={`flex-1 ${!isSidebarExpanded ? "hidden md:flex" : "flex"}`}
+            className="flex-1 flex"
             style={{
               minHeight: 0,
               overflow: "hidden",
