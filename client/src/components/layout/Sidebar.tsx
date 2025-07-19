@@ -309,6 +309,17 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
 
   return (
     <>
+      {/* Ícono hexagonal siempre visible - posicionado independientemente */}
+      <div 
+        className="fixed top-0 left-0 flex items-center justify-center z-50"
+        style={{
+          height: '80px',
+          width: '64px',
+          minHeight: '80px'
+        }}
+      >
+        <HexagonalMenuIcon onClick={toggleSidebar} />
+      </div>
 
       {/* Mobile Backdrop - Solo se muestra cuando el sidebar está expandido en móvil */}
       {isSidebarExpanded && window.innerWidth < 768 && (
@@ -334,17 +345,6 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             flexShrink: 0,
           }}
         >
-          {/* Ícono hexagonal posicionado absolutamente a la misma altura del logo */}
-          <div 
-            className="absolute top-0 left-0 w-full flex items-center justify-center z-50"
-            style={{
-              height: '80px',
-              minHeight: '80px'
-            }}
-          >
-            <HexagonalMenuIcon onClick={toggleSidebar} />
-          </div>
-
           {/* Separador visual para distinguir el control del sidebar - Oculto en móviles si no está expandido */}
           <div className={`flex-shrink-0 px-3 pb-2 ${!isSidebarExpanded ? "hidden md:block" : "block"}`}>
             <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent"></div>
