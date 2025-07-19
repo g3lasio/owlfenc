@@ -334,8 +334,14 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             flexShrink: 0,
           }}
         >
-          {/* Ícono hexagonal en la parte superior */}
-          <div className="flex-shrink-0 flex items-center justify-center pt-4 pb-2 px-2">
+          {/* Ícono hexagonal alineado con el logo del header */}
+          <div 
+            className="flex-shrink-0 flex items-center justify-center px-2"
+            style={{
+              height: 'var(--header-height)',
+              minHeight: 'var(--header-height)'
+            }}
+          >
             <HexagonalMenuIcon onClick={toggleSidebar} />
           </div>
 
