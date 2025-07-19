@@ -245,6 +245,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
   const { currentUser, logout } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const { 
     isSidebarExpanded, 
     isMobileMenuOpen, 
@@ -255,6 +256,17 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
   } = useSidebar();
   const { t } = useTranslation();
   const { language } = useLanguage();
+
+  // Track mobile state
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Query para obtener suscripción del usuario
   const { data: subscription, isLoading: subscriptionLoading } =
@@ -292,20 +304,26 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
 
   // Función para cerrar el sidebar automáticamente al hacer clic en elementos del menú
   const handleMenuItemClick = () => {
-    if (isSidebarExpanded) {
+    // On mobile devices, close sidebar after selection
+    if (isMobile) {
       setSidebarExpanded(false);
-    }
-    // Close mobile menu on mobile
-    if (window.innerWidth < 768) {
       setMobileMenuOpen(false);
     }
+    // On large screens, keep sidebar open
   };
 
   // Comunicar cambios de ancho al componente padre
   useEffect(() => {
-    const width = isSidebarExpanded ? 288 : 64;
+    let width;
+    if (isMobile) {
+      // Mobile: 0 width when hidden, full width when expanded
+      width = isSidebarExpanded ? 288 : 0;
+    } else {
+      // Large screens: always full width (persistent sidebar)
+      width = 288;
+    }
     onWidthChange?.(width);
-  }, [isSidebarExpanded, onWidthChange]);
+  }, [isSidebarExpanded, isMobile, onWidthChange]);
 
   return (
     <>
@@ -322,9 +340,9 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
       </div>
 
       {/* Mobile Backdrop - Solo se muestra cuando el sidebar está expandido en móvil */}
-      {isSidebarExpanded && window.innerWidth < 768 && (
+      {isSidebarExpanded && isMobile && (
         <div
-          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30 transition-opacity duration-300"
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 transition-opacity duration-300"
           onClick={() => setSidebarExpanded(false)}
         />
       )}
@@ -333,7 +351,10 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
         <aside
           className={`
             flex flex-col transition-all duration-300 
-            ${isSidebarExpanded ? "w-72 border-r border-border bg-card" : "w-16 bg-card/95 md:bg-card"}
+            ${isMobile 
+              ? (isSidebarExpanded ? "w-72 border-r border-border bg-card" : "hidden") 
+              : "w-72 border-r border-border bg-card"
+            }
             fixed left-0 top-0 z-40 translate-x-0
             md:relative
           `}
@@ -359,8 +380,8 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
               flexDirection: "column",
             }}
           >
-            {isSidebarExpanded ? (
-              // Vista expandida con scroll
+            {(isSidebarExpanded || !isMobile) ? (
+              // Vista expandida con scroll (always on large screens, on mobile only when expanded)
               <div
                 className="custom-scroll"
                 style={{
@@ -536,7 +557,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
           </div>
 
           {/* Footer fijo - posicionado absolutamente */}
-          {isSidebarExpanded && (
+          {(isSidebarExpanded || !isMobile) && (
             <div
               className="absolute bottom-0 left-0 right-0 p-2 border-t border-border bg-card"
               style={{ zIndex: 50 }}
