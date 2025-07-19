@@ -59,6 +59,12 @@
   /* Transiciones */
   --transition-default: 300ms ease-in-out;
   --transition-fast: 150ms ease-out;
+
+  /* Colores para el ícono hexagonal futurista */
+  --hex-primary: #00ffff;
+  --hex-secondary: #0080ff;
+  --hex-tertiary: #4040ff;
+  --hex-glow-alpha: 0.6;
 }
 
 /* =================================================================
@@ -2083,5 +2089,93 @@ body {
   100% {
     border-color: rgba(202, 138, 4, 0.3);
     box-shadow: 0 0 5px rgba(234, 179, 8, 0.3);
+  }
+}
+
+/* =================================================================
+   HEXAGONAL FUTURISTIC MENU ICON STYLES
+   Fecha: 19/07/2025
+   Propósito: Estilos específicos para el ícono hexagonal del menú
+   ================================================================= */
+
+/* Animaciones para el ícono hexagonal */
+@keyframes hexagonalPulse {
+  0%, 100% {
+    opacity: 0.8;
+    filter: drop-shadow(0 0 4px var(--hex-secondary));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px var(--hex-primary));
+  }
+}
+
+@keyframes hexagonalScanline {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(200%);
+    opacity: 0;
+  }
+}
+
+@keyframes hexagonalRotate3D {
+  0% {
+    transform: rotateY(0deg) rotateX(0deg);
+  }
+  100% {
+    transform: rotateY(360deg) rotateX(15deg);
+  }
+}
+
+@keyframes hexagonalGlowPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.6), 0 0 30px rgba(0, 128, 255, 0.3);
+  }
+}
+
+/* Clases utilitarias para el ícono hexagonal */
+.hexagonal-menu-icon {
+  transition: all var(--transition-default);
+}
+
+.hexagonal-menu-icon:hover {
+  animation: hexagonalGlowPulse 2s ease-in-out infinite;
+}
+
+/* Mejoras de accesibilidad para el ícono hexagonal */
+.hexagonal-menu-icon:focus {
+  outline: 2px solid var(--hex-primary);
+  outline-offset: 2px;
+}
+
+/* Responsividad para el ícono hexagonal */
+@media (max-width: 640px) {
+  .hexagonal-menu-icon {
+    transform: scale(0.9);
+  }
+}
+
+@media (max-width: 480px) {
+  .hexagonal-menu-icon {
+    transform: scale(0.8);
+  }
+}
+
+/* Modo dark theme para el ícono hexagonal */
+@media (prefers-color-scheme: dark) {
+  .hexagonal-menu-icon {
+    filter: brightness(1.1) contrast(1.2);
   }
 }
