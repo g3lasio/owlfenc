@@ -327,13 +327,17 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
 
   return (
     <>
-      {/* Ícono hexagonal siempre visible - posicionado independientemente */}
+      {/* ÍCONO HEXAGONAL SIEMPRE VISIBLE - ABSOLUTA PRIORIDAD */}
       <div 
-        className="fixed top-0 left-0 flex items-center justify-center z-50 bg-transparent"
+        className="fixed top-0 left-0 flex items-center justify-center bg-transparent pointer-events-auto"
         style={{
           height: '80px',
           width: '64px',
-          minHeight: '80px'
+          minHeight: '80px',
+          zIndex: 9999,  // Máximo z-index para que NUNCA se oculte
+          display: 'flex',  // Forzar visibilidad
+          visibility: 'visible',  // Forzar visibilidad
+          opacity: 1  // Forzar opacidad
         }}
       >
         <HexagonalMenuIcon onClick={toggleSidebar} />
