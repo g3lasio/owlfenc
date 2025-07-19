@@ -874,16 +874,14 @@ export const loginUser = async (email: string, password: string) => {
 
 // Espacio reservado para comentarios
 
-// Iniciar sesión con Google
+// Iniciar sesión con Google - VERSIÓN MEJORADA
 export const loginWithGoogle = async () => {
   try {
-    // Si estamos en modo de desarrollo y hay problemas de dominio, usar autenticación simulada
+    // Si estamos en modo de desarrollo, usar autenticación simulada
     if (devMode) {
       console.log("Usando login de desarrollo (sin Firebase)");
       const devUser = createDevUser();
       
-      // Simular un login exitoso
-      // Emitimos un evento de auth change que AuthContext detectará
       setTimeout(() => {
         const event = new CustomEvent('dev-auth-change', { detail: { user: devUser } });
         window.dispatchEvent(event);
@@ -892,33 +890,38 @@ export const loginWithGoogle = async () => {
       return devUser;
     }
     
-    // Configuración normal para entorno de producción
+    console.log("=== GOOGLE SIGN-IN INICIADO ===");
+    
+    // Configuración del proveedor de Google
     googleProvider.setCustomParameters({
       prompt: 'select_account'
     });
     
-    // Intentar con popup (más simple y rápido)
+    // Intentar con popup primero (experiencia más fluida)
     try {
+      console.log("Intentando autenticación con popup de Google...");
       const result = await signInWithPopup(auth, googleProvider);
+      console.log("¡Autenticación con Google popup exitosa!");
       return result.user;
-    } catch (error: any) {
-      console.error("Error con popup de Google:", error);
+    } catch (popupError: any) {
+      console.log("Popup de Google falló:", popupError.code, "- Evaluando alternativas...");
       
-      // Si el popup falla, intentar con redirección como fallback
-      if (error.code === 'auth/popup-blocked' || 
-          error.code === 'auth/popup-closed-by-user') {
-        console.log("Intentando con redirección como alternativa...");
+      // Si el popup es bloqueado o cerrado, usar redirección
+      if (popupError.code === 'auth/popup-blocked' || 
+          popupError.code === 'auth/popup-closed-by-user' ||
+          popupError.code === 'auth/cancelled-popup-request') {
+        
+        console.log("Iniciando redirección a Google...");
         await signInWithRedirect(auth, googleProvider);
-        return null; // La redirección navegará fuera de esta página
+        return null; // La redirección manejará el resultado
       }
       
-      // Si recibimos un error de dominio no autorizado y estamos en Replit, usar modo de desarrollo
-      if ((error.code === 'auth/unauthorized-domain' || 
-           error.message?.includes('domain not authorized')) && isReplitDev) {
-        console.log("Dominio no autorizado en Replit, usando autenticación de desarrollo");
+      // Para errores de dominio no autorizado en desarrollo, usar fallback
+      if ((popupError.code === 'auth/unauthorized-domain' || 
+           popupError.message?.includes('domain not authorized')) && isReplitDev) {
+        console.log("Dominio no autorizado - usando autenticación de desarrollo");
         const devUser = createDevUser();
         
-        // Simular un login exitoso
         setTimeout(() => {
           const event = new CustomEvent('dev-auth-change', { detail: { user: devUser } });
           window.dispatchEvent(event);
@@ -927,19 +930,38 @@ export const loginWithGoogle = async () => {
         return devUser;
       }
       
-      throw error;
+      throw popupError;
     }
+    
   } catch (error: any) {
     console.error("Error iniciando sesión con Google:", error);
     
-    // Si es un error de red o dominio no autorizado en Replit, usar autenticación simulada
-    if ((error.code === 'auth/network-request-failed' || 
-         error.code === 'auth/unauthorized-domain' ||
-         error.message?.includes('domain not authorized')) && isReplitDev) {
-      console.log("Error de red o dominio en Replit, usando autenticación de desarrollo");
+    // Mapear errores comunes a mensajes amigables
+    if (error.code === 'auth/unauthorized-domain') {
+      throw new Error("Este dominio no está autorizado para Google Sign-In. Contacta al administrador.");
+    } else if (error.code === 'auth/network-request-failed') {
+      // Para errores de red en desarrollo, usar fallback
+      if (isReplitDev) {
+        console.log("Error de red en desarrollo - usando autenticación de desarrollo");
+        const devUser = createDevUser();
+        
+        setTimeout(() => {
+          const event = new CustomEvent('dev-auth-change', { detail: { user: devUser } });
+          window.dispatchEvent(event);
+        }, 500);
+        
+        return devUser;
+      }
+      throw new Error("Error de conexión. Verifica tu internet e intenta nuevamente.");
+    } else if (error.code === 'auth/invalid-oauth-provider') {
+      throw new Error("Google Sign-In no está configurado correctamente en Firebase.");
+    }
+    
+    // Para otros errores en desarrollo, intentar fallback
+    if (isReplitDev) {
+      console.log("Error genérico en desarrollo - usando autenticación de desarrollo");
       const devUser = createDevUser();
       
-      // Simular un login exitoso
       setTimeout(() => {
         const event = new CustomEvent('dev-auth-change', { detail: { user: devUser } });
         window.dispatchEvent(event);
@@ -1026,7 +1048,7 @@ const initReplAuth = () => {
   });
 };
 
-// Iniciar sesión con Apple - VERSIÓN CORREGIDA
+// Iniciar sesión con Apple - VERSIÓN SIMPLIFICADA Y CORREGIDA
 export const loginWithApple = async () => {
   try {
     // Si estamos en modo de desarrollo, usar autenticación simulada
@@ -1042,102 +1064,68 @@ export const loginWithApple = async () => {
       return devUser;
     }
     
-    console.log("=== APPLE SIGN-IN CORREGIDO ===");
+    console.log("=== APPLE SIGN-IN SIMPLIFICADO ===");
     console.log("Dominio:", window.location.hostname);
     console.log("AuthDomain:", auth.app.options.authDomain);
     
-    // Crear proveedor con configuración limpia
+    // Crear proveedor de Apple con configuración simple
     const provider = new OAuthProvider('apple.com');
     provider.addScope('email');
     provider.addScope('name');
     
-    // Configurar parámetros específicos para Replit
-    provider.setCustomParameters({
-      'locale': 'en_US'
-    });
-    
-    // Guardar estado para el callback
-    sessionStorage.setItem('apple_auth_redirect', JSON.stringify({
-      timestamp: Date.now(),
-      from: window.location.href,
-      domain: window.location.hostname
-    }));
-    
-    console.log("Iniciando autenticación optimizada con Apple...");
-    
-    // Verificar conectividad básica
-    if (!navigator.onLine) {
-      throw new Error('NO_INTERNET');
-    }
-    
-    // Implementar reintentos con timeouts progresivos
-    let attempts = 0;
-    const maxAttempts = 3;
-    
-    while (attempts < maxAttempts) {
-      attempts++;
-      console.log(`Intento ${attempts}/${maxAttempts} de conectar con Apple`);
+    // Intentar primero con popup (más rápido)
+    try {
+      console.log("Intentando autenticación con popup...");
+      const result = await signInWithPopup(auth, provider);
+      console.log("¡Autenticación con popup exitosa!");
+      return result.user;
+    } catch (popupError: any) {
+      console.log("Popup falló:", popupError.code, "- Intentando con redirección...");
       
-      try {
-        const timeoutDuration = 5000 + (attempts * 2000); // 5s, 7s, 9s
+      // Si el popup falla, usar redirección como fallback
+      if (popupError.code === 'auth/popup-blocked' || 
+          popupError.code === 'auth/popup-closed-by-user' ||
+          popupError.code === 'auth/cancelled-popup-request') {
         
-        const redirectPromise = signInWithRedirect(auth, provider);
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('TIMEOUT')), timeoutDuration);
-        });
-        
-        await Promise.race([redirectPromise, timeoutPromise]);
-        console.log("Redirección a Apple iniciada exitosamente");
-        return null;
-        
-      } catch (attemptError: any) {
-        console.log(`Intento ${attempts} falló:`, attemptError.message);
-        
-        if (attempts === maxAttempts) {
-          throw new Error('APPLE_UNRESPONSIVE');
-        }
-        
-        // Esperar antes del siguiente intento
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+        console.log("Iniciando redirección a Apple...");
+        await signInWithRedirect(auth, provider);
+        return null; // La redirección manejará el resultado
       }
+      
+      // Para errores de dominio no autorizado en desarrollo, usar fallback
+      if (popupError.code === 'auth/unauthorized-domain' && isReplitDev) {
+        console.log("Dominio no autorizado - usando autenticación de desarrollo");
+        try {
+          return await initReplAuth();
+        } catch (replError) {
+          console.error("Error en fallback de Repl Auth:", replError);
+          throw new Error("Apple ID no está disponible en este entorno. Intenta con Google o email/contraseña.");
+        }
+      }
+      
+      throw popupError;
     }
-    
-    throw new Error('MAX_ATTEMPTS_REACHED');
     
   } catch (error: any) {
     console.error("Error en Apple Sign-In:", error);
     console.error("Código:", error.code);
     console.error("Mensaje:", error.message);
     
-    // Manejo específico de errores de Apple
-    if (error.message === 'APPLE_UNRESPONSIVE' || error.message === 'MAX_ATTEMPTS_REACHED' || error.message === 'NO_INTERNET') {
-      console.log("Apple no responde después de múltiples intentos - activando fallback");
-      if (isReplitDev) {
-        console.log("Usando sistema alternativo de autenticación");
-        try {
-          return await initReplAuth();
-        } catch (replError) {
-          console.error("Error en sistema alternativo:", replError);
-          throw new Error("Apple ID no responde. Por favor, intenta con Google o ingresa con email y contraseña.");
-        }
-      }
-      throw new Error("Apple ID no responde después de varios intentos. Intenta con otro método de autenticación.");
-    }
-    
-    // Para otros errores en entornos de desarrollo, usar fallback
-    if (isReplitDev && (error.code === 'auth/unauthorized-domain' || error.code === 'auth/network-request-failed')) {
-      console.log("Error de conectividad con Apple - usando fallback");
-      return await initReplAuth();
-    }
-    
-    // Proporcionar error específico para producción
+    // Mapear errores comunes a mensajes amigables
     if (error.code === 'auth/unauthorized-domain') {
-      throw new Error("Dominio no autorizado en Apple Developer Console");
+      throw new Error("Este dominio no está autorizado para Apple Sign-In. Contacta al administrador.");
     } else if (error.code === 'auth/invalid-oauth-provider') {
-      throw new Error("Apple Sign-In no está configurado correctamente");
+      throw new Error("Apple Sign-In no está configurado correctamente en Firebase.");
+    } else if (error.code === 'auth/network-request-failed') {
+      throw new Error("Error de conexión. Verifica tu internet e intenta nuevamente.");
+    } else if (error.code === 'auth/internal-error') {
+      throw new Error("Error interno de Firebase. Intenta con otro método de autenticación.");
+    } else if (error.message?.includes("Apple ID no está disponible")) {
+      throw error; // Ya es un mensaje amigable
     }
     
-    throw error;
+    // Error genérico
+    throw new Error("No se pudo conectar con Apple ID. Intenta con Google o email/contraseña.");
   }
 };
 

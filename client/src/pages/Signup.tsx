@@ -102,18 +102,51 @@ export default function Signup() {
     setIsLoading(true);
     try {
       clearError();
-      const user = await loginWithGoogle();
-      // register user in db
-      // await createUser
-      // navigate("/");
+      console.log("=== INICIANDO GOOGLE SIGNUP ===");
+      
+      const result = await loginWithGoogle();
+      
+      if (result) {
+        // Registro exitoso inmediato
+        console.log("GOOGLE SIGNUP EXITOSO");
+        
+        toast({
+          title: "Registro exitoso",
+          description: "Tu cuenta ha sido creada correctamente con Google.",
+        });
+        
+        navigate("/");
+      } else {
+        // Redirección iniciada
+        console.log("GOOGLE SIGNUP REDIRECCIÓN INICIADA");
+        
+        toast({
+          title: "Redirigiendo a Google",
+          description: "Se abrirá la página de registro de Google.",
+        });
+      }
     } catch (err: any) {
-      console.error("Error de registro con Google:", err);
+      console.error("ERROR EN GOOGLE SIGNUP:", err);
+      
+      // Mapear errores a mensajes amigables
+      let errorDescription = err.message;
+      
+      if (err.code === "auth/popup-blocked") {
+        toast({
+          title: "Popup bloqueado",
+          description: "Permite ventanas emergentes para completar el registro.",
+        });
+        return;
+      } else if (err.code === "auth/account-exists-with-different-credential") {
+        errorDescription = "Ya tienes una cuenta con este email. Intenta iniciar sesión.";
+      } else if (!err.message || err.message.length > 100) {
+        errorDescription = "Error al registrarte con Google. Intenta con email/contraseña.";
+      }
+
       toast({
         variant: "destructive",
         title: "Error de registro",
-        description:
-          err.message ||
-          "Ocurrió un error al registrarte con Google. Intenta de nuevo.",
+        description: errorDescription,
       });
     } finally {
       setIsLoading(false);
@@ -125,16 +158,51 @@ export default function Signup() {
     setIsLoading(true);
     try {
       clearError();
-      await loginWithApple();
-      navigate("/");
+      console.log("=== INICIANDO APPLE SIGNUP ===");
+      
+      const result = await loginWithApple();
+      
+      if (result) {
+        // Registro exitoso inmediato
+        console.log("APPLE SIGNUP EXITOSO");
+        
+        toast({
+          title: "Registro exitoso",
+          description: "Tu cuenta ha sido creada correctamente con Apple ID.",
+        });
+        
+        navigate("/");
+      } else {
+        // Redirección iniciada
+        console.log("APPLE SIGNUP REDIRECCIÓN INICIADA");
+        
+        toast({
+          title: "Redirigiendo a Apple",
+          description: "Se abrirá la página de registro de Apple ID.",
+        });
+      }
     } catch (err: any) {
-      console.error("Error de registro con Apple:", err);
+      console.error("ERROR EN APPLE SIGNUP:", err);
+      
+      // Mapear errores a mensajes amigables
+      let errorDescription = err.message;
+      
+      if (err.code === "auth/popup-blocked") {
+        toast({
+          title: "Popup bloqueado",
+          description: "Permite ventanas emergentes para completar el registro.",
+        });
+        return;
+      } else if (err.code === "auth/account-exists-with-different-credential") {
+        errorDescription = "Ya tienes una cuenta con este email. Intenta iniciar sesión.";
+      } else if (!err.message || err.message.length > 100) {
+        errorDescription = "Error al registrarte con Apple. Intenta con email/contraseña.";
+      }
+
       toast({
         variant: "destructive",
         title: "Error de registro",
-        description:
-          err.message ||
-          "Ocurrió un error al registrarte con Apple. Intenta de nuevo.",
+        description: errorDescription,
       });
     } finally {
       setIsLoading(false);

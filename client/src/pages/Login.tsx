@@ -249,16 +249,53 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       clearError();
-      await loginWithGoogle();
-      showSuccessEffect();
+      console.log("=== INICIANDO GOOGLE AUTH DESDE LOGIN PAGE ===");
+      
+      const result = await loginWithGoogle();
+      
+      if (result) {
+        // Autenticación exitosa inmediata
+        console.log("GOOGLE LOGIN EXITOSO");
+        
+        toast({
+          title: "Inicio de sesión exitoso",
+          description: "Has iniciado sesión correctamente con Google.",
+        });
+        
+        showSuccessEffect();
+      } else {
+        // Redirección iniciada
+        console.log("GOOGLE REDIRECCIÓN INICIADA");
+        
+        toast({
+          title: "Redirigiendo a Google",
+          description: "Se abrirá la página de autenticación de Google.",
+        });
+      }
     } catch (err: any) {
-      console.error("Error de autenticación con Google:", err);
+      console.error("ERROR EN GOOGLE AUTH:", err);
+      
+      // Mapear errores a mensajes amigables
+      let errorDescription = err.message;
+      
+      if (err.code === "auth/popup-blocked") {
+        toast({
+          title: "Popup bloqueado",
+          description: "Permite ventanas emergentes o se usará redirección automáticamente.",
+        });
+        return;
+      } else if (err.code === "auth/unauthorized-domain") {
+        errorDescription = "Este dominio no está autorizado. Contacta al administrador.";
+      } else if (err.code === "auth/network-request-failed") {
+        errorDescription = "Error de conexión. Verifica tu internet e intenta nuevamente.";
+      } else if (!err.message || err.message.length > 100) {
+        errorDescription = "Error al conectar con Google. Intenta con email/contraseña.";
+      }
+
       toast({
         variant: "destructive",
-        title: "Error de autenticación",
-        description:
-          err.message ||
-          "Ocurrió un error al autenticar con Google. Intenta de nuevo.",
+        title: "Error de Google",
+        description: errorDescription,
       });
     } finally {
       setIsLoading(false);
@@ -272,120 +309,57 @@ export default function AuthPage() {
       clearError();
 
       console.log("=== INICIANDO APPLE AUTH DESDE LOGIN PAGE ===");
-      console.log("1. Timestamp:", new Date().toISOString());
-      console.log("2. Auth mode:", authMode);
-      console.log("3. User Agent:", navigator.userAgent);
-      console.log("4. Window location:", window.location.href);
+      console.log("Modo:", authMode);
+      console.log("URL:", window.location.href);
 
-      // Limpiar cualquier dato anterior de diagnóstico
-      const oldKeys = Object.keys(sessionStorage).filter((key) =>
-        key.startsWith("appleAuth_"),
-      );
-      console.log("5. Limpiando datos anteriores:", oldKeys.length, "claves");
-      oldKeys.forEach((key) => sessionStorage.removeItem(key));
-
-      // Marcar inicio del proceso
-      sessionStorage.setItem(
-        "appleAuth_login_start",
-        JSON.stringify({
-          timestamp: Date.now(),
-          authMode,
-          url: window.location.href,
-        }),
-      );
-
-      console.log("6. Llamando a loginWithApple()...");
       const result = await loginWithApple();
 
       if (result) {
-        // Si tenemos un resultado inmediato
-        console.log("7. LOGIN EXITOSO - Resultado inmediato:");
-        console.log("8. UID:", result.uid);
-        console.log("9. Email:", result.email);
-        console.log("10. DisplayName:", result.displayName);
-
-        // Limpiar datos de diagnóstico exitoso
-        sessionStorage.removeItem("appleAuth_login_start");
-
-        // Verificar si es Repl Auth o usuario de desarrollo
-        if (
-          result.email?.includes("replit.dev") ||
-          result.uid?.includes("repl-user") ||
-          result.uid?.includes("dev-user")
-        ) {
-          toast({
-            title: "Autenticación exitosa",
-            description:
-              "Has iniciado sesión correctamente usando el sistema de respaldo.",
-          });
-        }
+        // Autenticación exitosa inmediata (modo desarrollo o popup exitoso)
+        console.log("LOGIN EXITOSO - Resultado inmediato");
+        
+        toast({
+          title: "Inicio de sesión exitoso",
+          description: "Has iniciado sesión correctamente con Apple ID.",
+        });
 
         showSuccessEffect();
       } else {
-        // En producción, se inicia redirección
-        console.log("7. REDIRECCIÓN INICIADA - No hay resultado inmediato");
-        console.log("8. Esto es normal para Apple Auth en producción");
-
+        // Redirección iniciada
+        console.log("REDIRECCIÓN INICIADA - Procesando en nueva página");
+        
         toast({
           title: "Redirigiendo a Apple",
-          description:
-            "Se abrirá la página de autenticación de Apple. Por favor, completa el proceso.",
+          description: "Se abrirá la página de autenticación de Apple ID.",
         });
       }
     } catch (err: any) {
-      console.error("=== ERROR EN APPLE AUTH DESDE LOGIN ===");
-      console.error("Error completo:", err);
-      console.error("Código:", err.code || "NO_CODE");
-      console.error("Mensaje:", err.message || "NO_MESSAGE");
+      console.error("ERROR EN APPLE AUTH:", err);
 
-      let errorMessage = "Error al iniciar la autenticación con Apple";
-      let errorDescription =
-        "Ha ocurrido un problema con la autenticación de Apple.";
-      let showDiagnosticButton = false;
+      // Mapear errores a mensajes amigables
+      let errorTitle = "Error de Apple ID";
+      let errorDescription = err.message;
 
-      // Análisis específico de errores
-      if (err.code === "auth/internal-error") {
-        errorMessage = "Problema de configuración detectado";
-        errorDescription =
-          "Se ha detectado un problema en la configuración de Apple Auth. El sistema está intentando métodos alternativos de autenticación automáticamente.";
-        showDiagnosticButton = true;
-      } else if (err.message?.includes("No se pudo")) {
-        errorMessage = "Método alternativo en uso";
-        errorDescription =
-          "Se está utilizando un método de autenticación alternativo. Esto es normal en el entorno de desarrollo.";
-      } else if (err.code === "auth/popup-blocked") {
-        // Para popup bloqueado, mostrar mensaje informativo
+      if (err.code === "auth/popup-blocked") {
         toast({
-          title: "Redirigiendo a Apple",
-          description:
-            "Tu navegador bloqueó la ventana emergente. Se abrirá la página de Apple en la misma ventana.",
+          title: "Popup bloqueado",
+          description: "Permite ventanas emergentes o se usará redirección automáticamente.",
         });
         return;
       } else if (err.code === "auth/unauthorized-domain") {
-        errorMessage = "Configuración de dominio pendiente";
-        errorDescription =
-          "Este dominio necesita ser autorizado en la configuración. Se está usando un método alternativo.";
-        showDiagnosticButton = true;
-      } else {
-        errorDescription =
-          "Intenta con otro método de inicio de sesión o contacta a soporte.";
-        showDiagnosticButton = true;
+        errorDescription = "Este dominio no está autorizado. Intenta con Google o email/contraseña.";
+      } else if (err.code === "auth/internal-error") {
+        errorDescription = "Error de configuración. Intenta con Google o email/contraseña.";
+      } else if (err.message?.includes("Apple ID no está disponible")) {
+        errorDescription = err.message;
+      } else if (!err.message || err.message.length > 100) {
+        errorDescription = "Apple ID no está disponible. Intenta con Google o email/contraseña.";
       }
 
       toast({
         variant: "destructive",
-        title: errorMessage,
+        title: errorTitle,
         description: errorDescription,
-        action: showDiagnosticButton ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate("/apple-auth-diagnostic")}
-            className="bg-background/80 backdrop-blur-sm"
-          >
-            Diagnosticar
-          </Button>
-        ) : undefined,
       });
     } finally {
       setIsLoading(false);
