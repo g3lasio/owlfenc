@@ -3696,9 +3696,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     switch (currentStep) {
       case 0: // Client Selection
         return (
-          <Card>
+          <Card className="bg-gray-900 border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+              <CardTitle className="flex items-center justify-between text-cyan-400">
                 <div className="flex items-center gap-2">
                   <User className="h-5 w-5" />
                   <p className="text-base">Seleccionar Cliente</p>
@@ -3708,14 +3708,14 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   onOpenChange={setShowAddClientDialog}
                 >
                   <DialogTrigger asChild>
-                    <Button size="sm">
+                    <Button size="sm" className="bg-cyan-400 text-black hover:bg-cyan-300">
                       <UserPlus className="h-4 w-4 mr-2" />
                       <p className="md:block hidden">Nuevo Cliente</p>
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-md sm:max-w-lg border-0 bg-transparent p-0 shadow-none">
                     {/* Futuristic Sci-Fi Container */}
-                    <div className="relative bg-gradient-to-b from-slate-900/95 via-slate-800/98 to-slate-900/95 backdrop-blur-xl ">
+                    <div className="relative bg-gray-900 backdrop-blur-xl border border-gray-700 rounded-lg">
                       {/* Corner Brackets */}
                       <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-cyan-400/60"></div>
                       <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-cyan-400/60"></div>
@@ -3768,7 +3768,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                     }))
                                   }
                                   className="
-                                    bg-slate-800/50 border-cyan-400/30 text-white placeholder:text-slate-400
+                                    bg-gray-800 border-gray-600 text-white placeholder:text-gray-400
                                     focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50
                                     transition-all duration-300
                                   "
@@ -5866,22 +5866,22 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
   };
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-black text-white font-quantico">
       {/* Cyberpunk Header */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/30 via-slate-900/50 to-blue-900/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/30 via-black/50 to-blue-900/30" />
         <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-8">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-300 bg-clip-text text-transparent mb-4">
+              <h1 className="text-4xl md:text-5xl font-bold text-cyan-400 mb-4">
                 Professional Estimates Generator
               </h1>
             </div>
 
             {/* Navigation Buttons */}
             <div className="flex justify-center mb-8">
-              <div className="flex bg-gray-900/50 backdrop-blur-sm rounded-lg border border-cyan-400/30 overflow-hidden">
-                <button className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold flex items-center gap-2 border-r border-cyan-400/30">
+              <div className="flex bg-gray-900 backdrop-blur-sm rounded-lg border border-gray-700 overflow-hidden">
+                <button className="px-6 py-3 bg-cyan-400 text-black font-semibold flex items-center gap-2 border-r border-gray-700 hover:bg-cyan-300">
                   <FileText className="h-5 w-5" />
                   New Estimate
                 </button>
@@ -5890,12 +5890,12 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     setShowEstimatesHistory(true);
                     loadSavedEstimates();
                   }}
-                  className="px-6 py-3 text-cyan-300 hover:text-white hover:bg-blue-900/30 transition-all duration-200 flex items-center gap-2 relative"
+                  className="px-6 py-3 text-gray-300 hover:text-white hover:bg-gray-800 transition-all duration-200 flex items-center gap-2 relative"
                 >
                   <Clock className="h-5 w-5" />
                   History
                   {savedEstimates.length > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-cyan-400 text-slate-900 text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
+                    <span className="absolute -top-2 -right-2 bg-cyan-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
                       {savedEstimates.length}
                     </span>
                   )}
@@ -5908,9 +5908,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg border border-cyan-400/30 p-6">
+        <div className="bg-gray-900 backdrop-blur-sm rounded-lg border border-gray-700 p-6">
           <div className="mb-6">
-            <p className="text-cyan-300 text-center">
+            <p className="text-cyan-400 text-center">
               {isEditMode
                 ? "Edita tu estimado existente y guarda los cambios"
                 : "Sigue los pasos para crear un estimado profesional para tu cliente"}
@@ -5932,10 +5932,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         <div
                           className={`flex items-center justify-center w-12 h-12 rounded-full border-2 mb-2 transition-all duration-300 ${
                             isActive
-                              ? "border-cyan-400 bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25 scale-110"
+                              ? "border-cyan-400 bg-cyan-400 text-black shadow-lg shadow-cyan-500/25 scale-110"
                               : isCompleted
-                                ? "border-cyan-400 bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-500/20"
-                                : "border-blue-400/30 bg-gray-900/80 text-blue-300"
+                                ? "border-cyan-400 bg-cyan-400 text-black shadow-md shadow-cyan-500/20"
+                                : "border-gray-500 bg-gray-900 text-gray-300"
                           }`}
                         >
                           {isCompleted ? (
