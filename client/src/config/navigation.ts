@@ -80,7 +80,7 @@ export const navigationGroups: NavigationGroup[] = [
       },
       {
         id: "invoices",
-        label: "navigation.invoices",
+        label: "Invoices",
         path: "/invoices",
         icon: "ri-file-text-line"
       },
