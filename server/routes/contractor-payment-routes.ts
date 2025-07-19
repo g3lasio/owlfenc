@@ -589,7 +589,7 @@ router.get("/stripe/account-status", isAuthenticated, async (req: Request, res: 
 });
 
 /**
- * Connect to Stripe
+ * Connect to Stripe - Real Implementation
  */
 router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Response) => {
   try {
@@ -597,15 +597,35 @@ router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Respon
       return res.status(401).json({ error: "User not authenticated" });
     }
 
-    const { businessType, country } = req.body;
+    // Get Stripe instance
+    const stripe = require('stripe')(process.env.STRIPE_API_TEST_KEY || process.env.STRIPE_SECRET_KEY);
+    
+    // Create Stripe Connect account
+    const account = await stripe.accounts.create({
+      type: 'express',
+      country: 'US', // Default to US, can be made configurable
+      capabilities: {
+        card_payments: { requested: true },
+        transfers: { requested: true },
+      },
+    });
 
-    // For now, return mock Stripe connect URL
-    const connectUrl = "https://connect.stripe.com/setup/demo";
+    // Create account link for onboarding
+    const accountLink = await stripe.accountLinks.create({
+      account: account.id,
+      refresh_url: `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/payments?tab=settings&refresh=true`,
+      return_url: `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/payments?tab=settings&connected=true`,
+      type: 'account_onboarding',
+    });
 
+    // Store account ID for this user (you'll need to implement this storage)
+    // For now, just return the URL
+    
     res.json({
       success: true,
-      url: connectUrl,
-      message: "Stripe connect URL generated successfully",
+      url: accountLink.url,
+      accountId: account.id,
+      message: "Stripe Connect account created successfully",
     });
   } catch (error) {
     console.error("Error creating Stripe connect:", error);

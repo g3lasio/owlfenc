@@ -154,12 +154,22 @@ export const paymentHistory = pgTable('payment_history', {
 
 // Project payments table
 export const projectPayments = pgTable('project_payments', {
-  id: text('id').primaryKey(),
-  projectId: text('project_id').notNull(),
-  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
-  status: varchar('status', { length: 50 }).notNull(),
+  id: serial('id').primaryKey(),
+  projectId: integer('project_id').notNull(),
+  userId: integer('user_id').notNull(),
+  amount: integer('amount').notNull(), // Amount in cents
+  type: varchar('type', { length: 50 }).notNull(), // 'deposit', 'final', 'partial'
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending', 'processing', 'succeeded', 'failed'
+  description: text('description'),
+  clientEmail: varchar('client_email', { length: 255 }),
+  clientName: varchar('client_name', { length: 255 }),
+  invoiceNumber: varchar('invoice_number', { length: 100 }),
+  stripePaymentIntentId: varchar('stripe_payment_intent_id', { length: 255 }),
+  checkoutUrl: text('checkout_url'),
   dueDate: timestamp('due_date'),
   paidDate: timestamp('paid_date'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 // Materials table

@@ -378,55 +378,32 @@ const ProjectPayments: React.FC = () => {
     },
   });
 
-  // Connect to Stripe
+  // Connect to Stripe - Simplified Real Implementation
   const connectToStripe = async () => {
     try {
-      const response = await apiRequest(
-        "POST",
-        "/api/contractor-payments/stripe/connect",
-        {
-          businessType: "individual",
-          country: "US",
-        },
-      );
+      toast({
+        title: "Connecting to Stripe",
+        description: "Creating your Stripe Connect account...",
+      });
 
-      // Verificar que la respuesta sea válida
+      const response = await apiRequest("POST", "/api/contractor-payments/stripe/connect", {});
+      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Stripe connect error response:", errorText);
-        throw new Error(`Server error: ${response.status}`);
-      }
-
-      // Verificar que sea JSON válido
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Non-JSON response received:", text);
-        throw new Error("Server returned invalid response format");
+        throw new Error("Failed to create Stripe Connect account");
       }
 
       const data = await response.json();
-
-      if (data.url) {
-        // Redirect to Stripe onboarding
-        console.log("Redirecting to Stripe onboarding:", data.url);
+      
+      if (data.success && data.url) {
+        // Open Stripe onboarding in current window
         window.location.href = data.url;
       } else {
-        console.error("No URL received from Stripe Connect:", data);
-        toast({
-          title: "Configuration Error",
-          description:
-            "Unable to create bank account connection. Please check Stripe configuration.",
-          variant: "destructive",
-        });
+        throw new Error(data.message || "Failed to get Stripe Connect URL");
       }
     } catch (error: any) {
-      console.error("Stripe connect error:", error);
       toast({
-        title: "Bank Connection Failed",
-        description:
-          error.message ||
-          "Failed to set up bank account connection. Please try again.",
+        title: "Connection Failed",
+        description: error.message || "Failed to connect to Stripe. Please try again.",
         variant: "destructive",
       });
     }
