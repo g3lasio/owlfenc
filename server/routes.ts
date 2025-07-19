@@ -4179,6 +4179,7 @@ Output must be between 200-900 characters in English.`;
             id: 1,
             name: "Primo Chambeador",
             price: 0,
+            yearlyPrice: 0,
             interval: "monthly",
             features: [
               "10 basic estimates",
@@ -4190,7 +4191,8 @@ Output must be between 200-900 characters in English.`;
           {
             id: 2,
             name: "Mero Patrón",
-            price: 4999, // $49.99 in cents
+            price: 4999, // $49.99 in cents (monthly)
+            yearlyPrice: 49999, // $499.99 in cents (yearly)
             interval: "monthly",
             features: [
               "Unlimited basic estimates",
@@ -4202,7 +4204,8 @@ Output must be between 200-900 characters in English.`;
           {
             id: 3,
             name: "Master Contractor",
-            price: 9999, // $99.99 in cents
+            price: 9999, // $99.99 in cents (monthly)
+            yearlyPrice: 99999, // $999.99 in cents (yearly)
             interval: "monthly",
             features: [
               "Complete management features",

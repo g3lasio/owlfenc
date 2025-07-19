@@ -172,12 +172,13 @@ class StripeService {
         );
       }
 
-      // Use hardcoded plans instead of database
+      // Use hardcoded plans with both monthly and yearly pricing
       const subscriptionPlans = [
         {
           id: 1,
           name: "Primo Chambeador",
           price: 0,
+          yearlyPrice: 0,
           interval: "monthly",
           code: "primo-chambeador",
           description: "Plan básico con funcionalidades esenciales",
@@ -185,7 +186,8 @@ class StripeService {
         {
           id: 2,
           name: "Mero Patrón",
-          price: 4999, // $49.99 in cents
+          price: 4999, // $49.99 in cents (monthly)
+          yearlyPrice: 49999, // $499.99 in cents (yearly)
           interval: "monthly",
           code: "mero-patron",
           description: "Plan avanzado para contratistas profesionales",
@@ -193,7 +195,8 @@ class StripeService {
         {
           id: 3,
           name: "Master Contractor",
-          price: 9999, // $99.99 in cents
+          price: 9999, // $99.99 in cents (monthly)
+          yearlyPrice: 99999, // $999.99 in cents (yearly)
           interval: "monthly",
           code: "master-contractor",
           description: "Plan completo con todas las funcionalidades",
@@ -218,6 +221,15 @@ class StripeService {
       }
 
       try {
+        // Determine the correct price based on billing cycle
+        const unitAmount = options.billingCycle === "yearly" 
+          ? (plan as any).yearlyPrice || plan.price 
+          : plan.price;
+          
+        console.log(
+          `[${new Date().toISOString()}] Using price: $${unitAmount / 100} for ${options.billingCycle} billing`,
+        );
+
         // Create checkout session with inline price data
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
@@ -229,7 +241,7 @@ class StripeService {
                   name: plan.name,
                   description: plan.description,
                 },
-                unit_amount: plan.price,
+                unit_amount: unitAmount,
                 recurring: {
                   interval:
                     options.billingCycle === "yearly" ? "year" : "month",
