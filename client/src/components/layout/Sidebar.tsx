@@ -257,15 +257,21 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
   const { t } = useTranslation();
   const { language } = useLanguage();
 
-  // Track mobile state
+  // Track device type
+  const [isPhone, setIsPhone] = useState(false);
+  const [isTabletOrDesktop, setIsTabletOrDesktop] = useState(false);
+
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+    const checkDeviceType = () => {
+      const width = window.innerWidth;
+      setIsPhone(width < 640); // sm breakpoint - phones only
+      setIsTabletOrDesktop(width >= 640); // tablets and desktop
+      setIsMobile(width < 640); // keep existing logic for compatibility
     };
     
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    checkDeviceType();
+    window.addEventListener('resize', checkDeviceType);
+    return () => window.removeEventListener('resize', checkDeviceType);
   }, []);
 
   // Query para obtener suscripción del usuario
@@ -304,26 +310,31 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
 
   // Función para cerrar el sidebar automáticamente al hacer clic en elementos del menú
   const handleMenuItemClick = () => {
-    // On mobile devices, close sidebar after selection
-    if (isMobile) {
+    if (isPhone) {
+      // Phone: close sidebar after selection
       setSidebarExpanded(false);
       setMobileMenuOpen(false);
+    } else if (isTabletOrDesktop && isSidebarExpanded) {
+      // Tablet/Desktop: close expanded sidebar after selection, return to icons-only
+      setSidebarExpanded(false);
     }
-    // On large screens, keep sidebar open
+    // On tablets/desktop with icons-only view, do nothing
   };
 
   // Comunicar cambios de ancho al componente padre
   useEffect(() => {
     let width;
-    if (isMobile) {
-      // Mobile: 0 width when hidden, full width when expanded
+    if (isPhone) {
+      // Phone: 0 width when hidden, full width when expanded
       width = isSidebarExpanded ? 288 : 0;
+    } else if (isTabletOrDesktop) {
+      // Tablet/Desktop: icons-only width (64px) by default, full width when expanded
+      width = isSidebarExpanded ? 288 : 64;
     } else {
-      // Large screens: always full width (persistent sidebar always visible)
-      width = 288;
+      width = 64; // fallback
     }
     onWidthChange?.(width);
-  }, [isSidebarExpanded, isMobile, onWidthChange]);
+  }, [isSidebarExpanded, isPhone, isTabletOrDesktop, onWidthChange]);
 
   return (
     <>
@@ -354,13 +365,15 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
       <TooltipProvider>
         <aside
           className={`
-            flex flex-col transition-all duration-300 w-72 border-r border-border bg-card
-            ${isMobile 
-              ? (isSidebarExpanded ? "block" : "hidden")  // Mobile: hidden by default, visible when expanded
-              : "block"  // Large screens: always visible (never hidden)
+            flex flex-col transition-all duration-300 border-r border-border bg-card
+            ${isPhone 
+              ? (isSidebarExpanded ? "w-72 block" : "hidden")  // Phone: hidden by default, full width when expanded
+              : isTabletOrDesktop 
+                ? (isSidebarExpanded ? "w-72" : "w-16")  // Tablet/Desktop: icons-only by default, full width when expanded
+                : "w-16"  // fallback
             }
             fixed left-0 top-0 z-40 translate-x-0
-            md:relative
+            sm:relative sm:block
           `}
           style={{
             height: "100vh",
@@ -384,108 +397,242 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
               flexDirection: "column",
             }}
           >
-            {/* VISTA EXPANDIDA - SIEMPRE cuando el sidebar esté visible */}
-            <div
-              className="custom-scroll"
-              style={{
-                height: "100%",
-                overflowY: "auto",
-                overflowX: "hidden",
-                paddingTop: "12px",
-                paddingLeft: "12px",
-                paddingRight: "12px",
-                paddingBottom: "80px", // Espacio para el footer
-              }}
-            >
-              {navigationGroups.map((group, index) => (
-                <div key={`group-${index}`} style={{ marginBottom: "16px" }}>
-                  <h3
-                    className="text-xs font-semibold uppercase tracking-wider px-2 mb-2 text-center"
-                    style={{ color: "#00ffff" }}
-                  >
-                    {t(`navigation.${group.title}`)}
-                  </h3>
+            {/* CONTENIDO CONDICIONAL SEGÚN DISPOSITIVO Y ESTADO */}
+            {isPhone || (isTabletOrDesktop && isSidebarExpanded) ? (
+              // VISTA EXPANDIDA - Phone siempre o Tablet/Desktop cuando expandido
+              <div
+                className="custom-scroll"
+                style={{
+                  height: "100%",
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  paddingTop: "12px",
+                  paddingLeft: "12px",
+                  paddingRight: "12px",
+                  paddingBottom: "80px", // Espacio para el footer
+                }}
+              >
+                {navigationGroups.map((group, index) => (
+                  <div key={`group-${index}`} style={{ marginBottom: "16px" }}>
+                    <h3
+                      className="text-xs font-semibold uppercase tracking-wider px-2 mb-2 text-center"
+                      style={{ color: "#00ffff" }}
+                    >
+                      {t(`navigation.${group.title}`)}
+                    </h3>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "4px",
-                    }}
-                  >
-                    {group.items
-                      .filter(
-                        (item) =>
-                          item.path !== "/mervin" && item.id !== "mervin",
-                      )
-                      .map((item) => (
-                        <Link key={item.id} href={item.path}>
-                          <Button
-                            variant="ghost"
-                            className={`w-full justify-start px-2 py-1.5 h-auto hover:bg-accent text-sm font-normal ${
-                              location === item.path
-                                ? "bg-primary/20 text-primary"
-                                : ""
-                            }`}
-                            onClick={handleMenuItemClick}
-                          >
-                            {item.icon.startsWith("lucide-") ? (
-                              <>
-                                {item.icon === "lucide-user" && (
-                                  <User className="h-4 w-4 mr-3" />
-                                )}
-                                {item.icon === "lucide-credit-card" && (
-                                  <CreditCard className="h-4 w-4 mr-3" />
-                                )}
-                                {item.icon === "lucide-building" && (
-                                  <Building className="h-4 w-4 mr-3" />
-                                )}
-                                {item.icon === "lucide-settings" && (
-                                  <Settings className="h-4 w-4 mr-3" />
-                                )}
-                                {item.icon === "lucide-brain" && (
-                                  <BrainIcon className="h-4 w-4 mr-3" />
-                                )}
-                              </>
-                            ) : (
-                              <i
-                                className={`${item.icon} mr-3 text-base`}
-                              ></i>
-                            )}
-                            {t(item.label)}
-                          </Button>
-                        </Link>
-                      ))}
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "4px",
+                      }}
+                    >
+                      {group.items
+                        .filter(
+                          (item) =>
+                            item.path !== "/mervin" && item.id !== "mervin",
+                        )
+                        .map((item) => (
+                          <Link key={item.id} href={item.path}>
+                            <Button
+                              variant="ghost"
+                              className={`w-full justify-start px-2 py-1.5 h-auto hover:bg-accent text-sm font-normal ${
+                                location === item.path
+                                  ? "bg-primary/20 text-primary"
+                                  : ""
+                              }`}
+                              onClick={handleMenuItemClick}
+                            >
+                              {item.icon.startsWith("lucide-") ? (
+                                <>
+                                  {item.icon === "lucide-user" && (
+                                    <User className="h-4 w-4 mr-3" />
+                                  )}
+                                  {item.icon === "lucide-credit-card" && (
+                                    <CreditCard className="h-4 w-4 mr-3" />
+                                  )}
+                                  {item.icon === "lucide-building" && (
+                                    <Building className="h-4 w-4 mr-3" />
+                                  )}
+                                  {item.icon === "lucide-settings" && (
+                                    <Settings className="h-4 w-4 mr-3" />
+                                  )}
+                                  {item.icon === "lucide-brain" && (
+                                    <BrainIcon className="h-4 w-4 mr-3" />
+                                  )}
+                                </>
+                              ) : (
+                                <i
+                                  className={`${item.icon} mr-3 text-base`}
+                                ></i>
+                              )}
+                              {t(item.label)}
+                            </Button>
+                          </Link>
+                        ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              // VISTA SOLO ICONOS - Tablet/Desktop cuando no expandido
+              <div
+                className="custom-scroll"
+                style={{
+                  height: "100%",
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  paddingTop: "12px",
+                  paddingLeft: "8px",
+                  paddingRight: "8px",
+                  paddingBottom: "80px",
+                }}
+              >
+                {navigationGroups.map((group, groupIndex) => (
+                  <div
+                    key={`group-${groupIndex}`}
+                    style={{ marginBottom: "16px" }}
+                  >
+                    {/* Separador visual sutil entre grupos */}
+                    {groupIndex > 0 && (
+                      <div
+                        style={{
+                          height: "1px",
+                          background: "rgba(255,255,255,0.08)",
+                          margin: "12px 6px",
+                          borderRadius: "1px",
+                        }}
+                      ></div>
+                    )}
+
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                      }}
+                    >
+                      {group.items
+                        .filter(
+                          (item) =>
+                            item.path !== "/mervin" && item.id !== "mervin",
+                        )
+                        .map((item: NavigationItem) => (
+                          <Tooltip key={item.id}>
+                            <TooltipTrigger asChild>
+                              <Link
+                                href={item.path}
+                                className={`
+                                  flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 mx-auto
+                                  hover:bg-accent/50 hover:scale-105 hover:shadow-md
+                                  ${
+                                    location === item.path
+                                      ? "bg-primary/20 text-primary border border-primary/30 shadow-sm"
+                                      : "text-muted-foreground hover:text-primary"
+                                  }
+                                `}
+                                style={{
+                                  minHeight: "40px",
+                                  minWidth: "40px",
+                                }}
+                                onClick={handleMenuItemClick}
+                              >
+                                {item.icon.startsWith("lucide-") ? (
+                                  <>
+                                    {item.icon === "lucide-user" && (
+                                      <User className="h-4 w-4" />
+                                    )}
+                                    {item.icon === "lucide-building" && (
+                                      <Building className="h-4 w-4" />
+                                    )}
+                                    {item.icon === "lucide-settings" && (
+                                      <Settings className="h-4 w-4" />
+                                    )}
+                                    {item.icon === "lucide-credit-card" && (
+                                      <CreditCard className="h-4 w-4" />
+                                    )}
+                                    {item.icon === "lucide-brain" && (
+                                      <BrainIcon className="h-4 w-4" />
+                                    )}
+                                  </>
+                                ) : (
+                                  <i className={`${item.icon} text-base`} />
+                                )}
+                              </Link>
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="right"
+                              className="bg-background border border-border text-foreground shadow-xl"
+                            >
+                              <p className="font-medium">{t(item.label)}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Footer fijo - siempre visible cuando el sidebar esté visible */}
+          {/* Footer fijo - adaptivo según el ancho */}
           <div
-            className="absolute bottom-0 left-0 right-0 p-2 border-t border-border bg-card"
+            className="absolute bottom-0 left-0 right-0 border-t border-border bg-card"
             style={{ zIndex: 50 }}
           >
-            <div className="flex items-center justify-between space-x-2">
-              <Button
-                variant="ghost"
-                className="flex-1 justify-start text-destructive hover:bg-destructive/10 hover:text-destructive text-xs font-normal h-8"
-                onClick={handleLogout}
-                disabled={loading}
-              >
-                {loading ? (
-                  <i className="ri-loader-2-line animate-spin mr-2"></i>
-                ) : (
-                  <LogOut className="h-3 w-3 mr-2" />
-                )}
-                {t("general.logout")}
-              </Button>
+            {isPhone || (isTabletOrDesktop && isSidebarExpanded) ? (
+              // Footer expandido - Phone siempre o Tablet/Desktop cuando expandido
+              <div className="p-2">
+                <div className="flex items-center justify-between space-x-2">
+                  <Button
+                    variant="ghost"
+                    className="flex-1 justify-start text-destructive hover:bg-destructive/10 hover:text-destructive text-xs font-normal h-8"
+                    onClick={handleLogout}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <i className="ri-loader-2-line animate-spin mr-2"></i>
+                    ) : (
+                      <LogOut className="h-3 w-3 mr-2" />
+                    )}
+                    {t("general.logout")}
+                  </Button>
 
-              <div className="flex-shrink-0">
-                <LanguageSwitch />
+                  <div className="flex-shrink-0">
+                    <LanguageSwitch />
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              // Footer solo iconos - Tablet/Desktop cuando no expandido
+              <div className="p-1 flex flex-col items-center space-y-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-10 h-10 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={handleLogout}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <i className="ri-loader-2-line animate-spin"></i>
+                      ) : (
+                        <LogOut className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>{t("general.logout")}</p>
+                  </TooltipContent>
+                </Tooltip>
+                
+                <div className="scale-75">
+                  <LanguageSwitch />
+                </div>
+              </div>
+            )}
           </div>
         </aside>
       </TooltipProvider>
