@@ -91,7 +91,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
       {/* Contenido principal con margen para el sidebar */}
       <div
-        className="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ml-16 md:ml-0"
+        className="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ml-12 md:ml-0"
       >
         {/* Header fijo */}
         <Header />
