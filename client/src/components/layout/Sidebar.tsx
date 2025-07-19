@@ -323,18 +323,14 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
 
   // Comunicar cambios de ancho al componente padre
   useEffect(() => {
-    let width;
-    if (isPhone) {
-      // Phone: 0 width when hidden, full width when expanded
-      width = isSidebarExpanded ? 288 : 0;
-    } else if (isTabletOrDesktop) {
-      // Tablet/Desktop: icons-only width (64px) by default, full width when expanded
-      width = isSidebarExpanded ? 288 : 64;
-    } else {
-      width = 64; // fallback
+    // Para tablets/desktop no necesitamos margen porque usamos flex layout
+    // Solo para teléfonos necesitamos comunicar el ancho
+    let width = 0;
+    if (isPhone && isSidebarExpanded) {
+      width = 288; // Solo cuando expandido en phone
     }
     onWidthChange?.(width);
-  }, [isSidebarExpanded, isPhone, isTabletOrDesktop, onWidthChange]);
+  }, [isSidebarExpanded, isPhone, onWidthChange]);
 
   return (
     <>
@@ -365,7 +361,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
       <TooltipProvider>
         <aside
           className={`
-            flex flex-col transition-all duration-300 bg-card
+            flex flex-col transition-all duration-300 bg-background
             ${isPhone 
               ? (isSidebarExpanded ? "w-72 block fixed left-0 top-0 z-40" : "hidden")  // Phone: hidden by default, fixed when expanded
               : isTabletOrDesktop 
@@ -379,6 +375,8 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
             maxHeight: "100vh",
             overflow: "hidden",
             flexShrink: 0,
+            boxShadow: "none", // Eliminar cualquier sombra que pueda causar líneas
+            border: "none", // Eliminar cualquier borde
           }}
         >
 
@@ -564,7 +562,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
 
           {/* Footer fijo - adaptivo según el ancho */}
           <div
-            className="absolute bottom-0 left-0 right-0 bg-card"
+            className="absolute bottom-0 left-0 right-0 bg-background"
             style={{ zIndex: 50 }}
           >
             {isPhone || (isTabletOrDesktop && isSidebarExpanded) ? (
