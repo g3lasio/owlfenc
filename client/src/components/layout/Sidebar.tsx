@@ -333,7 +333,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
         <aside
           className={`
             flex flex-col transition-all duration-300 
-            ${isSidebarExpanded ? "w-72 border-r border-border bg-card" : "w-12 md:w-16 md:bg-card"}
+            ${isSidebarExpanded ? "w-72 border-r border-border bg-card" : "hidden md:flex md:w-16 md:bg-card"}
             fixed left-0 top-0 z-40 translate-x-0
             md:relative
           `}
