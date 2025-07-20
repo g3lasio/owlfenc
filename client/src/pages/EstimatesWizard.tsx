@@ -5895,7 +5895,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   <Clock className="h-5 w-5" />
                   History
                   {savedEstimates.length > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-cyan-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
+                    <span className="ml-2 bg-cyan-600 text-white text-xs rounded-full px-2 py-1 min-w-[1.5rem] h-6 flex items-center justify-center font-bold">
                       {savedEstimates.length}
                     </span>
                   )}
