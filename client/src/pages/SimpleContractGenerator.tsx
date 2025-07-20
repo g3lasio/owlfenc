@@ -2760,34 +2760,7 @@ export default function SimpleContractGenerator() {
                       </Badge>
                     </div>
 
-                    {/* Delivery Status Monitor */}
-                    {deliveryStatus && (
-                      <div className="bg-black/60 border border-green-400/30 rounded p-3 mb-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                          <span className="text-xs font-bold text-green-400 tracking-wider">SYSTEM STATUS:</span>
-                        </div>
-                        <div className="font-mono text-sm text-green-300 animate-pulse">
-                          {deliveryStatus}
-                        </div>
-                        
-                        {/* Progress Indicators */}
-                        <div className="mt-3 space-y-2">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-cyan-400">CONTRACTOR LINK:</span>
-                            <span className="text-green-400 font-bold">{contractorSignUrl ? 'GENERATED' : 'PENDING'}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-green-400">CLIENT LINK:</span>
-                            <span className="text-green-400 font-bold">{clientSignUrl ? 'GENERATED' : 'PENDING'}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-orange-400">SHARE OPTIONS:</span>
-                            <span className="text-green-400 font-bold">AVAILABLE</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+
                     
                     {/* Secure Access Links */}
                     <div className="space-y-3">
@@ -2938,75 +2911,7 @@ export default function SimpleContractGenerator() {
                       )}
                     </div>
 
-                    {contractorSignUrl && clientSignUrl && (
-                      <>
-                        {/* Deployment Status Grid */}
-                        <div className="mt-4 grid grid-cols-2 gap-2">
-                          <div className="bg-black/40 border border-cyan-400/30 rounded p-2">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-cyan-400 font-bold">CONTRACTOR:</span>
-                              <Badge className="bg-cyan-600 text-black text-xs font-mono">DELIVERED</Badge>
-                            </div>
-                          </div>
-                          <div className="bg-black/40 border border-green-400/30 rounded p-2">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-green-400 font-bold">CLIENT:</span>
-                              <Badge className="bg-green-600 text-black text-xs font-mono">DELIVERED</Badge>
-                            </div>
-                          </div>
-                        </div>
 
-                        {/* Available Share Methods */}
-                        <div className="mt-4 bg-black/60 border border-green-400/30 rounded p-3">
-                          <div className="text-xs font-bold text-green-400 mb-2 tracking-wider">SHARE METHODS:</div>
-                          <div className="flex gap-2 flex-wrap">
-                            <Badge className="bg-cyan-600 text-black text-xs font-mono">
-                              <Copy className="h-3 w-3 mr-1" />
-                              COPY LINK
-                            </Badge>
-                            <Badge className="bg-orange-600 text-black text-xs font-mono">
-                              <Share2 className="h-3 w-3 mr-1" />
-                              NATIVE SHARE
-                            </Badge>
-                            <Badge className="bg-blue-600 text-black text-xs font-mono">
-                              <Mail className="h-3 w-3 mr-1" />
-                              EMAIL
-                            </Badge>
-                            <Badge className="bg-green-500 text-black text-xs font-mono">
-                              <MessageCircle className="h-3 w-3 mr-1" />
-                              WHATSAPP
-                            </Badge>
-                            <Badge className="bg-purple-600 text-black text-xs font-mono">
-                              <Phone className="h-3 w-3 mr-1" />
-                              SMS
-                            </Badge>
-                          </div>
-                        </div>
-
-                        {/* Real-time Security Metrics */}
-                        <div className="mt-4 bg-black/60 border border-green-400/30 rounded p-3">
-                          <div className="text-xs font-bold text-green-400 mb-2 tracking-wider">SECURITY METRICS:</div>
-                          <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-400">ENCRYPTION:</span>
-                              <span className="text-green-400">ACTIVE</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-400">FIREWALL:</span>
-                              <span className="text-green-400">SECURED</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-400">MONITORING:</span>
-                              <span className="text-green-400">LIVE</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-400">STATUS:</span>
-                              <span className="text-green-400">OPERATIONAL</span>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    )}
 
                     {/* Corner Security Indicators */}
                     <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-green-400"></div>
