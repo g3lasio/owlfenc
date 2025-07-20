@@ -507,6 +507,50 @@ export default function SimpleContractGenerator() {
     }
   }, [toast]);
 
+  // Function to generate PDF for completed contract
+  const generateContractPdf = useCallback(async (contractId: string, clientName: string) => {
+    try {
+      toast({
+        title: "Generating PDF",
+        description: "Creating signed PDF document...",
+        variant: "default"
+      });
+
+      const response = await fetch(`/api/dual-signature/regenerate-pdf/${contractId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: "Success",
+          description: "PDF generated successfully! Refreshing contract list...",
+          variant: "default"
+        });
+        
+        // Refresh the completed contracts list
+        await loadCompletedContracts();
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Generation Error",
+          description: error.message || "Failed to generate PDF",
+          variant: "destructive"
+        });
+      }
+    } catch (error: any) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Generation Error",
+        description: "Failed to generate contract PDF",
+        variant: "destructive"
+      });
+    }
+  }, [toast, loadCompletedContracts]);
+
   // Share contract function with enhanced mobile app support
   const shareContract = useCallback(async (contractId: string, clientName: string) => {
     try {

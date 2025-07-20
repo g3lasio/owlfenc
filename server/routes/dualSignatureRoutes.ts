@@ -360,17 +360,16 @@ router.get('/completed/:userId', async (req, res) => {
     
     console.log(`✅ [API] Found ${completedContracts.length} contracts for user`);
     
-    // Filter for only truly completed contracts (both signed AND PDF generated)
+    // Filter for completed contracts (both signed, PDF optional due to Chrome issues)
     const fullyCompletedContracts = completedContracts.filter(contract => 
       contract.status === 'completed' && 
       contract.contractorSigned && 
-      contract.clientSigned &&
-      contract.signedPdfPath  // CRITICAL: Only completed if PDF exists
+      contract.clientSigned
     );
 
-    console.log(`🔍 [API] Filtered to ${fullyCompletedContracts.length} truly completed contracts (with PDFs)`);
+    console.log(`🔍 [API] Filtered to ${fullyCompletedContracts.length} truly completed contracts`);
 
-    // Transform data for frontend - only contracts with actual PDFs
+    // Transform data for frontend - show all signed contracts
     const contractsForFrontend = fullyCompletedContracts.map(contract => ({
       contractId: contract.contractId,
       status: contract.status,
@@ -385,7 +384,9 @@ router.get('/completed/:userId', async (req, res) => {
       updatedAt: contract.updatedAt,
       signedPdfPath: contract.signedPdfPath,
       isCompleted: true,
-      isDownloadable: true, // Only contracts with actual generated PDFs are downloadable
+      isDownloadable: !!contract.signedPdfPath, // PDF available for download
+      hasPdf: !!contract.signedPdfPath,
+      completionDate: contract.clientSignedAt || contract.updatedAt
     }));
     
     res.json({
@@ -396,6 +397,40 @@ router.get('/completed/:userId', async (req, res) => {
     
   } catch (error: any) {
     console.error('❌ [API] Error in /completed/:userId:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/dual-signature/regenerate-pdf/:contractId
+ * Regenerar PDF con firmas para contrato completado
+ */
+router.post('/regenerate-pdf/:contractId', async (req, res) => {
+  try {
+    const { contractId } = req.params;
+    
+    console.log('🔄 [API] Regenerating PDF for contract:', contractId);
+    
+    const result = await dualSignatureService.regenerateSignedPdf(contractId);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message,
+        pdfPath: result.pdfPath,
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message,
+      });
+    }
+  } catch (error: any) {
+    console.error('❌ [API] Error in /regenerate-pdf:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',

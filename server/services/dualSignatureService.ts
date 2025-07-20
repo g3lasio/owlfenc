@@ -1395,6 +1395,109 @@ export class DualSignatureService {
   }
 
   /**
+   * Regenerar PDF con firmas para contrato completado
+   */
+  async regenerateSignedPdf(contractId: string): Promise<{
+    success: boolean;
+    message: string;
+    pdfPath?: string;
+  }> {
+    try {
+      console.log('🔄 [DUAL-SIGNATURE] Regenerating signed PDF for contract:', contractId);
+
+      // Get contract data
+      const [contract] = await db.select()
+        .from(digitalContracts)
+        .where(eq(digitalContracts.contractId, contractId))
+        .limit(1);
+
+      if (!contract) {
+        return {
+          success: false,
+          message: 'Contract not found'
+        };
+      }
+
+      if (contract.status !== 'completed' || !contract.contractorSigned || !contract.clientSigned) {
+        return {
+          success: false,
+          message: 'Contract is not fully signed yet'
+        };
+      }
+
+      console.log('📄 [DUAL-SIGNATURE] Generating PDF with signatures...');
+
+      // Try to generate PDF with enhanced error handling
+      let pdfBuffer: Buffer | null = null;
+      let signedPdfPath: string | null = null;
+
+      try {
+        const { default: PremiumPdfService } = await import('./premiumPdfService');
+        const pdfService = new PremiumPdfService();
+
+        pdfBuffer = await pdfService.generateContractWithSignatures({
+          contractHTML: contract.contractHtml || '',
+          contractorSignature: {
+            name: contract.contractorName,
+            signatureData: contract.contractorSignatureData || '',
+            typedName: contract.contractorSignatureType === 'cursive' ? contract.contractorName : undefined,
+            signedAt: contract.contractorSignedAt || new Date()
+          },
+          clientSignature: {
+            name: contract.clientName,
+            signatureData: contract.clientSignatureData || '',
+            typedName: contract.clientSignatureType === 'cursive' ? contract.clientName : undefined,
+            signedAt: contract.clientSignedAt || new Date()
+          }
+        });
+
+        signedPdfPath = `signed_contracts/contract_${contractId}_signed.pdf`;
+        const fs = await import('fs');
+        const path = await import('path');
+        const fullPdfPath = path.join(process.cwd(), signedPdfPath);
+        
+        // Ensure directory exists
+        const dir = path.dirname(fullPdfPath);
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+        
+        fs.writeFileSync(fullPdfPath, pdfBuffer);
+        console.log('✅ [DUAL-SIGNATURE] PDF generated and saved:', signedPdfPath);
+
+        // Update database with PDF path
+        await db.update(digitalContracts)
+          .set({ 
+            signedPdfPath: signedPdfPath,
+            updatedAt: new Date()
+          })
+          .where(eq(digitalContracts.contractId, contractId));
+
+        return {
+          success: true,
+          message: 'Signed PDF generated successfully',
+          pdfPath: signedPdfPath
+        };
+
+      } catch (pdfError: any) {
+        console.warn('⚠️ [DUAL-SIGNATURE] PDF generation failed:', pdfError.message);
+        
+        return {
+          success: false,
+          message: `PDF generation failed: ${pdfError.message}. Chrome libraries may be missing.`
+        };
+      }
+
+    } catch (error: any) {
+      console.error('❌ [DUAL-SIGNATURE] Error regenerating PDF:', error);
+      return {
+        success: false,
+        message: `Error regenerating PDF: ${error.message}`
+      };
+    }
+  }
+
+  /**
    * Generar ID único para el contrato
    */
   private generateUniqueContractId(): string {
