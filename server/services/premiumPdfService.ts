@@ -83,7 +83,16 @@ class PremiumPdfService {
   }): Promise<Buffer> {
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu'
+      ]
     });
 
     try {
@@ -111,7 +120,7 @@ class PremiumPdfService {
       });
 
       console.log('✅ [PDF-SERVICE] Signed PDF generated successfully');
-      return pdfBuffer;
+      return Buffer.from(pdfBuffer);
 
     } finally {
       await browser.close();
@@ -212,7 +221,16 @@ class PremiumPdfService {
       // Launch browser and generate PDF
       browser = await puppeteer.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process',
+          '--disable-gpu'
+        ]
       });
 
       const page = await browser.newPage();
@@ -230,9 +248,9 @@ class PremiumPdfService {
       });
 
       console.log('✅ [PDF-SIGNATURES] PDF generated successfully with signatures');
-      return pdfBuffer;
+      return Buffer.from(pdfBuffer);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [PDF-SIGNATURES] Error generating PDF with signatures:', error);
       throw new Error(`Failed to generate signed PDF: ${error.message}`);
     } finally {

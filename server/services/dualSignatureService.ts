@@ -607,7 +607,12 @@ export class DualSignatureService {
           contractorSignedAt: contract.contractorSignedAt,
           clientSignedAt: contract.clientSignedAt,
           hasPdf: hasPdf
-        })
+        }),
+        attachments: hasPdf ? [{
+          filename: `contract_${contract.contractId}_signed.pdf`,
+          content: pdfBuffer!,
+          contentType: 'application/pdf'
+        }] : undefined
       });
 
       // Send to client
@@ -631,7 +636,12 @@ export class DualSignatureService {
           contractorSignedAt: contract.contractorSignedAt,
           clientSignedAt: contract.clientSignedAt,
           hasPdf: hasPdf
-        })
+        }),
+        attachments: hasPdf ? [{
+          filename: `contract_${contract.contractId}_signed.pdf`,
+          content: pdfBuffer!,
+          contentType: 'application/pdf'
+        }] : undefined
       });
 
       console.log('✅ [DUAL-SIGNATURE] Completion emails sent to both parties');
