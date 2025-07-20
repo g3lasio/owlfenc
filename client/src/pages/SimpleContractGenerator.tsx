@@ -1746,23 +1746,12 @@ export default function SimpleContractGenerator() {
     }
   }, [selectedProject, currentUser, contractHTML, profile, editableData, getCorrectProjectTotal, toast]);
 
-  // Multi-Channel Secure Delivery Handler - Send via Email, SMS, and WhatsApp
-  const handleMultiChannelDelivery = useCallback(async () => {
+  // Simplified Signature Protocol Handler - Generate signature links for both parties
+  const handleStartSignatureProtocol = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid || !contractHTML) {
       toast({
         title: "Error",
-        description: "Contract must be generated before sending secure links",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check if at least one delivery method is selected
-    const selectedMethods = Object.entries(deliveryMethods).filter(([_, enabled]) => enabled);
-    if (selectedMethods.length === 0) {
-      toast({
-        title: "No Delivery Method Selected",
-        description: "Please select at least one delivery method",
+        description: "Contract must be generated before starting signature protocol",
         variant: "destructive",
       });
       return;
@@ -1770,14 +1759,14 @@ export default function SimpleContractGenerator() {
 
     setIsLoading(true);
     setIsMultiChannelActive(true);
-    setDeliveryStatus("Initiating secure multi-channel delivery...");
+    setDeliveryStatus("Generating signature links...");
 
     try {
-      // Prepare contract data for secure delivery
+      // Prepare contract data for signature protocol
       const secureDeliveryPayload = {
         userId: currentUser.uid,
         contractHTML: contractHTML,
-        deliveryMethods: deliveryMethods,
+        deliveryMethods: { email: false, sms: false, whatsapp: false }, // Not using delivery methods anymore
         contractData: {
           contractorName: profile?.company || profile?.ownerName || "Contractor Name",
           contractorEmail: profile?.email || currentUser.email || "",
@@ -1800,7 +1789,7 @@ export default function SimpleContractGenerator() {
         }
       };
 
-      console.log("🔐 [MULTI-CHANNEL] Initiating secure delivery:", secureDeliveryPayload);
+      console.log("🔐 [SIGNATURE-PROTOCOL] Generating signature links:", secureDeliveryPayload);
 
       const response = await fetch('/api/multi-channel/initiate', {
         method: 'POST',
@@ -1812,7 +1801,7 @@ export default function SimpleContractGenerator() {
       });
 
       if (!response.ok) {
-        throw new Error(`Multi-channel delivery failed: ${response.status}`);
+        throw new Error(`Signature protocol failed: ${response.status}`);
       }
 
       const result = await response.json();
@@ -1820,35 +1809,75 @@ export default function SimpleContractGenerator() {
       setContractorSignUrl(result.contractorSignUrl || "");
       setClientSignUrl(result.clientSignUrl || "");
       
-      // Create status message based on selected delivery methods
-      const methodNames = selectedMethods.map(([method, _]) => {
-        switch(method) {
-          case 'email': return 'Secure Email';
-          case 'sms': return 'SMS';
-          case 'whatsapp': return 'WhatsApp Business';
-          default: return method;
-        }
-      });
-      
-      setDeliveryStatus(`Secure links sent via: ${methodNames.join(', ')}`);
+      setDeliveryStatus("Signature links generated successfully");
 
       toast({
-        title: "Secure Links Sent",
-        description: `Contract delivered via ${methodNames.length} secure channel${methodNames.length > 1 ? 's' : ''}. Contract ID: ${result.contractId}`,
+        title: "Signature Protocol Started",
+        description: `Secure signature links generated. Contract ID: ${result.contractId}`,
       });
 
     } catch (error) {
-      console.error("❌ [MULTI-CHANNEL] Error:", error);
-      setDeliveryStatus("Failed to send secure contract links");
+      console.error("❌ [SIGNATURE-PROTOCOL] Error:", error);
+      setDeliveryStatus("Failed to generate signature links");
       toast({
-        title: "Delivery Error",
-        description: `Failed to send secure links: ${error.message}`,
+        title: "Signature Protocol Error",
+        description: `Failed to generate signature links: ${error.message}`,
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  }, [selectedProject, currentUser, contractHTML, profile, editableData, deliveryMethods, getCorrectProjectTotal, toast]);
+  }, [selectedProject, currentUser, contractHTML, profile, editableData, getCorrectProjectTotal, toast]);
+
+  // Share functionality for signature links
+  const handleCopyToClipboard = useCallback(async (url: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({
+        title: "Link Copied",
+        description: `${type} signature link copied to clipboard`,
+      });
+    } catch (error) {
+      console.error("Failed to copy to clipboard:", error);
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy link to clipboard",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  const handleShareLink = useCallback((url: string, type: string) => {
+    if (navigator.share) {
+      navigator.share({
+        title: `Contract Signature - ${type}`,
+        text: `Please sign the contract using this secure link`,
+        url: url,
+      }).catch(console.error);
+    } else {
+      // Fallback to copying to clipboard
+      handleCopyToClipboard(url, type);
+    }
+  }, [handleCopyToClipboard]);
+
+  const handleEmailShare = useCallback((url: string, type: string) => {
+    const subject = encodeURIComponent(`Contract Signature Required - ${type}`);
+    const body = encodeURIComponent(`Please sign the contract using this secure link: ${url}`);
+    const mailtoUrl = `mailto:?subject=${subject}&body=${body}`;
+    window.open(mailtoUrl, '_blank');
+  }, []);
+
+  const handleWhatsAppShare = useCallback((url: string, type: string) => {
+    const text = encodeURIComponent(`Please sign the contract using this secure link: ${url}`);
+    const whatsappUrl = `https://wa.me/?text=${text}`;
+    window.open(whatsappUrl, '_blank');
+  }, []);
+
+  const handleSMSShare = useCallback((url: string, type: string) => {
+    const text = encodeURIComponent(`Please sign the contract using this secure link: ${url}`);
+    const smsUrl = `sms:?body=${text}`;
+    window.open(smsUrl, '_blank');
+  }, []);
 
   // Legal Compliance Workflow - No manual signature handlers needed
   // All signature handling is now done through LegalComplianceWorkflow component
@@ -2670,84 +2699,13 @@ export default function SimpleContractGenerator() {
                       <h3 className="font-semibold text-cyan-400">Send for Signature</h3>
                       <Badge className="bg-cyan-600 text-white text-xs">Secure</Badge>
                     </div>
-                    <p className="text-gray-300 text-sm mb-4">
-                      Send contract to both parties for digital signature
+                    <p className="text-gray-300 text-sm mb-6">
+                      Generate secure signature links for both contractor and client
                     </p>
                     
-                    {/* Delivery Methods */}
-                    <div className="space-y-3 mb-4">
-                      <div className="text-sm font-medium text-cyan-400 mb-2">Delivery Methods:</div>
-                      
-                      {/* Email Option */}
-                      <label className={`flex items-center gap-3 p-3 rounded border-2 cursor-pointer transition-all ${
-                        deliveryMethods.email 
-                          ? 'border-cyan-400 bg-cyan-400/10' 
-                          : 'border-gray-600 hover:border-cyan-400'
-                      }`}>
-                        <input 
-                          type="checkbox" 
-                          checked={deliveryMethods.email}
-                          onChange={(e) => setDeliveryMethods(prev => ({ ...prev, email: e.target.checked }))}
-                          className="text-cyan-400 focus:ring-cyan-400"
-                        />
-                        <Mail className="h-4 w-4 text-cyan-400" />
-                        <div className="flex-1">
-                          <span className="text-white font-medium">Email</span>
-                          <p className="text-xs text-gray-400">Professional email delivery</p>
-                        </div>
-                        {deliveryMethods.email && (
-                          <CheckCircle className="h-4 w-4 text-green-400" />
-                        )}
-                      </label>
-                      
-                      {/* SMS Option */}
-                      <label className={`flex items-center gap-3 p-3 rounded border-2 cursor-pointer transition-all ${
-                        deliveryMethods.sms 
-                          ? 'border-green-400 bg-green-400/10' 
-                          : 'border-gray-600 hover:border-green-400'
-                      }`}>
-                        <input 
-                          type="checkbox" 
-                          checked={deliveryMethods.sms}
-                          onChange={(e) => setDeliveryMethods(prev => ({ ...prev, sms: e.target.checked }))}
-                          className="text-green-400 focus:ring-green-400"
-                        />
-                        <Phone className="h-4 w-4 text-green-400" />
-                        <div className="flex-1">
-                          <span className="text-white font-medium">SMS Text</span>
-                          <p className="text-xs text-gray-400">Direct mobile delivery</p>
-                        </div>
-                        {deliveryMethods.sms && (
-                          <CheckCircle className="h-4 w-4 text-green-400" />
-                        )}
-                      </label>
-                      
-                      {/* WhatsApp Option */}
-                      <label className={`flex items-center gap-3 p-3 rounded border-2 cursor-pointer transition-all ${
-                        deliveryMethods.whatsapp 
-                          ? 'border-green-500 bg-green-500/10' 
-                          : 'border-gray-600 hover:border-green-500'
-                      }`}>
-                        <input 
-                          type="checkbox" 
-                          checked={deliveryMethods.whatsapp}
-                          onChange={(e) => setDeliveryMethods(prev => ({ ...prev, whatsapp: e.target.checked }))}
-                          className="text-green-500 focus:ring-green-500"
-                        />
-                        <MessageCircle className="h-4 w-4 text-green-500" />
-                        <div className="flex-1">
-                          <span className="text-white font-medium">WhatsApp</span>
-                          <p className="text-xs text-gray-400">Business messaging</p>
-                        </div>
-                        {deliveryMethods.whatsapp && (
-                          <CheckCircle className="h-4 w-4 text-green-400" />
-                        )}
-                      </label>
-                    </div>
-
-                    {/* Send Button */}
+                    {/* Simplified Start Button */}
                     <Button
-                      onClick={handleMultiChannelDelivery}
+                      onClick={handleStartSignatureProtocol}
                       disabled={isLoading || !contractHTML || isMultiChannelActive}
                       className={`w-full py-3 font-medium transition-all ${
                         isLoading 
@@ -2760,17 +2718,17 @@ export default function SimpleContractGenerator() {
                       {isLoading ? (
                         <div className="flex items-center justify-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Sending...</span>
+                          <span>Generating...</span>
                         </div>
                       ) : isMultiChannelActive ? (
                         <div className="flex items-center justify-center gap-2">
                           <CheckCircle className="h-4 w-4" />
-                          <span>Sent Successfully</span>
+                          <span>Links Generated</span>
                         </div>
                       ) : (
                         <div className="flex items-center justify-center gap-2">
-                          <Send className="h-4 w-4" />
-                          <span>Send for Signature</span>
+                          <Shield className="h-4 w-4" />
+                          <span>Start Signature Protocol</span>
                         </div>
                       )}
                     </Button>
@@ -2815,24 +2773,18 @@ export default function SimpleContractGenerator() {
                         
                         {/* Progress Indicators */}
                         <div className="mt-3 space-y-2">
-                          {deliveryMethods.email && (
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-cyan-400">EMAIL VECTOR:</span>
-                              <span className="text-green-400 font-bold">DEPLOYED</span>
-                            </div>
-                          )}
-                          {deliveryMethods.sms && (
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-green-400">SMS VECTOR:</span>
-                              <span className="text-green-400 font-bold">TRANSMITTED</span>
-                            </div>
-                          )}
-                          {deliveryMethods.whatsapp && (
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-green-500">WHATSAPP VECTOR:</span>
-                              <span className="text-green-400 font-bold">OPERATIONAL</span>
-                            </div>
-                          )}
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-cyan-400">CONTRACTOR LINK:</span>
+                            <span className="text-green-400 font-bold">{contractorSignUrl ? 'GENERATED' : 'PENDING'}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-green-400">CLIENT LINK:</span>
+                            <span className="text-green-400 font-bold">{clientSignUrl ? 'GENERATED' : 'PENDING'}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-orange-400">SHARE OPTIONS:</span>
+                            <span className="text-green-400 font-bold">AVAILABLE</span>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -2841,10 +2793,59 @@ export default function SimpleContractGenerator() {
                     <div className="space-y-3">
                       {contractorSignUrl && (
                         <div className="bg-black/40 border border-cyan-400/50 rounded-lg p-3">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Shield className="h-4 w-4 text-cyan-400" />
-                            <h4 className="text-cyan-400 font-bold text-xs tracking-wider">CONTRACTOR ACCESS PORTAL</h4>
-                            <Badge className="bg-cyan-600 text-black text-xs font-mono">SECURED</Badge>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Shield className="h-4 w-4 text-cyan-400" />
+                              <h4 className="text-cyan-400 font-bold text-xs tracking-wider">CONTRACTOR ACCESS PORTAL</h4>
+                              <Badge className="bg-cyan-600 text-black text-xs font-mono">SECURED</Badge>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleCopyToClipboard(contractorSignUrl, "Contractor")}
+                                className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
+                                title="Copy link"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleShareLink(contractorSignUrl, "Contractor")}
+                                className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
+                                title="Share link"
+                              >
+                                <Share2 className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEmailShare(contractorSignUrl, "Contractor")}
+                                className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
+                                title="Share via email"
+                              >
+                                <Mail className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleWhatsAppShare(contractorSignUrl, "Contractor")}
+                                className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
+                                title="Share via WhatsApp"
+                              >
+                                <MessageCircle className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleSMSShare(contractorSignUrl, "Contractor")}
+                                className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
+                                title="Share via SMS"
+                              >
+                                <Phone className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
                           <div className="bg-black/60 rounded p-2 border border-cyan-400/30">
                             <a 
@@ -2865,10 +2866,59 @@ export default function SimpleContractGenerator() {
                       
                       {clientSignUrl && (
                         <div className="bg-black/40 border border-green-400/50 rounded-lg p-3">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Shield className="h-4 w-4 text-green-400" />
-                            <h4 className="text-green-400 font-bold text-xs tracking-wider">CLIENT ACCESS PORTAL</h4>
-                            <Badge className="bg-green-600 text-black text-xs font-mono">SECURED</Badge>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Shield className="h-4 w-4 text-green-400" />
+                              <h4 className="text-green-400 font-bold text-xs tracking-wider">CLIENT ACCESS PORTAL</h4>
+                              <Badge className="bg-green-600 text-black text-xs font-mono">SECURED</Badge>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleCopyToClipboard(clientSignUrl, "Client")}
+                                className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
+                                title="Copy link"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleShareLink(clientSignUrl, "Client")}
+                                className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
+                                title="Share link"
+                              >
+                                <Share2 className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEmailShare(clientSignUrl, "Client")}
+                                className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
+                                title="Share via email"
+                              >
+                                <Mail className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleWhatsAppShare(clientSignUrl, "Client")}
+                                className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
+                                title="Share via WhatsApp"
+                              >
+                                <MessageCircle className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleSMSShare(clientSignUrl, "Client")}
+                                className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
+                                title="Share via SMS"
+                              >
+                                <Phone className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
                           <div className="bg-black/60 rounded p-2 border border-green-400/30">
                             <a 
@@ -2906,28 +2956,30 @@ export default function SimpleContractGenerator() {
                           </div>
                         </div>
 
-                        {/* Active Delivery Vectors */}
+                        {/* Available Share Methods */}
                         <div className="mt-4 bg-black/60 border border-green-400/30 rounded p-3">
-                          <div className="text-xs font-bold text-green-400 mb-2 tracking-wider">ACTIVE VECTORS:</div>
+                          <div className="text-xs font-bold text-green-400 mb-2 tracking-wider">SHARE METHODS:</div>
                           <div className="flex gap-2 flex-wrap">
-                            {deliveryMethods.email && (
-                              <Badge className="bg-cyan-600 text-black text-xs font-mono">
-                                <Mail className="h-3 w-3 mr-1" />
-                                SMTP CHANNEL
-                              </Badge>
-                            )}
-                            {deliveryMethods.sms && (
-                              <Badge className="bg-green-600 text-black text-xs font-mono">
-                                <Phone className="h-3 w-3 mr-1" />
-                                GSM NETWORK
-                              </Badge>
-                            )}
-                            {deliveryMethods.whatsapp && (
-                              <Badge className="bg-green-500 text-black text-xs font-mono">
-                                <MessageCircle className="h-3 w-3 mr-1" />
-                                WHATSAPP API
-                              </Badge>
-                            )}
+                            <Badge className="bg-cyan-600 text-black text-xs font-mono">
+                              <Copy className="h-3 w-3 mr-1" />
+                              COPY LINK
+                            </Badge>
+                            <Badge className="bg-orange-600 text-black text-xs font-mono">
+                              <Share2 className="h-3 w-3 mr-1" />
+                              NATIVE SHARE
+                            </Badge>
+                            <Badge className="bg-blue-600 text-black text-xs font-mono">
+                              <Mail className="h-3 w-3 mr-1" />
+                              EMAIL
+                            </Badge>
+                            <Badge className="bg-green-500 text-black text-xs font-mono">
+                              <MessageCircle className="h-3 w-3 mr-1" />
+                              WHATSAPP
+                            </Badge>
+                            <Badge className="bg-purple-600 text-black text-xs font-mono">
+                              <Phone className="h-3 w-3 mr-1" />
+                              SMS
+                            </Badge>
                           </div>
                         </div>
 
