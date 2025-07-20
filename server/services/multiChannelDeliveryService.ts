@@ -352,7 +352,11 @@ class MultiChannelDeliveryService {
         .filter(([_, result]) => result.sent)
         .map(([channel, _]) => channel);
       
-      console.log(`🔐 [MULTI-CHANNEL] Delivery completed via: ${successfulChannels.join(', ')}`);
+      if (successfulChannels.length > 0) {
+        console.log(`🔐 [MULTI-CHANNEL] Delivery completed via: ${successfulChannels.join(', ')}`);
+      } else {
+        console.log('🔐 [MULTI-CHANNEL] Signature links generated - no delivery channels used');
+      }
       
       return {
         success: true,

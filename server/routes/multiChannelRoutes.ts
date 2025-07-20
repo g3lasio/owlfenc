@@ -57,14 +57,9 @@ router.post('/initiate', async (req, res) => {
       });
     }
 
-    // Check if at least one delivery method is selected
+    // Allow generation of signature links without requiring delivery methods
     const selectedMethods = Object.entries(deliveryMethods).filter(([_, enabled]) => enabled);
-    if (selectedMethods.length === 0) {
-      return res.status(400).json({ 
-        error: 'At least one delivery method must be selected',
-        code: 'NO_DELIVERY_METHODS'
-      });
-    }
+    console.log('🔐 [MULTI-CHANNEL API] Selected delivery methods:', selectedMethods.length > 0 ? selectedMethods.map(([method, _]) => method) : 'None (links only mode)');
 
     // Validate email addresses if email delivery is selected
     if (deliveryMethods.email) {
@@ -86,8 +81,12 @@ router.post('/initiate', async (req, res) => {
       }
     }
 
-    console.log('🔐 [MULTI-CHANNEL API] Validation passed, initiating delivery...');
-    console.log('🔐 [MULTI-CHANNEL API] Selected methods:', selectedMethods.map(([method, _]) => method));
+    console.log('🔐 [MULTI-CHANNEL API] Validation passed, initiating signature protocol...');
+    if (selectedMethods.length > 0) {
+      console.log('🔐 [MULTI-CHANNEL API] Selected methods:', selectedMethods.map(([method, _]) => method));
+    } else {
+      console.log('🔐 [MULTI-CHANNEL API] Links only mode - no delivery methods selected');
+    }
 
     // Initiate secure delivery
     const result = await multiChannelDeliveryService.initiateSecureDelivery({
@@ -109,7 +108,7 @@ router.post('/initiate', async (req, res) => {
     // Return success response
     res.json({
       success: true,
-      message: 'Secure contract delivery initiated successfully',
+      message: selectedMethods.length > 0 ? 'Secure contract delivery initiated successfully' : 'Signature links generated successfully',
       contractId: result.contractId,
       contractorSignUrl: result.contractorSignUrl,
       clientSignUrl: result.clientSignUrl,
@@ -121,14 +120,14 @@ router.post('/initiate', async (req, res) => {
         timeStamps: true,
         expirationHours: 72
       },
-      deliveredChannels: selectedMethods.map(([method, _]) => {
+      deliveredChannels: selectedMethods.length > 0 ? selectedMethods.map(([method, _]) => {
         switch(method) {
           case 'email': return 'Secure Email';
           case 'sms': return 'SMS Text Message';
           case 'whatsapp': return 'WhatsApp Business';
           default: return method;
         }
-      })
+      }) : ['Signature Links Generated - Manual Sharing']
     });
 
   } catch (error) {
