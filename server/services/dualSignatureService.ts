@@ -549,6 +549,16 @@ export class DualSignatureService {
 
       } catch (pdfError: any) {
         console.error('⚠️ [DUAL-SIGNATURE] PDF generation failed, completing contract without PDF:', pdfError.message);
+        
+        // Provide specific logging for Chrome dependency issues
+        const isChromeDependencyError = pdfError.message?.includes('libgbm.so.1') || 
+                                       pdfError.message?.includes('Failed to launch the browser') ||
+                                       pdfError.message?.includes('chrome');
+        
+        if (isChromeDependencyError) {
+          console.error('🚨 [CHROME-DEPS] Chrome browser dependencies missing in Replit environment - HTML download will be available instead');
+        }
+        
         // Contract will still be marked as completed but without PDF
         pdfBuffer = null;
         signedPdfPath = null;
@@ -1531,9 +1541,18 @@ export class DualSignatureService {
       } catch (pdfError: any) {
         console.warn('⚠️ [DUAL-SIGNATURE] PDF generation failed:', pdfError.message);
         
+        // Provide specific error message for Chrome dependency issues
+        const isChromeDependencyError = pdfError.message?.includes('libgbm.so.1') || 
+                                       pdfError.message?.includes('Failed to launch the browser') ||
+                                       pdfError.message?.includes('chrome');
+        
+        const errorMessage = isChromeDependencyError 
+          ? 'PDF generation unavailable: Chrome browser dependencies missing in Replit environment. Use HTML download instead.'
+          : `PDF generation failed: ${pdfError.message}`;
+        
         return {
           success: false,
-          message: `PDF generation failed: ${pdfError.message}. Chrome libraries may be missing.`
+          message: errorMessage
         };
       }
 

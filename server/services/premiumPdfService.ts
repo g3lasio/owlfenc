@@ -404,9 +404,9 @@ class PremiumPdfService {
       console.log('✅ [PDF-SIGNATURES] Signatures integrated successfully');
       return modifiedHTML;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [PDF-SIGNATURES] Error integrating signatures:', error);
-      throw new Error(`Failed to integrate signatures: ${error.message}`);
+      throw new Error(`Failed to integrate signatures: ${error?.message || 'Unknown error'}`);
     }
   }
 
@@ -785,9 +785,9 @@ class PremiumPdfService {
                     <p><span class="section-number" style="color: #0891b2;">${index + 13}. ${clause.title.toUpperCase()}</span></p>
                     <div style="background: #e0f2fe; padding: 12px; border-radius: 6px; margin: 10px 0; border: 1px solid #b3e5fc;">
                         <p style="font-size: 9px; color: #0891b2; margin: 0 0 8px 0; font-weight: bold; text-transform: uppercase;">
-                            🔒 SELECTED PROTECTION CLAUSE - ${clause.riskLevel || 'STANDARD'} RISK MITIGATION
+                            🔒 SELECTED PROTECTION CLAUSE - STANDARD RISK MITIGATION
                         </p>
-                        <p class="legal-text" style="margin: 0; color: #0f172a;">${clause.clause || clause.content || clause.description || 'Protective clause content not available'}</p>
+                        <p class="legal-text" style="margin: 0; color: #0f172a;">${clause.content || 'Protective clause content not available'}</p>
                     </div>
                 </div>
             `).join('')}

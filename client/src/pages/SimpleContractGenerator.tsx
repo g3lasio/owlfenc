@@ -629,88 +629,6 @@ export default function SimpleContractGenerator() {
     }
   }, [toast, loadCompletedContracts]);
 
-  // Share contract function with enhanced mobile app support
-  const shareContract = useCallback(async (contractId: string, clientName: string) => {
-    try {
-      console.log("📤 Sharing contract:", contractId);
-      
-      if (!currentUser) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to share contracts",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Check if Web Share API is available (mobile devices)
-      if (navigator.share) {
-        try {
-          // First try to share the actual PDF file for mobile apps
-          const response = await fetch(`/api/dual-signature/download/${contractId}`, {
-            headers: {
-              'x-user-id': currentUser.uid
-            }
-          });
-          
-          if (response.ok) {
-            const blob = await response.blob();
-            const file = new File([blob], `contract_${clientName.replace(/\s+/g, '_')}_signed.pdf`, {
-              type: 'application/pdf'
-            });
-            
-            // Try to share the file directly (works with most mobile apps)
-            await navigator.share({
-              title: `Signed Contract - ${clientName}`,
-              text: `Signed contract for ${clientName} project`,
-              files: [file]
-            });
-            
-            toast({
-              title: "Shared Successfully", 
-              description: `Contract shared via mobile app`,
-            });
-          } else {
-            throw new Error('Failed to load contract for sharing');
-          }
-        } catch (shareError: any) {
-          // Fallback to URL sharing if file sharing fails
-          const downloadUrl = `/api/dual-signature/download/${contractId}`;
-          const fullUrl = `${window.location.origin}${downloadUrl}`;
-          
-          await navigator.share({
-            title: `Signed Contract - ${clientName}`,
-            text: `Signed contract for ${clientName} project`,
-            url: fullUrl
-          });
-          
-          toast({
-            title: "Share Link Sent",
-            description: `Contract download link shared`,
-          });
-        }
-      } else {
-        // Fallback for desktop - copy download link to clipboard
-        const downloadUrl = `/api/dual-signature/download/${contractId}`;
-        const fullUrl = `${window.location.origin}${downloadUrl}`;
-        
-        await navigator.clipboard.writeText(fullUrl);
-        toast({
-          title: "Link Copied",
-          description: `Download link copied to clipboard - share it with anyone who needs the signed contract`,
-        });
-      }
-      
-    } catch (error: any) {
-      console.error("❌ Error sharing contract:", error);
-      toast({
-        title: "Share Failed",
-        description: error.message || "Failed to share contract",
-        variant: "destructive",
-      });
-    }
-  }, [toast]);
-
   // Copy contract link to clipboard
   const copyContractLink = useCallback(async (contractId: string, clientName: string) => {
     try {
@@ -780,7 +698,70 @@ export default function SimpleContractGenerator() {
     }
   }, [toast]);
 
+  // Share contract using native share API or copy link
+  const shareContract = useCallback(async (contractId: string, clientName: string) => {
+    try {
+      console.log("🔗 Sharing contract:", contractId);
+      
+      if (!currentUser) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to share contracts",
+          variant: "destructive"
+        });
+        return;
+      }
 
+      // Create shareable URL based on PDF availability
+      const baseUrl = window.location.origin;
+      const shareUrl = `${baseUrl}/api/dual-signature/download-html/${contractId}`;
+      const shareText = `Signed Contract for ${clientName}`;
+      
+      // Try native Web Share API first
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: shareText,
+            text: `View the signed contract for ${clientName}`,
+            url: shareUrl,
+          });
+          
+          toast({
+            title: "Contract Shared",
+            description: `Contract shared via native share options`,
+          });
+          return;
+        } catch (shareError: any) {
+          // User cancelled share or share failed, fall back to copy
+          console.log("Native share cancelled or failed, falling back to copy");
+        }
+      }
+      
+      // Fallback: Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "Link Copied",
+          description: `Contract link copied to clipboard for ${clientName}`,
+        });
+      } catch (clipboardError) {
+        // Ultimate fallback: Show URL in alert
+        window.prompt("Copy this contract link:", shareUrl);
+        toast({
+          title: "Contract Link",
+          description: "Contract link displayed for manual copy",
+        });
+      }
+      
+    } catch (error: any) {
+      console.error("❌ Error sharing contract:", error);
+      toast({
+        title: "Share Error", 
+        description: error.message || "Failed to share contract",
+        variant: "destructive",
+      });
+    }
+  }, [toast, currentUser]);
 
   // Download contract as HTML file
   const downloadContractHtml = useCallback(async (contractId: string, clientName: string) => {
@@ -3440,19 +3421,7 @@ export default function SimpleContractGenerator() {
                               </Badge>
                             </div>
 
-                            {/* Signature Status */}
-                            <div className="bg-gray-700 rounded-lg p-3 mb-3">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <span className="text-gray-300 text-sm">Contractor:</span>
-                                  <Badge className="ml-2 text-xs bg-green-600 text-white">SIGNED</Badge>
-                                </div>
-                                <div>
-                                  <span className="text-gray-300 text-sm">Client:</span>
-                                  <Badge className="ml-2 text-xs bg-green-600 text-white">SIGNED</Badge>
-                                </div>
-                              </div>
-                            </div>
+
 
                             {/* Contract Actions */}
                             <div className="space-y-3">
@@ -3526,6 +3495,15 @@ export default function SimpleContractGenerator() {
                                       >
                                         <Download className="h-3 w-3 mr-1" />
                                         Download HTML
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => shareContract(contract.contractId, contract.clientName)}
+                                        className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs"
+                                      >
+                                        <Share2 className="h-3 w-3 mr-1" />
+                                        Share Contract
                                       </Button>
                                     </>
                                   )}
