@@ -735,6 +735,21 @@ app.use('/api', (req, res, next) => {
 import healthRoutes from './routes/health';
 app.use('/api', healthRoutes);
 
+// Add root health check endpoint that responds quickly for deployment health checks
+app.get('/', (req, res) => {
+  // Quick response for deployment health checks
+  res.status(200).send('OK');
+});
+
+// Add backup health endpoints for deployment monitoring
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
+app.get('/status', (req, res) => {
+  res.status(200).json({ status: 'healthy', uptime: process.uptime() });
+});
+
 // Add OCR simplified routes
 app.use('/api/ocr', ocrSimpleRoutes);
 
@@ -779,7 +794,7 @@ console.log('📱 [SMS] Rutas registradas en /api/sms');
       });
       
       // Set server timeout for better deployment compatibility
-      httpServer.timeout = 30000; // 30 seconds
+      httpServer.timeout = 120000; // 2 minutes for deployment health checks
       httpServer.keepAliveTimeout = 65000; // 65 seconds
       httpServer.headersTimeout = 66000; // 66 seconds
       
@@ -794,7 +809,7 @@ console.log('📱 [SMS] Rutas registradas en /api/sms');
       await setupVite(app, server);
       console.log('📄 Frontend served via Vite development server');
     } else {
-      // In production, use custom production setup
+      // In production, use custom production setup BEFORE defining fallback routes
       setupProductionRoutes(app);
       setupProductionErrorHandlers();
       console.log('📄 Frontend served from production build');

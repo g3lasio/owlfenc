@@ -4,18 +4,31 @@ import path from 'path';
 import fs from 'fs';
 
 export function setupProductionRoutes(app: express.Express) {
-  // Serve static files from the dist/client directory
-  const clientPath = path.join(process.cwd(), 'dist', 'client');
+  // Serve static files - try multiple possible paths (Vite builds to dist/public)
+  const possibleClientPaths = [
+    path.join(process.cwd(), 'dist', 'public'),
+    path.join(process.cwd(), 'dist', 'client'),
+    path.join(process.cwd(), 'dist'),
+    path.join(process.cwd(), 'client', 'dist')
+  ];
+  
+  let clientPath = '';
+  for (const possiblePath of possibleClientPaths) {
+    if (fs.existsSync(possiblePath)) {
+      clientPath = possiblePath;
+      break;
+    }
+  }
   
   // Check if build directory exists
-  if (fs.existsSync(clientPath)) {
+  if (clientPath) {
     console.log('Serving static files from:', clientPath);
     app.use(express.static(clientPath));
     
-    // Serve index.html for all routes not handled by API
+    // Serve index.html for all routes not handled by API (but skip root health checks)
     app.get('*', (req, res) => {
-      // Skip API routes
-      if (req.path.startsWith('/api')) {
+      // Skip API routes and health endpoints
+      if (req.path.startsWith('/api') || req.path === '/' || req.path === '/health' || req.path === '/status') {
         return;
       }
       
@@ -27,10 +40,10 @@ export function setupProductionRoutes(app: express.Express) {
       }
     });
   } else {
-    console.warn('Client build directory not found at:', clientPath);
+    console.warn('Client build directory not found. Checked paths:', possibleClientPaths);
     // Serve a basic error page
     app.get('*', (req, res) => {
-      if (req.path.startsWith('/api')) {
+      if (req.path.startsWith('/api') || req.path === '/' || req.path === '/health' || req.path === '/status') {
         return;
       }
       res.status(503).send(`
