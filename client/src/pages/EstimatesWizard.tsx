@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -317,13 +318,13 @@ export default function EstimatesWizardFixed() {
     if (showEmailDialog && estimate.client && profile) {
       setEmailData({
         toEmail: estimate.client.email || "",
-        subject: `Professional Estimate - ${estimate.title || "Your Project"}`,
+        subject: `Professional Estimate - ${estimate.projectDescription || "Your Project"}`,
         message: `Dear ${estimate.client.name || "Valued Client"},
 
 We are pleased to provide you with a professional estimate for your project. Please find all details in the attached estimate.
 
 Project Summary:
-• ${estimate.title || "Construction Project"}
+• ${estimate.projectDescription || "Construction Project"}
 • Location: ${estimate.client.address || "Project Location"}
 • Total Investment: $${estimate.total?.toFixed(2) || "0.00"}
 
@@ -3434,7 +3435,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           type: estimate.projectType || "Fence Installation",
           description:
             estimate.projectDescription ||
-            estimate.title ||
+            estimate.projectDescription ||
             "Proyecto de construcción de cerca",
           location:
             estimate.client?.address ||

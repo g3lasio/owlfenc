@@ -148,6 +148,11 @@ Changelog:
   * INSTANT PDF GENERATION: Fast PDF creation without browser launch overhead or memory-intensive operations
   * LEGALLY COMPLIANT DOCUMENTS: Generated PDFs include digital signature authentication and legal binding notices
   * PRODUCTION READY: Complete PDF generation workflow operational without external browser dependencies or Chrome libraries
+- July 21, 2025. ✅ ESTIMATES WIZARD USEQUERY IMPORT FIX: Successfully resolved "useQuery is not defined" error in EstimatesWizard component:
+  * IMPORT FIX: Added missing import for useQuery from @tanstack/react-query to resolve runtime error
+  * COMPONENT STABILITY: EstimatesWizard now loads without errors and subscription data fetching works correctly
+  * USER EXPERIENCE: Users can now access estimates wizard without runtime crashes or undefined reference errors
+  * DEVELOPMENT CONTINUITY: Fixed compilation error that was blocking estimates workflow functionality
 - July 21, 2025. ✅ ALTERNATIVE PDF SERVICE IMPLEMENTED - CHROME DEPENDENCY ELIMINATED: Successfully created PDF generation solution that works without Chrome/Puppeteer:
   * ALTERNATIVE PDF SERVICE: Created AlternativePdfService using pdf-lib library that generates PDFs without browser dependencies
   * CHROME-FREE PDF GENERATION: Implemented native Node.js PDF creation using StandardFonts and direct PDF document generation
