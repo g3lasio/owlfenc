@@ -702,6 +702,191 @@ export default function SimpleContractGenerator() {
     }
   }, [toast]);
 
+  // View contract HTML in new window
+  const viewContractHtml = useCallback(async (contractId: string, clientName: string) => {
+    try {
+      console.log("👀 Opening contract HTML for viewing:", contractId);
+      
+      if (!currentUser) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to view contracts",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Fetch contract data to get HTML content
+      const response = await fetch(`/api/dual-signature/contract/${contractId}/contractor`, {
+        headers: {
+          'x-user-id': currentUser.uid
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch contract data');
+      }
+      
+      const contractData = await response.json();
+      
+      if (contractData.success && contractData.contract?.contractHtml) {
+        // Create a new window with the contract HTML
+        const newWindow = window.open('', '_blank');
+        
+        if (newWindow) {
+          // Create a complete HTML document with styling for the contract
+          const styledHtml = `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Contract - ${clientName}</title>
+              <style>
+                body {
+                  font-family: 'Times New Roman', serif;
+                  max-width: 800px;
+                  margin: 0 auto;
+                  padding: 20px;
+                  line-height: 1.6;
+                  background: white;
+                  color: black;
+                }
+                .header {
+                  text-align: center;
+                  border-bottom: 2px solid #333;
+                  padding-bottom: 20px;
+                  margin-bottom: 30px;
+                }
+                .signatures {
+                  margin-top: 40px;
+                  padding: 20px;
+                  border: 2px solid #ccc;
+                  background: #f9f9f9;
+                }
+                .signature-section {
+                  margin: 20px 0;
+                  padding: 15px;
+                  border: 1px solid #ddd;
+                }
+                .signature-data {
+                  max-width: 200px;
+                  height: 100px;
+                  border: 1px solid #000;
+                  margin: 10px 0;
+                  background: white;
+                }
+                @media print {
+                  body { margin: 0; padding: 15px; }
+                }
+              </style>
+            </head>
+            <body>
+              ${contractData.contract.contractHtml}
+              
+              <div class="signatures">
+                <h3>Digital Signatures</h3>
+                ${contractData.contract.contractorSigned ? `
+                  <div class="signature-section">
+                    <h4>Contractor Signature</h4>
+                    <p><strong>Name:</strong> ${contractData.contract.contractorName}</p>
+                    <p><strong>Signed:</strong> ${new Date(contractData.contract.contractorSignedAt).toLocaleString()}</p>
+                    ${contractData.contract.contractorSignatureData ? `
+                      <div class="signature-data">
+                        <img src="${contractData.contract.contractorSignatureData}" style="max-width: 100%; max-height: 100%;" alt="Contractor Signature" />
+                      </div>
+                    ` : ''}
+                  </div>
+                ` : ''}
+                
+                ${contractData.contract.clientSigned ? `
+                  <div class="signature-section">
+                    <h4>Client Signature</h4>
+                    <p><strong>Name:</strong> ${contractData.contract.clientName}</p>
+                    <p><strong>Signed:</strong> ${new Date(contractData.contract.clientSignedAt).toLocaleString()}</p>
+                    ${contractData.contract.clientSignatureData ? `
+                      <div class="signature-data">
+                        <img src="${contractData.contract.clientSignatureData}" style="max-width: 100%; max-height: 100%;" alt="Client Signature" />
+                      </div>
+                    ` : ''}
+                  </div>
+                ` : ''}
+              </div>
+            </body>
+            </html>
+          `;
+          
+          newWindow.document.write(styledHtml);
+          newWindow.document.close();
+          newWindow.focus();
+          
+          toast({
+            title: "Contract Opened",
+            description: `Viewing contract HTML for ${clientName}`,
+          });
+        } else {
+          toast({
+            title: "Popup Blocked",
+            description: "Please allow popups to view contracts",
+            variant: "destructive",
+          });
+        }
+      } else {
+        throw new Error('Contract HTML not found');
+      }
+      
+    } catch (error: any) {
+      console.error("❌ Error viewing contract HTML:", error);
+      toast({
+        title: "View Error",
+        description: error.message || "Failed to open contract HTML for viewing",
+        variant: "destructive",
+      });
+    }
+  }, [toast, currentUser]);
+
+
+
+  // Download contract as HTML file
+  const downloadContractHtml = useCallback(async (contractId: string, clientName: string) => {
+    try {
+      console.log("📄 Downloading contract HTML:", contractId);
+      
+      if (!currentUser) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to download contracts",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Create download link for HTML
+      const downloadUrl = `/api/dual-signature/download-html/${contractId}`;
+      
+      // Create temporary link and trigger download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.setAttribute('download', `contract_${clientName.replace(/\s+/g, '_')}_${contractId}.html`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Download Started",
+        description: `HTML contract for ${clientName} is downloading`,
+      });
+      
+    } catch (error: any) {
+      console.error("❌ Error downloading HTML:", error);
+      toast({
+        title: "Download Error",
+        description: error.message || "Failed to download HTML contract",
+        variant: "destructive",
+      });
+    }
+  }, [toast, currentUser]);
+
   // CRITICAL: Helper function to get correct project total (prioritizes display values over raw values in centavos)
   const getCorrectProjectTotal = useCallback((project: any) => {
     if (!project) {
@@ -3334,41 +3519,100 @@ export default function SimpleContractGenerator() {
                               </div>
                             </div>
 
-                            {/* Download Actions */}
-                            {contract.isDownloadable && (
-                              <div className="bg-green-900/30 border border-green-700 rounded-lg p-3">
-                                <h4 className="text-green-400 font-semibold text-sm mb-2">Signed Contract:</h4>
+                            {/* Contract Actions */}
+                            <div className="space-y-3">
+                              {/* PDF Status and Actions */}
+                              <div className={`border rounded-lg p-3 ${contract.hasPdf ? 'bg-green-900/30 border-green-700' : 'bg-orange-900/30 border-orange-700'}`}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h4 className={`font-semibold text-sm ${contract.hasPdf ? 'text-green-400' : 'text-orange-400'}`}>
+                                    {contract.hasPdf ? 'Signed PDF Available:' : 'PDF Not Generated:'}
+                                  </h4>
+                                  <Badge className={`text-xs ${contract.hasPdf ? 'bg-green-600 text-white' : 'bg-orange-600 text-white'}`}>
+                                    {contract.hasPdf ? 'PDF READY' : 'PDF PENDING'}
+                                  </Badge>
+                                </div>
+                                
                                 <div className="flex gap-2 flex-wrap">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => viewContract(contract.contractId, contract.clientName)}
-                                    className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black text-xs"
-                                  >
-                                    <Eye className="h-3 w-3 mr-1" />
-                                    View
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => downloadSignedPdf(contract.contractId, contract.clientName)}
-                                    className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs"
-                                  >
-                                    <Download className="h-3 w-3 mr-1" />
-                                    Download
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => shareContract(contract.contractId, contract.clientName)}
-                                    className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs"
-                                  >
-                                    <Share2 className="h-3 w-3 mr-1" />
-                                    Share
-                                  </Button>
+                                  {contract.hasPdf ? (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => viewContract(contract.contractId, contract.clientName)}
+                                        className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black text-xs"
+                                      >
+                                        <Eye className="h-3 w-3 mr-1" />
+                                        View PDF
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => downloadSignedPdf(contract.contractId, contract.clientName)}
+                                        className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs"
+                                      >
+                                        <Download className="h-3 w-3 mr-1" />
+                                        Download PDF
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => shareContract(contract.contractId, contract.clientName)}
+                                        className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs"
+                                      >
+                                        <Share2 className="h-3 w-3 mr-1" />
+                                        Share PDF
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => generateContractPdf(contract.contractId, contract.clientName)}
+                                        className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-black text-xs"
+                                      >
+                                        <FileText className="h-3 w-3 mr-1" />
+                                        Generate PDF
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => viewContractHtml(contract.contractId, contract.clientName)}
+                                        className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black text-xs"
+                                      >
+                                        <Eye className="h-3 w-3 mr-1" />
+                                        View HTML
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => downloadContractHtml(contract.contractId, contract.clientName)}
+                                        className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs"
+                                      >
+                                        <Download className="h-3 w-3 mr-1" />
+                                        Download HTML
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </div>
-                            )}
+                              
+                              {/* Contract Details */}
+                              <div className="bg-gray-700 rounded-lg p-3">
+                                <div className="grid grid-cols-2 gap-3 text-xs">
+                                  <div>
+                                    <span className="text-gray-400">Contract ID:</span>
+                                    <p className="text-gray-200 font-mono">{contract.contractId}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-400">Completion Date:</span>
+                                    <p className="text-gray-200">
+                                      {contract.completionDate ? new Date(contract.completionDate).toLocaleDateString() : 'N/A'}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>

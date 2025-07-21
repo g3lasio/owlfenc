@@ -1397,6 +1397,55 @@ export class DualSignatureService {
   /**
    * Regenerar PDF con firmas para contrato completado
    */
+  /**
+   * Get contract data for viewing/downloading
+   */
+  async getContractData(contractId: string, requestingUserId?: string): Promise<{
+    success: boolean;
+    contract?: DigitalContract;
+    message: string;
+  }> {
+    try {
+      console.log('📥 [DUAL-SIGNATURE] Getting contract data:', contractId);
+      console.log('👤 [DUAL-SIGNATURE] Requesting user:', requestingUserId || 'No user ID');
+
+      const [contract] = await db.select()
+        .from(digitalContracts)
+        .where(eq(digitalContracts.contractId, contractId))
+        .limit(1);
+
+      if (!contract) {
+        return {
+          success: false,
+          message: 'Contract not found'
+        };
+      }
+
+      // If a requesting user is provided, verify access
+      if (requestingUserId && contract.userId !== requestingUserId) {
+        console.log('❌ [DUAL-SIGNATURE] Access denied for user:', requestingUserId);
+        return {
+          success: false,
+          message: 'Access denied: Contract not owned by user'
+        };
+      }
+
+      console.log('✅ [DUAL-SIGNATURE] Contract data retrieved successfully');
+      return {
+        success: true,
+        contract,
+        message: 'Contract found'
+      };
+
+    } catch (error: any) {
+      console.error('❌ [DUAL-SIGNATURE] Error getting contract data:', error);
+      return {
+        success: false,
+        message: `Error retrieving contract: ${error.message}`
+      };
+    }
+  }
+
   async regenerateSignedPdf(contractId: string): Promise<{
     success: boolean;
     message: string;

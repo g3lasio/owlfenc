@@ -554,4 +554,163 @@ router.post('/resend-links', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/dual-signature/download-html/:contractId
+ * Descargar contrato como archivo HTML con firmas
+ */
+router.get('/download-html/:contractId', async (req, res) => {
+  try {
+    const { contractId } = req.params;
+    const requestingUserId = req.headers['x-user-id'] as string;
+    
+    console.log('📥 [API] HTML download request for contract:', contractId);
+    console.log('👤 [API] Requesting user:', requestingUserId || 'No user ID');
+    
+    // Get contract data
+    const contractResult = await dualSignatureService.getContractData(contractId, requestingUserId);
+    
+    if (!contractResult.success || !contractResult.contract) {
+      return res.status(404).json({
+        success: false,
+        message: 'Contract not found or access denied'
+      });
+    }
+    
+    const contract = contractResult.contract;
+    
+    // Generate complete HTML document with signatures
+    const completeHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signed Contract - ${contract.clientName}</title>
+  <style>
+    body {
+      font-family: 'Times New Roman', serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+      background: white;
+      color: black;
+    }
+    .header {
+      text-align: center;
+      border-bottom: 2px solid #333;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    .signatures {
+      margin-top: 40px;
+      padding: 20px;
+      border: 2px solid #333;
+      background: #f9f9f9;
+      page-break-inside: avoid;
+    }
+    .signature-section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #ddd;
+      background: white;
+    }
+    .signature-data {
+      max-width: 300px;
+      height: 120px;
+      border: 1px solid #000;
+      margin: 10px 0;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .signature-data img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .contract-id {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      font-size: 10px;
+      color: #666;
+      background: rgba(255,255,255,0.8);
+      padding: 5px;
+    }
+    @media print {
+      body { margin: 0; padding: 15px; }
+      .contract-id { position: absolute; }
+    }
+  </style>
+</head>
+<body>
+  ${contract.contractHtml || '<h1>Contract Content Not Available</h1>'}
+  
+  <div class="signatures">
+    <h3>Digital Signatures - Contract ID: ${contractId}</h3>
+    
+    ${contract.contractorSigned ? `
+      <div class="signature-section">
+        <h4>✓ Contractor Signature (Digitally Signed)</h4>
+        <p><strong>Name:</strong> ${contract.contractorName}</p>
+        <p><strong>Date & Time:</strong> ${new Date(contract.contractorSignedAt).toLocaleString()}</p>
+        <p><strong>Signature Type:</strong> ${contract.contractorSignatureType === 'cursive' ? 'Typed Name' : 'Hand Drawn'}</p>
+        ${contract.contractorSignatureData ? `
+          <div class="signature-data">
+            <img src="${contract.contractorSignatureData}" alt="Contractor Signature" />
+          </div>
+        ` : '<p style="color: #888;">Signature data not available</p>'}
+      </div>
+    ` : '<div class="signature-section"><h4>⏳ Contractor Signature Pending</h4></div>'}
+    
+    ${contract.clientSigned ? `
+      <div class="signature-section">
+        <h4>✓ Client Signature (Digitally Signed)</h4>
+        <p><strong>Name:</strong> ${contract.clientName}</p>
+        <p><strong>Date & Time:</strong> ${new Date(contract.clientSignedAt).toLocaleString()}</p>
+        <p><strong>Signature Type:</strong> ${contract.clientSignatureType === 'cursive' ? 'Typed Name' : 'Hand Drawn'}</p>
+        ${contract.clientSignatureData ? `
+          <div class="signature-data">
+            <img src="${contract.clientSignatureData}" alt="Client Signature" />
+          </div>
+        ` : '<p style="color: #888;">Signature data not available</p>'}
+      </div>
+    ` : '<div class="signature-section"><h4>⏳ Client Signature Pending</h4></div>'}
+    
+    <div style="margin-top: 30px; padding: 15px; background: #e8f4f8; border: 1px solid #b3d9e6;">
+      <h4>Document Verification</h4>
+      <p><strong>Contract ID:</strong> ${contractId}</p>
+      <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+      <p><strong>Status:</strong> ${contract.status === 'completed' ? 'Fully Executed' : 'In Progress'}</p>
+      <p><strong>Digital Integrity:</strong> This document contains embedded digital signatures and is legally binding.</p>
+    </div>
+  </div>
+  
+  <div class="contract-id">
+    Contract ID: ${contractId} | Generated: ${new Date().toISOString()}
+  </div>
+</body>
+</html>
+    `;
+    
+    // Set headers for HTML download
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="contract_${contract.clientName.replace(/\s+/g, '_')}_${contractId}.html"`);
+    res.setHeader('Content-Length', Buffer.byteLength(completeHtml, 'utf8'));
+    
+    console.log('✅ [API] Serving signed contract HTML for download');
+    res.send(completeHtml);
+    
+  } catch (error: any) {
+    console.error('❌ [API] Error in /download-html/:contractId:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+});
+
 export default router;
