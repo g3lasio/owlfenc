@@ -153,6 +153,12 @@ Changelog:
   * COMPONENT STABILITY: EstimatesWizard now loads without errors and subscription data fetching works correctly
   * USER EXPERIENCE: Users can now access estimates wizard without runtime crashes or undefined reference errors
   * DEVELOPMENT CONTINUITY: Fixed compilation error that was blocking estimates workflow functionality
+- July 21, 2025. ✅ DISCOUNT AND TAX PERSISTENCE BUG FIXED: Successfully resolved critical data persistence issue where discount and tax values were not saving properly in project history:
+  * ROOT CAUSE IDENTIFIED: loadProjectForEdit function was resetting discount and tax values to defaults instead of loading saved values from Firebase
+  * DATA PERSISTENCE CORRECTED: Modified loadProjectForEdit to restore discountType, discountValue, discountAmount, and discountName from saved project data
+  * AUTOGUARDADO VERIFICATION: Confirmed autosave system already includes all discount and tax fields in dependency array for automatic saving
+  * USER EXPERIENCE IMPROVED: Users can now set discounts and taxes knowing they will persist when returning to estimates from history
+  * PRODUCTION READY: Complete discount and tax configuration now maintains state across page reloads and history navigation
 - July 21, 2025. ✅ ALTERNATIVE PDF SERVICE IMPLEMENTED - CHROME DEPENDENCY ELIMINATED: Successfully created PDF generation solution that works without Chrome/Puppeteer:
   * ALTERNATIVE PDF SERVICE: Created AlternativePdfService using pdf-lib library that generates PDFs without browser dependencies
   * CHROME-FREE PDF GENERATION: Implemented native Node.js PDF creation using StandardFonts and direct PDF document generation

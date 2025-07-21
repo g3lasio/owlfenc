@@ -1966,7 +1966,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           projectData.notes ||
           `Proyecto de ${projectData.projectType || "cerca"} para ${clientName}`;
 
-        // Set estimate data
+        // Set estimate data - MANTENER DESCUENTOS E IMPUESTOS GUARDADOS
         setEstimate({
           client: clientData,
           items: estimateItems,
@@ -1978,10 +1978,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             projectData.taxRate > 100
               ? projectData.taxRate / 100
               : projectData.taxRate || 10,
-          discountType: "percentage",
-          discountValue: 0,
-          discountAmount: 0,
-          discountName: "",
+          // RESTAURAR VALORES DE DESCUENTO GUARDADOS
+          discountType: projectData.discountType || "percentage",
+          discountValue: projectData.discountValue || 0,
+          discountAmount: projectData.discountAmount || 0,
+          discountName: projectData.discountName || "",
         });
 
         console.log("🎯 Estimate configurado:", {
