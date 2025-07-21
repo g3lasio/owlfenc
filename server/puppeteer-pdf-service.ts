@@ -38,6 +38,7 @@ interface EstimateData {
     phone?: string;
     address?: string;
   };
+  isMembership?:boolean;
 }
 
 export class PuppeteerPdfService {
@@ -109,10 +110,13 @@ export class PuppeteerPdfService {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
 
-    const templatePath = path.join(
-      __dirname,
-      "../client/src/components/templates/estimate-template.html",
-    );
+    const templatePath =data.isMembership? path.join(
+        __dirname,
+        "../client/src/components/templates/estimate-template.html",
+      ): path.join(
+        __dirname,
+        "../client/src/components/templates/estimate-template-free.html",
+      );
     const html = await fs.readFile(templatePath, "utf-8");
 
     const template = handlebars.compile(html);

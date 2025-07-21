@@ -5,7 +5,9 @@ import { Client } from "@/lib/clientFirebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { MaterialInventoryService } from "../../src/services/materialInventoryService";
 import { db } from "@/lib/firebase";
+import { useQuery } from "@tanstack/react-query";
 import { useProfile } from "@/hooks/use-profile";
+
 import {
   Dialog,
   DialogContent,
@@ -194,6 +196,21 @@ export default function Mervin() {
   const [canEditClient, setCanEditClient] = useState(false);
   const [canEditMaterials, setCanEditMaterials] = useState(false);
 
+  const { data: userSubscription, isLoading: isLoadingUserSubscription } =
+    useQuery({
+      queryKey: ["/api/subscription/user-subscription", currentUser?.email],
+      queryFn: async () => {
+        if (!currentUser?.email) throw new Error("User email is required");
+        const response = await fetch(
+          `/api/subscription/user-subscription?email=${encodeURIComponent(currentUser?.email)}`,
+        );
+        if (!response.ok) throw new Error("Failed to fetch subscription");
+        return response.json();
+      },
+      enabled: !!currentUser?.email,
+      throwOnError: false,
+    });
+  console.log(userSubscription);
   const loadMaterials = async (): Promise<Material[]> => {
     if (!currentUser) return [];
 
@@ -880,6 +897,7 @@ export default function Mervin() {
           logo: profile?.logo || "",
           license: profile?.license || "CA-LICENSE-123",
         },
+        isMembership: userSubscription?.plan?.id === 1 ? false : true,
       };
 
       console.log("📤 Sending payload to PDF service:", payload);

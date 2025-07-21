@@ -477,7 +477,18 @@
                                 <p>{{contractorInfo.address}}</p>
                                 <p>Phone: {{contractorInfo.phone}}</p>
                                 <p>Email: {{contractorInfo.email}}</p>
-                                <p>License #: {{contractorInfo.license}}</p>
+                                <p>
+                                    License #:
+                                    <a
+                                        href="{{contractorInfo.licenseUrl}}"
+                                        style="
+                                            color: #44eaf4;
+                                            text-decoration: underline;
+                                        "
+                                        target="_blank"
+                                        >{{contractorInfo.license}}</a
+                                    >
+                                </p>
                             </div>
                         </div>
                     </div>

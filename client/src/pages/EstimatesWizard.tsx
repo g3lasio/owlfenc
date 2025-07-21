@@ -250,6 +250,22 @@ export default function EstimatesWizardFixed() {
     }
   }, []);
 
+  const { data: userSubscription, isLoading: isLoadingUserSubscription } =
+    useQuery({
+      queryKey: ["/api/subscription/user-subscription", currentUser?.email],
+      queryFn: async () => {
+        if (!currentUser?.email) throw new Error("User email is required");
+        const response = await fetch(
+          `/api/subscription/user-subscription?email=${encodeURIComponent(currentUser?.email)}`,
+        );
+        if (!response.ok) throw new Error("Failed to fetch subscription");
+        return response.json();
+      },
+      enabled: !!currentUser?.email,
+      throwOnError: false,
+    });
+  console.log(userSubscription);
+
   // Email dialog states
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showEmailPreview, setShowEmailPreview] = useState(false);
@@ -3622,6 +3638,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           logo: profile?.logo || "",
           license: profile?.license || "",
         },
+        isMembership: userSubscription?.plan?.id === 1 ? false : true,
       };
 
       console.log("📤 Sending payload to PDF service:", payload);
@@ -3708,7 +3725,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   onOpenChange={setShowAddClientDialog}
                 >
                   <DialogTrigger asChild>
-                    <Button size="sm" className="bg-cyan-400 text-black hover:bg-cyan-300">
+                    <Button
+                      size="sm"
+                      className="bg-cyan-400 text-black hover:bg-cyan-300"
+                    >
                       <UserPlus className="h-4 w-4 mr-2" />
                       <p className="md:block hidden">Nuevo Cliente</p>
                     </Button>

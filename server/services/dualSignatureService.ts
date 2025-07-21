@@ -1491,10 +1491,14 @@ export class DualSignatureService {
       let signedPdfPath: string | null = null;
 
       try {
-        const { default: PremiumPdfService } = await import('./premiumPdfService');
-        const pdfService = new PremiumPdfService();
+        console.log('🔄 [DUAL-SIGNATURE] Trying Alternative PDF Service (no Chrome required)...');
+        
+        const { default: ReplitPdfService } = await import('./replitPdfService');
+        console.log('📦 [DUAL-SIGNATURE] ReplitPdfService imported successfully');
+        const altPdfService = ReplitPdfService.getInstance();
+        console.log('🏭 [DUAL-SIGNATURE] Service instance created:', typeof altPdfService);
 
-        pdfBuffer = await pdfService.generateContractWithSignatures({
+        pdfBuffer = await altPdfService.generateContractWithSignatures({
           contractHTML: contract.contractHtml || '',
           contractorSignature: {
             name: contract.contractorName,

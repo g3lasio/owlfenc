@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Fence Estimate</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=DejaVu+Sans:wght@400;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            body {
+                font-family: "DejaVu Sans", Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f9f9f9;
+                color: #333;
+                line-height: 1.6;
+            }
+
+            .container {
+                margin: 0 auto;
+                background-color: #fff;
+                padding: 20px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            }
+
+            .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+            }
+
+            .company-info {
+                flex: 1;
+            }
+
+            .logo {
+                text-align: center;
+                flex: 1;
+            }
+
+            .logo img {
+                max-width: 120px;
+            }
+
+            .estimate-info {
+                flex: 1;
+                text-align: right;
+                background-color: #f8f9fa;
+                padding: 4px 20px 4px 20px;
+                border-radius: 8px;
+                border-left: 6px solid #00ffb9;
+                box-shadow: 0 2px 8px rgba(0, 255, 185, 0.1);
+            }
+
+            .company-name {
+                font-size: 24px;
+                font-weight: bold;
+                color: #333;
+                margin: 0;
+            }
+
+            .estimate-title {
+                font-size: 28px;
+                font-weight: bold;
+                color: #2c3e50;
+                margin: 0 0 15px 0;
+                letter-spacing: 2px;
+            }
+
+            .divider {
+                height: 3px;
+                background: linear-gradient(
+                    90deg,
+                    #00ffb9 0%,
+                    rgba(0, 255, 185, 0.3) 100%
+                );
+                margin: 20px 0;
+                border-radius: 2px;
+            }
+
+            .section-title {
+                text-align: center;
+                font-size: 20px;
+                font-weight: bold;
+                color: #2c3e50;
+                margin: 20px 0;
+            }
+
+            .client-info {
+                background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+                padding: 25px;
+                border-radius: 12px;
+                border-left: 6px solid #00ffb9;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 15px rgba(0, 255, 185, 0.08);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .client-info::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 2px;
+                background: linear-gradient(
+                    90deg,
+                    #00ffb9 0%,
+                    rgba(0, 255, 185, 0.3) 100%
+                );
+            }
+
+            .client-name {
+                font-size: 22px;
+                font-weight: bold;
+                margin-bottom: 15px;
+                color: #2c3e50;
+            }
+
+            .client-info p {
+                margin: 8px 0;
+                display: flex;
+                align-items: center;
+            }
+
+            .project-details {
+                background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+                padding: 25px;
+                border-radius: 12px;
+                border-left: 6px solid #00ffb9;
+                margin-bottom: 20px;
+                color: #555;
+                box-shadow: 0 4px 15px rgba(0, 255, 185, 0.08);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .project-details::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 2px;
+                background: linear-gradient(
+                    90deg,
+                    #00ffb9 0%,
+                    rgba(0, 255, 185, 0.3) 100%
+                );
+            }
+
+            .text-right {
+                text-align: right;
+            }
+
+            .label {
+                font-weight: bold;
+                color: #2c3e50;
+                min-width: 80px;
+            }
+
+            .value {
+                color: #555;
+            }
+
+            .estimate-info .label {
+                color: #2c3e50;
+            }
+
+            .estimate-info .value {
+                color: #555;
+                font-weight: 400;
+            }
+
+            .items-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 30px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+
+            .items-table thead th {
+                background-color: #00ffb9;
+                color: #333;
+                padding: 15px 12px;
+                text-align: left;
+                font-weight: bold;
+                font-size: 14px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .items-table tbody td {
+                padding: 12px;
+                border-bottom: 1px solid #e9ecef;
+                color: #666;
+                font-size: 14px;
+            }
+
+            .items-table tbody tr {
+                background-color: #fff;
+            }
+
+            .items-table tbody tr:nth-child(even) {
+                background-color: #f8f9fa;
+            }
+
+            .items-table tbody tr:hover {
+                background-color: rgba(0, 255, 185, 0.05);
+            }
+
+            .items-table .item-name {
+                font-weight: 600;
+                color: #333;
+            }
+
+            .items-table .text-center {
+                text-align: center;
+            }
+
+            .items-table .text-right {
+                text-align: right;
+                font-weight: 600;
+            }
+
+            .summary-section {
+                background-color: #f8f9fa;
+                padding: 20px;
+                border-radius: 8px;
+                border-left: 4px solid #00ffb9;
+                margin-top: 20px;
+                max-width: 400px;
+                margin-left: auto;
+            }
+
+            .summary-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 0;
+                border-bottom: 1px solid #e9ecef;
+            }
+
+            .summary-row:last-child {
+                border-bottom: none;
+                font-weight: bold;
+                font-size: 16px;
+                color: #333;
+            }
+
+            .summary-label {
+                color: #666;
+                font-weight: 500;
+            }
+
+            .summary-value {
+                font-weight: 600;
+                color: #333;
+            }
+
+            .discount-value {
+                color: #dc3545;
+            }
+
+            .total-estimate {
+                text-align: center;
+                margin: 30px 0;
+                position: relative;
+            }
+
+            .total-estimate::before {
+                content: "";
+                position: absolute;
+                top: -10px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 200px;
+                height: 3px;
+                background: linear-gradient(
+                    90deg,
+                    #00ffb9 0%,
+                    rgba(0, 255, 185, 0.3) 100%
+                );
+                border-radius: 2px;
+            }
+
+            .total-estimate-text {
+                font-size: 24px;
+                font-weight: bold;
+                color: #2c3e50;
+                letter-spacing: 1px;
+            }
+
+            .thank-you-section {
+                background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+                color: #00ffb9;
+                padding: 25px;
+                border-radius: 12px;
+                text-align: center;
+                margin: 30px 0;
+                font-style: italic;
+                font-size: 16px;
+                line-height: 1.6;
+                box-shadow: 0 8px 25px rgba(44, 62, 80, 0.3);
+                border: 2px solid #00ffb9;
+            }
+
+            .terms-section {
+                margin: 30px 0;
+            }
+
+            .terms-content {
+                background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+                padding: 25px;
+                border-radius: 12px;
+                border-left: 6px solid #00ffb9;
+                box-shadow: 0 4px 15px rgba(0, 255, 185, 0.08);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .terms-content::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 2px;
+                background: linear-gradient(
+                    90deg,
+                    #00ffb9 0%,
+                    rgba(0, 255, 185, 0.3) 100%
+                );
+            }
+
+            .terms-list {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            .terms-list li {
+                margin-bottom: 20px;
+                position: relative;
+                padding-left: 20px;
+            }
+
+            .terms-list li::before {
+                content: "•";
+                color: #00ffb9;
+                font-size: 20px;
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+
+            .terms-title {
+                font-weight: bold;
+                color: #2c3e50;
+                margin-bottom: 5px;
+            }
+
+            .terms-description {
+                color: #666;
+                line-height: 1.5;
+            }
+
+            .footer-section {
+                text-align: center;
+                margin-top: 40px;
+                padding-top: 20px;
+                position: relative;
+            }
+
+            .footer-section::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                background: linear-gradient(
+                    90deg,
+                    #00ffb9 0%,
+                    rgba(0, 255, 185, 0.3) 100%
+                );
+                border-radius: 2px;
+            }
+
+            .footer-text {
+                color: #999;
+                font-size: 14px;
+                font-style: italic;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="">
+            <div class="header">
+                <div class="company-info">
+                    <h1 class="company-name">{{contractorInfo.name}}</h1>
+                    <p>
+                        <span class="label">Address:</span>
+                        <span class="value">{{contractorInfo.address}}</span>
+                    </p>
+                    <p>
+                        <span class="label">Phone:</span>
+                        <span class="value">{{contractorInfo.phone}}</span>
+                    </p>
+                    <p>
+                        <span class="label">Email:</span>
+                        <span class="value">{{contractorInfo.email}}</span>
+                    </p>
+                    <p>
+                        <span class="label">License:</span>
+                        <span class="value"
+                            ><a
+                                href="{{contractorInfo.licenseUrl}}"
+                                target="_blank"
+                                >{{contractorInfo.license}}</a
+                            ></span
+                        >
+                    </p>
+                </div>
+
+                <div class="logo">
+                    <img src="{{contractorInfo.logo}}" alt="Company Logo" />
+                </div>
+
+                <div>
+                    <h1 class="estimate-title">ESTIMATE</h1>
+                    <div class="estimate-info">
+                        <p>
+                            <span class="label">Estimate #:</span
+                            ><span class="value">{{number}}</span>
+                        </p>
+                        <p>
+                            <span class="label">Date:</span>
+                            <span class="value">{{date}}</span>
+                        </p>
+                        <p>
+                            <span class="label">Valid Until:</span>
+                            <span class="value">{{validUntil}}</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section-title">Client Information</div>
+
+            <div class="divider"></div>
+
+            <div class="client-info">
+                <div class="client-name">{{client.name}}</div>
+                <p>
+                    <span class="label">Phone:</span>
+                    <span class="value">{{client.phone}}</span>
+                </p>
+                <p>
+                    <span class="label">Email:</span>
+                    <span class="value">{{client.email}}</span>
+                </p>
+                <p>
+                    <span class="label">Address:</span>
+                    <span class="value">{{client.address}}</span>
+                </p>
+            </div>
+
+            <div class="section-title">Project Details</div>
+
+            <div class="divider"></div>
+
+            <div class="project-details">{{project.description}}</div>
+
+            <div class="section-title">Items & Services</div>
+            <div class="divider"></div>
+
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>ITEM</th>
+                        <th>DESCRIPTION</th>
+                        <th>QTY</th>
+                        <th>UNIT PRICE</th>
+                        <th>TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each items}}
+                    <tr>
+                        <td class="item-name">{{name}}</td>
+                        <td>{{description}}</td>
+                        <td class="text-center">{{quantity}}</td>
+                        <td class="text-right">{{unitPrice}}</td>
+                        <td class="text-right">{{total}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+
+            <div class="summary-section">
+                <div class="summary-row">
+                    <span class="summary-label">Subtotal:</span>
+                    <span class="summary-value">{{subtotal}}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Discounts:</span>
+                    <span class="summary-value discount-value"
+                        >{{discount}}</span
+                    >
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Tax ({{taxRate}}%):</span>
+                    <span class="summary-value">{{taxAmount}}</span>
+                </div>
+                <div class="total-estimate">
+                    <div class="total-estimate-text">
+                        TOTAL ESTIMATE: {{total}}
+                    </div>
+                </div>
+            </div>
+            <!-- Thank You Section -->
+            <div class="thank-you-section">
+                Thank you for your trust in our services. We are committed to
+                delivering excellence and look forward to partnering with you on
+                this project.
+            </div>
+
+            <!-- Terms & Conditions Section -->
+            <div class="terms-section">
+                <div class="section-title">Terms & Conditions</div>
+                <div class="divider"></div>
+
+                <div class="terms-content">
+                    <ul class="terms-list">
+                        <li>
+                            <div class="terms-title">Estimate Validity:</div>
+                            <div class="terms-description">
+                                This estimate is valid for 30 days from the
+                                issue date. Prices may change after this period
+                                due to fluctuations in materials, labor, or
+                                market conditions.
+                            </div>
+                        </li>
+                        <li>
+                            <div class="terms-title">Project Execution:</div>
+                            <div class="terms-description">
+                                Specific terms, project timeline, and additional
+                                conditions will be detailed in the formal
+                                contract to be signed by both parties before
+                                work commences.
+                            </div>
+                        </li>
+                        <li>
+                            <div class="terms-title">
+                                Material Specifications:
+                            </div>
+                            <div class="terms-description">
+                                All materials will meet or exceed industry
+                                standards and local building codes. Any changes
+                                to specified materials may affect the final
+                                price.
+                            </div>
+                        </li>
+                        <li>
+                            <div class="terms-title">Payment Terms:</div>
+                            <div class="terms-description">
+                                Payment schedule and terms will be outlined in
+                                the signed contract. Typically includes deposit
+                                upon contract signing and final payment upon
+                                completion.
+                            </div>
+                        </li>
+                        <li>
+                            <div class="terms-title">Contact Information:</div>
+                            <div class="terms-description">
+                                For questions, clarifications, or to proceed
+                                with this estimate, please contact us directly
+                                using the information provided above.
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Footer Section -->
+            <div class="footer-section">
+                <div class="footer-text">
+                    Powered by Mervin AI - Professional Construction Management
+                    Solutions
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

@@ -8,7 +8,7 @@ import { storage } from "../storage";
 
 // Verificar que la clave secreta de Stripe esté configurada
 // FORZAR MODO DE PRUEBA - usar solo la clave de test
-const stripeKey = process.env.STRIPE_API_TEST_KEY;
+const stripeKey = process.env.STRIPE_API_KEY;
 console.log(stripeKey);
 
 if (!stripeKey) {
@@ -222,10 +222,11 @@ class StripeService {
 
       try {
         // Determine the correct price based on billing cycle
-        const unitAmount = options.billingCycle === "yearly" 
-          ? (plan as any).yearlyPrice || plan.price 
-          : plan.price;
-          
+        const unitAmount =
+          options.billingCycle === "yearly"
+            ? (plan as any).yearlyPrice || plan.price
+            : plan.price;
+
         console.log(
           `[${new Date().toISOString()}] Using price: $${unitAmount / 100} for ${options.billingCycle} billing`,
         );
