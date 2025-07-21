@@ -639,10 +639,16 @@ router.get('/download-html/:contractId', async (req, res) => {
       );
       
       // Fill in client date (look for CLIENT section and replace the date line)
-      // First handle any existing broken date formatting
+      // Handle both normal and broken date formatting
       contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
         /(CLIENT[\s\S]*?<span class="date-line"[^>]*>)[^<]*?(<\/span>)/,
         `$1${new Date(contract.clientSignedAt).toLocaleDateString()}$2`
+      );
+      
+      // Also handle broken patterns where style attribute is misplaced
+      contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
+        /(CLIENT[\s\S]*?Date:\s*<span class="date-line")\s+style="font-weight:\s*bold;">([^<]*?)(<\/span>)/g,
+        `$1>${new Date(contract.clientSignedAt).toLocaleDateString()}$3`
       );
     }
 
@@ -837,10 +843,16 @@ router.get('/download-pdf/:contractId', async (req, res) => {
         </div>`
       );
       
-      // Fill in client date
+      // Fill in client date - handle both normal and broken formatting
       contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
         /(CLIENT[\s\S]*?<span class="date-line"[^>]*>)[^<]*?(<\/span>)/,
         `$1${new Date(contract.clientSignedAt).toLocaleDateString()}$2`
+      );
+      
+      // Also handle broken patterns where style attribute is misplaced
+      contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
+        /(CLIENT[\s\S]*?Date:\s*<span class="date-line")\s+style="font-weight:\s*bold;">([^<]*?)(<\/span>)/g,
+        `$1>${new Date(contract.clientSignedAt).toLocaleDateString()}$3`
       );
     }
 
