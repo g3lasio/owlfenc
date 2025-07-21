@@ -137,6 +137,14 @@ Owl Fence is a comprehensive SaaS platform designed for contractors in the const
 ## Changelog
 ```
 Changelog:
+- July 21, 2025. ✅ CLIENT DATE FORMATTING ISSUE RESOLVED & DOWNLOAD HTML BUTTON REMOVED: Successfully fixed signature injection date display and cleaned interface:
+  * CLIENT DATE FIELD FIXED: Resolved issue where client signature date showed "style=\"font-weight: bold;\">7/21/2025" instead of clean date format
+  * IMPROVED REGEX PATTERNS: Enhanced client date replacement to exclude style attribute leakage in both HTML download and PDF generation endpoints
+  * DOWNLOAD HTML BUTTON REMOVED: Eliminated Download HTML button from completed contracts interface as requested for cleaner UI
+  * ENHANCED PDF ERROR HANDLING: Improved generateContractPdf function with specific Chrome dependency error detection and user-friendly messages
+  * CHROME DEPENDENCY DETECTION: System now detects libgbm.so.1 errors and provides clear guidance to use HTML/Share alternatives instead
+  * SIGNATURE INJECTION DEBUGGING: Enhanced error handling in both /download-html and /regenerate-pdf endpoints for consistent behavior
+  * PRODUCTION READY: All signature injection now renders clean dates (7/21/2025) without style attribute contamination
 - July 21, 2025. ✅ ENHANCED SIGNATURE DOWNLOAD SYSTEM WITH INTELLIGENT FALLBACK COMPLETED: Successfully implemented robust download system with graceful PDF-to-HTML fallback mechanism:
   * INTELLIGENT PDF FALLBACK: Frontend downloadSignedPdf() function now attempts PDF download first, automatically falls back to HTML with embedded signatures if PDF generation fails
   * SIGNATURE STATUS CLEANUP: Removed unnecessary signature status div from completed contracts section as all contracts in this section are already fully signed

@@ -603,19 +603,40 @@ export default function SimpleContractGenerator() {
 
       if (response.ok) {
         const result = await response.json();
-        toast({
-          title: "Success",
-          description: "PDF generated successfully! Refreshing contract list...",
-          variant: "default"
-        });
-        
-        // Refresh the completed contracts list
-        await loadCompletedContracts();
+        if (result.success) {
+          toast({
+            title: "PDF Generated",
+            description: "PDF generated successfully! Refreshing contract list...",
+            variant: "default"
+          });
+          
+          // Refresh the completed contracts list
+          await loadCompletedContracts();
+        } else {
+          // Check if it's a Chrome dependency error
+          const isChromeDependencyError = result.message?.includes('Chrome browser dependencies missing') ||
+                                         result.message?.includes('libgbm.so.1') ||
+                                         result.message?.includes('Failed to launch the browser');
+          
+          toast({
+            title: isChromeDependencyError ? "PDF Generation Unavailable" : "Generation Error",
+            description: isChromeDependencyError 
+              ? "PDF generation requires Chrome dependencies not available in Replit. Use View HTML or Share Contract instead."
+              : result.message || "Failed to generate PDF",
+            variant: "destructive"
+          });
+        }
       } else {
         const error = await response.json();
+        const isChromeDependencyError = error.message?.includes('Chrome browser dependencies missing') ||
+                                       error.message?.includes('libgbm.so.1') ||
+                                       error.message?.includes('Failed to launch the browser');
+        
         toast({
-          title: "Generation Error",
-          description: error.message || "Failed to generate PDF",
+          title: isChromeDependencyError ? "PDF Generation Unavailable" : "Generation Error",
+          description: isChromeDependencyError 
+            ? "PDF generation requires Chrome dependencies not available in Replit. Use View HTML or Share Contract instead."
+            : error.message || "Failed to generate PDF",
           variant: "destructive"
         });
       }
@@ -623,7 +644,7 @@ export default function SimpleContractGenerator() {
       console.error('Error generating PDF:', error);
       toast({
         title: "Generation Error",
-        description: "Failed to generate contract PDF",
+        description: "Failed to connect to PDF generation service",
         variant: "destructive"
       });
     }
@@ -3487,15 +3508,7 @@ export default function SimpleContractGenerator() {
                                         <Eye className="h-3 w-3 mr-1" />
                                         View HTML
                                       </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => downloadContractHtml(contract.contractId, contract.clientName)}
-                                        className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs"
-                                      >
-                                        <Download className="h-3 w-3 mr-1" />
-                                        Download HTML
-                                      </Button>
+
                                       <Button
                                         size="sm"
                                         variant="outline"

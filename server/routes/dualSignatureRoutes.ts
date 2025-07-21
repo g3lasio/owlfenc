@@ -642,7 +642,7 @@ router.get('/download-html/:contractId', async (req, res) => {
       // First handle any existing broken date formatting
       contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
         /(CLIENT[\s\S]*?<span class="date-line"[^>]*>)[^<]*?(<\/span>)/,
-        `$1 style="font-weight: bold;">${new Date(contract.clientSignedAt).toLocaleDateString()}$2`
+        `$1${new Date(contract.clientSignedAt).toLocaleDateString()}$2`
       );
     }
 
@@ -840,7 +840,7 @@ router.get('/download-pdf/:contractId', async (req, res) => {
       // Fill in client date
       contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
         /(CLIENT[\s\S]*?<span class="date-line"[^>]*>)[^<]*?(<\/span>)/,
-        `$1 style="font-weight: bold;">${new Date(contract.clientSignedAt).toLocaleDateString()}$2`
+        `$1${new Date(contract.clientSignedAt).toLocaleDateString()}$2`
       );
     }
 
