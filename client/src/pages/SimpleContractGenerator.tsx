@@ -824,7 +824,7 @@ export default function SimpleContractGenerator() {
     }
   }, [toast, currentUser]);
 
-  // CRITICAL: Helper function to get correct project total - DECIMAL FORMATTING FIXED
+  // CRITICAL: Helper function to get correct project total - MALFORMED DATA DETECTION AND CORRECTION
   const getCorrectProjectTotal = useCallback((project: any) => {
     if (!project) {
       console.warn("⚠️ getCorrectProjectTotal called with null/undefined project");
@@ -840,54 +840,63 @@ export default function SimpleContractGenerator() {
       totalAmount: project.totalAmount
     });
     
-    // PRIORITY 1: Use display values (already in correct dollar format)
+    // Helper function to detect and fix malformed values (stored as centavos when they should be dollars)
+    const correctMalformedValue = (value: number, fieldName: string) => {
+      if (!value || value <= 0) return 0;
+      
+      // Check if value seems malformed (too large, likely stored as centavos incorrectly)
+      // Values over $100K are suspicious for typical projects and likely stored incorrectly
+      if (value > 100000) {
+        const corrected = value / 100;
+        console.log(`💰 CORRECTING MALFORMED ${fieldName}:`, value, "→", corrected, "(divided by 100)");
+        return corrected;
+      }
+      
+      // Check if value is in centavos format (large integer multiple of 100)
+      if (value > 10000 && value % 100 === 0 && Number.isInteger(value)) {
+        const corrected = value / 100;
+        console.log(`💰 Converting ${fieldName} from centavos:`, value, "→", corrected);
+        return corrected;
+      }
+      
+      console.log(`💰 Using ${fieldName} as-is:`, value);
+      return value;
+    };
+    
+    // PRIORITY 1: Check displaySubtotal (but correct if malformed)
     if (project.displaySubtotal && project.displaySubtotal > 0) {
-      console.log("💰 Using displaySubtotal (already in dollars):", project.displaySubtotal);
-      return project.displaySubtotal;
+      const corrected = correctMalformedValue(project.displaySubtotal, "displaySubtotal");
+      return corrected;
     }
     
+    // PRIORITY 2: Check displayTotal (but correct if malformed)
     if (project.displayTotal && project.displayTotal > 0) {
-      console.log("💰 Using displayTotal (already in dollars):", project.displayTotal);
-      return project.displayTotal;
+      const corrected = correctMalformedValue(project.displayTotal, "displayTotal");
+      return corrected;
     }
     
-    // PRIORITY 2: Use estimate amounts (typically in dollars)
-    if (project.estimateAmount && project.estimateAmount > 0) {
-      console.log("💰 Using estimateAmount:", project.estimateAmount);
-      return project.estimateAmount;
-    }
-    
+    // PRIORITY 3: Check totalPrice
     if (project.totalPrice && project.totalPrice > 0) {
-      console.log("💰 Using totalPrice:", project.totalPrice);
-      return project.totalPrice;
+      const corrected = correctMalformedValue(project.totalPrice, "totalPrice");
+      return corrected;
     }
     
-    // PRIORITY 3: Handle total values - check if they're in centavos (>$100 and integer multiple of 100)
+    // PRIORITY 4: Check estimateAmount
+    if (project.estimateAmount && project.estimateAmount > 0) {
+      const corrected = correctMalformedValue(project.estimateAmount, "estimateAmount");
+      return corrected;
+    }
+    
+    // PRIORITY 5: Check total
     if (project.total && project.total > 0) {
-      const total = project.total;
-      // If value is large and ends in 00 (likely centavos), divide by 100
-      if (total > 10000 && total % 100 === 0) {
-        const dollarAmount = total / 100;
-        console.log("💰 Converting total from centavos:", total, "→", dollarAmount);
-        return dollarAmount;
-      } else {
-        console.log("💰 Using total as-is (already in dollars):", total);
-        return total;
-      }
+      const corrected = correctMalformedValue(project.total, "total");
+      return corrected;
     }
     
-    // PRIORITY 4: Handle totalAmount - same logic as total
+    // PRIORITY 6: Check totalAmount
     if (project.totalAmount && project.totalAmount > 0) {
-      const totalAmount = project.totalAmount;
-      // If value is large and ends in 00 (likely centavos), divide by 100
-      if (totalAmount > 10000 && totalAmount % 100 === 0) {
-        const dollarAmount = totalAmount / 100;
-        console.log("💰 Converting totalAmount from centavos:", totalAmount, "→", dollarAmount);
-        return dollarAmount;
-      } else {
-        console.log("💰 Using totalAmount as-is (already in dollars):", totalAmount);
-        return totalAmount;
-      }
+      const corrected = correctMalformedValue(project.totalAmount, "totalAmount");
+      return corrected;
     }
     
     console.log("💰 Final calculated total:", 0);

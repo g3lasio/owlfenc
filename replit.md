@@ -169,6 +169,8 @@ Changelog:
   * STEP 2 CONSISTENCY: All project total displays now use same formatting function ensuring consistency across Legal Defense workflow
   * MILESTONE CALCULATIONS: Payment milestones now calculate correctly from properly formatted project totals
   * PRODUCTION READY: Project costs now display in correct dollar amounts (e.g., $14,463.26 instead of $1,446,326)
+  * MALFORMED DATA DETECTION: Enhanced function to detect values over $100K as likely corrupted data and automatically correct by dividing by 100 (lowered threshold to catch more corrupted values)
+  * COMPREHENSIVE CORRECTION: System now handles both centavos format detection and data corruption scenarios for all financial fields
 - July 21, 2025. ✅ ALTERNATIVE PDF SERVICE IMPLEMENTED - CHROME DEPENDENCY ELIMINATED: Successfully created PDF generation solution that works without Chrome/Puppeteer:
   * ALTERNATIVE PDF SERVICE: Created AlternativePdfService using pdf-lib library that generates PDFs without browser dependencies
   * CHROME-FREE PDF GENERATION: Implemented native Node.js PDF creation using StandardFonts and direct PDF document generation
