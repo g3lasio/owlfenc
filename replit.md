@@ -159,6 +159,16 @@ Changelog:
   * AUTOGUARDADO VERIFICATION: Confirmed autosave system already includes all discount and tax fields in dependency array for automatic saving
   * USER EXPERIENCE IMPROVED: Users can now set discounts and taxes knowing they will persist when returning to estimates from history
   * PRODUCTION READY: Complete discount and tax configuration now maintains state across page reloads and history navigation
+- July 21, 2025. ✅ DECIMAL FORMATTING ERROR FIXED - PROJECT COST DISPLAY CORRECTED: Successfully resolved critical decimal point handling issue causing project costs to appear 100x larger in Legal Defense cards:
+  * ROOT CAUSE IDENTIFIED: Project selection cards showing raw values without proper decimal formatting, making projects appear like millions instead of thousands
+  * GETPROJECTTOTAL FUNCTION ENHANCED: Completely rewrote getCorrectProjectTotal function with intelligent priority system for different value sources
+  * DISPLAY VALUE PRIORITY: Function now prioritizes displaySubtotal/displayTotal (already in dollars) over raw total values that may be in centavos
+  * CENTAVOS DETECTION LOGIC: Added smart detection for values in centavos (>$100 and multiple of 100) with automatic conversion to dollars
+  * PROJECT CARD DISPLAY FIXED: Updated project selection cards to use getCorrectProjectTotal function ensuring consistent decimal formatting
+  * COMPREHENSIVE LOGGING: Added detailed financial data analysis logging for troubleshooting decimal formatting issues
+  * STEP 2 CONSISTENCY: All project total displays now use same formatting function ensuring consistency across Legal Defense workflow
+  * MILESTONE CALCULATIONS: Payment milestones now calculate correctly from properly formatted project totals
+  * PRODUCTION READY: Project costs now display in correct dollar amounts (e.g., $14,463.26 instead of $1,446,326)
 - July 21, 2025. ✅ ALTERNATIVE PDF SERVICE IMPLEMENTED - CHROME DEPENDENCY ELIMINATED: Successfully created PDF generation solution that works without Chrome/Puppeteer:
   * ALTERNATIVE PDF SERVICE: Created AlternativePdfService using pdf-lib library that generates PDFs without browser dependencies
   * CHROME-FREE PDF GENERATION: Implemented native Node.js PDF creation using StandardFonts and direct PDF document generation

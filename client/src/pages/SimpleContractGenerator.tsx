@@ -824,7 +824,7 @@ export default function SimpleContractGenerator() {
     }
   }, [toast, currentUser]);
 
-  // CRITICAL: Helper function to get correct project total (prioritizes display values over raw values in centavos)
+  // CRITICAL: Helper function to get correct project total - DECIMAL FORMATTING FIXED
   const getCorrectProjectTotal = useCallback((project: any) => {
     if (!project) {
       console.warn("⚠️ getCorrectProjectTotal called with null/undefined project");
@@ -840,24 +840,58 @@ export default function SimpleContractGenerator() {
       totalAmount: project.totalAmount
     });
     
-    // Priority order: display values first (already in dollars), then convert centavos if needed
-    const result = project.displaySubtotal || 
-                   project.displayTotal || 
-                   project.totalPrice || 
-                   project.estimateAmount || 
-                   (project.total && project.total > 10000 ? project.total / 100 : project.total) ||
-                   (project.totalAmount && project.totalAmount > 10000 ? project.totalAmount / 100 : project.totalAmount) ||
-                   0;
-    
-    console.log("💰 Final calculated total:", result);
-    
-    // Data integrity check - warn if result seems corrupted
-    if (result > 1000000) {
-      console.warn("⚠️ POTENTIAL DATA CORRUPTION: Total amount exceeds $1M:", result);
-      console.warn("⚠️ Original project data:", project);
+    // PRIORITY 1: Use display values (already in correct dollar format)
+    if (project.displaySubtotal && project.displaySubtotal > 0) {
+      console.log("💰 Using displaySubtotal (already in dollars):", project.displaySubtotal);
+      return project.displaySubtotal;
     }
     
-    return result;
+    if (project.displayTotal && project.displayTotal > 0) {
+      console.log("💰 Using displayTotal (already in dollars):", project.displayTotal);
+      return project.displayTotal;
+    }
+    
+    // PRIORITY 2: Use estimate amounts (typically in dollars)
+    if (project.estimateAmount && project.estimateAmount > 0) {
+      console.log("💰 Using estimateAmount:", project.estimateAmount);
+      return project.estimateAmount;
+    }
+    
+    if (project.totalPrice && project.totalPrice > 0) {
+      console.log("💰 Using totalPrice:", project.totalPrice);
+      return project.totalPrice;
+    }
+    
+    // PRIORITY 3: Handle total values - check if they're in centavos (>$100 and integer multiple of 100)
+    if (project.total && project.total > 0) {
+      const total = project.total;
+      // If value is large and ends in 00 (likely centavos), divide by 100
+      if (total > 10000 && total % 100 === 0) {
+        const dollarAmount = total / 100;
+        console.log("💰 Converting total from centavos:", total, "→", dollarAmount);
+        return dollarAmount;
+      } else {
+        console.log("💰 Using total as-is (already in dollars):", total);
+        return total;
+      }
+    }
+    
+    // PRIORITY 4: Handle totalAmount - same logic as total
+    if (project.totalAmount && project.totalAmount > 0) {
+      const totalAmount = project.totalAmount;
+      // If value is large and ends in 00 (likely centavos), divide by 100
+      if (totalAmount > 10000 && totalAmount % 100 === 0) {
+        const dollarAmount = totalAmount / 100;
+        console.log("💰 Converting totalAmount from centavos:", totalAmount, "→", dollarAmount);
+        return dollarAmount;
+      } else {
+        console.log("💰 Using totalAmount as-is (already in dollars):", totalAmount);
+        return totalAmount;
+      }
+    }
+    
+    console.log("💰 Final calculated total:", 0);
+    return 0;
   }, []);
 
   // Auto-save function with debounce
@@ -2267,7 +2301,7 @@ export default function SimpleContractGenerator() {
                                       {project.clientName || project.client?.name || project.client || `Project ${project.estimateNumber || project.id}`}
                                     </h3>
                                     <p className="text-cyan-400 font-semibold text-sm mt-1">
-                                      ${(project.totalAmount || project.totalPrice || project.displaySubtotal || 0).toLocaleString()}
+                                      ${getCorrectProjectTotal(project).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </p>
                                   </div>
                                   <Button
