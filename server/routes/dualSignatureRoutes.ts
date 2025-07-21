@@ -5,9 +5,11 @@
 
 import { Router } from 'express';
 import { dualSignatureService } from '../services/dualSignatureService';
+import { DocumentService } from '../services/documentService';
 import { z } from 'zod';
 
 const router = Router();
+const documentService = new DocumentService();
 
 // Validation schemas
 const initiateDualSignatureSchema = z.object({
@@ -636,11 +638,11 @@ router.get('/download-html/:contractId', async (req, res) => {
         </div>`
       );
       
-      // Fill in client date (look for CLIENT section and replace empty date line within it)
-      // Match CLIENT section and replace the empty date line within it
+      // Fill in client date (look for CLIENT section and replace the date line)
+      // First handle any existing broken date formatting
       contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
-        /(CLIENT[\s\S]*?<span class="date-line">)(<\/span>)/,
-        `$1" style="font-weight: bold;">${new Date(contract.clientSignedAt).toLocaleDateString()}$2`
+        /(CLIENT[\s\S]*?<span class="date-line"[^>]*>)[^<]*?(<\/span>)/,
+        `$1 style="font-weight: bold;">${new Date(contract.clientSignedAt).toLocaleDateString()}$2`
       );
     }
 
@@ -729,50 +731,14 @@ router.get('/download-html/:contractId', async (req, res) => {
 <body>
   ${contractHtmlWithSignatures}
   
-  <div class="signatures">
-    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 25px;">Digital Signatures - Contract ID: ${contractId}</h3>
-    
-    ${contract.contractorSigned ? `
-      <div class="signature-section">
-        <h4 style="color: #27ae60; margin-bottom: 15px;">✓ Contractor Signature (Digitally Signed)</h4>
-        <div class="signature-info">
-          <p><strong>Name:</strong> ${contract.contractorName}</p>
-          <p><strong>Date & Time:</strong> ${new Date(contract.contractorSignedAt).toLocaleString()}</p>
-          <p><strong>Signature Type:</strong> ${contract.contractorSignatureType === 'cursive' ? 'Typed Name' : 'Hand Drawn'}</p>
-        </div>
-        ${contract.contractorSignatureData ? `
-          <div class="signature-preview">
-            <img src="${createSignatureImage(contract.contractorSignatureData, contract.contractorSignatureType, contract.contractorName)}" alt="Contractor Signature" />
-          </div>
-        ` : '<p style="color: #888;">Signature data not available</p>'}
-      </div>
-    ` : '<div class="signature-section"><h4 style="color: #f39c12;">⏳ Contractor Signature Pending</h4></div>'}
-    
-    ${contract.clientSigned ? `
-      <div class="signature-section">
-        <h4 style="color: #27ae60; margin-bottom: 15px;">✓ Client Signature (Digitally Signed)</h4>
-        <div class="signature-info">
-          <p><strong>Name:</strong> ${contract.clientName}</p>
-          <p><strong>Date & Time:</strong> ${new Date(contract.clientSignedAt).toLocaleString()}</p>
-          <p><strong>Signature Type:</strong> ${contract.clientSignatureType === 'cursive' ? 'Typed Name' : 'Hand Drawn'}</p>
-        </div>
-        ${contract.clientSignatureData ? `
-          <div class="signature-preview">
-            <img src="${createSignatureImage(contract.clientSignatureData, contract.clientSignatureType, contract.clientName)}" alt="Client Signature" />
-          </div>
-        ` : '<p style="color: #888;">Signature data not available</p>'}
-      </div>
-    ` : '<div class="signature-section"><h4 style="color: #f39c12;">⏳ Client Signature Pending</h4></div>'}
-    
-    <div class="verification-section">
-      <h4 style="color: #2c3e50; margin-bottom: 15px; text-align: center;">📋 Document Verification</h4>
-      <div style="display: grid; gap: 8px;">
-        <p><strong>Contract ID:</strong> ${contractId}</p>
-        <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
-        <p><strong>Status:</strong> <span style="color: #27ae60; font-weight: bold;">${contract.status === 'completed' ? 'Fully Executed' : 'In Progress'}</span></p>
-        <p><strong>Digital Integrity:</strong> This document contains embedded digital signatures and is legally binding under electronic signature laws.</p>
-        <p><strong>Verification:</strong> Signatures are cryptographically secured and tamper-evident.</p>
-      </div>
+  <div class="verification-section">
+    <h4 style="color: #2c3e50; margin-bottom: 15px; text-align: center;">📋 Document Verification</h4>
+    <div style="display: grid; gap: 8px;">
+      <p><strong>Contract ID:</strong> ${contractId}</p>
+      <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+      <p><strong>Status:</strong> <span style="color: #27ae60; font-weight: bold;">${contract.status === 'completed' ? 'Fully Executed' : 'In Progress'}</span></p>
+      <p><strong>Digital Integrity:</strong> This document contains embedded digital signatures and is legally binding under electronic signature laws.</p>
+      <p><strong>Verification:</strong> Signatures are cryptographically secured and tamper-evident.</p>
     </div>
   </div>
   
@@ -793,6 +759,152 @@ router.get('/download-html/:contractId', async (req, res) => {
     
   } catch (error: any) {
     console.error('❌ [API] Error in /download-html/:contractId:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/dual-signature/download-pdf/:contractId
+ * Download signed contract as PDF
+ */
+router.get('/download-pdf/:contractId', async (req, res) => {
+  try {
+    const { contractId } = req.params;
+    console.log('📥 [API] PDF download request for contract:', contractId);
+    console.log('👤 [API] Requesting user:', req.user?.uid || 'No user ID');
+
+    const contractResult = await dualSignatureService.getContractData(contractId, req.user?.uid);
+    if (!contractResult.success || !contractResult.contract) {
+      return res.status(404).json({ success: false, message: contractResult.message });
+    }
+    
+    const contract = contractResult.contract;
+
+    // Helper function to create signature SVG
+    const createSignatureImage = (signatureData: string, signatureType: string, name: string): string => {
+      const color = '#000080';
+      const svgContent = `<svg width="300" height="60" xmlns="http://www.w3.org/2000/svg">
+        <text x="10" y="40" font-family="Brush Script MT, cursive" font-size="28" fill="${color}" style="font-style: italic;">
+          ${name}
+        </text>
+      </svg>`;
+      return `data:image/svg+xml;base64,${Buffer.from(svgContent).toString('base64')}`;
+    };
+
+    // Inject signatures into the contract HTML
+    let contractHtmlWithSignatures = contract.contractHtml || '<h1>Contract Content Not Available</h1>';
+    
+    console.log('📝 [SIGNATURE-INJECTION] Processing contract signatures for PDF generation');
+    
+    if (contract.contractorSigned && contract.contractorSignatureData) {
+      const contractorSigImage = createSignatureImage(
+        contract.contractorSignatureData, 
+        contract.contractorSignatureType, 
+        contract.contractorName
+      );
+      
+      // Replace contractor signature line with actual signature
+      contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
+        /(<div class="signature-title">CONTRACTOR<\/div>\s*)<div class="signature-line"><\/div>/,
+        `$1<div class="signature-line" style="display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
+          <img src="${contractorSigImage}" alt="Contractor Signature" style="max-height: 45px; max-width: 250px;" />
+        </div>`
+      );
+      
+      // Fill in contractor date
+      contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
+        /(CONTRACTOR[\s\S]*?<span class="date-line"[^>]*>)([^<]*?)(<\/span>)/,
+        `$1${new Date(contract.contractorSignedAt).toLocaleDateString()}$3`
+      );
+    }
+    
+    if (contract.clientSigned && contract.clientSignatureData) {
+      const clientSigImage = createSignatureImage(
+        contract.clientSignatureData, 
+        contract.clientSignatureType, 
+        contract.clientName
+      );
+      
+      // Replace client signature line with actual signature
+      contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
+        /(<div class="signature-title">CLIENT<\/div>\s*)<div class="signature-line"><\/div>/,
+        `$1<div class="signature-line" style="display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
+          <img src="${clientSigImage}" alt="Client Signature" style="max-height: 45px; max-width: 250px;" />
+        </div>`
+      );
+      
+      // Fill in client date
+      contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
+        /(CLIENT[\s\S]*?<span class="date-line"[^>]*>)[^<]*?(<\/span>)/,
+        `$1 style="font-weight: bold;">${new Date(contract.clientSignedAt).toLocaleDateString()}$2`
+      );
+    }
+
+    // Generate complete HTML document with enhanced signatures
+    const completeHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signed Contract - ${contract.clientName}</title>
+  <style>
+    body {
+      font-family: 'Times New Roman', serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+      background: white;
+      color: black;
+    }
+    .verification-section {
+      margin-top: 30px;
+      padding: 20px;
+      background: linear-gradient(135deg, #e8f4f8 0%, #d1e7dd 100%);
+      border: 2px solid #4a90e2;
+      border-radius: 10px;
+    }
+    @media print {
+      body { margin: 0; padding: 15px; }
+    }
+  </style>
+</head>
+<body>
+  ${contractHtmlWithSignatures}
+  
+  <div class="verification-section">
+    <h4 style="color: #2c3e50; margin-bottom: 15px; text-align: center;">📋 Document Verification</h4>
+    <div style="display: grid; gap: 8px;">
+      <p><strong>Contract ID:</strong> ${contractId}</p>
+      <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+      <p><strong>Status:</strong> <span style="color: #27ae60; font-weight: bold;">${contract.status === 'completed' ? 'Fully Executed' : 'In Progress'}</span></p>
+      <p><strong>Digital Integrity:</strong> This document contains embedded digital signatures and is legally binding under electronic signature laws.</p>
+      <p><strong>Verification:</strong> Signatures are cryptographically secured and tamper-evident.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+    
+    // Generate PDF from HTML
+    console.log('🔄 [PDF] Generating PDF from signed contract HTML');
+    const pdfBuffer = await documentService.generatePdfFromHtml(completeHtml);
+    
+    // Set headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="contract_${contract.clientName.replace(/\s+/g, '_')}_${contractId}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    
+    console.log('✅ [API] Serving signed contract PDF for download');
+    res.send(pdfBuffer);
+    
+  } catch (error: any) {
+    console.error('❌ [API] Error in /download-pdf/:contractId:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',

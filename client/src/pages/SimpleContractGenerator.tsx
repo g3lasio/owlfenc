@@ -452,7 +452,7 @@ export default function SimpleContractGenerator() {
   // Download signed PDF with authentication
   const downloadSignedPdf = useCallback(async (contractId: string, clientName: string) => {
     try {
-      console.log("📥 Downloading signed PDF for contract:", contractId);
+      console.log("📥 Downloading signed contract for:", contractId);
       
       if (!currentUser) {
         toast({
@@ -463,45 +463,123 @@ export default function SimpleContractGenerator() {
         return;
       }
 
-      const response = await fetch(`/api/dual-signature/download/${contractId}`, {
+      // First, try PDF download
+      try {
+        console.log("🔄 Attempting PDF download...");
+        const pdfResponse = await fetch(`/api/dual-signature/download-pdf/${contractId}`, {
+          headers: {
+            'x-user-id': currentUser.uid
+          }
+        });
+        
+        if (pdfResponse.ok) {
+          const blob = await pdfResponse.blob();
+          
+          // Verify we got an actual PDF (not an error JSON)
+          if (blob.size > 1000 && blob.type === 'application/pdf') {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `contract_${clientName.replace(/\s+/g, '_')}_signed.pdf`;
+            
+            document.body.appendChild(a);
+            a.click();
+            
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            console.log("✅ PDF downloaded successfully");
+            toast({
+              title: "PDF Download Complete",
+              description: `Signed contract for ${clientName} downloaded as PDF`,
+            });
+            return;
+          }
+        }
+      } catch (pdfError: any) {
+        console.warn("⚠️ PDF download failed, falling back to HTML:", pdfError.message);
+      }
+
+      // Fallback to HTML download with embedded signatures
+      console.log("🔄 Falling back to HTML download with embedded signatures...");
+      const htmlResponse = await fetch(`/api/dual-signature/download-html/${contractId}`, {
         headers: {
           'x-user-id': currentUser.uid
         }
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to download PDF');
+      if (!htmlResponse.ok) {
+        const errorData = await htmlResponse.json();
+        throw new Error(errorData.message || 'Failed to download contract');
       }
       
-      // Get the PDF blob
-      const blob = await response.blob();
+      const htmlContent = await htmlResponse.text();
       
-      // Create download link
+      // Create HTML blob for download
+      const blob = new Blob([htmlContent], { type: 'text/html' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      a.download = `contract_${clientName.replace(/\s+/g, '_')}_signed.pdf`;
+      a.download = `contract_${clientName.replace(/\s+/g, '_')}_signed.html`;
       
-      // Trigger download
       document.body.appendChild(a);
       a.click();
       
-      // Cleanup
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
-      console.log("✅ PDF downloaded successfully");
+      console.log("✅ HTML contract downloaded successfully with embedded signatures");
       toast({
-        title: "Download Complete",
-        description: `Signed contract for ${clientName} downloaded successfully`,
+        title: "Contract Downloaded",
+        description: `Signed contract for ${clientName} downloaded as HTML (signatures included)`,
       });
+      
     } catch (error: any) {
-      console.error("❌ Error downloading PDF:", error);
+      console.error("❌ Error downloading contract:", error);
       toast({
         title: "Download Error",
-        description: error.message || "Failed to download contract PDF",
+        description: error.message || "Failed to download signed contract",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  // View contract HTML in new window with embedded signatures
+  const viewContractHtml = useCallback(async (contractId: string, clientName: string) => {
+    try {
+      console.log("👀 Opening signed contract view for:", contractId);
+      
+      const htmlResponse = await fetch(`/api/dual-signature/download-html/${contractId}`);
+      
+      if (!htmlResponse.ok) {
+        const errorData = await htmlResponse.json();
+        throw new Error(errorData.message || 'Failed to load contract');
+      }
+      
+      const htmlContent = await htmlResponse.text();
+      
+      // Open in new window with proper styling
+      const newWindow = window.open('', '_blank', 'width=800,height=1000,scrollbars=yes,resizable=yes');
+      if (newWindow) {
+        newWindow.document.write(htmlContent);
+        newWindow.document.close();
+        newWindow.document.title = `Signed Contract - ${clientName}`;
+        
+        toast({
+          title: "Contract Opened",
+          description: `Signed contract for ${clientName} opened in new window`,
+        });
+      } else {
+        throw new Error('Popup blocked. Please allow popups for this site.');
+      }
+      
+    } catch (error: any) {
+      console.error("❌ Error viewing contract:", error);
+      toast({
+        title: "View Error",
+        description: error.message || "Failed to view signed contract",
         variant: "destructive",
       });
     }
@@ -701,149 +779,6 @@ export default function SimpleContractGenerator() {
       });
     }
   }, [toast]);
-
-  // View contract HTML in new window
-  const viewContractHtml = useCallback(async (contractId: string, clientName: string) => {
-    try {
-      console.log("👀 Opening contract HTML for viewing:", contractId);
-      
-      if (!currentUser) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to view contracts",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Fetch contract data to get HTML content
-      const response = await fetch(`/api/dual-signature/contract/${contractId}/contractor`, {
-        headers: {
-          'x-user-id': currentUser.uid
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch contract data');
-      }
-      
-      const contractData = await response.json();
-      
-      if (contractData.success && contractData.contract?.contractHtml) {
-        // Create a new window with the contract HTML
-        const newWindow = window.open('', '_blank');
-        
-        if (newWindow) {
-          // Create a complete HTML document with styling for the contract
-          const styledHtml = `
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Contract - ${clientName}</title>
-              <style>
-                body {
-                  font-family: 'Times New Roman', serif;
-                  max-width: 800px;
-                  margin: 0 auto;
-                  padding: 20px;
-                  line-height: 1.6;
-                  background: white;
-                  color: black;
-                }
-                .header {
-                  text-align: center;
-                  border-bottom: 2px solid #333;
-                  padding-bottom: 20px;
-                  margin-bottom: 30px;
-                }
-                .signatures {
-                  margin-top: 40px;
-                  padding: 20px;
-                  border: 2px solid #ccc;
-                  background: #f9f9f9;
-                }
-                .signature-section {
-                  margin: 20px 0;
-                  padding: 15px;
-                  border: 1px solid #ddd;
-                }
-                .signature-data {
-                  max-width: 200px;
-                  height: 100px;
-                  border: 1px solid #000;
-                  margin: 10px 0;
-                  background: white;
-                }
-                @media print {
-                  body { margin: 0; padding: 15px; }
-                }
-              </style>
-            </head>
-            <body>
-              ${contractData.contract.contractHtml}
-              
-              <div class="signatures">
-                <h3>Digital Signatures</h3>
-                ${contractData.contract.contractorSigned ? `
-                  <div class="signature-section">
-                    <h4>Contractor Signature</h4>
-                    <p><strong>Name:</strong> ${contractData.contract.contractorName}</p>
-                    <p><strong>Signed:</strong> ${new Date(contractData.contract.contractorSignedAt).toLocaleString()}</p>
-                    ${contractData.contract.contractorSignatureData ? `
-                      <div class="signature-data">
-                        <img src="${contractData.contract.contractorSignatureData}" style="max-width: 100%; max-height: 100%;" alt="Contractor Signature" />
-                      </div>
-                    ` : ''}
-                  </div>
-                ` : ''}
-                
-                ${contractData.contract.clientSigned ? `
-                  <div class="signature-section">
-                    <h4>Client Signature</h4>
-                    <p><strong>Name:</strong> ${contractData.contract.clientName}</p>
-                    <p><strong>Signed:</strong> ${new Date(contractData.contract.clientSignedAt).toLocaleString()}</p>
-                    ${contractData.contract.clientSignatureData ? `
-                      <div class="signature-data">
-                        <img src="${contractData.contract.clientSignatureData}" style="max-width: 100%; max-height: 100%;" alt="Client Signature" />
-                      </div>
-                    ` : ''}
-                  </div>
-                ` : ''}
-              </div>
-            </body>
-            </html>
-          `;
-          
-          newWindow.document.write(styledHtml);
-          newWindow.document.close();
-          newWindow.focus();
-          
-          toast({
-            title: "Contract Opened",
-            description: `Viewing contract HTML for ${clientName}`,
-          });
-        } else {
-          toast({
-            title: "Popup Blocked",
-            description: "Please allow popups to view contracts",
-            variant: "destructive",
-          });
-        }
-      } else {
-        throw new Error('Contract HTML not found');
-      }
-      
-    } catch (error: any) {
-      console.error("❌ Error viewing contract HTML:", error);
-      toast({
-        title: "View Error",
-        description: error.message || "Failed to open contract HTML for viewing",
-        variant: "destructive",
-      });
-    }
-  }, [toast, currentUser]);
 
 
 
