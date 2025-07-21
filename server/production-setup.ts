@@ -25,10 +25,10 @@ export function setupProductionRoutes(app: express.Express) {
     console.log('Serving static files from:', clientPath);
     app.use(express.static(clientPath));
     
-    // Serve index.html for all routes not handled by API (but skip root health checks)
+    // Serve index.html for all routes not handled by API (including root path)
     app.get('*', (req, res) => {
-      // Skip API routes and health endpoints
-      if (req.path.startsWith('/api') || req.path === '/' || req.path === '/health' || req.path === '/status') {
+      // Skip API routes and specific health endpoints (but serve root path)
+      if (req.path.startsWith('/api') || req.path === '/health' || req.path === '/status') {
         return;
       }
       
@@ -43,7 +43,7 @@ export function setupProductionRoutes(app: express.Express) {
     console.warn('Client build directory not found. Checked paths:', possibleClientPaths);
     // Serve a basic error page
     app.get('*', (req, res) => {
-      if (req.path.startsWith('/api') || req.path === '/' || req.path === '/health' || req.path === '/status') {
+      if (req.path.startsWith('/api') || req.path === '/health' || req.path === '/status') {
         return;
       }
       res.status(503).send(`

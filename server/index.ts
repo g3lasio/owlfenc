@@ -735,11 +735,7 @@ app.use('/api', (req, res, next) => {
 import healthRoutes from './routes/health';
 app.use('/api', healthRoutes);
 
-// Add root health check endpoint that responds quickly for deployment health checks
-app.get('/', (req, res) => {
-  // Quick response for deployment health checks
-  res.status(200).send('OK');
-});
+// Root endpoint will be handled by production setup or Vite - no explicit handler needed here
 
 // Add backup health endpoints for deployment monitoring
 app.get('/health', (req, res) => {
