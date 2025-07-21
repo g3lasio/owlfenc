@@ -1,0 +1,62 @@
+There are currently several issues with the generation and rendering of digitally signed contracts in PDF format:
+
+Problems to Address:
+Signatures Not Using Original Contract Fields:
+
+The contract contains signature fields/lines for both contractor and client, but the actual signatures are not being rendered in those original designated fields. The fields appear empty in the contract, while the signature details show up separately below the main content.
+
+Digital Signature Details Not Rendered Correctly:
+
+The section below the contract ("Digital Signatures") attempts to show signature metadata and verification, but the layout and rendering are inconsistent or incomplete.
+
+Signature Images Not Displaying Correctly:
+
+The captured signatures are being shown as image elements (<img src="...">), but the source is just the signer’s name (not an actual image or data URL), so no handwritten signature appears—just a broken image or a fragment.
+
+This makes it look unprofessional and incomplete, and fails to provide a visible, legally recognizable signature.
+
+Reference (from your attached contract HTML/PDF):
+Signature fields in the contract (in the main agreement, under “CONTRACTOR” and “CLIENT”) are empty (see lines with .signature-line and .date-line).
+
+At the end of the document, under “Digital Signatures,” only the name is passed as the image src, which results in no actual signature rendering.
+
+The intended digital signature integrity block is present, but does not show actual, visible signatures.
+
+Requested Fixes and Improvements:
+Render Collected Signatures in the Main Contract:
+
+Insert the actual digital signature (handwritten image or typed name as image) into the signature fields within the contract, exactly where the user is supposed to sign—replace or overlay on the .signature-line for both contractor and client.
+
+Signature Metadata and Integrity Section:
+
+After the signature section, continue to show a summary (“Digital Signatures” or “Document Verification”) with:
+
+Name, timestamp, signature type, and a preview of the signed image.
+
+Contract ID, generation date, status, and integrity statement as now.
+
+Proper Signature Image Handling:
+
+Make sure the <img src="..."> for signatures contains either:
+
+a valid data URI (base64-encoded image), if user hand-signs, or
+
+a styled SVG image of the typed name (if typed signature), so the contract never shows a broken image.
+
+General UI/UX & PDF Polish:
+
+Align fonts, boxes, and data fields for a professional look.
+
+Make sure no required signature box is left empty—visually indicate if a party hasn’t signed yet.
+
+Summary of Expected Result:
+
+Contract PDF has both signatures visibly displayed in the proper signature lines/boxes.
+
+Digital signature verification at the end is clear, complete, and visually matches modern e-signature standards.
+
+No more broken or missing signature images.
+
+All critical legal and audit fields remain visible and tamper-proof.
+
+Please fix these issues, test with several signature types (drawn, typed), and confirm the PDFs are now fully professional and legally robust.
