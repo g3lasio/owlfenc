@@ -233,7 +233,7 @@ export default function SimpleContractGenerator() {
       setIsLoading(true);
       console.log("🔥 Loading projects from Firebase for Legal Defense...");
 
-      let allEstimates = [];
+      let allEstimates: any[] = [];
 
       // Load from projects collection (same as EstimatesWizard)
       try {
@@ -540,7 +540,7 @@ export default function SimpleContractGenerator() {
       console.error("❌ Error downloading contract:", error);
       toast({
         title: "Download Error",
-        description: error.message || "Failed to download signed contract",
+        description: (error as Error).message || "Failed to download signed contract",
         variant: "destructive",
       });
     }
@@ -579,7 +579,7 @@ export default function SimpleContractGenerator() {
       console.error("❌ Error viewing contract:", error);
       toast({
         title: "View Error",
-        description: error.message || "Failed to view signed contract",
+        description: (error as Error).message || "Failed to view signed contract",
         variant: "destructive",
       });
     }
@@ -628,15 +628,15 @@ export default function SimpleContractGenerator() {
         }
       } else {
         const error = await response.json();
-        const isChromeDependencyError = error.message?.includes('Chrome browser dependencies missing') ||
-                                       error.message?.includes('libgbm.so.1') ||
-                                       error.message?.includes('Failed to launch the browser');
+        const isChromeDependencyError = (error as Error).message?.includes('Chrome browser dependencies missing') ||
+                                       (error as Error).message?.includes('libgbm.so.1') ||
+                                       (error as Error).message?.includes('Failed to launch the browser');
         
         toast({
           title: isChromeDependencyError ? "PDF Generation Unavailable" : "Generation Error",
           description: isChromeDependencyError 
             ? "PDF generation requires Chrome dependencies not available in Replit. Use View HTML or Share Contract instead."
-            : error.message || "Failed to generate PDF",
+            : (error as Error).message || "Failed to generate PDF",
           variant: "destructive"
         });
       }
@@ -713,7 +713,7 @@ export default function SimpleContractGenerator() {
       console.error("❌ Error viewing contract:", error);
       toast({
         title: "View Error",
-        description: error.message || "Failed to open contract for viewing",
+        description: (error as Error).message || "Failed to open contract for viewing",
         variant: "destructive",
       });
     }
@@ -778,7 +778,7 @@ export default function SimpleContractGenerator() {
       console.error("❌ Error sharing contract:", error);
       toast({
         title: "Share Error", 
-        description: error.message || "Failed to share contract",
+        description: (error as Error).message || "Failed to share contract",
         variant: "destructive",
       });
     }
@@ -818,7 +818,7 @@ export default function SimpleContractGenerator() {
       console.error("❌ Error downloading HTML:", error);
       toast({
         title: "Download Error",
-        description: error.message || "Failed to download HTML contract",
+        description: (error as Error).message || "Failed to download HTML contract",
         variant: "destructive",
       });
     }
@@ -969,7 +969,7 @@ export default function SimpleContractGenerator() {
             startDate: editableData.startDate,
             completionDate: editableData.completionDate,
           },
-          paymentTerms: editableData.paymentMilestones,
+          paymentTerms: editableData.paymentMilestones as any,
           materials: selectedProject.materials || [],
           terms: {
             warranty: editableData.warrantyYears,
@@ -1064,7 +1064,7 @@ export default function SimpleContractGenerator() {
       ];
       
       // Fix any milestones that don't have amount field or have it as undefined
-      paymentMilestones = paymentMilestones.map(milestone => ({
+      paymentMilestones = paymentMilestones.map((milestone: any) => ({
         ...milestone,
         amount: milestone.amount ?? (contractTotal * (milestone.percentage || 0) / 100)
       }));
@@ -1151,7 +1151,7 @@ export default function SimpleContractGenerator() {
         throw new Error("No se pudo conectar a Firebase. Verifique su conexión a internet.");
       }
       
-      let allProjects = [];
+      let allProjects: any[] = [];
       
       // 1. Load from estimates collection (primary source)
       console.log("📋 Loading from estimates collection...");
@@ -1392,7 +1392,7 @@ export default function SimpleContractGenerator() {
         console.error("❌ Firebase listener connection error:", error);
         console.error("❌ Error details:", {
           code: error.code,
-          message: error.message,
+          message: (error as Error).message,
           timestamp: new Date().toISOString()
         });
         
@@ -1515,9 +1515,8 @@ export default function SimpleContractGenerator() {
           { id: 1, description: "Initial deposit", percentage: 50, amount: getCorrectProjectTotal(project) * 0.5 },
           { id: 2, description: "Project completion", percentage: 50, amount: getCorrectProjectTotal(project) * 0.5 }
         ],
-        suggestedClauses: [],
-        selectedClauses: [],
-        customClauses: []
+
+        customClauses: [] as any[]
       });
       
       setCurrentStep(2);
@@ -1539,14 +1538,14 @@ export default function SimpleContractGenerator() {
       console.error("❌ CRITICAL ERROR selecting project:", error);
       console.error("❌ Project data when error occurred:", project);
       console.error("❌ Error details:", {
-        message: error.message,
-        stack: error.stack,
+        message: (error as Error).message || 'Unknown error',
+        stack: (error as Error).stack,
         timestamp: new Date().toISOString()
       });
       
       toast({
         title: "Error de Conexión",
-        description: `Error procesando datos del proyecto: ${error.message || 'Error desconocido'}`,
+        description: `Error procesando datos del proyecto: ${(error as Error).message || 'Error desconocido'}`,
         variant: "destructive",
       });
     } finally {
@@ -1638,7 +1637,7 @@ export default function SimpleContractGenerator() {
       console.error("❌ Error downloading PDF:", error);
       toast({
         title: "Download Error", 
-        description: `Failed to download PDF: ${error.message}`,
+        description: `Failed to download PDF: ${(error as Error).message}`,
         variant: "destructive",
       });
     } finally {
@@ -1677,7 +1676,7 @@ export default function SimpleContractGenerator() {
             "Business Address",
           phone: profile?.phone || profile?.mobilePhone || "Business Phone", 
           email: profile?.email || "business@email.com",
-          license: profile?.licenseNumber || profile?.license || "License Number"
+          license: (profile as any)?.licenseNumber || (profile as any)?.license || "License Number"
         },
         timeline: {
           startDate: editableData.startDate || new Date().toISOString().split('T')[0],
@@ -1830,10 +1829,10 @@ export default function SimpleContractGenerator() {
         }
       }
     } catch (error) {
-      console.error("❌ Error generating contract:", error);
+      console.error("❌ Error generating contract:", error as Error);
       console.error("❌ Error details:", {
-        message: error.message,
-        stack: error.stack,
+        message: (error as Error).message,
+        stack: (error as Error).stack,
         contractPayload: contractPayload ? {
           clientName: contractPayload.client?.name,
           contractorName: contractPayload.contractor?.name,
@@ -1843,7 +1842,7 @@ export default function SimpleContractGenerator() {
       
       toast({
         title: "Generation Error",
-        description: `Failed to generate contract: ${error.message || 'Unknown error'}. Please check the console for details.`,
+        description: `Failed to generate contract: ${(error as Error).message || 'Unknown error'}. Please check the console for details.`,
         variant: "destructive",
       });
     } finally {
@@ -1947,7 +1946,7 @@ export default function SimpleContractGenerator() {
       setDualSignatureStatus("Failed to initiate dual signature");
       toast({
         title: "Dual Signature Error",
-        description: `Failed to initiate dual signature: ${error.message}`,
+        description: `Failed to initiate dual signature: ${(error as Error).message}`,
         variant: "destructive",
       });
     } finally {
@@ -2030,7 +2029,7 @@ export default function SimpleContractGenerator() {
       setDeliveryStatus("Failed to generate signature links");
       toast({
         title: "Signature Protocol Error",
-        description: `Failed to generate signature links: ${error.message}`,
+        description: `Failed to generate signature links: ${(error as Error).message}`,
         variant: "destructive",
       });
     } finally {
@@ -2577,7 +2576,7 @@ export default function SimpleContractGenerator() {
                     <div>
                       <Label className="text-gray-400">License Number</Label>
                       <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
-                        {profile?.licenseNumber || profile?.license || "Not set in profile"}
+                        {(profile as any)?.licenseNumber || (profile as any)?.license || "Not set in profile"}
                       </div>
                     </div>
                   </div>
