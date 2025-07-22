@@ -871,25 +871,35 @@ class PremiumPdfService {
     `;
   }
 
-  private generatePermitSection(permitInfo?: { permitsRequired: boolean; responsibility: string; numbers: string }): string {
+  private generatePermitSection(permitInfo?: { permitsRequired?: boolean; required?: boolean; responsibility?: string; numbers?: string }): string {
+    console.log("🔧 [PERMIT-DEBUG] generatePermitSection called with:", JSON.stringify(permitInfo, null, 2));
+    
     if (!permitInfo) {
+      console.log("🔧 [PERMIT-DEBUG] No permitInfo provided, using default");
       // Default permit section when no permitInfo is provided
       return `The Contractor shall obtain and pay for all permits, licenses, and approvals required by federal, state, and local authorities for the performance of the work, unless specifically agreed otherwise in writing. All work shall be performed in strict compliance with applicable building codes, zoning ordinances, environmental regulations, safety requirements, and industry standards. The Contractor shall schedule and coordinate all required inspections. Upon completion, all permits shall be properly closed out and documentation provided to the Client.`;
     }
 
     let permitText = '';
     
-    if (permitInfo.permitsRequired) {
-      if (permitInfo.responsibility === 'contractor') {
+    // Support both field names: 'required' from frontend and 'permitsRequired' as backup
+    const permitsRequired = permitInfo.permitsRequired || permitInfo.required;
+    const responsibility = permitInfo.responsibility || 'contractor';
+    const numbers = permitInfo.numbers || '';
+    
+    console.log("🔧 [PERMIT-DEBUG] Processed values:", { permitsRequired, responsibility, numbers });
+    
+    if (permitsRequired) {
+      if (responsibility === 'contractor') {
         permitText = `<strong>Contractor Responsibility:</strong> The Contractor shall obtain and pay for all permits, licenses, and approvals required by federal, state, and local authorities for the performance of the work. `;
-      } else if (permitInfo.responsibility === 'client') {
+      } else if (responsibility === 'client') {
         permitText = `<strong>Client Responsibility:</strong> The Client is responsible for obtaining and paying for all permits, licenses, and approvals required by federal, state, and local authorities for the performance of the work. The Contractor shall provide all necessary documentation and specifications required for permit applications. `;
       } else {
         permitText = `<strong>Shared Responsibility:</strong> Both parties agree to cooperate in obtaining all permits, licenses, and approvals required by federal, state, and local authorities for the performance of the work. Specific responsibilities shall be determined by mutual agreement in writing. `;
       }
       
-      if (permitInfo.numbers && permitInfo.numbers.trim()) {
-        permitText += `<strong>Permit Numbers:</strong> ${permitInfo.numbers}. `;
+      if (numbers && numbers.trim()) {
+        permitText += `<strong>Permit Numbers:</strong> ${numbers}. `;
       }
     } else {
       permitText = `<strong>No Permits Required:</strong> Based on the scope of work, no permits are anticipated to be required for this project. However, if permits become necessary during the course of work, the parties agree to address permit requirements through a written change order. `;

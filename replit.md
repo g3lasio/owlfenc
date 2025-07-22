@@ -137,6 +137,15 @@ Owl Fence is a comprehensive SaaS platform designed for contractors in the const
 ## Changelog
 ```
 Changelog:
+- July 22, 2025. ✅ PERMIT DATA TRANSMISSION BUG COMPLETELY FIXED - FRONTEND TO BACKEND ALIGNMENT: Successfully resolved critical data mismatch where permit information was not flowing from frontend to PDF contracts:
+  * FRONTEND PERMIT CAPTURE: Frontend correctly captures permitRequired and permitResponsibility in editableData state
+  * BACKEND DATA MAPPING: Fixed backend routes to properly map permitInfo from frontend to contractData and pdfData structures  
+  * FIELD NAME ALIGNMENT: Updated premiumPdfService to support both 'required' (frontend) and 'permitsRequired' (backend) field names
+  * PDF GENERATION FIX: Enhanced generatePermitSection method to process permit data from frontend with comprehensive logging
+  * DATA STRUCTURE SUPPORT: Backend now supports both old 'permits' and new 'permitInfo' field names for compatibility
+  * PERMIT RESPONSIBILITY REFLECTION: PDF contracts now correctly show permit responsibility (contractor/client) based on user selection
+  * COMPREHENSIVE DEBUGGING: Added detailed logging to track permit data flow from frontend through backend to PDF generation
+  * PRODUCTION READY: Permit information now flows correctly from user selection in frontend to final PDF contract content
 - July 22, 2025. ✅ CRITICAL LEGAL COMPLIANCE FIX - CLIENT-ONLY JURISDICTION DETECTION SYSTEM IMPLEMENTED: Successfully resolved serious legal issue and implemented client-address-only jurisdiction detection per user requirements:
   * CLIENT-ONLY JURISDICTION: System now uses EXCLUSIVELY the client address from frontend input to determine jurisdiction, completely ignoring contractor address
   * COMPREHENSIVE STATE MAPPING: Created jurisdictionDetector.ts with complete mapping for all 50 US states + DC including specific legal requirements per state

@@ -3423,8 +3423,8 @@ Output must be between 200-900 characters in English.`;
           paymentTerms: req.body.paymentTerms || {},
           totalCost: projectTotal,
           timeline: req.body.timeline || {},
-          permits: req.body.permits || {},
-          permitInfo: req.body.permitInfo || {},
+          permits: req.body.permits || req.body.permitInfo || {},  // Support both old and new field names
+          permitInfo: req.body.permitInfo || req.body.permits || {},  // Primary field from frontend
           warranties: req.body.warranties || {},
           extraClauses: req.body.extraClauses || [],
           consents: req.body.consents || {},
@@ -3471,7 +3471,11 @@ Output must be between 200-900 characters in English.`;
           req.body.timeline,
         );
         console.log(
-          "🔍 [STEP3-DEBUG] Permits data received:",
+          "🔍 [STEP3-DEBUG] PermitInfo data received:",
+          req.body.permitInfo,
+        );
+        console.log(
+          "🔍 [STEP3-DEBUG] Permits data received (deprecated):",
           req.body.permits,
         );
         console.log(
@@ -3514,7 +3518,7 @@ Output must be between 200-900 characters in English.`;
             [],
           timeline: contractData.timeline,
           warranties: contractData.warranties,
-          permitInfo: contractData.permitInfo,
+          permitInfo: contractData.permitInfo || contractData.permits || req.body.permitInfo || req.body.permits || {},  // Ensure permit data is passed
         };
 
         console.log(
@@ -3537,8 +3541,12 @@ Output must be between 200-900 characters in English.`;
           pdfData.warranties,
         );
         console.log(
-          "🔧 [STEP3-PDF] Permit info passed to PDF service:",
+          "🔧 [STEP3-PDF] PermitInfo passed to PDF service:",
           pdfData.permitInfo,
+        );
+        console.log(
+          "🔧 [STEP3-PDF] Frontend permitInfo structure:",
+          JSON.stringify(pdfData.permitInfo, null, 2),
         );
 
         // Generate premium PDF with enhanced data
