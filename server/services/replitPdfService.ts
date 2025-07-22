@@ -40,36 +40,36 @@ class ReplitPdfService {
     try {
       console.log('📄 [REPLIT-PDF] PRESERVING EXACT original contract format - generating PDF that matches HTML exactly');
       
-      // PRIMARY METHOD: Use exact layout preserving PDF generation
+      // PRIMARY METHOD: Use EXACT HTML-to-PDF converter that maintains original format
       try {
-        const { createPdfWithExactHtmlLayout } = await import('../utils/htmlLayoutPreservingPdf.js');
+        const { convertHtmlToExactPdf } = await import('../utils/htmlToExactPdfConverter.js');
         
-        const pdfBuffer = await createPdfWithExactHtmlLayout(htmlContent, {
+        const pdfBuffer = await convertHtmlToExactPdf(htmlContent, {
           title: options.title || 'SIGNED CONTRACT',
           contractId: options.contractId
         });
         
-        console.log('✅ [REPLIT-PDF] PDF generated successfully with EXACT original format preserved');
+        console.log('✅ [REPLIT-PDF] PDF generated with EXACT original contract format preserved');
         return pdfBuffer;
         
-      } catch (exactLayoutError: any) {
-        console.error('❌ [REPLIT-PDF] Exact layout PDF failed:', exactLayoutError.message);
-        console.log('⚠️ [REPLIT-PDF] Trying secondary format-preserving method');
+      } catch (exactConversionError: any) {
+        console.error('❌ [REPLIT-PDF] Exact HTML conversion failed:', exactConversionError.message);
+        console.log('⚠️ [REPLIT-PDF] Trying fallback layout-preserving method');
         
-        // SECONDARY METHOD: Alternative format-preserving approach
+        // FALLBACK METHOD: Alternative layout preservation
         try {
-          const { createPdfFromFormattedHtml } = await import('../utils/htmlPreservingPdfGenerator.ts');
+          const { createPdfWithExactHtmlLayout } = await import('../utils/htmlLayoutPreservingPdf.js');
           
-          const pdfBuffer = await createPdfFromFormattedHtml(htmlContent, {
+          const pdfBuffer = await createPdfWithExactHtmlLayout(htmlContent, {
             title: options.title || 'SIGNED CONTRACT',
             contractId: options.contractId
           });
           
-          console.log('✅ [REPLIT-PDF] PDF generated with secondary preserving method');
+          console.log('✅ [REPLIT-PDF] PDF generated with fallback layout-preserving method');
           return pdfBuffer;
           
-        } catch (secondaryError: any) {
-          console.error('❌ [REPLIT-PDF] Secondary format-preserving failed:', secondaryError.message);
+        } catch (fallbackError: any) {
+          console.error('❌ [REPLIT-PDF] Fallback layout preservation failed:', fallbackError.message);
         }
       }
       

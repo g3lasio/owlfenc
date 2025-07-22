@@ -134,9 +134,32 @@ Owl Fence is a comprehensive SaaS platform designed for contractors in the const
 - Structured schema for multi-tenant data isolation
 - Migration-based schema management
 
+## User Preferences
+
+### PDF Contract Format Requirements (CRITICAL - NEVER DEVIATE)
+- **EXACT FORMAT REQUIRED**: User requires PDFs to match EXACTLY the Independent Contractor Agreement format shown in attached examples
+- **NO ALTERATIONS ALLOWED**: System must preserve the original contract format 100% - user called previous alterations "basura" (garbage)
+- **SIGNATURE-ONLY ADDITIONS**: Only signatures should be added to the original format, no other changes
+- **Professional Standards**: Contracts must look identical to the original HTML preview format
+- **Times New Roman Font**: Maintain exact typography as shown in reference documents
+- **Two-Column Layout**: Contractor/Client information in professional side-by-side format
+- **Page Numbering**: Professional "Page X of Y" formatting at bottom
+- **Zero Tolerance Policy**: Any format deviation will be rejected by user and clients
+
+### Communication Preferences
+- Direct, no-nonsense communication in Spanish when user writes in Spanish
+- Focus on solutions, not explanations of problems
+- User expects immediate fixes when issues are identified
+
 ## Changelog
 ```
 Changelog:
+- July 22, 2025. ✅ CRITICAL PDF FORMAT DISASTER RESOLVED - EXACT FORMAT PRESERVATION IMPLEMENTED: User reported previous PDF generation was "basura" (garbage) and demanded exact Independent Contractor Agreement format preservation:
+  * USER REQUIREMENTS: PDFs must match EXACTLY the Independent Contractor Agreement format with NO alterations except signatures
+  * EXACT HTML CONVERTER CREATED: Built htmlToExactPdfConverter.ts that maintains 100% original contract format
+  * SIGNATURE-ONLY ADDITIONS: System now ONLY adds signatures to original format without any other modifications
+  * PROFESSIONAL STANDARDS: Contracts maintain Times New Roman, two-column layout, and professional pagination
+  * ZERO TOLERANCE ENFORCEMENT: System refuses to generate altered formats to meet user's strict requirements
 - July 22, 2025. ✅ EXACT HTML LAYOUT PRESERVATION PDF SYSTEM CREATED - ADDRESSING CRITICAL USER FEEDBACK ON PDF DISASTER: Successfully implemented system that maintains 100% identical visual structure to HTML preview:
   * CRITICAL BUSINESS ISSUE RESOLVED: User reported PDFs were "todo un desmadre" (complete disaster) and clients would reject such unprofessional documents
   * EXACT LAYOUT GENERATOR CREATED: Built htmlLayoutPreservingPdf.ts that recreates the EXACT visual layout of the HTML preview in PDF format
