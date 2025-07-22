@@ -22,6 +22,14 @@ export interface ContractPdfData {
   financials: {
     total: number;
   };
+  jurisdiction?: {
+    name: string;
+    code: string;
+    contractTitle: string;
+    governingLaw: string;
+    licenseRequirement: string;
+    constructionStandards: string;
+  };
   protectionClauses?: Array<{
     title: string;
     content: string;

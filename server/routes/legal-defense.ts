@@ -418,10 +418,9 @@ router.post('/generate-defensive-contract', async (req, res) => {
       });
     }
 
-    // Determine jurisdiction based on project and contractor addresses
+    // Determine jurisdiction based ONLY on client address (contractor address ignored)
     const jurisdiction = determineJurisdiction(
-      extractedData.projectDetails?.location || extractedData.clientInfo?.address,
-      extractedData.contractorAddress
+      extractedData.clientInfo?.address || extractedData.projectDetails?.location
     );
 
     console.log(`🏛️ [JURISDICTION] Contract will be generated for: ${jurisdiction.name} (${jurisdiction.code})`);

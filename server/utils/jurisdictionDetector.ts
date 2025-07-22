@@ -572,34 +572,25 @@ export function extractStateFromAddress(address: string): string | null {
 }
 
 /**
- * Determine jurisdiction based on project and contractor addresses
- * Priority: Project location > Contractor location > Default (CA)
+ * Determine jurisdiction based ONLY on client address from frontend input
+ * Priority: CLIENT ADDRESS ONLY (contractor address completely ignored)
  */
-export function determineJurisdiction(projectAddress?: string, contractorAddress?: string): StateInfo {
-  console.log(`🔍 [JURISDICTION] Determining jurisdiction...`);
-  console.log(`📍 [JURISDICTION] Project address: ${projectAddress}`);
-  console.log(`🏢 [JURISDICTION] Contractor address: ${contractorAddress}`);
+export function determineJurisdiction(clientAddress?: string, _contractorAddress?: string): StateInfo {
+  console.log(`🔍 [JURISDICTION] Determining CLIENT-ONLY jurisdiction...`);
+  console.log(`📍 [JURISDICTION] Client address (ONLY SOURCE): ${clientAddress}`);
+  console.log(`🚫 [JURISDICTION] Contractor address IGNORED per user requirements`);
   
-  // Try project address first (where work is performed)
-  if (projectAddress) {
-    const projectState = extractStateFromAddress(projectAddress);
-    if (projectState && STATE_INFO[projectState]) {
-      console.log(`✅ [JURISDICTION] Detected project state: ${projectState} (${STATE_INFO[projectState].name})`);
-      return STATE_INFO[projectState];
+  // ONLY use client address from frontend input
+  if (clientAddress) {
+    const clientState = extractStateFromAddress(clientAddress);
+    if (clientState && STATE_INFO[clientState]) {
+      console.log(`✅ [JURISDICTION] Detected client state: ${clientState} (${STATE_INFO[clientState].name})`);
+      return STATE_INFO[clientState];
     }
   }
   
-  // Try contractor address as fallback
-  if (contractorAddress) {
-    const contractorState = extractStateFromAddress(contractorAddress);
-    if (contractorState && STATE_INFO[contractorState]) {
-      console.log(`✅ [JURISDICTION] Detected contractor state: ${contractorState} (${STATE_INFO[contractorState].name})`);
-      return STATE_INFO[contractorState];
-    }
-  }
-  
-  // Default to California if no state detected
-  console.log(`⚠️ [JURISDICTION] No valid state detected, defaulting to California`);
+  // Default to California only if no client address provided
+  console.log(`⚠️ [JURISDICTION] No client address provided, defaulting to California`);
   return STATE_INFO.CA;
 }
 

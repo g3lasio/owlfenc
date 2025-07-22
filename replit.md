@@ -137,19 +137,20 @@ Owl Fence is a comprehensive SaaS platform designed for contractors in the const
 ## Changelog
 ```
 Changelog:
-- July 22, 2025. ✅ CRITICAL LEGAL COMPLIANCE FIX - AUTOMATIC JURISDICTION DETECTION SYSTEM IMPLEMENTED: Successfully resolved serious legal issue where all contracts were hardcoded to California jurisdiction regardless of actual project location:
+- July 22, 2025. ✅ CRITICAL LEGAL COMPLIANCE FIX - CLIENT-ONLY JURISDICTION DETECTION SYSTEM IMPLEMENTED: Successfully resolved serious legal issue and implemented client-address-only jurisdiction detection per user requirements:
+  * CLIENT-ONLY JURISDICTION: System now uses EXCLUSIVELY the client address from frontend input to determine jurisdiction, completely ignoring contractor address
   * COMPREHENSIVE STATE MAPPING: Created jurisdictionDetector.ts with complete mapping for all 50 US states + DC including specific legal requirements per state
-  * AUTOMATIC JURISDICTION DETECTION: System now automatically detects correct state jurisdiction based on project address (priority) or contractor address (fallback)
-  * DYNAMIC CONTRACT GENERATION: All contract generation services (premiumPdfService, legal-defense routes, main contract routes) now use dynamic jurisdiction instead of hardcoded California
-  * LEGAL COMPLIANCE ENHANCEMENT: Contract titles, governing law clauses, license requirements, and construction standards now adjust automatically per state
-  * BACKEND INTEGRATION COMPLETE: Updated server/routes.ts, server/routes/legal-defense.ts, and server/services/premiumPdfService.ts with jurisdiction detection
+  * FRONTEND INTEGRATION: Address input component (AddressAutocomplete) now directly drives backend jurisdiction detection for all contract generation
+  * DYNAMIC CONTRACT GENERATION: All contract generation services (premiumPdfService, legal-defense routes, main contract routes) use client address only for jurisdiction
+  * LEGAL COMPLIANCE ENHANCEMENT: Contract titles, governing law clauses, license requirements, and construction standards adjust automatically per client state
+  * BACKEND INTEGRATION COMPLETE: Updated server/routes.ts, server/routes/legal-defense.ts, server/utils/jurisdictionDetector.ts with client-only detection
   * ADDRESS PARSING INTELLIGENCE: Advanced regex patterns detect state from various address formats (abbreviations, full names, ZIP codes, etc.)
-  * PRODUCTION LEGAL SAFETY: Eliminates legal liability of using California law for projects in Texas, New York, Florida, and other states
-  * MULTI-PATTERN DETECTION: Handles addresses with state abbreviations (CA, TX, NY), full state names, and various formatting styles
-  * FALLBACK PROTECTION: Defaults to California if no state detected, but logs detection attempts for troubleshooting
+  * PRODUCTION LEGAL SAFETY: Eliminates legal liability of using California law for projects in other states based on actual client location
+  * SIMPLIFIED PRIORITY SYSTEM: Client address (ONLY) → Default (California) - contractor address completely ignored per user requirements
+  * FALLBACK PROTECTION: Defaults to California only if no client address provided, logs detection attempts for troubleshooting
   * 50-STATE COVERAGE: Complete legal framework for all US states with state-specific contract titles, governing laws, and license requirements
   * CONSTRUCTION STANDARDS ADAPTATION: Contract language adapts to mention correct state building codes and construction standards
-  * LOGGING AND DEBUGGING: Comprehensive console logging for jurisdiction detection process with emoji indicators for easy monitoring
+  * LOGGING AND DEBUGGING: Comprehensive console logging with CLIENT-ONLY emphasis for jurisdiction detection process
 - July 22, 2025. ✅ COMPLETE DOCUMENT MANAGEMENT SYSTEM WITH FIREBASE STORAGE FIX: Successfully transformed documents section and resolved Firebase Storage permission issues:
   * ESTIMATE/CONTRACT BUTTONS REMOVED: Eliminated old estimate and contract PDF generation buttons as requested
   * UPLOAD FUNCTIONALITY ADDED: Comprehensive file upload system supporting PDFs, images, videos, and any project-related files

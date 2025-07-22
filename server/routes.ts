@@ -1073,10 +1073,9 @@ ${extractedText}`,
       // Procesar cláusulas inteligentes seleccionadas
       const selectedClauses = extractedData?.selectedIntelligentClauses || [];
 
-      // Determinar jurisdicción basada en direcciones del proyecto y contratista
+      // Determinar jurisdicción basada ÚNICAMENTE en dirección del cliente
       const jurisdiction = determineJurisdiction(
-        extractedData?.projectDetails?.location || clientAddress,
-        contractorAddress
+        clientAddress || extractedData?.clientInfo?.address
       );
 
       console.log(`🏛️ [JURISDICTION] Contrato será generado para: ${jurisdiction.name} (${jurisdiction.code})`);
@@ -3498,9 +3497,17 @@ Output must be between 200-900 characters in English.`;
           });
         }
 
-        // CRITICAL FIX: Map all Step 3 data to PDF service format
+        // Determine jurisdiction based ONLY on client address from frontend
+        const jurisdiction = determineJurisdiction(
+          contractData.client?.address
+        );
+
+        console.log(`🏛️ [JURISDICTION] PDF será generado para: ${jurisdiction.name} (${jurisdiction.code})`);
+
+        // CRITICAL FIX: Map all Step 3 data to PDF service format with jurisdiction
         const pdfData = {
           ...contractData,
+          jurisdiction: jurisdiction, // Add jurisdiction info to PDF data
           protectionClauses:
             contractData.selectedIntelligentClauses ||
             req.body.protections ||
@@ -6598,7 +6605,14 @@ Output must be between 200-900 characters in English.`;
         );
         const premiumPdfService = PremiumPdfService.getInstance();
 
-        // Process contract data similar to PDF generation
+        // Determine jurisdiction based ONLY on client address
+        const jurisdiction = determineJurisdiction(
+          req.body.client?.address
+        );
+
+        console.log(`🏛️ [JURISDICTION] HTML será generado para: ${jurisdiction.name} (${jurisdiction.code})`);
+
+        // Process contract data similar to PDF generation with jurisdiction
         const contractData = {
           client: req.body.client,
           contractor: req.body.contractor,
@@ -6609,6 +6623,7 @@ Output must be between 200-900 characters in English.`;
           warranties: req.body.warranties || {},
           selectedClauses: req.body.selectedClauses || [],
           paymentTerms: req.body.paymentTerms || {},
+          jurisdiction: jurisdiction, // Add jurisdiction info
         };
 
         console.log("📋 [CONTRACT-HTML] Contract data structure:", {
