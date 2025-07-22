@@ -74,6 +74,7 @@ export default function SimpleContractGenerator() {
     clientAddress: "",
     startDate: "",
     completionDate: "",
+    permitRequired: "",
     permitResponsibility: "contractor",
     warrantyYears: "1",
     paymentMilestones: [
@@ -2732,13 +2733,37 @@ export default function SimpleContractGenerator() {
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-gray-400">Permit Responsibility</Label>
+                      <Label className="text-gray-400">Is a permit required for this project?</Label>
+                      <Select
+                        value={editableData.permitRequired}
+                        onValueChange={(value) => setEditableData(prev => ({ 
+                          ...prev, 
+                          permitRequired: value,
+                          // Reset permit responsibility when changing permit requirement
+                          permitResponsibility: value === "yes" ? prev.permitResponsibility : ""
+                        }))}
+                      >
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="yes">Yes</SelectItem>
+                          <SelectItem value="no">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  {/* Show permit responsibility only if permit is required */}
+                  {editableData.permitRequired === "yes" && (
+                    <div className="mt-4">
+                      <Label className="text-gray-400">Who will be responsible for obtaining the permit?</Label>
                       <Select
                         value={editableData.permitResponsibility}
                         onValueChange={(value) => setEditableData(prev => ({ ...prev, permitResponsibility: value }))}
                       >
                         <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                          <SelectValue />
+                          <SelectValue placeholder="Select responsibility..." />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="contractor">Contractor obtains permits</SelectItem>
@@ -2746,7 +2771,7 @@ export default function SimpleContractGenerator() {
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* AI-Powered Legal Clauses */}
