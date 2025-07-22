@@ -23,6 +23,7 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState(0);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [tempStageIndex, setTempStageIndex] = useState(0);
   const timelineRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -35,67 +36,126 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
 
   useEffect(() => {
     setDragPosition(progressPercentage);
-  }, [progressPercentage]);
+    setTempStageIndex(validCurrentIndex);
+    console.log(`📊 [TIMELINE] Project ${projectId} progress: ${currentProgress} (${validCurrentIndex}/${timelineStages.length - 1})`);
+  }, [progressPercentage, validCurrentIndex, projectId, currentProgress]);
+
+  const getPointerPosition = (clientX: number) => {
+    if (!timelineRef.current) return 0;
+    const rect = timelineRef.current.getBoundingClientRect();
+    const x = clientX - rect.left;
+    return Math.max(0, Math.min(100, (x / rect.width) * 100));
+  };
+
+  const calculateStageFromPercentage = (percentage: number) => {
+    return Math.round((percentage / 100) * (timelineStages.length - 1));
+  };
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (isUpdating) return;
     setIsDragging(true);
+    const percentage = getPointerPosition(e.clientX);
+    setDragPosition(percentage);
+    setTempStageIndex(calculateStageFromPercentage(percentage));
     e.preventDefault();
+    console.log(`🎯 [TIMELINE] Started dragging at ${percentage.toFixed(1)}%`);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (isUpdating) return;
+    setIsDragging(true);
+    const touch = e.touches[0];
+    const percentage = getPointerPosition(touch.clientX);
+    setDragPosition(percentage);
+    setTempStageIndex(calculateStageFromPercentage(percentage));
+    e.preventDefault();
+    console.log(`📱 [TIMELINE] Started touch dragging at ${percentage.toFixed(1)}%`);
   };
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging || !timelineRef.current) return;
-
-    const rect = timelineRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    const percentage = getPointerPosition(e.clientX);
+    const stageIndex = calculateStageFromPercentage(percentage);
     setDragPosition(percentage);
+    setTempStageIndex(stageIndex);
   };
 
-  const handleMouseUp = async () => {
+  const handleTouchMove = (e: TouchEvent) => {
+    if (!isDragging || !timelineRef.current) return;
+    const touch = e.touches[0];
+    const percentage = getPointerPosition(touch.clientX);
+    const stageIndex = calculateStageFromPercentage(percentage);
+    setDragPosition(percentage);
+    setTempStageIndex(stageIndex);
+    e.preventDefault();
+  };
+
+  const handleEnd = async () => {
     if (!isDragging) return;
     setIsDragging(false);
 
-    // Calculate closest stage
-    const stageIndex = Math.round((dragPosition / 100) * (timelineStages.length - 1));
-    const newStage = timelineStages[stageIndex];
+    const finalStageIndex = calculateStageFromPercentage(dragPosition);
+    const newStage = timelineStages[finalStageIndex];
+
+    console.log(`🏁 [TIMELINE] Drag ended at stage ${finalStageIndex}: ${newStage?.key}`);
 
     if (newStage && newStage.key !== currentProgress) {
       try {
         setIsUpdating(true);
+        console.log(`🔄 [TIMELINE] Updating project ${projectId} from "${currentProgress}" to "${newStage.key}"`);
+        
         await updateProjectProgress(projectId, newStage.key);
         onProgressUpdate(newStage.key);
+        
         toast({
-          title: "Progress Updated",
+          title: "🎯 Timeline Updated",
           description: `Project moved to: ${newStage.label}`,
+          duration: 3000,
         });
+        
+        console.log(`✅ [TIMELINE] Successfully updated to: ${newStage.key}`);
       } catch (error) {
-        console.error("Error updating progress:", error);
+        console.error(`❌ [TIMELINE] Error updating progress:`, error);
         toast({
           variant: "destructive",
-          title: "Error",
-          description: "Failed to update project progress",
+          title: "⚠️ Update Failed",
+          description: "Failed to update project progress. Please try again.",
+          duration: 5000,
         });
-        // Reset position on error
+        // Reset to original position on error
         setDragPosition(progressPercentage);
+        setTempStageIndex(validCurrentIndex);
       } finally {
         setIsUpdating(false);
       }
     } else {
       // Reset to current position if no change
+      console.log(`🔄 [TIMELINE] No change detected, resetting position`);
       setDragPosition(progressPercentage);
+      setTempStageIndex(validCurrentIndex);
     }
   };
 
   useEffect(() => {
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
+      const handleMouseMove_ = (e: MouseEvent) => handleMouseMove(e);
+      const handleTouchMove_ = (e: TouchEvent) => handleTouchMove(e);
+      const handleMouseUp = () => handleEnd();
+      const handleTouchEnd = () => handleEnd();
+
+      document.addEventListener('mousemove', handleMouseMove_);
       document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchmove', handleTouchMove_, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
+      
       return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mousemove', handleMouseMove_);
         document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('touchmove', handleTouchMove_);
+        document.removeEventListener('touchend', handleTouchEnd);
       };
     }
-  }, [isDragging, dragPosition, currentProgress]);
+  }, [isDragging, dragPosition, currentProgress, projectId]);
 
   return (
     <div className="w-full max-w-4xl mx-auto px-2 md:px-4 py-2 md:py-3">
@@ -105,6 +165,25 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
           Project Timeline
         </h3>
         <div className="w-16 md:w-24 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent mx-auto"></div>
+        
+        {/* Live Stage Feedback During Drag */}
+        {isDragging && (
+          <div className="mt-2 px-3 py-1 bg-cyan-400/10 border border-cyan-400/30 rounded-lg backdrop-blur-sm">
+            <span className="text-sm font-medium text-cyan-200">
+              Moving to: <span className="text-cyan-100 font-bold">{timelineStages[tempStageIndex]?.label}</span>
+            </span>
+          </div>
+        )}
+        
+        {/* Update Status Feedback */}
+        {isUpdating && (
+          <div className="mt-2 px-3 py-1 bg-yellow-400/10 border border-yellow-400/30 rounded-lg backdrop-blur-sm">
+            <span className="text-sm font-medium text-yellow-200">
+              <i className="ri-loader-2-line animate-spin mr-2"></i>
+              Updating project status...
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Compact Timeline Container */}
@@ -112,8 +191,10 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
         {/* Stage Icons Row - Flexbox Layout */}
         <div className="flex items-center justify-between gap-1 md:gap-2 mb-3 px-2">
           {timelineStages.map((stage, index) => {
-            const isActive = index <= validCurrentIndex;
-            const isCurrent = index === validCurrentIndex;
+            // Use temp stage index during dragging for immediate visual feedback
+            const activeIndex = isDragging ? tempStageIndex : validCurrentIndex;
+            const isActive = index <= activeIndex;
+            const isCurrent = index === activeIndex;
             
             return (
               <div key={stage.key} className="flex flex-col items-center flex-1 min-w-0">
@@ -160,7 +241,9 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
         {/* Connection Lines */}
         <div className="flex items-center justify-between px-6 md:px-8 mb-4">
           {timelineStages.slice(0, -1).map((stage, index) => {
-            const isActive = index < validCurrentIndex;
+            // Use temp stage index during dragging for immediate visual feedback
+            const activeIndex = isDragging ? tempStageIndex : validCurrentIndex;
+            const isActive = index < activeIndex;
             return (
               <div 
                 key={`line-${stage.key}`}
@@ -246,19 +329,29 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
 
             {/* NEURAL CONTROL HANDLE */}
             <div 
-              className={`absolute top-1/2 transform -translate-y-1/2 w-6 h-6 md:w-8 md:h-8 rounded-full cursor-grab transition-all duration-300 ${
-                isDragging ? 'cursor-grabbing scale-150' : 'hover:scale-125'
-              } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`absolute top-1/2 transform -translate-y-1/2 w-6 h-6 md:w-8 md:h-8 rounded-full select-none transition-all duration-300 ${
+                isUpdating 
+                  ? 'opacity-50 cursor-not-allowed' 
+                  : isDragging 
+                    ? 'cursor-grabbing scale-150 z-50' 
+                    : 'cursor-grab hover:scale-125'
+              }`}
               style={{ 
                 left: `calc(${isDragging ? dragPosition : progressPercentage}% - 12px)`,
-                background: 'radial-gradient(circle, #22d3ee 0%, #0891b2 40%, #164e63 80%, #0f172a 100%)',
-                boxShadow: isDragging 
-                  ? '0 0 25px rgba(34, 211, 238, 1), 0 0 50px rgba(34, 211, 238, 0.6), 0 0 75px rgba(34, 211, 238, 0.3)' 
-                  : '0 0 15px rgba(34, 211, 238, 0.8), 0 4px 12px rgba(34, 211, 238, 0.4)',
+                background: isUpdating 
+                  ? 'radial-gradient(circle, #6b7280 0%, #374151 40%, #1f2937 80%, #0f172a 100%)'
+                  : 'radial-gradient(circle, #22d3ee 0%, #0891b2 40%, #164e63 80%, #0f172a 100%)',
+                boxShadow: isUpdating
+                  ? '0 0 10px rgba(107, 114, 128, 0.5)'
+                  : isDragging 
+                    ? '0 0 25px rgba(34, 211, 238, 1), 0 0 50px rgba(34, 211, 238, 0.6), 0 0 75px rgba(34, 211, 238, 0.3)' 
+                    : '0 0 15px rgba(34, 211, 238, 0.8), 0 4px 12px rgba(34, 211, 238, 0.4)',
                 border: '2px solid rgba(255, 255, 255, 0.5)',
-                filter: isDragging ? 'brightness(1.4) contrast(1.2)' : 'brightness(1.1)'
+                filter: isDragging ? 'brightness(1.4) contrast(1.2)' : 'brightness(1.1)',
+                touchAction: 'none'
               }}
               onMouseDown={handleMouseDown}
+              onTouchStart={handleTouchStart}
             >
               {/* Inner Neural Core */}
               <div className="w-full h-full rounded-full border border-white/20 flex items-center justify-center relative overflow-hidden">
