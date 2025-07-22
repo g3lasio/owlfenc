@@ -925,4 +925,87 @@ router.get('/download-pdf/:contractId', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/dual-signature/generate-pdf-from-html
+ * Generate PDF from signed HTML content - CRITICAL FIX for PDF/HTML mismatch
+ */
+router.post('/generate-pdf-from-html', async (req, res) => {
+  try {
+    const { contractId, htmlContent, clientName } = req.body;
+    
+    console.log('📄 [CRITICAL-FIX] Generating PDF from signed HTML for contract:', contractId);
+    
+    if (!contractId || !htmlContent || !clientName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: contractId, htmlContent, or clientName'
+      });
+    }
+
+    // Import PDF services dynamically
+    const { ReplitPdfService } = await import('../services/replitPdfService');
+    
+    try {
+      // Use ReplitPdfService (Chrome-free) for PDF generation from HTML
+      const replitPdfService = new ReplitPdfService();
+      console.log('📄 [CRITICAL-FIX] Using ReplitPdfService to generate PDF from signed HTML');
+      
+      const pdfBuffer = await replitPdfService.generatePdfFromHtml(htmlContent, {
+        title: `Signed Contract - ${clientName}`,
+        contractId,
+        watermark: false // Signed contracts should not have watermarks
+      });
+      
+      console.log('✅ [CRITICAL-FIX] PDF generated successfully from signed HTML content');
+      
+      // Return PDF as blob
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="contract_${contractId}_from_signed_html.pdf"`);
+      res.send(pdfBuffer);
+      
+    } catch (pdfError: any) {
+      console.error('❌ [CRITICAL-FIX] ReplitPdfService failed:', pdfError.message);
+      
+      // Fallback to simple text-based PDF with signed content
+      try {
+        const { createSimplePdfFromText } = await import('../utils/simplePdfGenerator');
+        
+        // Extract text content from HTML for simple PDF
+        const textContent = htmlContent
+          .replace(/<[^>]*>/g, ' ')  // Remove HTML tags
+          .replace(/\s+/g, ' ')      // Normalize whitespace
+          .trim();
+        
+        const simplePdfBuffer = await createSimplePdfFromText(textContent, {
+          title: `Signed Contract - ${clientName}`,
+          contractId
+        });
+        
+        console.log('✅ [CRITICAL-FIX] Fallback simple PDF generated from signed content');
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="contract_${contractId}_signed_text.pdf"`);
+        res.send(simplePdfBuffer);
+        
+      } catch (fallbackError: any) {
+        console.error('❌ [CRITICAL-FIX] All PDF generation methods failed:', fallbackError.message);
+        
+        return res.status(500).json({
+          success: false,
+          message: 'PDF generation failed. Chrome dependencies may be missing. Use View HTML or Download HTML instead.',
+          error: fallbackError.message
+        });
+      }
+    }
+    
+  } catch (error: any) {
+    console.error('❌ [CRITICAL-FIX] Error in /generate-pdf-from-html:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while generating PDF from signed HTML',
+      error: error.message,
+    });
+  }
+});
+
 export default router;

@@ -28,6 +28,127 @@ class ReplitPdfService {
     return ReplitPdfService.instance;
   }
 
+  /**
+   * Generate PDF from HTML content - CRITICAL FIX for PDF/HTML mismatch
+   * This ensures PDF matches exactly what's shown in View HTML
+   */
+  async generatePdfFromHtml(htmlContent: string, options: {
+    title?: string;
+    contractId?: string;
+    watermark?: boolean;
+  } = {}): Promise<Buffer> {
+    try {
+      console.log('📄 [REPLIT-PDF] Generating PDF from HTML content...');
+      
+      // Create a new PDF document
+      const pdfDoc = await PDFDocument.create();
+      const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      
+      // Add a page
+      let currentPage = pdfDoc.addPage();
+      const { width, height } = currentPage.getSize();
+      let yPosition = height - 50;
+      
+      // Document header
+      currentPage.drawText(options.title || 'SIGNED CONTRACT', {
+        x: 50,
+        y: yPosition,
+        size: 20,
+        font: helveticaBold,
+        color: rgb(0, 0, 0),
+      });
+      yPosition -= 40;
+      
+      if (options.contractId) {
+        currentPage.drawText(`Contract ID: ${options.contractId}`, {
+          x: 50,
+          y: yPosition,
+          size: 12,
+          font: helveticaFont,
+          color: rgb(0.5, 0.5, 0.5),
+        });
+        yPosition -= 30;
+      }
+      
+      // Add signed notice
+      currentPage.drawText('*** DIGITALLY SIGNED CONTRACT ***', {
+        x: 50,
+        y: yPosition,
+        size: 14,
+        font: helveticaBold,
+        color: rgb(0, 0.5, 0),
+      });
+      yPosition -= 40;
+      
+      // Extract text content from HTML for PDF
+      const textContent = htmlContent
+        .replace(/<[^>]*>/g, ' ')  // Remove HTML tags
+        .replace(/\s+/g, ' ')      // Normalize whitespace
+        .trim();
+      
+      // Split text into lines that fit on page
+      const maxWidth = width - 100; // 50px margins on each side
+      const fontSize = 10;
+      const lineHeight = 15;
+      
+      const words = textContent.split(' ');
+      const lines: string[] = [];
+      let currentLine = '';
+      
+      for (const word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const textWidth = helveticaFont.widthOfTextAtSize(testLine, fontSize);
+        
+        if (textWidth <= maxWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine) {
+            lines.push(currentLine);
+            currentLine = word;
+          } else {
+            // Word is too long, split it
+            lines.push(word.substring(0, 50));
+            currentLine = word.substring(50);
+          }
+        }
+      }
+      
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+      
+      // Add text lines to PDF, creating new pages as needed
+      for (const line of lines) {
+        if (yPosition < 50) {
+          // Add new page
+          currentPage = pdfDoc.addPage();
+          yPosition = height - 50;
+        }
+        
+        currentPage.drawText(line, {
+          x: 50,
+          y: yPosition,
+          size: fontSize,
+          font: helveticaFont,
+          color: rgb(0, 0, 0),
+        });
+        
+        yPosition -= lineHeight;
+      }
+      
+      // Generate PDF buffer
+      const pdfBytes = await pdfDoc.save();
+      console.log('✅ [REPLIT-PDF] PDF generated successfully from signed HTML content');
+      
+      return Buffer.from(pdfBytes);
+      
+    } catch (error: any) {
+      console.error('❌ [REPLIT-PDF] Failed to generate PDF from HTML:', error.message);
+      throw new Error(`PDF generation from HTML failed: ${error.message}`);
+    }
+  }
+
   async generateContractWithSignatures(data: ContractData): Promise<Buffer> {
     try {
       console.log('📄 [REPLIT-PDF] Generating PDF without Chrome dependencies...');
@@ -300,4 +421,5 @@ class ReplitPdfService {
   }
 }
 
+export { ReplitPdfService };
 export default ReplitPdfService;

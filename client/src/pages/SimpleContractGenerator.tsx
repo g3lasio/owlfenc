@@ -672,10 +672,10 @@ export default function SimpleContractGenerator() {
     }
   }, [toast]);
 
-  // View contract in new window/tab
+  // View contract in new window/tab - ALWAYS uses signed HTML for PDF generation
   const viewContract = useCallback(async (contractId: string, clientName: string) => {
     try {
-      console.log("👀 Opening contract for viewing:", contractId);
+      console.log("👀 Opening signed contract PDF view for:", contractId);
       
       if (!currentUser) {
         toast({
@@ -686,39 +686,71 @@ export default function SimpleContractGenerator() {
         return;
       }
 
-      // Open the contract PDF in a new window/tab for viewing
-      const downloadUrl = `/api/dual-signature/download/${contractId}`;
-      const viewUrl = `${downloadUrl}?view=true&userId=${currentUser.uid}`;
+      toast({
+        title: "Generating PDF",
+        description: "Creating PDF from signed contract...",
+        variant: "default"
+      });
+
+      // CRITICAL FIX: Get the signed HTML content first (same as viewContractHtml)
+      const htmlResponse = await fetch(`/api/dual-signature/download-html/${contractId}`);
       
-      // Open in new window with PDF viewer
-      const newWindow = window.open(viewUrl, '_blank');
+      if (!htmlResponse.ok) {
+        const errorData = await htmlResponse.json();
+        throw new Error(errorData.message || 'Failed to load signed contract');
+      }
       
-      if (newWindow) {
-        // Focus the new window
-        newWindow.focus();
+      const signedHtmlContent = await htmlResponse.text();
+      
+      // Generate PDF from the EXACT signed HTML content
+      const pdfResponse = await fetch('/api/dual-signature/generate-pdf-from-html', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contractId,
+          htmlContent: signedHtmlContent,
+          clientName
+        })
+      });
+
+      if (pdfResponse.ok) {
+        // Get the PDF blob and open in new window
+        const pdfBlob = await pdfResponse.blob();
+        const pdfUrl = window.URL.createObjectURL(pdfBlob);
         
-        toast({
-          title: "Contract Opened",
-          description: `Viewing signed contract for ${clientName}`,
-        });
+        const newWindow = window.open(pdfUrl, '_blank');
+        
+        if (newWindow) {
+          newWindow.focus();
+          
+          toast({
+            title: "PDF Opened",
+            description: `Viewing signed contract PDF for ${clientName}`,
+          });
+          
+          // Clean up URL after 10 seconds
+          setTimeout(() => {
+            window.URL.revokeObjectURL(pdfUrl);
+          }, 10000);
+        } else {
+          throw new Error('Popup blocked. Please allow popups for this site.');
+        }
       } else {
-        // If popup blocked, show alternative
-        toast({
-          title: "Popup Blocked",
-          description: "Please allow popups to view contracts, or use Download instead",
-          variant: "destructive",
-        });
+        const errorData = await pdfResponse.json();
+        throw new Error(errorData.message || 'Failed to generate PDF from signed contract');
       }
       
     } catch (error: any) {
-      console.error("❌ Error viewing contract:", error);
+      console.error("❌ Error viewing contract PDF:", error);
       toast({
-        title: "View Error",
-        description: (error as Error).message || "Failed to open contract for viewing",
+        title: "PDF View Error", 
+        description: (error as Error).message || "Failed to view signed contract as PDF",
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [toast, currentUser]);
 
   // Share contract using native share API or copy link
   const shareContract = useCallback(async (contractId: string, clientName: string) => {
