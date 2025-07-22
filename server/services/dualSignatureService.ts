@@ -511,26 +511,25 @@ export class DualSignatureService {
       let signedPdfPath: string | null = null;
 
       try {
-        // Import PDF service
-        const { default: PremiumPdfService } = await import('./premiumPdfService');
-        const pdfService = new PremiumPdfService();
+        // Import EXACT FORMAT signature service to preserve original contract format
+        const { ExactFormatSignatureService } = await import('./exactFormatSignatureService');
 
-        // Generate PDF with signatures integrated
-        pdfBuffer = await pdfService.generateContractWithSignatures({
-          contractHTML: contract.contractHtml || '',
-          contractorSignature: {
+        // Generate PDF with signatures using EXACT format preservation
+        pdfBuffer = await ExactFormatSignatureService.createSignedContractWithExactFormat(
+          contract.contractHtml || '',
+          {
             name: contract.contractorName,
             signatureData: contract.contractorSignatureData || '',
             typedName: contract.contractorSignatureType === 'typed' ? contract.contractorName : undefined,
             signedAt: contract.contractorSignedAt || new Date()
           },
-          clientSignature: {
+          {
             name: contract.clientName,
             signatureData: contract.clientSignatureData || '',
             typedName: contract.clientSignatureType === 'typed' ? contract.clientName : undefined,
             signedAt: contract.clientSignedAt || new Date()
           }
-        });
+        );
 
         // Save PDF to file system
         const fs = await import('fs');
@@ -1491,28 +1490,27 @@ export class DualSignatureService {
       let signedPdfPath: string | null = null;
 
       try {
-        console.log('🔄 [DUAL-SIGNATURE] Trying Alternative PDF Service (no Chrome required)...');
+        console.log('🎯 [DUAL-SIGNATURE] Using EXACT FORMAT signature service to regenerate PDF...');
         
-        const { default: ReplitPdfService } = await import('./replitPdfService');
-        console.log('📦 [DUAL-SIGNATURE] ReplitPdfService imported successfully');
-        const altPdfService = ReplitPdfService.getInstance();
-        console.log('🏭 [DUAL-SIGNATURE] Service instance created:', typeof altPdfService);
+        // Import EXACT FORMAT signature service to preserve original contract format
+        const { ExactFormatSignatureService } = await import('./exactFormatSignatureService');
 
-        pdfBuffer = await altPdfService.generateContractWithSignatures({
-          contractHTML: contract.contractHtml || '',
-          contractorSignature: {
+        // Generate PDF with signatures using EXACT format preservation
+        pdfBuffer = await ExactFormatSignatureService.createSignedContractWithExactFormat(
+          contract.contractHtml || '',
+          {
             name: contract.contractorName,
             signatureData: contract.contractorSignatureData || '',
-            typedName: contract.contractorSignatureType === 'cursive' ? contract.contractorName : undefined,
+            typedName: contract.contractorSignatureType === 'typed' ? contract.contractorName : undefined,
             signedAt: contract.contractorSignedAt || new Date()
           },
-          clientSignature: {
+          {
             name: contract.clientName,
             signatureData: contract.clientSignatureData || '',
-            typedName: contract.clientSignatureType === 'cursive' ? contract.clientName : undefined,
+            typedName: contract.clientSignatureType === 'typed' ? contract.clientName : undefined,
             signedAt: contract.clientSignedAt || new Date()
           }
-        });
+        );
 
         signedPdfPath = `signed_contracts/contract_${contractId}_signed.pdf`;
         const fs = await import('fs');
