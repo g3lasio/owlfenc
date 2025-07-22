@@ -426,8 +426,8 @@ export const updateProjectProgress = async (id: string, progress: string) => {
       throw new Error("Usuario no autenticado");
     }
     
-    // Buscar en ambas colecciones de Firebase: owlFenceProjects y owlFenceEstimates
-    const collectionsToSearch = ["owlFenceProjects", "owlFenceEstimates"];
+    // Buscar en ambas colecciones de Firebase: projects y estimates
+    const collectionsToSearch = ["projects", "estimates"];
     let projectDoc = null;
     let collectionName = null;
     
