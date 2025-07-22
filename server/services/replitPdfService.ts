@@ -38,7 +38,29 @@ class ReplitPdfService {
     watermark?: boolean;
   } = {}): Promise<Buffer> {
     try {
-      console.log('📄 [REPLIT-PDF] Generating PDF from HTML content...');
+      console.log('📄 [REPLIT-PDF] PRESERVING original contract format - generating PDF that matches HTML exactly');
+      
+      // CRITICAL FIX: Use format-preserving PDF generation as PRIMARY method
+      try {
+        // Import format-preserving PDF service  
+        const { createPdfFromFormattedHtml } = await import('../utils/htmlPreservingPdfGenerator.js');
+        
+        // Generate PDF while preserving the original HTML formatting
+        const pdfBuffer = await createPdfFromFormattedHtml(htmlContent, {
+          title: options.title || 'SIGNED CONTRACT',
+          contractId: options.contractId
+        });
+        
+        console.log('✅ [REPLIT-PDF] PDF generated successfully preserving original contract formatting');
+        return pdfBuffer;
+        
+      } catch (preservingError: any) {
+        console.error('❌ [REPLIT-PDF] Format-preserving PDF failed:', preservingError.message);
+        console.log('⚠️ [REPLIT-PDF] Falling back to simple text method');
+      }
+      
+      // FALLBACK: Simple PDF generation if format-preserving fails
+      console.log('📄 [REPLIT-PDF] Using fallback method - simple PDF generation');
       
       // Create a new PDF document
       const pdfDoc = await PDFDocument.create();
@@ -81,61 +103,48 @@ class ReplitPdfService {
       });
       yPosition -= 40;
       
-      // NEW APPROACH: Use structured HTML parser instead of raw text extraction
+      // CRITICAL FIX: Use format-preserving PDF generation as PRIMARY method
+      console.log('📄 [REPLIT-PDF] PRESERVING original contract format - generating PDF that matches HTML exactly');
+      
       try {
-        const { parseContractHtml, createStructuredPdf } = await import('../utils/htmlToPdfParser.js');
+        // Import format-preserving PDF service  
+        const { createPdfFromFormattedHtml } = await import('../utils/htmlPreservingPdfGenerator.js');
         
-        // Parse the HTML content to extract structured contract data
-        const contractContent = parseContractHtml(htmlContent);
+        // Generate PDF while preserving the original HTML formatting
+        const pdfBuffer = await createPdfFromFormattedHtml(htmlContent, {
+          title: options.title || 'SIGNED CONTRACT',
+          contractId: options.contractId
+        });
         
-        // Override title if provided
-        if (options.title) {
-          contractContent.title = options.title;
-        }
-        
-        // Generate professional PDF from structured content
-        const pdfBuffer = await createStructuredPdf(contractContent, options.contractId);
-        
-        console.log('✅ [REPLIT-PDF] Professional PDF generated successfully from structured contract content');
+        console.log('✅ [REPLIT-PDF] PDF generated successfully preserving original contract formatting');
         return pdfBuffer;
-      } catch (parseError: any) {
-        console.warn('⚠️ [REPLIT-PDF] Structured parsing failed, falling back to text extraction:', parseError.message);
+        
+      } catch (preservingError: any) {
+        console.error('❌ [REPLIT-PDF] Format-preserving PDF failed:', preservingError.message);
+        console.log('⚠️ [REPLIT-PDF] Falling back to structured approach');
       }
 
-      // CRITICAL FALLBACK: Extract ONLY contract content, ignore ALL CSS/HTML structure
-      console.log('⚠️ [REPLIT-PDF] Using enhanced fallback - extracting contract content only');
+      // FALLBACK: Simple text extraction that preserves basic structure
+      console.log('⚠️ [REPLIT-PDF] Using simple fallback - preserving text structure');
       
-      // Extract only the main contract content between specific markers
-      const contractStartMarkers = [
-        'Independent Contractor Agreement',
-        'Agreement Date:',
-        'WHEREAS,',
-        'Contract ID:'
-      ];
-      
-      // Find actual contract content start
-      let contractContent = htmlContent;
-      
-      // First, aggressively remove ALL styling
-      contractContent = contractContent
-        .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '') // Remove entire head section
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '') // Remove any remaining style blocks
+      // Clean HTML but preserve text structure
+      let cleanContent = htmlContent
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '') // Remove CSS
         .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove scripts
-        .replace(/style="[^"]*"/gi, '') // Remove inline styles
-        .replace(/class="[^"]*"/gi, '') // Remove class attributes
-        .replace(/@media[^{]*\{[^{}]*\{[^{}]*\}[^{}]*\}/gi, '') // Remove media queries
-        .replace(/\.[a-zA-Z0-9_-]+\s*\{[^}]*\}/gi, '') // Remove CSS selectors
-        .replace(/[a-zA-Z-]+:\s*[^;]+;/gi, '') // Remove CSS properties
-        .replace(/\{[^}]*\}/gi, ''); // Remove any remaining CSS blocks
+        .replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g, '') // Remove emojis
+        .replace(/[^\x00-\x7F]/g, '') // Remove non-ASCII
+        .replace(/[\u2018\u2019]/g, "'") // Smart quotes
+        .replace(/[\u201C\u201D]/g, '"') // Smart double quotes;
       
-      // Extract text and clean thoroughly
-      const textContent = contractContent
-        .replace(/<[^>]*>/g, ' ')  // Remove ALL HTML tags
-        .replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g, '')  // Remove emojis
-        .replace(/[^\x00-\x7F]/g, '')  // Remove non-ASCII characters
-        .replace(/[\u2018\u2019]/g, "'")  // Replace smart quotes
-        .replace(/[\u201C\u201D]/g, '"')  // Replace smart double quotes
-        .replace(/\s+/g, ' ')      // Normalize ALL whitespace
+      // Convert HTML to text while preserving some structure
+      const textContent = cleanContent
+        .replace(/<br\s*\/?>/gi, '\n')  // Convert breaks to newlines
+        .replace(/<\/p>/gi, '\n\n')    // Convert paragraph ends to double newlines  
+        .replace(/<\/h[1-6]>/gi, '\n\n') // Convert header ends to double newlines
+        .replace(/<[^>]*>/g, ' ')       // Remove remaining HTML tags
+        .replace(/\s*\n\s*/g, '\n')     // Clean up newlines
+        .replace(/\n{3,}/g, '\n\n')     // Limit consecutive newlines
+        .replace(/\s+/g, ' ')           // Normalize spaces
         .trim();
       
       // Split text into lines that fit on page

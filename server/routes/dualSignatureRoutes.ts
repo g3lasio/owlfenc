@@ -946,17 +946,17 @@ router.post('/generate-pdf-from-html', async (req, res) => {
     const { ReplitPdfService } = await import('../services/replitPdfService');
     
     try {
-      // Use ReplitPdfService (Chrome-free) for PDF generation from HTML
-      const replitPdfService = new ReplitPdfService();
-      console.log('📄 [CRITICAL-FIX] Using ReplitPdfService to generate PDF from signed HTML');
+      // Use format-preserving PDF generation to maintain original contract structure
+      console.log('📄 [FORMAT-PRESERVING] Using format-preserving PDF generation to maintain exact HTML structure');
       
-      const pdfBuffer = await replitPdfService.generatePdfFromHtml(htmlContent, {
-        title: `Signed Contract - ${clientName}`,
-        contractId,
-        watermark: false // Signed contracts should not have watermarks
+      const { createPdfFromFormattedHtml } = await import('../utils/htmlPreservingPdfGenerator');
+      
+      const pdfBuffer = await createPdfFromFormattedHtml(htmlContent, {
+        title: `SIGNED CONTRACT - ${clientName.toUpperCase()}`,
+        contractId
       });
       
-      console.log('✅ [CRITICAL-FIX] PDF generated successfully from signed HTML content');
+      console.log('✅ [FORMAT-PRESERVING] PDF generated successfully preserving original contract structure');
       
       // Return PDF as blob
       res.setHeader('Content-Type', 'application/pdf');
