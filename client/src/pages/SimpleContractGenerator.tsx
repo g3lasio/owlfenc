@@ -3215,29 +3215,108 @@ export default function SimpleContractGenerator() {
               </CardHeader>
               <CardContent>
                 <Tabs value={historyTab} onValueChange={(value: any) => setHistoryTab(value)}>
-                  <TabsList className="grid w-full grid-cols-3 bg-gray-800 border-gray-700">
-                    <TabsTrigger 
-                      value="drafts" 
-                      className="data-[state=active]:bg-cyan-600 data-[state=active]:text-black"
-                    >
-                      <Clock className="h-4 w-4 mr-2" />
-                      Drafts ({contractHistory.filter(c => c.status !== 'completed').length})
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="in-progress" 
-                      className="data-[state=active]:bg-yellow-600 data-[state=active]:text-black"
-                    >
-                      <FileCheck className="h-4 w-4 mr-2" />
-                      In Progress ({inProgressContracts.length})
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="completed" 
-                      className="data-[state=active]:bg-green-600 data-[state=active]:text-black"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Completed ({completedContracts.filter(c => c.isCompleted).length})
-                    </TabsTrigger>
-                  </TabsList>
+                  {/* Mobile-First Responsive Tab Layout */}
+                  <div className="w-full">
+                    {/* Mobile: Vertical Stacked Buttons */}
+                    <div className="block sm:hidden space-y-2 mb-4">
+                      <button
+                        onClick={() => setHistoryTab("drafts")}
+                        className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
+                          historyTab === "drafts" 
+                            ? "bg-cyan-600 text-black border-cyan-400" 
+                            : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700"
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          <Clock className="h-4 w-4 mr-2" />
+                          <span className="font-medium">Drafts</span>
+                        </div>
+                        <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+                          historyTab === "drafts" ? "bg-black/20 text-black" : "bg-cyan-600 text-white"
+                        }`}>
+                          {contractHistory.filter(c => c.status !== 'completed').length}
+                        </div>
+                      </button>
+                      
+                      <button
+                        onClick={() => setHistoryTab("in-progress")}
+                        className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
+                          historyTab === "in-progress" 
+                            ? "bg-yellow-600 text-black border-yellow-400" 
+                            : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700"
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          <FileCheck className="h-4 w-4 mr-2" />
+                          <span className="font-medium">In Progress</span>
+                        </div>
+                        <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+                          historyTab === "in-progress" ? "bg-black/20 text-black" : "bg-yellow-600 text-white"
+                        }`}>
+                          {inProgressContracts.length}
+                        </div>
+                      </button>
+                      
+                      <button
+                        onClick={() => setHistoryTab("completed")}
+                        className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
+                          historyTab === "completed" 
+                            ? "bg-green-600 text-black border-green-400" 
+                            : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700"
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          <span className="font-medium">Completed</span>
+                        </div>
+                        <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+                          historyTab === "completed" ? "bg-black/20 text-black" : "bg-green-600 text-white"
+                        }`}>
+                          {completedContracts.filter(c => c.isCompleted).length}
+                        </div>
+                      </button>
+                    </div>
+
+                    {/* Desktop: Traditional Tab Layout */}
+                    <TabsList className="hidden sm:grid w-full grid-cols-3 bg-gray-800 border-gray-700 h-auto">
+                      <TabsTrigger 
+                        value="drafts" 
+                        className="data-[state=active]:bg-cyan-600 data-[state=active]:text-black flex-col py-3 px-2"
+                      >
+                        <div className="flex items-center mb-1">
+                          <Clock className="h-4 w-4 mr-1" />
+                          <span className="text-sm font-medium">Drafts</span>
+                        </div>
+                        <div className="text-xs opacity-75">
+                          ({contractHistory.filter(c => c.status !== 'completed').length})
+                        </div>
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="in-progress" 
+                        className="data-[state=active]:bg-yellow-600 data-[state=active]:text-black flex-col py-3 px-2"
+                      >
+                        <div className="flex items-center mb-1">
+                          <FileCheck className="h-4 w-4 mr-1" />
+                          <span className="text-sm font-medium">Progress</span>
+                        </div>
+                        <div className="text-xs opacity-75">
+                          ({inProgressContracts.length})
+                        </div>
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="completed" 
+                        className="data-[state=active]:bg-green-600 data-[state=active]:text-black flex-col py-3 px-2"
+                      >
+                        <div className="flex items-center mb-1">
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          <span className="text-sm font-medium">Completed</span>
+                        </div>
+                        <div className="text-xs opacity-75">
+                          ({completedContracts.filter(c => c.isCompleted).length})
+                        </div>
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
 
                   {/* Drafts Tab */}
                   <TabsContent value="drafts" className="space-y-4 mt-6">
@@ -3300,15 +3379,16 @@ export default function SimpleContractGenerator() {
                               )}
                             </div>
 
-                            {/* Actions */}
+                            {/* Actions - Mobile Responsive */}
                             <div className="bg-cyan-900/30 border border-cyan-700 rounded-lg p-3">
-                              <h4 className="text-cyan-400 font-semibold text-sm mb-2">Draft Actions:</h4>
-                              <div className="flex gap-2">
+                              <h4 className="text-cyan-400 font-semibold text-sm mb-3">Draft Actions:</h4>
+                              {/* Mobile: Stacked Buttons */}
+                              <div className="flex flex-col sm:flex-row gap-2">
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => loadContractFromHistory(contract)}
-                                  className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs"
+                                  className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs w-full sm:w-auto"
                                 >
                                   <Edit2 className="h-3 w-3 mr-1" />
                                   Resume Editing
@@ -3317,7 +3397,7 @@ export default function SimpleContractGenerator() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => loadContractFromHistory(contract)}
-                                  className="border-gray-400 text-gray-400 hover:bg-gray-400 hover:text-black text-xs"
+                                  className="border-gray-400 text-gray-400 hover:bg-gray-400 hover:text-black text-xs w-full sm:w-auto"
                                 >
                                   <Eye className="h-3 w-3 mr-1" />
                                   View Details
@@ -3405,9 +3485,10 @@ export default function SimpleContractGenerator() {
                             {/* Direct Signature Links */}
                             <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-3">
                               <h4 className="text-blue-400 font-semibold text-sm mb-2">Direct Signature Links:</h4>
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-gray-300 text-sm">Contractor Link:</span>
+                              {/* Mobile-Responsive Signature Links */}
+                              <div className="space-y-3">
+                                <div className="space-y-2">
+                                  <span className="text-gray-300 text-sm block">Contractor Link:</span>
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -3422,14 +3503,14 @@ export default function SimpleContractGenerator() {
                                         });
                                       }
                                     }}
-                                    className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs"
+                                    className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs w-full"
                                   >
                                     <ExternalLink className="h-3 w-3 mr-1" />
                                     Open Contractor Link
                                   </Button>
                                 </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-gray-300 text-sm">Client Link:</span>
+                                <div className="space-y-2">
+                                  <span className="text-gray-300 text-sm block">Client Link:</span>
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -3444,7 +3525,7 @@ export default function SimpleContractGenerator() {
                                         });
                                       }
                                     }}
-                                    className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs"
+                                    className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs w-full"
                                   >
                                     <ExternalLink className="h-3 w-3 mr-1" />
                                     Open Client Link
@@ -3525,14 +3606,15 @@ export default function SimpleContractGenerator() {
                                   </Badge>
                                 </div>
                                 
-                                <div className="flex gap-2 flex-wrap">
+                                {/* Mobile-Responsive Action Buttons */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                   {contract.hasPdf ? (
                                     <>
                                       <Button
                                         size="sm"
                                         variant="outline"
                                         onClick={() => viewContract(contract.contractId, contract.clientName)}
-                                        className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black text-xs"
+                                        className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black text-xs w-full"
                                       >
                                         <Eye className="h-3 w-3 mr-1" />
                                         View PDF
@@ -3541,19 +3623,19 @@ export default function SimpleContractGenerator() {
                                         size="sm"
                                         variant="outline"
                                         onClick={() => downloadSignedPdf(contract.contractId, contract.clientName)}
-                                        className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs"
+                                        className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs w-full"
                                       >
                                         <Download className="h-3 w-3 mr-1" />
-                                        Download PDF
+                                        Download
                                       </Button>
                                       <Button
                                         size="sm"
                                         variant="outline"
                                         onClick={() => shareContract(contract.contractId, contract.clientName)}
-                                        className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs"
+                                        className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs w-full"
                                       >
                                         <Share2 className="h-3 w-3 mr-1" />
-                                        Share PDF
+                                        Share
                                       </Button>
                                     </>
                                   ) : (
@@ -3562,44 +3644,43 @@ export default function SimpleContractGenerator() {
                                         size="sm"
                                         variant="outline"
                                         onClick={() => generateContractPdf(contract.contractId, contract.clientName)}
-                                        className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-black text-xs"
+                                        className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-black text-xs w-full"
                                       >
                                         <FileText className="h-3 w-3 mr-1" />
-                                        Generate PDF
+                                        Generate
                                       </Button>
                                       <Button
                                         size="sm"
                                         variant="outline"
                                         onClick={() => viewContractHtml(contract.contractId, contract.clientName)}
-                                        className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black text-xs"
+                                        className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black text-xs w-full"
                                       >
                                         <Eye className="h-3 w-3 mr-1" />
                                         View HTML
                                       </Button>
-
                                       <Button
                                         size="sm"
                                         variant="outline"
                                         onClick={() => shareContract(contract.contractId, contract.clientName)}
-                                        className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs"
+                                        className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs w-full"
                                       >
                                         <Share2 className="h-3 w-3 mr-1" />
-                                        Share Contract
+                                        Share
                                       </Button>
                                     </>
                                   )}
                                 </div>
                               </div>
                               
-                              {/* Contract Details */}
+                              {/* Contract Details - Mobile Responsive */}
                               <div className="bg-gray-700 rounded-lg p-3">
-                                <div className="grid grid-cols-2 gap-3 text-xs">
-                                  <div>
-                                    <span className="text-gray-400">Contract ID:</span>
-                                    <p className="text-gray-200 font-mono">{contract.contractId}</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                  <div className="space-y-1">
+                                    <span className="text-gray-400 block">Contract ID:</span>
+                                    <p className="text-gray-200 font-mono text-xs break-all">{contract.contractId}</p>
                                   </div>
-                                  <div>
-                                    <span className="text-gray-400">Completion Date:</span>
+                                  <div className="space-y-1">
+                                    <span className="text-gray-400 block">Completion Date:</span>
                                     <p className="text-gray-200">
                                       {contract.completionDate ? new Date(contract.completionDate).toLocaleDateString() : 'N/A'}
                                     </p>
