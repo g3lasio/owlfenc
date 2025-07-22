@@ -2065,7 +2065,7 @@ export default function CyberpunkLegalDefense() {
       cancelNotice: true, // Always mandatory
       licenseDisclaimer,
       preliminaryNotice:
-        "As required by the Mechanics Lien Law of the state of California, you are hereby notified that a Preliminary Notice may be served upon you. Even though you have paid your contractor in full, if the contractor fails to pay subcontractors or material suppliers or becomes unable to meet these obligations during the course of construction of your project, the subcontractors or material suppliers may look to your property for satisfaction of the obligations owed to them by filing liens against your property.",
+        "As required by the Mechanics Lien Law of the applicable state jurisdiction, you are hereby notified that a Preliminary Notice may be served upon you. Even though you have paid your contractor in full, if the contractor fails to pay subcontractors or material suppliers or becomes unable to meet these obligations during the course of construction of your project, the subcontractors or material suppliers may look to your property for satisfaction of the obligations owed to them by filing liens against your property.",
       cancellationNotice:
         "You, the buyer, have the right to cancel this contract within three business days. You may cancel by e-mailing, mailing, faxing or delivering a written notice to the contractor at the contractor's place of business by midnight of the third business day after you received a signed copy of the contract that includes this notice. Include your name, your address, and the date you received the signed copy of the contract and this notice.",
     };

@@ -279,7 +279,7 @@ export class ProfessionalContractGenerator {
         <div class="section-title">GOVERNING LAW</div>
         <div class="clause">
             <span class="clause-number">35.</span>
-            This Agreement will be governed by and construed in accordance with the laws of the State of California.
+            This Agreement will be governed by and construed in accordance with the laws determined by the project jurisdiction.
         </div>
     </div>
 

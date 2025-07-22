@@ -802,7 +802,7 @@ class PremiumPdfService {
             <div class="numbered-section">
                 <p><span class="section-number">${data.protectionClauses ? data.protectionClauses.length + 13 : 13}. GOVERNING LAW AND JURISDICTION</span></p>
                 <p class="legal-text">
-                    This Agreement shall be governed by and construed in accordance with the laws of the State of California, without regard to its conflict of laws principles. The parties hereby consent to the exclusive jurisdiction of the state and federal courts located in the county where the work is performed for the resolution of any disputes arising under this Agreement. This Agreement shall be binding upon and inure to the benefit of the parties' respective heirs, successors, and assigns.
+                    This Agreement shall be governed by and construed in accordance with the ${data.jurisdiction?.governingLaw || 'laws of the State of California'}, without regard to its conflict of laws principles. The parties hereby consent to the exclusive jurisdiction of the state and federal courts located in the county where the work is performed for the resolution of any disputes arising under this Agreement. This Agreement shall be binding upon and inure to the benefit of the parties' respective heirs, successors, and assigns.
                 </p>
             </div>
 

@@ -38,6 +38,7 @@ import {
 } from "./services/estimatorService";
 import { promptGeneratorService } from "./services/promptGeneratorService";
 import { projectPaymentService } from "./services/projectPaymentService";
+import { determineJurisdiction } from "./utils/jurisdictionDetector";
 import { registerPromptTemplateRoutes } from "./routes/prompt-templates";
 import { registerEstimateRoutes } from "./routes/estimate-routes";
 import { registerPropertyRoutes } from "./routes/property-routes";
@@ -1072,6 +1073,13 @@ ${extractedText}`,
       // Procesar cláusulas inteligentes seleccionadas
       const selectedClauses = extractedData?.selectedIntelligentClauses || [];
 
+      // Determinar jurisdicción basada en direcciones del proyecto y contratista
+      const jurisdiction = determineJurisdiction(
+        extractedData?.projectDetails?.location || clientAddress,
+        contractorAddress
+      );
+
+      console.log(`🏛️ [JURISDICTION] Contrato será generado para: ${jurisdiction.name} (${jurisdiction.code})`);
       console.log(
         "Generando contrato con cláusulas seleccionadas:",
         selectedClauses.length,
@@ -1215,8 +1223,8 @@ ${extractedText}`,
 
       <div class="section">
         <h2>TÉRMINOS Y CONDICIONES GENERALES</h2>
-        <p>Este contrato protege a ambas partes asegurando la finalización profesional del proyecto. Todo el trabajo se completará de acuerdo con los estándares de construcción de California y códigos de construcción locales.</p>
-        <p>Las modificaciones a este contrato deben ser por escrito y firmadas por ambas partes. Este contrato se rige por las leyes del Estado de California.</p>
+        <p>Este contrato protege a ambas partes asegurando la finalización profesional del proyecto. Todo el trabajo se completará de acuerdo con los ${jurisdiction.constructionStandards} y códigos de construcción locales.</p>
+        <p>Las modificaciones a este contrato deben ser por escrito y firmadas por ambas partes. Este contrato se rige por las ${jurisdiction.governingLaw}.</p>
       </div>
 
       <div class="footer">

@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import pdf from 'pdf-parse';
 import sharp from 'sharp';
+import { determineJurisdiction } from '../utils/jurisdictionDetector';
 
 const router = express.Router();
 
@@ -417,6 +418,14 @@ router.post('/generate-defensive-contract', async (req, res) => {
       });
     }
 
+    // Determine jurisdiction based on project and contractor addresses
+    const jurisdiction = determineJurisdiction(
+      extractedData.projectDetails?.location || extractedData.clientInfo?.address,
+      extractedData.contractorAddress
+    );
+
+    console.log(`🏛️ [JURISDICTION] Contract will be generated for: ${jurisdiction.name} (${jurisdiction.code})`);
+
     // Generate comprehensive contract HTML using the extracted data
     const contractHtml = `
     <!DOCTYPE html>
@@ -440,7 +449,7 @@ router.post('/generate-defensive-contract', async (req, res) => {
     </head>
     <body>
       <div class="header">
-        <h1>California Construction Contract</h1>
+        <h1>${jurisdiction?.contractTitle || 'California Construction Contract'}</h1>
         <h2>Legal Defense Edition</h2>
       </div>
 
@@ -460,7 +469,7 @@ router.post('/generate-defensive-contract', async (req, res) => {
 
       <div class="section">
         <div class="section-header">II. Recital</div>
-        <p>WHEREAS, Contractor is a licensed construction professional authorized to perform construction services in the State of California; and</p>
+        <p>WHEREAS, Contractor is a ${jurisdiction?.licenseRequirement || 'licensed construction professional authorized to perform construction services in the State of California'}; and</p>
         <p>WHEREAS, Client desires to engage Contractor for construction services as described herein; and</p>
         <p>WHEREAS, both parties wish to establish clear terms that protect their respective interests;</p>
         <p>NOW, THEREFORE, in consideration of the mutual covenants contained herein, the parties agree as follows:</p>
