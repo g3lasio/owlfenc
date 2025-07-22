@@ -1,0 +1,485 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signed Contract - Manolo E Constantino</title>
+  <style>
+    body {
+      font-family: 'Times New Roman', serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+      background: white;
+      color: black;
+    }
+    .header {
+      text-align: center;
+      border-bottom: 2px solid #333;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    .signatures {
+      margin-top: 40px;
+      padding: 20px;
+      border: 2px solid #333;
+      background: #f9f9f9;
+      page-break-inside: avoid;
+    }
+    .signature-section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 8px;
+    }
+    .signature-preview {
+      max-width: 300px;
+      height: 80px;
+      border: 2px solid #4a90e2;
+      margin: 10px 0;
+      background: #f8f9fa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+    }
+    .signature-preview img {
+      max-width: 280px;
+      max-height: 70px;
+      object-fit: contain;
+    }
+    .contract-id {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      font-size: 10px;
+      color: #666;
+      background: rgba(255,255,255,0.8);
+      padding: 5px;
+      border-radius: 3px;
+    }
+    .verification-section {
+      margin-top: 30px;
+      padding: 20px;
+      background: linear-gradient(135deg, #e8f4f8 0%, #d1e7dd 100%);
+      border: 2px solid #4a90e2;
+      border-radius: 10px;
+    }
+    .signature-info {
+      display: grid;
+      gap: 8px;
+      margin: 10px 0;
+    }
+    @media print {
+      body { margin: 0; padding: 15px; }
+      .contract-id { position: absolute; }
+    }
+  </style>
+</head>
+<body>
+  
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Independent Contractor Agreement</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1in 1in 1in 1in;
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: 'Times New Roman', serif;
+                font-size: 10pt;
+                color: #666;
+            }
+        }
+        
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 12pt;
+            line-height: 1.5;
+            color: #000;
+            background: white;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            max-width: 100%;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
+        }
+        
+        .header h1 {
+            font-size: 18pt;
+            font-weight: bold;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .date-section {
+            text-align: right;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        
+        .parties-section {
+            margin: 30px 0;
+        }
+        
+        .party-info {
+            display: table;
+            width: 100%;
+            margin: 20px 0;
+            border-collapse: separate;
+            border-spacing: 20px 0;
+        }
+        
+        .party-box {
+            display: table-cell;
+            width: 45%;
+            border: 2px solid #000;
+            padding: 20px;
+            vertical-align: top;
+        }
+        
+        .party-title {
+            font-weight: bold;
+            font-size: 14pt;
+            text-align: center;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+        }
+        
+        .party-details {
+            line-height: 1.8;
+        }
+        
+        .content-section {
+            margin: 25px 0;
+        }
+        
+        .section-title {
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 25px 0 15px 0;
+            text-transform: uppercase;
+            text-align: center;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+        }
+        
+        .legal-text {
+            text-align: justify;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        
+        .numbered-section {
+            margin-bottom: 25px;
+        }
+        
+        .section-number {
+            font-weight: bold;
+            text-decoration: underline;
+            font-size: 13pt;
+        }
+        
+        .page-break {
+            page-break-before: always;
+            margin-top: 30px;
+        }
+        
+        .signature-section {
+            margin-top: 60px;
+            page-break-inside: avoid;
+        }
+        
+        .signature-container {
+            display: table;
+            width: 100%;
+            margin: 40px 0;
+            border-collapse: separate;
+            border-spacing: 30px 0;
+        }
+        
+        .signature-box {
+            display: table-cell;
+            width: 45%;
+            border: 2px solid #000;
+            padding: 30px 20px;
+            vertical-align: top;
+            text-align: center;
+        }
+        
+        .signature-title {
+            font-weight: bold;
+            font-size: 14pt;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+        }
+        
+        .signature-line {
+            border-bottom: 2px solid #000;
+            height: 50px;
+            margin: 25px 0;
+        }
+        
+        .date-line {
+            border-bottom: 1px solid #000;
+            display: inline-block;
+            width: 150px;
+            height: 20px;
+        }
+        
+        .footer-discrete {
+            text-align: center;
+            font-size: 8pt;
+            color: #999;
+            margin-top: 60px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Independent Contractor Agreement</h1>
+        </div>
+        
+        <div class="date-section">
+            <strong>Agreement Date:</strong> July 21, 2025
+        </div>
+
+        <div class="parties-section">
+            <div class="party-info">
+                <div class="party-box">
+                    <div class="party-title">Contractor</div>
+                    <div class="party-details">
+                        <p><strong>Business Name:</strong> OWL FENC </p>
+                        <p><strong>Business Address:</strong><br>2901 Owens Court, Fairfield, California 94534</p>
+                        <p><strong>Telephone:</strong> 202 549 3519</p>
+                        <p><strong>Email:</strong> owl@chyrris.com</p>
+                    </div>
+                </div>
+                <div class="party-box">
+                    <div class="party-title">Client</div>
+                    <div class="party-details">
+                        <p><strong>Full Name/Company:</strong> Manolo E Constantino</p>
+                        <p><strong>Property Address:</strong><br>2000 Mokelumne Drive, Antioch, California 94531, Estados Unidos</p>
+                        <p><strong>Telephone:</strong> 415 378 7585</p>
+                        <p><strong>Email:</strong> me_constantino@hotmail.com</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <div class="section-title">WHEREAS CLAUSES</div>
+            <p class="legal-text">
+                <strong>WHEREAS,</strong> the Client desires to engage the services of an independent contractor to perform specialized construction work at the above-referenced property; and
+            </p>
+            <p class="legal-text">
+                <strong>WHEREAS,</strong> the Contractor represents that it possesses the requisite skill, experience, expertise, and all necessary licenses to perform the specified work in accordance with industry standards and applicable regulations; and
+            </p>
+            <p class="legal-text">
+                <strong>WHEREAS,</strong> both parties desire to establish clear terms and conditions governing their professional relationship and to define their respective rights, duties, and obligations;
+            </p>
+            <p class="legal-text">
+                <strong>NOW, THEREFORE,</strong> in consideration of the mutual covenants, agreements, and undertakings contained herein, and for other good and valuable consideration, the receipt and sufficiency of which are hereby acknowledged, the parties agree as follows:
+            </p>
+        </div>
+
+        <div class="content-section">
+            <div class="numbered-section">
+                <p><span class="section-number">1. SCOPE OF WORK AND SPECIFICATIONS</span></p>
+                <p class="legal-text">
+                    The Contractor hereby agrees to furnish all labor, materials, equipment, and services necessary to complete the following work: construction project for Manolo E Constantino. Said work shall be performed at the following location: undefined. All work shall be executed in a professional, workmanlike manner in strict accordance with industry best practices, applicable building codes, municipal regulations, and manufacturer specifications. The Contractor warrants that all work will meet or exceed industry standards for quality and durability.
+                </p>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">2. CONTRACT PRICE AND PAYMENT TERMS</span></p>
+                <p class="legal-text">
+                    The total contract price for all work, materials, and services described herein shall be <strong>$8,674.06 USD</strong>. Payment shall be made according to the following schedule: (a) Fifty percent (50%) of the total contract price is due and payable upon execution of this Agreement as a down payment, and (b) The remaining fifty percent (50%) balance is due and payable immediately upon substantial completion and Client's acceptance of the work. All payments shall be made in United States currency. Late payments shall accrue interest at the rate of one and one-half percent (1.5%) per month or the maximum rate permitted by law, whichever is less.
+                </p>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">3. COMMENCEMENT AND COMPLETION</span></p>
+                <p class="legal-text">
+                    <strong>Project Start Date:</strong> Work shall commence on or about July 28, 2025, subject to receipt of initial payment and favorable weather conditions. Time is of the essence in this Agreement. The Contractor shall proceed with due diligence and in a timely manner to achieve substantial completion. The Contractor shall provide the Client with reasonable advance notice of any circumstances that may delay completion, including but not limited to adverse weather conditions, permit delays, or unforeseen site conditions. Extensions of time may be granted only through written agreement of both parties.
+                </p>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">4. INDEPENDENT CONTRACTOR STATUS</span></p>
+                <p class="legal-text">
+                    The Contractor is and shall remain an independent contractor in the performance of all work under this Agreement. Nothing contained herein shall be construed to create an employer-employee, partnership, joint venture, or agency relationship between the parties. The Contractor shall be solely responsible for all federal, state, and local taxes, withholdings, unemployment insurance, workers' compensation, and other statutory obligations. The Contractor retains the exclusive right to control the manner, method, and means of performing the contracted services, subject to achieving the specified results.
+                </p>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">5. MATERIALS, EQUIPMENT, AND WORKMANSHIP</span></p>
+                <p class="legal-text">
+                    Unless expressly specified otherwise in writing, the Contractor shall furnish and pay for all materials, equipment, tools, transportation, and incidental services necessary for the completion of the work. All materials shall be new, of first quality, and shall conform to applicable industry standards and manufacturer specifications. All equipment used shall be properly maintained and in safe working condition. The Contractor warrants that all work will be free from defects in materials and workmanship for a period of one (1) year from the date of completion.
+                </p>
+            </div>
+
+        <div class="page-break"></div>
+            
+            <div class="numbered-section">
+                <p><span class="section-number">6. INSURANCE AND LIABILITY</span></p>
+                <p class="legal-text">
+                    The Contractor shall maintain, at its own expense, comprehensive general liability insurance with minimum coverage limits of One Million Dollars ($1,000,000) per occurrence and Two Million Dollars ($2,000,000) aggregate, naming the Client as an additional insured. The Contractor shall also maintain workers' compensation insurance as required by law. Evidence of such insurance coverage shall be provided to the Client upon request. Each party agrees to indemnify, defend, and hold harmless the other party from and against any and all claims, damages, losses, costs, and expenses (including reasonable attorney fees) arising from or relating to their own negligent acts, errors, or omissions in connection with this Agreement.
+                </p>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">7. CHANGE ORDERS AND MODIFICATIONS</span></p>
+                <p class="legal-text">
+                    No changes, modifications, or alterations to the scope of work, specifications, or contract terms shall be valid or binding unless executed in writing and signed by both parties. Any approved change order shall specify the nature of the change, adjustment to the contract price (if any), and any modification to the completion schedule. The Contractor shall not proceed with any additional work without a signed written change order. Verbal agreements or understandings shall not be enforceable.
+                </p>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">8. PERMITS, LICENSES, AND CODE COMPLIANCE</span></p>
+                <p class="legal-text">
+                    The Contractor shall obtain and pay for all permits, licenses, and approvals required by federal, state, and local authorities for the performance of the work, unless specifically agreed otherwise in writing. All work shall be performed in strict compliance with applicable building codes, zoning ordinances, environmental regulations, safety requirements, and industry standards. The Contractor shall schedule and coordinate all required inspections. Upon completion, all permits shall be properly closed out and documentation provided to the Client.
+                </p>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">9. WARRANTY AND REMEDIES</span></p>
+                <p class="legal-text">
+                    <strong>Workmanship Warranty:</strong> The Contractor hereby warrants all work performed under this Agreement against defects in workmanship for a period of 2 years from the date of substantial completion. <strong>Materials Warranty:</strong> Manufacturer warranty. This warranty does not cover damage resulting from normal wear and tear, abuse, neglect, accident, or failure to properly maintain the work. Upon written notice of any warranty defect, the Contractor shall, at its option, repair or replace the defective work at no cost to the Client within thirty (30) days. These warranties are in addition to any manufacturer warranties that may apply to materials or equipment.
+                </p>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">10. DEFAULT AND TERMINATION</span></p>
+                <p class="legal-text">
+                    Either party may terminate this Agreement upon the material breach of the other party, provided that the breaching party is given written notice of the breach and fails to cure such breach within ten (10) days after receipt of notice. In the event of termination, the Contractor shall be entitled to payment for all work satisfactorily completed prior to termination, less any damages sustained by the Client as a result of Contractor's breach. The Client may also terminate this Agreement for convenience upon thirty (30) days written notice, in which case the Contractor shall be compensated for all work completed and materials ordered prior to termination.
+                </p>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">11. DISPUTE RESOLUTION</span></p>
+                <p class="legal-text">
+                    Any disputes arising under this Agreement shall first be addressed through good faith negotiations between the parties. If such negotiations fail to resolve the dispute within thirty (30) days, the matter shall be submitted to binding arbitration administered by the American Arbitration Association under its Construction Industry Arbitration Rules. The arbitration shall be conducted in the county where the work is performed. The prevailing party in any arbitration or legal proceeding shall be entitled to recover reasonable attorney fees and costs from the non-prevailing party.
+                </p>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">12. SAFETY AND COMPLIANCE</span></p>
+                <p class="legal-text">
+                    The Contractor shall maintain a safe work environment and comply with all applicable Occupational Safety and Health Administration (OSHA) regulations and industry safety standards. The Contractor shall be solely responsible for the safety of its employees, subcontractors, and work site. All personnel shall use appropriate personal protective equipment and follow established safety protocols. The Contractor shall immediately report any workplace accidents or injuries to the Client and appropriate authorities.
+                </p>
+            </div>
+        </div>
+
+        
+
+        <div class="page-break"></div>
+
+        <div class="content-section">
+            <div class="section-title">GENERAL PROVISIONS</div>
+            
+            <div class="numbered-section">
+                <p><span class="section-number">13. GOVERNING LAW AND JURISDICTION</span></p>
+                <p class="legal-text">
+                    This Agreement shall be governed by and construed in accordance with the laws of the State of California, without regard to its conflict of laws principles. The parties hereby consent to the exclusive jurisdiction of the state and federal courts located in the county where the work is performed for the resolution of any disputes arising under this Agreement. This Agreement shall be binding upon and inure to the benefit of the parties' respective heirs, successors, and assigns.
+                </p>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">14. ENTIRE AGREEMENT AND MODIFICATIONS</span></p>
+                <p class="legal-text">
+                    This Agreement constitutes the complete and exclusive statement of the agreement between the parties and supersedes all prior negotiations, representations, understandings, and agreements, whether written or oral, relating to the subject matter hereof. No amendment, modification, or waiver of any provision of this Agreement shall be effective unless set forth in a written document signed by both parties. No course of dealing or usage of trade shall be used to modify, interpret, supplement, or alter the terms of this Agreement.
+                </p>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">15. SEVERABILITY AND CONSTRUCTION</span></p>
+                <p class="legal-text">
+                    If any provision of this Agreement is held to be invalid, illegal, or unenforceable by a court of competent jurisdiction, the remaining provisions shall continue in full force and effect. Any invalid provision shall be replaced by a valid provision that most closely approximates the intent and economic effect of the invalid provision. The headings used in this Agreement are for convenience only and shall not affect the interpretation of any provision. This Agreement has been negotiated by the parties and shall not be construed against either party as the drafter.
+                </p>
+            </div>
+
+            <div class="numbered-section">
+                <p><span class="section-number">16. NOTICES</span></p>
+                <p class="legal-text">
+                    All notices required or permitted under this Agreement shall be in writing and shall be deemed to have been duly given when personally delivered, or three (3) days after being sent by certified mail, return receipt requested, postage prepaid, to the addresses set forth above or to such other address as either party may designate by written notice to the other party.
+                </p>
+            </div>
+        </div>
+
+        <div class="signature-section">
+            <div class="section-title">EXECUTION</div>
+            <p class="legal-text" style="text-align: center; margin-bottom: 30px;">
+                <strong>IN WITNESS WHEREOF,</strong> the parties have executed this Independent Contractor Agreement as of the date first written above.
+            </p>
+            
+            <div class="signature-container">
+                <div class="signature-box">
+                    <div class="signature-title">CONTRACTOR</div>
+                    <div class="signature-line" style="display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
+          <img src="data:image/svg+xml;base64,CiAgICAgICAgICA8c3ZnIHdpZHRoPSIzMDAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgICAgICAgICAgIDx0ZXh0IHg9IjE1MCIgeT0iMzUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJCcnVzaCBTY3JpcHQgTVQsIGN1cnNpdmUiIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMwMDAwODAiPk9XTCBGRU5DIDwvdGV4dD4KICAgICAgICAgIDwvc3ZnPgogICAgICAgIA==" alt="Contractor Signature" style="max-height: 45px; max-width: 250px;" />
+        </div>
+                    <p><strong>OWL FENC </strong></p>
+                    <p>Print Name</p>
+                    <br>
+                    <p>Date: <span class="date-line" style="font-weight: bold;">7/21/2025</span></p>
+                </div>
+                <div class="signature-box">
+                    <div class="signature-title">CLIENT</div>
+                    <div class="signature-line" style="display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
+          <img src="data:image/png;base64,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QKy2MboCybopjuuggQed7xpYgupUXZ5gddoqJiI9LK19kofTcW+51t6wXk5Cnb8mBXV5QjyiQAAEQOCMINAoE5Zn59BXD1VPTBnuG+wqT/GtHKNkK71W5cGl1zJyydYqpAIBEACBxUegIQqEzj8qLbNydZigp6N8LTPHk+i8RaFWvDzq4HkFKqTmMmqtG/lAAARA4Ewl0BAT1kJghfcHxJW1EFNUXJkIBwEQAAEQyE6gISOQ7NVXptRX0LjKhI/QaDs9V9lwhIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIAACIDA4iPw/yEUthpZ0SnkAAAAAElFTkSuQmCC" alt="Client Signature" style="max-height: 45px; max-width: 250px;" />
+        </div>
+                    <p><strong>Manolo E Constantino</strong></p>
+                    <p>Print Name</p>
+                    <br>
+                    <p>Date: <span class="date-line">7/22/2025</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-discrete">
+            Powered by Mervin AI
+        </div>
+    </div>
+</body>
+</html>
+    
+  
+  <div class="verification-section">
+    <h4 style="color: #2c3e50; margin-bottom: 15px; text-align: center;">📋 Document Verification</h4>
+    <div style="display: grid; gap: 8px;">
+      <p><strong>Contract ID:</strong> CNT-mddfocat-8AF395D3</p>
+      <p><strong>Generated:</strong> 7/22/2025, 5:03:40 PM</p>
+      <p><strong>Status:</strong> <span style="color: #27ae60; font-weight: bold;">Fully Executed</span></p>
+      <p><strong>Digital Integrity:</strong> This document contains embedded digital signatures and is legally binding under electronic signature laws.</p>
+      <p><strong>Verification:</strong> Signatures are cryptographically secured and tamper-evident.</p>
+    </div>
+  </div>
+  
+  <div class="contract-id">
+    Contract ID: CNT-mddfocat-8AF395D3 | Generated: 2025-07-22T17:03:40.601Z
+  </div>
+</body>
+</html>
+    

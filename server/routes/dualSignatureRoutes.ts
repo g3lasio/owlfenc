@@ -946,17 +946,17 @@ router.post('/generate-pdf-from-html', async (req, res) => {
     const { ReplitPdfService } = await import('../services/replitPdfService');
     
     try {
-      // Use format-preserving PDF generation to maintain original contract structure
-      console.log('📄 [FORMAT-PRESERVING] Using format-preserving PDF generation to maintain exact HTML structure');
+      // Use EXACT layout preserving PDF generation to match HTML preview 100%
+      console.log('🎯 [EXACT-LAYOUT] Using EXACT layout preservation to match HTML preview 100%');
       
-      const { createPdfFromFormattedHtml } = await import('../utils/htmlPreservingPdfGenerator');
+      const { createPdfWithExactHtmlLayout } = await import('../utils/htmlLayoutPreservingPdf');
       
-      const pdfBuffer = await createPdfFromFormattedHtml(htmlContent, {
+      const pdfBuffer = await createPdfWithExactHtmlLayout(htmlContent, {
         title: `SIGNED CONTRACT - ${clientName.toUpperCase()}`,
         contractId
       });
       
-      console.log('✅ [FORMAT-PRESERVING] PDF generated successfully preserving original contract structure');
+      console.log('✅ [EXACT-LAYOUT] PDF generated with EXACT HTML layout structure preserved');
       
       // Return PDF as blob
       res.setHeader('Content-Type', 'application/pdf');
