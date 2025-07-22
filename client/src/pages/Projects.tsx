@@ -81,6 +81,7 @@ function Projects() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [dashboardTab, setDashboardTab] = useState("details");
+  const [uploadingFile, setUploadingFile] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -394,6 +395,141 @@ function Projects() {
         variant: "destructive",
         title: "Error",
         description: "No se pudo actualizar el progreso del proyecto.",
+      });
+    }
+  };
+
+  // Document management functions
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || !selectedProject) return;
+
+    setUploadingFile(true);
+
+    try {
+      const { uploadFile } = await import("@/lib/firebase");
+      const updatedDocuments = [...(selectedProject.documents || [])];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Upload to Firebase Storage
+        const downloadURL = await uploadFile(file, `projects/${selectedProject.id}/documents`);
+        
+        const document = {
+          id: fileId,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          uploadedAt: new Date().toISOString(),
+          downloadURL: downloadURL
+        };
+
+        updatedDocuments.push(document);
+      }
+
+      // Update project in Firebase
+      const { updateDoc, doc } = await import("firebase/firestore");
+      const { db } = await import("@/lib/firebase");
+      
+      const projectRef = doc(db, "estimates", selectedProject.id);
+      await updateDoc(projectRef, {
+        documents: updatedDocuments
+      });
+
+      setSelectedProject({ ...selectedProject, documents: updatedDocuments });
+
+      toast({
+        title: "Documents uploaded",
+        description: `${files.length} documento(s) subido(s) exitosamente.`,
+      });
+
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron subir los archivos.",
+      });
+    } finally {
+      setUploadingFile(false);
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+
+  const getFileIcon = (fileType: string) => {
+    if (fileType.includes('image')) return 'ri-image-line';
+    if (fileType.includes('video')) return 'ri-video-line';
+    if (fileType.includes('pdf')) return 'ri-file-pdf-line';
+    if (fileType.includes('word')) return 'ri-file-word-line';
+    if (fileType.includes('excel')) return 'ri-file-excel-line';
+    if (fileType.includes('powerpoint')) return 'ri-file-ppt-line';
+    if (fileType.includes('text')) return 'ri-file-text-line';
+    if (fileType.includes('audio')) return 'ri-music-line';
+    return 'ri-file-line';
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const handleDownloadDocument = (document: any) => {
+    try {
+      const link = document.createElement('a');
+      link.href = document.downloadURL;
+      link.download = document.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Document downloaded",
+        description: "El documento se ha descargado exitosamente.",
+      });
+    } catch (error) {
+      console.error("Error downloading document:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo descargar el documento.",
+      });
+    }
+  };
+
+  const handleDeleteDocument = async (documentId: string) => {
+    if (!selectedProject) return;
+
+    try {
+      const updatedDocuments = selectedProject.documents?.filter(doc => doc.id !== documentId) || [];
+
+      // Update project in Firebase
+      const { updateDoc, doc } = await import("firebase/firestore");
+      const { db } = await import("@/lib/firebase");
+      
+      const projectRef = doc(db, "estimates", selectedProject.id);
+      await updateDoc(projectRef, {
+        documents: updatedDocuments
+      });
+
+      setSelectedProject({ ...selectedProject, documents: updatedDocuments });
+
+      toast({
+        title: "Document deleted",
+        description: "El documento ha sido eliminado exitosamente.",
+      });
+
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo eliminar el documento.",
       });
     }
   };
@@ -1147,44 +1283,74 @@ function Projects() {
 
                       {dashboardTab === "documents" && (
                         <div className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="text-center p-4 bg-gray-700/20 rounded border border-cyan-400/20 hover:bg-gray-700/30 transition-all">
-                              <i className="ri-file-text-line text-2xl text-cyan-400 mb-2 block"></i>
-                              <p className="text-sm text-gray-300 mb-3">
-                                Estimate
-                              </p>
-                              <Button
-                                size="sm"
-                                className="w-full bg-cyan-500/20 text-cyan-300 border-cyan-400/30 hover:bg-cyan-500/30"
-                                onClick={() => handleEstimateAction(selectedProject)}
-                              >
-                                <i className="ri-download-line mr-1"></i>
-                                {selectedProject.estimateHtml
-                                  ? "Download PDF"
-                                  : "Generate PDF"}
-                              </Button>
-                            </div>
-                            <div className="text-center p-4 bg-gray-700/20 rounded border border-cyan-400/20 hover:bg-gray-700/30 transition-all">
-                              <i className="ri-file-shield-line text-2xl text-cyan-400 mb-2 block"></i>
-                              <p className="text-sm text-gray-300 mb-3">
-                                Contract
-                              </p>
-                              <Button
-                                size="sm"
-                                className="w-full bg-cyan-500/20 text-cyan-300 border-cyan-400/30 hover:bg-cyan-500/30"
-                                onClick={() => handleContractAction(selectedProject)}
-                              >
-                                <i className="ri-download-line mr-1"></i>
-                                {selectedProject.contractHtml
-                                  ? "Download PDF"
-                                  : "Generate PDF"}
-                              </Button>
-                            </div>
+                          <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-medium text-cyan-300">Project Documents</h3>
+                            <Button
+                              size="sm"
+                              className="bg-cyan-500/20 text-cyan-300 border-cyan-400/30 hover:bg-cyan-500/30"
+                              onClick={() => document.getElementById('fileUpload')?.click()}
+                            >
+                              <i className="ri-upload-line mr-1"></i>
+                              Upload File
+                            </Button>
+                            <input
+                              id="fileUpload"
+                              type="file"
+                              multiple
+                              accept="*/*"
+                              className="hidden"
+                              onChange={handleFileUpload}
+                            />
                           </div>
-                          <div className="mt-4 p-3 bg-gray-700/20 rounded border border-gray-600/20">
-                            <p className="text-xs text-gray-400 text-center">
-                              Click the buttons above to generate and download professional PDF documents using real project data.
-                            </p>
+
+                          {/* Documents List */}
+                          <div className="space-y-3">
+                            {selectedProject.documents && selectedProject.documents.length > 0 ? (
+                              selectedProject.documents.map((doc: any, index: number) => (
+                                <div key={index} className="flex items-center justify-between p-3 bg-gray-700/30 rounded border border-gray-600/20">
+                                  <div className="flex items-center space-x-3">
+                                    <i className={`text-xl ${getFileIcon(doc.type)} text-cyan-400`}></i>
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-200">{doc.name}</p>
+                                      <p className="text-xs text-gray-400">
+                                        {formatFileSize(doc.size)} • {formatDate(doc.uploadedAt)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex space-x-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="bg-gray-700/30 border-gray-600 text-gray-300 hover:bg-gray-600/30"
+                                      onClick={() => handleDownloadDocument(doc)}
+                                    >
+                                      <i className="ri-download-line text-xs"></i>
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="bg-red-500/20 border-red-400/30 text-red-300 hover:bg-red-500/30"
+                                      onClick={() => handleDeleteDocument(doc.id)}
+                                    >
+                                      <i className="ri-delete-bin-line text-xs"></i>
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-center py-8 border-2 border-dashed border-gray-600/30 rounded-lg">
+                                <i className="ri-folder-open-line text-4xl text-gray-400 mb-3 block"></i>
+                                <p className="text-gray-400 mb-4">No documents uploaded yet</p>
+                                <Button
+                                  size="sm"
+                                  className="bg-cyan-500/20 text-cyan-300 border-cyan-400/30 hover:bg-cyan-500/30"
+                                  onClick={() => document.getElementById('fileUpload')?.click()}
+                                >
+                                  <i className="ri-upload-cloud-line mr-2"></i>
+                                  Upload First Document
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
