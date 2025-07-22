@@ -1077,7 +1077,8 @@ export default function SimpleContractGenerator() {
         clientAddress: contractDataFromHistory.client?.address || "",
         startDate: contractDataFromHistory.formFields?.startDate || contractDataFromHistory.timeline?.startDate || "",
         completionDate: contractDataFromHistory.formFields?.completionDate || contractDataFromHistory.timeline?.completionDate || "",
-        permitResponsibility: contractDataFromHistory.formFields?.permitResponsibility || "contractor",
+        permitRequired: (contractDataFromHistory as any).permitInfo?.required ? "yes" : "no",
+        permitResponsibility: contractDataFromHistory.formFields?.permitResponsibility || (contractDataFromHistory as any).permitInfo?.responsibility || "contractor",
         warrantyYears: contractDataFromHistory.formFields?.warrantyYears || "1",
         paymentMilestones
       });
@@ -1510,14 +1511,13 @@ export default function SimpleContractGenerator() {
         clientAddress,
         startDate: "",
         completionDate: "",
+        permitRequired: "",
         permitResponsibility: "contractor",
         warrantyYears: "1",
         paymentMilestones: [
           { id: 1, description: "Initial deposit", percentage: 50, amount: getCorrectProjectTotal(project) * 0.5 },
           { id: 2, description: "Project completion", percentage: 50, amount: getCorrectProjectTotal(project) * 0.5 }
-        ],
-
-        customClauses: [] as any[]
+        ]
       });
       
       setCurrentStep(2);
@@ -1691,8 +1691,8 @@ export default function SimpleContractGenerator() {
           paymentMilestones: editableData.paymentMilestones,
         },
         permitInfo: {
-          required: true,
-          responsibility: editableData.permitResponsibility,
+          required: editableData.permitRequired === "yes",
+          responsibility: editableData.permitRequired === "yes" ? editableData.permitResponsibility : "",
           numbers: "",
         },
         warranty: {
@@ -1864,6 +1864,7 @@ export default function SimpleContractGenerator() {
       clientAddress: "",
       startDate: "",
       completionDate: "",
+      permitRequired: "",
       permitResponsibility: "contractor",
       warrantyYears: "1",
       paymentMilestones: [
