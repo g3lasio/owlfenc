@@ -399,7 +399,7 @@ function Projects() {
     }
   };
 
-  // Document management functions
+  // Document management functions - Using Base64 storage to avoid Firebase Storage permissions
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || !selectedProject) return;
@@ -407,15 +407,14 @@ function Projects() {
     setUploadingFile(true);
 
     try {
-      const { uploadFile } = await import("@/lib/firebase");
       const updatedDocuments = [...(selectedProject.documents || [])];
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const fileId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
-        // Upload to Firebase Storage
-        const downloadURL = await uploadFile(file, `projects/${selectedProject.id}/documents`);
+        // Convert file to Base64 to store in Firestore
+        const base64Data = await fileToBase64(file);
         
         const document = {
           id: fileId,
@@ -423,13 +422,13 @@ function Projects() {
           type: file.type,
           size: file.size,
           uploadedAt: new Date().toISOString(),
-          downloadURL: downloadURL
+          base64Data: base64Data
         };
 
         updatedDocuments.push(document);
       }
 
-      // Update project in Firebase
+      // Update project in Firebase Firestore
       const { updateDoc, doc } = await import("firebase/firestore");
       const { db } = await import("@/lib/firebase");
       
@@ -459,6 +458,16 @@ function Projects() {
     }
   };
 
+  // Helper function to convert file to Base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
   const getFileIcon = (fileType: string) => {
     if (fileType.includes('image')) return 'ri-image-line';
     if (fileType.includes('video')) return 'ri-video-line';
@@ -481,8 +490,9 @@ function Projects() {
 
   const handleDownloadDocument = (document: any) => {
     try {
+      // Create download link from Base64 data
       const link = document.createElement('a');
-      link.href = document.downloadURL;
+      link.href = document.base64Data || document.downloadURL; // Support both new and old format
       link.download = document.name;
       document.body.appendChild(link);
       link.click();
