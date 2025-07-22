@@ -13,13 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 
 import { Input } from "@/components/ui/input";
 import {
@@ -75,35 +69,13 @@ interface Project {
   clientPhone?: string;
 }
 
-const projectCategories = {
-  fences: {
-    name: "Cercas",
-    icon: "fence",
-    types: ["Madera", "Vinilo", "Metal", "Chain Link", "Compuesta"],
-  },
-  decks: {
-    name: "Terrazas",
-    icon: "building",
-    types: ["Madera", "Compuesta", "Vinilo", "Metal"],
-  },
-  roofing: {
-    name: "Techos",
-    icon: "home",
-    types: ["Asfalto", "Metal", "Teja", "Slate"],
-  },
-  general: {
-    name: "General",
-    icon: "tools",
-    types: ["Reparación", "Instalación", "Mantenimiento"],
-  },
-};
+
 
 function Projects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedProjectCategory, setSelectedProjectCategory] = useState("all");
-  const [selectedProjectType, setSelectedProjectType] = useState("all");
+
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -246,21 +218,7 @@ function Projects() {
       project.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       project.address.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesCategory =
-      selectedProjectCategory === "all" ||
-      project.projectCategory === selectedProjectCategory ||
-      (selectedProjectCategory === "fences" &&
-        project.projectType === "fence") ||
-      (selectedProjectCategory === "decks" && project.projectType === "deck") ||
-      (selectedProjectCategory === "roofing" &&
-        project.projectType === "roofing");
-
-    const matchesType =
-      selectedProjectType === "all" ||
-      project.projectSubtype === selectedProjectType ||
-      project.fenceType === selectedProjectType;
-
-    return matchesSearch && matchesCategory && matchesType;
+    return matchesSearch;
   });
 
   const getProjectCategoryInfo = (project: Project) => {
@@ -758,30 +716,7 @@ function Projects() {
                 className="w-full"
               />
             </div>
-            <div className="w-full md:w-64">
-              <Select
-                value={selectedProjectCategory}
-                onValueChange={(value) => {
-                  setSelectedProjectCategory(value);
-                  setSelectedProjectType("");
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Filtrar por categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas las categorías</SelectItem>
-                  {Object.entries(projectCategories).map(([key, category]) => (
-                    <SelectItem key={key} value={key}>
-                      <div className="flex items-center gap-2">
-                        <i className={`ri-${category.icon}-line`}></i>
-                        {category.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
           </div>
 
 
