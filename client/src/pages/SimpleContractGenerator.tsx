@@ -450,10 +450,10 @@ export default function SimpleContractGenerator() {
     }
   }, [toast]);
 
-  // Download signed PDF with authentication
+  // Download signed PDF with authentication - ALWAYS PDF generation from signed HTML
   const downloadSignedPdf = useCallback(async (contractId: string, clientName: string) => {
     try {
-      console.log("📥 Downloading signed contract for:", contractId);
+      console.log("📥 Downloading signed contract PDF for:", contractId);
       
       if (!currentUser) {
         toast({
@@ -464,46 +464,13 @@ export default function SimpleContractGenerator() {
         return;
       }
 
-      // First, try PDF download
-      try {
-        console.log("🔄 Attempting PDF download...");
-        const pdfResponse = await fetch(`/api/dual-signature/download-pdf/${contractId}`, {
-          headers: {
-            'x-user-id': currentUser.uid
-          }
-        });
-        
-        if (pdfResponse.ok) {
-          const blob = await pdfResponse.blob();
-          
-          // Verify we got an actual PDF (not an error JSON)
-          if (blob.size > 1000 && blob.type === 'application/pdf') {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = `contract_${clientName.replace(/\s+/g, '_')}_signed.pdf`;
-            
-            document.body.appendChild(a);
-            a.click();
-            
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            
-            console.log("✅ PDF downloaded successfully");
-            toast({
-              title: "PDF Download Complete",
-              description: `Signed contract for ${clientName} downloaded as PDF`,
-            });
-            return;
-          }
-        }
-      } catch (pdfError: any) {
-        console.warn("⚠️ PDF download failed, falling back to HTML:", pdfError.message);
-      }
+      toast({
+        title: "Generating PDF",
+        description: "Creating PDF from signed contract document...",
+        variant: "default"
+      });
 
-      // Fallback to HTML download with embedded signatures
-      console.log("🔄 Falling back to HTML download with embedded signatures...");
+      // CRITICAL FIX: Get the signed HTML content first (same as viewContractHtml)
       const htmlResponse = await fetch(`/api/dual-signature/download-html/${contractId}`, {
         headers: {
           'x-user-id': currentUser.uid
@@ -512,40 +479,59 @@ export default function SimpleContractGenerator() {
       
       if (!htmlResponse.ok) {
         const errorData = await htmlResponse.json();
-        throw new Error(errorData.message || 'Failed to download contract');
+        throw new Error(errorData.message || 'Failed to load signed contract');
       }
       
-      const htmlContent = await htmlResponse.text();
+      const signedHtmlContent = await htmlResponse.text();
       
-      // Create HTML blob for download
-      const blob = new Blob([htmlContent], { type: 'text/html' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `contract_${clientName.replace(/\s+/g, '_')}_signed.html`;
-      
-      document.body.appendChild(a);
-      a.click();
-      
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      console.log("✅ HTML contract downloaded successfully with embedded signatures");
-      toast({
-        title: "Contract Downloaded",
-        description: `Signed contract for ${clientName} downloaded as HTML (signatures included)`,
+      // Generate PDF from the EXACT signed HTML content
+      const pdfResponse = await fetch('/api/dual-signature/generate-pdf-from-html', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contractId,
+          htmlContent: signedHtmlContent,
+          clientName
+        })
       });
+
+      if (pdfResponse.ok) {
+        // Get the PDF blob and trigger download
+        const pdfBlob = await pdfResponse.blob();
+        
+        const url = window.URL.createObjectURL(pdfBlob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `contract_${clientName.replace(/\s+/g, '_')}_signed.pdf`;
+        
+        document.body.appendChild(a);
+        a.click();
+        
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        console.log("✅ PDF downloaded successfully from signed HTML content");
+        toast({
+          title: "PDF Downloaded",
+          description: `Signed contract for ${clientName} downloaded as PDF`,
+        });
+      } else {
+        const errorData = await pdfResponse.json();
+        throw new Error(errorData.message || 'Failed to generate PDF from signed contract');
+      }
       
     } catch (error: any) {
-      console.error("❌ Error downloading contract:", error);
+      console.error("❌ Error downloading signed contract PDF:", error);
       toast({
-        title: "Download Error",
-        description: (error as Error).message || "Failed to download signed contract",
+        title: "PDF Download Error",
+        description: (error as Error).message || "Failed to download signed contract as PDF. Chrome dependencies may be missing.",
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [toast, currentUser]);
 
   // View contract HTML in new window with embedded signatures
   const viewContractHtml = useCallback(async (contractId: string, clientName: string) => {
@@ -1111,8 +1097,8 @@ export default function SimpleContractGenerator() {
         completionDate: contractDataFromHistory.formFields?.completionDate || contractDataFromHistory.timeline?.completionDate || "",
         permitRequired: (contractDataFromHistory as any).permitInfo?.required ? "yes" : "no",
         permitResponsibility: contractDataFromHistory.formFields?.permitResponsibility || (contractDataFromHistory as any).permitInfo?.responsibility || "contractor",
-        warrantyYears: contractDataFromHistory.formFields?.warrantyYears || "1",
-        paymentMilestones
+        warrantyYears: (contractDataFromHistory.formFields as any)?.warrantyYears || "1",
+        paymentMilestones: paymentMilestones as any
       });
 
       // Set clauses from history

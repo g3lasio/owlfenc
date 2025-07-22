@@ -52,12 +52,19 @@ export async function createSimplePdfFromText(textContent: string, options: {
     });
     yPosition -= 40;
     
+    // Clean text content to remove problematic characters for PDF generation
+    const cleanedText = textContent
+      .replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g, '')  // Remove emojis (ES5 compatible)
+      .replace(/[^\x00-\x7F]/g, '')  // Remove non-ASCII characters
+      .replace(/\s+/g, ' ')  // Normalize whitespace
+      .trim();
+    
     // Split text into lines that fit on page
     const maxWidth = width - 100; // 50px margins on each side
     const fontSize = 10;
     const lineHeight = 15;
     
-    const words = textContent.split(' ');
+    const words = cleanedText.split(' ');
     const lines: string[] = [];
     let currentLine = '';
     

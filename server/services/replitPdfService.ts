@@ -81,9 +81,11 @@ class ReplitPdfService {
       });
       yPosition -= 40;
       
-      // Extract text content from HTML for PDF
+      // Extract text content from HTML for PDF and clean special characters
       const textContent = htmlContent
         .replace(/<[^>]*>/g, ' ')  // Remove HTML tags
+        .replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g, '')  // Remove emojis (ES5 compatible)
+        .replace(/[^\x00-\x7F]/g, '')  // Remove non-ASCII characters
         .replace(/\s+/g, ' ')      // Normalize whitespace
         .trim();
       
