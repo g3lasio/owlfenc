@@ -71,6 +71,8 @@ interface Project {
   materialsList?: any[];
   laborHours?: number;
   difficulty?: string;
+  clientEmail?: string;
+  clientPhone?: string;
 }
 
 const projectCategories = {
@@ -438,6 +440,265 @@ function Projects() {
         title: "Error",
         description: "No se pudo actualizar el progreso del proyecto.",
       });
+    }
+  };
+
+  // Function to generate PDF from project data
+  const generateEstimatePdf = async (project: Project) => {
+    try {
+      const response = await fetch('/api/contract-management/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contractHtml: project.estimateHtml || generateEstimateHtml(project),
+          contractData: {
+            clientName: project.clientName,
+            clientAddress: project.address,
+            projectType: project.projectType,
+            projectDescription: project.projectDescription,
+            totalAmount: project.totalPrice
+          },
+          fileName: `estimate-${project.clientName}.pdf`
+        }),
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `estimate-${project.clientName}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        toast({
+          title: "Estimado descargado",
+          description: "El archivo PDF se ha descargado exitosamente.",
+        });
+      } else {
+        throw new Error('Error generating PDF');
+      }
+    } catch (error) {
+      console.error('Error generating estimate PDF:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo generar el PDF del estimado.",
+      });
+    }
+  };
+
+  const generateContractPdf = async (project: Project) => {
+    try {
+      const response = await fetch('/api/contract-management/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contractHtml: project.contractHtml || generateContractHtml(project),
+          contractData: {
+            clientName: project.clientName,
+            clientAddress: project.address,
+            projectType: project.projectType,
+            projectDescription: project.projectDescription,
+            totalAmount: project.totalPrice
+          },
+          fileName: `contract-${project.clientName}.pdf`
+        }),
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `contract-${project.clientName}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        toast({
+          title: "Contrato descargado",
+          description: "El archivo PDF se ha descargado exitosamente.",
+        });
+      } else {
+        throw new Error('Error generating PDF');
+      }
+    } catch (error) {
+      console.error('Error generating contract PDF:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo generar el PDF del contrato.",
+      });
+    }
+  };
+
+  // Generate HTML content for estimate if not available
+  const generateEstimateHtml = (project: Project) => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Estimado - ${project.clientName}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .client-info, .project-info { margin-bottom: 20px; }
+          .total { font-size: 18px; font-weight: bold; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>ESTIMADO</h1>
+          <p>Fecha: ${new Date().toLocaleDateString()}</p>
+        </div>
+        <div class="client-info">
+          <h2>Información del Cliente</h2>
+          <p><strong>Nombre:</strong> ${project.clientName}</p>
+          <p><strong>Dirección:</strong> ${project.address}</p>
+        </div>
+        <div class="project-info">
+          <h2>Información del Proyecto</h2>
+          <p><strong>Tipo:</strong> ${project.projectType}</p>
+          <p><strong>Descripción:</strong> ${project.projectDescription || 'No especificada'}</p>
+        </div>
+        <div class="total">
+          <p>Total Estimado: $${project.totalPrice?.toLocaleString() || '0.00'}</p>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  // Generate HTML content for contract if not available
+  const generateContractHtml = (project: Project) => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Contrato - ${project.clientName}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .section { margin-bottom: 25px; }
+          .signature-section { margin-top: 50px; display: flex; justify-content: space-between; }
+          .signature-box { width: 45%; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>CONTRATO DE SERVICIOS</h1>
+          <p>Fecha: ${new Date().toLocaleDateString()}</p>
+        </div>
+        <div class="section">
+          <h2>PARTES</h2>
+          <p><strong>Contratista:</strong> OWL FENC LLC</p>
+          <p><strong>Cliente:</strong> ${project.clientName}</p>
+          <p><strong>Dirección del Proyecto:</strong> ${project.address}</p>
+        </div>
+        <div class="section">
+          <h2>DESCRIPCIÓN DE LOS SERVICIOS</h2>
+          <p><strong>Tipo de Proyecto:</strong> ${project.projectType}</p>
+          <p><strong>Descripción:</strong> ${project.projectDescription || 'Servicios de construcción según especificaciones acordadas'}</p>
+        </div>
+        <div class="section">
+          <h2>TÉRMINOS FINANCIEROS</h2>
+          <p><strong>Valor Total del Contrato:</strong> $${project.totalPrice?.toLocaleString() || '0.00'}</p>
+          <p><strong>Términos de Pago:</strong> Según lo acordado entre las partes</p>
+        </div>
+        <div class="signature-section">
+          <div class="signature-box">
+            <div style="border-top: 1px solid #000; padding-top: 5px;">
+              <p>Firma del Contratista</p>
+              <p>Fecha: _______________</p>
+            </div>
+          </div>
+          <div class="signature-box">
+            <div style="border-top: 1px solid #000; padding-top: 5px;">
+              <p>Firma del Cliente</p>
+              <p>Fecha: _______________</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  // Function to handle estimate viewing/generation
+  const handleEstimateAction = async (project: Project) => {
+    if (project.estimateHtml) {
+      // If estimate HTML exists, generate and download PDF
+      await generateEstimatePdf(project);
+    } else {
+      // If no estimate HTML, generate it first
+      const estimateHtml = generateEstimateHtml(project);
+      
+      try {
+        // Save the generated HTML to the project
+        const { updateDoc, doc } = await import("firebase/firestore");
+        const { db } = await import("@/lib/firebase");
+        
+        await updateDoc(doc(db, "estimates", project.id), {
+          estimateHtml: estimateHtml
+        });
+        
+        // Update local state
+        setSelectedProject(prev => prev ? { ...prev, estimateHtml } : null);
+        
+        // Generate PDF
+        await generateEstimatePdf({ ...project, estimateHtml });
+      } catch (error) {
+        console.error('Error saving estimate HTML:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudo generar el estimado.",
+        });
+      }
+    }
+  };
+
+  // Function to handle contract viewing/generation
+  const handleContractAction = async (project: Project) => {
+    if (project.contractHtml) {
+      // If contract HTML exists, generate and download PDF
+      await generateContractPdf(project);
+    } else {
+      // If no contract HTML, generate it first
+      const contractHtml = generateContractHtml(project);
+      
+      try {
+        // Save the generated HTML to the project
+        const { updateDoc, doc } = await import("firebase/firestore");
+        const { db } = await import("@/lib/firebase");
+        
+        await updateDoc(doc(db, "estimates", project.id), {
+          contractHtml: contractHtml
+        });
+        
+        // Update local state
+        setSelectedProject(prev => prev ? { ...prev, contractHtml } : null);
+        
+        // Generate PDF
+        await generateContractPdf({ ...project, contractHtml });
+      } catch (error) {
+        console.error('Error saving contract HTML:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudo generar el contrato.",
+        });
+      }
     }
   };
 
@@ -827,7 +1088,7 @@ function Projects() {
       </div>
       {isDialogOpen && selectedProject && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="dialog-content p-0 max-w-7xl w-[98vw] h-[95vh] flex flex-col">
+          <DialogContent className="dialog-content p-0 max-w-7xl w-[98vw] h-[95vh] flex flex-col overflow-hidden">
             <div className="fixed-header p-2 border-b border-cyan-400/30 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 relative flex-shrink-0">
               <div className="absolute top-0 left-0 w-3 h-3 border-l border-t border-cyan-400"></div>
               <div className="absolute top-0 right-0 w-3 h-3 border-r border-t border-cyan-400"></div>
@@ -842,162 +1103,209 @@ function Projects() {
               </DialogTitle>
             </div>
 
-            <div className="dialog-body bg-gray-900 flex-1 overflow-y-auto dialog-scroll-container">
-              <div className="fixed-header p-4 pb-4 bg-gray-900 border-b-2 border-cyan-400/20 shadow-lg sticky top-0 z-10">
+            <div className="dialog-body bg-gray-900 flex-1 flex flex-col min-h-0">
+              <div className="fixed-header p-4 pb-4 bg-gray-900 border-b-2 border-cyan-400/20 shadow-lg flex-shrink-0">
                 <FuturisticTimeline
                   projectId={selectedProject.id}
                   currentProgress={
                     selectedProject.projectProgress || "estimate_created"
                   }
-                  onProgressUpdate={handleProgressUpdate}
+                  onProgressUpdate={(newProgress: string) => handleProgressUpdate(selectedProject.id, newProgress)}
                 />
               </div>
 
-              <div className="h-8 bg-gray-900 border-b border-gray-700/30"></div>
+              <div className="h-2 bg-gray-900 border-b border-gray-700/30 flex-shrink-0"></div>
 
-              <div className="px-4 pb-4 bg-gray-900 pt-4 min-h-0">
-                <div className="mb-4">
-                  <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-lg border border-cyan-400/30 shadow-xl backdrop-blur-sm">
-                    <button
-                      onClick={() => setDashboardTab("details")}
-                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
-                        dashboardTab === "details"
-                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/30"
-                          : "text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30"
-                      }`}
-                    >
-                      <i className="ri-settings-4-line mr-1"></i>
-                      Details
-                    </button>
-                    <button
-                      onClick={() => setDashboardTab("client")}
-                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
-                        dashboardTab === "client"
-                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/30"
-                          : "text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30"
-                      }`}
-                    >
-                      <i className="ri-user-3-line mr-1"></i>
-                      Client
-                    </button>
-                    <button
-                      onClick={() => setDashboardTab("documents")}
-                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
-                        dashboardTab === "documents"
-                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/30"
-                          : "text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30"
-                      }`}
-                    >
-                      <i className="ri-folder-3-line mr-1"></i>
-                      Docs
-                    </button>
+              <div className="flex-1 overflow-y-auto">
+                <div className="px-4 pb-4 bg-gray-900 pt-4">
+                  <div className="mb-4">
+                    <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-lg border border-cyan-400/30 shadow-xl backdrop-blur-sm">
+                      <button
+                        onClick={() => setDashboardTab("details")}
+                        className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
+                          dashboardTab === "details"
+                            ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/30"
+                            : "text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30"
+                        }`}
+                      >
+                        <i className="ri-settings-4-line mr-1"></i>
+                        Details
+                      </button>
+                      <button
+                        onClick={() => setDashboardTab("client")}
+                        className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
+                          dashboardTab === "client"
+                            ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/30"
+                            : "text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30"
+                        }`}
+                      >
+                        <i className="ri-user-3-line mr-1"></i>
+                        Client
+                      </button>
+                      <button
+                        onClick={() => setDashboardTab("documents")}
+                        className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
+                          dashboardTab === "documents"
+                            ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/30"
+                            : "text-gray-400 hover:text-cyan-300 hover:bg-gray-700/30"
+                        }`}
+                      >
+                        <i className="ri-folder-3-line mr-1"></i>
+                        Docs
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div className="bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm shadow-2xl">
-                  <div className="p-4 max-h-[60vh] overflow-y-auto dialog-scroll-container">
-                    {dashboardTab === "details" && (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
-                            <span className="text-gray-400 block mb-1">
-                              Type:
-                            </span>
-                            <span className="text-cyan-200 font-medium">
-                              {selectedProject.projectType || "General"}
-                            </span>
+                  <div className="bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg backdrop-blur-sm shadow-2xl">
+                    <div className="p-4">
+                      {dashboardTab === "details" && (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                              <span className="text-gray-400 block mb-1">
+                                Type:
+                              </span>
+                              <span className="text-cyan-200 font-medium">
+                                {selectedProject.projectType || "General"}
+                              </span>
+                            </div>
+                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                              <span className="text-gray-400 block mb-1">
+                                Subtype:
+                              </span>
+                              <span className="text-cyan-200 font-medium">
+                                {selectedProject.projectSubtype ||
+                                  selectedProject.fenceType ||
+                                  "N/A"}
+                              </span>
+                            </div>
+                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                              <span className="text-gray-400 block mb-1">
+                                Total Price:
+                              </span>
+                              <span className="text-cyan-200 font-medium">
+                                ${selectedProject.totalPrice?.toLocaleString() || '0.00'}
+                              </span>
+                            </div>
+                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                              <span className="text-gray-400 block mb-1">
+                                Status:
+                              </span>
+                              <span className="text-cyan-200 font-medium">
+                                {getProgressLabel(selectedProject.projectProgress || selectedProject.status || 'estimate_created')}
+                              </span>
+                            </div>
                           </div>
-                          <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
-                            <span className="text-gray-400 block mb-1">
-                              Subtype:
-                            </span>
-                            <span className="text-cyan-200 font-medium">
-                              {selectedProject.projectSubtype ||
-                                selectedProject.fenceType ||
-                                "N/A"}
-                            </span>
-                          </div>
+
+                          {selectedProject.projectDescription && (
+                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                              <span className="text-gray-400 text-sm block mb-2">
+                                Description:
+                              </span>
+                              <p className="text-gray-200 text-sm">
+                                {selectedProject.projectDescription}
+                              </p>
+                            </div>
+                          )}
+
+                          {selectedProject.projectScope && (
+                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                              <span className="text-gray-400 text-sm block mb-2">
+                                Scope:
+                              </span>
+                              <p className="text-gray-200 text-sm">
+                                {selectedProject.projectScope}
+                              </p>
+                            </div>
+                          )}
                         </div>
+                      )}
 
-                        {selectedProject.projectDescription && (
+                      {dashboardTab === "client" && (
+                        <div className="space-y-4">
                           <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
                             <span className="text-gray-400 text-sm block mb-2">
-                              Description:
+                              Client Name:
                             </span>
-                            <p className="text-gray-200 text-sm">
-                              {selectedProject.projectDescription}
+                            <p className="text-cyan-200 font-medium">
+                              {selectedProject.clientName}
                             </p>
                           </div>
-                        )}
-
-                        {selectedProject.projectScope && (
                           <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
                             <span className="text-gray-400 text-sm block mb-2">
-                              Scope:
+                              Address:
                             </span>
                             <p className="text-gray-200 text-sm">
-                              {selectedProject.projectScope}
+                              {selectedProject.address}
                             </p>
                           </div>
-                        )}
-                      </div>
-                    )}
+                          {selectedProject.clientEmail && (
+                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                              <span className="text-gray-400 text-sm block mb-2">
+                                Email:
+                              </span>
+                              <p className="text-gray-200 text-sm">
+                                {selectedProject.clientEmail}
+                              </p>
+                            </div>
+                          )}
+                          {selectedProject.clientPhone && (
+                            <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
+                              <span className="text-gray-400 text-sm block mb-2">
+                                Phone:
+                              </span>
+                              <p className="text-gray-200 text-sm">
+                                {selectedProject.clientPhone}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
-                    {dashboardTab === "client" && (
-                      <div className="space-y-4">
-                        <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
-                          <span className="text-gray-400 text-sm block mb-2">
-                            Client Name:
-                          </span>
-                          <p className="text-cyan-200 font-medium">
-                            {selectedProject.clientName}
-                          </p>
-                        </div>
-                        <div className="bg-gray-700/30 p-3 rounded border border-gray-600/20">
-                          <span className="text-gray-400 text-sm block mb-2">
-                            Address:
-                          </span>
-                          <p className="text-gray-200 text-sm">
-                            {selectedProject.address}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {dashboardTab === "documents" && (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="text-center p-4 bg-gray-700/20 rounded border border-cyan-400/20">
-                            <i className="ri-file-text-line text-2xl text-cyan-400 mb-2 block"></i>
-                            <p className="text-sm text-gray-300 mb-2">
-                              Estimate
-                            </p>
-                            <Button
-                              size="sm"
-                              className="w-full bg-cyan-500/20 text-cyan-300 border-cyan-400/30"
-                            >
-                              {selectedProject.estimateHtml
-                                ? "View"
-                                : "Generate"}
-                            </Button>
+                      {dashboardTab === "documents" && (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="text-center p-4 bg-gray-700/20 rounded border border-cyan-400/20 hover:bg-gray-700/30 transition-all">
+                              <i className="ri-file-text-line text-2xl text-cyan-400 mb-2 block"></i>
+                              <p className="text-sm text-gray-300 mb-3">
+                                Estimate
+                              </p>
+                              <Button
+                                size="sm"
+                                className="w-full bg-cyan-500/20 text-cyan-300 border-cyan-400/30 hover:bg-cyan-500/30"
+                                onClick={() => handleEstimateAction(selectedProject)}
+                              >
+                                <i className="ri-download-line mr-1"></i>
+                                {selectedProject.estimateHtml
+                                  ? "Download PDF"
+                                  : "Generate PDF"}
+                              </Button>
+                            </div>
+                            <div className="text-center p-4 bg-gray-700/20 rounded border border-cyan-400/20 hover:bg-gray-700/30 transition-all">
+                              <i className="ri-file-shield-line text-2xl text-cyan-400 mb-2 block"></i>
+                              <p className="text-sm text-gray-300 mb-3">
+                                Contract
+                              </p>
+                              <Button
+                                size="sm"
+                                className="w-full bg-cyan-500/20 text-cyan-300 border-cyan-400/30 hover:bg-cyan-500/30"
+                                onClick={() => handleContractAction(selectedProject)}
+                              >
+                                <i className="ri-download-line mr-1"></i>
+                                {selectedProject.contractHtml
+                                  ? "Download PDF"
+                                  : "Generate PDF"}
+                              </Button>
+                            </div>
                           </div>
-                          <div className="text-center p-4 bg-gray-700/20 rounded border border-cyan-400/20">
-                            <i className="ri-file-shield-line text-2xl text-cyan-400 mb-2 block"></i>
-                            <p className="text-sm text-gray-300 mb-2">
-                              Contract
+                          <div className="mt-4 p-3 bg-gray-700/20 rounded border border-gray-600/20">
+                            <p className="text-xs text-gray-400 text-center">
+                              Click the buttons above to generate and download professional PDF documents using real project data.
                             </p>
-                            <Button
-                              size="sm"
-                              className="w-full bg-cyan-500/20 text-cyan-300 border-cyan-400/30"
-                            >
-                              {selectedProject.contractHtml
-                                ? "View"
-                                : "Generate"}
-                            </Button>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
