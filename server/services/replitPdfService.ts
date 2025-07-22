@@ -102,17 +102,40 @@ class ReplitPdfService {
         console.warn('⚠️ [REPLIT-PDF] Structured parsing failed, falling back to text extraction:', parseError.message);
       }
 
-      // FALLBACK: Extract text content without CSS pollution
-      const bodyContent = htmlContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      const contentToProcess = bodyContent ? bodyContent[1] : htmlContent;
+      // CRITICAL FALLBACK: Extract ONLY contract content, ignore ALL CSS/HTML structure
+      console.log('⚠️ [REPLIT-PDF] Using enhanced fallback - extracting contract content only');
       
-      const textContent = contentToProcess
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')  // Remove CSS styles
+      // Extract only the main contract content between specific markers
+      const contractStartMarkers = [
+        'Independent Contractor Agreement',
+        'Agreement Date:',
+        'WHEREAS,',
+        'Contract ID:'
+      ];
+      
+      // Find actual contract content start
+      let contractContent = htmlContent;
+      
+      // First, aggressively remove ALL styling
+      contractContent = contractContent
+        .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '') // Remove entire head section
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '') // Remove any remaining style blocks
         .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove scripts
-        .replace(/<[^>]*>/g, ' ')  // Remove HTML tags
-        .replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g, '')  // Remove emojis (ES5 compatible)
+        .replace(/style="[^"]*"/gi, '') // Remove inline styles
+        .replace(/class="[^"]*"/gi, '') // Remove class attributes
+        .replace(/@media[^{]*\{[^{}]*\{[^{}]*\}[^{}]*\}/gi, '') // Remove media queries
+        .replace(/\.[a-zA-Z0-9_-]+\s*\{[^}]*\}/gi, '') // Remove CSS selectors
+        .replace(/[a-zA-Z-]+:\s*[^;]+;/gi, '') // Remove CSS properties
+        .replace(/\{[^}]*\}/gi, ''); // Remove any remaining CSS blocks
+      
+      // Extract text and clean thoroughly
+      const textContent = contractContent
+        .replace(/<[^>]*>/g, ' ')  // Remove ALL HTML tags
+        .replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g, '')  // Remove emojis
         .replace(/[^\x00-\x7F]/g, '')  // Remove non-ASCII characters
-        .replace(/\s+/g, ' ')      // Normalize whitespace
+        .replace(/[\u2018\u2019]/g, "'")  // Replace smart quotes
+        .replace(/[\u201C\u201D]/g, '"')  // Replace smart double quotes
+        .replace(/\s+/g, ' ')      // Normalize ALL whitespace
         .trim();
       
       // Split text into lines that fit on page

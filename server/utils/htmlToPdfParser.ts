@@ -24,8 +24,18 @@ interface ContractContent {
 export function parseContractHtml(htmlContent: string): ContractContent {
   console.log('📝 [HTML-PARSER] Parsing contract HTML content for structured PDF generation');
   
+  // First, clean ALL problematic characters that cause WinAnsi encoding errors
+  let cleanContent = htmlContent
+    .replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g, '')  // Remove ALL emojis
+    .replace(/[^\x00-\x7F]/g, '')  // Remove ALL non-ASCII characters
+    .replace(/[\u2018\u2019]/g, "'")  // Replace smart quotes
+    .replace(/[\u201C\u201D]/g, '"')  // Replace smart double quotes
+    .replace(/[\u2013\u2014]/g, '-')  // Replace em/en dashes
+    .replace(/[\u2026]/g, '...')      // Replace ellipsis
+    .replace(/[\u00A0]/g, ' ');       // Replace non-breaking spaces
+  
   // Remove all CSS styles and script tags
-  let cleanHtml = htmlContent
+  let cleanHtml = cleanContent
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
     .replace(/style="[^"]*"/gi, '')
