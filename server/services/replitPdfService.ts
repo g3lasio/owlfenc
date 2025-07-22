@@ -81,8 +81,34 @@ class ReplitPdfService {
       });
       yPosition -= 40;
       
-      // Extract text content from HTML for PDF and clean special characters
-      const textContent = htmlContent
+      // NEW APPROACH: Use structured HTML parser instead of raw text extraction
+      try {
+        const { parseContractHtml, createStructuredPdf } = await import('../utils/htmlToPdfParser.js');
+        
+        // Parse the HTML content to extract structured contract data
+        const contractContent = parseContractHtml(htmlContent);
+        
+        // Override title if provided
+        if (options.title) {
+          contractContent.title = options.title;
+        }
+        
+        // Generate professional PDF from structured content
+        const pdfBuffer = await createStructuredPdf(contractContent, options.contractId);
+        
+        console.log('✅ [REPLIT-PDF] Professional PDF generated successfully from structured contract content');
+        return pdfBuffer;
+      } catch (parseError: any) {
+        console.warn('⚠️ [REPLIT-PDF] Structured parsing failed, falling back to text extraction:', parseError.message);
+      }
+
+      // FALLBACK: Extract text content without CSS pollution
+      const bodyContent = htmlContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      const contentToProcess = bodyContent ? bodyContent[1] : htmlContent;
+      
+      const textContent = contentToProcess
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')  // Remove CSS styles
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove scripts
         .replace(/<[^>]*>/g, ' ')  // Remove HTML tags
         .replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g, '')  // Remove emojis (ES5 compatible)
         .replace(/[^\x00-\x7F]/g, '')  // Remove non-ASCII characters
