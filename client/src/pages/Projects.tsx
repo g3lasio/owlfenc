@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -104,7 +104,7 @@ function Projects() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProjectCategory, setSelectedProjectCategory] = useState("all");
   const [selectedProjectType, setSelectedProjectType] = useState("all");
-  const [progressFilter, setProgressFilter] = useState("all");
+
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -260,10 +260,7 @@ function Projects() {
       project.projectSubtype === selectedProjectType ||
       project.fenceType === selectedProjectType;
 
-    const matchesProgress =
-      progressFilter === "all" || project.projectProgress === progressFilter;
-
-    return matchesSearch && matchesCategory && matchesType && matchesProgress;
+    return matchesSearch && matchesCategory && matchesType;
   });
 
   const getProjectCategoryInfo = (project: Project) => {
@@ -787,56 +784,7 @@ function Projects() {
             </div>
           </div>
 
-          <Tabs
-            value={progressFilter}
-            onValueChange={setProgressFilter}
-            className="w-full"
-          >
-            <TabsList className="flex flex-wrap  sm:grid sm:grid-cols-4 md:grid-cols-8 gap-1 overflow-x-auto scrollbar-hide">
-              <TabsTrigger value="all" className="text-xs whitespace-nowrap">
-                Todos
-              </TabsTrigger>
-              <TabsTrigger
-                value="estimate_created"
-                className="text-xs whitespace-nowrap"
-              >
-                Estimado
-              </TabsTrigger>
-              <TabsTrigger
-                value="rejected"
-                className="text-xs whitespace-nowrap"
-              >
-                Rechazado
-              </TabsTrigger>
-              <TabsTrigger
-                value="in_contract"
-                className="text-xs whitespace-nowrap"
-              >
-                Contrato
-              </TabsTrigger>
-              <TabsTrigger
-                value="scheduled"
-                className="text-xs whitespace-nowrap"
-              >
-                Programado
-              </TabsTrigger>
-              <TabsTrigger
-                value="in_progress"
-                className="text-xs whitespace-nowrap"
-              >
-                Proyecto
-              </TabsTrigger>
-              <TabsTrigger value="paid" className="text-xs whitespace-nowrap">
-                Pagado
-              </TabsTrigger>
-              <TabsTrigger
-                value="completed"
-                className="text-xs whitespace-nowrap"
-              >
-                Completado
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+
 
           <div className="text-sm text-muted-foreground">
             {filteredProjects.length}{" "}
