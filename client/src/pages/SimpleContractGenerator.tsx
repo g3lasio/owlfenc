@@ -3364,20 +3364,7 @@ export default function SimpleContractGenerator() {
                               </Badge>
                             </div>
 
-                            {/* Project Info */}
-                            <div className="bg-gray-700 rounded-lg p-3 mb-3">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Wrench className="h-3 w-3 text-gray-400" />
-                                <span className="text-gray-300 text-sm font-medium">
-                                  {contract.projectType}
-                                </span>
-                              </div>
-                              {contract.contractData.project?.description && (
-                                <p className="text-gray-400 text-xs">
-                                  {contract.contractData.project.description}
-                                </p>
-                              )}
-                            </div>
+
 
                             {/* Actions - Mobile Responsive */}
                             <div className="bg-cyan-900/30 border border-cyan-700 rounded-lg p-3">

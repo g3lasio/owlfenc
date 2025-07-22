@@ -147,6 +147,7 @@ Changelog:
   * SHORTENED BUTTON TEXT: Mobile-optimized text ("Download PDF" → "Download") to prevent cramping
   * DUAL COLOR SYSTEM: Maintained color coding (cyan/yellow/green) with proper contrast for both light and dark themes
   * PRODUCTION READY: Complete mobile experience where users can clearly see and access each function without overlap
+  * DRAFT DETAILS HIDDEN: Removed project info section from draft contracts to reduce visual clutter and save space
 - July 22, 2025. ✅ PERMIT DATA TRANSMISSION BUG COMPLETELY FIXED - FRONTEND TO BACKEND ALIGNMENT: Successfully resolved critical data mismatch where permit information was not flowing from frontend to PDF contracts:
   * FRONTEND PERMIT CAPTURE: Frontend correctly captures permitRequired and permitResponsibility in editableData state
   * BACKEND DATA MAPPING: Fixed backend routes to properly map permitInfo from frontend to contractData and pdfData structures  
