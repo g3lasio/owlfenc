@@ -81,41 +81,113 @@ function extractContractSections(html: string): Array<{ title: string; content: 
   const sections: Array<{ title: string; content: string }> = [];
   
   // Remove HTML tags but preserve structure
-  const textContent = html
+  let textContent = html
     .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
-  // Split into logical sections based on numbered headings
-  const sectionRegex = /(\d+\.\s*[A-Z\s]+?)(?=\d+\.|$)/g;
-  let match;
-  
-  while ((match = sectionRegex.exec(textContent)) !== null) {
-    const sectionText = match[0].trim();
-    if (sectionText.length > 20) {
-      const lines = sectionText.split(/\s+/);
-      const title = lines.slice(0, 5).join(' ').replace(/^\d+\.\s*/, '');
-      const content = lines.slice(5).join(' ');
+  // Extract specific contract sections with better pattern matching
+  const contractSections = [
+    { 
+      pattern: /(\d+\.\s*SCOPE OF WORK[^]*?)(?=\d+\.\s*[A-Z]|$)/i,
+      title: "SCOPE OF WORK"
+    },
+    {
+      pattern: /(\d+\.\s*CONTRACT PRICE[^]*?)(?=\d+\.\s*[A-Z]|$)/i,
+      title: "CONTRACT PRICE AND PAYMENT TERMS"
+    },
+    {
+      pattern: /(\d+\.\s*COMMENCEMENT[^]*?)(?=\d+\.\s*[A-Z]|$)/i,
+      title: "COMMENCEMENT AND COMPLETION"
+    },
+    {
+      pattern: /(\d+\.\s*INDEPENDENT CONTRACTOR[^]*?)(?=\d+\.\s*[A-Z]|$)/i,
+      title: "INDEPENDENT CONTRACTOR STATUS"
+    },
+    {
+      pattern: /(\d+\.\s*MATERIALS[^]*?)(?=\d+\.\s*[A-Z]|$)/i,
+      title: "MATERIALS, EQUIPMENT, AND WORKMANSHIP"
+    },
+    {
+      pattern: /(\d+\.\s*INSURANCE[^]*?)(?=\d+\.\s*[A-Z]|$)/i,
+      title: "INSURANCE AND LIABILITY"
+    },
+    {
+      pattern: /(\d+\.\s*CHANGE ORDERS[^]*?)(?=\d+\.\s*[A-Z]|$)/i,
+      title: "CHANGE ORDERS AND MODIFICATIONS"
+    },
+    {
+      pattern: /(\d+\.\s*PERMITS[^]*?)(?=\d+\.\s*[A-Z]|$)/i,
+      title: "PERMITS, LICENSES, AND CODE COMPLIANCE"
+    },
+    {
+      pattern: /(\d+\.\s*WARRANTY[^]*?)(?=\d+\.\s*[A-Z]|$)/i,
+      title: "WARRANTY AND REMEDIES"
+    },
+    {
+      pattern: /(\d+\.\s*DEFAULT[^]*?)(?=\d+\.\s*[A-Z]|$)/i,
+      title: "DEFAULT AND TERMINATION"
+    },
+    {
+      pattern: /(\d+\.\s*DISPUTE[^]*?)(?=\d+\.\s*[A-Z]|$)/i,
+      title: "DISPUTE RESOLUTION"
+    },
+    {
+      pattern: /(\d+\.\s*SAFETY[^]*?)(?=\d+\.\s*[A-Z]|$)/i,
+      title: "SAFETY AND COMPLIANCE"
+    },
+    {
+      pattern: /(\d+\.\s*GOVERNING LAW[^]*?)(?=\d+\.\s*[A-Z]|$)/i,
+      title: "GOVERNING LAW AND JURISDICTION"
+    }
+  ];
+
+  // Try to extract specific sections
+  for (const section of contractSections) {
+    const match = textContent.match(section.pattern);
+    if (match) {
+      const content = match[1]
+        .replace(/^\d+\.\s*[A-Z\s]+/i, '') // Remove section number and title
+        .trim()
+        .substring(0, 800); // Limit content length
       
-      if (title && content) {
+      if (content.length > 50) {
         sections.push({
-          title: title.trim(),
-          content: content.trim()
+          title: section.title,
+          content: content
         });
       }
     }
   }
 
-  // If no numbered sections found, create general sections
+  // If no specific sections found, use simple numbered pattern
+  if (sections.length === 0) {
+    const simplePattern = /(\d+\.\s*[A-Z][A-Z\s]*?)([^]*?)(?=\d+\.\s*[A-Z]|$)/g;
+    let match;
+    
+    while ((match = simplePattern.exec(textContent)) !== null && sections.length < 8) {
+      const title = match[1].replace(/^\d+\.\s*/, '').trim();
+      const content = match[2].trim().substring(0, 400);
+      
+      if (title.length > 3 && content.length > 50) {
+        sections.push({
+          title: title,
+          content: content
+        });
+      }
+    }
+  }
+
+  // Final fallback - create manageable chunks
   if (sections.length === 0) {
     const words = textContent.split(/\s+/);
-    const chunkSize = 200;
+    const chunkSize = 150; // Smaller chunks
     
-    for (let i = 0; i < words.length; i += chunkSize) {
+    for (let i = 0; i < Math.min(words.length, 1000) && sections.length < 6; i += chunkSize) {
       const chunk = words.slice(i, i + chunkSize).join(' ');
       if (chunk.trim().length > 50) {
         sections.push({
-          title: `Section ${Math.floor(i / chunkSize) + 1}`,
+          title: `Contract Section ${sections.length + 1}`,
           content: chunk.trim()
         });
       }
@@ -208,27 +280,30 @@ export async function createStructuredPdf(content: ContractContent, contractId?:
   });
   yPosition -= 40;
   
-  // Contract sections
-  for (const section of content.sections) {
+  // Contract sections with better formatting
+  for (let i = 0; i < content.sections.length && i < 8; i++) { // Limit to 8 sections
+    const section = content.sections[i];
+    
     // Check if we need a new page
-    if (yPosition < 100) {
+    if (yPosition < 120) {
       currentPage = pdfDoc.addPage();
       yPosition = height - 50;
     }
     
-    // Section title
-    currentPage.drawText(section.title.toUpperCase(), {
+    // Section number and title
+    const sectionTitle = `${i + 1}. ${section.title}`;
+    currentPage.drawText(sectionTitle.toUpperCase(), {
       x: 50,
       y: yPosition,
-      size: 12,
+      size: 11,
       font: helveticaBold,
       color: rgb(0, 0, 0),
     });
-    yPosition -= 20;
+    yPosition -= 25;
     
-    // Section content - wrap text
+    // Section content - wrap text with better formatting
     const maxWidth = width - 100;
-    const words = section.content.split(' ');
+    const words = section.content.split(' ').slice(0, 80); // Limit words per section
     const lines: string[] = [];
     let currentLine = '';
     
@@ -243,7 +318,8 @@ export async function createStructuredPdf(content: ContractContent, contractId?:
           lines.push(currentLine);
           currentLine = word;
         } else {
-          lines.push(word);
+          // Word too long, truncate it
+          lines.push(word.substring(0, 40));
         }
       }
     }
@@ -252,24 +328,27 @@ export async function createStructuredPdf(content: ContractContent, contractId?:
       lines.push(currentLine);
     }
     
+    // Limit lines per section
+    const limitedLines = lines.slice(0, 8);
+    
     // Draw content lines
-    for (const line of lines) {
+    for (const line of limitedLines) {
       if (yPosition < 50) {
         currentPage = pdfDoc.addPage();
         yPosition = height - 50;
       }
       
       currentPage.drawText(line, {
-        x: 50,
+        x: 55, // Slight indent
         y: yPosition,
         size: 10,
         font: helveticaFont,
         color: rgb(0, 0, 0),
       });
-      yPosition -= 15;
+      yPosition -= 14;
     }
     
-    yPosition -= 20; // Space between sections
+    yPosition -= 15; // Space between sections
   }
   
   // Signatures section
