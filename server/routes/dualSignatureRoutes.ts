@@ -1091,6 +1091,7 @@ router.post('/generate-pdf-from-html', async (req, res) => {
       
       const browser = await puppeteer.launch({
         headless: true,
+        executablePath: '/home/runner/.cache/puppeteer/chrome/linux-136.0.7103.92/chrome-linux64/chrome',
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -1099,7 +1100,9 @@ router.post('/generate-pdf-from-html', async (req, res) => {
           '--no-first-run',
           '--no-zygote',
           '--single-process',
-          '--disable-extensions'
+          '--disable-extensions',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor'
         ],
       });
       
@@ -1160,10 +1163,12 @@ router.post('/generate-pdf-from-html', async (req, res) => {
       try {
         const { createSimplePdfFromText } = await import('../utils/simplePdfGenerator');
         
-        // Extract text content from HTML for simple PDF
+        // Extract and clean text content from HTML for simple PDF
         const textContent = htmlContent
           .replace(/<[^>]*>/g, ' ')  // Remove HTML tags
           .replace(/\s+/g, ' ')      // Normalize whitespace
+          .replace(/[^\x00-\x7F]/g, '') // Remove non-ASCII characters (emojis, special chars)
+          .replace(/[^\w\s\.\,\-\:\(\)\$]/g, '') // Keep only safe characters
           .trim();
         
         const simplePdfBuffer = await createSimplePdfFromText(textContent, {
