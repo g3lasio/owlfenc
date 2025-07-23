@@ -563,14 +563,30 @@ export class DualSignatureService {
         signedPdfPath = null;
       }
 
-      // Update database with completion status (with or without PDF)
-      await db.update(digitalContracts)
-        .set({ 
-          status: 'completed',
-          signedPdfPath: signedPdfPath,
-          updatedAt: new Date()
-        })
-        .where(eq(digitalContracts.contractId, contractId));
+      // CRITICAL: Only mark as completed if PDF was generated successfully
+      if (signedPdfPath && pdfBuffer) {
+        // PDF generated successfully - mark as completed
+        await db.update(digitalContracts)
+          .set({ 
+            status: 'completed',
+            signedPdfPath: signedPdfPath,
+            updatedAt: new Date()
+          })
+          .where(eq(digitalContracts.contractId, contractId));
+        
+        console.log('✅ [DUAL-SIGNATURE] Contract marked as COMPLETED with PDF');
+      } else {
+        // PDF generation failed - keep as in progress
+        await db.update(digitalContracts)
+          .set({ 
+            status: 'both_signed_pending_pdf',
+            signedPdfPath: null,
+            updatedAt: new Date()
+          })
+          .where(eq(digitalContracts.contractId, contractId));
+        
+        console.log('⚠️ [DUAL-SIGNATURE] Contract remains IN PROGRESS (both signed but no PDF)');
+      }
 
       console.log('📧 [DUAL-SIGNATURE] Sending completed contract to both parties...');
 

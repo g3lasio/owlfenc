@@ -293,13 +293,21 @@ router.get('/in-progress/:userId', async (req, res) => {
       .where(eq(digitalContracts.userId, userId))
       .orderBy(digitalContracts.createdAt);
     
-    // Filter for contracts that are not completed (missing signatures OR missing PDF)
-    const filteredContracts = inProgressContracts.filter(contract => 
-      contract.status !== 'completed' || 
-      !contract.contractorSigned || 
-      !contract.clientSigned ||
-      !contract.signedPdfPath  // CRITICAL: Include signed contracts without PDF in "in progress"
-    );
+    // Filter for contracts that are in progress (signatures sent but not completed)
+    const filteredContracts = inProgressContracts.filter(contract => {
+      // Must have signature URLs generated (not a draft)
+      const hasSignatureUrls = contract.contractorSignUrl && contract.clientSignUrl;
+      if (!hasSignatureUrls) {
+        return false; // This is draft, not in progress
+      }
+      
+      // In Progress includes:
+      // 1. One party signed
+      // 2. Both parties signed but no PDF (status: both_signed_pending_pdf)
+      // 3. Not marked as completed
+      const isCompleted = contract.status === 'completed' && contract.signedPdfPath;
+      return !isCompleted;
+    });
     
     console.log(`✅ [API] Found ${filteredContracts.length} in-progress contracts for user`);
     
@@ -362,11 +370,12 @@ router.get('/completed/:userId', async (req, res) => {
     
     console.log(`✅ [API] Found ${completedContracts.length} contracts for user`);
     
-    // Filter for completed contracts (both signed, PDF optional due to Chrome issues)
+    // CRITICAL: Only truly completed contracts have BOTH signatures AND generated PDF
     const fullyCompletedContracts = completedContracts.filter(contract => 
       contract.status === 'completed' && 
       contract.contractorSigned && 
-      contract.clientSigned
+      contract.clientSigned &&
+      contract.signedPdfPath // PDF must exist for contract to be considered completed
     );
 
     console.log(`🔍 [API] Filtered to ${fullyCompletedContracts.length} truly completed contracts`);
@@ -433,6 +442,64 @@ router.post('/regenerate-pdf/:contractId', async (req, res) => {
     }
   } catch (error: any) {
     console.error('❌ [API] Error in /regenerate-pdf:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/dual-signature/drafts/:userId
+ * Get all draft contracts (created but no signatures sent)
+ */
+router.get('/drafts/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    console.log('📋 [API] Getting draft contracts for user:', userId);
+    
+    // Import database here to avoid circular dependencies
+    const { db } = await import('../db');
+    const { digitalContracts } = await import('../../shared/schema');
+    const { eq, or, isNull } = await import('drizzle-orm');
+    
+    const draftContracts = await db.select()
+      .from(digitalContracts)
+      .where(eq(digitalContracts.userId, userId))
+      .orderBy(digitalContracts.createdAt);
+    
+    // Filter for contracts that are drafts (no signature URLs generated)
+    const filteredDrafts = draftContracts.filter(contract => 
+      (!contract.contractorSignUrl || !contract.clientSignUrl) &&
+      !contract.contractorSigned && 
+      !contract.clientSigned &&
+      contract.status !== 'completed'
+    );
+    
+    console.log(`✅ [API] Found ${filteredDrafts.length} draft contracts for user`);
+    
+    // Transform data for frontend
+    const contractsForFrontend = filteredDrafts.map(contract => ({
+      contractId: contract.contractId,
+      status: 'draft',
+      contractorName: contract.contractorName,
+      clientName: contract.clientName,
+      totalAmount: parseFloat(contract.totalAmount || '0'),
+      createdAt: contract.createdAt,
+      updatedAt: contract.updatedAt,
+      projectDescription: (contract.contractData as any)?.projectDescription || 'Contract Draft'
+    }));
+    
+    res.json({
+      success: true,
+      contracts: contractsForFrontend,
+      total: contractsForFrontend.length,
+    });
+    
+  } catch (error: any) {
+    console.error('❌ [API] Error getting draft contracts:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',

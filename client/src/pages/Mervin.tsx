@@ -60,6 +60,7 @@ type Message = {
   clients?: Client[]; // for searchable + scrollable UI
   materialList?: Material[]; // ✅ NEW - show inventory inside chat like clients
   selectedMaterials?: { material: Material; quantity: number }[]; // ✅ NEW - confirmed selections
+  estimates?: EstimateData[]; // NEW - for contract generation
 };
 
 type EstimateStep1ChatFlowStep =
@@ -76,6 +77,61 @@ type EstimateStep1ChatFlowStep =
   | "awaiting-discount"
   | "awaiting-tax"
   | null;
+
+// Contract-specific types (NEW - for contract generation only)
+type ContractFlowStep =
+  | "select-estimate"
+  | "awaiting-estimate-choice"
+  | "edit-client-info"
+  | "project-timeline"
+  | "contractor-info"
+  | "project-milestones"
+  | "warranty-permits"
+  | "legal-clauses"
+  | "project-scope"
+  | "final-review"
+  | "generate-contract"
+  | null;
+
+interface EstimateData {
+  id: string;
+  estimateNumber: string;
+  clientName: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
+  clientInformation?: Client;
+  projectDescription: string;
+  items: any[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  createdAt: string;
+  status: string;
+}
+
+interface ProjectTimelineField {
+  id: string;
+  label: string;
+  value: string;
+  required: boolean;
+}
+
+interface ProjectMilestone {
+  id: string;
+  title: string;
+  description: string;
+  percentage: number;
+  estimatedDays: number;
+}
+
+interface LegalClause {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  isRequired: boolean;
+}
 
 type DeepSearchOption = "materials-labor" | "materials-only" | "labor-only";
 
@@ -178,6 +234,83 @@ export default function Mervin() {
     useState<EstimateStep1ChatFlowStep>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const { currentUser } = useAuth();
+
+  // Contract-specific states (NEW - only for contract generation)
+  const [contractFlowStep, setContractFlowStep] =
+    useState<ContractFlowStep>(null);
+  const [estimates, setEstimates] = useState<EstimateData[]>([]);
+  const [selectedEstimate, setSelectedEstimate] = useState<EstimateData | null>(
+    null,
+  );
+  const [projectTimeline, setProjectTimeline] = useState<
+    ProjectTimelineField[]
+  >([
+    { id: "start", label: "Fecha de inicio", value: "", required: true },
+    {
+      id: "completion",
+      label: "Fecha de finalización",
+      value: "",
+      required: true,
+    },
+    {
+      id: "duration",
+      label: "Duración estimada (días)",
+      value: "",
+      required: true,
+    },
+    {
+      id: "workingHours",
+      label: "Horario de trabajo",
+      value: "8:00 AM - 5:00 PM",
+      required: false,
+    },
+  ]);
+  const [contractorInfo, setContractorInfo] = useState({
+    company: "",
+    license: "",
+    insurance: "",
+    address: "",
+    phone: "",
+    email: "",
+  });
+  const [projectMilestones, setProjectMilestones] = useState<
+    ProjectMilestone[]
+  >([
+    {
+      id: "1",
+      title: "Inicio del proyecto",
+      description: "Preparación del sitio y materiales",
+      percentage: 25,
+      estimatedDays: 2,
+    },
+    {
+      id: "2",
+      title: "Desarrollo",
+      description: "Ejecución principal del trabajo",
+      percentage: 50,
+      estimatedDays: 5,
+    },
+    {
+      id: "3",
+      title: "Finalización",
+      description: "Acabados y limpieza",
+      percentage: 25,
+      estimatedDays: 2,
+    },
+  ]);
+  const [warrantyPermits, setWarrantyPermits] = useState({
+    warranty: "",
+    permits: "",
+    insurance: "",
+  });
+  const [legalClauses, setLegalClauses] = useState<LegalClause[]>([]);
+  const [projectScope, setProjectScope] = useState("");
+  const [editingClient, setEditingClient] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+  });
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
 
   // DeepSearch AI states
@@ -405,6 +538,13 @@ export default function Mervin() {
       return;
     }
 
+    // Continue based on contract flow (NEW)
+    if (caseType === "Contract") {
+      await handleContractFlow(inputValue.trim());
+      setInputValue("");
+      return;
+    }
+
     // Default flow
     setInputValue("");
     setIsLoading(true);
@@ -548,6 +688,52 @@ export default function Mervin() {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
           }, 100);
         }, 3000);
+      });
+
+      return; // Prevent default simulated reply
+    }
+
+    // Handle contract generation (NEW)
+    if (action === "contracts") {
+      setCaseType("Contract");
+      setContractFlowStep("select-estimate");
+
+      // Load estimates for contract generation
+      loadEstimates().then((estimatesData) => {
+        setTimeout(() => {
+          setMessages((prev) =>
+            prev.filter((m) => m.id !== thinkingMessage.id),
+          );
+
+          if (!estimatesData || estimatesData.length === 0) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: `assistant-${Date.now()}`,
+                content:
+                  "No se encontraron estimados. Necesitas crear un estimado primero antes de generar un contrato.",
+                sender: "assistant",
+              },
+            ]);
+            setIsLoading(false);
+            return;
+          }
+
+          const assistantMessage: Message = {
+            id: `assistant-${Date.now()}`,
+            content: "Selecciona el estimado que deseas convertir en contrato:",
+            sender: "assistant",
+            estimates: estimatesData.slice(0, 10),
+          };
+
+          setMessages((prev) => [...prev, assistantMessage]);
+          setContractFlowStep("awaiting-estimate-choice");
+          setIsLoading(false);
+
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+          }, 100);
+        }, 1000);
       });
 
       return; // Prevent default simulated reply
@@ -874,7 +1060,7 @@ export default function Mervin() {
           discount: discountCalculation(),
           taxRate: tax.type === "percentage" ? tax.amount : 0,
           taxAmount: Number(taxWithPercentage(tax)), // ✅ ADD THIS - send as number
-          tax: Number(taxWithPercentage(tax)), // ✅ CHANGE - send as number
+          tax: Number(taxWithPercentage(tax)), // rr� CHANGE - send as number
           total: Number(
             (
               Number(getCartTotal()) +
@@ -1395,6 +1581,680 @@ export default function Mervin() {
     }
   };
 
+  // Contract flow handler (NEW - only for contract generation)
+  const handleContractFlow = async (userInput: string) => {
+    const input = userInput.trim().toLowerCase();
+
+    if (contractFlowStep === "awaiting-estimate-choice") {
+      const selectedIndex = parseInt(input) - 1;
+      if (selectedIndex >= 0 && selectedIndex < estimates.length) {
+        const estimate = estimates[selectedIndex];
+        setSelectedEstimate(estimate);
+        setSelectedClient(
+          estimate.clientInformation ||
+            ({
+              id: "temp",
+              clientId: "temp",
+              name: estimate.clientName,
+              email: estimate.clientEmail,
+              phone: estimate.clientPhone,
+              address: estimate.clientAddress,
+            } as Client),
+        );
+
+        // Set project scope from estimate
+        setProjectScope(
+          estimate.projectDescription ||
+            "Descripción del proyecto no disponible",
+        );
+
+        // Set editing client data
+        setEditingClient({
+          name: estimate.clientName || "",
+          email: estimate.clientEmail || "",
+          phone: estimate.clientPhone || "",
+          address: estimate.clientAddress || "",
+        });
+
+        const clientInfo = estimate.clientInformation || {
+          name: estimate.clientName,
+          email: estimate.clientEmail,
+          phone: estimate.clientPhone,
+          address: estimate.clientAddress,
+        };
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content: `✅ Estimado "${estimate.estimateNumber}" seleccionado.\n\n📋 **INFORMACIÓN DEL CLIENTE:**\n• Nombre: ${clientInfo.name || "No especificado"}\n• Email: ${clientInfo.email || "No especificado"}\n• Teléfono: ${clientInfo.phone || "No especificado"}\n• Dirección: ${clientInfo.address || "No especificado"}\n\n¿Deseas editar esta información? Responde **SÍ** o **NO**`,
+            sender: "assistant",
+          },
+        ]);
+        setContractFlowStep("edit-client-info");
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "Número inválido. Por favor selecciona un estimado de la lista.",
+            sender: "assistant",
+          },
+        ]);
+      }
+    } else if (contractFlowStep === "edit-client-info") {
+      if (
+        input === "sí" ||
+        input === "si" ||
+        input === "yes" ||
+        input === "s"
+      ) {
+        // Show client editing form
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "📝 **EDITAR INFORMACIÓN DEL CLIENTE**\n\nCompleta el formulario a continuación:",
+            sender: "assistant",
+            action: "client-edit-form",
+          },
+        ]);
+      } else if (input === "no" || input === "n") {
+        // Continue to project timeline
+        setContractFlowStep("project-timeline");
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "✅ Perfecto. Mantendremos la información actual del cliente.\n\n📅 **CRONOGRAMA DEL PROYECTO**\n\nAhora necesito información sobre el cronograma del proyecto:",
+            sender: "assistant",
+            action: "project-timeline",
+          },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "❌ Respuesta no válida. Por favor responde **SÍ** para editar la información del cliente o **NO** para continuar con los datos actuales.",
+            sender: "assistant",
+          },
+        ]);
+      }
+    } else if (contractFlowStep === "project-timeline") {
+      // Check if contractor profile exists automatically
+      const hasContractorInfo =
+        profile?.company && profile?.company.trim() !== "";
+
+      if (hasContractorInfo) {
+        // Use profile data and skip contractor info step
+        setContractorInfo({
+          company: profile?.company || "",
+          license: profile?.license || "",
+          insurance: profile?.insurance || "",
+          address: profile?.address || "",
+          phone: profile?.phone || "",
+          email: profile?.email || "",
+        });
+
+        setContractFlowStep("project-milestones");
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "✅ Cronograma del proyecto guardado.\n\n✅ Información del contratista cargada desde el perfil.\n\n🎯 **HITOS DEL PROYECTO**\n\nConfigura los hitos del proyecto:",
+            sender: "assistant",
+            action: "project-milestones",
+          },
+        ]);
+      } else {
+        // No contractor info exists, ask them to set it up
+        setContractFlowStep("contractor-info");
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "✅ Cronograma del proyecto guardado.\n\n🏢 **INFORMACIÓN DEL CONTRATISTA**\n\nNo tienes información de empresa configurada en tu perfil. Necesitas configurar tu información de empresa para generar contratos.\n\n¿Deseas configurarla ahora? Responde **SÍ** para continuar o **PERFIL** para ir a la página de perfil.",
+            sender: "assistant",
+          },
+        ]);
+      }
+    } else if (contractFlowStep === "contractor-info") {
+      if (
+        input === "sí" ||
+        input === "si" ||
+        input === "yes" ||
+        input === "s"
+      ) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "📝 **INFORMACIÓN DEL CONTRATISTA**\n\nCompleta la información de tu empresa:",
+            sender: "assistant",
+            action: "contractor-form",
+          },
+        ]);
+      } else if (input === "perfil") {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "🔗 **IR AL PERFIL**\n\nPuedes configurar tu información de empresa en la página de perfil (/profile). Una vez configurada, regresa aquí para continuar con la generación del contrato.\n\n¿Deseas continuar sin información de empresa por ahora? Responde **CONTINUAR** o **CANCELAR**.",
+            sender: "assistant",
+          },
+        ]);
+      } else if (input === "continuar") {
+        // Continue without contractor info (use defaults)
+        setContractorInfo({
+          company: "Tu Empresa",
+          license: "Licencia pendiente",
+          insurance: "Seguro pendiente",
+          address: "Dirección pendiente",
+          phone: "Teléfono pendiente",
+          email: "Email pendiente",
+        });
+
+        setContractFlowStep("project-milestones");
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "⚠️ Continuando con información de empresa temporal. Te recomendamos configurar tu perfil después.\n\n🎯 **HITOS DEL PROYECTO**\n\nConfigura los hitos del proyecto:",
+            sender: "assistant",
+            action: "project-milestones",
+          },
+        ]);
+      } else if (input === "cancelar") {
+        // Reset contract flow
+        resetContractFlow();
+        return;
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "Por favor responde: **SÍ** para configurar ahora, **PERFIL** para ir a la página de perfil, **CONTINUAR** para usar datos temporales, o **CANCELAR** para salir.",
+            sender: "assistant",
+          },
+        ]);
+      }
+    } else if (contractFlowStep === "project-milestones") {
+      // Continue to warranty and permits
+      setContractFlowStep("warranty-permits");
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content:
+            "✅ Hitos del proyecto configurados.\n\n🛡️ **GARANTÍAS Y PERMISOS**\n\n¿Deseas agregar información sobre garantías y permisos?\n\n• **SÍ** - Completar formulario\n• **OMITIR** - Continuar sin esta información",
+          sender: "assistant",
+        },
+      ]);
+    } else if (contractFlowStep === "warranty-permits") {
+      if (
+        input === "sí" ||
+        input === "si" ||
+        input === "yes" ||
+        input === "s"
+      ) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "📝 **GARANTÍAS Y PERMISOS**\n\nCompleta la información sobre garantías y permisos:",
+            sender: "assistant",
+            action: "warranty-permits-form",
+          },
+        ]);
+      } else if (
+        input === "omitir" ||
+        input === "skip" ||
+        input === "no" ||
+        input === "n"
+      ) {
+        // Skip warranty and permits, set defaults
+        setWarrantyPermits({
+          warranty: "Garantía estándar según términos del contrato",
+          permits: "Permisos según regulaciones locales",
+          insurance: "Seguro de responsabilidad vigente",
+        });
+
+        setContractFlowStep("legal-clauses");
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "✅ Información de garantías y permisos omitida (se usarán valores estándar).\n\n⚖️ **CLÁUSULAS LEGALES**\n\n¿Deseas agregar cláusulas legales?\n\n• **AI** - Generar con inteligencia artificial\n• **MANUAL** - Agregar manualmente\n• **OMITIR** - Continuar sin cláusulas",
+            sender: "assistant",
+          },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "Por favor responde: **SÍ** para completar el formulario o **OMITIR** para continuar sin esta información.",
+            sender: "assistant",
+          },
+        ]);
+      }
+    } else if (contractFlowStep === "legal-clauses") {
+      if (input === "ai") {
+        // Generate AI legal clauses
+        await generateAILegalClauses();
+      } else if (input === "manual") {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "📝 **CLÁUSULAS LEGALES MANUALES**\n\nAgrega cláusulas legales manualmente:",
+            sender: "assistant",
+            action: "legal-clauses-form",
+          },
+        ]);
+      } else if (input === "omitir") {
+        // Skip to project scope
+        setContractFlowStep("project-scope");
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content: `📋 **ALCANCE DEL PROYECTO**\n\nRevisemos el alcance del proyecto:\n\n"${projectScope}"\n\n¿Deseas editarlo? Responde **SÍ** o **NO**`,
+            sender: "assistant",
+          },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content: "Por favor responde: **AI**, **MANUAL** o **OMITIR**",
+            sender: "assistant",
+          },
+        ]);
+      }
+    } else if (contractFlowStep === "project-scope") {
+      if (
+        input === "sí" ||
+        input === "si" ||
+        input === "yes" ||
+        input === "s"
+      ) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "📝 **EDITAR ALCANCE DEL PROYECTO**\n\nEdita la descripción del proyecto:",
+            sender: "assistant",
+            action: "project-scope-form",
+          },
+        ]);
+      } else {
+        // Final review
+        setContractFlowStep("final-review");
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content: generateContractSummary(),
+            sender: "assistant",
+          },
+        ]);
+      }
+    } else if (contractFlowStep === "final-review") {
+      if (input === "generar" || input === "confirmar") {
+        await generateAndDownloadContract();
+      }
+    }
+
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
+
+  // Helper functions for contract generation
+  const generateAILegalClauses = async () => {
+    setIsLoading(true);
+    try {
+      // Generate standard legal clauses for construction contracts
+      const standardClauses: LegalClause[] = [
+        {
+          id: "1",
+          title: "Términos de Pago",
+          content:
+            "El cliente pagará según el cronograma acordado. Los pagos vencidos generarán intereses del 1.5% mensual.",
+          category: "payment",
+          isRequired: true,
+        },
+        {
+          id: "2",
+          title: "Garantía de Trabajo",
+          content: `${contractorInfo.company} garantiza el trabajo realizado por un período de ${warrantyPermits.warranty || "1 año"}.`,
+          category: "warranty",
+          isRequired: true,
+        },
+        {
+          id: "3",
+          title: "Responsabilidad y Seguros",
+          content: `El contratista mantiene ${warrantyPermits.insurance || "seguro de responsabilidad general"} durante la duración del proyecto.`,
+          category: "insurance",
+          isRequired: true,
+        },
+        {
+          id: "4",
+          title: "Permisos y Regulaciones",
+          content: `Todos los trabajos se realizarán cumpliendo con ${warrantyPermits.permits || "las regulaciones locales aplicables"}.`,
+          category: "permits",
+          isRequired: true,
+        },
+        {
+          id: "5",
+          title: "Modificaciones al Contrato",
+          content:
+            "Cualquier modificación a este contrato debe ser acordada por escrito y firmada por ambas partes.",
+          category: "modifications",
+          isRequired: true,
+        },
+      ];
+
+      setLegalClauses(standardClauses);
+
+      setContractFlowStep("project-scope");
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content: `✅ Se generaron ${standardClauses.length} cláusulas legales estándar.\n\n📋 **ALCANCE DEL PROYECTO**\n\nRevisemos el alcance del proyecto:\n\n"${projectScope}"\n\n¿Deseas editarlo? Responde **SÍ** o **NO**`,
+          sender: "assistant",
+        },
+      ]);
+
+      toast({
+        title: "✅ Cláusulas Generadas",
+        description: `Se generaron ${standardClauses.length} cláusulas legales estándar`,
+      });
+    } catch (error) {
+      console.error("Error generating AI legal clauses:", error);
+      toast({
+        title: "Error",
+        description: "No se pudieron generar las cláusulas legales",
+        variant: "destructive",
+      });
+
+      setContractFlowStep("project-scope");
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content: `Error generando cláusulas. Continuemos sin cláusulas adicionales.\n\n📋 **ALCANCE DEL PROYECTO**\n\nRevisemos el alcance del proyecto:\n\n"${projectScope}"\n\n¿Deseas editarlo? Responde **SÍ** o **NO**`,
+          sender: "assistant",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateContractSummary = () => {
+    return `📋 **RESUMEN DEL CONTRATO**
+
+👤 **Cliente:** ${selectedClient?.name}
+📧 **Email:** ${selectedClient?.email}
+📞 **Teléfono:** ${selectedClient?.phone}
+📍 **Dirección:** ${selectedClient?.address}
+
+🏢 **Contratista:** ${contractorInfo.company}
+📄 **Licencia:** ${contractorInfo.license}
+🛡️ **Seguro:** ${contractorInfo.insurance}
+
+📅 **Cronograma:**
+• Inicio: ${projectTimeline[0]?.value}
+• Finalización: ${projectTimeline[1]?.value}
+• Duración: ${projectTimeline[2]?.value} días
+
+💰 **Valor del contrato:** $${selectedEstimate?.total?.toFixed(2)}
+
+🎯 **Hitos del proyecto:** ${projectMilestones.length} hitos configurados
+⚖️ **Cláusulas legales:** ${legalClauses.length} cláusulas incluidas
+🛡️ **Garantía:** ${warrantyPermits.warranty}
+
+¿Todo se ve correcto? Escribe **GENERAR** para crear el contrato PDF.`;
+  };
+
+  const generateAndDownloadContract = async () => {
+    setIsLoading(true);
+
+    try {
+      const contractData = {
+        clientInfo: {
+          name: selectedClient?.name,
+          email: selectedClient?.email,
+          phone: selectedClient?.phone,
+          address: selectedClient?.address,
+        },
+        contractorInfo: contractorInfo,
+        projectInfo: {
+          description: projectScope,
+          timeline: projectTimeline,
+          milestones: projectMilestones,
+          totalAmount: selectedEstimate?.total,
+          items: selectedEstimate?.items || [],
+        },
+        legalInfo: {
+          clauses: legalClauses,
+          warranty: warrantyPermits.warranty,
+          permits: warrantyPermits.permits,
+          insurance: warrantyPermits.insurance,
+        },
+        metadata: {
+          estimateNumber: selectedEstimate?.estimateNumber,
+          contractNumber: `CON-${Date.now()}`,
+          createdAt: new Date().toISOString(),
+          source: "mervin-contract-generator",
+        },
+      };
+
+      // For now, create a simple contract document
+      const contractHtml = `
+        <html>
+          <head>
+            <title>Contrato de Construcción</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 40px; }
+              .header { text-align: center; margin-bottom: 30px; }
+              .section { margin-bottom: 20px; }
+              .signature { margin-top: 50px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>CONTRATO DE CONSTRUCCIÓN</h1>
+              <p>Número: ${contractData.metadata.contractNumber}</p>
+            </div>
+
+            <div class="section">
+              <h3>INFORMACIÓN DEL CONTRATISTA</h3>
+              <p><strong>Empresa:</strong> ${contractorInfo.company}</p>
+              <p><strong>Dirección:</strong> ${contractorInfo.address}</p>
+              <p><strong>Teléfono:</strong> ${contractorInfo.phone}</p>
+              <p><strong>Email:</strong> ${contractorInfo.email}</p>
+              <p><strong>Licencia:</strong> ${contractorInfo.license}</p>
+            </div>
+
+            <div class="section">
+              <h3>INFORMACIÓN DEL CLIENTE</h3>
+              <p><strong>Nombre:</strong> ${selectedClient?.name}</p>
+              <p><strong>Dirección:</strong> ${selectedClient?.address}</p>
+              <p><strong>Teléfono:</strong> ${selectedClient?.phone}</p>
+              <p><strong>Email:</strong> ${selectedClient?.email}</p>
+            </div>
+
+            <div class="section">
+              <h3>ALCANCE DEL PROYECTO</h3>
+              <p>${projectScope}</p>
+            </div>
+
+            <div class="section">
+              <h3>VALOR DEL CONTRATO</h3>
+              <p><strong>Total:</strong> $${selectedEstimate?.total?.toFixed(2)}</p>
+            </div>
+
+            <div class="section">
+              <h3>CRONOGRAMA</h3>
+              <p><strong>Fecha de inicio:</strong> ${projectTimeline[0]?.value}</p>
+              <p><strong>Fecha de finalización:</strong> ${projectTimeline[1]?.value}</p>
+              <p><strong>Duración:</strong> ${projectTimeline[2]?.value} días</p>
+            </div>
+
+            <div class="section">
+              <h3>GARANTÍAS Y PERMISOS</h3>
+              <p><strong>Garantía:</strong> ${warrantyPermits.warranty}</p>
+              <p><strong>Permisos:</strong> ${warrantyPermits.permits}</p>
+              <p><strong>Seguro:</strong> ${warrantyPermits.insurance}</p>
+            </div>
+
+            <div class="signature">
+              <table width="100%">
+                <tr>
+                  <td width="45%">
+                    <p>_________________________</p>
+                    <p><strong>Contratista</strong></p>
+                    <p>${contractorInfo.company}</p>
+                  </td>
+                  <td width="10%"></td>
+                  <td width="45%">
+                    <p>_________________________</p>
+                    <p><strong>Cliente</strong></p>
+                    <p>${selectedClient?.name}</p>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </body>
+        </html>
+      `;
+
+      // Create a simple PDF download (for now just show success)
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content:
+            "✅ ¡Contrato generado exitosamente!\n\n📄 **CONTRATO CREADO**\n\n• Número de contrato: " +
+            contractData.metadata.contractNumber +
+            "\n• Cliente: " +
+            selectedClient?.name +
+            "\n• Valor: $" +
+            selectedEstimate?.total?.toFixed(2) +
+            "\n• Empresa: " +
+            contractorInfo.company +
+            "\n\nEl contrato está listo para su uso.",
+          sender: "assistant",
+        },
+      ]);
+
+      toast({
+        title: "✅ Contrato Generado",
+        description: "El contrato se ha generado correctamente",
+      });
+
+      // Reset flow after 5 seconds
+      setTimeout(() => {
+        resetContractFlow();
+      }, 5000);
+    } catch (error) {
+      console.error("Error generating contract:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar el contrato. Intenta nuevamente.",
+        variant: "destructive",
+      });
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content:
+            "❌ Error generando el contrato. Por favor intenta nuevamente o contacta soporte técnico.",
+          sender: "assistant",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetContractFlow = () => {
+    setContractFlowStep(null);
+    setCaseType("");
+    setSelectedEstimate(null);
+    setSelectedClient(null);
+    setProjectScope("");
+    setLegalClauses([]);
+
+    setMessages([
+      {
+        id: "welcome",
+        content:
+          "¡Hola! Soy Mervin, tu asistente virtual especializado en proyectos de construcción y cercas. ¿En qué puedo ayudarte hoy?",
+        sender: "assistant",
+        action: "menu",
+      },
+    ]);
+  };
+
+  // Load estimates for contract generation
+  const loadEstimates = async () => {
+    if (!currentUser) return [];
+
+    try {
+      const { collection, query, where, getDocs } = await import(
+        "firebase/firestore"
+      );
+      const estimatesRef = collection(db, "estimates");
+      const q = query(
+        estimatesRef,
+        where("firebaseUserId", "==", currentUser.uid),
+      );
+      const querySnapshot = await getDocs(q);
+
+      const estimatesData: EstimateData[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        estimatesData.push({
+          id: doc.id,
+          ...data,
+        } as EstimateData);
+      });
+
+      estimatesData.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+      setEstimates(estimatesData);
+      return estimatesData;
+    } catch (error) {
+      console.error("Error loading estimates:", error);
+      return [];
+    }
+  };
+
   // Manejar tecla Enter
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -1867,6 +2727,63 @@ export default function Mervin() {
                 </div>
               )}
 
+              {/* Estimates selection for contracts (NEW) */}
+              {message.estimates && message.estimates.length > 0 && (
+                <div className="mt-2 space-y-3">
+                  <div className="max-h-64 overflow-y-auto space-y-2 pr-2">
+                    {message.estimates.map((estimate, index) => (
+                      <div
+                        key={estimate.id}
+                        className="bg-gradient-to-r from-gray-800 to-gray-900 p-4 rounded-lg border border-gray-700 hover:border-cyan-600 transition-all duration-200"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-cyan-400 font-bold text-lg">
+                                {index + 1}.
+                              </span>
+                              <span className="font-semibold text-white">
+                                {estimate.estimateNumber}
+                              </span>
+                              <span className="text-xs bg-green-900/30 text-green-400 px-2 py-1 rounded">
+                                {estimate.status}
+                              </span>
+                            </div>
+                            <div className="text-sm text-gray-300 mb-1">
+                              👤 {estimate.clientName}
+                            </div>
+                            <div className="text-sm text-gray-400 mb-2">
+                              {estimate.projectDescription?.substring(0, 100)}
+                              ...
+                            </div>
+                            <div className="flex items-center gap-4 text-xs text-gray-400">
+                              <span>💰 ${estimate.total?.toFixed(2)}</span>
+                              <span>
+                                📅{" "}
+                                {new Date(
+                                  estimate.createdAt,
+                                ).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const userMessage = {
+                              content: (index + 1).toString(),
+                            };
+                            handleContractFlow(userMessage.content);
+                          }}
+                          className="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2 rounded transition-colors"
+                        >
+                          Seleccionar para Contrato
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {message.materialList && message.materialList.length > 0 && (
                 <div className="mt-2 space-y-3">
                   {/* Shopping Cart Header */}
@@ -2292,6 +3209,554 @@ export default function Mervin() {
                     </div>
                   </div>
                 )}
+
+              {/* Contract Forms (NEW) */}
+              {message.action === "client-edit-form" && (
+                <div className="mt-4 bg-gray-800 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Nombre
+                      </label>
+                      <input
+                        type="text"
+                        value={editingClient.name}
+                        onChange={(e) =>
+                          setEditingClient((prev) => ({
+                            ...prev,
+                            name: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={editingClient.email}
+                        onChange={(e) =>
+                          setEditingClient((prev) => ({
+                            ...prev,
+                            email: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Teléfono
+                      </label>
+                      <input
+                        type="tel"
+                        value={editingClient.phone}
+                        onChange={(e) =>
+                          setEditingClient((prev) => ({
+                            ...prev,
+                            phone: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Dirección
+                      </label>
+                      <input
+                        type="text"
+                        value={editingClient.address}
+                        onChange={(e) =>
+                          setEditingClient((prev) => ({
+                            ...prev,
+                            address: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedClient((prev) => ({
+                          ...prev!,
+                          name: editingClient.name,
+                          email: editingClient.email,
+                          phone: editingClient.phone,
+                          address: editingClient.address,
+                        }));
+
+                        setContractFlowStep("project-timeline");
+                        setMessages((prev) => [
+                          ...prev,
+                          {
+                            id: `assistant-${Date.now()}`,
+                            content: `✅ Información del cliente actualizada.\n\n📅 **CRONOGRAMA DEL PROYECTO**\n\nAhora necesito información sobre el cronograma del proyecto:`,
+                            sender: "assistant",
+                            action: "project-timeline",
+                          },
+                        ]);
+                      }}
+                      className="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2 rounded transition-colors"
+                    >
+                      Guardar y Continuar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {message.action === "project-timeline" && (
+                <div className="mt-4 bg-gray-800 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 gap-3">
+                    {projectTimeline.map((field) => (
+                      <div key={field.id}>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">
+                          {field.label}{" "}
+                          {field.required && (
+                            <span className="text-red-400">*</span>
+                          )}
+                        </label>
+                        <input
+                          type={field.id.includes("fecha") ? "date" : "text"}
+                          value={field.value}
+                          onChange={(e) => {
+                            const updatedTimeline = projectTimeline.map((t) =>
+                              t.id === field.id
+                                ? { ...t, value: e.target.value }
+                                : t,
+                            );
+                            setProjectTimeline(updatedTimeline);
+                          }}
+                          className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                          placeholder={
+                            field.id === "duration"
+                              ? "ej: 10"
+                              : field.id === "workingHours"
+                                ? "ej: 8:00 AM - 5:00 PM"
+                                : ""
+                          }
+                        />
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => {
+                        handleContractFlow("timeline-saved");
+                      }}
+                      className="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2 rounded transition-colors"
+                    >
+                      Guardar Cronograma
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {message.action === "contractor-form" && (
+                <div className="mt-4 bg-gray-800 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Nombre de la Empresa *
+                      </label>
+                      <input
+                        type="text"
+                        value={contractorInfo.company}
+                        onChange={(e) =>
+                          setContractorInfo((prev) => ({
+                            ...prev,
+                            company: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                        placeholder="ej: Tu Empresa LLC"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Número de Licencia
+                      </label>
+                      <input
+                        type="text"
+                        value={contractorInfo.license}
+                        onChange={(e) =>
+                          setContractorInfo((prev) => ({
+                            ...prev,
+                            license: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                        placeholder="ej: CA-123456"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Seguro de Responsabilidad
+                      </label>
+                      <input
+                        type="text"
+                        value={contractorInfo.insurance}
+                        onChange={(e) =>
+                          setContractorInfo((prev) => ({
+                            ...prev,
+                            insurance: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                        placeholder="ej: Póliza #12345"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Dirección de la Empresa
+                      </label>
+                      <input
+                        type="text"
+                        value={contractorInfo.address}
+                        onChange={(e) =>
+                          setContractorInfo((prev) => ({
+                            ...prev,
+                            address: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                        placeholder="ej: 123 Main St, Ciudad, Estado 12345"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Teléfono
+                      </label>
+                      <input
+                        type="tel"
+                        value={contractorInfo.phone}
+                        onChange={(e) =>
+                          setContractorInfo((prev) => ({
+                            ...prev,
+                            phone: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                        placeholder="ej: (555) 123-4567"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={contractorInfo.email}
+                        onChange={(e) =>
+                          setContractorInfo((prev) => ({
+                            ...prev,
+                            email: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                        placeholder="ej: info@tuempresa.com"
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (!contractorInfo.company.trim()) {
+                          toast({
+                            title: "Error",
+                            description:
+                              "El nombre de la empresa es obligatorio",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+
+                        setContractFlowStep("project-milestones");
+                        setMessages((prev) => [
+                          ...prev,
+                          {
+                            id: `assistant-${Date.now()}`,
+                            content:
+                              "✅ Información del contratista guardada.\n\n🎯 **HITOS DEL PROYECTO**\n\nConfigura los hitos del proyecto:",
+                            sender: "assistant",
+                            action: "project-milestones",
+                          },
+                        ]);
+                      }}
+                      className="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2 rounded transition-colors"
+                    >
+                      Guardar y Continuar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {message.action === "project-milestones" && (
+                <div className="mt-4 bg-gray-800 p-4 rounded-lg">
+                  <div className="space-y-3">
+                    {projectMilestones.map((milestone, index) => (
+                      <div
+                        key={milestone.id}
+                        className="bg-gray-700 p-3 rounded"
+                      >
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-300 mb-1">
+                              Título
+                            </label>
+                            <input
+                              value={milestone.title}
+                              onChange={(e) => {
+                                const updated = projectMilestones.map((m) =>
+                                  m.id === milestone.id
+                                    ? { ...m, title: e.target.value }
+                                    : m,
+                                );
+                                setProjectMilestones(updated);
+                              }}
+                              className="w-full bg-gray-600 text-white px-2 py-1 rounded text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-300 mb-1">
+                              Porcentaje
+                            </label>
+                            <input
+                              type="number"
+                              value={milestone.percentage}
+                              onChange={(e) => {
+                                const updated = projectMilestones.map((m) =>
+                                  m.id === milestone.id
+                                    ? {
+                                        ...m,
+                                        percentage: parseInt(e.target.value),
+                                      }
+                                    : m,
+                                );
+                                setProjectMilestones(updated);
+                              }}
+                              className="w-full bg-gray-600 text-white px-2 py-1 rounded text-sm"
+                            />
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <label className="block text-xs text-gray-300 mb-1">
+                            Descripción
+                          </label>
+                          <textarea
+                            value={milestone.description}
+                            onChange={(e) => {
+                              const updated = projectMilestones.map((m) =>
+                                m.id === milestone.id
+                                  ? { ...m, description: e.target.value }
+                                  : m,
+                              );
+                              setProjectMilestones(updated);
+                            }}
+                            className="w-full bg-gray-600 text-white px-2 py-1 rounded text-sm"
+                            rows={2}
+                          />
+                        </div>
+                        <div className="flex justify-between items-center mt-2">
+                          <div className="flex items-center gap-2">
+                            <label className="text-xs text-gray-300">
+                              Días estimados:
+                            </label>
+                            <input
+                              type="number"
+                              value={milestone.estimatedDays}
+                              onChange={(e) => {
+                                const updated = projectMilestones.map((m) =>
+                                  m.id === milestone.id
+                                    ? {
+                                        ...m,
+                                        estimatedDays: parseInt(e.target.value),
+                                      }
+                                    : m,
+                                );
+                                setProjectMilestones(updated);
+                              }}
+                              className="w-16 bg-gray-600 text-white px-2 py-1 rounded text-sm"
+                            />
+                          </div>
+                          <button
+                            onClick={() => {
+                              const updated = projectMilestones.filter(
+                                (m) => m.id !== milestone.id,
+                              );
+                              setProjectMilestones(updated);
+                            }}
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const newMilestone: ProjectMilestone = {
+                            id: Date.now().toString(),
+                            title: "",
+                            description: "",
+                            percentage: 0,
+                            estimatedDays: 1,
+                          };
+                          setProjectMilestones((prev) => [
+                            ...prev,
+                            newMilestone,
+                          ]);
+                        }}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Agregar Hito
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleContractFlow("milestones-saved");
+
+                          // Scroll to bottom
+                          setTimeout(() => {
+                            messagesEndRef.current?.scrollIntoView({
+                              behavior: "smooth",
+                            });
+                          }, 100);
+                        }}
+                        className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white py-2 rounded transition-colors"
+                      >
+                        Continuar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {message.action === "warranty-permits-form" && (
+                <div className="mt-4 bg-gray-800 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        🛡️ Garantía Ofrecida
+                      </label>
+                      <textarea
+                        value={warrantyPermits.warranty}
+                        onChange={(e) =>
+                          setWarrantyPermits((prev) => ({
+                            ...prev,
+                            warranty: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                        rows={2}
+                        placeholder="ej: Garantía de 1 año en materiales y mano de obra"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        📋 Permisos Requeridos
+                      </label>
+                      <textarea
+                        value={warrantyPermits.permits}
+                        onChange={(e) =>
+                          setWarrantyPermits((prev) => ({
+                            ...prev,
+                            permits: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                        rows={2}
+                        placeholder="ej: Permiso de construcción municipal, permiso de cercado"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        🏥 Seguro de Responsabilidad
+                      </label>
+                      <textarea
+                        value={warrantyPermits.insurance}
+                        onChange={(e) =>
+                          setWarrantyPermits((prev) => ({
+                            ...prev,
+                            insurance: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                        rows={2}
+                        placeholder="ej: Seguro de responsabilidad general por $1,000,000"
+                      />
+                    </div>
+
+                    <div className="bg-gray-700 p-3 rounded-lg">
+                      <h4 className="text-sm font-medium text-cyan-400 mb-2">
+                        💡 Sugerencias Comunes:
+                      </h4>
+                      <div className="grid grid-cols-1 gap-2 text-xs text-gray-300">
+                        <div>
+                          <strong>Garantías:</strong> 1 año materiales, 2 años
+                          mano de obra, garantía de satisfacción
+                        </div>
+                        <div>
+                          <strong>Permisos:</strong> Permiso municipal, permiso
+                          de cercado, inspección final
+                        </div>
+                        <div>
+                          <strong>Seguros:</strong> Responsabilidad general,
+                          seguro de trabajadores, bonos de garantía
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          // Use default values
+                          setWarrantyPermits({
+                            warranty:
+                              "Garantía de 1 año en materiales y mano de obra",
+                            permits:
+                              "Permisos según regulaciones locales aplicables",
+                            insurance:
+                              "Seguro de responsabilidad general vigente",
+                          });
+
+                          setContractFlowStep("legal-clauses");
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content:
+                                "✅ Valores estándar aplicados para garantías y permisos.\n\n⚖️ **CLÁUSULAS LEGALES**\n\n¿Deseas agregar cláusulas legales?\n\n• **AI** - Generar con inteligencia artificial\n• **MANUAL** - Agregar manualmente\n• **OMITIR** - Continuar sin cláusulas",
+                              sender: "assistant",
+                            },
+                          ]);
+                        }}
+                        className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded transition-colors"
+                      >
+                        Usar Valores Estándar
+                      </button>
+                      <button
+                        onClick={() => {
+                          setContractFlowStep("legal-clauses");
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content:
+                                "✅ Información de garantías y permisos guardada.\n\n⚖️ **CLÁUSULAS LEGALES**\n\n¿Deseas agregar cláusulas legales?\n\n• **AI** - Generar con inteligencia artificial\n• **MANUAL** - Agregar manualmente\n• **OMITIR** - Continuar sin cláusulas",
+                              sender: "assistant",
+                            },
+                          ]);
+                        }}
+                        className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white py-2 rounded transition-colors"
+                      >
+                        Guardar y Continuar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
 

@@ -55,6 +55,10 @@ export default function SimpleContractGenerator() {
   const [completedContracts, setCompletedContracts] = useState<any[]>([]);
   const [isLoadingCompleted, setIsLoadingCompleted] = useState(false);
 
+  // Draft contracts state
+  const [draftContracts, setDraftContracts] = useState<any[]>([]);
+  const [isLoadingDrafts, setIsLoadingDrafts] = useState(false);
+  
   // In-progress contracts state
   const [inProgressContracts, setInProgressContracts] = useState<any[]>([]);
   const [isLoadingInProgress, setIsLoadingInProgress] = useState(false);
@@ -201,6 +205,31 @@ export default function SimpleContractGenerator() {
   }, [currentUser?.uid, toast]);
 
   // Load in-progress contracts
+  const loadDraftContracts = useCallback(async () => {
+    if (!currentUser?.uid) return;
+    
+    setIsLoadingDrafts(true);
+    try {
+      console.log("📋 Loading draft contracts for user:", currentUser.uid);
+      const response = await fetch(`/api/dual-signature/drafts/${currentUser.uid}`);
+      
+      if (!response.ok) throw new Error('Failed to load draft contracts');
+      
+      const data = await response.json();
+      setDraftContracts(data.contracts || []);
+      console.log("✅ Draft contracts loaded:", data.contracts?.length || 0, "contracts");
+    } catch (error) {
+      console.error("❌ Error loading draft contracts:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load draft contracts",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingDrafts(false);
+    }
+  }, [currentUser?.uid, toast]);
+
   const loadInProgressContracts = useCallback(async () => {
     if (!currentUser?.uid) return;
     
@@ -2156,10 +2185,16 @@ export default function SimpleContractGenerator() {
 
   // Load in-progress contracts when switching to in-progress tab
   useEffect(() => {
-    if (historyTab === 'in-progress' && currentUser?.uid) {
-      loadInProgressContracts();
+    if (currentUser?.uid) {
+      if (historyTab === 'drafts') {
+        loadDraftContracts();
+      } else if (historyTab === 'in-progress') {
+        loadInProgressContracts();
+      } else if (historyTab === 'completed') {
+        loadCompletedContracts();
+      }
     }
-  }, [historyTab, currentUser?.uid, loadInProgressContracts]);
+  }, [historyTab, currentUser?.uid, loadDraftContracts, loadInProgressContracts, loadCompletedContracts]);
 
   // Load projects from Firebase when component mounts
   useEffect(() => {
@@ -3224,7 +3259,7 @@ export default function SimpleContractGenerator() {
                   <History className="h-5 w-5" />
                   Contract Management
                   <Badge className="bg-cyan-600 text-white ml-2">
-                    {contractHistory.length + completedContracts.length} total
+                    {draftContracts.length + inProgressContracts.length + completedContracts.length} total
                   </Badge>
                 </CardTitle>
                 <p className="text-sm text-cyan-300 mt-2">
@@ -3252,7 +3287,7 @@ export default function SimpleContractGenerator() {
                         <div className={`px-2 py-1 rounded-full text-xs font-bold ${
                           historyTab === "drafts" ? "bg-black/20 text-black" : "bg-cyan-600 text-white"
                         }`}>
-                          {contractHistory.filter(c => c.status !== 'completed').length}
+                          {draftContracts.length}
                         </div>
                       </button>
                       
@@ -3306,7 +3341,7 @@ export default function SimpleContractGenerator() {
                           <span className="text-sm font-medium">Drafts</span>
                         </div>
                         <div className="text-xs opacity-75">
-                          ({contractHistory.filter(c => c.status !== 'completed').length})
+                          ({draftContracts.length})
                         </div>
                       </TabsTrigger>
                       <TabsTrigger 
@@ -3345,23 +3380,23 @@ export default function SimpleContractGenerator() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={loadContractHistory}
-                        disabled={isLoadingHistory}
+                        onClick={loadDraftContracts}
+                        disabled={isLoadingDrafts}
                         className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
                       >
-                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingHistory ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingDrafts ? 'animate-spin' : ''}`} />
                         Refresh
                       </Button>
                     </div>
 
-                    {isLoadingHistory ? (
+                    {isLoadingDrafts ? (
                       <div className="text-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto"></div>
                         <p className="mt-2 text-gray-400">Loading contract drafts...</p>
                       </div>
-                    ) : contractHistory.filter(c => c.status !== 'completed').length > 0 ? (
+                    ) : draftContracts.length > 0 ? (
                       <div className="space-y-3">
-                        {contractHistory.filter(c => c.status !== 'completed').map((contract, index) => (
+                        {draftContracts.map((contract, index) => (
                           <div
                             key={contract.id || `draft-${index}`}
                             className="bg-gray-800 border border-gray-600 rounded-lg p-4"
@@ -3370,15 +3405,15 @@ export default function SimpleContractGenerator() {
                               <div>
                                 <h3 className="font-bold text-white text-lg">{contract.clientName}</h3>
                                 <p className="text-cyan-400 font-semibold">
-                                  ${(contract.contractData.financials?.total || 0).toLocaleString()}
+                                  ${(contract.totalAmount || 0).toLocaleString()}
+                                </p>
+                                <p className="text-gray-400 text-sm">
+                                  {contract.projectDescription || 'Draft Contract'}
                                 </p>
                               </div>
-                              <Badge className={`${
-                                contract.status === 'draft' ? 'bg-yellow-600 text-black' : 'bg-blue-600 text-white'
-                              }`}>
-                                {contract.status === 'draft' && <Clock className="h-3 w-3 mr-1" />}
-                                {contract.status === 'processing' && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-                                {contract.status.toUpperCase()}
+                              <Badge className="bg-yellow-600 text-black">
+                                <Clock className="h-3 w-3 mr-1" />
+                                DRAFT
                               </Badge>
                             </div>
 
