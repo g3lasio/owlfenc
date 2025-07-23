@@ -1,0 +1,1 @@
+{"success":false,"message":"PDF generation failed. Chrome dependencies may be missing. Use View HTML or Download HTML instead.","error":"Failed to generate simple PDF: WinAnsi cannot encode \"\" (0x1f4cb)"}

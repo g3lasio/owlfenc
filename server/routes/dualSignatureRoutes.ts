@@ -1163,12 +1163,30 @@ router.post('/generate-pdf-from-html', async (req, res) => {
       try {
         const { createSimplePdfFromText } = await import('../utils/simplePdfGenerator');
         
-        // Extract and clean text content from HTML for simple PDF
-        const textContent = htmlContent
+        // SIMPLE AND BRUTAL TEXT CLEANING - ASCII ONLY
+        let cleanText = htmlContent
           .replace(/<[^>]*>/g, ' ')  // Remove HTML tags
           .replace(/\s+/g, ' ')      // Normalize whitespace
-          .replace(/[^\x00-\x7F]/g, '') // Remove non-ASCII characters (emojis, special chars)
-          .replace(/[^\w\s\.\,\-\:\(\)\$]/g, '') // Keep only safe characters
+          .trim();
+        
+        // Convert each character to safe ASCII equivalent or remove
+        let textContent = '';
+        for (let i = 0; i < cleanText.length; i++) {
+          const char = cleanText[i];
+          const charCode = char.charCodeAt(0);
+          
+          // Keep only ASCII printable characters (32-126)
+          if (charCode >= 32 && charCode <= 126) {
+            textContent += char;
+          } else {
+            // Replace non-ASCII with space
+            textContent += ' ';
+          }
+        }
+        
+        // Final cleanup
+        textContent = textContent
+          .replace(/\s+/g, ' ')  // Re-normalize whitespace
           .trim();
         
         const simplePdfBuffer = await createSimplePdfFromText(textContent, {
