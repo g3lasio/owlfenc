@@ -1,0 +1,21 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Contract - Test Client</title>
+          <style>
+            body { font-family: 'Times New Roman', serif; margin: 20px; }
+            .print-btn { background: #007cba; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="no-print">
+            <button class="print-btn" onclick="window.print()">Print to PDF</button>
+            <p><strong>Note:</strong> Use your browser's "Print to PDF" option to save as PDF.</p>
+          </div>
+          <html><head><title>Test Contract</title><style>body{font-family:Times New Roman; padding:20px;} h1{text-align:center; border-bottom:2px solid black;} .contractor{font-weight:bold; color:blue;} .client{font-weight:bold; color:green;}</style></head><body><h1>INDEPENDENT CONTRACTOR AGREEMENT</h1><p>This is a test contract using the NEW HTML-PDF-NODE SERVICE.</p><div class="contractor">CONTRACTOR: OWL FENCE</div><div class="client">CLIENT: Test Client</div><p>This PDF should be properly formatted without any HTML/CSS code showing.</p></body></html>
+        </body>
+        </html>
+        

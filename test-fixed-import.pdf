@@ -1,0 +1,21 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Contract - Test Client Fixed Import</title>
+          <style>
+            body { font-family: 'Times New Roman', serif; margin: 20px; }
+            .print-btn { background: #007cba; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="no-print">
+            <button class="print-btn" onclick="window.print()">Print to PDF</button>
+            <p><strong>Note:</strong> Use your browser's "Print to PDF" option to save as PDF.</p>
+          </div>
+          <html><body><h1>INDEPENDENT CONTRACTOR AGREEMENT</h1><p>Testing fixed jsPDF import</p></body></html>
+        </body>
+        </html>
+        

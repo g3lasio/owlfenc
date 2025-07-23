@@ -1,0 +1,21 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Contract - Manolo E Constantino</title>
+          <style>
+            body { font-family: 'Times New Roman', serif; margin: 20px; }
+            .print-btn { background: #007cba; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="no-print">
+            <button class="print-btn" onclick="window.print()">Print to PDF</button>
+            <p><strong>Note:</strong> Use your browser's "Print to PDF" option to save as PDF.</p>
+          </div>
+          <html><body><h1>INDEPENDENT CONTRACTOR AGREEMENT</h1><p>Testing PDF-LIB solution for professional contract generation</p><div>Contractor: OWL FENC</div><div>Client: Manolo E Constantino</div><p>Contract Price: $8,674.06</p><p>Property Address: 2000 Mokelumne Drive, Antioch, California 94531</p><p>Scope of Work: Construction project for Manolo E Constantino including professional fence installation and related services</p></body></html>
+        </body>
+        </html>
+        

@@ -1,0 +1,21 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Contract - Test Client Final</title>
+          <style>
+            body { font-family: 'Times New Roman', serif; margin: 20px; }
+            .print-btn { background: #007cba; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="no-print">
+            <button class="print-btn" onclick="window.print()">Print to PDF</button>
+            <p><strong>Note:</strong> Use your browser's "Print to PDF" option to save as PDF.</p>
+          </div>
+          <html><head><title>Final Test</title></head><body><h1>INDEPENDENT CONTRACTOR AGREEMENT</h1><p>Testing the FINAL jsPDF solution</p><div>Contractor: OWL FENC</div><div>Client: Test Client Final</div><p>Contract Price: $25,000.00</p><p>Project Address: 456 Final Test Ave, Success City, CA 94000</p><p>Scope of Work: Complete fence installation with premium materials</p></body></html>
+        </body>
+        </html>
+        

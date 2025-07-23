@@ -1084,129 +1084,61 @@ router.post('/generate-pdf-from-html', async (req, res) => {
     }
 
     try {
-      // DIRECT PUPPETEER IMPLEMENTATION - No external dependencies
-      console.log('🎯 [CRITICAL-FIX] Using direct Puppeteer implementation for EXACT HTML layout');
+      // SOLUCIÓN DEFINITIVA: PDF-LIB - Genera PDFs profesionales sin dependencias externas  
+      console.log('🚀 [PDF-LIB] Using pdf-lib for reliable professional PDF generation');
       
-      const puppeteer = await import('puppeteer');
+      const { generateProfessionalContractPdf } = await import('../utils/pdfLibService');
       
-      const browser = await puppeteer.launch({
-        headless: true,
-        executablePath: '/home/runner/.cache/puppeteer/chrome/linux-136.0.7103.92/chrome-linux64/chrome',
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
-          '--no-first-run',
-          '--no-zygote',
-          '--single-process',
-          '--disable-extensions',
-          '--disable-web-security',
-          '--disable-features=VizDisplayCompositor'
-        ],
-      });
+      const pdfBuffer = await generateProfessionalContractPdf(htmlContent, contractId, clientName);
       
-      const page = await browser.newPage();
+      console.log('✅ [PDF-LIB] PDF generated successfully with professional formatting');
       
-      // Set viewport for consistent rendering
-      await page.setViewport({
-        width: 1200,
-        height: 1600,
-        deviceScaleFactor: 2,
-      });
-      
-      // Inject the HTML content
-      await page.setContent(htmlContent, {
-        waitUntil: ['networkidle0', 'domcontentloaded'],
-        timeout: 30000,
-      });
-      
-      // Wait for fonts to load
-      await page.evaluateHandle('document.fonts.ready');
-      await page.waitForTimeout(1000);
-      
-      // Generate PDF with settings that preserve exact layout
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        displayHeaderFooter: true,
-        headerTemplate: '<div></div>',
-        footerTemplate: `
-          <div style="font-size: 10px; text-align: center; width: 100%; font-family: 'Times New Roman', serif; color: #666;">
-            <span style="margin: 0 auto;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
-          </div>
-        `,
-        margin: {
-          top: '0.75in',
-          right: '0.75in',
-          bottom: '1in',
-          left: '0.75in',
-        },
-        preferCSSPageSize: false,
-        scale: 1,
-      });
-      
-      await browser.close();
-      
-      console.log('✅ [CRITICAL-FIX] PDF generated successfully with EXACT HTML layout preserved using direct Puppeteer');
-      
-      // Return PDF
+      // Return professionally formatted PDF
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="contract_${clientName.replace(/\s+/g, '_')}_signed.pdf"`);
       res.setHeader('Content-Length', pdfBuffer.length);
-      res.send(Buffer.from(pdfBuffer));
+      res.send(pdfBuffer);
       
-    } catch (puppeteerError: any) {
-      console.error('❌ [CRITICAL-FIX] Direct Puppeteer failed:', puppeteerError.message);
+    } catch (pdfLibError: any) {
+      console.error('❌ [PDF-LIB] PDF generation failed:', pdfLibError.message);
       
-      // Fallback to simple text-based PDF with signed content
+      // Emergency fallback: Return properly formatted HTML 
       try {
-        const { createSimplePdfFromText } = await import('../utils/simplePdfGenerator');
+        console.log('🆘 [EMERGENCY-FALLBACK] Returning formatted HTML');
         
-        // SIMPLE AND BRUTAL TEXT CLEANING - ASCII ONLY
-        let cleanText = htmlContent
-          .replace(/<[^>]*>/g, ' ')  // Remove HTML tags
-          .replace(/\s+/g, ' ')      // Normalize whitespace
-          .trim();
+        const formattedHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Contract - ${clientName}</title>
+          <style>
+            body { font-family: 'Times New Roman', serif; margin: 20px; }
+            .print-btn { background: #007cba; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="no-print">
+            <button class="print-btn" onclick="window.print()">Print to PDF</button>
+            <p><strong>Note:</strong> Use your browser's "Print to PDF" option to save as PDF.</p>
+          </div>
+          ${htmlContent}
+        </body>
+        </html>
+        `;
         
-        // Convert each character to safe ASCII equivalent or remove
-        let textContent = '';
-        for (let i = 0; i < cleanText.length; i++) {
-          const char = cleanText[i];
-          const charCode = char.charCodeAt(0);
-          
-          // Keep only ASCII printable characters (32-126)
-          if (charCode >= 32 && charCode <= 126) {
-            textContent += char;
-          } else {
-            // Replace non-ASCII with space
-            textContent += ' ';
-          }
-        }
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Disposition', `inline; filename="contract_${contractId}_signed.html"`);
+        res.send(formattedHtml);
         
-        // Final cleanup
-        textContent = textContent
-          .replace(/\s+/g, ' ')  // Re-normalize whitespace
-          .trim();
-        
-        const simplePdfBuffer = await createSimplePdfFromText(textContent, {
-          title: `Signed Contract - ${clientName}`,
-          contractId
-        });
-        
-        console.log('✅ [CRITICAL-FIX] Fallback simple PDF generated from signed content');
-        
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="contract_${contractId}_signed_text.pdf"`);
-        res.send(simplePdfBuffer);
-        
-      } catch (fallbackError: any) {
-        console.error('❌ [CRITICAL-FIX] All PDF generation methods failed:', fallbackError.message);
+      } catch (htmlError: any) {
+        console.error('❌ [EMERGENCY-FALLBACK] HTML fallback failed:', htmlError.message);
         
         return res.status(500).json({
           success: false,
-          message: 'PDF generation failed. Chrome dependencies may be missing. Use View HTML or Download HTML instead.',
-          error: fallbackError.message
+          message: 'All PDF generation methods failed. Please try again.',
+          error: newServiceError.message
         });
       }
     }
