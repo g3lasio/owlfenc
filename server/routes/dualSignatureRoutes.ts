@@ -1083,29 +1083,78 @@ router.post('/generate-pdf-from-html', async (req, res) => {
       });
     }
 
-    // Import PDF services dynamically
-    const { ReplitPdfService } = await import('../services/replitPdfService');
-    
     try {
-      // Use EXACT layout preserving PDF generation to match HTML preview 100%
-      console.log('🎯 [EXACT-LAYOUT] Using EXACT layout preservation to match HTML preview 100%');
+      // DIRECT PUPPETEER IMPLEMENTATION - No external dependencies
+      console.log('🎯 [CRITICAL-FIX] Using direct Puppeteer implementation for EXACT HTML layout');
       
-      const { createPdfWithExactHtmlLayout } = await import('../utils/htmlLayoutPreservingPdf');
+      const puppeteer = await import('puppeteer');
       
-      const pdfBuffer = await createPdfWithExactHtmlLayout(htmlContent, {
-        title: `SIGNED CONTRACT - ${clientName.toUpperCase()}`,
-        contractId
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process',
+          '--disable-extensions'
+        ],
       });
       
-      console.log('✅ [EXACT-LAYOUT] PDF generated with EXACT HTML layout structure preserved');
+      const page = await browser.newPage();
       
-      // Return PDF as blob
+      // Set viewport for consistent rendering
+      await page.setViewport({
+        width: 1200,
+        height: 1600,
+        deviceScaleFactor: 2,
+      });
+      
+      // Inject the HTML content
+      await page.setContent(htmlContent, {
+        waitUntil: ['networkidle0', 'domcontentloaded'],
+        timeout: 30000,
+      });
+      
+      // Wait for fonts to load
+      await page.evaluateHandle('document.fonts.ready');
+      await page.waitForTimeout(1000);
+      
+      // Generate PDF with settings that preserve exact layout
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        displayHeaderFooter: true,
+        headerTemplate: '<div></div>',
+        footerTemplate: `
+          <div style="font-size: 10px; text-align: center; width: 100%; font-family: 'Times New Roman', serif; color: #666;">
+            <span style="margin: 0 auto;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+          </div>
+        `,
+        margin: {
+          top: '0.75in',
+          right: '0.75in',
+          bottom: '1in',
+          left: '0.75in',
+        },
+        preferCSSPageSize: false,
+        scale: 1,
+      });
+      
+      await browser.close();
+      
+      console.log('✅ [CRITICAL-FIX] PDF generated successfully with EXACT HTML layout preserved using direct Puppeteer');
+      
+      // Return PDF
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="contract_${contractId}_from_signed_html.pdf"`);
-      res.send(pdfBuffer);
+      res.setHeader('Content-Disposition', `attachment; filename="contract_${clientName.replace(/\s+/g, '_')}_signed.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.send(Buffer.from(pdfBuffer));
       
-    } catch (pdfError: any) {
-      console.error('❌ [CRITICAL-FIX] ReplitPdfService failed:', pdfError.message);
+    } catch (puppeteerError: any) {
+      console.error('❌ [CRITICAL-FIX] Direct Puppeteer failed:', puppeteerError.message);
       
       // Fallback to simple text-based PDF with signed content
       try {
