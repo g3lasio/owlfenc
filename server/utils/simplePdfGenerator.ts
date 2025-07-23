@@ -1,132 +1,136 @@
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
-/**
- * Simple PDF Generator - Fallback when all other PDF services fail
- * Creates basic PDF from text content with professional formatting
- */
-export async function createSimplePdfFromText(textContent: string, options: {
+interface SimplePdfOptions {
   title?: string;
   contractId?: string;
-} = {}): Promise<Buffer> {
+}
+
+/**
+ * Creates a simple PDF from text content
+ * Used as a fallback when Puppeteer is not available
+ */
+export async function createSimplePdfFromText(
+  textContent: string,
+  options: SimplePdfOptions = {}
+): Promise<Buffer> {
+  console.log('📄 [SIMPLE-PDF] Creating simple PDF from text content');
+  
   try {
-    console.log('📄 [SIMPLE-PDF] Creating fallback PDF from text content...');
-    
     // Create a new PDF document
     const pdfDoc = await PDFDocument.create();
-    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     
     // Add a page
-    let currentPage = pdfDoc.addPage();
-    const { width, height } = currentPage.getSize();
-    let yPosition = height - 50;
+    const page = pdfDoc.addPage([612, 792]); // Letter size (8.5" x 11")
+    const { width, height } = page.getSize();
     
-    // Document header
-    currentPage.drawText(options.title || 'SIGNED CONTRACT', {
-      x: 50,
+    // Embed Times New Roman fonts
+    const timesRoman = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+    const timesRomanBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+    
+    // Starting position
+    let yPosition = height - 80;
+    
+    // Add title
+    const title = options.title || 'SIGNED CONTRACT';
+    page.drawText(title.toUpperCase(), {
+      x: width / 2 - (title.length * 4), // Rough centering
       y: yPosition,
-      size: 20,
-      font: helveticaBold,
+      size: 16,
+      font: timesRomanBold,
       color: rgb(0, 0, 0),
     });
-    yPosition -= 40;
+    yPosition -= 30;
     
+    // Add contract ID if provided
     if (options.contractId) {
-      currentPage.drawText(`Contract ID: ${options.contractId}`, {
-        x: 50,
+      const contractIdText = `Contract ID: ${options.contractId}`;
+      page.drawText(contractIdText, {
+        x: width / 2 - (contractIdText.length * 3),
         y: yPosition,
-        size: 12,
-        font: helveticaFont,
-        color: rgb(0.5, 0.5, 0.5),
+        size: 10,
+        font: timesRoman,
+        color: rgb(0.4, 0.4, 0.4),
       });
-      yPosition -= 30;
+      yPosition -= 40;
     }
     
-    // Add signature notice
-    currentPage.drawText('*** DIGITALLY SIGNED CONTRACT ***', {
-      x: 50,
-      y: yPosition,
-      size: 14,
-      font: helveticaBold,
-      color: rgb(0, 0.5, 0),
+    // Add a separator line
+    page.drawLine({
+      start: { x: 50, y: yPosition },
+      end: { x: width - 50, y: yPosition },
+      thickness: 1,
+      color: rgb(0.2, 0.2, 0.2),
     });
-    yPosition -= 40;
+    yPosition -= 30;
     
-    // Clean text content to remove problematic characters for PDF generation
-    const cleanedText = textContent
-      .replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g, '')  // Remove emojis (ES5 compatible)
-      .replace(/[^\x00-\x7F]/g, '')  // Remove non-ASCII characters
-      .replace(/\s+/g, ' ')  // Normalize whitespace
-      .trim();
-    
-    // Split text into lines that fit on page
-    const maxWidth = width - 100; // 50px margins on each side
-    const fontSize = 10;
-    const lineHeight = 15;
-    
-    const words = cleanedText.split(' ');
+    // Process text content
+    const words = textContent.split(/\s+/);
     const lines: string[] = [];
     let currentLine = '';
+    const maxCharsPerLine = 75;
     
+    // Break text into lines
     for (const word of words) {
-      const testLine = currentLine ? `${currentLine} ${word}` : word;
-      const textWidth = helveticaFont.widthOfTextAtSize(testLine, fontSize);
-      
-      if (textWidth <= maxWidth) {
-        currentLine = testLine;
-      } else {
+      if ((currentLine + ' ' + word).length > maxCharsPerLine) {
         if (currentLine) {
           lines.push(currentLine);
           currentLine = word;
         } else {
-          // Word is too long, split it
-          lines.push(word.substring(0, 50));
-          currentLine = word.substring(50);
+          // Word is too long, force break
+          lines.push(word.substring(0, maxCharsPerLine));
+          currentLine = word.substring(maxCharsPerLine);
         }
+      } else {
+        currentLine = currentLine ? currentLine + ' ' + word : word;
       }
     }
-    
     if (currentLine) {
       lines.push(currentLine);
     }
     
-    // Add text lines to PDF, creating new pages as needed
+    // Add text lines to PDF
+    const lineHeight = 14;
+    const fontSize = 11;
+    let currentPage = page;
+    
     for (const line of lines) {
-      if (yPosition < 50) {
-        // Add new page
-        currentPage = pdfDoc.addPage();
-        yPosition = height - 50;
+      // Check if we need a new page
+      if (yPosition < 80) {
+        currentPage = pdfDoc.addPage([612, 792]);
+        yPosition = height - 80;
       }
       
+      // Draw the line
       currentPage.drawText(line, {
         x: 50,
         y: yPosition,
         size: fontSize,
-        font: helveticaFont,
+        font: timesRoman,
         color: rgb(0, 0, 0),
+        maxWidth: width - 100,
       });
       
       yPosition -= lineHeight;
     }
     
-    // Add footer to last page
-    const lastPage = pdfDoc.getPages()[pdfDoc.getPages().length - 1];
-    lastPage.drawText('*** END OF SIGNED CONTRACT ***', {
-      x: 50,
+    // Add footer on last page
+    const footerText = '*** DIGITALLY SIGNED CONTRACT ***';
+    currentPage.drawText(footerText, {
+      x: width / 2 - (footerText.length * 3),
       y: 50,
-      size: 12,
-      font: helveticaBold,
-      color: rgb(0.5, 0.5, 0.5),
+      size: 10,
+      font: timesRomanBold,
+      color: rgb(0.3, 0.3, 0.7),
     });
     
-    // Generate PDF buffer
+    // Save the PDF
     const pdfBytes = await pdfDoc.save();
-    console.log('✅ [SIMPLE-PDF] Simple PDF generated successfully from text content');
     
+    console.log('✅ [SIMPLE-PDF] Simple PDF generated successfully');
     return Buffer.from(pdfBytes);
     
-  } catch (error: any) {
-    console.error('❌ [SIMPLE-PDF] Failed to create simple PDF:', error.message);
-    throw new Error(`Simple PDF generation failed: ${error.message}`);
+  } catch (error) {
+    console.error('❌ [SIMPLE-PDF] Error generating simple PDF:', error);
+    throw new Error(`Failed to generate simple PDF: ${error.message}`);
   }
 }
