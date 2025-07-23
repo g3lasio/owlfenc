@@ -1,404 +1,218 @@
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import puppeteer from 'puppeteer';
+import * as cheerio from 'cheerio';
 
 /**
- * CRITICAL FIX: Creates PDF that EXACTLY matches the HTML preview layout
- * This preserves the EXACT visual structure instead of converting to plain text
+ * CRITICAL: HTML Layout Preserving PDF Generator
+ * 
+ * This service generates PDFs that EXACTLY match the HTML preview layout.
+ * It uses Puppeteer to render HTML with all CSS intact, then converts to PDF.
+ * 
+ * REQUIREMENTS:
+ * - Preserve 100% of original HTML/CSS styling
+ * - Only modify signature areas to add signatures
+ * - Output must be visually identical to HTML preview
+ * - Professional Times New Roman formatting must be maintained
  */
-export async function createPdfWithExactHtmlLayout(htmlContent: string, options: {
-  title?: string;
-  contractId?: string;
-} = {}): Promise<Buffer> {
+
+interface SignatureData {
+  contractorSignature?: {
+    name: string;
+    signatureData: string;
+    typedName?: string;
+    signedAt: Date;
+  };
+  clientSignature?: {
+    name: string;
+    signatureData: string;
+    typedName?: string;
+    signedAt: Date;
+  };
+}
+
+export async function generateExactLayoutPdf(
+  originalHtml: string,
+  signatures?: SignatureData,
+  options: {
+    contractId?: string;
+    debug?: boolean;
+  } = {}
+): Promise<Buffer> {
+  let browser;
+  
   try {
-    console.log('🎯 [EXACT-LAYOUT-PDF] Creating PDF that EXACTLY matches HTML preview structure');
+    console.log('🎯 [EXACT-LAYOUT] Using EXACT layout preservation to match HTML preview 100%');
     
-    const pdfDoc = await PDFDocument.create();
-    const timesFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-    const timesBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
-    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    // Load HTML with cheerio to inject signatures if provided
+    let htmlToRender = originalHtml;
     
-    let currentPage = pdfDoc.addPage();
-    const { width, height } = currentPage.getSize();
-    let yPosition = height - 50;
-    
-    // Extract the contract layout structure from HTML
-    const contractStructure = parseContractLayoutStructure(htmlContent);
-    
-    // 1. CENTERED HEADER SECTION (exactly like HTML)
-    if (contractStructure.header) {
-      const headerText = contractStructure.header.title;
-      const headerWidth = timesBold.widthOfTextAtSize(headerText, 18);
-      
-      // Center the header exactly like HTML
-      currentPage.drawText(headerText, {
-        x: width / 2 - headerWidth / 2,
-        y: yPosition,
-        size: 18,
-        font: timesBold,
-        color: rgb(0, 0, 0),
+    if (signatures) {
+      const $ = cheerio.load(originalHtml, {
+        decodeEntities: false,
+        lowerCaseAttributeNames: false,
+        recognizeSelfClosing: true,
       });
-      yPosition -= 25;
       
-      // Add header bottom border (like HTML border-bottom: 2px solid #000)
-      currentPage.drawLine({
-        start: { x: 50, y: yPosition },
-        end: { x: width - 50, y: yPosition },
-        thickness: 2,
-        color: rgb(0, 0, 0),
-      });
-      yPosition -= 30;
-      
-      // Agreement date (centered, like HTML)
-      if (contractStructure.header.date) {
-        const dateText = contractStructure.header.date;
-        const dateWidth = timesFont.widthOfTextAtSize(dateText, 12);
-        currentPage.drawText(dateText, {
-          x: width / 2 - dateWidth / 2,
-          y: yPosition,
-          size: 12,
-          font: timesFont,
-          color: rgb(0, 0, 0),
-        });
-        yPosition -= 40;
-      }
-    }
-    
-    // 2. TWO-COLUMN CONTRACTOR/CLIENT SECTION (exactly like HTML)
-    if (contractStructure.parties) {
-      const columnWidth = (width - 120) / 2; // 50px margins + 20px gap
-      const leftColumnX = 50;
-      const rightColumnX = width / 2 + 10;
-      
-      // CONTRACTOR column (left)
-      if (contractStructure.parties.contractor) {
-        currentPage.drawText('CONTRACTOR', {
-          x: leftColumnX,
-          y: yPosition,
-          size: 14,
-          font: timesBold,
-          color: rgb(0, 0, 0),
-        });
-        yPosition -= 20;
+      // Helper to create signature image HTML
+      const createSignatureHtml = (signature: any) => {
+        if (!signature) return '';
         
-        const contractorLines = contractStructure.parties.contractor;
-        for (const line of contractorLines) {
-          currentPage.drawText(line, {
-            x: leftColumnX,
-            y: yPosition,
-            size: 11,
-            font: timesFont,
-            color: rgb(0, 0, 0),
-          });
-          yPosition -= 15;
+        if (signature.signatureData.startsWith('data:image')) {
+          // Canvas/drawn signature
+          return `<img src="${signature.signatureData}" style="max-height: 50px; max-width: 250px; object-fit: contain;" alt="${signature.name} Signature" />`;
+        } else {
+          // Typed signature - create SVG
+          const sigName = signature.typedName || signature.name;
+          return `
+            <svg width="250" height="50" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+              <text x="125" y="35" text-anchor="middle" font-family="'Brush Script MT', cursive" font-size="24" font-style="italic" fill="#000080">${sigName}</text>
+            </svg>
+          `;
+        }
+      };
+      
+      // Find contractor signature area
+      const contractorSelectors = [
+        '.sign-space:first',
+        '.signature-line:first',
+        '.sign-block:first .sign-space',
+        '#contractor-signature',
+        '[data-signature="contractor"]'
+      ];
+      
+      for (const selector of contractorSelectors) {
+        const element = $(selector);
+        if (element.length > 0 && signatures.contractorSignature) {
+          element.html(createSignatureHtml(signatures.contractorSignature));
+          console.log('✅ [EXACT-LAYOUT] Injected contractor signature');
+          break;
         }
       }
       
-      // Reset yPosition for CLIENT column (right side)
-      let clientYPosition = height - 50 - 25 - 30 - 40; // Same as contractor start
+      // Find client signature area
+      const clientSelectors = [
+        '.sign-space:last',
+        '.signature-line:last',
+        '.sign-block:last .sign-space',
+        '#client-signature',
+        '[data-signature="client"]'
+      ];
       
-      // CLIENT column (right)
-      if (contractStructure.parties.client) {
-        currentPage.drawText('CLIENT', {
-          x: rightColumnX,
-          y: clientYPosition,
-          size: 14,
-          font: timesBold,
-          color: rgb(0, 0, 0),
-        });
-        clientYPosition -= 20;
-        
-        const clientLines = contractStructure.parties.client;
-        for (const line of clientLines) {
-          currentPage.drawText(line, {
-            x: rightColumnX,
-            y: clientYPosition,
-            size: 11,
-            font: timesFont,
-            color: rgb(0, 0, 0),
-          });
-          clientYPosition -= 15;
+      for (const selector of clientSelectors) {
+        const element = $(selector);
+        if (element.length > 0 && signatures.clientSignature) {
+          element.html(createSignatureHtml(signatures.clientSignature));
+          console.log('✅ [EXACT-LAYOUT] Injected client signature');
+          break;
         }
       }
       
-      // Adjust yPosition to continue after both columns
-      yPosition = Math.min(yPosition, clientYPosition) - 30;
-    }
-    
-    // 3. CONTRACT SECTIONS (numbered sections exactly like HTML)
-    if (contractStructure.sections) {
-      for (const section of contractStructure.sections) {
-        // Check if we need a new page
-        if (yPosition < 150) {
-          currentPage = pdfDoc.addPage();
-          yPosition = height - 50;
-        }
-        
-        // Section header (bold, like HTML h2 style)
-        const sectionHeader = section.header;
-        currentPage.drawText(sectionHeader, {
-          x: 50,
-          y: yPosition,
-          size: 12,
-          font: timesBold,
-          color: rgb(0, 0, 0),
-        });
-        yPosition -= 20;
-        
-        // Section content (regular text, like HTML p style)
-        const contentLines = wrapTextToLines(section.content, timesFont, 11, width - 100);
-        for (const line of contentLines) {
-          if (yPosition < 50) {
-            currentPage = pdfDoc.addPage();
-            yPosition = height - 50;
-          }
-          
-          currentPage.drawText(line, {
-            x: 50,
-            y: yPosition,
-            size: 11,
-            font: timesFont,
-            color: rgb(0, 0, 0),
-          });
-          yPosition -= 16; // line-height: 1.5 like HTML
-        }
-        yPosition -= 15; // Section spacing
-      }
-    }
-    
-    // 4. SIGNATURE SECTION (if present)
-    if (contractStructure.signatures) {
-      if (yPosition < 200) {
-        currentPage = pdfDoc.addPage();
-        yPosition = height - 50;
+      // Update date fields if signatures are provided
+      if (signatures.contractorSignature?.signedAt) {
+        const contractorDate = new Date(signatures.contractorSignature.signedAt).toLocaleDateString();
+        $('.sign-block:first .date-line, #contractor-date').text(contractorDate);
       }
       
-      // Signature header
-      currentPage.drawText('EXECUTION', {
-        x: 50,
-        y: yPosition,
-        size: 12,
-        font: timesBold,
-        color: rgb(0, 0, 0),
-      });
-      yPosition -= 25;
-      
-      // Contractor signature
-      if (contractStructure.signatures.contractor) {
-        currentPage.drawText('CONTRACTOR', {
-          x: 50,
-          y: yPosition,
-          size: 11,
-          font: timesBold,
-          color: rgb(0, 0, 0),
-        });
-        yPosition -= 20;
-        
-        currentPage.drawText(contractStructure.signatures.contractor.name, {
-          x: 70,
-          y: yPosition,
-          size: 11,
-          font: timesFont,
-          color: rgb(0, 0, 0),
-        });
-        yPosition -= 15;
-        
-        currentPage.drawText(`Date: ${contractStructure.signatures.contractor.date}`, {
-          x: 70,
-          y: yPosition,
-          size: 10,
-          font: timesFont,
-          color: rgb(0, 0, 0),
-        });
-        yPosition -= 30;
+      if (signatures.clientSignature?.signedAt) {
+        const clientDate = new Date(signatures.clientSignature.signedAt).toLocaleDateString();
+        $('.sign-block:last .date-line, #client-date').text(clientDate);
       }
       
-      // Client signature
-      if (contractStructure.signatures.client) {
-        currentPage.drawText('CLIENT', {
-          x: 50,
-          y: yPosition,
-          size: 11,
-          font: timesBold,
-          color: rgb(0, 0, 0),
-        });
-        yPosition -= 20;
-        
-        currentPage.drawText(contractStructure.signatures.client.name, {
-          x: 70,
-          y: yPosition,
-          size: 11,
-          font: timesFont,
-          color: rgb(0, 0, 0),
-        });
-        yPosition -= 15;
-        
-        currentPage.drawText(`Date: ${contractStructure.signatures.client.date}`, {
-          x: 70,
-          y: yPosition,
-          size: 10,
-          font: timesFont,
-          color: rgb(0, 0, 0),
-        });
-      }
+      htmlToRender = $.html();
     }
     
-    // Add contract ID footer (like HTML)
-    if (options.contractId) {
-      const footerText = `Contract ID: ${options.contractId}`;
-      const footerWidth = helveticaFont.widthOfTextAtSize(footerText, 9);
-      currentPage.drawText(footerText, {
-        x: width - footerWidth - 10,
-        y: 10,
-        size: 9,
-        font: helveticaFont,
-        color: rgb(0.4, 0.4, 0.4),
-      });
-    }
+    // Launch Puppeteer
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-zygote',
+        '--single-process',
+      ],
+    });
     
-    const pdfBytes = await pdfDoc.save();
-    console.log('✅ [EXACT-LAYOUT-PDF] PDF generated with EXACT HTML layout structure preserved');
-    return Buffer.from(pdfBytes);
+    const page = await browser.newPage();
+    
+    // Set viewport to match standard letter size
+    await page.setViewport({
+      width: 816,  // 8.5 inches at 96 DPI
+      height: 1056, // 11 inches at 96 DPI
+    });
+    
+    // Set the HTML content
+    await page.setContent(htmlToRender, {
+      waitUntil: ['networkidle0', 'domcontentloaded'],
+    });
+    
+    // Generate PDF with exact formatting
+    const pdfBuffer = await page.pdf({
+      format: 'Letter',
+      printBackground: true,
+      margin: {
+        top: '0.5in',
+        right: '0.5in',
+        bottom: '0.5in',
+        left: '0.5in',
+      },
+      displayHeaderFooter: true,
+      headerTemplate: '<div></div>',
+      footerTemplate: `
+        <div style="width: 100%; text-align: center; font-family: 'Times New Roman', serif; font-size: 10pt; color: #666;">
+          <span class="pageNumber"></span> of <span class="totalPages"></span>
+        </div>
+      `,
+    });
+    
+    await browser.close();
+    
+    console.log('✅ [EXACT-LAYOUT] PDF generated with EXACT HTML layout structure preserved');
+    
+    return Buffer.from(pdfBuffer);
     
   } catch (error: any) {
-    console.error('❌ [EXACT-LAYOUT-PDF] Failed to generate layout-preserving PDF:', error.message);
+    console.error('❌ [EXACT-LAYOUT] Error generating PDF:', error.message);
+    
+    if (browser) {
+      await browser.close();
+    }
+    
+    // Check for specific Chrome errors
+    if (error.message.includes('Failed to launch') || 
+        error.message.includes('chrome') || 
+        error.message.includes('chromium')) {
+      throw new Error('Chrome/Chromium not available for PDF generation. Please use HTML download instead.');
+    }
+    
     throw error;
   }
 }
 
-interface ContractStructure {
-  header?: {
-    title: string;
-    date?: string;
-  };
-  parties?: {
-    contractor?: string[];
-    client?: string[];
-  };
-  sections?: Array<{
-    header: string;
-    content: string;
-  }>;
-  signatures?: {
-    contractor?: {
-      name: string;
-      date: string;
-    };
-    client?: {
-      name: string;
-      date: string;
-    };
-  };
-}
-
-function parseContractLayoutStructure(html: string): ContractStructure {
-  const structure: ContractStructure = {};
+/**
+ * Generate PDF from signed HTML contract
+ * This is the main entry point for generating signed contract PDFs
+ */
+export async function generateSignedContractPdf(
+  contractHtml: string,
+  contractorSignature?: any,
+  clientSignature?: any,
+  contractId?: string
+): Promise<Buffer> {
+  console.log('🎯 [EXACT-LAYOUT-PDF] Creating PDF that EXACTLY matches HTML preview structure');
   
-  // Extract header
-  const headerMatch = html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-  if (headerMatch) {
-    structure.header = { title: headerMatch[1].trim() };
-    
-    // Look for agreement date
-    const dateMatch = html.match(/Agreement Date:\s*([^<\n]+)/i);
-    if (dateMatch) {
-      structure.header.date = `Agreement Date: ${dateMatch[1].trim()}`;
-    }
+  const signatures: SignatureData = {};
+  
+  if (contractorSignature) {
+    signatures.contractorSignature = contractorSignature;
   }
   
-  // Extract contractor/client info (two-column layout)
-  const contractorMatch = html.match(/CONTRACTOR[^<]*<\/h[^>]*>[\s\S]*?Business Name:\s*([^<\n]+)[\s\S]*?Business Address:\s*([^<\n]+)[\s\S]*?Telephone:\s*([^<\n]+)[\s\S]*?Email:\s*([^<\n]+)/i);
-  const clientMatch = html.match(/CLIENT[^<]*<\/h[^>]*>[\s\S]*?Full Name\/Company:\s*([^<\n]+)[\s\S]*?Property Address:\s*([^<\n]+)[\s\S]*?(?:Telephone:\s*([^<\n]+))?[\s\S]*?Email:\s*([^<\n]+)/i);
-  
-  if (contractorMatch || clientMatch) {
-    structure.parties = {};
-    
-    if (contractorMatch) {
-      structure.parties.contractor = [
-        `Business Name: ${contractorMatch[1].trim()}`,
-        `Business Address: ${contractorMatch[2].trim()}`,
-        `Telephone: ${contractorMatch[3].trim()}`,
-        `Email: ${contractorMatch[4].trim()}`
-      ];
-    }
-    
-    if (clientMatch) {
-      structure.parties.client = [
-        `Full Name/Company: ${clientMatch[1].trim()}`,
-        `Property Address: ${clientMatch[2].trim()}`,
-        clientMatch[3] ? `Telephone: ${clientMatch[3].trim()}` : '',
-        `Email: ${clientMatch[4].trim()}`
-      ].filter(line => line.length > 0);
-    }
+  if (clientSignature) {
+    signatures.clientSignature = clientSignature;
   }
   
-  // Extract numbered sections
-  const sectionPattern = /(\d+\.\s*[^<\n]+)[\s\S]*?<\/h[^>]*>([\s\S]*?)(?=\d+\.\s*[A-Z][^<\n]+<\/h[^>]*>|<div[^>]*class[^>]*signature|$)/gi;
-  const sections: Array<{ header: string; content: string }> = [];
-  let sectionMatch;
-  
-  while ((sectionMatch = sectionPattern.exec(html)) !== null) {
-    const header = sectionMatch[1].trim();
-    const content = sectionMatch[2]
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    
-    if (content.length > 10) { // Only include sections with meaningful content
-      sections.push({ header, content });
-    }
-  }
-  
-  if (sections.length > 0) {
-    structure.sections = sections;
-  }
-  
-  // Extract signatures
-  const contractorSigMatch = html.match(/CONTRACTOR[\s\S]*?OWL FENC[\s\S]*?Date:\s*([^<\n]+)/i);
-  const clientSigMatch = html.match(/CLIENT[\s\S]*?([^<\n]+)[\s\S]*?Print Name[\s\S]*?Date:\s*([^<\n]+)/i);
-  
-  if (contractorSigMatch || clientSigMatch) {
-    structure.signatures = {};
-    
-    if (contractorSigMatch) {
-      structure.signatures.contractor = {
-        name: 'OWL FENC',
-        date: contractorSigMatch[1].trim()
-      };
-    }
-    
-    if (clientSigMatch) {
-      structure.signatures.client = {
-        name: clientSigMatch[1].trim(),
-        date: clientSigMatch[2].trim()
-      };
-    }
-  }
-  
-  return structure;
-}
-
-function wrapTextToLines(text: string, font: any, fontSize: number, maxWidth: number): string[] {
-  const words = text.split(' ');
-  const lines: string[] = [];
-  let currentLine = '';
-  
-  for (const word of words) {
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
-    const testWidth = font.widthOfTextAtSize(testLine, fontSize);
-    
-    if (testWidth <= maxWidth) {
-      currentLine = testLine;
-    } else {
-      if (currentLine) {
-        lines.push(currentLine);
-      }
-      currentLine = word;
-    }
-  }
-  
-  if (currentLine) {
-    lines.push(currentLine);
-  }
-  
-  return lines;
+  return generateExactLayoutPdf(contractHtml, signatures, {
+    contractId,
+    debug: true,
+  });
 }

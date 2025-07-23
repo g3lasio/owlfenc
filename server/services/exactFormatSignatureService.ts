@@ -218,15 +218,16 @@ export class ExactFormatSignatureService {
   ): Promise<Buffer> {
     console.log('🎯 [EXACT-FORMAT] Starting complete signed contract generation with exact format preservation');
 
-    // Step 1: Embed signatures while preserving exact format
-    const signedHTML = this.embedSignaturesPreservingFormat(
+    // Use the new htmlLayoutPreservingPdf module that uses Puppeteer correctly
+    const { generateSignedContractPdf } = await import('../utils/htmlLayoutPreservingPdf');
+    
+    // Generate PDF with signatures embedded properly
+    const pdfBuffer = await generateSignedContractPdf(
       originalHTML,
       contractorSignature,
-      clientSignature
+      clientSignature,
+      `${contractorSignature.name}_${clientSignature.name}`
     );
-
-    // Step 2: Generate PDF with exact layout preservation
-    const pdfBuffer = await this.generateExactFormatPDF(signedHTML);
 
     console.log('✅ [EXACT-FORMAT] Signed contract generated with EXACT original format preserved');
     return pdfBuffer;

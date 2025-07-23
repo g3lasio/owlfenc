@@ -662,62 +662,63 @@ router.get('/download-html/:contractId', async (req, res) => {
       }
     };
 
-    // Inject signatures into the contract HTML
-    let contractHtmlWithSignatures = contract.contractHtml || '<h1>Contract Content Not Available</h1>';
+    // Use cheerio to properly inject signatures into the contract HTML
+    const cheerio = await import('cheerio');
+    const $ = cheerio.load(contract.contractHtml || '<h1>Contract Content Not Available</h1>');
     
     console.log('📝 [SIGNATURE-INJECTION] Processing contract signatures for display');
     
-    if (contract.contractorSigned && contract.contractorSignatureData) {
-      const contractorSigImage = createSignatureImage(
-        contract.contractorSignatureData, 
-        contract.contractorSignatureType, 
-        contract.contractorName
-      );
+    // Find signature blocks
+    const signBlocks = $('.sign-block');
+    console.log(`Found ${signBlocks.length} signature blocks`);
+    
+    if (signBlocks.length >= 2) {
+      // First sign-block is for Client
+      if (contract.clientSigned && contract.clientSignatureData) {
+        const clientSigImage = createSignatureImage(
+          contract.clientSignatureData, 
+          contract.clientSignatureType, 
+          contract.clientName
+        );
+        
+        const clientBlock = signBlocks.eq(0);
+        const clientSignSpace = clientBlock.find('.sign-space');
+        if (clientSignSpace.length > 0) {
+          clientSignSpace.html(`<img src="${clientSigImage}" alt="Client Signature" style="max-height: 45px; max-width: 250px; display: block; margin: 0 auto;" />`);
+          console.log('✅ Injected client signature');
+        }
+        
+        // Update date
+        const clientDateText = clientBlock.find('div').filter((i, el) => $(el).text().includes('Date:')).first();
+        if (clientDateText.length > 0 && contract.clientSignedAt) {
+          clientDateText.text(`Date: ${new Date(contract.clientSignedAt).toLocaleDateString()}`);
+        }
+      }
       
-      // Replace contractor signature line with actual signature
-      contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
-        /<div class="signature-line"><\/div>/,
-        `<div class="signature-line" style="display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
-          <img src="${contractorSigImage}" alt="Contractor Signature" style="max-height: 45px; max-width: 250px;" />
-        </div>`
-      );
-      
-      // Also fill in contractor date
-      contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
-        /<span class="date-line"><\/span>/,
-        `<span class="date-line" style="font-weight: bold;">${new Date(contract.contractorSignedAt).toLocaleDateString()}</span>`
-      );
+      // Second sign-block is for Contractor
+      if (contract.contractorSigned && contract.contractorSignatureData) {
+        const contractorSigImage = createSignatureImage(
+          contract.contractorSignatureData, 
+          contract.contractorSignatureType, 
+          contract.contractorName
+        );
+        
+        const contractorBlock = signBlocks.eq(1);
+        const contractorSignSpace = contractorBlock.find('.sign-space');
+        if (contractorSignSpace.length > 0) {
+          contractorSignSpace.html(`<img src="${contractorSigImage}" alt="Contractor Signature" style="max-height: 45px; max-width: 250px; display: block; margin: 0 auto;" />`);
+          console.log('✅ Injected contractor signature');
+        }
+        
+        // Update date
+        const contractorDateText = contractorBlock.find('div').filter((i, el) => $(el).text().includes('Date:')).first();
+        if (contractorDateText.length > 0 && contract.contractorSignedAt) {
+          contractorDateText.text(`Date: ${new Date(contract.contractorSignedAt).toLocaleDateString()}`);
+        }
+      }
     }
     
-    if (contract.clientSigned && contract.clientSignatureData) {
-      const clientSigImage = createSignatureImage(
-        contract.clientSignatureData, 
-        contract.clientSignatureType, 
-        contract.clientName
-      );
-      
-      // Replace client signature line with actual signature (find remaining empty signature line)
-      // Look for the CLIENT section and replace the empty signature line within it
-      contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
-        /(<div class="signature-title">CLIENT<\/div>\s*)<div class="signature-line"><\/div>/,
-        `$1<div class="signature-line" style="display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
-          <img src="${clientSigImage}" alt="Client Signature" style="max-height: 45px; max-width: 250px;" />
-        </div>`
-      );
-      
-      // Fill in client date (look for CLIENT section and replace the date line)
-      // Handle both normal and broken date formatting
-      contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
-        /(CLIENT[\s\S]*?<span class="date-line"[^>]*>)[^<]*?(<\/span>)/,
-        `$1${new Date(contract.clientSignedAt).toLocaleDateString()}$2`
-      );
-      
-      // Also handle broken patterns where style attribute is misplaced
-      contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
-        /(CLIENT[\s\S]*?Date:\s*<span class="date-line")\s+style="font-weight:\s*bold;">([^<]*?)(<\/span>)/g,
-        `$1>${new Date(contract.clientSignedAt).toLocaleDateString()}$3`
-      );
-    }
+    let contractHtmlWithSignatures = $.html();
 
     // Generate complete HTML document with enhanced signatures
     const completeHtml = `
@@ -868,111 +869,35 @@ router.get('/download-pdf/:contractId', async (req, res) => {
       return `data:image/svg+xml;base64,${Buffer.from(svgContent).toString('base64')}`;
     };
 
-    // Inject signatures into the contract HTML
-    let contractHtmlWithSignatures = contract.contractHtml || '<h1>Contract Content Not Available</h1>';
-    
+    // Use the new htmlLayoutPreservingPdf module to generate PDF with signatures
     console.log('📝 [SIGNATURE-INJECTION] Processing contract signatures for PDF generation');
     
-    if (contract.contractorSigned && contract.contractorSignatureData) {
-      const contractorSigImage = createSignatureImage(
-        contract.contractorSignatureData, 
-        contract.contractorSignatureType, 
-        contract.contractorName
-      );
-      
-      // Replace contractor signature line with actual signature
-      contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
-        /(<div class="signature-title">CONTRACTOR<\/div>\s*)<div class="signature-line"><\/div>/,
-        `$1<div class="signature-line" style="display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
-          <img src="${contractorSigImage}" alt="Contractor Signature" style="max-height: 45px; max-width: 250px;" />
-        </div>`
-      );
-      
-      // Fill in contractor date
-      contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
-        /(CONTRACTOR[\s\S]*?<span class="date-line"[^>]*>)([^<]*?)(<\/span>)/,
-        `$1${new Date(contract.contractorSignedAt).toLocaleDateString()}$3`
-      );
-    }
+    // Import the exact layout PDF generator
+    const { generateSignedContractPdf } = await import('../utils/htmlLayoutPreservingPdf');
     
-    if (contract.clientSigned && contract.clientSignatureData) {
-      const clientSigImage = createSignatureImage(
-        contract.clientSignatureData, 
-        contract.clientSignatureType, 
-        contract.clientName
-      );
-      
-      // Replace client signature line with actual signature
-      contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
-        /(<div class="signature-title">CLIENT<\/div>\s*)<div class="signature-line"><\/div>/,
-        `$1<div class="signature-line" style="display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
-          <img src="${clientSigImage}" alt="Client Signature" style="max-height: 45px; max-width: 250px;" />
-        </div>`
-      );
-      
-      // Fill in client date - handle both normal and broken formatting
-      contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
-        /(CLIENT[\s\S]*?<span class="date-line"[^>]*>)[^<]*?(<\/span>)/,
-        `$1${new Date(contract.clientSignedAt).toLocaleDateString()}$2`
-      );
-      
-      // Also handle broken patterns where style attribute is misplaced
-      contractHtmlWithSignatures = contractHtmlWithSignatures.replace(
-        /(CLIENT[\s\S]*?Date:\s*<span class="date-line")\s+style="font-weight:\s*bold;">([^<]*?)(<\/span>)/g,
-        `$1>${new Date(contract.clientSignedAt).toLocaleDateString()}$3`
-      );
-    }
-
-    // Generate complete HTML document with enhanced signatures
-    const completeHtml = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Signed Contract - ${contract.clientName}</title>
-  <style>
-    body {
-      font-family: 'Times New Roman', serif;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-      line-height: 1.6;
-      background: white;
-      color: black;
-    }
-    .verification-section {
-      margin-top: 30px;
-      padding: 20px;
-      background: linear-gradient(135deg, #e8f4f8 0%, #d1e7dd 100%);
-      border: 2px solid #4a90e2;
-      border-radius: 10px;
-    }
-    @media print {
-      body { margin: 0; padding: 15px; }
-    }
-  </style>
-</head>
-<body>
-  ${contractHtmlWithSignatures}
-  
-  <div class="verification-section">
-    <h4 style="color: #2c3e50; margin-bottom: 15px; text-align: center;">📋 Document Verification</h4>
-    <div style="display: grid; gap: 8px;">
-      <p><strong>Contract ID:</strong> ${contractId}</p>
-      <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
-      <p><strong>Status:</strong> <span style="color: #27ae60; font-weight: bold;">${contract.status === 'completed' ? 'Fully Executed' : 'In Progress'}</span></p>
-      <p><strong>Digital Integrity:</strong> This document contains embedded digital signatures and is legally binding under electronic signature laws.</p>
-      <p><strong>Verification:</strong> Signatures are cryptographically secured and tamper-evident.</p>
-    </div>
-  </div>
-</body>
-</html>
-    `;
+    // Prepare signature data
+    const contractorSignature = contract.contractorSigned ? {
+      name: contract.contractorName,
+      signatureData: contract.contractorSignatureData || '',
+      typedName: contract.contractorSignatureType === 'typed' ? contract.contractorName : undefined,
+      signedAt: contract.contractorSignedAt || new Date()
+    } : undefined;
     
-    // Generate PDF from HTML
-    console.log('🔄 [PDF] Generating PDF from signed contract HTML');
-    const pdfBuffer = await documentService.generatePdfFromHtml(completeHtml);
+    const clientSignature = contract.clientSigned ? {
+      name: contract.clientName,
+      signatureData: contract.clientSignatureData || '',
+      typedName: contract.clientSignatureType === 'typed' ? contract.clientName : undefined,
+      signedAt: contract.clientSignedAt || new Date()
+    } : undefined;
+    
+    // Generate PDF with exact layout preservation
+    console.log('🔄 [PDF] Generating PDF with EXACT layout preservation');
+    const pdfBuffer = await generateSignedContractPdf(
+      contract.contractHtml || '<h1>Contract Content Not Available</h1>',
+      contractorSignature,
+      clientSignature,
+      contractId
+    );
     
     // Set headers for PDF download
     res.setHeader('Content-Type', 'application/pdf');
