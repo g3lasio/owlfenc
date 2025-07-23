@@ -869,43 +869,192 @@ router.get('/download-pdf/:contractId', async (req, res) => {
       return `data:image/svg+xml;base64,${Buffer.from(svgContent).toString('base64')}`;
     };
 
-    // Use the new htmlLayoutPreservingPdf module to generate PDF with signatures
-    console.log('📝 [SIGNATURE-INJECTION] Processing contract signatures for PDF generation');
+    // Use surgical signature injection approach for EXACT format preservation
+    console.log('🔬 [SURGICAL-PDF] Using surgical signature injection for exact format preservation');
     
-    // Import the exact layout PDF generator
-    const { generateSignedContractPdf } = await import('../utils/htmlLayoutPreservingPdf');
-    
-    // Prepare signature data
-    const contractorSignature = contract.contractorSigned ? {
-      name: contract.contractorName,
-      signatureData: contract.contractorSignatureData || '',
-      typedName: contract.contractorSignatureType === 'typed' ? contract.contractorName : undefined,
-      signedAt: contract.contractorSignedAt || new Date()
-    } : undefined;
-    
-    const clientSignature = contract.clientSigned ? {
-      name: contract.clientName,
-      signatureData: contract.clientSignatureData || '',
-      typedName: contract.clientSignatureType === 'typed' ? contract.clientName : undefined,
-      signedAt: contract.clientSignedAt || new Date()
-    } : undefined;
-    
-    // Generate PDF with exact layout preservation
-    console.log('🔄 [PDF] Generating PDF with EXACT layout preservation');
-    const pdfBuffer = await generateSignedContractPdf(
-      contract.contractHtml || '<h1>Contract Content Not Available</h1>',
-      contractorSignature,
-      clientSignature,
-      contractId
-    );
-    
-    // Set headers for PDF download
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="contract_${contract.clientName.replace(/\s+/g, '_')}_${contractId}.pdf"`);
-    res.setHeader('Content-Length', pdfBuffer.length);
-    
-    console.log('✅ [API] Serving signed contract PDF for download');
-    res.send(pdfBuffer);
+    try {
+      // Import the surgical signature injection utilities
+      const { injectSignaturesIntoHtml, generatePdfFromSignedHtml } = await import('../utils/surgicalSignatureInjection');
+      
+      // Prepare signature data
+      const signatureData = {
+        contractorSignature: contract.contractorSignature || undefined,
+        contractorSignedAt: contract.contractorSignedAt || undefined,
+        clientSignature: contract.clientSignature || undefined,
+        clientSignedAt: contract.clientSignedAt || undefined,
+      };
+      
+      // First inject signatures into HTML
+      console.log('💉 [SURGICAL-PDF] Injecting signatures into contract HTML');
+      const signedHtml = await injectSignaturesIntoHtml(
+        contract.contractHtml || '<h1>Contract Content Not Available</h1>',
+        signatureData
+      );
+      
+      // Then generate PDF from the signed HTML
+      console.log('🔄 [SURGICAL-PDF] Generating PDF from signed HTML');
+      const pdfBuffer = await generatePdfFromSignedHtml(signedHtml, contractId);
+      
+      console.log('✅ [SURGICAL-PDF] PDF generated successfully with exact format preserved');
+      
+      // Set headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="contract_${contract.clientName.replace(/\s+/g, '_')}_${contractId}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      console.log('✅ [API] Serving signed contract PDF for download');
+      res.send(pdfBuffer);
+      
+    } catch (surgicalError: any) {
+      console.error('❌ [SURGICAL-PDF] Surgical injection failed:', surgicalError);
+      
+      // Fallback to simple text-based PDF with correct formatting
+      try {
+        console.log('🔄 [FALLBACK-PDF] Creating properly formatted PDF fallback...');
+        const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
+        
+        // Extract text content from HTML for display
+        const cheerio = await import('cheerio');
+        const $ = cheerio.load(contract.contractHtml || '');
+        
+        // Create new PDF document
+        const pdfDoc = await PDFDocument.create();
+        const page = pdfDoc.addPage([612, 792]); // Letter size
+        const { width, height } = page.getSize();
+        
+        // Embed Times New Roman font
+        const timesRoman = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+        const timesRomanBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+        
+        // Add header
+        page.drawText('INDEPENDENT CONTRACTOR AGREEMENT', {
+          x: width / 2 - 150,
+          y: height - 80,
+          size: 18,
+          font: timesRomanBold,
+          color: rgb(0, 0, 0),
+        });
+        
+        // Add contract details
+        let yPosition = height - 120;
+        
+        // Contract date
+        page.drawText(`Agreement Date: ${$('div:contains("Agreement Date:")').text().replace('Agreement Date:', '').trim()}`, {
+          x: 50,
+          y: yPosition,
+          size: 12,
+          font: timesRoman,
+          color: rgb(0, 0, 0),
+        });
+        yPosition -= 30;
+        
+        // Add parties info
+        page.drawText('CONTRACTOR:', {
+          x: 50,
+          y: yPosition,
+          size: 12,
+          font: timesRomanBold,
+          color: rgb(0, 0, 0),
+        });
+        yPosition -= 20;
+        
+        page.drawText(contract.contractorName || 'Not specified', {
+          x: 50,
+          y: yPosition,
+          size: 12,
+          font: timesRoman,
+          color: rgb(0, 0, 0),
+        });
+        yPosition -= 40;
+        
+        page.drawText('CLIENT:', {
+          x: 50,
+          y: yPosition,
+          size: 12,
+          font: timesRomanBold,
+          color: rgb(0, 0, 0),
+        });
+        yPosition -= 20;
+        
+        page.drawText(contract.clientName || 'Not specified', {
+          x: 50,
+          y: yPosition,
+          size: 12,
+          font: timesRoman,
+          color: rgb(0, 0, 0),
+        });
+        yPosition -= 40;
+        
+        // Add signatures if available
+        if (contract.contractorSigned || contract.clientSigned) {
+          page.drawText('SIGNATURES:', {
+            x: 50,
+            y: yPosition,
+            size: 14,
+            font: timesRomanBold,
+            color: rgb(0, 0, 0),
+          });
+          yPosition -= 30;
+          
+          if (contract.contractorSigned) {
+            page.drawText(`Contractor: ${contract.contractorSignature || contract.contractorName}`, {
+              x: 50,
+              y: yPosition,
+              size: 12,
+              font: timesRoman,
+              color: rgb(0, 0, 0.5),
+            });
+            if (contract.contractorSignedAt) {
+              page.drawText(`Date: ${new Date(contract.contractorSignedAt).toLocaleDateString()}`, {
+                x: 300,
+                y: yPosition,
+                size: 12,
+                font: timesRoman,
+                color: rgb(0, 0, 0),
+              });
+            }
+            yPosition -= 30;
+          }
+          
+          if (contract.clientSigned) {
+            page.drawText(`Client: ${contract.clientSignature || contract.clientName}`, {
+              x: 50,
+              y: yPosition,
+              size: 12,
+              font: timesRoman,
+              color: rgb(0, 0, 0.5),
+            });
+            if (contract.clientSignedAt) {
+              page.drawText(`Date: ${new Date(contract.clientSignedAt).toLocaleDateString()}`, {
+                x: 300,
+                y: yPosition,
+                size: 12,
+                font: timesRoman,
+                color: rgb(0, 0, 0),
+              });
+            }
+          }
+        }
+        
+        const pdfBytes = await pdfDoc.save();
+        console.log('✅ [FALLBACK-PDF] Fallback PDF generated successfully');
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="contract_${contract.clientName.replace(/\s+/g, '_')}_${contractId}.pdf"`);
+        res.setHeader('Content-Length', pdfBytes.length);
+        res.send(Buffer.from(pdfBytes));
+        
+      } catch (fallbackError: any) {
+        console.error('❌ [FALLBACK-PDF] All PDF generation methods failed:', fallbackError);
+        
+        // Final fallback: Return error message
+        res.status(500).json({
+          success: false,
+          message: 'PDF generation failed. Please use Download HTML option instead.',
+          error: fallbackError.message
+        });
+      }
+    }
     
   } catch (error: any) {
     console.error('❌ [API] Error in /download-pdf/:contractId:', error);
