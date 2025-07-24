@@ -15,7 +15,25 @@ export interface CompanyInfo {
   logo?: string;
 }
 
-export interface PermitData {
+export interface BuildingCodeSection {
+  section?: string;
+  title?: string;
+  description?: string;
+  summary?: string;
+  details?: string | any[] | any;
+  requirements?: any[];
+  specifications?: any[] | string;
+  codeReference?: string;
+  codeDetails?: string;
+  measurements?: any[] | string;
+  installation?: any[] | string;
+  materials?: any[] | string;
+  complianceNotes?: string;
+  violations?: string;
+  [key: string]: any; // For dynamic fields from enhanced permit service
+}
+
+interface PermitData {
   meta?: {
     projectType: string;
     location: string;
@@ -42,6 +60,15 @@ export interface PermitData {
     address?: string;
     hours?: string;
     website?: string;
+  }>;
+  buildingCodes?: BuildingCodeSection[];
+  processInfo?: any;
+  considerations?: any;
+  attachedFiles?: Array<{
+    id: string;
+    name: string;
+    size: number;
+    type: string;
   }>;
 }
 
@@ -694,38 +721,200 @@ export function generatePermitReportHTML(permitData: PermitData, companyInfo: Co
             </div>
         </div>
 
-        <!-- Building Codes Section -->
+        <!-- Enhanced Building Codes Section - Comprehensive Frontend Data Capture -->
         <div class="content-section">
             <h2 class="section-title">
                 <div class="section-icon">📚</div>
-                Applicable Building Codes
+                Project-Specific Building Codes
             </h2>
-            <div class="codes-grid">
-                <div class="code-card">
-                    <div class="code-header">
-                        <h3 class="code-title">California Building Code (CBC)</h3>
-                        <span class="code-badge">Title 24, Part 2</span>
+            
+            ${permitData.buildingCodes && Array.isArray(permitData.buildingCodes) && permitData.buildingCodes.length > 0 ? 
+                permitData.buildingCodes.map((codeSection, idx) => `
+                    <div class="building-code-section no-break" style="margin-bottom: 30px;">
+                        <div class="code-card">
+                            <div class="code-header">
+                                <h3 class="code-title">${codeSection.section || codeSection.title || `Building Code Section ${idx + 1}`}</h3>
+                                <span class="code-badge">Section ${idx + 1}</span>
+                            </div>
+                            <p class="code-description">
+                                ${codeSection.description || codeSection.summary || 'Code section details'}
+                            </p>
+                            
+                            <!-- Enhanced Details Section -->
+                            ${codeSection.details ? `
+                                <div class="detail-section" style="background: #f8fafc; border-left: 4px solid #10b981; padding: 16px; margin: 16px 0; border-radius: 8px;">
+                                    <h4 style="color: #065f46; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                        📋 Detailed Requirements
+                                    </h4>
+                                    ${typeof codeSection.details === 'string' ? 
+                                        `<p style="color: #374151; line-height: 1.6; white-space: pre-line;">${codeSection.details}</p>` :
+                                        Array.isArray(codeSection.details) ?
+                                            `<ul style="color: #374151; margin: 0; padding-left: 20px;">
+                                                ${codeSection.details.map(detail => 
+                                                    `<li style="margin-bottom: 8px;">${typeof detail === 'string' ? detail : detail.description || detail.requirement || JSON.stringify(detail)}</li>`
+                                                ).join('')}
+                                            </ul>` :
+                                            `<pre style="color: #374151; background: #f3f4f6; padding: 12px; border-radius: 6px; overflow-x: auto; white-space: pre-wrap;">${JSON.stringify(codeSection.details, null, 2)}</pre>`
+                                    }
+                                </div>
+                            ` : ''}
+                            
+                            <!-- Specific Requirements -->
+                            ${codeSection.requirements && Array.isArray(codeSection.requirements) ? `
+                                <div class="detail-section" style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; margin: 16px 0; border-radius: 8px;">
+                                    <h4 style="color: #15803d; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                        ✅ Specific Requirements
+                                    </h4>
+                                    <ul style="color: #374151; margin: 0; padding-left: 20px;">
+                                        ${codeSection.requirements.map(req => `
+                                            <li style="margin-bottom: 8px;">
+                                                ${typeof req === 'string' ? req : req.description || req.requirement || JSON.stringify(req)}
+                                                ${typeof req === 'object' && req.details ? `<div style="margin-left: 16px; margin-top: 4px; font-size: 12px; color: #6b7280; font-style: italic;">${req.details}</div>` : ''}
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                            ` : ''}
+                            
+                            <!-- Technical Specifications -->
+                            ${codeSection.specifications ? `
+                                <div class="detail-section" style="background: #ecfeff; border-left: 4px solid #06b6d4; padding: 16px; margin: 16px 0; border-radius: 8px;">
+                                    <h4 style="color: #0e7490; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                        🔧 Technical Specifications
+                                    </h4>
+                                    ${Array.isArray(codeSection.specifications) ? 
+                                        `<ul style="color: #374151; margin: 0; padding-left: 20px;">
+                                            ${codeSection.specifications.map(spec => 
+                                                `<li style="margin-bottom: 8px;">${typeof spec === 'string' ? spec : spec.description || JSON.stringify(spec)}</li>`
+                                            ).join('')}
+                                        </ul>` :
+                                        `<p style="color: #374151; line-height: 1.6;">${codeSection.specifications}</p>`
+                                    }
+                                </div>
+                            ` : ''}
+                            
+                            <!-- Code References -->
+                            ${codeSection.codeReference ? `
+                                <div class="detail-section" style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 16px 0; border-radius: 8px;">
+                                    <h4 style="color: #1d4ed8; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                        📖 Code Reference
+                                    </h4>
+                                    <p style="color: #374151; line-height: 1.6; font-family: 'Courier New', monospace; background: #f8fafc; padding: 8px; border-radius: 4px;">
+                                        ${codeSection.codeReference}
+                                    </p>
+                                    ${codeSection.codeDetails ? `
+                                        <div style="margin-top: 12px;">
+                                            <p style="color: #374151; line-height: 1.6;">${codeSection.codeDetails}</p>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            ` : ''}
+                            
+                            <!-- Measurements & Dimensions -->
+                            ${codeSection.measurements ? `
+                                <div class="detail-section" style="background: #fef3e2; border-left: 4px solid #f59e0b; padding: 16px; margin: 16px 0; border-radius: 8px;">
+                                    <h4 style="color: #92400e; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                        📐 Measurements & Dimensions
+                                    </h4>
+                                    ${Array.isArray(codeSection.measurements) ? 
+                                        `<ul style="color: #374151; margin: 0; padding-left: 20px;">
+                                            ${codeSection.measurements.map(measurement => 
+                                                `<li style="margin-bottom: 8px;">${typeof measurement === 'string' ? measurement : measurement.description || JSON.stringify(measurement)}</li>`
+                                            ).join('')}
+                                        </ul>` :
+                                        `<p style="color: #374151; line-height: 1.6;">${codeSection.measurements}</p>`
+                                    }
+                                </div>
+                            ` : ''}
+                            
+                            <!-- Installation Guidelines -->
+                            ${codeSection.installation ? `
+                                <div class="detail-section" style="background: #f5f3ff; border-left: 4px solid #8b5cf6; padding: 16px; margin: 16px 0; border-radius: 8px;">
+                                    <h4 style="color: #5b21b6; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                        🔨 Installation Guidelines
+                                    </h4>
+                                    ${Array.isArray(codeSection.installation) ? 
+                                        `<ul style="color: #374151; margin: 0; padding-left: 20px;">
+                                            ${codeSection.installation.map(guideline => 
+                                                `<li style="margin-bottom: 8px;">${typeof guideline === 'string' ? guideline : guideline.description || JSON.stringify(guideline)}</li>`
+                                            ).join('')}
+                                        </ul>` :
+                                        `<p style="color: #374151; line-height: 1.6;">${codeSection.installation}</p>`
+                                    }
+                                </div>
+                            ` : ''}
+                            
+                            <!-- Material Requirements -->
+                            ${codeSection.materials ? `
+                                <div class="detail-section" style="background: #fef7ed; border-left: 4px solid #ea580c; padding: 16px; margin: 16px 0; border-radius: 8px;">
+                                    <h4 style="color: #9a3412; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                        🧱 Material Requirements
+                                    </h4>
+                                    ${Array.isArray(codeSection.materials) ? 
+                                        `<ul style="color: #374151; margin: 0; padding-left: 20px;">
+                                            ${codeSection.materials.map(material => 
+                                                `<li style="margin-bottom: 8px;">${typeof material === 'string' ? material : material.description || JSON.stringify(material)}</li>`
+                                            ).join('')}
+                                        </ul>` :
+                                        `<p style="color: #374151; line-height: 1.6;">${codeSection.materials}</p>`
+                                    }
+                                </div>
+                            ` : ''}
+                            
+                            <!-- Compliance Notes -->
+                            ${codeSection.complianceNotes ? `
+                                <div class="detail-section" style="background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 16px; margin: 16px 0; border-radius: 8px;">
+                                    <h4 style="color: #0c4a6e; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                        📝 Compliance Notes
+                                    </h4>
+                                    <p style="color: #374151; line-height: 1.6;">${codeSection.complianceNotes}</p>
+                                </div>
+                            ` : ''}
+                            
+                            <!-- Violations & Penalties -->
+                            ${codeSection.violations ? `
+                                <div class="detail-section" style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; margin: 16px 0; border-radius: 8px;">
+                                    <h4 style="color: #991b1b; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                        ⚠️ Violations & Penalties
+                                    </h4>
+                                    <p style="color: #374151; line-height: 1.6;">${codeSection.violations}</p>
+                                </div>
+                            ` : ''}
+                            
+                            <div class="compliance-note">
+                                ✓ Project-specific compliance verified
+                            </div>
+                        </div>
                     </div>
-                    <p class="code-description">
-                        State building standards that apply to all construction projects in California
-                    </p>
-                    <div class="compliance-note">
-                        ✓ Mandatory compliance required for all permits
+                `).join('') :
+                `<div class="text-center py-8">
+                    <div class="code-card">
+                        <div class="code-header">
+                            <h3 class="code-title">California Building Code (CBC)</h3>
+                            <span class="code-badge">Title 24, Part 2</span>
+                        </div>
+                        <p class="code-description">
+                            State building standards that apply to all construction projects in California
+                        </p>
+                        <div class="compliance-note">
+                            ✓ Mandatory compliance required for all permits
+                        </div>
                     </div>
-                </div>
-                
-                <div class="code-card">
-                    <div class="code-header">
-                        <h3 class="code-title">${permitData.meta?.location || 'Local'} Municipal Code</h3>
-                        <span class="code-badge">Local Ordinances</span>
+                    <div class="code-card">
+                        <div class="code-header">
+                            <h3 class="code-title">${permitData.meta?.location || 'Local'} Municipal Code</h3>
+                            <span class="code-badge">Local Ordinances</span>
+                        </div>
+                        <p class="code-description">
+                            City-specific building requirements and zoning restrictions
+                        </p>
+                        <div class="compliance-note">
+                            ✓ Local compliance verification required
+                        </div>
                     </div>
-                    <p class="code-description">
-                        City-specific building requirements and zoning restrictions
-                    </p>
-                    <div class="compliance-note">
-                        ✓ Must comply with local amendments to state codes
-                    </div>
-                </div>
+                </div>`
+            }
+        </div>
             </div>
         </div>
 
