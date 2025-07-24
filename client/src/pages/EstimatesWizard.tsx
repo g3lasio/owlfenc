@@ -83,6 +83,10 @@ import {
   Combine,
   ArrowLeft,
   Send,
+  Upload,
+  Image,
+  FileImage,
+  Paperclip,
 } from "lucide-react";
 import axios from "axios";
 
@@ -126,10 +130,21 @@ interface EstimateItem {
   total: number;
 }
 
+interface ProjectAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  file?: File;
+  uploadDate: Date;
+}
+
 interface EstimateData {
   client: Client | null;
   items: EstimateItem[];
   projectDetails: string;
+  attachments: ProjectAttachment[];
   subtotal: number;
   tax: number;
   total: number;
@@ -167,6 +182,7 @@ export default function EstimatesWizardFixed() {
     client: null,
     items: [],
     projectDetails: "",
+    attachments: [],
     subtotal: 0,
     tax: 0,
     total: 0,
@@ -224,6 +240,10 @@ export default function EstimatesWizardFixed() {
 
   // AI enhancement states - using the existing isAIProcessing from Smart Search
   const [showMervinMessage, setShowMervinMessage] = useState(false);
+
+  // File upload states
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Estimates history states
   const [showEstimatesHistory, setShowEstimatesHistory] = useState(false);
@@ -365,6 +385,105 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       hasSpecificTerms,
       isDetailed: words.length >= 5 && (hasNumbers || hasSpecificTerms),
     };
+  };
+
+  // File upload functions
+  const handleFileUpload = async (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    
+    setIsUploading(true);
+    
+    try {
+      const validFiles = fileArray.filter(file => {
+        if (!allowedTypes.includes(file.type)) {
+          toast({
+            title: "Tipo de archivo no válido",
+            description: `${file.name} no es un tipo de archivo válido. Solo se permiten imágenes, PDFs y documentos.`,
+            variant: "destructive",
+          });
+          return false;
+        }
+        if (file.size > maxSize) {
+          toast({
+            title: "Archivo muy grande",
+            description: `${file.name} excede el límite de 10MB.`,
+            variant: "destructive",
+          });
+          return false;
+        }
+        return true;
+      });
+
+      const newAttachments: ProjectAttachment[] = [];
+      
+      for (const file of validFiles) {
+        const attachment: ProjectAttachment = {
+          id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          url: URL.createObjectURL(file),
+          file: file,
+          uploadDate: new Date(),
+        };
+        newAttachments.push(attachment);
+      }
+
+      setEstimate(prev => ({
+        ...prev,
+        attachments: [...prev.attachments, ...newAttachments],
+      }));
+
+      if (newAttachments.length > 0) {
+        toast({
+          title: "Archivos subidos exitosamente",
+          description: `${newAttachments.length} archivo${newAttachments.length > 1 ? 's' : ''} agregado${newAttachments.length > 1 ? 's' : ''} al proyecto.`,
+        });
+      }
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      toast({
+        title: "Error al subir archivos",
+        description: "Hubo un problema al subir los archivos. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemoveAttachment = (attachmentId: string) => {
+    setEstimate(prev => {
+      const attachment = prev.attachments.find(a => a.id === attachmentId);
+      // Clean up the object URL to prevent memory leaks
+      if (attachment?.url.startsWith('blob:')) {
+        URL.revokeObjectURL(attachment.url);
+      }
+      
+      return {
+        ...prev,
+        attachments: prev.attachments.filter(a => a.id !== attachmentId),
+      };
+    });
+    
+    toast({
+      title: "Archivo eliminado",
+      description: "El archivo ha sido eliminado del proyecto.",
+    });
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const isImageFile = (type: string): boolean => {
+    return type.startsWith('image/');
   };
 
   // Smart Search Handler
@@ -4311,6 +4430,154 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </p>
                     </div>
                   )}
+
+                {/* Project Attachments Section */}
+                <div className="mt-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Label className="text-base font-medium flex items-center gap-2">
+                      <Paperclip className="h-4 w-4" />
+                      Adjuntar Archivos
+                    </Label>
+                    {estimate.attachments.length > 0 && (
+                      <Badge variant="secondary" className="bg-cyan-400/20 text-cyan-400 border-cyan-400/30">
+                        {estimate.attachments.length} archivo{estimate.attachments.length > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Upload Zone */}
+                  <div
+                    className={`
+                      relative border-2 border-dashed rounded-lg p-6 transition-all duration-300
+                      ${isDragOver 
+                        ? 'border-cyan-400 bg-cyan-400/5' 
+                        : 'border-gray-600 hover:border-cyan-400/50 hover:bg-gray-800/50'
+                      }
+                      ${isUploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}
+                    `}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragOver(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      setIsDragOver(false);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragOver(false);
+                      const files = e.dataTransfer.files;
+                      if (files.length > 0) {
+                        handleFileUpload(files);
+                      }
+                    }}
+                    onClick={() => {
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.multiple = true;
+                      input.accept = 'image/*,.pdf,.doc,.docx,.txt';
+                      input.onchange = (e) => {
+                        const files = (e.target as HTMLInputElement).files;
+                        if (files && files.length > 0) {
+                          handleFileUpload(files);
+                        }
+                      };
+                      input.click();
+                    }}
+                  >
+                    <div className="text-center">
+                      {isUploading ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+                          <p className="text-sm text-gray-400">Subiendo archivos...</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="w-12 h-12 bg-cyan-400/10 rounded-full flex items-center justify-center">
+                            <Upload className="h-6 w-6 text-cyan-400" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-300">
+                              Arrastra archivos aquí o haz clic para seleccionar
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Imágenes, PDFs, documentos (máx. 10MB cada uno)
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Attachments List */}
+                  {estimate.attachments.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <p className="text-sm font-medium text-gray-400">Archivos adjuntos:</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {estimate.attachments.map((attachment) => (
+                          <div
+                            key={attachment.id}
+                            className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700"
+                          >
+                            {/* File Icon/Preview */}
+                            <div className="flex-shrink-0">
+                              {isImageFile(attachment.type) ? (
+                                <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-700">
+                                  <img
+                                    src={attachment.url}
+                                    alt={attachment.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center">
+                                  {attachment.type.includes('pdf') ? (
+                                    <FileText className="h-5 w-5 text-red-400" />
+                                  ) : (
+                                    <FileImage className="h-5 w-5 text-blue-400" />
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* File Info */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-300 truncate">
+                                {attachment.name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {formatFileSize(attachment.size)}
+                              </p>
+                            </div>
+
+                            {/* Remove Button */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveAttachment(attachment.id);
+                              }}
+                              className="text-gray-400 hover:text-red-400 hover:bg-red-400/10"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Help Text */}
+                  <div className="mt-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                    <div className="flex items-start gap-2">
+                      <Image className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-blue-300">
+                        <strong>Tip:</strong> Adjunta fotos del área de trabajo, planos, referencias o cualquier documento relevante para crear un estimado más preciso y detallado.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
