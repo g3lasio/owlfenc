@@ -29,7 +29,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle2, Search, Clock, Trash2 } from "lucide-react";
+import { CheckCircle2, Search, Clock, Trash2, Paperclip, X, FileText, Upload } from "lucide-react";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
 import { useToast } from "@/hooks/use-toast";
 import { auth, db } from "@/lib/firebase";
@@ -68,6 +68,16 @@ interface SearchHistoryItem {
   createdAt: string;
 }
 
+interface AttachedFile {
+  id: string;
+  file: File;
+  name: string;
+  size: number;
+  type: string;
+  uploadedAt: Date;
+  category: string;
+}
+
 interface PermitResponse {
   requiredPermits: PermitData[];
   specialConsiderations: string[];
@@ -97,6 +107,8 @@ export default function PermitAdvisor() {
   const [showHistory, setShowHistory] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [searchFilter, setSearchFilter] = useState("");
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
   const { toast } = useToast();
 
   // Monitor auth state
@@ -311,6 +323,126 @@ export default function PermitAdvisor() {
       title: "Search Loaded",
       description: `Loaded: ${historyItem.title}`,
     });
+  };
+
+  // File handling functions
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const validateFile = (file: File): { isValid: boolean; error?: string } => {
+    // Maximum file size: 10MB
+    const maxSize = 10 * 1024 * 1024;
+    
+    // Allowed file types
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain'
+    ];
+
+    if (file.size > maxSize) {
+      return { isValid: false, error: 'File size must be less than 10MB' };
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+      return { isValid: false, error: 'File type not supported. Please use PDF, Word, text, or image files.' };
+    }
+
+    return { isValid: true };
+  };
+
+  const categorizeFile = (file: File): string => {
+    const name = file.name.toLowerCase();
+    
+    if (name.includes('permit') || name.includes('permiso')) return 'Permits';
+    if (name.includes('estimate') || name.includes('estimado')) return 'Estimates';
+    if (name.includes('scope') || name.includes('trabajo')) return 'Scope of Work';
+    if (name.includes('plan') || name.includes('blueprint') || name.includes('plano')) return 'Plans';
+    if (name.includes('contract') || name.includes('contrato')) return 'Contracts';
+    
+    if (file.type === 'application/pdf') return 'Documents';
+    if (file.type.startsWith('image/')) return 'Images';
+    
+    return 'Other';
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    processFiles(files);
+  };
+
+  const handleFileDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(false);
+    
+    const files = Array.from(event.dataTransfer.files);
+    processFiles(files);
+  };
+
+  const processFiles = (files: File[]) => {
+    const newFiles: AttachedFile[] = [];
+    let hasErrors = false;
+
+    files.forEach((file) => {
+      const validation = validateFile(file);
+      
+      if (validation.isValid) {
+        const attachedFile: AttachedFile = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          file,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          uploadedAt: new Date(),
+          category: categorizeFile(file)
+        };
+        newFiles.push(attachedFile);
+      } else {
+        hasErrors = true;
+        toast({
+          title: "File Error",
+          description: `${file.name}: ${validation.error}`,
+          variant: "destructive",
+        });
+      }
+    });
+
+    if (newFiles.length > 0) {
+      setAttachedFiles(prev => [...prev, ...newFiles]);
+      toast({
+        title: "Files Uploaded",
+        description: `Successfully uploaded ${newFiles.length} file(s)`,
+        variant: "default",
+      });
+    }
+  };
+
+  const removeFile = (fileId: string) => {
+    setAttachedFiles(prev => prev.filter(f => f.id !== fileId));
+    toast({
+      title: "File Removed",
+      description: "File has been removed from the project",
+      variant: "default",
+    });
+  };
+
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(false);
   };
 
   const formatHistoryDate = (timestamp: any) => {
@@ -660,6 +792,118 @@ export default function PermitAdvisor() {
                 placeholder="Describe your project in detail (e.g., materials, scope, square footage)..."
                 className="w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[60px] resize-none"
               />
+            </div>
+
+            {/* File Attachment Section */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Paperclip className="h-4 w-4 text-cyan-300" />
+                <label className="text-sm font-medium text-cyan-300">
+                  Project Documents (Optional)
+                </label>
+              </div>
+              
+              {/* Drop Zone */}
+              <div
+                onDrop={handleFileDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                className={`relative border-2 border-dashed rounded-lg p-4 transition-all duration-300 cursor-pointer ${
+                  isDragOver
+                    ? "border-cyan-400 bg-cyan-500/10"
+                    : "border-cyan-500/30 bg-slate-900/30 hover:border-cyan-400/50"
+                }`}
+              >
+                {/* Cyberpunk corner effects */}
+                <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-cyan-400/60 rounded-tl-lg"></div>
+                <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-cyan-400/60 rounded-tr-lg"></div>
+                <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-cyan-400/60 rounded-bl-lg"></div>
+                <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-cyan-400/60 rounded-br-lg"></div>
+
+                <div className="text-center space-y-2">
+                  <div className="flex justify-center">
+                    <div className="w-8 h-8 bg-cyan-500/20 rounded-full flex items-center justify-center">
+                      <Upload className="h-4 w-4 text-cyan-300" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-cyan-300 text-sm font-medium">
+                      Drop files here or{" "}
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById("file-input")?.click()}
+                        className="text-cyan-400 hover:text-cyan-300 underline"
+                      >
+                        browse
+                      </button>
+                    </p>
+                    <p className="text-gray-400 text-xs mt-1">
+                      PDF, images, documents • Max 10MB each
+                    </p>
+                  </div>
+                </div>
+
+                {/* Hidden file input */}
+                <input
+                  id="file-input"
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </div>
+
+              {/* File List */}
+              {attachedFiles.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-cyan-300 font-medium">
+                    Attached Files ({attachedFiles.length})
+                  </p>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {attachedFiles.map((file) => (
+                      <div
+                        key={file.id}
+                        className="flex items-center justify-between bg-slate-900/50 border border-cyan-500/20 rounded-lg p-2 group hover:border-cyan-400/40 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <div className="flex-shrink-0">
+                            {file.type === 'application/pdf' ? (
+                              <div className="w-6 h-6 bg-red-500/20 rounded flex items-center justify-center">
+                                <FileText className="h-3 w-3 text-red-300" />
+                              </div>
+                            ) : file.type.startsWith('image/') ? (
+                              <div className="w-6 h-6 bg-green-500/20 rounded flex items-center justify-center">
+                                <span className="text-green-300 text-xs">🖼️</span>
+                              </div>
+                            ) : (
+                              <div className="w-6 h-6 bg-blue-500/20 rounded flex items-center justify-center">
+                                <FileText className="h-3 w-3 text-blue-300" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-white text-xs font-medium truncate">
+                              {file.name}
+                            </p>
+                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                              <span>{formatFileSize(file.size)}</span>
+                              <span>•</span>
+                              <span className="text-cyan-300">{file.category}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => removeFile(file.id)}
+                          className="flex-shrink-0 w-6 h-6 bg-red-500/20 hover:bg-red-500/30 rounded flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <X className="h-3 w-3 text-red-300" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Single button layout */}
