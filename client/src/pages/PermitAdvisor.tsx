@@ -29,7 +29,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle2, Search, Clock, Trash2, Brain } from "lucide-react";
+import { CheckCircle2, Search, Clock, Trash2 } from "lucide-react";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
 import { useToast } from "@/hooks/use-toast";
 import { auth, db } from "@/lib/firebase";
@@ -97,7 +97,6 @@ export default function PermitAdvisor() {
   const [showHistory, setShowHistory] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [searchFilter, setSearchFilter] = useState("");
-  const [isAIProcessing, setIsAIProcessing] = useState(false);
   const { toast } = useToast();
 
   // Monitor auth state
@@ -312,61 +311,6 @@ export default function PermitAdvisor() {
       title: "Search Loaded",
       description: `Loaded: ${historyItem.title}`,
     });
-  };
-
-  // Enhance project description with Mervin AI
-  const enhanceProjectWithAI = async () => {
-    if (!projectDescription.trim()) {
-      toast({
-        title: "Descripción Requerida",
-        description: "Por favor escribe una descripción básica del proyecto para mejorar con Mervin AI",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsAIProcessing(true);
-
-    try {
-      console.log('🤖 Starting Mervin AI enhancement...');
-      
-      const response = await fetch('/api/ai-enhance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          originalText: projectDescription,
-          projectType: projectType || 'construction permit project'
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al procesar con Mervin AI');
-      }
-      
-      const result = await response.json();
-      console.log('✅ Mervin AI Response:', result);
-      
-      if (result.enhancedDescription) {
-        setProjectDescription(result.enhancedDescription);
-        
-        toast({
-          title: '✨ Mejorado con Mervin AI',
-          description: 'La descripción del proyecto ha sido mejorada profesionalmente'
-        });
-      } else {
-        throw new Error('No se pudo generar contenido mejorado');
-      }
-      
-    } catch (error) {
-      console.error('Error enhancing with AI:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo procesar con Mervin AI. Inténtalo de nuevo.',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsAIProcessing(false);
-    }
   };
 
   const formatHistoryDate = (timestamp: any) => {
@@ -685,43 +629,15 @@ export default function PermitAdvisor() {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-cyan-400">
-                  Project Description (Optional)
-                </label>
-                <Button
-                  onClick={enhanceProjectWithAI}
-                  disabled={isAIProcessing || !projectDescription.trim()}
-                  className="bg-cyan-400 hover:bg-cyan-300 text-black font-medium text-xs px-3 py-1 h-7"
-                  size="sm"
-                >
-                  {isAIProcessing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-black mr-1"></div>
-                      <span className="hidden sm:inline">Procesando...</span>
-                      <span className="sm:hidden">AI...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Brain className="h-3 w-3 mr-1" />
-                      <span className="hidden sm:inline">Enhance with Mervin AI</span>
-                      <span className="sm:hidden">Mervin AI</span>
-                    </>
-                  )}
-                </Button>
-              </div>
+              <label className="text-sm font-medium text-cyan-400">
+                Project Description (Optional)
+              </label>
               <Textarea
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
                 placeholder="Describe your project in detail (e.g., materials, scope, square footage)..."
                 className="w-full bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[80px] resize-none"
               />
-              <div className="flex items-start gap-2 mt-2 p-3 bg-gray-800/50 border border-cyan-400/30 rounded-lg">
-                <Brain className="h-4 w-4 text-cyan-400 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-gray-400">
-                  <strong className="text-cyan-400">💡 Tip:</strong> Escribe una descripción básica de tu proyecto y usa <strong className="text-cyan-400">"Enhance with Mervin AI"</strong> para generar automáticamente una descripción profesional completa con terminología de construcción técnica.
-                </p>
-              </div>
             </div>
 
             {/* Responsive button layout */}
@@ -759,241 +675,46 @@ export default function PermitAdvisor() {
           </Card>
         )}
 
-        {/* Advanced Analysis Results - estilo Legal Defense */}
+        {/* Results - estilo Legal Defense */}
         {permitData && (
           <Card className="mt-6 bg-gray-900 border-gray-700">
             <CardHeader>
               <CardTitle className="text-cyan-400 flex items-center gap-2">
                 <div className="w-3 h-3 bg-cyan-400 rounded-full"></div>
-                Advanced Permit Analysis Results
+                Analysis Results
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-8">
-              {/* Project Information */}
+            <CardContent className="space-y-6">
+              {/* Property Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <h3 className="text-cyan-400 text-sm font-medium">Property Address</h3>
-                  <p className="text-gray-300">{permitData?.propertyAddress || selectedAddress}</p>
+                  <p className="text-gray-300">{permitData?.meta?.location}</p>
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-cyan-400 text-sm font-medium">Project Type</h3>
-                  <p className="text-gray-300">{permitData?.projectType || projectType}</p>
+                  <p className="text-gray-300">{permitData?.meta?.projectType}</p>
                 </div>
               </div>
 
-              {/* Jurisdiction Analysis */}
-              {permitData?.jurisdictionAnalysis && (
-                <div className="space-y-4">
-                  <h3 className="text-cyan-400 text-lg font-medium flex items-center gap-2">
-                    🏛️ Jurisdiction Analysis
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card className="bg-gray-800 border-gray-600">
-                      <CardContent className="p-4">
-                        <h4 className="text-white font-medium mb-3">Government Authorities</h4>
-                        <div className="space-y-2 text-sm">
-                          <p><strong className="text-cyan-400">City:</strong> {permitData.jurisdictionAnalysis.city}</p>
-                          <p><strong className="text-cyan-400">County:</strong> {permitData.jurisdictionAnalysis.county}</p>
-                          <p><strong className="text-cyan-400">State:</strong> {permitData.jurisdictionAnalysis.state}</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-gray-800 border-gray-600">
-                      <CardContent className="p-4">
-                        <h4 className="text-white font-medium mb-3">Key Departments</h4>
-                        <div className="space-y-2 text-sm">
-                          <p><strong className="text-cyan-400">Building:</strong> {permitData.jurisdictionAnalysis.buildingDepartment}</p>
-                          <p><strong className="text-cyan-400">Planning:</strong> {permitData.jurisdictionAnalysis.planningDepartment}</p>
-                          <p><strong className="text-cyan-400">Fire Authority:</strong> {permitData.jurisdictionAnalysis.fireAuthority}</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-              )}
-
-              {/* Building Codes Section */}
-              {permitData?.buildingCodes && (
-                <div className="space-y-4">
-                  <h3 className="text-cyan-400 text-lg font-medium flex items-center gap-2">
-                    📋 Building Codes & Regulations
-                  </h3>
-                  
-                  {/* Applicable Codes */}
-                  {permitData.buildingCodes.applicableCodes && permitData.buildingCodes.applicableCodes.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="text-white font-medium">Applicable Building Codes</h4>
-                      {permitData.buildingCodes.applicableCodes.map((code: any, idx: number) => (
-                        <Card key={idx} className="bg-gray-800 border-gray-600">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="text-white font-medium">{code.codeName}</h5>
-                              <Badge className="bg-cyan-400 text-black text-xs">{code.codeEdition}</Badge>
-                            </div>
-                            {code.specificSections && code.specificSections.length > 0 && (
-                              <div className="mb-3">
-                                <p className="text-cyan-400 text-sm font-medium mb-1">Specific Sections:</p>
-                                <div className="flex flex-wrap gap-2">
-                                  {code.specificSections.map((section: string, sIdx: number) => (
-                                    <Badge key={sIdx} variant="outline" className="border-gray-500 text-gray-300 text-xs">
-                                      {section}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            {code.keyRequirements && code.keyRequirements.length > 0 && (
-                              <div className="space-y-1">
-                                <p className="text-cyan-400 text-sm font-medium">Key Requirements:</p>
-                                <ul className="text-gray-300 text-sm space-y-1">
-                                  {code.keyRequirements.map((req: string, rIdx: number) => (
-                                    <li key={rIdx} className="flex items-start gap-2">
-                                      <span className="text-cyan-400 mt-1">•</span>
-                                      <span>{req}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* State and Federal Requirements */}
-                  {(permitData.buildingCodes.stateRegulations?.length > 0 || permitData.buildingCodes.federalRequirements?.length > 0) && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {permitData.buildingCodes.stateRegulations?.length > 0 && (
-                        <Card className="bg-gray-800 border-gray-600">
-                          <CardContent className="p-4">
-                            <h5 className="text-white font-medium mb-3">State Regulations</h5>
-                            <ul className="text-gray-300 text-sm space-y-1">
-                              {permitData.buildingCodes.stateRegulations.map((reg: string, idx: number) => (
-                                <li key={idx} className="flex items-start gap-2">
-                                  <span className="text-cyan-400 mt-1">•</span>
-                                  <span>{reg}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </CardContent>
-                        </Card>
-                      )}
-                      
-                      {permitData.buildingCodes.federalRequirements?.length > 0 && (
-                        <Card className="bg-gray-800 border-gray-600">
-                          <CardContent className="p-4">
-                            <h5 className="text-white font-medium mb-3">Federal Requirements</h5>
-                            <ul className="text-gray-300 text-sm space-y-1">
-                              {permitData.buildingCodes.federalRequirements.map((req: string, idx: number) => (
-                                <li key={idx} className="flex items-start gap-2">
-                                  <span className="text-cyan-400 mt-1">•</span>
-                                  <span>{req}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* OSHA Requirements Section */}
-              {permitData?.oshaRequirements && (
-                <div className="space-y-4">
-                  <h3 className="text-cyan-400 text-lg font-medium flex items-center gap-2">
-                    ⚠️ OSHA Safety Requirements
-                  </h3>
-                  
-                  {permitData.oshaRequirements.applicableStandards && permitData.oshaRequirements.applicableStandards.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="text-white font-medium">Applicable OSHA Standards</h4>
-                      {permitData.oshaRequirements.applicableStandards.map((standard: any, idx: number) => (
-                        <Card key={idx} className="bg-gray-800 border-gray-600">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="text-white font-medium">{standard.title}</h5>
-                              <Badge className="bg-yellow-400 text-black text-xs">{standard.standardNumber}</Badge>
-                            </div>
-                            {standard.specificRequirements && standard.specificRequirements.length > 0 && (
-                              <div className="space-y-2">
-                                <p className="text-cyan-400 text-sm font-medium">Specific Requirements:</p>
-                                <ul className="text-gray-300 text-sm space-y-1">
-                                  {standard.specificRequirements.map((req: string, rIdx: number) => (
-                                    <li key={rIdx} className="flex items-start gap-2">
-                                      <span className="text-yellow-400 mt-1">•</span>
-                                      <span>{req}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Required Permits Section */}
+              {/* Permits Required */}
               {permitData?.requiredPermits && permitData.requiredPermits.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-cyan-400 text-lg font-medium flex items-center gap-2">
-                    📄 Required Permits & Process
-                  </h3>
-                  <div className="space-y-4">
+                <div className="space-y-3">
+                  <h3 className="text-cyan-400 text-lg font-medium">Required Permits</h3>
+                  <div className="space-y-3">
                     {permitData.requiredPermits.map((permit: any, idx: number) => (
                       <Card key={idx} className="bg-gray-800 border-gray-600">
-                        <CardContent className="p-6">
-                          <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-white font-medium text-lg">{permit.permitName}</h4>
-                            <div className="flex gap-2">
-                              <Badge className="bg-green-400 text-black">{permit.cost}</Badge>
-                              <Badge variant="outline" className="border-gray-500 text-gray-300">{permit.timeline}</Badge>
-                            </div>
+                        <CardContent className="p-4">
+                          <h4 className="text-white font-medium mb-2">{permit.name}</h4>
+                          <p className="text-gray-400 text-sm mb-3">{permit.description}</p>
+                          <div className="space-y-2">
+                            <p className="text-cyan-400 text-sm">
+                              <strong>Cost:</strong> {permit.cost}
+                            </p>
+                            <p className="text-cyan-400 text-sm">
+                              <strong>Timeline:</strong> {permit.timeline}
+                            </p>
                           </div>
-                          
-                          <p className="text-cyan-400 text-sm mb-4">
-                            <strong>Issuing Authority:</strong> {permit.issuingAuthority}
-                          </p>
-
-                          {/* Application Process */}
-                          {permit.applicationProcess && permit.applicationProcess.length > 0 && (
-                            <div className="space-y-3">
-                              <h5 className="text-white font-medium">Application Process:</h5>
-                              <div className="space-y-3">
-                                {permit.applicationProcess.map((step: any, stepIdx: number) => (
-                                  <div key={stepIdx} className="flex gap-4 p-3 bg-gray-700/50 rounded-lg">
-                                    <div className="flex-shrink-0">
-                                      <div className="w-8 h-8 bg-cyan-400 text-black rounded-full flex items-center justify-center text-sm font-bold">
-                                        {step.step}
-                                      </div>
-                                    </div>
-                                    <div className="flex-1 space-y-2">
-                                      <p className="text-white font-medium">{step.description}</p>
-                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                        <div>
-                                          <p className="text-cyan-400 font-medium">Responsible Party:</p>
-                                          <p className="text-gray-300">{step.responsibleParty}</p>
-                                        </div>
-                                        <div>
-                                          <p className="text-cyan-400 font-medium">Estimated Time:</p>
-                                          <p className="text-gray-300">{step.estimatedTime}</p>
-                                        </div>
-                                        <div>
-                                          <p className="text-cyan-400 font-medium">Required Documents:</p>
-                                          <p className="text-gray-300">{step.requiredDocuments?.join(', ')}</p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
                         </CardContent>
                       </Card>
                     ))}
@@ -1001,58 +722,25 @@ export default function PermitAdvisor() {
                 </div>
               )}
 
-              {/* Inspector Contacts Section */}
-              {permitData?.inspectorContacts && permitData.inspectorContacts.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-cyan-400 text-lg font-medium flex items-center gap-2">
-                    👨‍🔧 Inspector Contacts
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {permitData.inspectorContacts.map((contact: any, idx: number) => (
+              {/* Contact Information */}
+              {permitData?.contactInformation && permitData.contactInformation.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-cyan-400 text-lg font-medium">Contact Information</h3>
+                  <div className="space-y-3">
+                    {permitData.contactInformation.map((contact: any, idx: number) => (
                       <Card key={idx} className="bg-gray-800 border-gray-600">
                         <CardContent className="p-4">
-                          <h4 className="text-white font-medium mb-3">{contact.department}</h4>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-center justify-between">
-                              <span className="text-cyan-400 font-medium">Inspector:</span>
-                              <span className="text-gray-300">{contact.inspectorName}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-cyan-400 font-medium">Title:</span>
-                              <span className="text-gray-300">{contact.title}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-cyan-400 font-medium">Direct Phone:</span>
-                              <a href={`tel:${contact.directPhone}`} className="text-green-400 hover:text-green-300">
-                                {contact.directPhone}
-                              </a>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-cyan-400 font-medium">Email:</span>
-                              <a href={`mailto:${contact.email}`} className="text-green-400 hover:text-green-300 truncate">
-                                {contact.email}
-                              </a>
-                            </div>
-                            <div className="flex items-start justify-between">
-                              <span className="text-cyan-400 font-medium">Office:</span>
-                              <span className="text-gray-300 text-right">{contact.officeAddress}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-cyan-400 font-medium">Hours:</span>
-                              <span className="text-gray-300">{contact.availability}</span>
-                            </div>
-                            {contact.specialties && contact.specialties.length > 0 && (
-                              <div className="mt-3">
-                                <p className="text-cyan-400 font-medium mb-2">Specialties:</p>
-                                <div className="flex flex-wrap gap-1">
-                                  {contact.specialties.map((specialty: string, sIdx: number) => (
-                                    <Badge key={sIdx} variant="outline" className="border-gray-500 text-gray-300 text-xs">
-                                      {specialty}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
+                          <h4 className="text-white font-medium mb-2">{contact.organization}</h4>
+                          <div className="space-y-1 text-sm">
+                            <p className="text-gray-400">
+                              <strong className="text-cyan-400">Phone:</strong> {contact.phone}
+                            </p>
+                            <p className="text-gray-400">
+                              <strong className="text-cyan-400">Email:</strong> {contact.email}
+                            </p>
+                            <p className="text-gray-400">
+                              <strong className="text-cyan-400">Address:</strong> {contact.address}
+                            </p>
                           </div>
                         </CardContent>
                       </Card>
@@ -1060,203 +748,6 @@ export default function PermitAdvisor() {
                   </div>
                 </div>
               )}
-
-              {/* Cost Analysis Section */}
-              {permitData?.costAnalysis && (
-                <div className="space-y-4">
-                  <h3 className="text-cyan-400 text-lg font-medium flex items-center gap-2">
-                    💰 Cost Analysis
-                  </h3>
-                  
-                  {permitData.costAnalysis.totalEstimatedCosts && (
-                    <Card className="bg-gray-800 border-gray-600">
-                      <CardContent className="p-4">
-                        <h4 className="text-white font-medium mb-3">Total Estimated Costs</h4>
-                        <div className="grid grid-cols-3 gap-4 text-center">
-                          <div>
-                            <p className="text-green-400 text-lg font-bold">{permitData.costAnalysis.totalEstimatedCosts.minimum}</p>
-                            <p className="text-gray-400 text-xs">Minimum</p>
-                          </div>
-                          <div>
-                            <p className="text-cyan-400 text-lg font-bold">{permitData.costAnalysis.totalEstimatedCosts.typical}</p>
-                            <p className="text-gray-400 text-xs">Typical</p>
-                          </div>
-                          <div>
-                            <p className="text-red-400 text-lg font-bold">{permitData.costAnalysis.totalEstimatedCosts.maximum}</p>
-                            <p className="text-gray-400 text-xs">Maximum</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {permitData.costAnalysis.permitFees && permitData.costAnalysis.permitFees.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="text-white font-medium">Permit Fee Breakdown</h4>
-                      {permitData.costAnalysis.permitFees.map((fee: any, idx: number) => (
-                        <Card key={idx} className="bg-gray-700/50 border-gray-600">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="text-white font-medium">{fee.permitType}</h5>
-                              <span className="text-green-400 font-bold">{fee.baseFee}</span>
-                            </div>
-                            {fee.additionalFees && fee.additionalFees.length > 0 && (
-                              <p className="text-gray-400 text-sm">
-                                Additional fees: {fee.additionalFees.join(', ')}
-                              </p>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Timeline Analysis */}
-              {permitData?.timelineAnalysis && (
-                <div className="space-y-4">
-                  <h3 className="text-cyan-400 text-lg font-medium flex items-center gap-2">
-                    ⏱️ Timeline Analysis
-                  </h3>
-                  
-                  <Card className="bg-gray-8800 border-gray-600">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-4 mb-4">
-                        <div>
-                          <p className="text-cyan-400 font-medium">Total Estimated Time</p>
-                          <p className="text-white text-lg font-bold">{permitData.timelineAnalysis.totalEstimatedTime}</p>
-                        </div>
-                      </div>
-
-                      {permitData.timelineAnalysis.criticalPath && permitData.timelineAnalysis.criticalPath.length > 0 && (
-                        <div className="space-y-3">
-                          <h4 className="text-white font-medium">Critical Path</h4>
-                          <div className="space-y-2">
-                            {permitData.timelineAnalysis.criticalPath.map((phase: any, idx: number) => (
-                              <div key={idx} className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
-                                <div>
-                                  <p className="text-white font-medium">{phase.phase}</p>
-                                  <p className="text-gray-400 text-sm">Duration: {phase.duration}</p>
-                                </div>
-                                {phase.permits && phase.permits.length > 0 && (
-                                  <div className="text-right">
-                                    <p className="text-cyan-400 text-sm">Permits:</p>
-                                    <p className="text-gray-300 text-sm">{phase.permits.join(', ')}</p>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-
-              {/* Risk Assessment */}
-              {permitData?.riskAssessment && (
-                <div className="space-y-4">
-                  <h3 className="text-cyan-400 text-lg font-medium flex items-center gap-2">
-                    ⚠️ Risk Assessment
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {permitData.riskAssessment.commonViolations && permitData.riskAssessment.commonViolations.length > 0 && (
-                      <Card className="bg-red-900/20 border-red-400/50">
-                        <CardContent className="p-4">
-                          <h4 className="text-red-400 font-medium mb-3">Common Violations</h4>
-                          <ul className="text-gray-300 text-sm space-y-1">
-                            {permitData.riskAssessment.commonViolations.map((violation: string, idx: number) => (
-                              <li key={idx} className="flex items-start gap-2">
-                                <span className="text-red-400 mt-1">•</span>
-                                <span>{violation}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {permitData.riskAssessment.mitigation && permitData.riskAssessment.mitigation.length > 0 && (
-                      <Card className="bg-green-900/20 border-green-400/50">
-                        <CardContent className="p-4">
-                          <h4 className="text-green-400 font-medium mb-3">Risk Mitigation</h4>
-                          <ul className="text-gray-300 text-sm space-y-1">
-                            {permitData.riskAssessment.mitigation.map((strategy: string, idx: number) => (
-                              <li key={idx} className="flex items-start gap-2">
-                                <span className="text-green-400 mt-1">•</span>
-                                <span>{strategy}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Official Resources */}
-              {permitData?.officialResources && (
-                <div className="space-y-4">
-                  <h3 className="text-cyan-400 text-lg font-medium flex items-center gap-2">
-                    🔗 Official Resources
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {permitData.officialResources.permitPortals && permitData.officialResources.permitPortals.length > 0 && (
-                      <Card className="bg-gray-800 border-gray-600">
-                        <CardContent className="p-4">
-                          <h4 className="text-white font-medium mb-3">Permit Portals</h4>
-                          <div className="space-y-2">
-                            {permitData.officialResources.permitPortals.map((portal: any, idx: number) => (
-                              <div key={idx} className="p-2 bg-gray-700/50 rounded">
-                                <p className="text-cyan-400 font-medium">{portal.name}</p>
-                                <a href={portal.url} target="_blank" rel="noopener noreferrer" 
-                                   className="text-green-400 hover:text-green-300 text-sm truncate block">
-                                  {portal.url}
-                                </a>
-                                <p className="text-gray-400 text-sm">{portal.description}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {permitData.officialResources.contactDirectory && permitData.officialResources.contactDirectory.length > 0 && (
-                      <Card className="bg-gray-800 border-gray-600">
-                        <CardContent className="p-4">
-                          <h4 className="text-white font-medium mb-3">Official Contacts</h4>
-                          <div className="space-y-3">
-                            {permitData.officialResources.contactDirectory.map((contact: any, idx: number) => (
-                              <div key={idx} className="p-2 bg-gray-700/50 rounded">
-                                <p className="text-cyan-400 font-medium">{contact.department}</p>
-                                <div className="text-sm space-y-1">
-                                  <p><strong className="text-cyan-400">Phone:</strong> 
-                                    <a href={`tel:${contact.phone}`} className="text-green-400 hover:text-green-300 ml-1">
-                                      {contact.phone}
-                                    </a>
-                                  </p>
-                                  <p><strong className="text-cyan-400">Email:</strong> 
-                                    <a href={`mailto:${contact.email}`} className="text-green-400 hover:text-green-300 ml-1">
-                                      {contact.email}
-                                    </a>
-                                  </p>
-                                  <p><strong className="text-cyan-400">Hours:</strong> <span className="text-gray-300">{contact.hours}</span></p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
-                </div>
-              )}
-
             </CardContent>
           </Card>
         )}

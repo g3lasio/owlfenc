@@ -53,39 +53,10 @@ export default function MapboxPlacesAutocomplete({
     setApiError(null);
   }, []);
 
-  // Función helper para abortar de forma segura
-  const safeAbort = useCallback(() => {
-    if (abortControllerRef.current) {
-      try {
-        // Solo abortar si no está ya abortado
-        if (!abortControllerRef.current.signal.aborted) {
-          abortControllerRef.current.abort();
-        }
-      } catch (error) {
-        // Ignorar errores de abort silenciosamente
-        console.log("🔄 [MapboxPlaces] AbortController ya cancelado");
-      } finally {
-        abortControllerRef.current = null;
-      }
-    }
-  }, []);
-
   // Inicializar
   useEffect(() => {
     checkMapboxAPI();
   }, [checkMapboxAPI]);
-
-  // Cleanup cuando el componente se desmonta
-  useEffect(() => {
-    return () => {
-      // Limpiar timer de debounce
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-      // Cancelar request pendiente de forma segura
-      safeAbort();
-    };
-  }, [safeAbort]);
 
   // Buscar sugerencias con Mapbox Geocoding API
   const searchSuggestions = useCallback(async (input: string) => {
@@ -97,7 +68,13 @@ export default function MapboxPlacesAutocomplete({
     }
 
     // Cancelar petición anterior de forma segura
-    safeAbort();
+    if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+      try {
+        abortControllerRef.current.abort();
+      } catch (e) {
+        // Ignorar errores de abort
+      }
+    }
 
     // Crear nuevo controlador
     const controller = new AbortController();
@@ -179,7 +156,7 @@ export default function MapboxPlacesAutocomplete({
         setIsLoading(false);
       }
     }
-  }, [countries, language, apiStatus, safeAbort]);
+  }, [countries, language, apiStatus]);
 
   // Debounce timer para búsqueda
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -204,7 +181,10 @@ export default function MapboxPlacesAutocomplete({
     } else {
       console.log("⏳ [MapboxPlaces] Esperando más caracteres:", newValue.length, "/3");
       // Cancelar cualquier petición pendiente de forma segura
-      safeAbort();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
       setSuggestions([]);
       setShowSuggestions(false);
     }
