@@ -6329,9 +6329,14 @@ Output must be between 200-900 characters in English.`;
         });
       }
 
-      // Obtener información de permisos
+      // Usar el nuevo analizador avanzado de permisos
       const startTime = Date.now();
-      const permitData = await permitService.checkPermits(address, projectType);
+      const { advancedPermitAnalyzer } = await import('./services/advancedPermitAnalyzer');
+      const permitData = await advancedPermitAnalyzer.analyzePermitRequirements(
+        address, 
+        projectType, 
+        req.body.projectDescription
+      );
       const endTime = Date.now();
 
       console.log(`Solicitud completada en ${endTime - startTime}ms`);
