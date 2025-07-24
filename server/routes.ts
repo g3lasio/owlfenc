@@ -6614,6 +6614,12 @@ Output must be between 200-900 characters in English.`;
       const pdfBuffer = await puppeteerPdfService.generatePdfFromHtml(htmlContent);
       
       console.log("✅ [PERMIT-REPORT] PDF generated successfully");
+      console.log("🔍 [PERMIT-REPORT] PDF Buffer validation:", {
+        isBuffer: Buffer.isBuffer(pdfBuffer),
+        length: pdfBuffer.length,
+        firstBytes: pdfBuffer.subarray(0, 8).toString("hex"),
+        isPDF: pdfBuffer.subarray(0, 4).toString() === "%PDF",
+      });
       
       // Set headers for PDF download
       const fileName = `Permit_Analysis_Report_${permitData?.meta?.projectType || 'Project'}_${new Date().toISOString().slice(0, 10)}.pdf`;
@@ -6621,8 +6627,10 @@ Output must be between 200-900 characters in English.`;
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
       res.setHeader('Content-Length', pdfBuffer.length);
+      res.setHeader('Cache-Control', 'no-cache');
       
-      res.send(pdfBuffer);
+      // Send PDF buffer as binary data (same method used in successful endpoints)
+      res.end(pdfBuffer, 'binary');
       
     } catch (error) {
       console.error("❌ [PERMIT-REPORT] PDF generation failed:", error);

@@ -737,6 +737,7 @@ export function generatePermitReportHTML(permitData: PermitData, companyInfo: Co
 
 export async function generatePDFReport(permitData: PermitData, companyInfo: CompanyInfo): Promise<Blob> {
   try {
+    console.log('🔄 [PDF-FRONTEND] Starting PDF generation request...');
     const htmlContent = generatePermitReportHTML(permitData, companyInfo);
     
     // Call backend PDF generation service
@@ -752,13 +753,35 @@ export async function generatePDFReport(permitData: PermitData, companyInfo: Com
       }),
     });
 
+    console.log('📄 [PDF-FRONTEND] Response received:', {
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get('Content-Type'),
+      contentLength: response.headers.get('Content-Length')
+    });
+
     if (!response.ok) {
-      throw new Error(`PDF generation failed: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('❌ [PDF-FRONTEND] Response error:', errorText);
+      throw new Error(`PDF generation failed: ${response.statusText} - ${errorText}`);
     }
 
-    return await response.blob();
+    // Verify content type
+    const contentType = response.headers.get('Content-Type');
+    if (!contentType || !contentType.includes('application/pdf')) {
+      console.error('❌ [PDF-FRONTEND] Invalid content type:', contentType);
+      throw new Error(`Invalid content type: ${contentType}. Expected application/pdf`);
+    }
+
+    const blob = await response.blob();
+    console.log('✅ [PDF-FRONTEND] PDF blob created:', {
+      size: blob.size,
+      type: blob.type
+    });
+
+    return blob;
   } catch (error) {
-    console.error('Error generating PDF report:', error);
+    console.error('❌ [PDF-FRONTEND] Error generating PDF report:', error);
     throw error;
   }
 }
