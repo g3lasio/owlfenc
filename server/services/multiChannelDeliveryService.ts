@@ -1,17 +1,17 @@
 /**
  * Multi-Channel Secure Contract Delivery Service
- * 
+ *
  * Handles secure contract delivery through multiple channels:
  * - Professional Email (SendGrid)
  * - SMS (External app integration)
  * - WhatsApp Business (External app integration)
- * 
+ *
  * Uses external app URL schemes for SMS and WhatsApp to ensure
  * professional, secure appearance without depending on complex APIs.
  */
 
-import { MailService } from '@sendgrid/mail';
-import { DualSignatureService } from './dualSignatureService';
+import { MailService } from "@sendgrid/mail";
+import { DualSignatureService } from "./dualSignatureService";
 
 interface ContractData {
   contractorName: string;
@@ -69,30 +69,32 @@ class MultiChannelDeliveryService {
     if (process.env.SENDGRID_API_KEY) {
       this.mailService.setApiKey(process.env.SENDGRID_API_KEY);
     }
-    
+
     // Initialize DualSignatureService for contract storage
     this.dualSignatureService = new DualSignatureService();
   }
-
-
 
   /**
    * Send professional email with contract
    */
   private async sendSecureEmail(
-    contractData: ContractData, 
-    contractHTML: string, 
+    contractData: ContractData,
+    contractHTML: string,
     signUrl: string,
-    isContractor: boolean = false
+    isContractor: boolean = false,
   ): Promise<{ sent: boolean; messageId?: string; error?: string }> {
     try {
       if (!process.env.SENDGRID_API_KEY) {
-        throw new Error('SendGrid API key not configured');
+        throw new Error("SendGrid API key not configured");
       }
 
-      const recipient = isContractor ? contractData.contractorEmail : contractData.clientEmail;
-      const recipientName = isContractor ? contractData.contractorName : contractData.clientName;
-      const role = isContractor ? 'Contractor' : 'Client';
+      const recipient = isContractor
+        ? contractData.contractorEmail
+        : contractData.clientEmail;
+      const recipientName = isContractor
+        ? contractData.contractorName
+        : contractData.clientName;
+      const role = isContractor ? "Contractor" : "Client";
 
       const emailContent = `
 <!DOCTYPE html>
@@ -181,25 +183,24 @@ class MultiChannelDeliveryService {
       const msg = {
         to: recipient,
         from: {
-          email: 'legal@owlfenc.com',
-          name: `${contractData.contractorCompany} - Secure Contracts`
+          email: "legal@owlfenc.com",
+          name: `${contractData.contractorCompany} - Secure Contracts`,
         },
         subject: `🔐 Secure Contract - ${contractData.projectDescription} ($${contractData.totalAmount.toLocaleString()})`,
         html: emailContent,
       };
 
       const [response] = await this.mailService.send(msg);
-      
+
       return {
         sent: true,
-        messageId: response.headers['x-message-id'] || 'unknown'
+        messageId: response.headers["x-message-id"] || "unknown",
       };
-
     } catch (error) {
-      console.error('Email delivery error:', error);
+      console.error("Email delivery error:", error);
       return {
         sent: false,
-        error: error.message || 'Email delivery failed'
+        error: error.message || "Email delivery failed",
       };
     }
   }
@@ -207,167 +208,215 @@ class MultiChannelDeliveryService {
   /**
    * Generate SMS URL for external app
    */
-  private generateSMSUrl(contractData: ContractData, signUrl: string, isContractor: boolean = false): string {
-    const recipient = isContractor ? contractData.contractorPhone : contractData.clientPhone;
-    const recipientName = isContractor ? contractData.contractorName : contractData.clientName;
-    
+  private generateSMSUrl(
+    contractData: ContractData,
+    signUrl: string,
+    isContractor: boolean = false,
+  ): string {
+    const recipient = isContractor
+      ? contractData.contractorPhone
+      : contractData.clientPhone;
+    const recipientName = isContractor
+      ? contractData.contractorName
+      : contractData.clientName;
+
     const message = encodeURIComponent(
       `🔐 SECURE CONTRACT from ${contractData.contractorCompany}\n\n` +
-      `Hi ${recipientName},\n\n` +
-      `You have a secure contract to review and sign:\n` +
-      `Project: ${contractData.projectDescription}\n` +
-      `Amount: $${contractData.totalAmount.toLocaleString()}\n\n` +
-      `🔗 Secure Link: ${signUrl}\n\n` +
-      `⏰ Expires in 72 hours\n` +
-      `🛡️ Bank-level security with 256-bit SSL encryption\n\n` +
-      `This is a secure professional contract system.`
+        `Hi ${recipientName},\n\n` +
+        `You have a secure contract to review and sign:\n` +
+        `Project: ${contractData.projectDescription}\n` +
+        `Amount: $${contractData.totalAmount.toLocaleString()}\n\n` +
+        `🔗 Secure Link: ${signUrl}\n\n` +
+        `⏰ Expires in 72 hours\n` +
+        `🛡️ Bank-level security with 256-bit SSL encryption\n\n` +
+        `This is a secure professional contract system.`,
     );
-    
+
     return `sms:${recipient}?body=${message}`;
   }
 
   /**
    * Generate WhatsApp URL for external app
    */
-  private generateWhatsAppUrl(contractData: ContractData, signUrl: string, isContractor: boolean = false): string {
-    const recipient = isContractor ? contractData.contractorPhone : contractData.clientPhone;
-    const recipientName = isContractor ? contractData.contractorName : contractData.clientName;
-    
+  private generateWhatsAppUrl(
+    contractData: ContractData,
+    signUrl: string,
+    isContractor: boolean = false,
+  ): string {
+    const recipient = isContractor
+      ? contractData.contractorPhone
+      : contractData.clientPhone;
+    const recipientName = isContractor
+      ? contractData.contractorName
+      : contractData.clientName;
+
     // Clean phone number for WhatsApp (remove spaces, dashes, etc.)
-    const cleanPhone = recipient.replace(/[^\d]/g, '');
-    
+    const cleanPhone = recipient.replace(/[^\d]/g, "");
+
     const message = encodeURIComponent(
       `🔐 *SECURE CONTRACT* from ${contractData.contractorCompany}\n\n` +
-      `Hello ${recipientName},\n\n` +
-      `You have received a secure contract to review and sign:\n\n` +
-      `📋 *Project:* ${contractData.projectDescription}\n` +
-      `💰 *Amount:* $${contractData.totalAmount.toLocaleString()}\n` +
-      `📅 *Start Date:* ${contractData.startDate}\n\n` +
-      `🔗 *Secure Contract Link:*\n${signUrl}\n\n` +
-      `🛡️ *Security Features:*\n` +
-      `• 256-bit SSL encryption\n` +
-      `• Device verification\n` +
-      `• Complete audit trail\n` +
-      `• Timestamp verification\n\n` +
-      `⏰ This secure link expires in 72 hours.\n\n` +
-      `If you have questions, please contact ${contractData.contractorCompany} directly.\n\n` +
-      `_Professional Contract Management System by Owl Fence_`
+        `Hello ${recipientName},\n\n` +
+        `You have received a secure contract to review and sign:\n\n` +
+        `📋 *Project:* ${contractData.projectDescription}\n` +
+        `💰 *Amount:* $${contractData.totalAmount.toLocaleString()}\n` +
+        `📅 *Start Date:* ${contractData.startDate}\n\n` +
+        `🔗 *Secure Contract Link:*\n${signUrl}\n\n` +
+        `🛡️ *Security Features:*\n` +
+        `• 256-bit SSL encryption\n` +
+        `• Device verification\n` +
+        `• Complete audit trail\n` +
+        `• Timestamp verification\n\n` +
+        `⏰ This secure link expires in 72 hours.\n\n` +
+        `If you have questions, please contact ${contractData.contractorCompany} directly.\n\n` +
+        `_Professional Contract Management System by Owl Fence_`,
     );
-    
+
     return `https://wa.me/${cleanPhone}?text=${message}`;
   }
 
   /**
    * Initiate multi-channel secure delivery
    */
-  async initiateSecureDelivery(payload: SecureDeliveryPayload): Promise<DeliveryResult> {
+  async initiateSecureDelivery(
+    payload: SecureDeliveryPayload,
+  ): Promise<DeliveryResult> {
     try {
-      console.log('🔐 [MULTI-CHANNEL] Starting secure delivery with contract storage...');
-      
+      console.log(
+        "🔐 [MULTI-CHANNEL] Starting secure delivery with contract storage...",
+      );
+
       // Use DualSignatureService to save contract to database
       const dualSignatureRequest = {
         userId: payload.userId,
         contractHTML: payload.contractHTML,
-        contractData: payload.contractData
+        contractData: payload.contractData,
       };
-      
-      console.log('💾 [MULTI-CHANNEL] Saving contract to database...');
-      const signatureResult = await this.dualSignatureService.initiateDualSignature(dualSignatureRequest);
-      
+
+      console.log("💾 [MULTI-CHANNEL] Saving contract to database...");
+      const signatureResult =
+        await this.dualSignatureService.initiateDualSignature(
+          dualSignatureRequest,
+        );
+
       if (!signatureResult.success) {
         throw new Error(`Failed to save contract: ${signatureResult.message}`);
       }
-      
+
       const contractId = signatureResult.contractId!;
       const contractorSignUrl = signatureResult.contractorSignUrl!;
       const clientSignUrl = signatureResult.clientSignUrl!;
-      
-      console.log('✅ [MULTI-CHANNEL] Contract saved successfully:', contractId);
-      console.log('🔗 [MULTI-CHANNEL] Contractor URL:', contractorSignUrl);
-      console.log('🔗 [MULTI-CHANNEL] Client URL:', clientSignUrl);
-      
-      const deliveryResults: DeliveryResult['deliveryResults'] = {};
-      
+
+      console.log(
+        "✅ [MULTI-CHANNEL] Contract saved successfully:",
+        contractId,
+      );
+      console.log("🔗 [MULTI-CHANNEL] Contractor URL:", contractorSignUrl);
+      console.log("🔗 [MULTI-CHANNEL] Client URL:", clientSignUrl);
+
+      const deliveryResults: DeliveryResult["deliveryResults"] = {};
+
       // Email Delivery
       if (payload.deliveryMethods.email) {
-        console.log('🔐 [MULTI-CHANNEL] Sending secure emails...');
-        
+        console.log("🔐 [MULTI-CHANNEL] Sending secure emails...");
+
         // Send to contractor
         const contractorEmail = await this.sendSecureEmail(
-          payload.contractData, 
-          payload.contractHTML, 
-          contractorSignUrl, 
-          true
+          payload.contractData,
+          payload.contractHTML,
+          contractorSignUrl,
+          true,
         );
-        
+
         // Send to client
         const clientEmail = await this.sendSecureEmail(
-          payload.contractData, 
-          payload.contractHTML, 
-          clientSignUrl, 
-          false
+          payload.contractData,
+          payload.contractHTML,
+          clientSignUrl,
+          false,
         );
-        
+
         deliveryResults.email = {
           sent: contractorEmail.sent && clientEmail.sent,
           messageId: contractorEmail.messageId || clientEmail.messageId,
-          error: contractorEmail.error || clientEmail.error
+          error: contractorEmail.error || clientEmail.error,
         };
-        
-        console.log('📧 [MULTI-CHANNEL] Email delivery:', deliveryResults.email);
+
+        console.log(
+          "📧 [MULTI-CHANNEL] Email delivery:",
+          deliveryResults.email,
+        );
       }
-      
+
       // SMS Delivery (External App)
       if (payload.deliveryMethods.sms) {
-        console.log('📱 [MULTI-CHANNEL] Generating SMS URLs...');
-        
-        const contractorSMSUrl = this.generateSMSUrl(payload.contractData, contractorSignUrl, true);
-        const clientSMSUrl = this.generateSMSUrl(payload.contractData, clientSignUrl, false);
-        
+        console.log("📱 [MULTI-CHANNEL] Generating SMS URLs...");
+
+        const contractorSMSUrl = this.generateSMSUrl(
+          payload.contractData,
+          contractorSignUrl,
+          true,
+        );
+        const clientSMSUrl = this.generateSMSUrl(
+          payload.contractData,
+          clientSignUrl,
+          false,
+        );
+
         deliveryResults.sms = {
           sent: true, // URL generation always succeeds
-          url: clientSMSUrl // Primary URL for client
+          url: clientSMSUrl, // Primary URL for client
         };
-        
-        console.log('📱 [MULTI-CHANNEL] SMS URLs generated successfully');
+
+        console.log("📱 [MULTI-CHANNEL] SMS URLs generated successfully");
       }
-      
+
       // WhatsApp Delivery (External App)
       if (payload.deliveryMethods.whatsapp) {
-        console.log('💬 [MULTI-CHANNEL] Generating WhatsApp URLs...');
-        
-        const contractorWhatsAppUrl = this.generateWhatsAppUrl(payload.contractData, contractorSignUrl, true);
-        const clientWhatsAppUrl = this.generateWhatsAppUrl(payload.contractData, clientSignUrl, false);
-        
+        console.log("💬 [MULTI-CHANNEL] Generating WhatsApp URLs...");
+
+        const contractorWhatsAppUrl = this.generateWhatsAppUrl(
+          payload.contractData,
+          contractorSignUrl,
+          true,
+        );
+        const clientWhatsAppUrl = this.generateWhatsAppUrl(
+          payload.contractData,
+          clientSignUrl,
+          false,
+        );
+
         deliveryResults.whatsapp = {
           sent: true, // URL generation always succeeds
-          url: clientWhatsAppUrl // Primary URL for client
+          url: clientWhatsAppUrl, // Primary URL for client
         };
-        
-        console.log('💬 [MULTI-CHANNEL] WhatsApp URLs generated successfully');
+
+        console.log("💬 [MULTI-CHANNEL] WhatsApp URLs generated successfully");
       }
-      
+
       // Log delivery summary
       const successfulChannels = Object.entries(deliveryResults)
         .filter(([_, result]) => result.sent)
         .map(([channel, _]) => channel);
-      
+
       if (successfulChannels.length > 0) {
-        console.log(`🔐 [MULTI-CHANNEL] Delivery completed via: ${successfulChannels.join(', ')}`);
+        console.log(
+          `🔐 [MULTI-CHANNEL] Delivery completed via: ${successfulChannels.join(", ")}`,
+        );
       } else {
-        console.log('🔐 [MULTI-CHANNEL] Signature links generated - no delivery channels used');
+        console.log(
+          "🔐 [MULTI-CHANNEL] Signature links generated - no delivery channels used",
+        );
       }
-      
+
       return {
         success: true,
         contractId,
         contractorSignUrl,
         clientSignUrl,
-        deliveryResults
+        deliveryResults,
       };
-      
     } catch (error) {
-      console.error('❌ [MULTI-CHANNEL] Delivery error:', error);
+      console.error("❌ [MULTI-CHANNEL] Delivery error:", error);
       throw error;
     }
   }

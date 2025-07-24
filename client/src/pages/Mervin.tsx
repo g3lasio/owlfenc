@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Client } from "@/lib/clientFirebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { MaterialInventoryService } from "../../src/services/materialInventoryService";
@@ -90,6 +91,8 @@ type ContractFlowStep =
   | "legal-clauses"
   | "project-scope"
   | "final-review"
+  | "signature-question"
+  | "awaiting-signature-choice"
   | "generate-contract"
   | null;
 
@@ -265,13 +268,30 @@ export default function Mervin() {
       required: false,
     },
   ]);
+
+  // Separate state for date values
+  const [projectDates, setProjectDates] = useState<{
+    start?: Date;
+    completion?: Date;
+  }>({});
+
+  // State for logo file upload
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string>("");
+
+  // State for signature protocol
+  const [contractorSignUrl, setContractorSignUrl] = useState<string>("");
+  const [clientSignUrl, setClientSignUrl] = useState<string>("");
+  const [contractHTML, setContractHTML] = useState<string>("");
   const [contractorInfo, setContractorInfo] = useState({
     company: "",
     license: "",
+    licenseUrl: "",
     insurance: "",
     address: "",
     phone: "",
     email: "",
+    logo: "",
   });
   const [projectMilestones, setProjectMilestones] = useState<
     ProjectMilestone[]
@@ -390,7 +410,7 @@ export default function Mervin() {
       setIsLoadingMaterials(false);
     }
   };
-  const { profile, isLoading: isProfileLoading } = useProfile();
+  const { profile, isLoading: isProfileLoading, updateProfile } = useProfile();
 
   // Inicializar con mensaje de bienvenida
   useEffect(() => {
@@ -404,6 +424,388 @@ export default function Mervin() {
 
     setMessages([welcomeMessage]);
   }, []);
+
+  // Initialize contractor info with profile data when profile loads
+  useEffect(() => {
+    if (profile && !isProfileLoading) {
+      setContractorInfo((prev) => ({
+        ...prev,
+        company: profile.company || prev.company,
+        license: profile.license || prev.license,
+        licenseUrl: profile.documents?.licenseUrl || prev.licenseUrl,
+        insurance: profile.insurancePolicy || prev.insurance,
+        address: profile.address || prev.address,
+        phone: profile.phone || prev.phone,
+        email: profile.email || prev.email,
+        logo: profile.logo || prev.logo,
+      }));
+
+      // Set logo preview if exists in profile
+      if (profile.logo) {
+        setLogoPreview(profile.logo);
+      }
+    }
+  }, [profile, isProfileLoading]);
+
+  // Handle logo file upload
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Error",
+          description: "Por favor selecciona un archivo de imagen válido",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "El archivo es demasiado grande. Máximo 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setLogoFile(file);
+
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setLogoPreview(result);
+
+        // Update contractor info with the data URL for immediate use
+        setContractorInfo((prev) => ({
+          ...prev,
+          logo: result,
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Convert file to base64 for storage
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Signature protocol function adapted for Mervin
+  const handleStartSignatureProtocol = async () => {
+    if (!selectedEstimate || !currentUser?.uid || !selectedClient) {
+      toast({
+        title: "Error",
+        description:
+          "Contract data must be complete before starting signature protocol",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Generate contract HTML
+      const contractHtml = generateContractHTML();
+      setContractHTML(contractHtml);
+
+      // Prepare contract data for signature protocol
+      const secureDeliveryPayload = {
+        userId: currentUser.uid,
+        contractHTML: contractHtml,
+        deliveryMethods: { email: false, sms: false, whatsapp: false },
+        contractData: {
+          contractorName:
+            contractorInfo.company || profile?.company || "Contractor Name",
+          contractorEmail:
+            contractorInfo.email || profile?.email || currentUser.email || "",
+          contractorPhone: contractorInfo.phone || profile?.phone || "",
+          contractorCompany:
+            contractorInfo.company || profile?.company || "Company Name",
+          clientName: selectedClient.name,
+          clientEmail: selectedClient.email || "",
+          clientPhone: selectedClient.phone || "",
+          clientAddress: selectedClient.address || "",
+          projectDescription:
+            projectScope ||
+            selectedEstimate.projectDescription ||
+            "Construction Project",
+          totalAmount: selectedEstimate.total || 0,
+          startDate:
+            projectTimeline[0]?.value || new Date().toISOString().split("T")[0],
+          completionDate:
+            projectTimeline[1]?.value ||
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split("T")[0],
+        },
+        securityFeatures: {
+          encryption: "256-bit SSL",
+          verification: true,
+          auditTrail: true,
+          timeStamps: true,
+        },
+      };
+
+      console.log(
+        "🔐 [SIGNATURE-PROTOCOL] Generating signature links:",
+        secureDeliveryPayload,
+      );
+
+      const response = await fetch("/api/multi-channel/initiate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.uid}`,
+        },
+        body: JSON.stringify(secureDeliveryPayload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Signature protocol failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      setContractorSignUrl(result.contractorSignUrl || "");
+      setClientSignUrl(result.clientSignUrl || "");
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content: `✅ **PROTOCOLO DE FIRMA INICIADO**\n\n🔐 Enlaces de firma seguros generados:\n\n**Para el Contratista:**\n${result.contractorSignUrl}\n\n**Para el Cliente:**\n${result.clientSignUrl}\n\n📋 **ID del Contrato:** ${result.contractId}\n\nAmbas partes pueden usar estos enlaces para firmar el contrato digitalmente.`,
+          sender: "assistant",
+        },
+      ]);
+
+      toast({
+        title: "Protocolo de Firma Iniciado",
+        description: `Enlaces seguros generados. ID del Contrato: ${result.contractId}`,
+      });
+    } catch (error) {
+      console.error("❌ [SIGNATURE-PROTOCOL] Error:", error);
+      toast({
+        title: "Error en Protocolo de Firma",
+        description: `No se pudieron generar los enlaces de firma: ${(error as Error).message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // PDF download function adapted for Mervin
+  const handleDownloadPDF = async () => {
+    if (!selectedEstimate || !currentUser?.uid || !selectedClient) {
+      toast({
+        title: "Error",
+        description: "Contract data must be complete before generating PDF",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Prepare contract payload
+      const contractPayload = {
+        userId: currentUser.uid,
+        client: {
+          name: selectedClient.name,
+          address: selectedClient.address || "",
+          email: selectedClient.email || "",
+          phone: selectedClient.phone || "",
+        },
+        project: {
+          description:
+            projectScope || selectedEstimate.projectDescription || "",
+          type: "Construction Project",
+          total: selectedEstimate.total || 0,
+          materials: selectedEstimate.items || [],
+        },
+        contractor: {
+          name: contractorInfo.company || profile?.company || "Company Name",
+          company: contractorInfo.company || profile?.company || "Company Name",
+          address: contractorInfo.address || profile?.address || "",
+          phone: contractorInfo.phone || profile?.phone || "",
+          email: contractorInfo.email || profile?.email || "",
+          license: contractorInfo.license || profile?.license || "",
+        },
+        financials: {
+          total: selectedEstimate.total || 0,
+          subtotal: selectedEstimate.total || 0,
+          tax: 0,
+          discount: 0,
+        },
+        timeline: {
+          startDate:
+            projectTimeline[0]?.value || new Date().toISOString().split("T")[0],
+          completionDate: projectTimeline[1]?.value || "",
+          estimatedDuration: projectTimeline[2]?.value
+            ? `${projectTimeline[2].value} días`
+            : "As specified in project details",
+        },
+        paymentTerms: projectMilestones.map((milestone, index) => ({
+          id: index + 1,
+          description: milestone.title,
+          percentage: milestone.percentage,
+          amount: (selectedEstimate.total || 0) * (milestone.percentage / 100),
+        })),
+      };
+
+      console.log(
+        "📄 [PDF DOWNLOAD] Generating PDF with payload:",
+        contractPayload,
+      );
+
+      const response = await fetch("/api/generate-pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-firebase-uid": currentUser?.uid || "",
+        },
+        body: JSON.stringify(contractPayload),
+      });
+
+      if (response.ok) {
+        // Convert response to blob and download
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `contract-${selectedClient.name?.replace(/\s+/g, "_") || "client"}-${new Date().toISOString().split("T")[0]}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content: `✅ **CONTRATO PDF GENERADO**\n\n📄 El contrato se ha descargado exitosamente:\n\n• **Cliente:** ${selectedClient.name}\n• **Valor:** $${(selectedEstimate.total || 0).toFixed(2)}\n• **Empresa:** ${contractorInfo.company}\n• **Archivo:** contract-${selectedClient.name?.replace(/\s+/g, "_") || "client"}-${new Date().toISOString().split("T")[0]}.pdf\n\nEl contrato está listo para su uso.`,
+            sender: "assistant",
+          },
+        ]);
+
+        toast({
+          title: "PDF Descargado",
+          description: `Contrato PDF descargado exitosamente para ${selectedClient.name}`,
+        });
+      } else {
+        const errorText = await response.text();
+        console.error("❌ PDF download failed:", errorText);
+        throw new Error(
+          `Failed to download PDF: ${response.status} - ${response.statusText}`,
+        );
+      }
+    } catch (error) {
+      console.error("❌ Error downloading PDF:", error);
+      toast({
+        title: "Error de Descarga",
+        description: `No se pudo descargar el PDF: ${(error as Error).message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Generate contract HTML for signature protocol
+  const generateContractHTML = () => {
+    return `
+      <html>
+        <head>
+          <title>Contrato de Construcción</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .section { margin-bottom: 20px; }
+            .signature { margin-top: 50px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>CONTRATO DE CONSTRUCCIÓN</h1>
+            <p>Número: CON-${Date.now()}</p>
+          </div>
+
+          <div class="section">
+            <h3>INFORMACIÓN DEL CONTRATISTA</h3>
+            <p><strong>Empresa:</strong> ${contractorInfo.company}</p>
+            <p><strong>Dirección:</strong> ${contractorInfo.address}</p>
+            <p><strong>Teléfono:</strong> ${contractorInfo.phone}</p>
+            <p><strong>Email:</strong> ${contractorInfo.email}</p>
+            <p><strong>Licencia:</strong> ${contractorInfo.license}</p>
+          </div>
+
+          <div class="section">
+            <h3>INFORMACIÓN DEL CLIENTE</h3>
+            <p><strong>Nombre:</strong> ${selectedClient?.name}</p>
+            <p><strong>Dirección:</strong> ${selectedClient?.address}</p>
+            <p><strong>Teléfono:</strong> ${selectedClient?.phone}</p>
+            <p><strong>Email:</strong> ${selectedClient?.email}</p>
+          </div>
+
+          <div class="section">
+            <h3>ALCANCE DEL PROYECTO</h3>
+            <p>${projectScope}</p>
+          </div>
+
+          <div class="section">
+            <h3>VALOR DEL CONTRATO</h3>
+            <p><strong>Total:</strong> $${selectedEstimate?.total?.toFixed(2)}</p>
+          </div>
+
+          <div class="section">
+            <h3>CRONOGRAMA</h3>
+            <p><strong>Fecha de inicio:</strong> ${projectTimeline[0]?.value}</p>
+            <p><strong>Fecha de finalización:</strong> ${projectTimeline[1]?.value}</p>
+            <p><strong>Duración:</strong> ${projectTimeline[2]?.value} días</p>
+          </div>
+
+          <div class="section">
+            <h3>CLÁUSULAS LEGALES</h3>
+            ${legalClauses
+              .map(
+                (clause, index) => `
+              <p><strong>${index + 1}. ${clause.title}:</strong> ${clause.content}</p>
+            `,
+              )
+              .join("")}
+          </div>
+
+          <div class="signature">
+            <table width="100%">
+              <tr>
+                <td width="45%">
+                  <p>_________________________</p>
+                  <p><strong>Contratista</strong></p>
+                  <p>${contractorInfo.company}</p>
+                </td>
+                <td width="10%"></td>
+                <td width="45%">
+                  <p>_________________________</p>
+                  <p><strong>Cliente</strong></p>
+                  <p>${selectedClient?.name}</p>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </body>
+      </html>
+    `;
+  };
   const [visibleCount, setVisibleCount] = useState(6);
   const [materialSearchTerm, setMaterialSearchTerm] = useState("");
   const [shoppingCart, setShoppingCart] = useState<
@@ -1060,7 +1462,7 @@ export default function Mervin() {
           discount: discountCalculation(),
           taxRate: tax.type === "percentage" ? tax.amount : 0,
           taxAmount: Number(taxWithPercentage(tax)), // ✅ ADD THIS - send as number
-          tax: Number(taxWithPercentage(tax)), // rr� CHANGE - send as number
+          tax: Number(taxWithPercentage(tax)), // ✅ CHANGE - send as number
           total: Number(
             (
               Number(getCartTotal()) +
@@ -1695,10 +2097,12 @@ export default function Mervin() {
         setContractorInfo({
           company: profile?.company || "",
           license: profile?.license || "",
-          insurance: profile?.insurance || "",
+          licenseUrl: profile?.documents?.licenseUrl || "",
+          insurance: profile?.insurancePolicy || "",
           address: profile?.address || "",
           phone: profile?.phone || "",
           email: profile?.email || "",
+          logo: profile?.logo || "",
         });
 
         setContractFlowStep("project-milestones");
@@ -1757,10 +2161,12 @@ export default function Mervin() {
         setContractorInfo({
           company: "Tu Empresa",
           license: "Licencia pendiente",
+          licenseUrl: "",
           insurance: "Seguro pendiente",
           address: "Dirección pendiente",
           phone: "Teléfono pendiente",
           email: "Email pendiente",
+          logo: "",
         });
 
         setContractFlowStep("project-milestones");
@@ -1888,8 +2294,49 @@ export default function Mervin() {
           },
         ]);
       }
+    } else if (
+      contractFlowStep === "legal-clauses" &&
+      input.includes("editar")
+    ) {
+      // User wants to edit clauses after preview
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content:
+            "📝 **EDITAR CLÁUSULAS LEGALES**\n\nPuedes continuar editando las cláusulas:",
+          sender: "assistant",
+          action: "legal-clauses-form",
+        },
+      ]);
+    } else if (
+      contractFlowStep === "legal-clauses" &&
+      (input === "sí" || input === "si" || input === "yes")
+    ) {
+      // User is satisfied with clauses preview, continue to project scope
+      setContractFlowStep("project-scope");
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content: `✅ Cláusulas legales confirmadas.\n\n📋 **ALCANCE DEL PROYECTO**\n\nRevisemos el alcance del proyecto: "${projectScope || selectedEstimate?.projectDescription || "No definido"}"\n\n¿Deseas editarlo? Responde **SÍ** o **NO**`,
+          sender: "assistant",
+        },
+      ]);
     } else if (contractFlowStep === "project-scope") {
-      if (
+      if (input.includes("editar")) {
+        // User wants to edit project scope after preview
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "📝 **EDITAR ALCANCE DEL PROYECTO**\n\nPuedes continuar editando la descripción:",
+            sender: "assistant",
+            action: "project-scope-form",
+          },
+        ]);
+      } else if (
         input === "sí" ||
         input === "si" ||
         input === "yes" ||
@@ -1918,8 +2365,29 @@ export default function Mervin() {
         ]);
       }
     } else if (contractFlowStep === "final-review") {
-      if (input === "generar" || input === "confirmar") {
-        await generateAndDownloadContract();
+      if (input === "generar" || input === "generate" || input === "GENERATE") {
+        // Ask about signature before generating
+        setContractFlowStep("signature-question");
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "📝 **FIRMA DEL CONTRATO**\n\n¿Te gustaría configurar la firma digital del contrato?\n\nEsto generará enlaces seguros para que tanto tú como el cliente puedan firmar el contrato digitalmente.\n\nResponde **SÍ** para configurar firmas o **NO** para solo generar el PDF.",
+            sender: "assistant",
+          },
+        ]);
+      }
+    } else if (contractFlowStep === "signature-question") {
+      if (
+        input === "sí" ||
+        input === "si" ||
+        input === "yes" ||
+        input === "s"
+      ) {
+        await handleStartSignatureProtocol();
+      } else {
+        await handleDownloadPDF();
       }
     }
 
@@ -1975,13 +2443,14 @@ export default function Mervin() {
 
       setLegalClauses(standardClauses);
 
-      setContractFlowStep("project-scope");
+      // Show editable form instead of going directly to project scope
       setMessages((prev) => [
         ...prev,
         {
           id: `assistant-${Date.now()}`,
-          content: `✅ Se generaron ${standardClauses.length} cláusulas legales estándar.\n\n📋 **ALCANCE DEL PROYECTO**\n\nRevisemos el alcance del proyecto:\n\n"${projectScope}"\n\n¿Deseas editarlo? Responde **SÍ** o **NO**`,
+          content: `✅ ${standardClauses.length} cláusulas legales estándar fueron generadas. Puedes editarlas a continuación:`,
           sender: "assistant",
+          action: "legal-clauses-form",
         },
       ]);
 
@@ -2033,6 +2502,7 @@ export default function Mervin() {
 🎯 **Hitos del proyecto:** ${projectMilestones.length} hitos configurados
 ⚖️ **Cláusulas legales:** ${legalClauses.length} cláusulas incluidas
 🛡️ **Garantía:** ${warrantyPermits.warranty}
+📝 **Firma del Contrato:** Requerida
 
 ¿Todo se ve correcto? Escribe **GENERAR** para crear el contrato PDF.`;
   };
@@ -3318,26 +3788,62 @@ export default function Mervin() {
                             <span className="text-red-400">*</span>
                           )}
                         </label>
-                        <input
-                          type={field.id.includes("fecha") ? "date" : "text"}
-                          value={field.value}
-                          onChange={(e) => {
-                            const updatedTimeline = projectTimeline.map((t) =>
-                              t.id === field.id
-                                ? { ...t, value: e.target.value }
-                                : t,
-                            );
-                            setProjectTimeline(updatedTimeline);
-                          }}
-                          className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
-                          placeholder={
-                            field.id === "duration"
-                              ? "ej: 10"
-                              : field.id === "workingHours"
-                                ? "ej: 8:00 AM - 5:00 PM"
-                                : ""
-                          }
-                        />
+                        {field.id === "start" || field.id === "completion" ? (
+                          <DatePicker
+                            date={
+                              projectDates[
+                                field.id as keyof typeof projectDates
+                              ]
+                            }
+                            onDateChange={(date) => {
+                              setProjectDates((prev) => ({
+                                ...prev,
+                                [field.id]: date,
+                              }));
+
+                              // Also update the string value for compatibility
+                              const updatedTimeline = projectTimeline.map(
+                                (t) =>
+                                  t.id === field.id
+                                    ? {
+                                        ...t,
+                                        value: date
+                                          ? date.toISOString().split("T")[0]
+                                          : "",
+                                      }
+                                    : t,
+                              );
+                              setProjectTimeline(updatedTimeline);
+                            }}
+                            placeholder={
+                              field.id === "start"
+                                ? "Seleccionar fecha de inicio"
+                                : "Seleccionar fecha de finalización"
+                            }
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            value={field.value}
+                            onChange={(e) => {
+                              const updatedTimeline = projectTimeline.map(
+                                (t) =>
+                                  t.id === field.id
+                                    ? { ...t, value: e.target.value }
+                                    : t,
+                              );
+                              setProjectTimeline(updatedTimeline);
+                            }}
+                            className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                            placeholder={
+                              field.id === "duration"
+                                ? "ej: 10"
+                                : field.id === "workingHours"
+                                  ? "ej: 8:00 AM - 5:00 PM"
+                                  : ""
+                            }
+                          />
+                        )}
                       </div>
                     ))}
                     <button
@@ -3387,6 +3893,23 @@ export default function Mervin() {
                         }
                         className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
                         placeholder="ej: CA-123456"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        URL de Licencia
+                      </label>
+                      <input
+                        type="url"
+                        value={contractorInfo.licenseUrl}
+                        onChange={(e) =>
+                          setContractorInfo((prev) => ({
+                            ...prev,
+                            licenseUrl: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                        placeholder="ej: https://ejemplo.com/licencia"
                       />
                     </div>
                     <div>
@@ -3457,8 +3980,83 @@ export default function Mervin() {
                         placeholder="ej: info@tuempresa.com"
                       />
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Logo de la Empresa *
+                      </label>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-center w-full">
+                          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-700 hover:bg-gray-600 transition-colors">
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                              {logoPreview ? (
+                                <img
+                                  src={logoPreview}
+                                  alt="Logo preview"
+                                  className="h-16 w-auto rounded border border-gray-500 mb-2"
+                                />
+                              ) : (
+                                <>
+                                  <svg
+                                    className="w-8 h-8 mb-4 text-gray-400"
+                                    aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 20 16"
+                                  >
+                                    <path
+                                      stroke="currentColor"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                      d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"
+                                    />
+                                  </svg>
+                                  <p className="mb-2 text-sm text-gray-400">
+                                    <span className="font-semibold">
+                                      Click para subir
+                                    </span>{" "}
+                                    o arrastra y suelta
+                                  </p>
+                                  <p className="text-xs text-gray-400">
+                                    PNG, JPG, GIF (MAX. 5MB)
+                                  </p>
+                                </>
+                              )}
+                            </div>
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*"
+                              onChange={handleLogoUpload}
+                            />
+                          </label>
+                        </div>
+
+                        {logoPreview && (
+                          <div className="flex items-center justify-between bg-gray-600 p-2 rounded">
+                            <span className="text-sm text-gray-300">
+                              {logoFile?.name || "Logo cargado"}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLogoFile(null);
+                                setLogoPreview("");
+                                setContractorInfo((prev) => ({
+                                  ...prev,
+                                  logo: "",
+                                }));
+                              }}
+                              className="text-red-400 hover:text-red-300 text-sm"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         if (!contractorInfo.company.trim()) {
                           toast({
                             title: "Error",
@@ -3469,17 +4067,58 @@ export default function Mervin() {
                           return;
                         }
 
-                        setContractFlowStep("project-milestones");
-                        setMessages((prev) => [
-                          ...prev,
-                          {
-                            id: `assistant-${Date.now()}`,
-                            content:
-                              "✅ Información del contratista guardada.\n\n🎯 **HITOS DEL PROYECTO**\n\nConfigura los hitos del proyecto:",
-                            sender: "assistant",
-                            action: "project-milestones",
-                          },
-                        ]);
+                        if (!logoPreview) {
+                          toast({
+                            title: "Error",
+                            description: "El logo de la empresa es obligatorio",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+
+                        try {
+                          // Save contractor information to profile
+                          await updateProfile({
+                            company: contractorInfo.company,
+                            license: contractorInfo.license,
+                            phone: contractorInfo.phone,
+                            email: contractorInfo.email,
+                            address: contractorInfo.address,
+                            logo: logoPreview, // Use the base64 data from file upload
+                            insurancePolicy: contractorInfo.insurance,
+                            // Add licenseUrl to documents or create a new field
+                            documents: {
+                              ...profile?.documents,
+                              licenseUrl: contractorInfo.licenseUrl,
+                            },
+                          });
+
+                          toast({
+                            title: "Éxito",
+                            description:
+                              "Información del contratista guardada en el perfil",
+                          });
+
+                          setContractFlowStep("project-milestones");
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content:
+                                "✅ Información del contratista guardada en el perfil.\n\n🎯 **HITOS DEL PROYECTO**\n\nConfigura los hitos del proyecto:",
+                              sender: "assistant",
+                              action: "project-milestones",
+                            },
+                          ]);
+                        } catch (error) {
+                          console.error("Error saving contractor info:", error);
+                          toast({
+                            title: "Error",
+                            description:
+                              "No se pudo guardar la información del contratista",
+                            variant: "destructive",
+                          });
+                        }
                       }}
                       className="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2 rounded transition-colors"
                     >
@@ -3752,6 +4391,353 @@ export default function Mervin() {
                         className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white py-2 rounded transition-colors"
                       >
                         Guardar y Continuar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Legal Clauses Form - Editable AI Generated Clauses */}
+              {message.action === "legal-clauses-form" && (
+                <div className="mt-4 bg-gray-800 p-4 rounded-lg">
+                  <div className="space-y-4">
+                    <div className="text-sm text-gray-300 mb-4">
+                      ✅ {legalClauses.length} cláusulas legales generadas.
+                      Puedes editarlas a continuación:
+                    </div>
+
+                    {legalClauses.map((clause, index) => (
+                      <div
+                        key={clause.id}
+                        className="bg-gray-700 p-4 rounded-lg"
+                      >
+                        <div className="mb-2">
+                          <label className="block text-sm font-medium text-gray-300 mb-1">
+                            {clause.title}{" "}
+                            {clause.isRequired && (
+                              <span className="text-red-400">*</span>
+                            )}
+                          </label>
+                          <div className="text-xs text-gray-400 mb-2">
+                            Categoría: {clause.category}
+                          </div>
+                        </div>
+                        <textarea
+                          value={clause.content}
+                          onChange={(e) => {
+                            const updatedClauses = legalClauses.map((c) =>
+                              c.id === clause.id
+                                ? { ...c, content: e.target.value }
+                                : c,
+                            );
+                            setLegalClauses(updatedClauses);
+                          }}
+                          className="w-full bg-gray-600 text-white px-3 py-2 rounded border border-gray-500 min-h-[100px] resize-y"
+                          placeholder="Contenido de la cláusula..."
+                        />
+                        {!clause.isRequired && (
+                          <button
+                            onClick={() => {
+                              const updatedClauses = legalClauses.filter(
+                                (c) => c.id !== clause.id,
+                              );
+                              setLegalClauses(updatedClauses);
+                            }}
+                            className="mt-2 text-red-400 hover:text-red-300 text-sm"
+                          >
+                            Eliminar cláusula
+                          </button>
+                        )}
+                      </div>
+                    ))}
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const newClause: LegalClause = {
+                            id: `custom-${Date.now()}`,
+                            title: "Cláusula Personalizada",
+                            content: "",
+                            category: "custom",
+                            isRequired: false,
+                          };
+                          setLegalClauses([...legalClauses, newClause]);
+                        }}
+                        className="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        + Agregar Cláusula
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          // Show preview with better formatting
+                          const previewContent = legalClauses
+                            .map(
+                              (clause, index) =>
+                                `**${index + 1}. ${clause.title}** *(${clause.category})*\n${clause.content}`,
+                            )
+                            .join("\n\n---\n\n");
+
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content: `📋 **VISTA PREVIA DE CLÁUSULAS LEGALES**\n\n${previewContent}\n\n---\n\n✅ **Total: ${legalClauses.length} cláusulas legales**\n\n¿Estás satisfecho con estas cláusulas? Responde **SÍ** para continuar o **EDITAR** para modificarlas.`,
+                              sender: "assistant",
+                              action: "legal-clauses-preview",
+                            },
+                          ]);
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        👁️ Vista Previa
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          // Initialize project scope with estimate description if empty
+                          if (
+                            !projectScope &&
+                            selectedEstimate?.projectDescription
+                          ) {
+                            setProjectScope(
+                              selectedEstimate.projectDescription,
+                            );
+                          }
+
+                          setContractFlowStep("project-scope");
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content: `✅ Cláusulas legales guardadas (${legalClauses.length} cláusulas).\n\n📋 **ALCANCE DEL PROYECTO**\n\nRevisemos el alcance del proyecto:\n\n"${projectScope || selectedEstimate?.projectDescription || "No definido"}"\n\n¿Deseas editarlo? Responde **SÍ** o **NO**`,
+                              sender: "assistant",
+                            },
+                          ]);
+                        }}
+                        className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        Continuar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Legal Clauses Preview */}
+              {message.action === "legal-clauses-preview" && (
+                <div className="mt-4 bg-gray-800 p-4 rounded-lg">
+                  <div className="space-y-4">
+                    <div className="text-sm text-gray-300 mb-4">
+                      📋 **Vista previa de las cláusulas legales:**
+                    </div>
+
+                    <div className="bg-gray-700 p-4 rounded-lg max-h-96 overflow-y-auto">
+                      {legalClauses.map((clause, index) => (
+                        <div
+                          key={clause.id}
+                          className="mb-4 pb-4 border-b border-gray-600 last:border-b-0"
+                        >
+                          <h4 className="font-semibold text-cyan-400 mb-2">
+                            {index + 1}. {clause.title}
+                          </h4>
+                          <p className="text-xs text-gray-400 mb-2">
+                            Categoría: {clause.category}{" "}
+                            {clause.isRequired && "• Obligatoria"}
+                          </p>
+                          <p className="text-gray-300 text-sm leading-relaxed">
+                            {clause.content}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content:
+                                "📝 **EDITAR CLÁUSULAS LEGALES**\n\nPuedes continuar editando las cláusulas:",
+                              sender: "assistant",
+                              action: "legal-clauses-form",
+                            },
+                          ]);
+                        }}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        ✏️ Editar
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          // Initialize project scope with estimate description if empty
+                          if (
+                            !projectScope &&
+                            selectedEstimate?.projectDescription
+                          ) {
+                            setProjectScope(
+                              selectedEstimate.projectDescription,
+                            );
+                          }
+
+                          setContractFlowStep("project-scope");
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content: `✅ Cláusulas legales confirmadas (${legalClauses.length} cláusulas).\n\n📋 **ALCANCE DEL PROYECTO**\n\nRevisemos el alcance del proyecto:\n\n"${projectScope || selectedEstimate?.projectDescription || "No definido"}"\n\n¿Deseas editarlo? Responde **SÍ** o **NO**`,
+                              sender: "assistant",
+                            },
+                          ]);
+                        }}
+                        className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        ✅ Confirmar y Continuar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Project Scope Form - Editable Project Description */}
+              {message.action === "project-scope-form" && (
+                <div className="mt-4 bg-gray-800 p-4 rounded-lg">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Descripción del Proyecto *
+                      </label>
+                      <textarea
+                        value={
+                          projectScope ||
+                          selectedEstimate?.projectDescription ||
+                          ""
+                        }
+                        onChange={(e) => setProjectScope(e.target.value)}
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 min-h-[150px] resize-y"
+                        placeholder="Describe detalladamente el alcance del proyecto, materiales, trabajo a realizar, etc..."
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const currentScope =
+                            projectScope ||
+                            selectedEstimate?.projectDescription ||
+                            "";
+                          if (!currentScope.trim()) {
+                            toast({
+                              title: "Error",
+                              description:
+                                "La descripción del proyecto es obligatoria",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+
+                          // Show preview with better formatting
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content: `📋 **VISTA PREVIA DEL ALCANCE DEL PROYECTO**\n\n---\n\n${currentScope}\n\n---\n\n¿Estás satisfecho con esta descripción? Responde **SÍ** para continuar o **EDITAR** para modificarla.`,
+                              sender: "assistant",
+                              action: "project-scope-preview",
+                            },
+                          ]);
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        👁️ Vista Previa
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (!projectScope.trim()) {
+                            toast({
+                              title: "Error",
+                              description:
+                                "La descripción del proyecto es obligatoria",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+
+                          setContractFlowStep("final-review");
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content: `✅ Alcance del proyecto guardado.\n\n🎯 **REVISIÓN FINAL**\n\nTodo está listo para generar el contrato. Revisa el resumen final:`,
+                              sender: "assistant",
+                              action: "final-review",
+                            },
+                          ]);
+                        }}
+                        className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        Continuar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Project Scope Preview */}
+              {message.action === "project-scope-preview" && (
+                <div className="mt-4 bg-gray-800 p-4 rounded-lg">
+                  <div className="space-y-4">
+                    <div className="text-sm text-gray-300 mb-4">
+                      📋 **Vista previa del alcance del proyecto:**
+                    </div>
+
+                    <div className="bg-gray-700 p-4 rounded-lg">
+                      <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                        {projectScope ||
+                          selectedEstimate?.projectDescription ||
+                          ""}
+                      </p>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content:
+                                "📝 **EDITAR ALCANCE DEL PROYECTO**\n\nPuedes continuar editando la descripción:",
+                              sender: "assistant",
+                              action: "project-scope-form",
+                            },
+                          ]);
+                        }}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        ✏️ Editar
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setContractFlowStep("final-review");
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content: `✅ Alcance del proyecto confirmado.\n\n🎯 **REVISIÓN FINAL**\n\nTodo está listo para generar el contrato. Revisa el resumen final:`,
+                              sender: "assistant",
+                              action: "final-review",
+                            },
+                          ]);
+                        }}
+                        className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        ✅ Confirmar y Continuar
                       </button>
                     </div>
                   </div>
