@@ -27,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
@@ -620,6 +621,10 @@ export default function PermitAdvisor() {
     setProjectDescription(historyItem.projectDescription || "");
     setPermitData(historyItem.results);
     setShowHistory(false);
+    
+    // Navigate to step 3 to show DeepSearch results
+    setCurrentStep(3);
+    
     toast({
       title: "Search Loaded",
       description: `Loaded: ${historyItem.title}`,
@@ -1265,10 +1270,11 @@ export default function PermitAdvisor() {
                   <div className="space-y-3">
                     {filteredHistory.map((item: any, index: number) => (
                       <div key={item.id}>
-                        <div
-                          onClick={() => loadFromHistory(item)}
-                          className="group relative p-4 bg-slate-900/40 hover:bg-slate-900/70 border border-cyan-400/30 hover:border-cyan-300/50 rounded-lg cursor-pointer transition-all duration-300"
-                        >
+                        <DialogClose asChild>
+                          <div
+                            onClick={() => loadFromHistory(item)}
+                            className="group relative p-4 bg-slate-900/40 hover:bg-slate-900/70 border border-cyan-400/30 hover:border-cyan-300/50 rounded-lg cursor-pointer transition-all duration-300"
+                          >
                           {/* Holographic border effect */}
                           <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-transparent to-blue-500/10 opacity-0 group-hover:opacity-100 rounded-lg transition-opacity duration-300"></div>
 
@@ -1322,7 +1328,8 @@ export default function PermitAdvisor() {
                           <div className="absolute right-4 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
                           </div>
-                        </div>
+                          </div>
+                        </DialogClose>
 
                         {index < filteredHistory.length - 1 && (
                           <Separator className="my-3 bg-cyan-400/30" />
