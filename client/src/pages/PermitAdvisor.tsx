@@ -783,127 +783,96 @@ export default function PermitAdvisor() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-cyan-300">
-                Project Description (Optional)
+              <label className="text-sm font-medium text-cyan-300 flex items-center gap-2">
+                Project Description & Documents (Optional)
+                <Paperclip className="h-4 w-4 text-cyan-300/70" />
               </label>
-              <Textarea
-                value={projectDescription}
-                onChange={(e) => setProjectDescription(e.target.value)}
-                placeholder="Describe your project in detail (e.g., materials, scope, square footage)..."
-                className="w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[60px] resize-none"
-              />
-            </div>
+              <div className="relative">
+                <div
+                  onDrop={handleFileDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  className={`relative transition-all duration-300 ${
+                    isDragOver ? "ring-2 ring-cyan-400/50 ring-offset-2 ring-offset-slate-900" : ""
+                  }`}
+                >
+                  <Textarea
+                    value={projectDescription}
+                    onChange={(e) => setProjectDescription(e.target.value)}
+                    placeholder="Describe your project in detail (e.g., materials, scope, square footage)... 
 
-            {/* File Attachment Section */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Paperclip className="h-4 w-4 text-cyan-300" />
-                <label className="text-sm font-medium text-cyan-300">
-                  Project Documents (Optional)
-                </label>
-              </div>
-              
-              {/* Drop Zone */}
-              <div
-                onDrop={handleFileDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                className={`relative border-2 border-dashed rounded-lg p-4 transition-all duration-300 cursor-pointer ${
-                  isDragOver
-                    ? "border-cyan-400 bg-cyan-500/10"
-                    : "border-cyan-500/30 bg-slate-900/30 hover:border-cyan-400/50"
-                }`}
-              >
-                {/* Cyberpunk corner effects */}
-                <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-cyan-400/60 rounded-tl-lg"></div>
-                <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-cyan-400/60 rounded-tr-lg"></div>
-                <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-cyan-400/60 rounded-bl-lg"></div>
-                <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-cyan-400/60 rounded-br-lg"></div>
+You can also drag & drop documents here (permits, plans, estimates)"
+                    className={`w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[80px] resize-none pr-12 transition-all duration-300 ${
+                      isDragOver ? "border-cyan-400 bg-cyan-500/10" : ""
+                    }`}
+                  />
+                  
+                  {/* Upload button inside textarea */}
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById("file-input")?.click()}
+                    className="absolute right-2 top-2 w-8 h-8 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-full flex items-center justify-center transition-all duration-300 group hover:scale-110"
+                    title="Upload documents"
+                  >
+                    <Upload className="h-4 w-4 text-cyan-300 group-hover:text-cyan-200" />
+                  </button>
 
-                <div className="text-center space-y-2">
-                  <div className="flex justify-center">
-                    <div className="w-8 h-8 bg-cyan-500/20 rounded-full flex items-center justify-center">
-                      <Upload className="h-4 w-4 text-cyan-300" />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-cyan-300 text-sm font-medium">
-                      Drop files here or{" "}
-                      <button
-                        type="button"
-                        onClick={() => document.getElementById("file-input")?.click()}
-                        className="text-cyan-400 hover:text-cyan-300 underline"
-                      >
-                        browse
-                      </button>
-                    </p>
-                    <p className="text-gray-400 text-xs mt-1">
-                      PDF, images, documents • Max 10MB each
-                    </p>
-                  </div>
+                  {/* Hidden file input */}
+                  <input
+                    id="file-input"
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
                 </div>
 
-                {/* Hidden file input */}
-                <input
-                  id="file-input"
-                  type="file"
-                  multiple
-                  accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-              </div>
-
-              {/* File List */}
-              {attachedFiles.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs text-cyan-300 font-medium">
-                    Attached Files ({attachedFiles.length})
-                  </p>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {attachedFiles.map((file) => (
-                      <div
-                        key={file.id}
-                        className="flex items-center justify-between bg-slate-900/50 border border-cyan-500/20 rounded-lg p-2 group hover:border-cyan-400/40 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                {/* Compact File List */}
+                {attachedFiles.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    <div className="flex flex-wrap gap-1">
+                      {attachedFiles.map((file) => (
+                        <div
+                          key={file.id}
+                          className="inline-flex items-center gap-1 bg-slate-900/70 border border-cyan-500/20 rounded-md px-2 py-1 text-xs group hover:border-cyan-400/40 transition-colors"
+                        >
                           <div className="flex-shrink-0">
                             {file.type === 'application/pdf' ? (
-                              <div className="w-6 h-6 bg-red-500/20 rounded flex items-center justify-center">
-                                <FileText className="h-3 w-3 text-red-300" />
+                              <div className="w-3 h-3 bg-red-500/30 rounded-sm flex items-center justify-center">
+                                <span className="text-red-300 text-[8px]">📄</span>
                               </div>
                             ) : file.type.startsWith('image/') ? (
-                              <div className="w-6 h-6 bg-green-500/20 rounded flex items-center justify-center">
-                                <span className="text-green-300 text-xs">🖼️</span>
+                              <div className="w-3 h-3 bg-green-500/30 rounded-sm flex items-center justify-center">
+                                <span className="text-green-300 text-[8px]">🖼️</span>
                               </div>
                             ) : (
-                              <div className="w-6 h-6 bg-blue-500/20 rounded flex items-center justify-center">
-                                <FileText className="h-3 w-3 text-blue-300" />
+                              <div className="w-3 h-3 bg-blue-500/30 rounded-sm flex items-center justify-center">
+                                <FileText className="h-2 w-2 text-blue-300" />
                               </div>
                             )}
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-white text-xs font-medium truncate">
-                              {file.name}
-                            </p>
-                            <div className="flex items-center gap-2 text-xs text-gray-400">
-                              <span>{formatFileSize(file.size)}</span>
-                              <span>•</span>
-                              <span className="text-cyan-300">{file.category}</span>
-                            </div>
-                          </div>
+                          <span className="text-white font-medium truncate max-w-[100px]">
+                            {file.name}
+                          </span>
+                          <span className="text-gray-400">
+                            ({formatFileSize(file.size)})
+                          </span>
+                          <button
+                            onClick={() => removeFile(file.id)}
+                            className="w-3 h-3 bg-red-500/20 hover:bg-red-500/40 rounded-full flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 ml-1"
+                          >
+                            <X className="h-2 w-2 text-red-300" />
+                          </button>
                         </div>
-                        <button
-                          onClick={() => removeFile(file.id)}
-                          className="flex-shrink-0 w-6 h-6 bg-red-500/20 hover:bg-red-500/30 rounded flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100"
-                        >
-                          <X className="h-3 w-3 text-red-300" />
-                        </button>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                    <p className="text-xs text-cyan-300/70">
+                      {attachedFiles.length} file{attachedFiles.length !== 1 ? 's' : ''} attached
+                    </p>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Single button layout */}
