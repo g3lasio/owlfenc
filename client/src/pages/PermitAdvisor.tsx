@@ -29,7 +29,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle2, Search, Clock, Trash2, Paperclip, X, FileText, Upload, Download } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { CheckCircle2, Search, Clock, Trash2, Paperclip, X, FileText, Upload, Download, MapPin, ArrowRight, ArrowLeft, Eye, Database, Building, RefreshCw } from "lucide-react";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
 import { useToast } from "@/hooks/use-toast";
 import { auth, db } from "@/lib/firebase";
@@ -94,7 +95,22 @@ interface PermitResponse {
   [key: string]: any;
 }
 
+interface WizardStep {
+  id: string;
+  step: number;
+  title: string;
+  description: string;
+  status: "pending" | "processing" | "completed";
+  progress: number;
+  icon: React.ReactNode;
+  estimatedTime: string;
+}
+
 export default function PermitAdvisor() {
+  // Wizard state management
+  const [currentStep, setCurrentStep] = useState(1);
+  
+  // Existing state - preserved exactly
   const [selectedAddress, setSelectedAddress] = useState("");
   const [coordinates, setCoordinates] = useState<{
     lat: number;
@@ -122,6 +138,52 @@ export default function PermitAdvisor() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Define wizard steps matching Legal Defense pattern
+  const workflowSteps: WizardStep[] = [
+    {
+      id: "property-analysis",
+      step: 1,
+      title: "Property & Project Analysis",
+      description: "Enter your property address to begin comprehensive permit analysis. Our system will identify local requirements and jurisdiction-specific regulations.",
+      status: selectedAddress && coordinates
+        ? "completed"
+        : currentStep === 1
+          ? "processing"
+          : "pending",
+      progress: selectedAddress && coordinates ? 100 : currentStep === 1 ? 50 : 0,
+      icon: <MapPin className="h-6 w-6" />,
+      estimatedTime: "1 min",
+    },
+    {
+      id: "project-details",
+      step: 2,
+      title: "Project Details & Documentation",
+      description: "Specify your project type, provide detailed description, and attach relevant documents. This information helps generate precise permit requirements.",
+      status: projectType && projectDescription
+        ? "completed"
+        : currentStep === 2
+          ? "processing"
+          : "pending",
+      progress: projectType && projectDescription ? 100 : currentStep === 2 ? 50 : 0,
+      icon: <FileText className="h-6 w-6" />,
+      estimatedTime: "2 min",
+    },
+    {
+      id: "deepsearch-results",
+      step: 3,
+      title: "DeepSearch Results & Analysis",
+      description: "Review comprehensive permit requirements, building codes, timeline estimates, and download your professional permit analysis report.",
+      status: permitData
+        ? "completed"
+        : currentStep === 3
+          ? "processing"
+          : "pending",
+      progress: permitData ? 100 : currentStep === 3 ? 50 : 0,
+      icon: <Eye className="h-6 w-6" />,
+      estimatedTime: "3 min",
+    },
+  ];
 
   // Query para obtener historial real de Firebase
   const {
@@ -500,6 +562,27 @@ export default function PermitAdvisor() {
     }
   };
 
+  // Wizard navigation functions
+  const nextStep = () => {
+    if (currentStep < 3) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const canProceedToStep2 = () => {
+    return selectedAddress && coordinates;
+  };
+
+  const canProceedToStep3 = () => {
+    return projectType && projectDescription;
+  };
+
   const formatHistoryDate = (timestamp: any) => {
     if (!timestamp) return "Unknown";
 
@@ -601,7 +684,7 @@ export default function PermitAdvisor() {
   };
 
   return (
-    <div className=" bg-gradient-to-br pb-40 from-slate-950 via-gray-900 to-slate-800">
+    <div className="bg-gradient-to-br pb-40 from-slate-950 via-gray-900 to-slate-800">
       {/* Header with cyberpunk styling */}
       <div className="relative bg-gradient-to-r from-slate-900/50 to-gray-900/50 backdrop-blur-sm">
         <div className="absolute inset-0 bg-gray-800/10 opacity-30"></div>
@@ -622,6 +705,175 @@ export default function PermitAdvisor() {
           </div>
         </div>
       </div>
+
+      {/* Wizard Step Indicator - Matching Legal Defense Style */}
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="mb-8 md:px-4">
+          {/* Mobile: Horizontal Scroll Stepper */}
+          <div className="md:hidden md:pb-4">
+            <div className="flex items-center space-x-0 md:space-x-4 min-w-max px-2">
+              {workflowSteps.map((step, index) => (
+                <div key={step.id} className="flex items-center">
+                  {/* Step Icon + Label */}
+                  <div className="flex flex-col items-center min-w-0">
+                    <div
+                      className={`w-12 h-12 rounded-full border-2 flex items-center justify-center relative transition-all duration-300 ${
+                        step.status === "completed"
+                          ? "border-green-400 bg-green-400/20 shadow-green-400/30 shadow-lg"
+                          : step.status === "processing"
+                            ? "border-cyan-400 bg-cyan-400/20 shadow-cyan-400/50 shadow-lg"
+                            : step.step === currentStep
+                              ? "border-cyan-400 bg-cyan-400/10 shadow-cyan-400/30 shadow-lg"
+                              : "border-gray-600 bg-gray-800/30"
+                      }`}
+                    >
+                      {step.status === "completed" ? (
+                        <CheckCircle2 className="h-6 w-6 text-green-400" />
+                      ) : (
+                        step.icon
+                      )}
+                    </div>
+                    <div className="mt-2 text-center min-w-0">
+                      <p className="text-xs font-semibold text-gray-300 truncate max-w-20">
+                        {step.title.split(' ')[0]}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Connection Line */}
+                  {index < workflowSteps.length - 1 && (
+                    <div
+                      className={`flex-1 h-0.5 mx-2 transition-colors duration-300 ${
+                        step.status === "completed"
+                          ? "bg-green-400/60"
+                          : "bg-gray-600/30"
+                      }`}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Desktop: Full Width Stepper */}
+          <div className="hidden md:block">
+            <div className="grid grid-cols-3 gap-6">
+              {workflowSteps.map((step, index) => (
+                <div key={step.id} className="relative">
+                  {/* Step Card */}
+                  <div
+                    className={`p-6 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
+                      step.status === "completed"
+                        ? "border-green-400/60 bg-green-400/5 shadow-green-400/20 shadow-lg"
+                        : step.status === "processing"
+                          ? "border-cyan-400/80 bg-cyan-400/10 shadow-cyan-400/40 shadow-xl"
+                          : step.step === currentStep
+                            ? "border-cyan-400/50 bg-cyan-400/5 shadow-cyan-400/20 shadow-lg"
+                            : "border-gray-600/30 bg-gray-800/20"
+                    }`}
+                    onClick={() => {
+                      if (step.step === 1 || 
+                          (step.step === 2 && canProceedToStep2()) ||
+                          (step.step === 3 && canProceedToStep3())) {
+                        setCurrentStep(step.step);
+                      }
+                    }}
+                  >
+                    {/* Step Header */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-10 h-10 rounded-full border-2 flex items-center justify-center ${
+                            step.status === "completed"
+                              ? "border-green-400 bg-green-400/20"
+                              : step.status === "processing"
+                                ? "border-cyan-400 bg-cyan-400/20"
+                                : step.step === currentStep
+                                  ? "border-cyan-400 bg-cyan-400/10"
+                                  : "border-gray-600 bg-gray-800/30"
+                          }`}
+                        >
+                          {step.status === "completed" ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-400" />
+                          ) : (
+                            <span className={`text-sm font-bold ${
+                              step.status === "processing" ? "text-cyan-400" : 
+                              step.step === currentStep ? "text-cyan-400" : "text-gray-400"
+                            }`}>
+                              {step.step}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <h3
+                            className={`font-semibold text-sm ${
+                              step.status === "completed"
+                                ? "text-green-400"
+                                : step.status === "processing"
+                                  ? "text-cyan-400"
+                                  : step.step === currentStep
+                                    ? "text-cyan-400"
+                                    : "text-gray-400"
+                            }`}
+                          >
+                            {step.title}
+                          </h3>
+                        </div>
+                      </div>
+                      <Badge
+                        variant="secondary"
+                        className={`text-xs ${
+                          step.status === "completed"
+                            ? "bg-green-400/20 text-green-400 border-green-400/30"
+                            : step.status === "processing"
+                              ? "bg-cyan-400/20 text-cyan-400 border-cyan-400/30"
+                              : "bg-gray-600/20 text-gray-400 border-gray-600/30"
+                        }`}
+                      >
+                        {step.estimatedTime}
+                      </Badge>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-xs text-gray-400 mb-4 leading-relaxed">
+                      {step.description}
+                    </p>
+
+                    {/* Progress Bar */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">Progress</span>
+                        <span className="text-xs font-mono text-gray-400">
+                          {step.progress}%
+                        </span>
+                      </div>
+                      <Progress 
+                        value={step.progress} 
+                        className={`h-1.5 ${
+                          step.status === "completed" ? "bg-green-400/20" :
+                          step.status === "processing" ? "bg-cyan-400/20" : "bg-gray-600/20"
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Connection Arrow */}
+                  {index < workflowSteps.length - 1 && (
+                    <div className="absolute top-1/2 -right-3 transform -translate-y-1/2">
+                      <ArrowRight
+                        className={`h-6 w-6 ${
+                          step.status === "completed"
+                            ? "text-green-400"
+                            : "text-gray-600"
+                        }`}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
       {/* Search History Section - Moved to top */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2">
@@ -764,786 +1016,449 @@ export default function PermitAdvisor() {
         </div>
       </div>
 
-      {/* Search Interface - Compressed */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2">
-        <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-sm">
-          <CardHeader className="text-center px-4 sm:px-6 py-4">
-            <CardTitle className="text-lg text-cyan-300 flex items-center justify-center gap-2">
-              <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-              <span className="truncate">Property & Project Analysis</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 px-4 sm:px-6 pb-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Address Input - Simplified */}
-              <div className="relative bg-slate-900/30 border border-cyan-500/30 rounded-lg p-3 hover:border-cyan-400/50 transition-colors">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-cyan-300">
-                    Property Address
-                  </label>
-                  <MapboxPlacesAutocomplete
-                    onPlaceSelect={handleAddressSelect}
-                    onChange={() => {}}
-                    className="w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[40px]"
-                    placeholder="Enter property address..."
-                  />
+      {/* Main Wizard Content */}
+      <div className="max-w-6xl mx-auto px-6 py-4">
+        
+        {/* Step 1: Property Analysis */}
+        {currentStep === 1 && (
+          <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-sm">
+            <CardHeader className="text-center px-4 sm:px-6 py-6">
+              <CardTitle className="text-xl text-cyan-300 flex items-center justify-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+                  <MapPin className="h-5 w-5 text-white" />
                 </div>
-                {/* Subtle corner accent */}
-                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan-400/50 rounded-tl-lg"></div>
-                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-cyan-400/50 rounded-br-lg"></div>
-              </div>
-
-              {/* Project Type - Simplified */}
-              <div className="relative bg-slate-900/30 border border-cyan-500/30 rounded-lg p-3 hover:border-cyan-400/50 transition-colors">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-cyan-300">
-                    Project Type
-                  </label>
-                  <Select value={projectType} onValueChange={setProjectType}>
-                    <SelectTrigger className="w-full bg-slate-900/50 border-cyan-500/30 text-white focus:border-cyan-400 min-h-[40px]">
-                      <SelectValue placeholder="Select project type" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-cyan-500/30 max-h-[200px]">
-                      <SelectItem value="fence">Fence Installation</SelectItem>
-                      <SelectItem value="deck">Deck Construction</SelectItem>
-                      <SelectItem value="addition">Home Addition</SelectItem>
-                      <SelectItem value="renovation">Renovation</SelectItem>
-                      <SelectItem value="electrical">Electrical Work</SelectItem>
-                      <SelectItem value="plumbing">Plumbing</SelectItem>
-                      <SelectItem value="roofing">Roofing</SelectItem>
-                      <SelectItem value="hvac">HVAC Installation</SelectItem>
-                      <SelectItem value="concrete">Concrete Work</SelectItem>
-                      <SelectItem value="landscaping">Landscaping</SelectItem>
-                      <SelectItem value="pool">Pool Installation</SelectItem>
-                      <SelectItem value="solar">Solar Panel Installation</SelectItem>
-                      <SelectItem value="siding">Siding</SelectItem>
-                      <SelectItem value="windows">Window Replacement</SelectItem>
-                      <SelectItem value="demolition">Demolition</SelectItem>
-                      <SelectItem value="garage">Garage Construction</SelectItem>
-                      <SelectItem value="shed">Shed Installation</SelectItem>
-                      <SelectItem value="driveway">Driveway</SelectItem>
-                      <SelectItem value="bathroom">Bathroom Remodel</SelectItem>
-                      <SelectItem value="kitchen">Kitchen Remodel</SelectItem>
-                      <SelectItem value="basement">Basement Finishing</SelectItem>
-                      <SelectItem value="attic">Attic Conversion</SelectItem>
-                      <SelectItem value="porch">Porch/Patio</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {/* Subtle corner accent */}
-                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyan-400/50 rounded-tr-lg"></div>
-                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyan-400/50 rounded-bl-lg"></div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-cyan-300 flex items-center gap-2">
-                Project Description & Documents (Optional)
-                <Paperclip className="h-4 w-4 text-cyan-300/70" />
-              </label>
-              <div className="relative">
-                <div
-                  onDrop={handleFileDrop}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  className={`relative transition-all duration-300 ${
-                    isDragOver ? "ring-2 ring-cyan-400/50 ring-offset-2 ring-offset-slate-900" : ""
-                  }`}
-                >
-                  <Textarea
-                    value={projectDescription}
-                    onChange={(e) => setProjectDescription(e.target.value)}
-                    placeholder="Describe your project in detail (e.g., materials, scope, square footage)... 
-
-You can also drag & drop documents here (permits, plans, estimates)"
-                    className={`w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[80px] resize-none pr-12 transition-all duration-300 ${
-                      isDragOver ? "border-cyan-400 bg-cyan-500/10" : ""
-                    }`}
-                  />
-                  
-                  {/* Upload button inside textarea */}
-                  <button
-                    type="button"
-                    onClick={() => document.getElementById("file-input")?.click()}
-                    className="absolute right-2 top-2 w-8 h-8 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-full flex items-center justify-center transition-all duration-300 group hover:scale-110"
-                    title="Upload documents"
-                  >
-                    <Upload className="h-4 w-4 text-cyan-300 group-hover:text-cyan-200" />
-                  </button>
-
-                  {/* Hidden file input */}
-                  <input
-                    id="file-input"
-                    type="file"
-                    multiple
-                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                </div>
-
-                {/* Compact File List */}
-                {attachedFiles.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    <div className="flex flex-wrap gap-1">
-                      {attachedFiles.map((file) => (
-                        <div
-                          key={file.id}
-                          className="inline-flex items-center gap-1 bg-slate-900/70 border border-cyan-500/20 rounded-md px-2 py-1 text-xs group hover:border-cyan-400/40 transition-colors"
-                        >
-                          <div className="flex-shrink-0">
-                            {file.type === 'application/pdf' ? (
-                              <div className="w-3 h-3 bg-red-500/30 rounded-sm flex items-center justify-center">
-                                <span className="text-red-300 text-[8px]">📄</span>
-                              </div>
-                            ) : file.type.startsWith('image/') ? (
-                              <div className="w-3 h-3 bg-green-500/30 rounded-sm flex items-center justify-center">
-                                <span className="text-green-300 text-[8px]">🖼️</span>
-                              </div>
-                            ) : (
-                              <div className="w-3 h-3 bg-blue-500/30 rounded-sm flex items-center justify-center">
-                                <FileText className="h-2 w-2 text-blue-300" />
-                              </div>
-                            )}
-                          </div>
-                          <span className="text-white font-medium truncate max-w-[100px]">
-                            {file.name}
-                          </span>
-                          <span className="text-gray-400">
-                            ({formatFileSize(file.size)})
-                          </span>
-                          <button
-                            onClick={() => removeFile(file.id)}
-                            className="w-3 h-3 bg-red-500/20 hover:bg-red-500/40 rounded-full flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 ml-1"
-                          >
-                            <X className="h-2 w-2 text-red-300" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-xs text-cyan-300/70">
-                      {attachedFiles.length} file{attachedFiles.length !== 1 ? 's' : ''} attached
-                    </p>
+                <span>Property & Project Analysis</span>
+              </CardTitle>
+              <p className="text-gray-400 text-sm mt-2">
+                Enter your property address to begin comprehensive permit analysis
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6 px-4 sm:px-6 pb-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Address Input */}
+                <div className="relative bg-slate-900/30 border border-cyan-500/30 rounded-lg p-4 hover:border-cyan-400/50 transition-colors">
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-cyan-300 flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Property Address
+                    </label>
+                    <MapboxPlacesAutocomplete
+                      onPlaceSelect={handleAddressSelect}
+                      onChange={() => {}}
+                      className="w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[40px]"
+                      placeholder="Enter property address..."
+                    />
+                    {selectedAddress && (
+                      <div className="text-xs text-green-400 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Address verified
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Single button layout */}
-            <div className="flex justify-center">
-              <Button
-                onClick={handleSearch}
-                disabled={isLoading || !selectedAddress || !projectType}
-                className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border border-cyan-400/30 shadow-lg shadow-cyan-400/20 transition-all duration-300 text-white font-medium"
-              >
-                <span className="flex items-center justify-center gap-2">
-                  {isLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      <span>Analyzing...</span>
-                    </>
-                  ) : (
-                    <>
-                      🔍
-                      <span>Run DeepSearch Analysis</span>
-                    </>
-                  )}
-                </span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Error Message */}
-        {error && (
-          <Card className="mt-6 relative overflow-visible bg-transparent border-0 shadow-none">
-            {/* Cyberpunk error border */}
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute top-0 left-0 w-6 h-0.5 bg-gradient-to-r from-red-400 to-orange-500 shadow-lg shadow-red-400/50"></div>
-              <div className="absolute top-0 left-0 w-0.5 h-6 bg-gradient-to-b from-red-400 to-orange-500 shadow-lg shadow-red-400/50"></div>
-              <div className="absolute top-0 right-0 w-6 h-0.5 bg-gradient-to-l from-red-400 to-orange-500 shadow-lg shadow-red-400/50"></div>
-              <div className="absolute top-0 right-0 w-0.5 h-6 bg-gradient-to-b from-red-400 to-orange-500 shadow-lg shadow-red-400/50"></div>
-            </div>
-            <CardContent className="relative z-10 p-4">
-              <div className="bg-red-900/20 border border-red-400/50 rounded-lg p-4 backdrop-blur-sm">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
-                  <p className="text-red-300 font-medium">Error</p>
+                  <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan-400/50 rounded-tl-lg"></div>
+                  <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-cyan-400/50 rounded-br-lg"></div>
                 </div>
-                <p className="text-red-200 mt-2">{error}</p>
+
+                {/* Project Type */}
+                <div className="relative bg-slate-900/30 border border-cyan-500/30 rounded-lg p-4 hover:border-cyan-400/50 transition-colors">
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-cyan-300 flex items-center gap-2">
+                      <Building className="h-4 w-4" />
+                      Project Type
+                    </label>
+                    <Select value={projectType} onValueChange={setProjectType}>
+                      <SelectTrigger className="w-full bg-slate-900/50 border-cyan-500/30 text-white focus:border-cyan-400 min-h-[40px]">
+                        <SelectValue placeholder="Select project type" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-cyan-500/30 max-h-[200px]">
+                        <SelectItem value="fence">Fence Installation</SelectItem>
+                        <SelectItem value="deck">Deck Construction</SelectItem>
+                        <SelectItem value="addition">Home Addition</SelectItem>
+                        <SelectItem value="renovation">Renovation</SelectItem>
+                        <SelectItem value="electrical">Electrical Work</SelectItem>
+                        <SelectItem value="plumbing">Plumbing</SelectItem>
+                        <SelectItem value="roofing">Roofing</SelectItem>
+                        <SelectItem value="hvac">HVAC Installation</SelectItem>
+                        <SelectItem value="concrete">Concrete Work</SelectItem>
+                        <SelectItem value="landscaping">Landscaping</SelectItem>
+                        <SelectItem value="pool">Pool Installation</SelectItem>
+                        <SelectItem value="solar">Solar Panel Installation</SelectItem>
+                        <SelectItem value="siding">Siding</SelectItem>
+                        <SelectItem value="windows">Window Replacement</SelectItem>
+                        <SelectItem value="demolition">Demolition</SelectItem>
+                        <SelectItem value="garage">Garage Construction</SelectItem>
+                        <SelectItem value="shed">Shed Installation</SelectItem>
+                        <SelectItem value="driveway">Driveway</SelectItem>
+                        <SelectItem value="bathroom">Bathroom Remodel</SelectItem>
+                        <SelectItem value="kitchen">Kitchen Remodel</SelectItem>
+                        <SelectItem value="basement">Basement Finishing</SelectItem>
+                        <SelectItem value="attic">Attic Conversion</SelectItem>
+                        <SelectItem value="porch">Porch/Patio</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {projectType && (
+                      <div className="text-xs text-green-400 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Project type selected
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyan-400/50 rounded-tr-lg"></div>
+                  <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyan-400/50 rounded-bl-lg"></div>
+                </div>
+              </div>
+
+              {/* Navigation */}
+              <div className="flex justify-end pt-4 border-t border-gray-700/30">
+                <Button
+                  onClick={() => {
+                    if (selectedAddress && projectType) {
+                      setCurrentStep(2);
+                    } else {
+                      toast({
+                        title: "Missing Information",
+                        description: "Please enter both property address and project type",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                  disabled={!selectedAddress || !projectType}
+                  className="bg-cyan-600 hover:bg-cyan-500 text-black font-medium px-6"
+                >
+                  Continue to Project Details
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
               </div>
             </CardContent>
           </Card>
         )}
-      </div>
 
-      {/* Results */}
-      {permitData && (
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
-          <div className="space-y-4 sm:space-y-6">
-            <Card className="relative overflow-visible bg-transparent border-0 shadow-none">
-              {/* Cyberpunk results border */}
-              <div className="absolute inset-0 pointer-events-none">
-                {/* Corner arrows - top left */}
-                <div className="absolute top-0 left-0 w-8 h-8">
-                  <div className="absolute top-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                  <div className="absolute top-0 left-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
+        {/* Step 2: Project Details & Documentation */}
+        {currentStep === 2 && (
+          <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-sm">
+            <CardHeader className="text-center px-4 sm:px-6 py-6">
+              <CardTitle className="text-xl text-cyan-300 flex items-center justify-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-white" />
                 </div>
-                {/* Corner arrows - top right */}
-                <div className="absolute top-0 right-0 w-8 h-8">
-                  <div className="absolute top-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                  <div className="absolute top-0 right-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                </div>
-                {/* Corner arrows - bottom left */}
-                <div className="absolute bottom-0 left-0 w-8 h-8">
-                  <div className="absolute bottom-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                  <div className="absolute bottom-0 left-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                </div>
-                {/* Corner arrows - bottom right */}
-                <div className="absolute bottom-0 right-0 w-8 h-8">
-                  <div className="absolute bottom-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                  <div className="absolute bottom-0 right-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                </div>
-              </div>
+                <span>Project Details & Documentation</span>
+              </CardTitle>
+              <p className="text-gray-400 text-sm mt-2">
+                Provide detailed project information and attach relevant documents
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6 px-4 sm:px-6 pb-6">
+              <div className="space-y-4">
+                <label className="text-sm font-medium text-cyan-300 flex items-center gap-2">
+                  Project Description & Documents
+                  <Paperclip className="h-4 w-4 text-cyan-300/70" />
+                </label>
+                <div className="relative">
+                  <div
+                    onDrop={handleFileDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    className={`relative transition-all duration-300 ${
+                      isDragOver ? "ring-2 ring-cyan-400/50 ring-offset-2 ring-offset-slate-900" : ""
+                    }`}
+                  >
+                    <Textarea
+                      value={projectDescription}
+                      onChange={(e) => setProjectDescription(e.target.value)}
+                      placeholder="Describe your project in detail (e.g., materials, scope, square footage)... 
 
-              <CardHeader className="relative z-10 text-center px-4 sm:px-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="text-center sm:text-left">
-                    <CardTitle className="text-lg sm:text-xl lg:text-2xl text-cyan-300 flex items-center justify-center sm:justify-start gap-2">
-                      <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                      <span className="truncate">DeepSearch Results</span>
-                    </CardTitle>
-                    <CardDescription className="text-gray-400 text-sm sm:text-base">
-                      Project: {permitData.meta?.projectType} at{" "}
-                      {permitData.meta?.location}
-                    </CardDescription>
-                  </div>
-                  <div className="flex justify-center sm:justify-end">
-                    <Button
-                      onClick={handleExportPDF}
-                      disabled={isGeneratingPDF}
-                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 border border-purple-400/30 shadow-lg shadow-purple-400/20 transition-all duration-300 text-white font-medium"
+You can also drag & drop documents here (permits, plans, estimates)"
+                      className={`w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[120px] resize-none pr-12 transition-all duration-300 ${
+                        isDragOver ? "border-cyan-400 bg-cyan-500/10" : ""
+                      }`}
+                    />
+                    
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById("file-input")?.click()}
+                      className="absolute right-2 top-2 w-8 h-8 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-full flex items-center justify-center transition-all duration-300 group hover:scale-110"
+                      title="Upload documents"
                     >
-                      <span className="flex items-center gap-2">
-                        {isGeneratingPDF ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            <span className="hidden sm:inline">Generating...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Download className="h-4 w-4" />
-                            <span className="hidden sm:inline">Export PDF Report</span>
-                            <span className="sm:hidden">Export PDF</span>
-                          </>
-                        )}
-                      </span>
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="relative z-10 px-2 sm:px-4 lg:px-6">
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  {/* Responsive tabs */}
-                  <div className="w-full   /30">
-                    <TabsList className="flex w-max min-w-full sm:grid sm:grid-cols-5 sm:w-full bg-slate-900/80 border border-cyan-400/30 relative p-2 gap-2">
-                      <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-transparent to-blue-500/10 animate-pulse"></div>
-                      <TabsTrigger
-                        value="permits"
-                        className="relative text-cyan-300 data-[state=active]:bg-cyan-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2"
-                      >
-                        <span className="relative z-10">Permits</span>
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="contacts"
-                        className="relative text-cyan-300 data-[state=active]:bg-blue-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2"
-                      >
-                        <span className="relative z-10">Contacts</span>
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="codes"
-                        className="relative text-cyan-300 data-[state=active]:bg-emerald-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2"
-                      >
-                        <span className="relative z-10">Codes</span>
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="process"
-                        className="relative text-cyan-300 data-[state=active]:bg-indigo-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-indigo-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2"
-                      >
-                        <span className="relative z-10">Process</span>
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="considerations"
-                        className="relative text-cyan-300 data-[state=active]:bg-amber-500/30 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/50 transition-all duration-300 whitespace-nowrap min-w-[90px] flex-shrink-0 text-sm font-medium px-4 py-2"
-                      >
-                        <span className="relative z-10">Alerts</span>
-                      </TabsTrigger>
-                    </TabsList>
+                      <Upload className="h-4 w-4 text-cyan-300 group-hover:text-cyan-200" />
+                    </button>
+
+                    <input
+                      id="file-input"
+                      type="file"
+                      multiple
+                      accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
                   </div>
 
-                  <TabsContent value="permits" className="space-y-4">
-                    {permitData.requiredPermits &&
-                    permitData.requiredPermits.length > 0 ? (
-                      <div className="space-y-4">
-                        {permitData.requiredPermits.map(
-                          (permit: any, idx: number) => (
-                            <div key={idx} className="relative">
-                              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-blue-400/20 to-cyan-400/20 animate-pulse rounded-lg"></div>
-                              <Card className="relative bg-slate-900/90 border-cyan-400/30 backdrop-blur-sm hover:shadow-lg hover:shadow-cyan-400/20 transition-all duration-300 m-1">
-                                <CardHeader>
-                                  <CardTitle className="text-cyan-300 flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                                    {permit.name}
-                                  </CardTitle>
-                                  <CardDescription className="text-cyan-200/70">
-                                    {permit.issuingAuthority}
-                                  </CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                  {/* Responsible Party */}
-                                  {permit.responsibleParty && (
-                                    <div className="bg-amber-500/10 border border-amber-400/30 rounded-lg p-3">
-                                      <h4 className="text-amber-400 font-medium mb-1 flex items-center gap-2">
-                                        👤 Who's Responsible
-                                      </h4>
-                                      <p className="text-amber-200 text-sm font-medium">
-                                        {permit.responsibleParty}
-                                      </p>
-                                    </div>
-                                  )}
-
-                                  {permit.description && (
-                                    <p className="text-gray-300 text-sm">
-                                      {permit.description}
-                                    </p>
-                                  )}
-
-                                  <div className="grid grid-cols-2 gap-4">
-                                    {permit.estimatedTimeline && (
-                                      <div>
-                                        <h4 className="text-teal-400 font-medium mb-1">
-                                          Timeline
-                                        </h4>
-                                        <p className="text-sm text-gray-300">
-                                          {permit.estimatedTimeline}
-                                        </p>
-                                      </div>
-                                    )}
-                                    {permit.averageCost && (
-                                      <div>
-                                        <h4 className="text-teal-400 font-medium mb-1">
-                                          Cost
-                                        </h4>
-                                        <p className="text-sm text-gray-300">
-                                          {permit.averageCost}
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {/* Required Documents */}
-                                  {permit.requiredDocuments && (
-                                    <div>
-                                      <h4 className="text-purple-400 font-medium mb-2 flex items-center gap-2">
-                                        📋 Required Documents
-                                      </h4>
-                                      <div className="grid grid-cols-1 gap-2">
-                                        {Array.isArray(
-                                          permit.requiredDocuments,
-                                        ) ? (
-                                          permit.requiredDocuments.map(
-                                            (doc: string, docIdx: number) => (
-                                              <div
-                                                key={docIdx}
-                                                className="flex items-center gap-2 text-sm bg-purple-500/10 p-2 rounded border-l-2 border-purple-400"
-                                              >
-                                                <span className="text-purple-300">
-                                                  •
-                                                </span>
-                                                <span className="text-gray-300">
-                                                  {doc}
-                                                </span>
-                                              </div>
-                                            ),
-                                          )
-                                        ) : (
-                                          <div className="flex items-center gap-2 text-sm bg-purple-500/10 p-2 rounded border-l-2 border-purple-400">
-                                            <span className="text-purple-300">
-                                              •
-                                            </span>
-                                            <span className="text-gray-300">
-                                              {permit.requiredDocuments}
-                                            </span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Official Links */}
-                                  <div className="space-y-3">
-                                    {permit.applicationFormUrl && (
-                                      <a
-                                        href={permit.applicationFormUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-3 bg-blue-500/10 border border-blue-400/30 rounded-lg p-3 hover:bg-blue-500/20 transition-colors group"
-                                      >
-                                        <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center group-hover:bg-blue-500/30">
-                                          📄
-                                        </div>
-                                        <div>
-                                          <h4 className="text-blue-300 font-medium">
-                                            Application Form
-                                          </h4>
-                                          <p className="text-blue-200/70 text-sm">
-                                            Download official permit application
-                                          </p>
-                                        </div>
-                                        <div className="ml-auto text-blue-400">
-                                          →
-                                        </div>
-                                      </a>
-                                    )}
-
-                                    {permit.website && (
-                                      <a
-                                        href={permit.website}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-3 bg-green-500/10 border border-green-400/30 rounded-lg p-3 hover:bg-green-500/20 transition-colors group"
-                                      >
-                                        <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center group-hover:bg-green-500/30">
-                                          🌐
-                                        </div>
-                                        <div>
-                                          <h4 className="text-green-300 font-medium">
-                                            Official Website
-                                          </h4>
-                                          <p className="text-green-200/70 text-sm">
-                                            Visit department website
-                                          </p>
-                                        </div>
-                                        <div className="ml-auto text-green-400">
-                                          →
-                                        </div>
-                                      </a>
-                                    )}
-
-                                    {permit.contactPhone && (
-                                      <a
-                                        href={`tel:${permit.contactPhone.replace(/\D/g, "")}`}
-                                        className="flex items-center gap-3 bg-teal-500/10 border border-teal-400/30 rounded-lg p-3 hover:bg-teal-500/20 transition-colors group"
-                                      >
-                                        <div className="w-8 h-8 bg-teal-500/20 rounded-full flex items-center justify-center group-hover:bg-teal-500/30">
-                                          📞
-                                        </div>
-                                        <div>
-                                          <h4 className="text-teal-300 font-medium">
-                                            Call Department
-                                          </h4>
-                                          <p className="text-teal-200/70 text-sm font-mono">
-                                            {permit.contactPhone}
-                                          </p>
-                                        </div>
-                                        <div className="ml-auto text-teal-400">
-                                          →
-                                        </div>
-                                      </a>
-                                    )}
-                                  </div>
-
-                                  {/* Submission Method */}
-                                  {permit.submissionMethod && (
-                                    <div className="bg-cyan-500/10 border border-cyan-400/30 rounded-lg p-3">
-                                      <h4 className="text-cyan-400 font-medium mb-1 flex items-center gap-2">
-                                        📤 How to Submit
-                                      </h4>
-                                      <p className="text-cyan-200 text-sm">
-                                        {permit.submissionMethod}
-                                      </p>
-                                    </div>
-                                  )}
-
-                                  {permit.requirements && (
-                                    <div>
-                                      <h4 className="text-cyan-400 font-medium mb-2">
-                                        Additional Requirements
-                                      </h4>
-                                      <p className="text-sm text-gray-300 bg-gray-700/50 p-3 rounded border-l-4 border-cyan-400">
-                                        {permit.requirements}
-                                      </p>
-                                    </div>
-                                  )}
-                                </CardContent>
-                              </Card>
+                  {/* File List */}
+                  {attachedFiles.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        {attachedFiles.map((file) => (
+                          <div
+                            key={file.id}
+                            className="inline-flex items-center gap-2 bg-slate-900/70 border border-cyan-500/20 rounded-md px-3 py-2 text-sm group hover:border-cyan-400/40 transition-colors"
+                          >
+                            <div className="flex-shrink-0">
+                              {file.type === 'application/pdf' ? (
+                                <div className="w-4 h-4 bg-red-500/30 rounded-sm flex items-center justify-center">
+                                  <span className="text-red-300 text-xs">📄</span>
+                                </div>
+                              ) : file.type.startsWith('image/') ? (
+                                <div className="w-4 h-4 bg-green-500/30 rounded-sm flex items-center justify-center">
+                                  <span className="text-green-300 text-xs">🖼️</span>
+                                </div>
+                              ) : (
+                                <div className="w-4 h-4 bg-blue-500/30 rounded-sm flex items-center justify-center">
+                                  <FileText className="h-3 w-3 text-blue-300" />
+                                </div>
+                              )}
                             </div>
-                          ),
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-teal-300">
-                          No specific permits required
-                        </h3>
-                        <p className="text-gray-400">
-                          According to available information, your project may
-                          not require special permits.
-                        </p>
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  {/* Contacts Tab */}
-                  <TabsContent value="contacts" className="space-y-4">
-                    {(permitData.contactInformation &&
-                      permitData.contactInformation.length > 0) ||
-                    permitData.requiredPermits ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Extract contacts from permits if contactInformation is empty */}
-                        {(
-                          permitData.contactInformation ||
-                          (Array.isArray(permitData.requiredPermits)
-                            ? permitData.requiredPermits.map((permit: any) => ({
-                                department: permit.issuingAuthority,
-                                phone: permit.contactPhone,
-                                email:
-                                  permit.email || permit.website?.includes("@")
-                                    ? permit.website
-                                    : null,
-                                website: permit.website,
-                                address: permit.address,
-                                hours: permit.hours,
-                              }))
-                            : [])
-                        ).map((contact: any, idx: number) => (
-                          <div key={idx} className="relative">
-                            <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-teal-400/20 to-blue-400/20 animate-pulse rounded-lg"></div>
-                            <Card className="relative bg-gray-800/90 border-cyan-400/30 backdrop-blur-sm hover:shadow-lg hover:shadow-cyan-400/20 transition-all duration-300">
-                              <CardHeader>
-                                <CardTitle className="text-cyan-300 flex items-center gap-2">
-                                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                                  {contact.department || "Department"}
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-3">
-                                {contact.phone && (
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-teal-500/20 rounded-full flex items-center justify-center">
-                                      📞
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-gray-400">
-                                        Direct Line
-                                      </p>
-                                      <a
-                                        href={`tel:${contact.phone.replace(/\D/g, "")}`}
-                                        className="text-teal-300 font-mono hover:text-teal-200 hover:underline transition-colors cursor-pointer"
-                                      >
-                                        {contact.phone}
-                                      </a>
-                                    </div>
-                                  </div>
-                                )}
-                                {contact.email && (
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-cyan-500/20 rounded-full flex items-center justify-center">
-                                      📧
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-gray-400">
-                                        Email
-                                      </p>
-                                      <a
-                                        href={`mailto:${contact.email}`}
-                                        className="text-cyan-300 font-mono text-sm hover:text-cyan-200 hover:underline transition-colors cursor-pointer"
-                                      >
-                                        {contact.email}
-                                      </a>
-                                    </div>
-                                  </div>
-                                )}
-                                {contact.address && (
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">
-                                      📍
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-gray-400">
-                                        Address
-                                      </p>
-                                      <a
-                                        href={`https://maps.google.com/maps?q=${encodeURIComponent(contact.address)}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-blue-300 text-sm hover:text-blue-200 hover:underline transition-colors cursor-pointer"
-                                      >
-                                        {contact.address}
-                                      </a>
-                                    </div>
-                                  </div>
-                                )}
-                                {contact.hours && (
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-emerald-500/20 rounded-full flex items-center justify-center">
-                                      🕒
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-gray-400">
-                                        Hours
-                                      </p>
-                                      <p className="text-emerald-300 text-sm">
-                                        {contact.hours}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
+                            <span className="text-white font-medium truncate max-w-[120px]">
+                              {file.name}
+                            </span>
+                            <span className="text-gray-400 text-xs">
+                              ({formatFileSize(file.size)})
+                            </span>
+                            <button
+                              onClick={() => removeFile(file.id)}
+                              className="w-4 h-4 bg-red-500/20 hover:bg-red-500/40 rounded-full flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100"
+                            >
+                              <X className="h-3 w-3 text-red-300" />
+                            </button>
                           </div>
                         ))}
                       </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Navigation */}
+              <div className="flex justify-between pt-4 border-t border-gray-700/30">
+                <Button
+                  onClick={() => setCurrentStep(1)}
+                  variant="outline"
+                  className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Property Analysis
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (projectDescription.trim()) {
+                      setCurrentStep(3);
+                    } else {
+                      toast({
+                        title: "Missing Information",
+                        description: "Please provide a project description",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                  disabled={!projectDescription.trim()}
+                  className="bg-cyan-600 hover:bg-cyan-500 text-black font-medium px-6"
+                >
+                  Start DeepSearch Analysis
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 3: DeepSearch Results & Analysis */}
+        {currentStep === 3 && (
+          <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-sm">
+            <CardHeader className="text-center px-4 sm:px-6 py-6">
+              <CardTitle className="text-xl text-cyan-300 flex items-center justify-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+                  <Search className="h-5 w-5 text-white" />
+                </div>
+                <span>DeepSearch Results & Analysis</span>
+              </CardTitle>
+              <p className="text-gray-400 text-sm mt-2">
+                Comprehensive permit requirements and analysis for your project
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6 px-4 sm:px-6 pb-6">
+              
+              {/* Analysis Controls */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button
+                  onClick={handleDeepSearch}
+                  disabled={isLoading || !selectedAddress || !projectType || !projectDescription.trim()}
+                  className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium px-6 py-3 shadow-lg"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Running Analysis...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="h-4 w-4 mr-2" />
+                      Run DeepSearch Analysis
+                    </>
+                  )}
+                </Button>
+                
+                {permitData && (
+                  <Button
+                    onClick={generatePDF}
+                    disabled={isGeneratingPDF}
+                    className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-medium px-6 py-3 shadow-lg"
+                  >
+                    {isGeneratingPDF ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Generating PDF...
+                      </>
                     ) : (
-                      <div className="text-center py-8">
-                        <div className="w-16 h-16 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-spin">
-                          📞
-                        </div>
-                        <h3 className="text-lg font-medium text-cyan-300">
-                          Contact Info Loading...
-                        </h3>
-                        <p className="text-gray-400">
-                          Premium contact details will appear here
-                        </p>
-                      </div>
+                      <>
+                        <Download className="h-4 w-4 mr-2" />
+                        Export PDF Report
+                      </>
                     )}
-                  </TabsContent>
+                  </Button>
+                )}
+              </div>
 
-                  {/* Building Codes Tab */}
-                  <TabsContent value="codes" className="space-y-4">
-                    <div className="space-y-4">
-                      {/* Extract and display building codes from permit requirements */}
-                      {permitData.requiredPermits &&
-                        permitData.requiredPermits.map(
-                          (permit: any, idx: number) => {
-                            // Extract building codes from permit requirements
-                            const codes = [];
-                            if (
-                              permit.requirements &&
-                              permit.requirements.includes("California")
-                            ) {
-                              codes.push({
-                                title: "California Building Code (CBC)",
-                                code: "Title 24, Part 2",
-                                description:
-                                  "State building standards that apply to all construction projects in California",
-                                compliance:
-                                  "Mandatory compliance required for all permits",
-                              });
-                            }
-                            if (
-                              permit.requirements &&
-                              permit.requirements.includes("Electrical")
-                            ) {
-                              codes.push({
-                                title: "California Electrical Code (CEC)",
-                                code: "Title 24, Part 3",
-                                description:
-                                  "Electrical installation standards and safety requirements",
-                                compliance: "Required for all electrical work",
-                              });
-                            }
-                            if (projectType === "electrical") {
-                              codes.push({
-                                title: "National Electrical Code (NEC)",
-                                code: "NFPA 70",
-                                description:
-                                  "National standard for electrical installation and safety",
-                                compliance: "Must follow current NEC standards",
-                              });
-                            }
-                            if (projectType === "plumbing") {
-                              codes.push({
-                                title: "California Plumbing Code (CPC)",
-                                code: "Title 24, Part 5",
-                                description:
-                                  "Plumbing system installation and safety standards",
-                                compliance:
-                                  "Required for all plumbing modifications",
-                              });
-                            }
-                            if (
-                              projectType === "concrete" ||
-                              projectType === "addition"
-                            ) {
-                              codes.push({
-                                title: "Structural Engineering Standards",
-                                code: "CBC Chapter 16-23",
-                                description:
-                                  "Structural design and concrete construction requirements",
-                                compliance:
-                                  "Engineer stamped plans may be required",
-                              });
-                            }
+              {/* Loading State */}
+              {isLoading && (
+                <div className="py-8">
+                  <Card className="bg-gray-800/50 border-teal-500/20">
+                    <CardContent className="p-8">
+                      <div className="flex items-center justify-center space-x-4">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-400"></div>
+                        <p className="text-teal-300">Running DeepSearch analysis...</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
 
-                            // Add local codes
-                            codes.push({
-                              title: `${permitData.meta?.location || "Local"} Municipal Code`,
-                              code: "Local Ordinances",
-                              description:
-                                "City-specific building requirements and zoning restrictions",
-                              compliance:
-                                "Must comply with local amendments to state codes",
-                            });
+              {/* Error State */}
+              {error && (
+                <div className="py-4">
+                  <Card className="bg-red-900/20 border-red-500/20">
+                    <CardContent className="p-6">
+                      <p className="text-red-300">{error}</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
 
-                            return codes.length > 0 ? (
-                              <div key={idx} className="space-y-3">
-                                <h4 className="text-emerald-300 font-semibold border-b border-emerald-500/30 pb-2">
-                                  Building Codes for {permit.name}
-                                </h4>
-                                {codes.map((code, codeIdx) => (
-                                  <div key={codeIdx} className="relative">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-green-400/10 to-teal-400/10 rounded-lg"></div>
-                                    <Card className="relative bg-gray-800/70 border-emerald-400/30 backdrop-blur-sm">
-                                      <CardContent className="p-4">
-                                        <div className="flex items-start gap-4">
-                                          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg">
-                                            📋
-                                          </div>
-                                          <div className="flex-1 space-y-2">
-                                            <div className="flex items-center gap-3">
-                                              <h5 className="text-emerald-300 font-semibold">
-                                                {code.title}
-                                              </h5>
-                                              <Badge
-                                                variant="outline"
-                                                className="border-emerald-400/30 text-emerald-300"
-                                              >
-                                                {code.code}
-                                              </Badge>
-                                            </div>
-                                            <p className="text-gray-300 text-sm leading-relaxed">
-                                              {code.description}
-                                            </p>
-                                            <div className="bg-emerald-500/10 border border-emerald-400/30 rounded-lg p-3 mt-3">
-                                              <p className="text-emerald-200 text-sm font-medium">
-                                                ✓ {code.compliance}
-                                              </p>
-                                            </div>
-                                          </div>
+              {/* Results Display */}
+              {permitData && !isLoading && (
+                <div className="space-y-6">
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-4 bg-gray-800/50 border border-cyan-500/20">
+                      <TabsTrigger 
+                        value="permits" 
+                        className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
+                      >
+                        Permits
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="codes" 
+                        className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
+                      >
+                        Building Codes
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="process" 
+                        className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
+                      >
+                        Process
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="considerations" 
+                        className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
+                      >
+                        Alerts
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="permits" className="space-y-4 mt-6">
+                      {permitData.requiredPermits && permitData.requiredPermits.length > 0 ? (
+                        <div className="space-y-4">
+                          {permitData.requiredPermits.map((permit: any, idx: number) => (
+                            <div key={idx} className="relative">
+                              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-blue-400/10 to-teal-400/10 rounded-lg"></div>
+                              <Card className="relative bg-gray-800/70 border-cyan-400/30 backdrop-blur-sm">
+                                <CardContent className="p-6">
+                                  <div className="flex items-start gap-4">
+                                    <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center shadow-lg">
+                                      <span className="text-xl">📋</span>
+                                    </div>
+                                    <div className="flex-1 space-y-3">
+                                      <div>
+                                        <h3 className="text-xl font-semibold text-cyan-300 mb-2">
+                                          {permit.type || `Permit ${idx + 1}`}
+                                        </h3>
+                                        <p className="text-gray-300 leading-relaxed">
+                                          {permit.description || permit.requirements || "Permit details"}
+                                        </p>
+                                      </div>
+
+                                      {permit.fees && (
+                                        <div className="bg-green-500/10 border border-green-400/30 rounded-lg p-4">
+                                          <h4 className="text-green-400 font-medium mb-2 flex items-center gap-2">
+                                            💰 Estimated Fees
+                                          </h4>
+                                          <p className="text-green-200 font-semibold">
+                                            {permit.fees}
+                                          </p>
                                         </div>
-                                      </CardContent>
-                                    </Card>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : null;
-                          },
-                        )}
+                                      )}
 
-                      {/* Additional general building codes */}
-                      <div className="mt-6">
+                                      {permit.timeline && (
+                                        <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-4">
+                                          <h4 className="text-blue-400 font-medium mb-2 flex items-center gap-2">
+                                            ⏱️ Processing Time
+                                          </h4>
+                                          <p className="text-blue-200">
+                                            {permit.timeline}
+                                          </p>
+                                        </div>
+                                      )}
+
+                                      {permit.contact && (
+                                        <div className="bg-purple-500/10 border border-purple-400/30 rounded-lg p-4">
+                                          <h4 className="text-purple-400 font-medium mb-2 flex items-center gap-2">
+                                            📞 Contact Information
+                                          </h4>
+                                          <p className="text-purple-200">
+                                            {permit.contact}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-green-300">
+                            Permit information loading...
+                          </h3>
+                          <p className="text-gray-400">
+                            Required permits will appear here.
+                          </p>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="codes" className="space-y-4 mt-6">
+                      <div className="space-y-4">
                         <h4 className="text-emerald-300 font-semibold border-b border-emerald-500/30 pb-2 mb-4">
                           General Construction Requirements
                         </h4>
@@ -1558,12 +1473,8 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                       📏 Setback Requirements
                                     </h5>
                                     <ul className="text-gray-300 text-sm space-y-1">
-                                      <li>
-                                        • Front setback: Check local zoning
-                                      </li>
-                                      <li>
-                                        • Side setback: Minimum 5 feet typical
-                                      </li>
+                                      <li>• Front setback: Check local zoning</li>
+                                      <li>• Side setback: Minimum 5 feet typical</li>
                                       <li>• Rear setback: Varies by zone</li>
                                     </ul>
                                   </div>
@@ -1577,350 +1488,122 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                       <li>• Inspections at key milestones</li>
                                     </ul>
                                   </div>
-                                  <div className="space-y-3">
-                                    <h5 className="text-emerald-300 font-medium">
-                                      🔧 Material Standards
-                                    </h5>
-                                    <ul className="text-gray-300 text-sm space-y-1">
-                                      <li>• Use approved materials only</li>
-                                      <li>
-                                        • Check manufacturer specifications
-                                      </li>
-                                      <li>
-                                        • Maintain material certifications
-                                      </li>
-                                    </ul>
-                                  </div>
-                                  <div className="space-y-3">
-                                    <h5 className="text-emerald-300 font-medium">
-                                      ⚠️ Safety Requirements
-                                    </h5>
-                                    <ul className="text-gray-300 text-sm space-y-1">
-                                      <li>• OSHA safety protocols</li>
-                                      <li>• Proper fall protection</li>
-                                      <li>• Site safety documentation</li>
-                                    </ul>
-                                  </div>
                                 </div>
                               </CardContent>
                             </Card>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </TabsContent>
+                    </TabsContent>
 
-                  <TabsContent value="process" className="space-y-4">
-                    {permitData.process &&
-                    Array.isArray(permitData.process) &&
-                    permitData.process.length > 0 ? (
-                      <div className="space-y-4">
-                        {permitData.process.map((step: any, idx: number) => (
-                          <div key={idx} className="relative">
-                            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-cyan-400/10 to-teal-400/10 rounded-lg"></div>
-                            <Card className="relative bg-gray-800/70 border-blue-400/30 backdrop-blur-sm">
-                              <CardContent className="p-4">
-                                <div className="flex items-start gap-4">
-                                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg">
-                                    {idx + 1}
+                    <TabsContent value="process" className="space-y-4 mt-6">
+                      {permitData.process && Array.isArray(permitData.process) && permitData.process.length > 0 ? (
+                        <div className="space-y-4">
+                          {permitData.process.map((step: any, idx: number) => (
+                            <div key={idx} className="relative">
+                              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-cyan-400/10 to-teal-400/10 rounded-lg"></div>
+                              <Card className="relative bg-gray-800/70 border-blue-400/30 backdrop-blur-sm">
+                                <CardContent className="p-4">
+                                  <div className="flex items-start gap-4">
+                                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg">
+                                      {idx + 1}
+                                    </div>
+                                    <div className="flex-1 space-y-2">
+                                      <h4 className="text-blue-300 font-semibold">
+                                        {typeof step === "string" ? `Step ${idx + 1}` : step.step || `Step ${idx + 1}`}
+                                      </h4>
+                                      <p className="text-gray-300 text-sm leading-relaxed">
+                                        {typeof step === "string" ? step : step.step || step.description || "Process step details"}
+                                      </p>
+                                    </div>
                                   </div>
-                                  <div className="flex-1 space-y-2">
-                                    <h4 className="text-blue-300 font-semibold">
-                                      {typeof step === "string"
-                                        ? `Step ${idx + 1}`
-                                        : step.step || `Step ${idx + 1}`}
-                                    </h4>
-                                    <p className="text-gray-300 text-sm leading-relaxed">
-                                      {typeof step === "string"
-                                        ? step
-                                        : step.step ||
-                                          step.description ||
-                                          "Process step details"}
-                                    </p>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-green-300">
+                            Process information loading...
+                          </h3>
+                          <p className="text-gray-400">
+                            Step-by-step process will appear here.
+                          </p>
+                        </div>
+                      )}
+                    </TabsContent>
 
-                                    {/* Additional step details */}
-                                    {typeof step === "object" &&
-                                      step.timing && (
-                                        <div className="flex items-center gap-2 mt-2">
-                                          <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-1 rounded">
-                                            ⏱️ {step.timing}
-                                          </span>
-                                          {step.responsibleParty && (
-                                            <span className="text-xs bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded">
-                                              👤 {step.responsibleParty}
-                                            </span>
-                                          )}
-                                        </div>
-                                      )}
-
-                                    {/* Required documents for this step */}
-                                    {typeof step === "object" &&
-                                      step.requiredDocuments &&
-                                      step.requiredDocuments.length > 0 && (
-                                        <div className="mt-3">
-                                          <h5 className="text-xs text-gray-400 uppercase tracking-wide mb-2">
-                                            Required Documents:
-                                          </h5>
-                                          <div className="flex flex-wrap gap-1">
-                                            {(Array.isArray(
-                                              step.requiredDocuments,
-                                            )
-                                              ? step.requiredDocuments
-                                              : [step.requiredDocuments]
-                                            ).map(
-                                              (doc: string, docIdx: number) => (
-                                                <span
-                                                  key={docIdx}
-                                                  className="text-xs bg-gray-700/50 text-gray-300 px-2 py-1 rounded border border-gray-600/30"
-                                                >
-                                                  📄 {doc}
-                                                </span>
-                                              ),
-                                            )}
-                                          </div>
-                                        </div>
-                                      )}
-
-                                    {/* Official links */}
-                                    {typeof step === "object" &&
-                                      step.officialLinks && (
-                                        <div className="mt-3">
-                                          <h5 className="text-xs text-gray-400 uppercase tracking-wide mb-2">
-                                            Official Resources:
-                                          </h5>
-                                          <div className="flex flex-wrap gap-2">
-                                            {Array.isArray(
-                                              step.officialLinks,
-                                            ) ? (
-                                              step.officialLinks.map(
-                                                (
-                                                  link: string,
-                                                  linkIdx: number,
-                                                ) => (
-                                                  <a
-                                                    key={linkIdx}
-                                                    href={link}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-xs bg-blue-500/20 text-blue-300 px-3 py-1 rounded border border-blue-400/30 hover:bg-blue-500/30 transition-colors"
-                                                  >
-                                                    🔗 Official Form
-                                                  </a>
-                                                ),
-                                              )
-                                            ) : (
-                                              <a
-                                                href={step.officialLinks}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-xs bg-blue-500/20 text-blue-300 px-3 py-1 rounded border border-blue-400/30 hover:bg-blue-500/30 transition-colors"
-                                              >
-                                                🔗 Official Form
-                                              </a>
-                                            )}
-                                          </div>
-                                        </div>
-                                      )}
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-green-300">
-                          Process information loading...
-                        </h3>
-                        <p className="text-gray-400">
-                          Step-by-step process will appear here.
-                        </p>
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="considerations" className="space-y-4">
-                    {permitData.specialConsiderations &&
-                    Array.isArray(permitData.specialConsiderations) &&
-                    permitData.specialConsiderations.length > 0 ? (
-                      <div className="space-y-4">
-                        {permitData.specialConsiderations.map(
-                          (consideration: any, idx: number) => {
-                            // Parse the consideration if it's a string containing JSON-like data
-                            let alertData: any = {};
-                            let alertText = "";
-
-                            if (typeof consideration === "string") {
-                              // Try to extract structured data from string
-                              try {
-                                // Check if it looks like structured data
-                                if (
-                                  consideration.includes(":") &&
-                                  consideration.includes('"')
-                                ) {
-                                  // Parse JSON-like string structure
-                                  const matches =
-                                    consideration.match(/"([^"]+)":"([^"]+)"/g);
-                                  if (matches) {
-                                    matches.forEach((match) => {
-                                      const [key, value] = match
-                                        .replace(/"/g, "")
-                                        .split(":");
-                                      alertData[key] = value;
-                                    });
-                                    alertText = consideration;
-                                  } else {
-                                    alertText = consideration;
-                                  }
-                                } else {
-                                  alertText = consideration;
-                                }
-                              } catch {
-                                alertText = consideration;
-                              }
-                            } else {
-                              alertData = consideration;
-                              alertText = JSON.stringify(consideration);
-                            }
-
-                            return (
-                              <div key={idx} className="relative">
-                                <div className="absolute inset-0 bg-gradient-to-r from-amber-400/10 via-orange-400/10 to-red-400/10 rounded-lg"></div>
-                                <Card className="relative bg-gray-800/70 border-amber-400/30 backdrop-blur-sm">
-                                  <CardContent className="p-4">
-                                    <div className="flex items-start gap-4">
-                                      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center text-sm font-bold text-black shadow-lg">
-                                        ⚠️
-                                      </div>
-                                      <div className="flex-1 space-y-3">
-                                        <h4 className="text-amber-300 font-semibold">
-                                          Critical Alert #{idx + 1}
-                                        </h4>
-
-                                        {/* Specific regulations */}
-                                        {alertData.specificLocalRegulations && (
-                                          <div className="bg-red-500/10 border border-red-400/30 rounded-lg p-3">
-                                            <h5 className="text-red-400 font-medium mb-2 flex items-center gap-2">
-                                              📋 Local Regulations
-                                            </h5>
-                                            <p className="text-red-200 text-sm">
-                                              {
-                                                alertData.specificLocalRegulations
-                                              }
-                                            </p>
-                                          </div>
-                                        )}
-
-                                        {/* Environmental considerations */}
-                                        {alertData.environmental && (
-                                          <div className="bg-green-500/10 border border-green-400/30 rounded-lg p-3">
-                                            <h5 className="text-green-400 font-medium mb-2 flex items-center gap-2">
-                                              🌿 Environmental Requirements
-                                            </h5>
-                                            <p className="text-green-200 text-sm">
-                                              {alertData.environmental}
-                                            </p>
-                                          </div>
-                                        )}
-
-                                        {/* Zoning restrictions */}
-                                        {alertData.zoning && (
-                                          <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-3">
-                                            <h5 className="text-blue-400 font-medium mb-2 flex items-center gap-2">
-                                              🏢 Zoning Restrictions
-                                            </h5>
-                                            <p className="text-blue-200 text-sm">
-                                              {alertData.zoning}
-                                            </p>
-                                          </div>
-                                        )}
-
-                                        {/* Penalties */}
-                                        {alertData.penalties && (
-                                          <div className="bg-red-500/10 border border-red-400/30 rounded-lg p-3">
-                                            <h5 className="text-red-400 font-medium mb-2 flex items-center gap-2">
-                                              ⚖️ Penalties for Non-Compliance
-                                            </h5>
-                                            <p className="text-red-200 text-sm font-medium">
-                                              {alertData.penalties}
-                                            </p>
-                                          </div>
-                                        )}
-
-                                        {/* Deadlines */}
-                                        {alertData.deadlines && (
-                                          <div className="bg-amber-500/10 border border-amber-400/30 rounded-lg p-3">
-                                            <h5 className="text-amber-400 font-medium mb-2 flex items-center gap-2">
-                                              ⏰ Critical Deadlines
-                                            </h5>
-                                            <p className="text-amber-200 text-sm font-medium">
-                                              {alertData.deadlines}
-                                            </p>
-                                          </div>
-                                        )}
-
-                                        {/* If no structured data, show the raw text in a nice format */}
-                                        {Object.keys(alertData).length ===
-                                          0 && (
-                                          <div className="bg-amber-500/10 border border-amber-400/30 rounded-lg p-3">
-                                            <p className="text-amber-200 text-sm leading-relaxed">
-                                              {alertText}
-                                            </p>
-                                          </div>
-                                        )}
+                    <TabsContent value="considerations" className="space-y-4 mt-6">
+                      {permitData.specialConsiderations && Array.isArray(permitData.specialConsiderations) && permitData.specialConsiderations.length > 0 ? (
+                        <div className="space-y-4">
+                          {permitData.specialConsiderations.map((consideration: any, idx: number) => (
+                            <div key={idx} className="relative">
+                              <div className="absolute inset-0 bg-gradient-to-r from-amber-400/10 via-orange-400/10 to-red-400/10 rounded-lg"></div>
+                              <Card className="relative bg-gray-800/70 border-amber-400/30 backdrop-blur-sm">
+                                <CardContent className="p-4">
+                                  <div className="flex items-start gap-4">
+                                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center text-sm font-bold text-black shadow-lg">
+                                      ⚠️
+                                    </div>
+                                    <div className="flex-1 space-y-3">
+                                      <h4 className="text-amber-300 font-semibold">
+                                        Critical Alert #{idx + 1}
+                                      </h4>
+                                      <div className="bg-amber-500/10 border border-amber-400/30 rounded-lg p-3">
+                                        <p className="text-amber-200 text-sm leading-relaxed">
+                                          {typeof consideration === "string" ? consideration : JSON.stringify(consideration)}
+                                        </p>
                                       </div>
                                     </div>
-                                  </CardContent>
-                                </Card>
-                              </div>
-                            );
-                          },
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-green-300">
-                          No Critical Alerts
-                        </h3>
-                        <p className="text-gray-400">
-                          No special considerations or alerts identified for
-                          this project.
-                        </p>
-                      </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-green-300">
+                            No Critical Alerts
+                          </h3>
+                          <p className="text-gray-400">
+                            No special considerations or alerts identified for this project.
+                          </p>
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              )}
 
-      {isLoading && (
-        <div className="max-w-6xl mx-auto p-6">
-          <Card className="bg-gray-800/50 border-teal-500/20">
-            <CardContent className="p-8">
-              <div className="flex items-center justify-center space-x-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-400"></div>
-                <p className="text-teal-300">Running DeepSearch analysis...</p>
+              {/* Navigation */}
+              <div className="flex justify-between pt-6 border-t border-gray-700/30">
+                <Button
+                  onClick={() => setCurrentStep(2)}
+                  variant="outline"
+                  className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Project Details
+                </Button>
+                <Button
+                  onClick={() => setCurrentStep(1)}
+                  variant="outline"
+                  className="border-cyan-600 text-cyan-400 hover:border-cyan-500 hover:text-cyan-300"
+                >
+                  Start New Analysis
+                  <RefreshCw className="h-4 w-4 ml-2" />
+                </Button>
               </div>
             </CardContent>
           </Card>
-        </div>
-      )}
+        )}
 
-      {error && (
-        <div className="max-w-6xl mx-auto p-6">
-          <Card className="bg-red-900/20 border-red-500/20">
-            <CardContent className="p-6">
-              <p className="text-red-300">{error}</p>
-            </CardContent>
-          </Card>
         </div>
-      )}
+      </div>
     </div>
   );
 }
