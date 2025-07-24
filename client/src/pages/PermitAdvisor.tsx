@@ -418,17 +418,17 @@ export default function PermitAdvisor() {
       {/* Header with cyberpunk styling */}
       <div className="relative bg-gradient-to-r from-slate-900/50 to-gray-900/50 backdrop-blur-sm">
         <div className="absolute inset-0 bg-gray-800/10 opacity-30"></div>
-        <div className="relative max-w-6xl mx-auto px-6 py-8">
+        <div className="relative max-w-6xl mx-auto px-6 py-4">
           <div className="text-center">
-            <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-cyan-300 via-blue-300 to-cyan-300 bg-clip-text text-transparent mb-3">
+            <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-cyan-300 via-blue-300 to-cyan-300 bg-clip-text text-transparent mb-2">
               Mervin DeepSearch
             </h1>
-            <p className="text-lg text-gray-300 mb-4">
+            <p className="text-base text-gray-300 mb-2">
               AI-Powered Permit Analysis & Regulatory Intelligence
             </p>
             <div className="flex items-center justify-center gap-2 text-cyan-300">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-sm font-mono">
+              <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-xs font-mono">
                 Professional Grade Intelligence
               </span>
             </div>
@@ -437,19 +437,19 @@ export default function PermitAdvisor() {
       </div>
 
       {/* Search History Section - Moved to top */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2">
         <div className="flex justify-end">
           <Dialog>
             <DialogTrigger asChild>
               <Button
                 variant="outline"
-                className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 h-10 text-sm px-4"
+                className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 h-9 text-sm px-3"
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 bg-cyan-500/20 rounded-md flex items-center justify-center">
-                    📋
+                  <div className="w-4 h-4 bg-cyan-500/20 rounded-md flex items-center justify-center">
+                    🕒
                   </div>
-                  <span>Search History</span>
+                  <span>DeepSearch History</span>
                 </div>
               </Button>
             </DialogTrigger>
@@ -457,10 +457,10 @@ export default function PermitAdvisor() {
             <DialogContent className="max-w-2xl bg-slate-900/95 border-cyan-400/30 backdrop-blur-md">
               <DialogHeader>
                 <DialogTitle className="text-cyan-300 flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
-                    📋
+                  <div className="w-7 h-7 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+                    🕒
                   </div>
-                  Recent Searches
+                  DeepSearch History
                 </DialogTitle>
               </DialogHeader>
 
@@ -476,19 +476,19 @@ export default function PermitAdvisor() {
                 </div>
 
                 {historyLoading ? (
-                  <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto mb-4"></div>
-                    <p className="text-gray-400">Loading history...</p>
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-cyan-400 mx-auto mb-3"></div>
+                    <p className="text-gray-400 text-sm">Loading history...</p>
                   </div>
                 ) : filteredHistory.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-gradient-to-r from-slate-600 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
-                      📋
+                  <div className="text-center py-8">
+                    <div className="w-12 h-12 bg-gradient-to-r from-slate-600 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-3 opacity-50">
+                      🕒
                     </div>
-                    <h3 className="text-lg font-medium text-gray-400 mb-2">
+                    <h3 className="text-base font-medium text-gray-400 mb-1">
                       No search history found
                     </h3>
-                    <p className="text-gray-500 text-sm">
+                    <p className="text-gray-500 text-xs">
                       Your recent permit searches will appear here
                     </p>
                   </div>
