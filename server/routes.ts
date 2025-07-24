@@ -6608,29 +6608,54 @@ Output must be between 200-900 characters in English.`;
         });
       }
 
-      // Use the existing Puppeteer PDF service
-      const { puppeteerPdfService } = await import("./puppeteer-pdf-service");
+      // Use the enhanced PDF service for better reliability
+      const { enhancedPdfService } = await import("./enhanced-pdf-service");
       
-      const pdfBuffer = await puppeteerPdfService.generatePdfFromHtml(htmlContent);
+      // Validate HTML before processing
+      const validation = await enhancedPdfService.validateHtml(htmlContent);
+      if (!validation.valid) {
+        console.warn("⚠️ [PERMIT-REPORT] HTML validation issues:", validation.issues);
+      }
+      
+      const pdfBuffer = await enhancedPdfService.generatePdfFromHtml(htmlContent, {
+        format: 'A4',
+        landscape: false,
+        margin: {
+          top: "0.5in",
+          right: "0.5in", 
+          bottom: "0.5in",
+          left: "0.5in",
+        }
+      });
+      
+      // Convert Uint8Array to Buffer if needed
+      const finalBuffer = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
       
       console.log("✅ [PERMIT-REPORT] PDF generated successfully");
       console.log("🔍 [PERMIT-REPORT] PDF Buffer validation:", {
-        isBuffer: Buffer.isBuffer(pdfBuffer),
-        length: pdfBuffer.length,
-        firstBytes: pdfBuffer.subarray(0, 8).toString("hex"),
-        isPDF: pdfBuffer.subarray(0, 4).toString() === "%PDF",
+        isBuffer: Buffer.isBuffer(finalBuffer),
+        length: finalBuffer.length,
+        firstBytes: finalBuffer.subarray(0, 8).toString("hex"),
+        isPDF: finalBuffer.subarray(0, 4).toString() === "%PDF",
       });
+      
+      // Validate PDF header
+      if (!finalBuffer.subarray(0, 4).toString().startsWith("%PDF")) {
+        throw new Error("Generated file is not a valid PDF");
+      }
       
       // Set headers for PDF download
       const fileName = `Permit_Analysis_Report_${permitData?.meta?.projectType || 'Project'}_${new Date().toISOString().slice(0, 10)}.pdf`;
       
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
+      res.setHeader('Content-Length', finalBuffer.length.toString());
       res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Accept-Ranges', 'bytes');
       
-      // Send PDF buffer as binary data (same method used in successful endpoints)
-      res.end(pdfBuffer, 'binary');
+      // Send PDF buffer directly without encoding
+      res.write(finalBuffer);
+      res.end();
       
     } catch (error) {
       console.error("❌ [PERMIT-REPORT] PDF generation failed:", error);

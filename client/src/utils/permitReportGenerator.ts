@@ -70,6 +70,23 @@ export function generatePermitReportHTML(permitData: PermitData, companyInfo: Co
             line-height: 1.6;
             color: #2d3748;
             background: #ffffff;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            color-adjust: exact;
+        }
+        
+        /* PDF-specific optimizations */
+        @media print {
+            body { 
+                font-size: 12px; 
+                -webkit-print-color-adjust: exact;
+            }
+            .page-break { page-break-before: always; }
+            .no-break { page-break-inside: avoid; }
+            .header, .executive-summary, .content-section { 
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
         }
         
         .report-container {
@@ -77,6 +94,8 @@ export function generatePermitReportHTML(permitData: PermitData, companyInfo: Co
             margin: 0 auto;
             background: white;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
         
         /* Header */
@@ -146,6 +165,9 @@ export function generatePermitReportHTML(permitData: PermitData, companyInfo: Co
             padding: 40px;
             background: linear-gradient(to right, #f8fafc, #e2e8f0);
             border-left: 4px solid #667eea;
+            page-break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
         
         .section-title {
@@ -203,6 +225,9 @@ export function generatePermitReportHTML(permitData: PermitData, companyInfo: Co
         .content-section {
             padding: 40px;
             border-bottom: 1px solid #e2e8f0;
+            page-break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
         
         .content-section:last-child {
@@ -212,12 +237,14 @@ export function generatePermitReportHTML(permitData: PermitData, companyInfo: Co
         /* Permits Section */
         .permit-card {
             background: white;
-            border: 1px solid #e2e8f0;
+            border: 2px solid #e2e8f0;
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            transition: all 0.2s;
+            page-break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
         
         .permit-card:hover {
@@ -508,7 +535,7 @@ export function generatePermitReportHTML(permitData: PermitData, companyInfo: Co
         </div>
 
         <!-- Executive Summary -->
-        <div class="executive-summary">
+        <div class="executive-summary no-break">
             <h2 class="section-title">
                 <div class="section-icon">📊</div>
                 Executive Summary
@@ -518,15 +545,15 @@ export function generatePermitReportHTML(permitData: PermitData, companyInfo: Co
                 building codes, contact information, and compliance requirements for your construction project.
             </p>
             <div class="summary-stats">
-                <div class="stat-card">
+                <div class="stat-card no-break">
                     <div class="stat-number">${permitData.requiredPermits?.length || 0}</div>
                     <div class="stat-label">Required Permits</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card no-break">
                     <div class="stat-number">${permitData.contactInformation?.length || 0}</div>
                     <div class="stat-label">Department Contacts</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card no-break">
                     <div class="stat-number">${permitData.requiredPermits?.reduce((count, permit) => {
                         if (permit.requiredDocuments) {
                             return count + (Array.isArray(permit.requiredDocuments) ? permit.requiredDocuments.length : 1);
@@ -539,14 +566,14 @@ export function generatePermitReportHTML(permitData: PermitData, companyInfo: Co
         </div>
 
         <!-- Required Permits Section -->
-        <div class="content-section">
+        <div class="content-section no-break">
             <h2 class="section-title">
                 <div class="section-icon">🏛️</div>
                 Required Permits
             </h2>
             ${permitData.requiredPermits && permitData.requiredPermits.length > 0 ? 
                 permitData.requiredPermits.map(permit => `
-                    <div class="permit-card">
+                    <div class="permit-card no-break">
                         <div class="permit-header">
                             <div>
                                 <h3 class="permit-name">${permit.name}</h3>
