@@ -982,15 +982,15 @@ export default function PermitAdvisor() {
 
   return (
     <div className="bg-gradient-to-br pb-40 from-slate-950 via-gray-900 to-slate-800">
-      {/* Header with cyberpunk styling */}
+      {/* Header with cyberpunk styling - Mobile Optimized */}
       <div className="relative bg-gradient-to-r from-slate-900/50 to-gray-900/50 backdrop-blur-sm">
         <div className="absolute inset-0 bg-gray-800/10 opacity-30"></div>
-        <div className="relative max-w-6xl mx-auto px-6 py-4">
+        <div className="relative max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
           <div className="text-center">
-            <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-cyan-300 via-blue-300 to-cyan-300 bg-clip-text text-transparent mb-2">
+            <h1 className="text-xl sm:text-2xl md:text-4xl font-bold bg-gradient-to-r from-cyan-300 via-blue-300 to-cyan-300 bg-clip-text text-transparent mb-1 sm:mb-2">
               Mervin DeepSearch
             </h1>
-            <p className="text-base text-gray-300 mb-2">
+            <p className="text-sm sm:text-base text-gray-300 mb-1 sm:mb-2 px-2">
               AI-Powered Permit Analysis & Regulatory Intelligence
             </p>
             <div className="flex items-center justify-center gap-2 text-cyan-300">
@@ -1003,18 +1003,18 @@ export default function PermitAdvisor() {
         </div>
       </div>
 
-      {/* Wizard Step Indicator - Redesigned Centered Layout */}
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          {/* Mobile: Improved Centered Stepper */}
+      {/* Wizard Step Indicator - Mobile Optimized */}
+      <div className="max-w-5xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        <div className="mb-4 sm:mb-8">
+          {/* Mobile: Compact Horizontal Stepper */}
           <div className="md:hidden">
-            <div className="flex items-center justify-center space-x-1 px-4">
+            <div className="flex items-center justify-between px-2 overflow-x-auto scrollbar-none">
               {workflowSteps.map((step, index) => (
-                <div key={step.id} className="flex items-center">
+                <div key={step.id} className="flex items-center flex-shrink-0">
                   {/* Step Circle */}
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-10 h-10 rounded-full border-2 flex items-center justify-center relative transition-all duration-500 ${
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center relative transition-all duration-500 ${
                         step.status === "completed"
                           ? "border-green-400 bg-green-400/20 shadow-lg shadow-green-400/30"
                           : step.status === "processing"
@@ -1025,7 +1025,7 @@ export default function PermitAdvisor() {
                       }`}
                     >
                       {step.status === "completed" ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-400" />
+                        <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-400" />
                       ) : (
                         <span className={`text-xs font-bold ${
                           step.status === "processing" ? "text-cyan-300" : 
@@ -1036,18 +1036,18 @@ export default function PermitAdvisor() {
                       )}
                     </div>
                     <div className="mt-1 text-center">
-                      <p className="text-xs font-medium text-gray-300 max-w-16 leading-tight">
-                        {step.title.split(' ')[0]}
+                      <p className="text-xs font-medium text-gray-300 max-w-12 sm:max-w-16 leading-tight break-words">
+                        {step.title.split(' ').slice(0, 2).join(' ')}
                       </p>
                     </div>
                   </div>
                   
                   {/* Enhanced Connection Arrow */}
                   {index < workflowSteps.length - 1 && (
-                    <div className="px-2 flex items-center">
+                    <div className="px-1 sm:px-2 flex items-center">
                       <div className="relative">
                         <ArrowRight
-                          className={`h-4 w-4 transition-all duration-500 ${
+                          className={`h-3 w-3 sm:h-4 sm:w-4 transition-all duration-500 ${
                             step.status === "completed"
                               ? "text-green-400 scale-110"
                               : "text-gray-500"
@@ -1055,7 +1055,7 @@ export default function PermitAdvisor() {
                         />
                         {step.status === "completed" && (
                           <div className="absolute inset-0 animate-ping">
-                            <ArrowRight className="h-4 w-4 text-green-400/50" />
+                            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-green-400/50" />
                           </div>
                         )}
                       </div>
@@ -1204,20 +1204,21 @@ export default function PermitAdvisor() {
           </div>
         </div>
 
-      {/* Search History Section - Moved to top */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2">
+      {/* Search History Section - Mobile Optimized */}
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-2">
         <div className="flex justify-end">
           <Dialog>
             <DialogTrigger asChild>
               <Button
                 variant="outline"
-                className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 h-9 text-sm px-3"
+                className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3"
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-cyan-500/20 rounded-md flex items-center justify-center">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 bg-cyan-500/20 rounded-md flex items-center justify-center">
                     🕒
                   </div>
-                  <span>DeepSearch History</span>
+                  <span className="hidden sm:inline">DeepSearch History</span>
+                  <span className="sm:hidden">History</span>
                 </div>
               </Button>
             </DialogTrigger>
@@ -1345,93 +1346,95 @@ export default function PermitAdvisor() {
         </div>
       </div>
 
-      {/* Main Wizard Content */}
-      <div className="max-w-6xl mx-auto px-6 py-4">
+      {/* Main Wizard Content - Mobile Optimized */}
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-2 sm:py-4">
         
-        {/* Step 1: Property Analysis */}
+        {/* Step 1: Property Analysis - Mobile Optimized */}
         {currentStep === 1 && (
           <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-sm">
-            <CardHeader className="text-center px-4 sm:px-6 py-6">
-              <CardTitle className="text-xl text-cyan-300 flex items-center justify-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
-                  <MapPin className="h-5 w-5 text-white" />
+            <CardHeader className="text-center px-3 sm:px-6 py-4 sm:py-6">
+              <CardTitle className="text-lg sm:text-xl text-cyan-300 flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
-                <span>Property & Project Analysis</span>
+                <span className="text-center leading-tight">Property & Project Analysis</span>
               </CardTitle>
-              <p className="text-gray-400 text-sm mt-2">
+              <p className="text-gray-400 text-xs sm:text-sm mt-1 sm:mt-2 px-2">
                 Enter your property address to begin comprehensive permit analysis
               </p>
             </CardHeader>
-            <CardContent className="space-y-6 px-4 sm:px-6 pb-6">
-              {/* Selection Mode Toggle */}
-              <div className="flex justify-center mb-6">
-                <div className="bg-slate-900/50 border border-cyan-500/30 rounded-lg p-1 flex">
+            <CardContent className="space-y-4 sm:space-y-6 px-3 sm:px-6 pb-4 sm:pb-6">
+              {/* Selection Mode Toggle - Mobile Optimized */}
+              <div className="flex justify-center mb-4 sm:mb-6">
+                <div className="bg-slate-900/50 border border-cyan-500/30 rounded-lg p-1 flex w-full max-w-md">
                   <Button
                     onClick={() => setSelectionMode("manual")}
                     variant={selectionMode === "manual" ? "default" : "ghost"}
-                    className={`px-6 py-2 transition-all ${
+                    className={`flex-1 px-3 sm:px-6 py-2 text-xs sm:text-sm transition-all ${
                       selectionMode === "manual"
                         ? "bg-cyan-600 text-black hover:bg-cyan-500"
                         : "text-gray-400 hover:text-cyan-300 hover:bg-slate-800/50"
                     }`}
                   >
-                    <MapPin className="h-4 w-4 mr-2" />
-                    Manual Address
+                    <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Manual Address</span>
+                    <span className="sm:hidden">Manual</span>
                   </Button>
                   <Button
                     onClick={() => setSelectionMode("existing")}
                     variant={selectionMode === "existing" ? "default" : "ghost"}
-                    className={`px-6 py-2 transition-all ${
+                    className={`flex-1 px-3 sm:px-6 py-2 text-xs sm:text-sm transition-all ${
                       selectionMode === "existing"
                         ? "bg-cyan-600 text-black hover:bg-cyan-500"
                         : "text-gray-400 hover:text-cyan-300 hover:bg-slate-800/50"
                     }`}
                   >
-                    <Database className="h-4 w-4 mr-2" />
-                    Existing Projects
+                    <Database className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Existing Projects</span>
+                    <span className="sm:hidden">Existing</span>
                   </Button>
                 </div>
               </div>
 
-              {/* Manual Address Input Mode */}
+              {/* Manual Address Input Mode - Mobile Optimized */}
               {selectionMode === "manual" && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Address Input */}
-                <div className="relative bg-slate-900/30 border border-cyan-500/30 rounded-lg p-4 hover:border-cyan-400/50 transition-colors">
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-cyan-300 flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      Property Address
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                {/* Address Input - Mobile Optimized */}
+                <div className="relative bg-slate-900/30 border border-cyan-500/30 rounded-lg p-3 sm:p-4 hover:border-cyan-400/50 transition-colors">
+                  <div className="space-y-2 sm:space-y-3">
+                    <label className="text-xs sm:text-sm font-medium text-cyan-300 flex items-center gap-1 sm:gap-2">
+                      <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span>Property Address</span>
                     </label>
                     <MapboxPlacesAutocomplete
                       onPlaceSelect={handleAddressSelect}
                       onChange={() => {}}
-                      className="w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[40px]"
+                      className="w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[40px] text-sm"
                       placeholder="Enter property address..."
                     />
                     {selectedAddress && (
                       <div className="text-xs text-green-400 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" />
-                        Address verified
+                        <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
+                        <span className="break-words">Address verified</span>
                       </div>
                     )}
                   </div>
-                  <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan-400/50 rounded-tl-lg"></div>
-                  <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-cyan-400/50 rounded-br-lg"></div>
+                  <div className="absolute top-0 left-0 w-3 h-3 sm:w-4 sm:h-4 border-t-2 border-l-2 border-cyan-400/50 rounded-tl-lg"></div>
+                  <div className="absolute bottom-0 right-0 w-3 h-3 sm:w-4 sm:h-4 border-b-2 border-r-2 border-cyan-400/50 rounded-br-lg"></div>
                 </div>
 
-                {/* Project Type */}
-                <div className="relative bg-slate-900/30 border border-cyan-500/30 rounded-lg p-4 hover:border-cyan-400/50 transition-colors">
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-cyan-300 flex items-center gap-2">
-                      <Building className="h-4 w-4" />
-                      Project Type
+                {/* Project Type - Mobile Optimized */}
+                <div className="relative bg-slate-900/30 border border-cyan-500/30 rounded-lg p-3 sm:p-4 hover:border-cyan-400/50 transition-colors">
+                  <div className="space-y-2 sm:space-y-3">
+                    <label className="text-xs sm:text-sm font-medium text-cyan-300 flex items-center gap-1 sm:gap-2">
+                      <Building className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span>Project Type</span>
                     </label>
                     <Select value={projectType} onValueChange={setProjectType}>
-                      <SelectTrigger className="w-full bg-slate-900/50 border-cyan-500/30 text-white focus:border-cyan-400 min-h-[40px]">
+                      <SelectTrigger className="w-full bg-slate-900/50 border-cyan-500/30 text-white focus:border-cyan-400 min-h-[40px] text-sm">
                         <SelectValue placeholder="Select project type" />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-cyan-500/30 max-h-[200px]">
+                      <SelectContent className="bg-slate-900 border-cyan-500/30 max-h-[200px] text-sm">
                         <SelectItem value="fence">Fence Installation</SelectItem>
                         <SelectItem value="deck">Deck Construction</SelectItem>
                         <SelectItem value="addition">Home Addition</SelectItem>
@@ -1460,13 +1463,13 @@ export default function PermitAdvisor() {
                     </Select>
                     {projectType && (
                       <div className="text-xs text-green-400 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" />
-                        Project type selected
+                        <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
+                        <span className="break-words">Project type selected</span>
                       </div>
                     )}
                   </div>
-                  <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyan-400/50 rounded-tr-lg"></div>
-                  <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyan-400/50 rounded-bl-lg"></div>
+                  <div className="absolute top-0 right-0 w-3 h-3 sm:w-4 sm:h-4 border-t-2 border-r-2 border-cyan-400/50 rounded-tr-lg"></div>
+                  <div className="absolute bottom-0 left-0 w-3 h-3 sm:w-4 sm:h-4 border-b-2 border-l-2 border-cyan-400/50 rounded-bl-lg"></div>
                 </div>
                 </div>
               )}
@@ -1542,8 +1545,8 @@ export default function PermitAdvisor() {
                 </div>
               )}
 
-              {/* Navigation */}
-              <div className="flex justify-end pt-4 border-t border-gray-700/30">
+              {/* Navigation - Mobile Optimized */}
+              <div className="flex justify-end pt-3 sm:pt-4 border-t border-gray-700/30">
                 <Button
                   onClick={() => {
                     if (selectedAddress && projectType) {
@@ -1557,35 +1560,36 @@ export default function PermitAdvisor() {
                     }
                   }}
                   disabled={!selectedAddress || !projectType}
-                  className="bg-cyan-600 hover:bg-cyan-500 text-black font-medium px-6"
+                  className="bg-cyan-600 hover:bg-cyan-500 text-black font-medium px-4 sm:px-6 text-sm"
                 >
-                  Continue to Project Details
-                  <ArrowRight className="h-4 w-4 ml-2" />
+                  <span className="hidden sm:inline">Continue to Project Details</span>
+                  <span className="sm:hidden">Continue</span>
+                  <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Step 2: Project Details & Documentation */}
+        {/* Step 2: Project Details & Documentation - Mobile Optimized */}
         {currentStep === 2 && (
           <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-sm">
-            <CardHeader className="text-center px-4 sm:px-6 py-6">
-              <CardTitle className="text-xl text-cyan-300 flex items-center justify-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
-                  <FileText className="h-5 w-5 text-white" />
+            <CardHeader className="text-center px-3 sm:px-6 py-4 sm:py-6">
+              <CardTitle className="text-lg sm:text-xl text-cyan-300 flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
-                <span>Project Details & Documentation</span>
+                <span className="text-center leading-tight">Project Details & Documentation</span>
               </CardTitle>
-              <p className="text-gray-400 text-sm mt-2">
+              <p className="text-gray-400 text-xs sm:text-sm mt-1 sm:mt-2 px-2">
                 Provide detailed project information and attach relevant documents
               </p>
             </CardHeader>
-            <CardContent className="space-y-6 px-4 sm:px-6 pb-6">
-              <div className="space-y-4">
-                <label className="text-sm font-medium text-cyan-300 flex items-center gap-2">
-                  Project Description & Documents
-                  <Paperclip className="h-4 w-4 text-cyan-300/70" />
+            <CardContent className="space-y-4 sm:space-y-6 px-3 sm:px-6 pb-4 sm:pb-6">
+              <div className="space-y-3 sm:space-y-4">
+                <label className="text-xs sm:text-sm font-medium text-cyan-300 flex items-center gap-1 sm:gap-2">
+                  <span>Project Description & Documents</span>
+                  <Paperclip className="h-3 w-3 sm:h-4 sm:w-4 text-cyan-300/70 flex-shrink-0" />
                 </label>
                 <div className="relative">
                   <div
@@ -1602,7 +1606,7 @@ export default function PermitAdvisor() {
                       placeholder="Describe your project in detail (e.g., materials, scope, square footage)... 
 
 You can also drag & drop documents here (permits, plans, estimates)"
-                      className={`w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[120px] resize-none pr-12 transition-all duration-300 ${
+                      className={`w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[100px] sm:min-h-[120px] resize-none pr-10 sm:pr-12 transition-all duration-300 text-sm ${
                         isDragOver ? "border-cyan-400 bg-cyan-500/10" : ""
                       }`}
                     />
@@ -1610,10 +1614,10 @@ You can also drag & drop documents here (permits, plans, estimates)"
                     <button
                       type="button"
                       onClick={() => document.getElementById("file-input")?.click()}
-                      className="absolute right-2 top-2 w-8 h-8 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-full flex items-center justify-center transition-all duration-300 group hover:scale-110"
+                      className="absolute right-2 top-2 w-6 h-6 sm:w-8 sm:h-8 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-full flex items-center justify-center transition-all duration-300 group hover:scale-110"
                       title="Upload documents"
                     >
-                      <Upload className="h-4 w-4 text-cyan-300 group-hover:text-cyan-200" />
+                      <Upload className="h-3 w-3 sm:h-4 sm:w-4 text-cyan-300 group-hover:text-cyan-200" />
                     </button>
 
                     <input
@@ -1626,41 +1630,41 @@ You can also drag & drop documents here (permits, plans, estimates)"
                     />
                   </div>
 
-                  {/* File List */}
+                  {/* File List - Mobile Optimized */}
                   {attachedFiles.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      <div className="flex flex-wrap gap-2">
+                    <div className="mt-3 sm:mt-4 space-y-2">
+                      <div className="flex flex-wrap gap-1 sm:gap-2">
                         {attachedFiles.map((file) => (
                           <div
                             key={file.id}
-                            className="inline-flex items-center gap-2 bg-slate-900/70 border border-cyan-500/20 rounded-md px-3 py-2 text-sm group hover:border-cyan-400/40 transition-colors"
+                            className="inline-flex items-center gap-1 sm:gap-2 bg-slate-900/70 border border-cyan-500/20 rounded-md px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm group hover:border-cyan-400/40 transition-colors"
                           >
                             <div className="flex-shrink-0">
                               {file.type === 'application/pdf' ? (
-                                <div className="w-4 h-4 bg-red-500/30 rounded-sm flex items-center justify-center">
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500/30 rounded-sm flex items-center justify-center">
                                   <span className="text-red-300 text-xs">📄</span>
                                 </div>
                               ) : file.type.startsWith('image/') ? (
-                                <div className="w-4 h-4 bg-green-500/30 rounded-sm flex items-center justify-center">
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-500/30 rounded-sm flex items-center justify-center">
                                   <span className="text-green-300 text-xs">🖼️</span>
                                 </div>
                               ) : (
-                                <div className="w-4 h-4 bg-blue-500/30 rounded-sm flex items-center justify-center">
-                                  <FileText className="h-3 w-3 text-blue-300" />
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-blue-500/30 rounded-sm flex items-center justify-center">
+                                  <FileText className="h-2 w-2 sm:h-3 sm:w-3 text-blue-300" />
                                 </div>
                               )}
                             </div>
-                            <span className="text-white font-medium truncate max-w-[120px]">
+                            <span className="text-white font-medium truncate max-w-[80px] sm:max-w-[120px] break-all">
                               {file.name}
                             </span>
-                            <span className="text-gray-400 text-xs">
+                            <span className="text-gray-400 text-xs hidden sm:inline">
                               ({formatFileSize(file.size)})
                             </span>
                             <button
                               onClick={() => removeFile(file.id)}
-                              className="w-4 h-4 bg-red-500/20 hover:bg-red-500/40 rounded-full flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100"
+                              className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500/20 hover:bg-red-500/40 rounded-full flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
                             >
-                              <X className="h-3 w-3 text-red-300" />
+                              <X className="h-2 w-2 sm:h-3 sm:w-3 text-red-300" />
                             </button>
                           </div>
                         ))}
@@ -1670,15 +1674,16 @@ You can also drag & drop documents here (permits, plans, estimates)"
                 </div>
               </div>
 
-              {/* Navigation */}
-              <div className="flex justify-between pt-4 border-t border-gray-700/30">
+              {/* Navigation - Mobile Optimized */}
+              <div className="flex flex-col sm:flex-row justify-between gap-3 pt-3 sm:pt-4 border-t border-gray-700/30">
                 <Button
                   onClick={() => setCurrentStep(1)}
                   variant="outline"
-                  className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
+                  className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300 text-sm order-2 sm:order-1"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Property Analysis
+                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Back to Property Analysis</span>
+                  <span className="sm:hidden">Back</span>
                 </Button>
                 <Button
                   onClick={() => {
@@ -1693,48 +1698,51 @@ You can also drag & drop documents here (permits, plans, estimates)"
                     }
                   }}
                   disabled={!projectDescription.trim()}
-                  className="bg-cyan-600 hover:bg-cyan-500 text-black font-medium px-6"
+                  className="bg-cyan-600 hover:bg-cyan-500 text-black font-medium px-4 sm:px-6 text-sm order-1 sm:order-2"
                 >
-                  Start DeepSearch Analysis
-                  <ArrowRight className="h-4 w-4 ml-2" />
+                  <span className="hidden sm:inline">Start DeepSearch Analysis</span>
+                  <span className="sm:hidden">Start Analysis</span>
+                  <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Step 3: DeepSearch Results & Analysis */}
+        {/* Step 3: DeepSearch Results & Analysis - Mobile Optimized */}
         {currentStep === 3 && (
           <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-sm">
-            <CardHeader className="text-center px-4 sm:px-6 py-6">
-              <CardTitle className="text-xl text-cyan-300 flex items-center justify-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
-                  <Search className="h-5 w-5 text-white" />
+            <CardHeader className="text-center px-3 sm:px-6 py-4 sm:py-6">
+              <CardTitle className="text-lg sm:text-xl text-cyan-300 flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Search className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
-                <span>DeepSearch Results & Analysis</span>
+                <span className="text-center leading-tight">DeepSearch Results & Analysis</span>
               </CardTitle>
-              <p className="text-gray-400 text-sm mt-2">
+              <p className="text-gray-400 text-xs sm:text-sm mt-1 sm:mt-2 px-2">
                 Comprehensive permit requirements and analysis for your project
               </p>
             </CardHeader>
-            <CardContent className="space-y-6 px-4 sm:px-6 pb-6">
+            <CardContent className="space-y-4 sm:space-y-6 px-3 sm:px-6 pb-4 sm:pb-6">
               
-              {/* Analysis Controls */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {/* Analysis Controls - Mobile Optimized */}
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                 <Button
                   onClick={handleSearch}
                   disabled={isLoading || !selectedAddress || !projectType || !projectDescription.trim()}
-                  className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium px-6 py-3 shadow-lg"
+                  className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium px-4 sm:px-6 py-2 sm:py-3 shadow-lg text-sm"
                 >
                   {isLoading ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Running Analysis...
+                      <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1 sm:mr-2"></div>
+                      <span className="hidden sm:inline">Running Analysis...</span>
+                      <span className="sm:hidden">Analyzing...</span>
                     </>
                   ) : (
                     <>
-                      <Search className="h-4 w-4 mr-2" />
-                      Run DeepSearch Analysis
+                      <Search className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Run DeepSearch Analysis</span>
+                      <span className="sm:hidden">Start Analysis</span>
                     </>
                   )}
                 </Button>
@@ -1743,17 +1751,19 @@ You can also drag & drop documents here (permits, plans, estimates)"
                   <Button
                     onClick={generatePDF}
                     disabled={isGeneratingPDF}
-                    className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-medium px-6 py-3 shadow-lg"
+                    className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-medium px-4 sm:px-6 py-2 sm:py-3 shadow-lg text-sm"
                   >
                     {isGeneratingPDF ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Generating PDF...
+                        <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1 sm:mr-2"></div>
+                        <span className="hidden sm:inline">Generating PDF...</span>
+                        <span className="sm:hidden">Generating...</span>
                       </>
                     ) : (
                       <>
-                        <Download className="h-4 w-4 mr-2" />
-                        Export PDF Report
+                        <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline">Export PDF Report</span>
+                        <span className="sm:hidden">Export PDF</span>
                       </>
                     )}
                   </Button>
@@ -2235,9 +2245,9 @@ You can also drag & drop documents here (permits, plans, estimates)"
                           <div className="absolute inset-0 bg-gradient-to-r from-purple-400/10 via-blue-400/10 to-cyan-400/10 rounded-lg"></div>
                           <Card className="relative bg-gray-800/70 border-purple-400/30 backdrop-blur-sm">
                             <CardContent className="p-6">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Department Info */}
-                                <div className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                                {/* Department Info - Mobile Optimized */}
+                                <div className="space-y-3 sm:space-y-4">
                                   <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
                                       <span className="text-lg">🏛️</span>
@@ -2269,7 +2279,7 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                         <span className="text-green-400">📞</span>
                                         <div>
                                           <p className="text-green-300 font-medium">Phone</p>
-                                          <a href={`tel:${permitData.contactInfo?.phone || permitData.contactInformation?.[0]?.directPhone}`} className="text-gray-300 text-sm hover:text-cyan-400 transition-colors">
+                                          <a href={`tel:${permitData.contactInfo?.phone || permitData.contactInformation?.[0]?.directPhone}`} className="text-gray-300 text-sm hover:text-cyan-400 transition-colors break-all">
                                             {permitData.contactInfo?.phone || permitData.contactInformation?.[0]?.directPhone}
                                           </a>
                                         </div>
@@ -2281,7 +2291,7 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                         <span className="text-yellow-400">📧</span>
                                         <div>
                                           <p className="text-yellow-300 font-medium">Email</p>
-                                          <a href={`mailto:${permitData.contactInfo?.email || permitData.contactInformation?.[0]?.email}`} className="text-gray-300 text-sm hover:text-cyan-400 transition-colors">
+                                          <a href={`mailto:${permitData.contactInfo?.email || permitData.contactInformation?.[0]?.email}`} className="text-gray-300 text-sm hover:text-cyan-400 transition-colors break-all">
                                             {permitData.contactInfo?.email || permitData.contactInformation?.[0]?.email}
                                           </a>
                                         </div>
@@ -2312,7 +2322,7 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                         href={permitData.contactInfo?.website || permitData.contactInformation?.[0]?.website} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="text-blue-200 text-sm hover:text-cyan-300 transition-colors underline"
+                                        className="text-blue-200 text-sm hover:text-cyan-300 transition-colors underline break-all"
                                       >
                                         {permitData.contactInfo?.website || permitData.contactInformation?.[0]?.website}
                                       </a>
@@ -2368,7 +2378,7 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                           <div key={idx} className="text-sm">
                                             <p className="text-gray-200 font-medium">{contact.department}</p>
                                             {contact.directPhone && (
-                                              <a href={`tel:${contact.directPhone}`} className="text-gray-400 hover:text-cyan-400 transition-colors">
+                                              <a href={`tel:${contact.directPhone}`} className="text-gray-400 hover:text-cyan-400 transition-colors break-all">
                                                 📞 {contact.directPhone}
                                               </a>
                                             )}
@@ -2463,23 +2473,25 @@ You can also drag & drop documents here (permits, plans, estimates)"
                 </div>
               )}
 
-              {/* Navigation */}
-              <div className="flex justify-between pt-6 border-t border-gray-700/30">
+              {/* Navigation - Mobile Optimized */}
+              <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4 sm:pt-6 border-t border-gray-700/30">
                 <Button
                   onClick={() => setCurrentStep(2)}
                   variant="outline"
-                  className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
+                  className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300 text-sm order-2 sm:order-1"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Project Details
+                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Back to Project Details</span>
+                  <span className="sm:hidden">Back</span>
                 </Button>
                 <Button
                   onClick={() => setCurrentStep(1)}
                   variant="outline"
-                  className="border-cyan-600 text-cyan-400 hover:border-cyan-500 hover:text-cyan-300"
+                  className="border-cyan-600 text-cyan-400 hover:border-cyan-500 hover:text-cyan-300 text-sm order-1 sm:order-2"
                 >
-                  Start New Analysis
-                  <RefreshCw className="h-4 w-4 ml-2" />
+                  <span className="hidden sm:inline">Start New Analysis</span>
+                  <span className="sm:hidden">New Analysis</span>
+                  <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
                 </Button>
               </div>
             </CardContent>
