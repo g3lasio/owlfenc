@@ -539,11 +539,20 @@ export default function PermitAdvisor() {
         logo: profile.logo || "",
       };
 
+      // Ensure permitData has timestamp in meta
+      const permitDataWithTimestamp = {
+        ...permitData,
+        meta: {
+          ...permitData.meta,
+          timestamp: (permitData.meta as any)?.timestamp || new Date().toISOString()
+        }
+      };
+
       // Generate PDF using the utility functions
-      const pdfBlob = await generatePDFReport(permitData, companyInfo);
+      const pdfBlob = await generatePDFReport(permitDataWithTimestamp, companyInfo);
       
       // Download the PDF
-      downloadPDFReport(pdfBlob, permitData);
+      downloadPDFReport(pdfBlob, permitDataWithTimestamp);
       
       toast({
         title: "PDF Export Successful",
@@ -665,6 +674,59 @@ export default function PermitAdvisor() {
     }
   };
 
+  // Generate PDF wrapper function
+  const generatePDF = async () => {
+    if (!permitData || !profile) return;
+    
+    try {
+      setIsGeneratingPDF(true);
+      
+      // Prepare company information from profile
+      const companyInfo = {
+        company: profile.company || "",
+        ownerName: profile.ownerName || "",
+        email: profile.email || "",
+        phone: profile.phone || "",
+        mobilePhone: profile.mobilePhone || "",
+        address: profile.address || "",
+        city: profile.city || "",
+        state: profile.state || "",
+        zipCode: profile.zipCode || "",
+        license: profile.license || "",
+        website: profile.website || "",
+        logo: profile.logo || "",
+      };
+
+      // Ensure permitData has timestamp in meta
+      const permitDataWithTimestamp = {
+        ...permitData,
+        meta: {
+          ...permitData.meta,
+          timestamp: (permitData.meta as any)?.timestamp || new Date().toISOString()
+        }
+      };
+      
+      const pdfBlob = await generatePDFReport(permitDataWithTimestamp, companyInfo);
+      
+      // Download the PDF
+      downloadPDFReport(pdfBlob, permitDataWithTimestamp);
+      
+      toast({
+        title: "PDF Generated Successfully",
+        description: "Your permit analysis report has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({
+        title: "PDF Generation Failed",
+        description: "There was an error generating the PDF report.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   const historyQuery = useQuery({
     queryKey: ["/api/permit/history"],
     enabled: showHistory,
@@ -706,167 +768,199 @@ export default function PermitAdvisor() {
         </div>
       </div>
 
-      {/* Wizard Step Indicator - Matching Legal Defense Style */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="mb-8 md:px-4">
-          {/* Mobile: Horizontal Scroll Stepper */}
-          <div className="md:hidden md:pb-4">
-            <div className="flex items-center space-x-0 md:space-x-4 min-w-max px-2">
+      {/* Wizard Step Indicator - Redesigned Centered Layout */}
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        <div className="mb-8">
+          {/* Mobile: Improved Centered Stepper */}
+          <div className="md:hidden">
+            <div className="flex items-center justify-center space-x-1 px-4">
               {workflowSteps.map((step, index) => (
                 <div key={step.id} className="flex items-center">
-                  {/* Step Icon + Label */}
-                  <div className="flex flex-col items-center min-w-0">
+                  {/* Step Circle */}
+                  <div className="flex flex-col items-center">
                     <div
-                      className={`w-12 h-12 rounded-full border-2 flex items-center justify-center relative transition-all duration-300 ${
+                      className={`w-10 h-10 rounded-full border-2 flex items-center justify-center relative transition-all duration-500 ${
                         step.status === "completed"
-                          ? "border-green-400 bg-green-400/20 shadow-green-400/30 shadow-lg"
+                          ? "border-green-400 bg-green-400/20 shadow-lg shadow-green-400/30"
                           : step.status === "processing"
-                            ? "border-cyan-400 bg-cyan-400/20 shadow-cyan-400/50 shadow-lg"
+                            ? "border-cyan-400 bg-cyan-400/20 shadow-lg shadow-cyan-400/40 animate-pulse"
                             : step.step === currentStep
-                              ? "border-cyan-400 bg-cyan-400/10 shadow-cyan-400/30 shadow-lg"
+                              ? "border-cyan-400 bg-cyan-400/10 shadow-lg shadow-cyan-400/25"
                               : "border-gray-600 bg-gray-800/30"
                       }`}
                     >
                       {step.status === "completed" ? (
-                        <CheckCircle2 className="h-6 w-6 text-green-400" />
+                        <CheckCircle2 className="h-5 w-5 text-green-400" />
                       ) : (
-                        step.icon
+                        <span className={`text-xs font-bold ${
+                          step.status === "processing" ? "text-cyan-300" : 
+                          step.step === currentStep ? "text-cyan-300" : "text-gray-400"
+                        }`}>
+                          {step.step}
+                        </span>
                       )}
                     </div>
-                    <div className="mt-2 text-center min-w-0">
-                      <p className="text-xs font-semibold text-gray-300 truncate max-w-20">
+                    <div className="mt-1 text-center">
+                      <p className="text-xs font-medium text-gray-300 max-w-16 leading-tight">
                         {step.title.split(' ')[0]}
                       </p>
                     </div>
                   </div>
                   
-                  {/* Connection Line */}
+                  {/* Enhanced Connection Arrow */}
                   {index < workflowSteps.length - 1 && (
-                    <div
-                      className={`flex-1 h-0.5 mx-2 transition-colors duration-300 ${
-                        step.status === "completed"
-                          ? "bg-green-400/60"
-                          : "bg-gray-600/30"
-                      }`}
-                    />
+                    <div className="px-2 flex items-center">
+                      <div className="relative">
+                        <ArrowRight
+                          className={`h-4 w-4 transition-all duration-500 ${
+                            step.status === "completed"
+                              ? "text-green-400 scale-110"
+                              : "text-gray-500"
+                          }`}
+                        />
+                        {step.status === "completed" && (
+                          <div className="absolute inset-0 animate-ping">
+                            <ArrowRight className="h-4 w-4 text-green-400/50" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Desktop: Full Width Stepper */}
+          {/* Desktop: Enhanced Centered Flow Layout */}
           <div className="hidden md:block">
-            <div className="grid grid-cols-3 gap-6">
+            <div className="flex items-center justify-center max-w-4xl mx-auto">
               {workflowSteps.map((step, index) => (
-                <div key={step.id} className="relative">
-                  {/* Step Card */}
-                  <div
-                    className={`p-6 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
-                      step.status === "completed"
-                        ? "border-green-400/60 bg-green-400/5 shadow-green-400/20 shadow-lg"
-                        : step.status === "processing"
-                          ? "border-cyan-400/80 bg-cyan-400/10 shadow-cyan-400/40 shadow-xl"
-                          : step.step === currentStep
-                            ? "border-cyan-400/50 bg-cyan-400/5 shadow-cyan-400/20 shadow-lg"
-                            : "border-gray-600/30 bg-gray-800/20"
-                    }`}
-                    onClick={() => {
-                      if (step.step === 1 || 
-                          (step.step === 2 && canProceedToStep2()) ||
-                          (step.step === 3 && canProceedToStep3())) {
-                        setCurrentStep(step.step);
-                      }
-                    }}
-                  >
-                    {/* Step Header */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-10 h-10 rounded-full border-2 flex items-center justify-center ${
-                            step.status === "completed"
-                              ? "border-green-400 bg-green-400/20"
-                              : step.status === "processing"
-                                ? "border-cyan-400 bg-cyan-400/20"
-                                : step.step === currentStep
-                                  ? "border-cyan-400 bg-cyan-400/10"
-                                  : "border-gray-600 bg-gray-800/30"
-                          }`}
-                        >
-                          {step.status === "completed" ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-400" />
-                          ) : (
-                            <span className={`text-sm font-bold ${
-                              step.status === "processing" ? "text-cyan-400" : 
-                              step.step === currentStep ? "text-cyan-400" : "text-gray-400"
-                            }`}>
-                              {step.step}
-                            </span>
-                          )}
-                        </div>
-                        <div>
-                          <h3
-                            className={`font-semibold text-sm ${
+                <div key={step.id} className="flex items-center flex-1">
+                  {/* Step Card - More Compact */}
+                  <div className="flex-1 relative">
+                    <div
+                      className={`p-4 rounded-2xl border-2 transition-all duration-500 cursor-pointer transform hover:scale-105 ${
+                        step.status === "completed"
+                          ? "border-green-400/70 bg-gradient-to-br from-green-400/10 to-green-500/5 shadow-xl shadow-green-400/20"
+                          : step.status === "processing"
+                            ? "border-cyan-400 bg-gradient-to-br from-cyan-400/15 to-cyan-500/10 shadow-xl shadow-cyan-400/30 animate-pulse"
+                            : step.step === currentStep
+                              ? "border-cyan-400/60 bg-gradient-to-br from-cyan-400/10 to-cyan-500/5 shadow-lg shadow-cyan-400/20"
+                              : "border-gray-600/40 bg-gradient-to-br from-gray-800/20 to-gray-900/30"
+                      }`}
+                      onClick={() => {
+                        if (step.step === 1 || 
+                            (step.step === 2 && canProceedToStep2()) ||
+                            (step.step === 3 && canProceedToStep3())) {
+                          setCurrentStep(step.step);
+                        }
+                      }}
+                    >
+                      {/* Compact Header */}
+                      <div className="flex items-center justify-center mb-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${
                               step.status === "completed"
-                                ? "text-green-400"
+                                ? "border-green-400 bg-green-400/25 shadow-lg shadow-green-400/30"
                                 : step.status === "processing"
-                                  ? "text-cyan-400"
+                                  ? "border-cyan-400 bg-cyan-400/25 shadow-lg shadow-cyan-400/40"
                                   : step.step === currentStep
-                                    ? "text-cyan-400"
-                                    : "text-gray-400"
+                                    ? "border-cyan-400 bg-cyan-400/15 shadow-lg shadow-cyan-400/25"
+                                    : "border-gray-600 bg-gray-800/40"
                             }`}
                           >
-                            {step.title}
-                          </h3>
+                            {step.status === "completed" ? (
+                              <CheckCircle2 className="h-6 w-6 text-green-400" />
+                            ) : (
+                              <span className={`text-lg font-bold ${
+                                step.status === "processing" ? "text-cyan-300" : 
+                                step.step === currentStep ? "text-cyan-300" : "text-gray-400"
+                              }`}>
+                                {step.step}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <Badge
-                        variant="secondary"
-                        className={`text-xs ${
-                          step.status === "completed"
-                            ? "bg-green-400/20 text-green-400 border-green-400/30"
-                            : step.status === "processing"
-                              ? "bg-cyan-400/20 text-cyan-400 border-cyan-400/30"
-                              : "bg-gray-600/20 text-gray-400 border-gray-600/30"
-                        }`}
-                      >
-                        {step.estimatedTime}
-                      </Badge>
-                    </div>
 
-                    {/* Description */}
-                    <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-                      {step.description}
-                    </p>
-
-                    {/* Progress Bar */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500">Progress</span>
-                        <span className="text-xs font-mono text-gray-400">
-                          {step.progress}%
-                        </span>
+                      {/* Centered Title */}
+                      <div className="text-center">
+                        <h3
+                          className={`font-semibold text-sm mb-2 ${
+                            step.status === "completed"
+                              ? "text-green-400"
+                              : step.status === "processing"
+                                ? "text-cyan-300"
+                                : step.step === currentStep
+                                  ? "text-cyan-300"
+                                  : "text-gray-400"
+                          }`}
+                        >
+                          {step.title}
+                        </h3>
+                        <p className="text-xs text-gray-500 leading-relaxed">
+                          {step.description}
+                        </p>
                       </div>
-                      <Progress 
-                        value={step.progress} 
-                        className={`h-1.5 ${
-                          step.status === "completed" ? "bg-green-400/20" :
-                          step.status === "processing" ? "bg-cyan-400/20" : "bg-gray-600/20"
-                        }`}
-                      />
+
+                      {/* Status Badge */}
+                      <div className="flex justify-center mt-3">
+                        <Badge
+                          variant="secondary"
+                          className={`text-xs ${
+                            step.status === "completed"
+                              ? "bg-green-400/20 text-green-400 border-green-400/40"
+                              : step.status === "processing"
+                                ? "bg-cyan-400/20 text-cyan-300 border-cyan-400/40"
+                                : "bg-gray-600/20 text-gray-400 border-gray-600/40"
+                          }`}
+                        >
+                          {step.estimatedTime}
+                        </Badge>
+                      </div>
+
+                      {/* Progress Indicator */}
+                      <div className="mt-3">
+                        <Progress 
+                          value={step.progress} 
+                          className={`h-1 ${
+                            step.status === "completed" ? "bg-green-400/20" :
+                            step.status === "processing" ? "bg-cyan-400/20" : "bg-gray-600/20"
+                          }`}
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Connection Arrow */}
+                  {/* Enhanced Flow Arrow */}
                   {index < workflowSteps.length - 1 && (
-                    <div className="absolute top-1/2 -right-3 transform -translate-y-1/2">
-                      <ArrowRight
-                        className={`h-6 w-6 ${
-                          step.status === "completed"
-                            ? "text-green-400"
-                            : "text-gray-600"
-                        }`}
-                      />
+                    <div className="flex justify-center px-3">
+                      <div className="relative">
+                        {/* Main Arrow */}
+                        <div
+                          className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${
+                            step.status === "completed"
+                              ? "border-green-400/60 bg-green-400/10 shadow-lg shadow-green-400/20"
+                              : "border-gray-600/40 bg-gray-800/30"
+                          }`}
+                        >
+                          <ArrowRight
+                            className={`h-4 w-4 transition-all duration-500 ${
+                              step.status === "completed"
+                                ? "text-green-400"
+                                : "text-gray-500"
+                            }`}
+                          />
+                        </div>
+                        
+                        {/* Animated Ring for Completed Steps */}
+                        {step.status === "completed" && (
+                          <div className="absolute inset-0 animate-ping">
+                            <div className="w-8 h-8 rounded-full border border-green-400/40"></div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1289,7 +1383,7 @@ You can also drag & drop documents here (permits, plans, estimates)"
               {/* Analysis Controls */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button
-                  onClick={handleDeepSearch}
+                  onClick={handleSearch}
                   disabled={isLoading || !selectedAddress || !projectType || !projectDescription.trim()}
                   className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium px-6 py-3 shadow-lg"
                 >
