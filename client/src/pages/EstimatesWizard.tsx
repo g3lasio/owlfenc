@@ -4207,8 +4207,45 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         projectDetails: e.target.value,
                       }))
                     }
-                    className="min-h-[120px] max-h-[300px] text-sm resize-none"
+                    className="min-h-[120px] max-h-[300px] text-sm resize-none pr-12"
                   />
+                  
+                  {/* Attachment Button inside textarea */}
+                  <div className="absolute top-2 right-2 flex items-center gap-1">
+                    {estimate.attachments.length > 0 && (
+                      <Badge variant="secondary" className="bg-cyan-400/20 text-cyan-400 border-cyan-400/30 text-xs px-2 py-0.5">
+                        {estimate.attachments.length}
+                      </Badge>
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.multiple = true;
+                        input.accept = 'image/*,.pdf,.doc,.docx,.txt';
+                        input.onchange = (e) => {
+                          const files = (e.target as HTMLInputElement).files;
+                          if (files && files.length > 0) {
+                            handleFileUpload(files);
+                          }
+                        };
+                        input.click();
+                      }}
+                      disabled={isUploading}
+                      className="h-7 w-7 p-0 hover:bg-cyan-400/10 hover:text-cyan-400 text-gray-400"
+                      title="Adjuntar archivos"
+                    >
+                      {isUploading ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-400"></div>
+                      ) : (
+                        <Paperclip className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Smart Search Dynamic Bar - Compact & Mobile-Friendly */}
@@ -4431,153 +4468,67 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     </div>
                   )}
 
-                {/* Project Attachments Section */}
-                <div className="mt-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Label className="text-base font-medium flex items-center gap-2">
-                      <Paperclip className="h-4 w-4" />
-                      Adjuntar Archivos
-                    </Label>
-                    {estimate.attachments.length > 0 && (
-                      <Badge variant="secondary" className="bg-cyan-400/20 text-cyan-400 border-cyan-400/30">
-                        {estimate.attachments.length} archivo{estimate.attachments.length > 1 ? 's' : ''}
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Upload Zone */}
-                  <div
-                    className={`
-                      relative border-2 border-dashed rounded-lg p-6 transition-all duration-300
-                      ${isDragOver 
-                        ? 'border-cyan-400 bg-cyan-400/5' 
-                        : 'border-gray-600 hover:border-cyan-400/50 hover:bg-gray-800/50'
-                      }
-                      ${isUploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}
-                    `}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setIsDragOver(true);
-                    }}
-                    onDragLeave={(e) => {
-                      e.preventDefault();
-                      setIsDragOver(false);
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setIsDragOver(false);
-                      const files = e.dataTransfer.files;
-                      if (files.length > 0) {
-                        handleFileUpload(files);
-                      }
-                    }}
-                    onClick={() => {
-                      const input = document.createElement('input');
-                      input.type = 'file';
-                      input.multiple = true;
-                      input.accept = 'image/*,.pdf,.doc,.docx,.txt';
-                      input.onchange = (e) => {
-                        const files = (e.target as HTMLInputElement).files;
-                        if (files && files.length > 0) {
-                          handleFileUpload(files);
-                        }
-                      };
-                      input.click();
-                    }}
-                  >
-                    <div className="text-center">
-                      {isUploading ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
-                          <p className="text-sm text-gray-400">Subiendo archivos...</p>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-3">
-                          <div className="w-12 h-12 bg-cyan-400/10 rounded-full flex items-center justify-center">
-                            <Upload className="h-6 w-6 text-cyan-400" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-300">
-                              Arrastra archivos aquí o haz clic para seleccionar
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Imágenes, PDFs, documentos (máx. 10MB cada uno)
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                {/* Compact Attachments List - Only show if files exist */}
+                {estimate.attachments.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <Paperclip className="h-3 w-3" />
+                      <span>Archivos adjuntos ({estimate.attachments.length})</span>
                     </div>
-                  </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {estimate.attachments.map((attachment) => (
+                        <div
+                          key={attachment.id}
+                          className="flex items-center gap-2 p-2 bg-gray-800/30 rounded border border-gray-700/50 text-xs"
+                        >
+                          {/* File Icon/Preview */}
+                          <div className="flex-shrink-0">
+                            {isImageFile(attachment.type) ? (
+                              <div className="w-6 h-6 rounded overflow-hidden bg-gray-700">
+                                <img
+                                  src={attachment.url}
+                                  alt={attachment.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-6 h-6 bg-gray-700 rounded flex items-center justify-center">
+                                {attachment.type.includes('pdf') ? (
+                                  <FileText className="h-3 w-3 text-red-400" />
+                                ) : (
+                                  <FileImage className="h-3 w-3 text-blue-400" />
+                                )}
+                              </div>
+                            )}
+                          </div>
 
-                  {/* Attachments List */}
-                  {estimate.attachments.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      <p className="text-sm font-medium text-gray-400">Archivos adjuntos:</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {estimate.attachments.map((attachment) => (
-                          <div
-                            key={attachment.id}
-                            className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700"
+                          {/* File Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-gray-300 truncate font-medium">
+                              {attachment.name}
+                            </p>
+                            <p className="text-gray-500">
+                              {formatFileSize(attachment.size)}
+                            </p>
+                          </div>
+
+                          {/* Remove Button */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveAttachment(attachment.id);
+                            }}
+                            className="h-5 w-5 p-0 text-gray-400 hover:text-red-400 hover:bg-red-400/10"
                           >
-                            {/* File Icon/Preview */}
-                            <div className="flex-shrink-0">
-                              {isImageFile(attachment.type) ? (
-                                <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-700">
-                                  <img
-                                    src={attachment.url}
-                                    alt={attachment.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                              ) : (
-                                <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center">
-                                  {attachment.type.includes('pdf') ? (
-                                    <FileText className="h-5 w-5 text-red-400" />
-                                  ) : (
-                                    <FileImage className="h-5 w-5 text-blue-400" />
-                                  )}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* File Info */}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-300 truncate">
-                                {attachment.name}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {formatFileSize(attachment.size)}
-                              </p>
-                            </div>
-
-                            {/* Remove Button */}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveAttachment(attachment.id);
-                              }}
-                              className="text-gray-400 hover:text-red-400 hover:bg-red-400/10"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Help Text */}
-                  <div className="mt-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                    <div className="flex items-start gap-2">
-                      <Image className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                      <p className="text-xs text-blue-300">
-                        <strong>Tip:</strong> Adjunta fotos del área de trabajo, planos, referencias o cualquier documento relevante para crear un estimado más preciso y detallado.
-                      </p>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
