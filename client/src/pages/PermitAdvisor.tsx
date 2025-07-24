@@ -29,7 +29,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle2, Search, Clock, Trash2 } from "lucide-react";
+import { CheckCircle2, Search, Clock, Trash2, Brain } from "lucide-react";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
 import { useToast } from "@/hooks/use-toast";
 import { auth, db } from "@/lib/firebase";
@@ -97,6 +97,7 @@ export default function PermitAdvisor() {
   const [showHistory, setShowHistory] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [searchFilter, setSearchFilter] = useState("");
+  const [isAIProcessing, setIsAIProcessing] = useState(false);
   const { toast } = useToast();
 
   // Monitor auth state
@@ -311,6 +312,61 @@ export default function PermitAdvisor() {
       title: "Search Loaded",
       description: `Loaded: ${historyItem.title}`,
     });
+  };
+
+  // Enhance project description with Mervin AI
+  const enhanceProjectWithAI = async () => {
+    if (!projectDescription.trim()) {
+      toast({
+        title: "Descripción Requerida",
+        description: "Por favor escribe una descripción básica del proyecto para mejorar con Mervin AI",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAIProcessing(true);
+
+    try {
+      console.log('🤖 Starting Mervin AI enhancement...');
+      
+      const response = await fetch('/api/ai-enhance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          originalText: projectDescription,
+          projectType: projectType || 'construction permit project'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al procesar con Mervin AI');
+      }
+      
+      const result = await response.json();
+      console.log('✅ Mervin AI Response:', result);
+      
+      if (result.enhancedDescription) {
+        setProjectDescription(result.enhancedDescription);
+        
+        toast({
+          title: '✨ Mejorado con Mervin AI',
+          description: 'La descripción del proyecto ha sido mejorada profesionalmente'
+        });
+      } else {
+        throw new Error('No se pudo generar contenido mejorado');
+      }
+      
+    } catch (error) {
+      console.error('Error enhancing with AI:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo procesar con Mervin AI. Inténtalo de nuevo.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsAIProcessing(false);
+    }
   };
 
   const formatHistoryDate = (timestamp: any) => {
@@ -629,15 +685,43 @@ export default function PermitAdvisor() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-cyan-400">
-                Project Description (Optional)
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-cyan-400">
+                  Project Description (Optional)
+                </label>
+                <Button
+                  onClick={enhanceProjectWithAI}
+                  disabled={isAIProcessing || !projectDescription.trim()}
+                  className="bg-cyan-400 hover:bg-cyan-300 text-black font-medium text-xs px-3 py-1 h-7"
+                  size="sm"
+                >
+                  {isAIProcessing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-black mr-1"></div>
+                      <span className="hidden sm:inline">Procesando...</span>
+                      <span className="sm:hidden">AI...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Brain className="h-3 w-3 mr-1" />
+                      <span className="hidden sm:inline">Enhance with Mervin AI</span>
+                      <span className="sm:hidden">Mervin AI</span>
+                    </>
+                  )}
+                </Button>
+              </div>
               <Textarea
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
                 placeholder="Describe your project in detail (e.g., materials, scope, square footage)..."
                 className="w-full bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[80px] resize-none"
               />
+              <div className="flex items-start gap-2 mt-2 p-3 bg-gray-800/50 border border-cyan-400/30 rounded-lg">
+                <Brain className="h-4 w-4 text-cyan-400 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-gray-400">
+                  <strong className="text-cyan-400">💡 Tip:</strong> Escribe una descripción básica de tu proyecto y usa <strong className="text-cyan-400">"Enhance with Mervin AI"</strong> para generar automáticamente una descripción profesional completa con terminología de construcción técnica.
+                </p>
+              </div>
             </div>
 
             {/* Responsive button layout */}
