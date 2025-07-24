@@ -29,7 +29,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle2, Search, Clock, Trash2, Paperclip, X, FileText, Upload } from "lucide-react";
+import { CheckCircle2, Search, Clock, Trash2, Paperclip, X, FileText, Upload, Download } from "lucide-react";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
 import { useToast } from "@/hooks/use-toast";
 import { auth, db } from "@/lib/firebase";
@@ -46,6 +46,8 @@ import {
   doc,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
+import { useProfile } from "@/hooks/use-profile";
+import { generatePermitReportHTML, generatePDFReport, downloadPDFReport } from "@/utils/permitReportGenerator";
 
 interface PermitData {
   name: string;
@@ -109,7 +111,9 @@ export default function PermitAdvisor() {
   const [searchFilter, setSearchFilter] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const { toast } = useToast();
+  const { profile } = useProfile();
 
   // Monitor auth state
   useEffect(() => {
@@ -443,6 +447,57 @@ export default function PermitAdvisor() {
   const handleDragLeave = (event: React.DragEvent) => {
     event.preventDefault();
     setIsDragOver(false);
+  };
+
+  const handleExportPDF = async () => {
+    if (!permitData || !profile) {
+      toast({
+        title: "Cannot Export PDF",
+        description: "No permit data or company profile available",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingPDF(true);
+    try {
+      // Prepare company information from profile
+      const companyInfo = {
+        company: profile.company || "",
+        ownerName: profile.ownerName || "",
+        email: profile.email || "",
+        phone: profile.phone || "",
+        mobilePhone: profile.mobilePhone || "",
+        address: profile.address || "",
+        city: profile.city || "",
+        state: profile.state || "",
+        zipCode: profile.zipCode || "",
+        license: profile.license || "",
+        website: profile.website || "",
+        logo: profile.logo || "",
+      };
+
+      // Generate PDF using the utility functions
+      const pdfBlob = await generatePDFReport(permitData, companyInfo);
+      
+      // Download the PDF
+      downloadPDFReport(pdfBlob, permitData);
+      
+      toast({
+        title: "PDF Export Successful",
+        description: "Permit analysis report has been downloaded",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast({
+        title: "PDF Export Failed",
+        description: "There was an error generating the PDF report",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   const formatHistoryDate = (timestamp: any) => {
@@ -953,14 +1008,40 @@ You can also drag & drop documents here (permits, plans, estimates)"
               </div>
 
               <CardHeader className="relative z-10 text-center px-4 sm:px-6">
-                <CardTitle className="text-lg sm:text-xl lg:text-2xl text-cyan-300 flex items-center justify-center gap-2">
-                  <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="truncate">DeepSearch Results</span>
-                </CardTitle>
-                <CardDescription className="text-gray-400 text-sm sm:text-base">
-                  Project: {permitData.meta?.projectType} at{" "}
-                  {permitData.meta?.location}
-                </CardDescription>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="text-center sm:text-left">
+                    <CardTitle className="text-lg sm:text-xl lg:text-2xl text-cyan-300 flex items-center justify-center sm:justify-start gap-2">
+                      <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                      <span className="truncate">DeepSearch Results</span>
+                    </CardTitle>
+                    <CardDescription className="text-gray-400 text-sm sm:text-base">
+                      Project: {permitData.meta?.projectType} at{" "}
+                      {permitData.meta?.location}
+                    </CardDescription>
+                  </div>
+                  <div className="flex justify-center sm:justify-end">
+                    <Button
+                      onClick={handleExportPDF}
+                      disabled={isGeneratingPDF}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 border border-purple-400/30 shadow-lg shadow-purple-400/20 transition-all duration-300 text-white font-medium"
+                    >
+                      <span className="flex items-center gap-2">
+                        {isGeneratingPDF ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            <span className="hidden sm:inline">Generating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Download className="h-4 w-4" />
+                            <span className="hidden sm:inline">Export PDF Report</span>
+                            <span className="sm:hidden">Export PDF</span>
+                          </>
+                        )}
+                      </span>
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="relative z-10 px-2 sm:px-4 lg:px-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>

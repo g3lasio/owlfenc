@@ -6594,6 +6594,45 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
+  // *** PERMIT REPORT PDF GENERATION ***
+  app.post("/api/generate-permit-report-pdf", async (req: Request, res: Response) => {
+    try {
+      console.log("📄 [PERMIT-REPORT] Generating PDF report...");
+      
+      const { htmlContent, permitData, companyInfo } = req.body;
+      
+      if (!htmlContent) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "HTML content is required" 
+        });
+      }
+
+      // Use the existing Puppeteer PDF service
+      const { puppeteerPdfService } = await import("./puppeteer-pdf-service");
+      
+      const pdfBuffer = await puppeteerPdfService.generatePdfFromHtml(htmlContent);
+      
+      console.log("✅ [PERMIT-REPORT] PDF generated successfully");
+      
+      // Set headers for PDF download
+      const fileName = `Permit_Analysis_Report_${permitData?.meta?.projectType || 'Project'}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      res.send(pdfBuffer);
+      
+    } catch (error) {
+      console.error("❌ [PERMIT-REPORT] PDF generation failed:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to generate PDF report" 
+      });
+    }
+  });
+
   // *** CONTRACT HTML GENERATION FOR LEGAL COMPLIANCE WORKFLOW ***
   app.post(
     "/api/generate-contract-html",

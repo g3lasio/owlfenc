@@ -165,6 +165,68 @@ export class PuppeteerPdfService {
 
     return template(mappedData);
   }
+
+  async generatePdfFromHtml(html: string): Promise<Uint8Array> {
+    console.log("🔄 Starting PDF generation from HTML...");
+
+    let browser;
+
+    try {
+      const executablePath =
+        "/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium";
+
+      browser = await puppeteer.launch({
+        headless: true,
+        executablePath,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-accelerated-2d-canvas",
+          "--no-first-run",
+          "--no-zygote",
+          "--single-process",
+          "--disable-gpu",
+          "--disable-extensions",
+          "--disable-plugins",
+        ],
+      });
+
+      const page = await browser.newPage();
+
+      await page.setViewport({
+        width: 1200,
+        height: 1600,
+        deviceScaleFactor: 2,
+      });
+
+      await page.setContent(html, {
+        waitUntil: ["networkidle0", "domcontentloaded"],
+        timeout: 30000,
+      });
+
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        margin: {
+          top: "0.5in",
+          right: "0.5in",
+          bottom: "0.5in",
+          left: "0.5in",
+        },
+        printBackground: true,
+        preferCSSPageSize: true,
+        displayHeaderFooter: false,
+      });
+
+      console.log(`✅ PDF generated from HTML - Size: ${pdfBuffer.length} bytes`);
+      return pdfBuffer;
+    } catch (error) {
+      console.error("❌ PDF generation from HTML failed:", error);
+      throw new Error(`PDF generation from HTML failed: ${(error as Error).message}`);
+    } finally {
+      if (browser) await browser.close();
+    }
+  }
 }
 
 export const puppeteerPdfService = new PuppeteerPdfService();
