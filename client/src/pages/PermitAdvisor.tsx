@@ -1011,10 +1011,10 @@ export default function PermitAdvisor() {
             <div className="flex items-center justify-between px-2 overflow-x-auto scrollbar-none">
               {workflowSteps.map((step, index) => (
                 <div key={step.id} className="flex items-center flex-shrink-0">
-                  {/* Step Circle */}
+                  {/* Step Circle - Mobile Enhanced */}
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center relative transition-all duration-500 ${
+                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 flex items-center justify-center relative transition-all duration-500 ${
                         step.status === "completed"
                           ? "border-green-400 bg-green-400/20 shadow-lg shadow-green-400/30"
                           : step.status === "processing"
@@ -1025,9 +1025,9 @@ export default function PermitAdvisor() {
                       }`}
                     >
                       {step.status === "completed" ? (
-                        <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-400" />
+                        <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-green-400" />
                       ) : (
-                        <span className={`text-xs font-bold ${
+                        <span className={`text-sm sm:text-base font-bold ${
                           step.status === "processing" ? "text-cyan-300" : 
                           step.step === currentStep ? "text-cyan-300" : "text-gray-400"
                         }`}>
@@ -1035,19 +1035,19 @@ export default function PermitAdvisor() {
                         </span>
                       )}
                     </div>
-                    <div className="mt-1 text-center">
-                      <p className="text-xs font-medium text-gray-300 max-w-12 sm:max-w-16 leading-tight break-words">
+                    <div className="mt-2 text-center">
+                      <p className="text-sm sm:text-base font-medium text-gray-300 max-w-16 sm:max-w-20 leading-tight break-words">
                         {step.title.split(' ').slice(0, 2).join(' ')}
                       </p>
                     </div>
                   </div>
                   
-                  {/* Enhanced Connection Arrow */}
+                  {/* Enhanced Connection Arrow - Mobile Enhanced */}
                   {index < workflowSteps.length - 1 && (
-                    <div className="px-1 sm:px-2 flex items-center">
+                    <div className="px-2 sm:px-3 flex items-center">
                       <div className="relative">
                         <ArrowRight
-                          className={`h-3 w-3 sm:h-4 sm:w-4 transition-all duration-500 ${
+                          className={`h-4 w-4 sm:h-5 sm:w-5 transition-all duration-500 ${
                             step.status === "completed"
                               ? "text-green-400 scale-110"
                               : "text-gray-500"
@@ -1055,7 +1055,7 @@ export default function PermitAdvisor() {
                         />
                         {step.status === "completed" && (
                           <div className="absolute inset-0 animate-ping">
-                            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-green-400/50" />
+                            <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 text-green-400/50" />
                           </div>
                         )}
                       </div>
