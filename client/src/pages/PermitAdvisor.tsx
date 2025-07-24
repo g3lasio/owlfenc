@@ -416,14 +416,14 @@ export default function PermitAdvisor() {
   return (
     <div className=" bg-gradient-to-br pb-40 from-slate-950 via-gray-900 to-slate-800">
       {/* Header with cyberpunk styling */}
-      <div className="relative  bg-gradient-to-r from-slate-900/50 to-gray-900/50 backdrop-blur-sm">
+      <div className="relative bg-gradient-to-r from-slate-900/50 to-gray-900/50 backdrop-blur-sm">
         <div className="absolute inset-0 bg-gray-800/10 opacity-30"></div>
-        <div className="relative max-w-6xl mx-auto px-6 py-12">
+        <div className="relative max-w-6xl mx-auto px-6 py-8">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-cyan-300 via-blue-300 to-cyan-300 bg-clip-text text-transparent mb-4">
+            <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-cyan-300 via-blue-300 to-cyan-300 bg-clip-text text-transparent mb-3">
               Mervin DeepSearch
             </h1>
-            <p className="text-xl text-gray-300 mb-8">
+            <p className="text-lg text-gray-300 mb-4">
               AI-Powered Permit Analysis & Regulatory Intelligence
             </p>
             <div className="flex items-center justify-center gap-2 text-cyan-300">
@@ -436,173 +436,217 @@ export default function PermitAdvisor() {
         </div>
       </div>
 
-      {/* Search Interface */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+      {/* Search History Section - Moved to top */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4">
+        <div className="flex justify-end">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 h-10 text-sm px-4"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-cyan-500/20 rounded-md flex items-center justify-center">
+                    📋
+                  </div>
+                  <span>Search History</span>
+                </div>
+              </Button>
+            </DialogTrigger>
+
+            <DialogContent className="max-w-2xl bg-slate-900/95 border-cyan-400/30 backdrop-blur-md">
+              <DialogHeader>
+                <DialogTitle className="text-cyan-300 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+                    📋
+                  </div>
+                  Recent Searches
+                </DialogTitle>
+              </DialogHeader>
+
+              <ScrollArea className="max-h-[60vh] pr-4">
+                {/* Search filter */}
+                <div className="mb-4 p-3 bg-slate-900/30 rounded-lg border border-cyan-400/30">
+                  <Input
+                    placeholder="Search history... (address, project type)"
+                    value={searchFilter}
+                    onChange={(e) => setSearchFilter(e.target.value)}
+                    className="bg-slate-900/50 border-cyan-600/50 text-cyan-300 placeholder-gray-400"
+                  />
+                </div>
+
+                {historyLoading ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto mb-4"></div>
+                    <p className="text-gray-400">Loading history...</p>
+                  </div>
+                ) : filteredHistory.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-gradient-to-r from-slate-600 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
+                      📋
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-400 mb-2">
+                      No search history found
+                    </h3>
+                    <p className="text-gray-500 text-sm">
+                      Your recent permit searches will appear here
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredHistory.map((item: any, index: number) => (
+                      <div key={item.id}>
+                        <div
+                          onClick={() => loadFromHistory(item)}
+                          className="group relative p-4 bg-slate-900/40 hover:bg-slate-900/70 border border-cyan-400/30 hover:border-cyan-300/50 rounded-lg cursor-pointer transition-all duration-300"
+                        >
+                          {/* Holographic border effect */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-transparent to-blue-500/10 opacity-0 group-hover:opacity-100 rounded-lg transition-opacity duration-300"></div>
+
+                          <div className="relative space-y-3">
+                            {/* Header with project type and date */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">
+                                  {getProjectIcon(item.projectType)}
+                                </span>
+                                <Badge
+                                  className={`${getProjectTypeColor(item.projectType)} text-xs font-medium`}
+                                >
+                                  {item.projectType
+                                    .charAt(0)
+                                    .toUpperCase() +
+                                    item.projectType.slice(1)}
+                                </Badge>
+                              </div>
+                              <span className="text-xs text-gray-400 font-mono">
+                                {formatHistoryDate(item.createdAt)}
+                              </span>
+                            </div>
+
+                            {/* Address */}
+                            <div className="space-y-1">
+                              <p className="text-cyan-300 font-medium text-sm line-clamp-1">
+                                {item.address}
+                              </p>
+                            </div>
+
+                            {/* Quick stats */}
+                            <div className="flex items-center gap-4 text-xs text-gray-500">
+                              {item.results?.requiredPermits && (
+                                <span className="flex items-center gap-1">
+                                  🏛️ {item.results.requiredPermits.length}{" "}
+                                  permits
+                                </span>
+                              )}
+                              {item.results?.contactInformation && (
+                                <span className="flex items-center gap-1">
+                                  📞{" "}
+                                  {item.results.contactInformation.length}{" "}
+                                  contacts
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Hover effect indicator */}
+                          <div className="absolute right-4 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                          </div>
+                        </div>
+
+                        {index < filteredHistory.length - 1 && (
+                          <Separator className="my-3 bg-cyan-400/30" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+
+              {filteredHistory.length > 0 && (
+                <div className="flex justify-center pt-4 border-t border-gray-700/30">
+                  <p className="text-xs text-gray-500">
+                    Showing {filteredHistory.length} of {historyData.length}{" "}
+                    searches
+                  </p>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      {/* Search Interface - Compressed */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2">
         <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-sm">
-          <CardHeader className="text-center px-4 sm:px-6">
-            <CardTitle className="text-lg sm:text-xl lg:text-2xl text-cyan-300 flex items-center justify-center gap-2">
-              <div className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></div>
+          <CardHeader className="text-center px-4 sm:px-6 py-4">
+            <CardTitle className="text-lg text-cyan-300 flex items-center justify-center gap-2">
+              <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
               <span className="truncate">Property & Project Analysis</span>
             </CardTitle>
-            <CardDescription className="text-gray-400 text-sm sm:text-base">
-              Enter property details for comprehensive permit analysis
-            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              {/* Address Input with Cyberpunk Border */}
-              <div className="relative overflow-visible bg-transparent">
-                {/* Cyberpunk corner borders for address */}
-                <div className="absolute inset-0 pointer-events-none">
-                  {/* Corner arrows - top left */}
-                  <div className="absolute top-0 left-0 w-8 h-8">
-                    <div className="absolute top-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                    <div className="absolute top-0 left-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                    <div className="absolute top-1.5 left-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
-                    <div className="absolute top-1.5 left-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
-                  </div>
-
-                  {/* Corner arrows - top right */}
-                  <div className="absolute top-0 right-0 w-8 h-8">
-                    <div className="absolute top-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                    <div className="absolute top-0 right-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                    <div className="absolute top-1.5 right-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
-                    <div className="absolute top-1.5 right-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
-                  </div>
-
-                  {/* Corner arrows - bottom left */}
-                  <div className="absolute bottom-0 left-0 w-8 h-8">
-                    <div className="absolute bottom-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                    <div className="absolute bottom-0 left-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                    <div className="absolute bottom-1.5 left-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
-                    <div className="absolute bottom-1.5 left-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
-                  </div>
-
-                  {/* Corner arrows - bottom right */}
-                  <div className="absolute bottom-0 right-0 w-8 h-8">
-                    <div className="absolute bottom-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                    <div className="absolute bottom-0 right-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                    <div className="absolute bottom-1.5 right-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
-                    <div className="absolute bottom-1.5 right-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
-                  </div>
-
-                  {/* Side scanning lines */}
-                  <div className="absolute top-4 left-0 w-0.5 h-1/3 bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent opacity-60 animate-pulse"></div>
-                  <div className="absolute top-4 right-0 w-0.5 h-1/3 bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent opacity-60 animate-pulse delay-300"></div>
-                  <div className="absolute bottom-4 left-4 w-1/3 h-0.5 bg-gradient-to-r from-transparent via-blue-500/80 to-transparent opacity-60 animate-pulse delay-500"></div>
-                  <div className="absolute bottom-4 right-4 w-1/3 h-0.5 bg-gradient-to-l from-transparent via-blue-500/80 to-transparent opacity-60 animate-pulse delay-700"></div>
+          <CardContent className="space-y-4 px-4 sm:px-6 pb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Address Input - Simplified */}
+              <div className="relative bg-slate-900/30 border border-cyan-500/30 rounded-lg p-3 hover:border-cyan-400/50 transition-colors">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-cyan-300">
+                    Property Address
+                  </label>
+                  <MapboxPlacesAutocomplete
+                    onPlaceSelect={handleAddressSelect}
+                    onChange={() => {}}
+                    className="w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[40px]"
+                    placeholder="Enter property address..."
+                  />
                 </div>
-
-                <div className="relative z-10 p-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-cyan-300">
-                      Property Address
-                    </label>
-                    <MapboxPlacesAutocomplete
-                      onPlaceSelect={handleAddressSelect}
-                      onChange={() => {}}
-                      className="w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[44px]"
-                      placeholder="Enter property address..."
-                    />
-                  </div>
-                </div>
+                {/* Subtle corner accent */}
+                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan-400/50 rounded-tl-lg"></div>
+                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-cyan-400/50 rounded-br-lg"></div>
               </div>
 
-              {/* Project Type with Cyberpunk Border */}
-              <div className="relative overflow-visible bg-transparent">
-                {/* Cyberpunk corner borders for project type */}
-                <div className="absolute inset-0 pointer-events-none">
-                  {/* Corner arrows - top left */}
-                  <div className="absolute top-0 left-0 w-8 h-8">
-                    <div className="absolute top-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                    <div className="absolute top-0 left-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                    <div className="absolute top-1.5 left-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
-                    <div className="absolute top-1.5 left-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
-                  </div>
-
-                  {/* Corner arrows - top right */}
-                  <div className="absolute top-0 right-0 w-8 h-8">
-                    <div className="absolute top-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                    <div className="absolute top-0 right-0 w-0.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                    <div className="absolute top-1.5 right-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
-                    <div className="absolute top-1.5 right-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
-                  </div>
-
-                  {/* Corner arrows - bottom left */}
-                  <div className="absolute bottom-0 left-0 w-8 h-8">
-                    <div className="absolute bottom-0 left-0 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                    <div className="absolute bottom-0 left-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                    <div className="absolute bottom-1.5 left-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
-                    <div className="absolute bottom-1.5 left-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
-                  </div>
-
-                  {/* Corner arrows - bottom right */}
-                  <div className="absolute bottom-0 right-0 w-8 h-8">
-                    <div className="absolute bottom-0 right-0 w-6 h-0.5 bg-gradient-to-l from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                    <div className="absolute bottom-0 right-0 w-0.5 h-6 bg-gradient-to-t from-cyan-400 to-blue-500 shadow-lg shadow-cyan-400/50"></div>
-                    <div className="absolute bottom-1.5 right-1.5 w-3 h-0.5 bg-cyan-400/60"></div>
-                    <div className="absolute bottom-1.5 right-1.5 w-0.5 h-3 bg-cyan-400/60"></div>
-                  </div>
-
-                  {/* Side scanning lines */}
-                  <div className="absolute top-4 left-0 w-0.5 h-1/3 bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent opacity-60 animate-pulse delay-200"></div>
-                  <div className="absolute top-4 right-0 w-0.5 h-1/3 bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent opacity-60 animate-pulse delay-500"></div>
-                  <div className="absolute bottom-4 left-4 w-1/3 h-0.5 bg-gradient-to-r from-transparent via-blue-500/80 to-transparent opacity-60 animate-pulse delay-700"></div>
-                  <div className="absolute bottom-4 right-4 w-1/3 h-0.5 bg-gradient-to-l from-transparent via-blue-500/80 to-transparent opacity-60 animate-pulse delay-900"></div>
+              {/* Project Type - Simplified */}
+              <div className="relative bg-slate-900/30 border border-cyan-500/30 rounded-lg p-3 hover:border-cyan-400/50 transition-colors">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-cyan-300">
+                    Project Type
+                  </label>
+                  <Select value={projectType} onValueChange={setProjectType}>
+                    <SelectTrigger className="w-full bg-slate-900/50 border-cyan-500/30 text-white focus:border-cyan-400 min-h-[40px]">
+                      <SelectValue placeholder="Select project type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-cyan-500/30 max-h-[200px]">
+                      <SelectItem value="fence">Fence Installation</SelectItem>
+                      <SelectItem value="deck">Deck Construction</SelectItem>
+                      <SelectItem value="addition">Home Addition</SelectItem>
+                      <SelectItem value="renovation">Renovation</SelectItem>
+                      <SelectItem value="electrical">Electrical Work</SelectItem>
+                      <SelectItem value="plumbing">Plumbing</SelectItem>
+                      <SelectItem value="roofing">Roofing</SelectItem>
+                      <SelectItem value="hvac">HVAC Installation</SelectItem>
+                      <SelectItem value="concrete">Concrete Work</SelectItem>
+                      <SelectItem value="landscaping">Landscaping</SelectItem>
+                      <SelectItem value="pool">Pool Installation</SelectItem>
+                      <SelectItem value="solar">Solar Panel Installation</SelectItem>
+                      <SelectItem value="siding">Siding</SelectItem>
+                      <SelectItem value="windows">Window Replacement</SelectItem>
+                      <SelectItem value="demolition">Demolition</SelectItem>
+                      <SelectItem value="garage">Garage Construction</SelectItem>
+                      <SelectItem value="shed">Shed Installation</SelectItem>
+                      <SelectItem value="driveway">Driveway</SelectItem>
+                      <SelectItem value="bathroom">Bathroom Remodel</SelectItem>
+                      <SelectItem value="kitchen">Kitchen Remodel</SelectItem>
+                      <SelectItem value="basement">Basement Finishing</SelectItem>
+                      <SelectItem value="attic">Attic Conversion</SelectItem>
+                      <SelectItem value="porch">Porch/Patio</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-
-                <div className="relative z-10 p-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-cyan-300">
-                      Project Type
-                    </label>
-                    <Select value={projectType} onValueChange={setProjectType}>
-                      <SelectTrigger className="w-full bg-slate-900/50 border-cyan-500/30 text-white focus:border-cyan-400 min-h-[44px]">
-                        <SelectValue placeholder="Select project type" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-cyan-500/30 max-h-[200px] ">
-                        <SelectItem value="fence">
-                          Fence Installation
-                        </SelectItem>
-                        <SelectItem value="deck">Deck Construction</SelectItem>
-                        <SelectItem value="addition">Home Addition</SelectItem>
-                        <SelectItem value="renovation">Renovation</SelectItem>
-                        <SelectItem value="electrical">
-                          Electrical Work
-                        </SelectItem>
-                        <SelectItem value="plumbing">Plumbing</SelectItem>
-                        <SelectItem value="roofing">Roofing</SelectItem>
-                        <SelectItem value="hvac">HVAC Installation</SelectItem>
-                        <SelectItem value="concrete">Concrete Work</SelectItem>
-                        <SelectItem value="landscaping">Landscaping</SelectItem>
-                        <SelectItem value="pool">Pool Installation</SelectItem>
-                        <SelectItem value="solar">
-                          Solar Panel Installation
-                        </SelectItem>
-                        <SelectItem value="siding">Siding</SelectItem>
-                        <SelectItem value="windows">
-                          Window Replacement
-                        </SelectItem>
-                        <SelectItem value="demolition">Demolition</SelectItem>
-                        <SelectItem value="garage">
-                          Garage Construction
-                        </SelectItem>
-                        <SelectItem value="shed">Shed Installation</SelectItem>
-                        <SelectItem value="driveway">Driveway</SelectItem>
-                        <SelectItem value="bathroom">
-                          Bathroom Remodel
-                        </SelectItem>
-                        <SelectItem value="kitchen">Kitchen Remodel</SelectItem>
-                        <SelectItem value="basement">
-                          Basement Finishing
-                        </SelectItem>
-                        <SelectItem value="attic">Attic Conversion</SelectItem>
-                        <SelectItem value="porch">Porch/Patio</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                {/* Subtle corner accent */}
+                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyan-400/50 rounded-tr-lg"></div>
+                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyan-400/50 rounded-bl-lg"></div>
               </div>
             </div>
 
@@ -614,18 +658,18 @@ export default function PermitAdvisor() {
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
                 placeholder="Describe your project in detail (e.g., materials, scope, square footage)..."
-                className="w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[80px] resize-none"
+                className="w-full bg-slate-900/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20 min-h-[60px] resize-none"
               />
             </div>
 
-            {/* Responsive button layout */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            {/* Single button layout */}
+            <div className="flex justify-center">
               <Button
                 onClick={handleSearch}
                 disabled={isLoading || !selectedAddress || !projectType}
-                className="w-full sm:flex-1 relative  bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border border-cyan-400/30 shadow-lg shadow-cyan-400/20 transition-all duration-300 h-12 text-sm sm:text-base"
+                className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border border-cyan-400/30 shadow-lg shadow-cyan-400/20 transition-all duration-300 text-white font-medium"
               >
-                <span className="relative z-10 flex items-center justify-center gap-2">
+                <span className="flex items-center justify-center gap-2">
                   {isLoading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -634,154 +678,11 @@ export default function PermitAdvisor() {
                   ) : (
                     <>
                       🔍
-                      <span className="hidden sm:inline">
-                        Run DeepSearch Analysis
-                      </span>
-                      <span className="sm:hidden">Run Analysis</span>
+                      <span>Run DeepSearch Analysis</span>
                     </>
                   )}
                 </span>
-                {!isLoading && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-                )}
               </Button>
-
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full sm:w-auto border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 h-12 text-sm sm:text-base px-4"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-cyan-500/20 rounded-md flex items-center justify-center">
-                        📋
-                      </div>
-                      <span className="hidden sm:inline">Search History</span>
-                      <span className="sm:hidden">History</span>
-                    </div>
-                  </Button>
-                </DialogTrigger>
-
-                <DialogContent className="max-w-2xl bg-slate-900/95 border-cyan-400/30 backdrop-blur-md">
-                  <DialogHeader>
-                    <DialogTitle className="text-cyan-300 flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
-                        📋
-                      </div>
-                      Recent Searches
-                    </DialogTitle>
-                  </DialogHeader>
-
-                  <ScrollArea className="max-h-[60vh] pr-4">
-                    {/* Buscador de historial */}
-                    <div className="mb-4 p-3 bg-slate-900/30 rounded-lg border border-cyan-400/30">
-                      <Input
-                        placeholder="Buscar en historial... (dirección, tipo de proyecto)"
-                        value={searchFilter}
-                        onChange={(e) => setSearchFilter(e.target.value)}
-                        className="bg-slate-900/50 border-cyan-600/50 text-cyan-300 placeholder-gray-400"
-                      />
-                    </div>
-
-                    {historyLoading ? (
-                      <div className="text-center py-12">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto mb-4"></div>
-                        <p className="text-gray-400">Cargando historial...</p>
-                      </div>
-                    ) : filteredHistory.length === 0 ? (
-                      <div className="text-center py-12">
-                        <div className="w-16 h-16 bg-gradient-to-r from-slate-600 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
-                          📋
-                        </div>
-                        <h3 className="text-lg font-medium text-gray-400 mb-2">
-                          No search history found
-                        </h3>
-                        <p className="text-gray-500 text-sm">
-                          Your recent permit searches will appear here
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {filteredHistory.map((item: any, index: number) => (
-                          <div key={item.id}>
-                            <div
-                              onClick={() => loadFromHistory(item)}
-                              className="group relative p-4 bg-slate-900/40 hover:bg-slate-900/70 border border-cyan-400/30 hover:border-cyan-300/50 rounded-lg cursor-pointer transition-all duration-300"
-                            >
-                              {/* Holographic border effect */}
-                              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-transparent to-blue-500/10 opacity-0 group-hover:opacity-100 rounded-lg transition-opacity duration-300"></div>
-
-                              <div className="relative space-y-3">
-                                {/* Header with project type and date */}
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-lg">
-                                      {getProjectIcon(item.projectType)}
-                                    </span>
-                                    <Badge
-                                      className={`${getProjectTypeColor(item.projectType)} text-xs font-medium`}
-                                    >
-                                      {item.projectType
-                                        .charAt(0)
-                                        .toUpperCase() +
-                                        item.projectType.slice(1)}
-                                    </Badge>
-                                  </div>
-                                  <span className="text-xs text-gray-400 font-mono">
-                                    {formatHistoryDate(item.createdAt)}
-                                  </span>
-                                </div>
-
-                                {/* Address */}
-                                <div className="space-y-1">
-                                  <p className="text-cyan-300 font-medium text-sm line-clamp-1">
-                                    {item.address}
-                                  </p>
-                                </div>
-
-                                {/* Quick stats */}
-                                <div className="flex items-center gap-4 text-xs text-gray-500">
-                                  {item.results?.requiredPermits && (
-                                    <span className="flex items-center gap-1">
-                                      🏛️ {item.results.requiredPermits.length}{" "}
-                                      permits
-                                    </span>
-                                  )}
-                                  {item.results?.contactInformation && (
-                                    <span className="flex items-center gap-1">
-                                      📞{" "}
-                                      {item.results.contactInformation.length}{" "}
-                                      contacts
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Hover effect indicator */}
-                              <div className="absolute right-4 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                              </div>
-                            </div>
-
-                            {index < filteredHistory.length - 1 && (
-                              <Separator className="my-3 bg-cyan-400/30" />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </ScrollArea>
-
-                  {filteredHistory.length > 0 && (
-                    <div className="flex justify-center pt-4 border-t border-gray-700/30">
-                      <p className="text-xs text-gray-500">
-                        Showing {filteredHistory.length} of {historyData.length}{" "}
-                        searches
-                      </p>
-                    </div>
-                  )}
-                </DialogContent>
-              </Dialog>
             </div>
           </CardContent>
         </Card>
