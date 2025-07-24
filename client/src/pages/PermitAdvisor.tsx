@@ -1918,27 +1918,85 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                       <div className="flex-1 space-y-3">
                                         <div>
                                           <h3 className="text-xl font-semibold text-emerald-300 mb-2">
-                                            {codeSection.section || `Building Code Section ${idx + 1}`}
+                                            {codeSection.section || codeSection.title || `Building Code Section ${idx + 1}`}
                                           </h3>
                                           <p className="text-gray-300 leading-relaxed">
-                                            {codeSection.description || codeSection.requirements || "Code section details"}
+                                            {codeSection.description || codeSection.summary || "Code section details"}
                                           </p>
                                         </div>
 
-                                        {/* Specific Requirements */}
-                                        {codeSection.requirements && Array.isArray(codeSection.requirements) && (
+                                        {/* Enhanced Details Section */}
+                                        {codeSection.details && (
                                           <div className="bg-emerald-500/10 border border-emerald-400/30 rounded-lg p-4">
                                             <h4 className="text-emerald-400 font-medium mb-3 flex items-center gap-2">
+                                              📋 Detailed Requirements
+                                            </h4>
+                                            {typeof codeSection.details === 'string' ? (
+                                              <p className="text-emerald-200 text-sm leading-relaxed whitespace-pre-line">
+                                                {codeSection.details}
+                                              </p>
+                                            ) : Array.isArray(codeSection.details) ? (
+                                              <ul className="text-emerald-200 text-sm space-y-2">
+                                                {codeSection.details.map((detail: any, detailIdx: number) => (
+                                                  <li key={detailIdx} className="flex items-start gap-2">
+                                                    <span className="text-emerald-400">•</span>
+                                                    <span>{typeof detail === 'string' ? detail : detail.description || detail.requirement || JSON.stringify(detail)}</span>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            ) : (
+                                              <div className="text-emerald-200 text-sm">
+                                                {JSON.stringify(codeSection.details, null, 2)}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+
+                                        {/* Specific Requirements */}
+                                        {codeSection.requirements && Array.isArray(codeSection.requirements) && (
+                                          <div className="bg-green-500/10 border border-green-400/30 rounded-lg p-4">
+                                            <h4 className="text-green-400 font-medium mb-3 flex items-center gap-2">
                                               ✅ Specific Requirements
                                             </h4>
-                                            <ul className="text-emerald-200 text-sm space-y-2">
-                                              {codeSection.requirements.map((req: string, reqIdx: number) => (
+                                            <ul className="text-green-200 text-sm space-y-2">
+                                              {codeSection.requirements.map((req: any, reqIdx: number) => (
                                                 <li key={reqIdx} className="flex items-start gap-2">
-                                                  <span className="text-emerald-400">•</span>
-                                                  <span>{req}</span>
+                                                  <span className="text-green-400">•</span>
+                                                  <span>
+                                                    {typeof req === 'string' ? req : req.description || req.requirement || JSON.stringify(req)}
+                                                  </span>
+                                                  {/* Show additional details if available */}
+                                                  {typeof req === 'object' && req.details && (
+                                                    <div className="ml-4 mt-1 text-xs text-green-300 italic">
+                                                      {req.details}
+                                                    </div>
+                                                  )}
                                                 </li>
                                               ))}
                                             </ul>
+                                          </div>
+                                        )}
+
+                                        {/* Specifications */}
+                                        {codeSection.specifications && (
+                                          <div className="bg-cyan-500/10 border border-cyan-400/30 rounded-lg p-4">
+                                            <h4 className="text-cyan-400 font-medium mb-3 flex items-center gap-2">
+                                              🔧 Technical Specifications
+                                            </h4>
+                                            {Array.isArray(codeSection.specifications) ? (
+                                              <ul className="text-cyan-200 text-sm space-y-2">
+                                                {codeSection.specifications.map((spec: any, specIdx: number) => (
+                                                  <li key={specIdx} className="flex items-start gap-2">
+                                                    <span className="text-cyan-400">•</span>
+                                                    <span>{typeof spec === 'string' ? spec : spec.description || JSON.stringify(spec)}</span>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            ) : (
+                                              <p className="text-cyan-200 text-sm">
+                                                {codeSection.specifications}
+                                              </p>
+                                            )}
                                           </div>
                                         )}
 
@@ -1951,6 +2009,83 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                             <p className="text-blue-200 font-mono text-sm">
                                               {codeSection.codeReference}
                                             </p>
+                                            {/* Additional code details */}
+                                            {codeSection.codeDetails && (
+                                              <div className="mt-2 pt-2 border-t border-blue-400/20">
+                                                <p className="text-blue-300 text-xs">
+                                                  {codeSection.codeDetails}
+                                                </p>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+
+                                        {/* Measurements and Dimensions */}
+                                        {codeSection.measurements && (
+                                          <div className="bg-purple-500/10 border border-purple-400/30 rounded-lg p-4">
+                                            <h4 className="text-purple-400 font-medium mb-3 flex items-center gap-2">
+                                              📏 Measurements & Dimensions
+                                            </h4>
+                                            {Array.isArray(codeSection.measurements) ? (
+                                              <ul className="text-purple-200 text-sm space-y-2">
+                                                {codeSection.measurements.map((measurement: any, measIdx: number) => (
+                                                  <li key={measIdx} className="flex items-start gap-2">
+                                                    <span className="text-purple-400">•</span>
+                                                    <span>{typeof measurement === 'string' ? measurement : JSON.stringify(measurement)}</span>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            ) : (
+                                              <p className="text-purple-200 text-sm">
+                                                {codeSection.measurements}
+                                              </p>
+                                            )}
+                                          </div>
+                                        )}
+
+                                        {/* Installation Guidelines */}
+                                        {codeSection.installation && (
+                                          <div className="bg-orange-500/10 border border-orange-400/30 rounded-lg p-4">
+                                            <h4 className="text-orange-400 font-medium mb-3 flex items-center gap-2">
+                                              🔨 Installation Guidelines
+                                            </h4>
+                                            {Array.isArray(codeSection.installation) ? (
+                                              <ul className="text-orange-200 text-sm space-y-2">
+                                                {codeSection.installation.map((guideline: any, guideIdx: number) => (
+                                                  <li key={guideIdx} className="flex items-start gap-2">
+                                                    <span className="text-orange-400">•</span>
+                                                    <span>{typeof guideline === 'string' ? guideline : JSON.stringify(guideline)}</span>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            ) : (
+                                              <p className="text-orange-200 text-sm">
+                                                {codeSection.installation}
+                                              </p>
+                                            )}
+                                          </div>
+                                        )}
+
+                                        {/* Materials */}
+                                        {codeSection.materials && (
+                                          <div className="bg-indigo-500/10 border border-indigo-400/30 rounded-lg p-4">
+                                            <h4 className="text-indigo-400 font-medium mb-3 flex items-center gap-2">
+                                              🧱 Material Requirements
+                                            </h4>
+                                            {Array.isArray(codeSection.materials) ? (
+                                              <ul className="text-indigo-200 text-sm space-y-2">
+                                                {codeSection.materials.map((material: any, matIdx: number) => (
+                                                  <li key={matIdx} className="flex items-start gap-2">
+                                                    <span className="text-indigo-400">•</span>
+                                                    <span>{typeof material === 'string' ? material : JSON.stringify(material)}</span>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            ) : (
+                                              <p className="text-indigo-200 text-sm">
+                                                {codeSection.materials}
+                                              </p>
+                                            )}
                                           </div>
                                         )}
 
@@ -1965,6 +2100,49 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                             </p>
                                           </div>
                                         )}
+
+                                        {/* Violations/Penalties */}
+                                        {codeSection.violations && (
+                                          <div className="bg-red-500/10 border border-red-400/30 rounded-lg p-4">
+                                            <h4 className="text-red-400 font-medium mb-2 flex items-center gap-2">
+                                              🚫 Violations & Penalties
+                                            </h4>
+                                            <p className="text-red-200 text-sm">
+                                              {codeSection.violations}
+                                            </p>
+                                          </div>
+                                        )}
+
+                                        {/* Additional Dynamic Fields */}
+                                        {Object.keys(codeSection).filter(key => 
+                                          !['section', 'title', 'description', 'summary', 'details', 'requirements', 
+                                            'specifications', 'codeReference', 'codeDetails', 'measurements', 
+                                            'installation', 'materials', 'complianceNotes', 'violations'].includes(key)
+                                        ).map((key, keyIdx) => (
+                                          <div key={keyIdx} className="bg-gray-600/20 border border-gray-500/30 rounded-lg p-4">
+                                            <h4 className="text-gray-300 font-medium mb-2 flex items-center gap-2 capitalize">
+                                              🔍 {key.replace(/([A-Z])/g, ' $1').trim()}
+                                            </h4>
+                                            <div className="text-gray-400 text-sm">
+                                              {typeof codeSection[key] === 'string' ? (
+                                                <p>{codeSection[key]}</p>
+                                              ) : Array.isArray(codeSection[key]) ? (
+                                                <ul className="space-y-1">
+                                                  {codeSection[key].map((item: any, itemIdx: number) => (
+                                                    <li key={itemIdx} className="flex items-start gap-2">
+                                                      <span className="text-gray-500">•</span>
+                                                      <span>{typeof item === 'string' ? item : JSON.stringify(item)}</span>
+                                                    </li>
+                                                  ))}
+                                                </ul>
+                                              ) : (
+                                                <pre className="text-xs bg-gray-700/30 p-2 rounded overflow-x-auto">
+                                                  {JSON.stringify(codeSection[key], null, 2)}
+                                                </pre>
+                                              )}
+                                            </div>
+                                          </div>
+                                        ))}
                                       </div>
                                     </div>
                                   </CardContent>
