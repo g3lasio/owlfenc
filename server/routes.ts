@@ -6292,7 +6292,7 @@ Output must be between 200-900 characters in English.`;
 
   app.post("/api/permit/check", async (req: Request, res: Response) => {
     try {
-      console.log("===== INICIO DE SOLICITUD MERVIN DEEPSEARCH =====");
+      console.log("===== INICIO DE SOLICITUD MERVIN DEEPSEARCH ENHANCED =====");
 
       // Validar el esquema de la solicitud
       const permitSchema = z.object({
@@ -6300,6 +6300,7 @@ Output must be between 200-900 characters in English.`;
         projectType: z
           .string()
           .min(3, "El tipo de proyecto es demasiado corto"),
+        projectDescription: z.string().optional(),
       });
 
       const validationResult = permitSchema.safeParse(req.body);
@@ -6315,9 +6316,9 @@ Output must be between 200-900 characters in English.`;
         });
       }
 
-      const { address, projectType } = validationResult.data;
+      const { address, projectType, projectDescription } = validationResult.data;
       console.log(
-        `Consultando permisos para proyecto de ${projectType} en ${address}`,
+        `🔍 Consultando permisos ENHANCED para proyecto de ${projectType} en ${address}`,
       );
 
       // Verificar que tenemos API key de OpenAI configurada
@@ -6329,13 +6330,30 @@ Output must be between 200-900 characters in English.`;
         });
       }
 
-      // Obtener información de permisos
       const startTime = Date.now();
-      const permitData = await permitService.checkPermits(address, projectType);
-      const endTime = Date.now();
+      
+      // ENHANCED: Usar nuevo servicio para building codes específicos por proyecto
+      console.log("🎯 Generando building codes específicos por tipo de proyecto...");
+      const { enhancedPermitService } = await import('./services/enhancedPermitService');
+      
+      let permitData;
+      try {
+        // Intentar usar el servicio mejorado primero
+        permitData = await enhancedPermitService.generateProjectSpecificAnalysis(
+          address,
+          projectType,
+          projectDescription || `${projectType} project`
+        );
+        console.log("✅ Building codes específicos generados exitosamente");
+      } catch (enhancedError) {
+        console.log("⚠️ Enhanced service failed, falling back to original service...");
+        // Fallback al servicio original si el enhanced falla
+        permitData = await permitService.checkPermits(address, projectType);
+      }
 
-      console.log(`Solicitud completada en ${endTime - startTime}ms`);
-      console.log("Información de permisos obtenida correctamente");
+      const endTime = Date.now();
+      console.log(`🚀 Solicitud ENHANCED completada en ${endTime - startTime}ms`);
+      console.log("📋 Building codes específicos del proyecto generados correctamente");
 
       // Guardar la búsqueda en el historial
       try {

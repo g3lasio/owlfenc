@@ -1898,40 +1898,103 @@ You can also drag & drop documents here (permits, plans, estimates)"
 
                     <TabsContent value="codes" className="space-y-4 mt-6">
                       <div className="space-y-4">
-                        <h4 className="text-emerald-300 font-semibold border-b border-emerald-500/30 pb-2 mb-4">
-                          General Construction Requirements
+                        <h4 className="text-emerald-300 font-semibold border-b border-emerald-500/30 pb-2 mb-4 flex items-center gap-2">
+                          <span className="text-xl">📋</span>
+                          Project-Specific Building Codes
                         </h4>
-                        <div className="space-y-3">
-                          <div className="relative">
-                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-green-400/10 to-teal-400/10 rounded-lg"></div>
-                            <Card className="relative bg-gray-800/70 border-emerald-400/30 backdrop-blur-sm">
-                              <CardContent className="p-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div className="space-y-3">
-                                    <h5 className="text-emerald-300 font-medium">
-                                      📏 Setback Requirements
-                                    </h5>
-                                    <ul className="text-gray-300 text-sm space-y-1">
-                                      <li>• Front setback: Check local zoning</li>
-                                      <li>• Side setback: Minimum 5 feet typical</li>
-                                      <li>• Rear setback: Varies by zone</li>
-                                    </ul>
-                                  </div>
-                                  <div className="space-y-3">
-                                    <h5 className="text-emerald-300 font-medium">
-                                      🏗️ Construction Standards
-                                    </h5>
-                                    <ul className="text-gray-300 text-sm space-y-1">
-                                      <li>• Licensed contractor required</li>
-                                      <li>• Proper permits before work</li>
-                                      <li>• Inspections at key milestones</li>
-                                    </ul>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
+                        
+                        {/* Dynamic Building Codes from Enhanced Service */}
+                        {permitData.buildingCodes && Array.isArray(permitData.buildingCodes) && permitData.buildingCodes.length > 0 ? (
+                          <div className="space-y-4">
+                            {permitData.buildingCodes.map((codeSection: any, idx: number) => (
+                              <div key={idx} className="relative">
+                                <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-green-400/10 to-teal-400/10 rounded-lg"></div>
+                                <Card className="relative bg-gray-800/70 border-emerald-400/30 backdrop-blur-sm">
+                                  <CardContent className="p-6">
+                                    <div className="flex items-start gap-4">
+                                      <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-emerald-500 to-green-500 rounded-lg flex items-center justify-center shadow-lg">
+                                        <span className="text-xl">📏</span>
+                                      </div>
+                                      <div className="flex-1 space-y-3">
+                                        <div>
+                                          <h3 className="text-xl font-semibold text-emerald-300 mb-2">
+                                            {codeSection.section || `Building Code Section ${idx + 1}`}
+                                          </h3>
+                                          <p className="text-gray-300 leading-relaxed">
+                                            {codeSection.description || codeSection.requirements || "Code section details"}
+                                          </p>
+                                        </div>
+
+                                        {/* Specific Requirements */}
+                                        {codeSection.requirements && Array.isArray(codeSection.requirements) && (
+                                          <div className="bg-emerald-500/10 border border-emerald-400/30 rounded-lg p-4">
+                                            <h4 className="text-emerald-400 font-medium mb-3 flex items-center gap-2">
+                                              ✅ Specific Requirements
+                                            </h4>
+                                            <ul className="text-emerald-200 text-sm space-y-2">
+                                              {codeSection.requirements.map((req: string, reqIdx: number) => (
+                                                <li key={reqIdx} className="flex items-start gap-2">
+                                                  <span className="text-emerald-400">•</span>
+                                                  <span>{req}</span>
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+
+                                        {/* Code References */}
+                                        {codeSection.codeReference && (
+                                          <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-4">
+                                            <h4 className="text-blue-400 font-medium mb-2 flex items-center gap-2">
+                                              📖 Code Reference
+                                            </h4>
+                                            <p className="text-blue-200 font-mono text-sm">
+                                              {codeSection.codeReference}
+                                            </p>
+                                          </div>
+                                        )}
+
+                                        {/* Compliance Notes */}
+                                        {codeSection.complianceNotes && (
+                                          <div className="bg-yellow-500/10 border border-yellow-400/30 rounded-lg p-4">
+                                            <h4 className="text-yellow-400 font-medium mb-2 flex items-center gap-2">
+                                              ⚠️ Compliance Notes
+                                            </h4>
+                                            <p className="text-yellow-200 text-sm">
+                                              {codeSection.complianceNotes}
+                                            </p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              </div>
+                            ))}
                           </div>
-                        </div>
+                        ) : (
+                          /* Fallback for when enhanced building codes are not available */
+                          <div className="space-y-3">
+                            <div className="relative">
+                              <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-green-400/10 to-teal-400/10 rounded-lg"></div>
+                              <Card className="relative bg-gray-800/70 border-emerald-400/30 backdrop-blur-sm">
+                                <CardContent className="p-4">
+                                  <div className="text-center py-8">
+                                    <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                      <span className="text-2xl">📋</span>
+                                    </div>
+                                    <h3 className="text-lg font-medium text-emerald-300 mb-2">
+                                      Building Codes Analysis
+                                    </h3>
+                                    <p className="text-gray-400 text-sm">
+                                      Project-specific building codes will appear here based on your location and project type.
+                                    </p>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </TabsContent>
 
