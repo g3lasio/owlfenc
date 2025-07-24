@@ -15,6 +15,15 @@ export interface CompanyInfo {
   logo?: string;
 }
 
+// Helper function for file size formatting
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
 export interface BuildingCodeSection {
   section?: string;
   title?: string;
@@ -62,14 +71,37 @@ interface PermitData {
     website?: string;
   }>;
   buildingCodes?: BuildingCodeSection[];
-  processInfo?: any;
-  considerations?: any;
+  process?: any[];
+  specialConsiderations?: any[];
+  contactInfo?: {
+    department?: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+    hours?: string;
+    website?: string;
+    inspector?: string;
+    inspectorPhone?: string;
+    inspectorEmail?: string;
+    onlinePortal?: string;
+    emergencyContact?: string;
+    schedulingPhone?: string;
+  };
   attachedFiles?: Array<{
     id: string;
     name: string;
     size: number;
     type: string;
+    uploadDate?: string;
   }>;
+  clientInfo?: {
+    name?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    projectType?: string;
+  };
+  projectDescription?: string;
 }
 
 export function generatePermitReportHTML(permitData: PermitData, companyInfo: CompanyInfo): string {
@@ -458,6 +490,337 @@ export function generatePermitReportHTML(permitData: PermitData, companyInfo: Co
             font-weight: 500;
         }
         
+        /* Client & Project Information Styles */
+        .client-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .client-card, .project-description-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f7fa 100%);
+            border: 2px solid #0891b2;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .client-section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0c4a6e;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .client-details {
+            display: grid;
+            gap: 12px;
+        }
+        
+        .client-detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0f7fa;
+        }
+        
+        .client-detail-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0369a1;
+        }
+        
+        .client-detail-value {
+            font-size: 14px;
+            color: #164e63;
+            font-weight: 500;
+        }
+        
+        .project-description-content {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 16px;
+            border-left: 4px solid #0891b2;
+        }
+        
+        .project-description-content p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #374151;
+            margin: 0;
+        }
+        
+        /* Process Information Styles */
+        .process-timeline {
+            display: grid;
+            gap: 16px;
+        }
+        
+        .process-step {
+            background: linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%);
+            border: 1px solid #3b82f6;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .process-step-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .process-step-number {
+            width: 32px;
+            height: 32px;
+            background: #3b82f6;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        
+        .process-step-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e40af;
+            margin: 0;
+        }
+        
+        .process-step-content {
+            padding-left: 48px;
+        }
+        
+        .process-step-content p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+        
+        .process-timeline-info, .process-requirements {
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            font-size: 13px;
+            color: #1e40af;
+        }
+        
+        /* Enhanced Contact Information Styles */
+        .enhanced-contact-grid {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .enhanced-contact-card {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            border: 2px solid #6b7280;
+            border-radius: 12px;
+            padding: 24px;
+        }
+        
+        .contact-section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .contact-details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .contact-detail-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+        }
+        
+        .contact-detail-icon {
+            font-size: 20px;
+            width: 32px;
+            text-align: center;
+        }
+        
+        .contact-detail-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .contact-detail-value {
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .inspector-section, .portal-section {
+            background: #f9fafb;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        
+        .inspector-title, .portal-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 12px;
+        }
+        
+        .inspector-details {
+            display: grid;
+            gap: 8px;
+        }
+        
+        .inspector-detail {
+            font-size: 14px;
+            color: #4b5563;
+        }
+        
+        .portal-link {
+            font-size: 14px;
+            color: #2563eb;
+            font-weight: 500;
+            word-break: break-all;
+        }
+        
+        .additional-contacts {
+            background: #f3f4f6;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        
+        .additional-contact-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .additional-contact-item:last-child {
+            border-bottom: none;
+        }
+        
+        /* Special Considerations Styles */
+        .considerations-container {
+            display: grid;
+            gap: 16px;
+        }
+        
+        .consideration-card {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .consideration-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .consideration-number {
+            font-size: 24px;
+        }
+        
+        .consideration-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #92400e;
+            margin: 0;
+        }
+        
+        .consideration-content {
+            background: rgba(251, 191, 36, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .consideration-content p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #78350f;
+            margin: 0;
+        }
+        
+        /* Attached Files Styles */
+        .attached-files-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        
+        .attached-file-item {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .file-icon-container {
+            width: 48px;
+            height: 48px;
+            background: #e2e8f0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .file-details {
+            flex: 1;
+        }
+        
+        .file-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 4px;
+            word-break: break-all;
+        }
+        
+        .file-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: #64748b;
+        }
+        
+        .file-size, .file-date {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
         /* Footer */
         .footer {
             background: #1e293b;
@@ -561,6 +924,63 @@ export function generatePermitReportHTML(permitData: PermitData, companyInfo: Co
             </div>
         </div>
 
+        <!-- Client & Project Information Section -->
+        ${permitData.clientInfo || permitData.projectDescription ? `
+        <div class="content-section no-break">
+            <h2 class="section-title">
+                <div class="section-icon">👥</div>
+                Project & Client Information
+            </h2>
+            <div class="client-info-grid">
+                ${permitData.clientInfo ? `
+                    <div class="client-card no-break">
+                        <h3 class="client-section-title">Client Information</h3>
+                        <div class="client-details">
+                            ${permitData.clientInfo.name ? `
+                                <div class="client-detail-item">
+                                    <div class="client-detail-label">Client Name</div>
+                                    <div class="client-detail-value">${permitData.clientInfo.name}</div>
+                                </div>
+                            ` : ''}
+                            ${permitData.clientInfo.address ? `
+                                <div class="client-detail-item">
+                                    <div class="client-detail-label">Project Address</div>
+                                    <div class="client-detail-value">${permitData.clientInfo.address}</div>
+                                </div>
+                            ` : ''}
+                            ${permitData.clientInfo.phone ? `
+                                <div class="client-detail-item">
+                                    <div class="client-detail-label">Phone</div>
+                                    <div class="client-detail-value">${permitData.clientInfo.phone}</div>
+                                </div>
+                            ` : ''}
+                            ${permitData.clientInfo.email ? `
+                                <div class="client-detail-item">
+                                    <div class="client-detail-label">Email</div>
+                                    <div class="client-detail-value">${permitData.clientInfo.email}</div>
+                                </div>
+                            ` : ''}
+                            ${permitData.clientInfo.projectType ? `
+                                <div class="client-detail-item">
+                                    <div class="client-detail-label">Project Type</div>
+                                    <div class="client-detail-value">${permitData.clientInfo.projectType}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+                ${permitData.projectDescription ? `
+                    <div class="project-description-card no-break">
+                        <h3 class="client-section-title">Project Description</h3>
+                        <div class="project-description-content">
+                            <p>${permitData.projectDescription}</p>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+        ` : ''}
+
         <!-- Executive Summary -->
         <div class="executive-summary no-break">
             <h2 class="section-title">
@@ -581,13 +1001,12 @@ export function generatePermitReportHTML(permitData: PermitData, companyInfo: Co
                     <div class="stat-label">Department Contacts</div>
                 </div>
                 <div class="stat-card no-break">
-                    <div class="stat-number">${permitData.requiredPermits?.reduce((count, permit) => {
-                        if (permit.requiredDocuments) {
-                            return count + (Array.isArray(permit.requiredDocuments) ? permit.requiredDocuments.length : 1);
-                        }
-                        return count;
-                    }, 0) || 0}</div>
-                    <div class="stat-label">Required Documents</div>
+                    <div class="stat-number">${permitData.buildingCodes?.length || 0}</div>
+                    <div class="stat-label">Building Code Sections</div>
+                </div>
+                <div class="stat-card no-break">
+                    <div class="stat-number">${permitData.attachedFiles?.length || 0}</div>
+                    <div class="stat-label">Attached Files</div>
                 </div>
             </div>
         </div>
@@ -720,6 +1139,41 @@ export function generatePermitReportHTML(permitData: PermitData, companyInfo: Co
                 }
             </div>
         </div>
+
+        <!-- Process Information Section -->
+        ${permitData.process && Array.isArray(permitData.process) && permitData.process.length > 0 ? `
+        <div class="content-section no-break">
+            <h2 class="section-title">
+                <div class="section-icon">🔄</div>
+                Permit Process Information
+            </h2>
+            <div class="process-timeline">
+                ${permitData.process.map((step, idx) => `
+                    <div class="process-step no-break">
+                        <div class="process-step-header">
+                            <div class="process-step-number">${idx + 1}</div>
+                            <h4 class="process-step-title">
+                                ${typeof step === "string" ? `Step ${idx + 1}` : step.step || step.title || `Step ${idx + 1}`}
+                            </h4>
+                        </div>
+                        <div class="process-step-content">
+                            <p>${typeof step === "string" ? step : step.description || step.details || step.step || 'Process step details'}</p>
+                            ${typeof step === 'object' && step.timeline ? `
+                                <div class="process-timeline-info">
+                                    <strong>Timeline:</strong> ${step.timeline}
+                                </div>
+                            ` : ''}
+                            ${typeof step === 'object' && step.requirements ? `
+                                <div class="process-requirements">
+                                    <strong>Requirements:</strong> ${Array.isArray(step.requirements) ? step.requirements.join(', ') : step.requirements}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
 
         <!-- Enhanced Building Codes Section - Comprehensive Frontend Data Capture -->
         <div class="content-section">
@@ -917,6 +1371,186 @@ export function generatePermitReportHTML(permitData: PermitData, companyInfo: Co
         </div>
             </div>
         </div>
+
+        <!-- Enhanced Contact Information Section -->
+        <div class="content-section no-break">
+            <h2 class="section-title">
+                <div class="section-icon">📞</div>
+                Comprehensive Contact Information
+            </h2>
+            <div class="enhanced-contact-grid">
+                ${permitData.contactInfo ? `
+                    <div class="enhanced-contact-card no-break">
+                        <h3 class="contact-section-title">Municipal Building Department</h3>
+                        <div class="contact-details-grid">
+                            ${permitData.contactInfo.department ? `
+                                <div class="contact-detail-item">
+                                    <div class="contact-detail-icon">🏛️</div>
+                                    <div>
+                                        <div class="contact-detail-label">Department</div>
+                                        <div class="contact-detail-value">${permitData.contactInfo.department}</div>
+                                    </div>
+                                </div>
+                            ` : ''}
+                            ${permitData.contactInfo.address ? `
+                                <div class="contact-detail-item">
+                                    <div class="contact-detail-icon">📍</div>
+                                    <div>
+                                        <div class="contact-detail-label">Address</div>
+                                        <div class="contact-detail-value">${permitData.contactInfo.address}</div>
+                                    </div>
+                                </div>
+                            ` : ''}
+                            ${permitData.contactInfo.phone ? `
+                                <div class="contact-detail-item">
+                                    <div class="contact-detail-icon">📞</div>
+                                    <div>
+                                        <div class="contact-detail-label">Phone</div>
+                                        <div class="contact-detail-value">${permitData.contactInfo.phone}</div>
+                                    </div>
+                                </div>
+                            ` : ''}
+                            ${permitData.contactInfo.email ? `
+                                <div class="contact-detail-item">
+                                    <div class="contact-detail-icon">📧</div>
+                                    <div>
+                                        <div class="contact-detail-label">Email</div>
+                                        <div class="contact-detail-value">${permitData.contactInfo.email}</div>
+                                    </div>
+                                </div>
+                            ` : ''}
+                            ${permitData.contactInfo.hours ? `
+                                <div class="contact-detail-item">
+                                    <div class="contact-detail-icon">🕒</div>
+                                    <div>
+                                        <div class="contact-detail-label">Office Hours</div>
+                                        <div class="contact-detail-value">${permitData.contactInfo.hours}</div>
+                                    </div>
+                                </div>
+                            ` : ''}
+                            ${permitData.contactInfo.website ? `
+                                <div class="contact-detail-item">
+                                    <div class="contact-detail-icon">🌐</div>
+                                    <div>
+                                        <div class="contact-detail-label">Website</div>
+                                        <div class="contact-detail-value">${permitData.contactInfo.website}</div>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        ${permitData.contactInfo.inspector || permitData.contactInfo.inspectorPhone || permitData.contactInfo.inspectorEmail ? `
+                            <div class="inspector-section">
+                                <h4 class="inspector-title">👷 Assigned Inspector</h4>
+                                <div class="inspector-details">
+                                    ${permitData.contactInfo.inspector ? `
+                                        <div class="inspector-detail">
+                                            <strong>Name:</strong> ${permitData.contactInfo.inspector}
+                                        </div>
+                                    ` : ''}
+                                    ${permitData.contactInfo.inspectorPhone ? `
+                                        <div class="inspector-detail">
+                                            <strong>Phone:</strong> ${permitData.contactInfo.inspectorPhone}
+                                        </div>
+                                    ` : ''}
+                                    ${permitData.contactInfo.inspectorEmail ? `
+                                        <div class="inspector-detail">
+                                            <strong>Email:</strong> ${permitData.contactInfo.inspectorEmail}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        ${permitData.contactInfo.onlinePortal ? `
+                            <div class="portal-section">
+                                <h4 class="portal-title">💻 Online Portal</h4>
+                                <div class="portal-link">${permitData.contactInfo.onlinePortal}</div>
+                            </div>
+                        ` : ''}
+                        
+                        ${permitData.contactInfo.emergencyContact || permitData.contactInfo.schedulingPhone ? `
+                            <div class="additional-contacts">
+                                ${permitData.contactInfo.emergencyContact ? `
+                                    <div class="additional-contact-item">
+                                        <div class="contact-detail-icon">🚨</div>
+                                        <div>
+                                            <div class="contact-detail-label">Emergency Contact</div>
+                                            <div class="contact-detail-value">${permitData.contactInfo.emergencyContact}</div>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                ${permitData.contactInfo.schedulingPhone ? `
+                                    <div class="additional-contact-item">
+                                        <div class="contact-detail-icon">📅</div>
+                                        <div>
+                                            <div class="contact-detail-label">Scheduling Phone</div>
+                                            <div class="contact-detail-value">${permitData.contactInfo.schedulingPhone}</div>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                ` : '<p style="text-align: center; padding: 40px; color: #64748b;">Detailed contact information will be populated automatically based on analysis results.</p>'}
+            </div>
+        </div>
+
+        <!-- Special Considerations Section -->
+        ${permitData.specialConsiderations && Array.isArray(permitData.specialConsiderations) && permitData.specialConsiderations.length > 0 ? `
+        <div class="content-section no-break">
+            <h2 class="section-title">
+                <div class="section-icon">⚠️</div>
+                Special Considerations & Critical Alerts
+            </h2>
+            <div class="considerations-container">
+                ${permitData.specialConsiderations.map((consideration, idx) => `
+                    <div class="consideration-card no-break">
+                        <div class="consideration-header">
+                            <div class="consideration-number">⚠️</div>
+                            <h4 class="consideration-title">Critical Alert #${idx + 1}</h4>
+                        </div>
+                        <div class="consideration-content">
+                            <p>${typeof consideration === "string" ? consideration : JSON.stringify(consideration)}</p>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
+
+        <!-- Attached Files Section -->
+        ${permitData.attachedFiles && Array.isArray(permitData.attachedFiles) && permitData.attachedFiles.length > 0 ? `
+        <div class="content-section no-break">
+            <h2 class="section-title">
+                <div class="section-icon">📎</div>
+                Attached Project Files
+            </h2>
+            <div class="attached-files-container">
+                ${permitData.attachedFiles.map(file => `
+                    <div class="attached-file-item no-break">
+                        <div class="file-icon-container">
+                            ${file.type === 'application/pdf' ? '📄' : 
+                              file.type.startsWith('image/') ? '🖼️' : 
+                              file.type.includes('video/') ? '🎥' :
+                              file.type.includes('word') ? '📝' :
+                              file.type.includes('excel') || file.type.includes('spreadsheet') ? '📊' :
+                              file.type.includes('powerpoint') || file.type.includes('presentation') ? '🎯' :
+                              file.type.includes('text/') ? '📄' :
+                              file.type.includes('audio/') ? '🎵' : '📁'}
+                        </div>
+                        <div class="file-details">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-meta">
+                                <span class="file-size">${formatFileSize(file.size)}</span>
+                                ${file.uploadDate ? `<span class="file-date">Uploaded: ${file.uploadDate}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
 
         <!-- Footer -->
         <div class="footer">
