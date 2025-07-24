@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Search, Clock, Trash2, Paperclip, X, FileText, Upload, Download, MapPin, ArrowRight, ArrowLeft, Eye, Database, Building, RefreshCw } from "lucide-react";
+import { CheckCircle2, Search, Clock, Trash2, Paperclip, X, FileText, Upload, Download, MapPin, ArrowRight, ArrowLeft, Eye, Database, Building, RefreshCw, History, DollarSign } from "lucide-react";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
 import { useToast } from "@/hooks/use-toast";
 import { auth, db } from "@/lib/firebase";
@@ -48,7 +48,21 @@ import {
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { useProfile } from "@/hooks/use-profile";
+import { useAuth } from "@/hooks/use-auth";
 import { generatePermitReportHTML, generatePDFReport, downloadPDFReport } from "@/utils/permitReportGenerator";
+
+interface Project {
+  id: string;
+  clientName: string;
+  address: string;
+  projectType: string;
+  projectDescription?: string;
+  status: string;
+  createdAt: { toDate: () => Date };
+  totalPrice?: number;
+  clientEmail?: string;
+  clientPhone?: string;
+}
 
 interface PermitData {
   name: string;
@@ -130,6 +144,13 @@ export default function PermitAdvisor() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const { toast } = useToast();
   const { profile } = useProfile();
+  const { user } = useAuth();
+  
+  // New states for project selection option
+  const [selectionMode, setSelectionMode] = useState<"manual" | "existing">("manual");
+  const [existingProjects, setExistingProjects] = useState<Project[]>([]);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [loadingProjects, setLoadingProjects] = useState(false);
 
   // Monitor auth state
   useEffect(() => {
@@ -138,6 +159,68 @@ export default function PermitAdvisor() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Load existing projects when user changes to existing mode
+  useEffect(() => {
+    if (selectionMode === "existing" && user?.uid) {
+      loadExistingProjects();
+    }
+  }, [selectionMode, user?.uid]);
+
+  const loadExistingProjects = async () => {
+    if (!user?.uid) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to view your projects",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setLoadingProjects(true);
+      console.log(`🔒 Loading projects for user: ${user.uid}`);
+
+      // Load estimates from Firebase
+      const estimatesRef = collection(db, "estimates");
+      const estimatesQuery = query(
+        estimatesRef,
+        where("userId", "==", user.uid),
+        orderBy("createdAt", "desc"),
+        limit(50)
+      );
+
+      const estimatesSnapshot = await getDocs(estimatesQuery);
+      const projects: Project[] = estimatesSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Project[];
+
+      console.log(`📊 Loaded ${projects.length} projects from Firebase`);
+      setExistingProjects(projects);
+    } catch (error) {
+      console.error("Error loading projects:", error);
+      toast({
+        title: "Error Loading Projects",
+        description: "Failed to load your existing projects",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  const handleProjectSelection = (project: Project) => {
+    setSelectedProject(project);
+    setSelectedAddress(project.address);
+    setProjectType(project.projectType);
+    setProjectDescription(project.projectDescription || `${project.projectType} project for ${project.clientName}`);
+    
+    toast({
+      title: "Project Selected",
+      description: `Loaded project for ${project.clientName}`,
+    });
+  };
 
   // Define wizard steps matching Legal Defense pattern
   const workflowSteps: WizardStep[] = [
@@ -1128,7 +1211,39 @@ export default function PermitAdvisor() {
               </p>
             </CardHeader>
             <CardContent className="space-y-6 px-4 sm:px-6 pb-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Selection Mode Toggle */}
+              <div className="flex justify-center mb-6">
+                <div className="bg-slate-900/50 border border-cyan-500/30 rounded-lg p-1 flex">
+                  <Button
+                    onClick={() => setSelectionMode("manual")}
+                    variant={selectionMode === "manual" ? "default" : "ghost"}
+                    className={`px-6 py-2 transition-all ${
+                      selectionMode === "manual"
+                        ? "bg-cyan-600 text-black hover:bg-cyan-500"
+                        : "text-gray-400 hover:text-cyan-300 hover:bg-slate-800/50"
+                    }`}
+                  >
+                    <MapPin className="h-4 w-4 mr-2" />
+                    Manual Address
+                  </Button>
+                  <Button
+                    onClick={() => setSelectionMode("existing")}
+                    variant={selectionMode === "existing" ? "default" : "ghost"}
+                    className={`px-6 py-2 transition-all ${
+                      selectionMode === "existing"
+                        ? "bg-cyan-600 text-black hover:bg-cyan-500"
+                        : "text-gray-400 hover:text-cyan-300 hover:bg-slate-800/50"
+                    }`}
+                  >
+                    <Database className="h-4 w-4 mr-2" />
+                    Existing Projects
+                  </Button>
+                </div>
+              </div>
+
+              {/* Manual Address Input Mode */}
+              {selectionMode === "manual" && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Address Input */}
                 <div className="relative bg-slate-900/30 border border-cyan-500/30 rounded-lg p-4 hover:border-cyan-400/50 transition-colors">
                   <div className="space-y-3">
@@ -1201,7 +1316,79 @@ export default function PermitAdvisor() {
                   <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyan-400/50 rounded-tr-lg"></div>
                   <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyan-400/50 rounded-bl-lg"></div>
                 </div>
-              </div>
+                </div>
+              )}
+
+              {/* Existing Projects Mode */}
+              {selectionMode === "existing" && (
+                <div className="space-y-4">
+                  {loadingProjects ? (
+                    <div className="flex items-center justify-center py-8">
+                      <RefreshCw className="h-6 w-6 animate-spin text-cyan-400" />
+                      <span className="ml-2 text-gray-400">Loading your projects...</span>
+                    </div>
+                  ) : existingProjects.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Database className="h-12 w-12 mx-auto text-gray-600 mb-4" />
+                      <p className="text-gray-400 mb-2">No existing projects found</p>
+                      <p className="text-sm text-gray-500">
+                        Switch to Manual Address mode to create a new analysis
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <h4 className="text-cyan-300 font-medium flex items-center gap-2">
+                        <History className="h-4 w-4" />
+                        Select from {existingProjects.length} existing project{existingProjects.length !== 1 ? 's' : ''}
+                      </h4>
+                      <div className="grid gap-3 max-h-96 overflow-y-auto">
+                        {existingProjects.map((project) => (
+                          <div
+                            key={project.id}
+                            onClick={() => handleProjectSelection(project)}
+                            className={`relative bg-slate-900/30 border rounded-lg p-4 cursor-pointer transition-all hover:border-cyan-400/50 hover:bg-slate-800/50 ${
+                              selectedProject?.id === project.id
+                                ? "border-cyan-400/70 bg-slate-800/50"
+                                : "border-cyan-500/30"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 min-w-0">
+                                <h5 className="text-white font-medium truncate">
+                                  {project.clientName}
+                                </h5>
+                                <p className="text-cyan-300 text-sm mt-1 line-clamp-1">
+                                  {project.address}
+                                </p>
+                                <div className="flex items-center gap-4 mt-2">
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getProjectTypeColor(project.projectType)}`}>
+                                    {getProjectTypeIcon(project.projectType)} {project.projectType}
+                                  </span>
+                                  {project.totalPrice && (
+                                    <span className="text-green-400 text-sm font-medium flex items-center">
+                                      <DollarSign className="h-3 w-3 mr-1" />
+                                      {new Intl.NumberFormat('en-US', {
+                                        style: 'currency',
+                                        currency: 'USD',
+                                      }).format(project.totalPrice)}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-gray-500 text-xs mt-1">
+                                  Created {project.createdAt?.toDate?.()?.toLocaleDateString() || 'Recently'}
+                                </p>
+                              </div>
+                              {selectedProject?.id === project.id && (
+                                <CheckCircle2 className="h-5 w-5 text-cyan-400 flex-shrink-0" />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Navigation */}
               <div className="flex justify-end pt-4 border-t border-gray-700/30">
