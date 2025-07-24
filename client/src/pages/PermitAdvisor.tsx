@@ -1789,38 +1789,46 @@ You can also drag & drop documents here (permits, plans, estimates)"
               {permitData && !isLoading && (
                 <div className="space-y-6">
                   <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-5 bg-gray-800/50 border border-cyan-500/20">
-                      <TabsTrigger 
-                        value="permits" 
-                        className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
-                      >
-                        Permits
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="codes" 
-                        className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
-                      >
-                        Building Codes
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="process" 
-                        className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
-                      >
-                        Process
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="contact" 
-                        className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
-                      >
-                        Contact
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="considerations" 
-                        className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
-                      >
-                        Alerts
-                      </TabsTrigger>
-                    </TabsList>
+                    {/* Mobile-optimized TabsList */}
+                    <div className="bg-gray-800/50 border border-cyan-500/20 rounded-lg p-1">
+                      <TabsList className="flex w-full bg-transparent gap-1 overflow-x-auto scrollbar-none sm:grid sm:grid-cols-5">
+                        <TabsTrigger 
+                          value="permits" 
+                          className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300 whitespace-nowrap"
+                        >
+                          <span className="hidden sm:inline">Permits</span>
+                          <span className="sm:hidden">📋</span>
+                        </TabsTrigger>
+                        <TabsTrigger 
+                          value="codes" 
+                          className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300 whitespace-nowrap"
+                        >
+                          <span className="hidden sm:inline">Building Codes</span>
+                          <span className="sm:hidden">📏</span>
+                        </TabsTrigger>
+                        <TabsTrigger 
+                          value="process" 
+                          className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300 whitespace-nowrap"
+                        >
+                          <span className="hidden sm:inline">Process</span>
+                          <span className="sm:hidden">🔄</span>
+                        </TabsTrigger>
+                        <TabsTrigger 
+                          value="contact" 
+                          className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300 whitespace-nowrap"
+                        >
+                          <span className="hidden sm:inline">Contact</span>
+                          <span className="sm:hidden">📞</span>
+                        </TabsTrigger>
+                        <TabsTrigger 
+                          value="considerations" 
+                          className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300 whitespace-nowrap"
+                        >
+                          <span className="hidden sm:inline">Alerts</span>
+                          <span className="sm:hidden">⚠️</span>
+                        </TabsTrigger>
+                      </TabsList>
+                    </div>
 
                     <TabsContent value="permits" className="space-y-4 mt-6">
                       {permitData.requiredPermits && permitData.requiredPermits.length > 0 ? (
