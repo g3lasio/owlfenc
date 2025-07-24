@@ -181,23 +181,148 @@ export default function PermitAdvisor() {
       setLoadingProjects(true);
       console.log(`🔒 Loading projects for user: ${user.uid}`);
 
-      // Load estimates from Firebase
-      const estimatesRef = collection(db, "estimates");
-      const estimatesQuery = query(
-        estimatesRef,
-        where("userId", "==", user.uid),
-        orderBy("createdAt", "desc"),
-        limit(50)
+      let allProjects: any[] = [];
+
+      // 1. Load from projects collection (same as Legal Defense)
+      try {
+        const projectsQuery = query(
+          collection(db, "projects"),
+          where("firebaseUserId", "==", user.uid),
+        );
+
+        const projectsSnapshot = await getDocs(projectsQuery);
+        const projectEstimates = projectsSnapshot.docs
+          .filter((doc) => {
+            const data = doc.data();
+            return data.status === "estimate" || data.estimateNumber;
+          })
+          .map((doc) => {
+            const data = doc.data();
+
+            const clientName =
+              data.clientInformation?.name ||
+              data.clientName ||
+              data.client?.name ||
+              "Cliente sin nombre";
+
+            const address =
+              data.clientInformation?.address ||
+              data.clientAddress ||
+              data.client?.address ||
+              data.address ||
+              data.projectAddress ||
+              data.location ||
+              data.workAddress ||
+              data.propertyAddress ||
+              "";
+
+            const projectType = data.projectType || data.projectDetails?.type || "fence";
+
+            const projectDescription = 
+              data.projectDetails?.description ||
+              data.projectDescription ||
+              data.description ||
+              `${projectType} project for ${clientName}`;
+
+            return {
+              id: doc.id,
+              clientName: clientName,
+              address: address,
+              projectType: projectType,
+              projectDescription: projectDescription,
+              status: data.status || "draft",
+              createdAt: data.createdAt || { toDate: () => new Date() },
+              totalPrice: data.projectTotalCosts?.totalSummary?.finalTotal || 
+                         data.projectTotalCosts?.total ||
+                         data.total ||
+                         data.estimateAmount ||
+                         0,
+              clientEmail: data.clientInformation?.email || data.clientEmail || "",
+              clientPhone: data.clientInformation?.phone || data.clientPhone || "",
+            };
+          });
+
+        allProjects = [...allProjects, ...projectEstimates];
+        console.log(`📊 Loaded ${projectEstimates.length} projects from projects collection`);
+      } catch (projectError) {
+        console.warn("Could not load from projects collection:", projectError);
+      }
+
+      // 2. Load from estimates collection (same as Legal Defense)
+      try {
+        const estimatesQuery = query(
+          collection(db, "estimates"),
+          where("firebaseUserId", "==", user.uid),
+        );
+
+        const estimatesSnapshot = await getDocs(estimatesQuery);
+        const firebaseEstimates = estimatesSnapshot.docs.map((doc) => {
+          const data = doc.data();
+
+          const clientName = data.clientName || data.client?.name || "Cliente sin nombre";
+          const address = data.address || 
+                         data.clientAddress || 
+                         data.projectAddress ||
+                         data.location ||
+                         data.workAddress ||
+                         data.propertyAddress ||
+                         "";
+          const projectType = data.projectType || "fence";
+          const projectDescription = data.projectDescription || `${projectType} project for ${clientName}`;
+
+          return {
+            id: doc.id,
+            clientName: clientName,
+            address: address,
+            projectType: projectType,
+            projectDescription: projectDescription,
+            status: data.status || "draft",
+            createdAt: data.createdAt || { toDate: () => new Date() },
+            totalPrice: data.total || data.estimateAmount || 0,
+            clientEmail: data.clientEmail || "",
+            clientPhone: data.clientPhone || "",
+          };
+        });
+
+        allProjects = [...allProjects, ...firebaseEstimates];
+        console.log(`📋 Loaded ${firebaseEstimates.length} additional estimates`);
+      } catch (estimatesError) {
+        console.warn("Could not load from estimates collection:", estimatesError);
+      }
+
+      // 3. Filter for valid projects with comprehensive data validation
+      const validProjects = allProjects.filter((project: any) => {
+        const hasClientName = project.clientName && 
+                             project.clientName !== "Cliente sin nombre" && 
+                             project.clientName.trim().length > 0;
+        
+        const hasAddress = project.address && project.address.trim().length > 0;
+        
+        const isValidProject = hasClientName && hasAddress;
+        
+        if (!isValidProject) {
+          console.warn("⚠️ Invalid project filtered out:", {
+            id: project.id,
+            clientName: project.clientName,
+            hasAddress,
+            hasClientName
+          });
+        }
+        
+        return isValidProject;
+      });
+
+      // Remove duplicates by ID
+      const uniqueProjects = validProjects.filter((project, index, self) => 
+        index === self.findIndex(p => p.id === project.id)
       );
 
-      const estimatesSnapshot = await getDocs(estimatesQuery);
-      const projects: Project[] = estimatesSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Project[];
-
-      console.log(`📊 Loaded ${projects.length} projects from Firebase`);
-      setExistingProjects(projects);
+      setExistingProjects(uniqueProjects);
+      console.log(`✅ Total loaded: ${uniqueProjects.length} unique valid projects for Permit Advisor`);
+      
+      if (uniqueProjects.length === 0) {
+        console.log("❌ No valid projects found. User needs to create estimates first.");
+      }
     } catch (error) {
       console.error("Error loading projects:", error);
       toast({
@@ -457,9 +582,36 @@ export default function PermitAdvisor() {
       kitchen: "bg-green-500/20 text-green-300 border-green-500/30",
       addition: "bg-purple-500/20 text-purple-300 border-purple-500/30",
       concrete: "bg-gray-500/20 text-gray-300 border-gray-500/30",
+      fence: "bg-teal-500/20 text-teal-300 border-teal-500/30",
+      deck: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+      hvac: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+      pool: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
       default: "bg-teal-500/20 text-teal-300 border-teal-500/30",
     };
     return colors[projectType.toLowerCase()] || colors.default;
+  }
+
+  const getProjectTypeIcon = (projectType: string): string => {
+    const icons: Record<string, string> = {
+      electrical: '⚡',
+      plumbing: '🚿',
+      roofing: '🏠',
+      bathroom: '🛁',
+      kitchen: '🍳',
+      addition: '🏗️',
+      concrete: '🧱',
+      fence: '🚧',
+      deck: '🏘️',
+      pool: '🏊',
+      hvac: '❄️',
+      solar: '☀️',
+      garage: '🏢',
+      shed: '🏠',
+      driveway: '🛣️',
+      default: '🔧'
+    };
+    
+    return icons[projectType.toLowerCase()] || icons.default;
   };
 
   const loadFromHistory = (historyItem: any) => {
