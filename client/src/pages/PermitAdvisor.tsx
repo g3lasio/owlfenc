@@ -2151,58 +2151,20 @@ You can also drag & drop documents here (permits, plans, estimates)"
                           </div>
                         )}
                         
-                        {/* Default Contact Information (fallback) */}
+                        {/* No Contact Data Found Message */}
                         {!permitData?.contactInfo && !permitData?.contactInformation && (
-                          <div className="relative">
-                            <div className="absolute inset-0 bg-gradient-to-r from-purple-400/10 via-blue-400/10 to-cyan-400/10 rounded-lg"></div>
-                            <Card className="relative bg-gray-800/70 border-purple-400/30 backdrop-blur-sm">
-                              <CardContent className="p-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                  <div className="space-y-4">
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-                                        <span className="text-lg">🏛️</span>
-                                      </div>
-                                      <div>
-                                        <h5 className="text-purple-300 font-semibold">
-                                          {permitData?.location || 'Municipal'} Building Department
-                                        </h5>
-                                        <p className="text-gray-400 text-sm">Permits & Inspections Office</p>
-                                      </div>
-                                    </div>
-                                    
-                                    <div className="space-y-3">
-                                      <div className="flex items-center gap-3">
-                                        <span className="text-green-400">📞</span>
-                                        <div>
-                                          <p className="text-green-300 font-medium">General Information</p>
-                                          <p className="text-gray-300 text-sm">Contact your local building department</p>
-                                        </div>
-                                      </div>
-                                      
-                                      <div className="flex items-center gap-3">
-                                        <span className="text-blue-400">🕒</span>
-                                        <div>
-                                          <p className="text-blue-300 font-medium">Typical Hours</p>
-                                          <p className="text-gray-300 text-sm">Monday - Friday: 8:00 AM - 5:00 PM</p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="space-y-4">
-                                    <div className="bg-amber-500/10 border border-amber-400/30 rounded-lg p-4">
-                                      <h6 className="text-amber-400 font-medium mb-2 flex items-center gap-2">
-                                        💡 Pro Tip
-                                      </h6>
-                                      <p className="text-amber-200 text-sm">
-                                        Call ahead to schedule an appointment and confirm current processing times for your specific permit type.
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
+                          <div className="text-center py-12">
+                            <div className="bg-gray-800/30 border border-gray-600/30 rounded-lg p-8">
+                              <div className="text-gray-400 mb-4">
+                                <span className="text-4xl">🔍</span>
+                              </div>
+                              <h3 className="text-lg font-medium text-gray-300 mb-2">
+                                No Contact Information Found
+                              </h3>
+                              <p className="text-gray-500 text-sm max-w-md mx-auto">
+                                DeepSearch analysis did not return specific municipal contact information for this location and project type.
+                              </p>
+                            </div>
                           </div>
                         )}
                       </div>
