@@ -4211,15 +4211,15 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   />
                   
                   {/* Attachment Button inside textarea */}
-                  <div className="absolute top-2 right-2 flex items-center gap-1">
+                  <div className="absolute top-3 right-3 flex items-center gap-2">
                     {estimate.attachments.length > 0 && (
-                      <Badge variant="secondary" className="bg-cyan-400/20 text-cyan-400 border-cyan-400/30 text-xs px-2 py-0.5">
+                      <Badge variant="secondary" className="bg-cyan-400/20 text-cyan-400 border-cyan-400/30 text-xs px-2 py-1">
                         {estimate.attachments.length}
                       </Badge>
                     )}
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={(e) => {
                         e.preventDefault();
@@ -4236,13 +4236,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         input.click();
                       }}
                       disabled={isUploading}
-                      className="h-7 w-7 p-0 hover:bg-cyan-400/10 hover:text-cyan-400 text-gray-400"
+                      className="h-8 w-8 p-0 bg-gray-800/80 border-gray-600 hover:bg-cyan-400/20 hover:border-cyan-400/50 hover:text-cyan-400 text-gray-300 transition-all duration-200 shadow-sm"
                       title="Adjuntar archivos"
                     >
                       {isUploading ? (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-400"></div>
                       ) : (
-                        <Paperclip className="h-4 w-4" />
+                        <Upload className="h-4 w-4" />
                       )}
                     </Button>
                   </div>
