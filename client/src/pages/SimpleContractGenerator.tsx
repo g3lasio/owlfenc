@@ -4,18 +4,68 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import AddressAutocomplete from "@/components/ui/address-autocomplete";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
-import { Database, Eye, FileText, CheckCircle, Plus, Trash2, Edit2, Sparkles, Shield, AlertCircle, DollarSign, Calendar, Wrench, FileCheck, Loader2, Brain, RefreshCw, History, Clock, UserCheck, Search, Filter, PenTool, Download, Mail, Phone, MessageCircle, Send, Lock, Truck, Share2, ExternalLink, Copy } from "lucide-react";
+import {
+  Database,
+  Eye,
+  FileText,
+  CheckCircle,
+  Plus,
+  Trash2,
+  Edit2,
+  Sparkles,
+  Shield,
+  AlertCircle,
+  DollarSign,
+  Calendar,
+  Wrench,
+  FileCheck,
+  Loader2,
+  Brain,
+  RefreshCw,
+  History,
+  Clock,
+  UserCheck,
+  Search,
+  Filter,
+  PenTool,
+  Download,
+  Mail,
+  Phone,
+  MessageCircle,
+  Send,
+  Lock,
+  Truck,
+  Share2,
+  ExternalLink,
+  Copy,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { collection, query, where, onSnapshot, orderBy, getDocs } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  orderBy,
+  getDocs,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { contractHistoryService, ContractHistoryEntry } from "@/services/contractHistoryService";
+import {
+  contractHistoryService,
+  ContractHistoryEntry,
+} from "@/services/contractHistoryService";
 
 // Interface for completed contracts
 interface CompletedContract {
@@ -41,16 +91,24 @@ export default function SimpleContractGenerator() {
   const [isLoading, setIsLoading] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
   const [isLoadingClauses, setIsLoadingClauses] = useState(false);
-  
+
   // History management state
-  const [currentView, setCurrentView] = useState<'contracts' | 'history'>('contracts');
-  const [historyTab, setHistoryTab] = useState<'drafts' | 'in-progress' | 'completed'>('drafts');
-  const [contractHistory, setContractHistory] = useState<ContractHistoryEntry[]>([]);
+  const [currentView, setCurrentView] = useState<"contracts" | "history">(
+    "contracts",
+  );
+  const [historyTab, setHistoryTab] = useState<
+    "drafts" | "in-progress" | "completed"
+  >("drafts");
+  const [contractHistory, setContractHistory] = useState<
+    ContractHistoryEntry[]
+  >([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [historyFilter, setHistoryFilter] = useState<'all' | 'draft' | 'completed' | 'processing'>('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [historyFilter, setHistoryFilter] = useState<
+    "all" | "draft" | "completed" | "processing"
+  >("all");
+  const [searchTerm, setSearchTerm] = useState("");
   const [showAllProjects, setShowAllProjects] = useState(false);
-  
+
   // Completed contracts state
   const [completedContracts, setCompletedContracts] = useState<any[]>([]);
   const [isLoadingCompleted, setIsLoadingCompleted] = useState(false);
@@ -58,18 +116,24 @@ export default function SimpleContractGenerator() {
   // Draft contracts state
   const [draftContracts, setDraftContracts] = useState<any[]>([]);
   const [isLoadingDrafts, setIsLoadingDrafts] = useState(false);
-  
+
   // In-progress contracts state
   const [inProgressContracts, setInProgressContracts] = useState<any[]>([]);
   const [isLoadingInProgress, setIsLoadingInProgress] = useState(false);
-  
+
   // Auto-save state
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
-  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [currentContractId, setCurrentContractId] = useState<string | null>(null);
-  const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
-  
+  const [autoSaveStatus, setAutoSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const [currentContractId, setCurrentContractId] = useState<string | null>(
+    null,
+  );
+  const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(
+    null,
+  );
+
   // Editable fields state
   const [editableData, setEditableData] = useState({
     clientName: "",
@@ -83,74 +147,121 @@ export default function SimpleContractGenerator() {
     warrantyYears: "1",
     paymentMilestones: [
       { id: 1, description: "Initial deposit", percentage: 50, amount: 0 },
-      { id: 2, description: "Project completion", percentage: 50, amount: 0 }
-    ]
+      { id: 2, description: "Project completion", percentage: 50, amount: 0 },
+    ],
   });
 
   // Legal Compliance Workflow State
   const [isContractReady, setIsContractReady] = useState(false);
   const [contractHTML, setContractHTML] = useState<string>("");
-  
+
   // Dual Signature State
   const [isDualSignatureActive, setIsDualSignatureActive] = useState(false);
   const [dualSignatureStatus, setDualSignatureStatus] = useState<string>("");
   const [contractorSignUrl, setContractorSignUrl] = useState<string>("");
   const [clientSignUrl, setClientSignUrl] = useState<string>("");
-  
+
   // Multi-Channel Delivery State
   const [deliveryMethods, setDeliveryMethods] = useState({
     email: true,
     sms: true,
-    whatsapp: false
+    whatsapp: false,
   });
   const [isMultiChannelActive, setIsMultiChannelActive] = useState(false);
   const [deliveryStatus, setDeliveryStatus] = useState<string>("");
-  
+
   const [suggestedClauses, setSuggestedClauses] = useState<any[]>([]);
   const [selectedClauses, setSelectedClauses] = useState<string[]>([]);
-  
+
   const { currentUser } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
-  
+
   // Fetch AI-suggested legal clauses
   const fetchAISuggestedClauses = useCallback(async () => {
     if (!selectedProject) return;
-    
+
     setIsLoadingClauses(true);
     try {
-      const response = await fetch('/api/legal-defense/suggest-clauses', {
-        method: 'POST',
+      const response = await fetch("/api/legal-defense/suggest-clauses", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          projectType: selectedProject.projectType || 'construction',
-          projectValue: selectedProject.total || selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0,
-          location: selectedProject.clientAddress || editableData.clientAddress || '',
-          projectDescription: selectedProject.projectDescription || ''
+          projectType: selectedProject.projectType || "construction",
+          projectValue:
+            selectedProject.total ||
+            selectedProject.totalAmount ||
+            selectedProject.totalPrice ||
+            selectedProject.displaySubtotal ||
+            0,
+          location:
+            selectedProject.clientAddress || editableData.clientAddress || "",
+          projectDescription: selectedProject.projectDescription || "",
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to load clause suggestions');
-      
+      if (!response.ok) throw new Error("Failed to load clause suggestions");
+
       const data = await response.json();
       setSuggestedClauses(data.clauses || []);
-      setSelectedClauses(data.clauses?.filter((c: any) => c.mandatory).map((c: any) => c.id) || []);
+      setSelectedClauses(
+        data.clauses?.filter((c: any) => c.mandatory).map((c: any) => c.id) ||
+          [],
+      );
     } catch (error) {
-      console.error('Error loading clause suggestions:', error);
+      console.error("Error loading clause suggestions:", error);
       // Use default clauses if AI fails
       const defaultClauses = [
-        { id: 'liability', title: 'Limitation of Liability', description: 'Limits contractor liability to contract value', mandatory: true, risk: 'high' },
-        { id: 'indemnity', title: 'Indemnification', description: 'Client indemnifies contractor from third-party claims', mandatory: true, risk: 'high' },
-        { id: 'warranty', title: 'Warranty Terms', description: 'Limited warranty on workmanship and materials', mandatory: false, risk: 'medium' },
-        { id: 'payment', title: 'Payment Terms', description: 'Late payment penalties and collection rights', mandatory: true, risk: 'medium' },
-        { id: 'scope', title: 'Scope Changes', description: 'Additional work requires written change orders', mandatory: false, risk: 'low' },
-        { id: 'force-majeure', title: 'Force Majeure', description: 'Protection from unforeseeable circumstances', mandatory: false, risk: 'medium' }
+        {
+          id: "liability",
+          title: "Limitation of Liability",
+          description: "Limits contractor liability to contract value",
+          mandatory: true,
+          risk: "high",
+        },
+        {
+          id: "indemnity",
+          title: "Indemnification",
+          description: "Client indemnifies contractor from third-party claims",
+          mandatory: true,
+          risk: "high",
+        },
+        {
+          id: "warranty",
+          title: "Warranty Terms",
+          description: "Limited warranty on workmanship and materials",
+          mandatory: false,
+          risk: "medium",
+        },
+        {
+          id: "payment",
+          title: "Payment Terms",
+          description: "Late payment penalties and collection rights",
+          mandatory: true,
+          risk: "medium",
+        },
+        {
+          id: "scope",
+          title: "Scope Changes",
+          description: "Additional work requires written change orders",
+          mandatory: false,
+          risk: "low",
+        },
+        {
+          id: "force-majeure",
+          title: "Force Majeure",
+          description: "Protection from unforeseeable circumstances",
+          mandatory: false,
+          risk: "medium",
+        },
       ];
-      
+
       setSuggestedClauses(defaultClauses);
-      setSelectedClauses(defaultClauses.filter(c => c.mandatory).map(c => c.id));
+      setSelectedClauses(
+        defaultClauses.filter((c) => c.mandatory).map((c) => c.id),
+      );
     } finally {
       setIsLoadingClauses(false);
     }
@@ -159,11 +270,13 @@ export default function SimpleContractGenerator() {
   // Load contract history
   const loadContractHistory = useCallback(async () => {
     if (!currentUser?.uid) return;
-    
+
     setIsLoadingHistory(true);
     try {
       console.log("📋 Loading contract history for user:", currentUser.uid);
-      const history = await contractHistoryService.getContractHistory(currentUser.uid);
+      const history = await contractHistoryService.getContractHistory(
+        currentUser.uid,
+      );
       setContractHistory(history);
       console.log("✅ Contract history loaded:", history.length, "contracts");
     } catch (error) {
@@ -178,20 +291,80 @@ export default function SimpleContractGenerator() {
     }
   }, [currentUser?.uid, toast]);
 
-  // Load completed contracts
+  // Load completed contracts from both contract history and dual signature system
   const loadCompletedContracts = useCallback(async () => {
     if (!currentUser?.uid) return;
-    
+
     setIsLoadingCompleted(true);
     try {
       console.log("📋 Loading completed contracts for user:", currentUser.uid);
-      const response = await fetch(`/api/dual-signature/completed/${currentUser.uid}`);
-      
-      if (!response.ok) throw new Error('Failed to load completed contracts');
-      
-      const data = await response.json();
-      setCompletedContracts(data.contracts || []);
-      console.log("✅ Completed contracts loaded:", data.total, "contracts");
+
+      // Load from both sources and merge
+      const [historyResponse, dualSignatureResponse] = await Promise.allSettled(
+        [
+          // Source 1: Contract History (contracts completed via Simple Generator)
+          contractHistoryService.getContractHistory(currentUser.uid),
+          // Source 2: Dual Signature System (contracts signed via signature workflow)
+          fetch(`/api/dual-signature/completed/${currentUser.uid}`).then(
+            (res) => (res.ok ? res.json() : { contracts: [] }),
+          ),
+        ],
+      );
+
+      let allCompleted: any[] = [];
+
+      // Add contracts from history
+      if (historyResponse.status === "fulfilled") {
+        const historyCompleted = historyResponse.value
+          .filter((contract) => contract.status === "completed")
+          .map((contract) => ({
+            contractId: contract.contractId,
+            clientName: contract.clientName,
+            totalAmount: contract.contractData.financials.total || 0,
+            isCompleted: true,
+            isDownloadable: !!contract.pdfUrl,
+            contractorSigned: true,
+            clientSigned: true,
+            createdAt: contract.createdAt,
+            hasPdf: !!contract.pdfUrl,
+            pdfUrl: contract.pdfUrl,
+            source: "history",
+          }));
+        allCompleted = [...allCompleted, ...historyCompleted];
+      }
+
+      // Add contracts from dual signature system
+      if (dualSignatureResponse.status === "fulfilled") {
+        const dualSignatureCompleted = (
+          dualSignatureResponse.value.contracts || []
+        ).map((contract: any) => ({
+          contractId: contract.contractId,
+          clientName: contract.clientName,
+          totalAmount: contract.totalAmount || 0,
+          isCompleted: contract.isCompleted,
+          isDownloadable: contract.isDownloadable,
+          contractorSigned: contract.contractorSigned,
+          clientSigned: contract.clientSigned,
+          createdAt: contract.createdAt,
+          hasPdf: contract.isDownloadable,
+          pdfUrl: contract.signedPdfPath,
+          source: "dual-signature",
+        }));
+        allCompleted = [...allCompleted, ...dualSignatureCompleted];
+      }
+
+      // Remove duplicates (same contractId)
+      const uniqueCompleted = allCompleted.filter(
+        (contract, index, self) =>
+          index === self.findIndex((c) => c.contractId === contract.contractId),
+      );
+
+      setCompletedContracts(uniqueCompleted);
+      console.log(
+        "✅ Completed contracts loaded:",
+        uniqueCompleted.length,
+        "contracts from both sources",
+      );
     } catch (error) {
       console.error("❌ Error loading completed contracts:", error);
       toast({
@@ -204,20 +377,22 @@ export default function SimpleContractGenerator() {
     }
   }, [currentUser?.uid, toast]);
 
-  // Load in-progress contracts
+  // Load draft contracts from contract history
   const loadDraftContracts = useCallback(async () => {
     if (!currentUser?.uid) return;
-    
+
     setIsLoadingDrafts(true);
     try {
       console.log("📋 Loading draft contracts for user:", currentUser.uid);
-      const response = await fetch(`/api/dual-signature/drafts/${currentUser.uid}`);
-      
-      if (!response.ok) throw new Error('Failed to load draft contracts');
-      
-      const data = await response.json();
-      setDraftContracts(data.contracts || []);
-      console.log("✅ Draft contracts loaded:", data.contracts?.length || 0, "contracts");
+
+      // Load from contract history service
+      const history = await contractHistoryService.getContractHistory(
+        currentUser.uid,
+      );
+      const drafts = history.filter((contract) => contract.status === "draft");
+
+      setDraftContracts(drafts);
+      console.log("✅ Draft contracts loaded:", drafts.length, "contracts");
     } catch (error) {
       console.error("❌ Error loading draft contracts:", error);
       toast({
@@ -232,24 +407,37 @@ export default function SimpleContractGenerator() {
 
   const loadInProgressContracts = useCallback(async () => {
     if (!currentUser?.uid) return;
-    
+
     setIsLoadingInProgress(true);
     try {
-      console.log("📋 Loading in-progress contracts for user:", currentUser.uid);
-      const response = await fetch(`/api/dual-signature/in-progress/${currentUser.uid}`);
-      
-      if (!response.ok) throw new Error('Failed to load in-progress contracts');
-      
-      const data = await response.json();
-      setInProgressContracts(data.contracts || []);
-      console.log("✅ In-progress contracts loaded:", data.contracts?.length || 0, "contracts");
+      console.log(
+        "📋 Loading in-progress contracts for user:",
+        currentUser.uid,
+      );
+
+      // Load from dual signature system (contracts with signature links sent)
+      const response = await fetch(
+        `/api/dual-signature/in-progress/${currentUser.uid}`,
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setInProgressContracts(data.contracts || []);
+        console.log(
+          "✅ In-progress contracts loaded:",
+          data.contracts?.length || 0,
+          "contracts",
+        );
+      } else {
+        console.warn(
+          "⚠️ In-progress contracts API not available, using empty array",
+        );
+        setInProgressContracts([]);
+      }
     } catch (error) {
       console.error("❌ Error loading in-progress contracts:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load in-progress contracts",
-        variant: "destructive",
-      });
+      // Don't show error toast for in-progress contracts as it's not critical
+      setInProgressContracts([]);
     } finally {
       setIsLoadingInProgress(false);
     }
@@ -336,16 +524,23 @@ export default function SimpleContractGenerator() {
               estimateDate: data.createdAt
                 ? data.createdAt.toDate?.() || new Date(data.createdAt)
                 : new Date(),
-              items: data.projectTotalCosts?.materialCosts?.items || data.items || [],
-              projectType: data.projectType || data.projectDetails?.type || "fence",
+              items:
+                data.projectTotalCosts?.materialCosts?.items ||
+                data.items ||
+                [],
+              projectType:
+                data.projectType || data.projectDetails?.type || "fence",
               address: address,
-              projectDescription: data.projectDescription || data.description || "",
+              projectDescription:
+                data.projectDescription || data.description || "",
               originalData: data,
             };
           });
 
         allEstimates = [...allEstimates, ...projectEstimates];
-        console.log(`📊 Loaded ${projectEstimates.length} projects from projects collection`);
+        console.log(
+          `📊 Loaded ${projectEstimates.length} projects from projects collection`,
+        );
       } catch (projectError) {
         console.warn("Could not load from projects collection:", projectError);
       }
@@ -361,7 +556,8 @@ export default function SimpleContractGenerator() {
         const firebaseEstimates = estimatesSnapshot.docs.map((doc) => {
           const data = doc.data();
 
-          const clientName = data.clientName || data.client?.name || "Cliente sin nombre";
+          const clientName =
+            data.clientName || data.client?.name || "Cliente sin nombre";
           const clientEmail = data.clientEmail || data.client?.email || "";
           const clientPhone = data.clientPhone || data.client?.phone || "";
 
@@ -394,28 +590,40 @@ export default function SimpleContractGenerator() {
         });
 
         allEstimates = [...allEstimates, ...firebaseEstimates];
-        console.log(`📋 Loaded ${firebaseEstimates.length} additional estimates`);
+        console.log(
+          `📋 Loaded ${firebaseEstimates.length} additional estimates`,
+        );
       } catch (estimatesError) {
-        console.warn("Could not load from estimates collection:", estimatesError);
+        console.warn(
+          "Could not load from estimates collection:",
+          estimatesError,
+        );
       }
 
       // Remove duplicates and filter eligible projects
-      const uniqueProjects = allEstimates.filter((project, index, self) => 
-        index === self.findIndex(p => 
-          p.id === project.id || 
-          (p.clientName === project.clientName && p.address === project.address)
-        )
+      const uniqueProjects = allEstimates.filter(
+        (project, index, self) =>
+          index ===
+          self.findIndex(
+            (p) =>
+              p.id === project.id ||
+              (p.clientName === project.clientName &&
+                p.address === project.address),
+          ),
       );
 
-      const eligibleProjects = uniqueProjects.filter(project => {
-        const hasRequiredData = project.clientName && 
-                               project.totalAmount > 0 &&
-                               (project.address || project.projectType);
+      const eligibleProjects = uniqueProjects.filter((project) => {
+        const hasRequiredData =
+          project.clientName &&
+          project.totalAmount > 0 &&
+          (project.address || project.projectType);
         return hasRequiredData;
       });
 
       setProjects(eligibleProjects);
-      console.log(`✅ Total: ${eligibleProjects.length} unique projects loaded for Legal Defense`);
+      console.log(
+        `✅ Total: ${eligibleProjects.length} unique projects loaded for Legal Defense`,
+      );
     } catch (error) {
       console.error("Error loading projects:", error);
       toast({
@@ -429,524 +637,627 @@ export default function SimpleContractGenerator() {
   }, [currentUser?.uid, toast]);
 
   // Resend signature links
-  const resendSignatureLinks = useCallback(async (contractId: string, methods: string[]) => {
-    try {
-      console.log("📱 Resending signature links for contract:", contractId, "via:", methods);
-      
-      const response = await fetch('/api/dual-signature/resend-links', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+  const resendSignatureLinks = useCallback(
+    async (contractId: string, methods: string[]) => {
+      try {
+        console.log(
+          "📱 Resending signature links for contract:",
           contractId,
-          methods
-        }),
-      });
-      
-      if (!response.ok) throw new Error('Failed to resend signature links');
-      
-      const data = await response.json();
-      
-      // Show success message and handle specific delivery methods
-      toast({
-        title: "Links Sent Successfully",
-        description: `Contract signature links sent via ${methods.join(', ')}`,
-      });
-      
-      // Handle specific delivery methods that need direct user action
-      if (methods.includes('sms') || methods.includes('whatsapp')) {
-        data.results.forEach((result: string) => {
-          if (result.includes('SMS link generated:')) {
-            const smsLink = result.replace('SMS link generated: ', '');
-            window.open(smsLink, '_blank');
-          }
-          if (result.includes('WhatsApp link generated:')) {
-            const whatsappLink = result.replace('WhatsApp link generated: ', '');
-            window.open(whatsappLink, '_blank');
-          }
+          "via:",
+          methods,
+        );
+
+        const response = await fetch("/api/dual-signature/resend-links", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contractId,
+            methods,
+          }),
+        });
+
+        if (!response.ok) throw new Error("Failed to resend signature links");
+
+        const data = await response.json();
+
+        // Show success message and handle specific delivery methods
+        toast({
+          title: "Links Sent Successfully",
+          description: `Contract signature links sent via ${methods.join(", ")}`,
+        });
+
+        // Handle specific delivery methods that need direct user action
+        if (methods.includes("sms") || methods.includes("whatsapp")) {
+          data.results.forEach((result: string) => {
+            if (result.includes("SMS link generated:")) {
+              const smsLink = result.replace("SMS link generated: ", "");
+              window.open(smsLink, "_blank");
+            }
+            if (result.includes("WhatsApp link generated:")) {
+              const whatsappLink = result.replace(
+                "WhatsApp link generated: ",
+                "",
+              );
+              window.open(whatsappLink, "_blank");
+            }
+          });
+        }
+
+        return data;
+      } catch (error) {
+        console.error("❌ Error resending signature links:", error);
+        toast({
+          title: "Error",
+          description: "Failed to resend signature links",
+          variant: "destructive",
         });
       }
-      
-      return data;
-    } catch (error) {
-      console.error("❌ Error resending signature links:", error);
-      toast({
-        title: "Error",
-        description: "Failed to resend signature links",
-        variant: "destructive",
-      });
-    }
-  }, [toast]);
+    },
+    [toast],
+  );
 
   // Download signed PDF with authentication - ALWAYS PDF generation from signed HTML
-  const downloadSignedPdf = useCallback(async (contractId: string, clientName: string) => {
-    try {
-      console.log("📥 Downloading signed contract PDF for:", contractId);
-      
-      if (!currentUser) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to download contracts",
-          variant: "destructive"
-        });
-        return;
-      }
+  const downloadSignedPdf = useCallback(
+    async (contractId: string, clientName: string) => {
+      try {
+        console.log("📥 Downloading signed contract PDF for:", contractId);
 
-      toast({
-        title: "Generating PDF",
-        description: "Creating PDF from signed contract document...",
-        variant: "default"
-      });
-
-      // CRITICAL FIX: Get the signed HTML content first (same as viewContractHtml)
-      const htmlResponse = await fetch(`/api/dual-signature/download-html/${contractId}`, {
-        headers: {
-          'x-user-id': currentUser.uid
-        }
-      });
-      
-      if (!htmlResponse.ok) {
-        const errorData = await htmlResponse.json();
-        throw new Error(errorData.message || 'Failed to load signed contract');
-      }
-      
-      const signedHtmlContent = await htmlResponse.text();
-      
-      // Generate PDF from the EXACT signed HTML content
-      const pdfResponse = await fetch('/api/dual-signature/generate-pdf-from-html', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          contractId,
-          htmlContent: signedHtmlContent,
-          clientName
-        })
-      });
-
-      if (pdfResponse.ok) {
-        // Get the PDF blob and trigger download
-        const pdfBlob = await pdfResponse.blob();
-        
-        const url = window.URL.createObjectURL(pdfBlob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `contract_${clientName.replace(/\s+/g, '_')}_signed.pdf`;
-        
-        document.body.appendChild(a);
-        a.click();
-        
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        
-        console.log("✅ PDF downloaded successfully from signed HTML content");
-        toast({
-          title: "PDF Downloaded",
-          description: `Signed contract for ${clientName} downloaded as PDF`,
-        });
-      } else {
-        const errorData = await pdfResponse.json();
-        throw new Error(errorData.message || 'Failed to generate PDF from signed contract');
-      }
-      
-    } catch (error: any) {
-      console.error("❌ Error downloading signed contract PDF:", error);
-      toast({
-        title: "PDF Download Error",
-        description: (error as Error).message || "Failed to download signed contract as PDF. Chrome dependencies may be missing.",
-        variant: "destructive",
-      });
-    }
-  }, [toast, currentUser]);
-
-  // View contract HTML in new window with embedded signatures
-  const viewContractHtml = useCallback(async (contractId: string, clientName: string) => {
-    try {
-      console.log("👀 Opening signed contract view for:", contractId);
-      
-      const htmlResponse = await fetch(`/api/dual-signature/download-html/${contractId}`);
-      
-      if (!htmlResponse.ok) {
-        const errorData = await htmlResponse.json();
-        throw new Error(errorData.message || 'Failed to load contract');
-      }
-      
-      const htmlContent = await htmlResponse.text();
-      
-      // Open in new window with proper styling
-      const newWindow = window.open('', '_blank', 'width=800,height=1000,scrollbars=yes,resizable=yes');
-      if (newWindow) {
-        newWindow.document.write(htmlContent);
-        newWindow.document.close();
-        newWindow.document.title = `Signed Contract - ${clientName}`;
-        
-        toast({
-          title: "Contract Opened",
-          description: `Signed contract for ${clientName} opened in new window`,
-        });
-      } else {
-        throw new Error('Popup blocked. Please allow popups for this site.');
-      }
-      
-    } catch (error: any) {
-      console.error("❌ Error viewing contract:", error);
-      toast({
-        title: "View Error",
-        description: (error as Error).message || "Failed to view signed contract",
-        variant: "destructive",
-      });
-    }
-  }, [toast]);
-
-  // Function to generate PDF for completed contract
-  const generateContractPdf = useCallback(async (contractId: string, clientName: string) => {
-    try {
-      toast({
-        title: "Generating PDF",
-        description: "Creating signed PDF document...",
-        variant: "default"
-      });
-
-      const response = await fetch(`/api/dual-signature/regenerate-pdf/${contractId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
+        if (!currentUser) {
           toast({
-            title: "PDF Generated",
-            description: "PDF generated successfully! Refreshing contract list...",
-            variant: "default"
-          });
-          
-          // Refresh the completed contracts list
-          await loadCompletedContracts();
-        } else {
-          // Check if it's a Chrome dependency error
-          const isChromeDependencyError = result.message?.includes('Chrome browser dependencies missing') ||
-                                         result.message?.includes('libgbm.so.1') ||
-                                         result.message?.includes('Failed to launch the browser');
-          
-          toast({
-            title: isChromeDependencyError ? "PDF Generation Unavailable" : "Generation Error",
-            description: isChromeDependencyError 
-              ? "PDF generation requires Chrome dependencies not available in Replit. Use View HTML or Share Contract instead."
-              : result.message || "Failed to generate PDF",
-            variant: "destructive"
-          });
-        }
-      } else {
-        const error = await response.json();
-        const isChromeDependencyError = (error as Error).message?.includes('Chrome browser dependencies missing') ||
-                                       (error as Error).message?.includes('libgbm.so.1') ||
-                                       (error as Error).message?.includes('Failed to launch the browser');
-        
-        toast({
-          title: isChromeDependencyError ? "PDF Generation Unavailable" : "Generation Error",
-          description: isChromeDependencyError 
-            ? "PDF generation requires Chrome dependencies not available in Replit. Use View HTML or Share Contract instead."
-            : (error as Error).message || "Failed to generate PDF",
-          variant: "destructive"
-        });
-      }
-    } catch (error: any) {
-      console.error('Error generating PDF:', error);
-      toast({
-        title: "Generation Error",
-        description: "Failed to connect to PDF generation service",
-        variant: "destructive"
-      });
-    }
-  }, [toast, loadCompletedContracts]);
-
-  // Copy contract link to clipboard
-  const copyContractLink = useCallback(async (contractId: string, clientName: string) => {
-    try {
-      const downloadUrl = `/api/dual-signature/download/${contractId}`;
-      const fullUrl = `${window.location.origin}${downloadUrl}`;
-      
-      await navigator.clipboard.writeText(fullUrl);
-      toast({
-        title: "Link Copied",
-        description: `Contract link for ${clientName} copied to clipboard`,
-      });
-    } catch (error) {
-      console.error("❌ Error copying link:", error);
-      toast({
-        title: "Error",
-        description: "Failed to copy link",
-        variant: "destructive",
-      });
-    }
-  }, [toast]);
-
-  // View contract in new window/tab - ALWAYS uses signed HTML for PDF generation
-  const viewContract = useCallback(async (contractId: string, clientName: string) => {
-    try {
-      console.log("👀 Opening signed contract PDF view for:", contractId);
-      
-      if (!currentUser) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to view contracts",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      toast({
-        title: "Generating PDF",
-        description: "Creating PDF from signed contract...",
-        variant: "default"
-      });
-
-      // CRITICAL FIX: Get the signed HTML content first (same as viewContractHtml)
-      const htmlResponse = await fetch(`/api/dual-signature/download-html/${contractId}`);
-      
-      if (!htmlResponse.ok) {
-        const errorData = await htmlResponse.json();
-        throw new Error(errorData.message || 'Failed to load signed contract');
-      }
-      
-      const signedHtmlContent = await htmlResponse.text();
-      
-      // Generate PDF from the EXACT signed HTML content
-      const pdfResponse = await fetch('/api/dual-signature/generate-pdf-from-html', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          contractId,
-          htmlContent: signedHtmlContent,
-          clientName
-        })
-      });
-
-      if (pdfResponse.ok) {
-        // Get the PDF blob and open in new window
-        const pdfBlob = await pdfResponse.blob();
-        const pdfUrl = window.URL.createObjectURL(pdfBlob);
-        
-        const newWindow = window.open(pdfUrl, '_blank');
-        
-        if (newWindow) {
-          newWindow.focus();
-          
-          toast({
-            title: "PDF Opened",
-            description: `Viewing signed contract PDF for ${clientName}`,
-          });
-          
-          // Clean up URL after 10 seconds
-          setTimeout(() => {
-            window.URL.revokeObjectURL(pdfUrl);
-          }, 10000);
-        } else {
-          throw new Error('Popup blocked. Please allow popups for this site.');
-        }
-      } else {
-        const errorData = await pdfResponse.json();
-        throw new Error(errorData.message || 'Failed to generate PDF from signed contract');
-      }
-      
-    } catch (error: any) {
-      console.error("❌ Error viewing contract PDF:", error);
-      toast({
-        title: "PDF View Error", 
-        description: (error as Error).message || "Failed to view signed contract as PDF",
-        variant: "destructive",
-      });
-    }
-  }, [toast, currentUser]);
-
-  // Share contract using native share API or copy link
-  const shareContract = useCallback(async (contractId: string, clientName: string) => {
-    try {
-      console.log("🔗 Sharing contract:", contractId);
-      
-      if (!currentUser) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to share contracts",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Create shareable URL based on PDF availability
-      const baseUrl = window.location.origin;
-      const shareUrl = `${baseUrl}/api/dual-signature/download-html/${contractId}`;
-      const shareText = `Signed Contract for ${clientName}`;
-      
-      // Try native Web Share API first
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: shareText,
-            text: `View the signed contract for ${clientName}`,
-            url: shareUrl,
-          });
-          
-          toast({
-            title: "Contract Shared",
-            description: `Contract shared via native share options`,
+            title: "Authentication Required",
+            description: "Please log in to download contracts",
+            variant: "destructive",
           });
           return;
-        } catch (shareError: any) {
-          // User cancelled share or share failed, fall back to copy
-          console.log("Native share cancelled or failed, falling back to copy");
         }
+
+        toast({
+          title: "Generating PDF",
+          description: "Creating PDF from signed contract document...",
+          variant: "default",
+        });
+
+        // CRITICAL FIX: Get the signed HTML content first (same as viewContractHtml)
+        const htmlResponse = await fetch(
+          `/api/dual-signature/download-html/${contractId}`,
+          {
+            headers: {
+              "x-user-id": currentUser.uid,
+            },
+          },
+        );
+
+        if (!htmlResponse.ok) {
+          const errorData = await htmlResponse.json();
+          throw new Error(
+            errorData.message || "Failed to load signed contract",
+          );
+        }
+
+        const signedHtmlContent = await htmlResponse.text();
+
+        // Generate PDF from the EXACT signed HTML content
+        const pdfResponse = await fetch(
+          "/api/dual-signature/generate-pdf-from-html",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              contractId,
+              htmlContent: signedHtmlContent,
+              clientName,
+            }),
+          },
+        );
+
+        if (pdfResponse.ok) {
+          // Get the PDF blob and trigger download
+          const pdfBlob = await pdfResponse.blob();
+
+          const url = window.URL.createObjectURL(pdfBlob);
+          const a = document.createElement("a");
+          a.style.display = "none";
+          a.href = url;
+          a.download = `contract_${clientName.replace(/\s+/g, "_")}_signed.pdf`;
+
+          document.body.appendChild(a);
+          a.click();
+
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+
+          console.log(
+            "✅ PDF downloaded successfully from signed HTML content",
+          );
+          toast({
+            title: "PDF Downloaded",
+            description: `Signed contract for ${clientName} downloaded as PDF`,
+          });
+        } else {
+          const errorData = await pdfResponse.json();
+          throw new Error(
+            errorData.message || "Failed to generate PDF from signed contract",
+          );
+        }
+      } catch (error: any) {
+        console.error("❌ Error downloading signed contract PDF:", error);
+        toast({
+          title: "PDF Download Error",
+          description:
+            (error as Error).message ||
+            "Failed to download signed contract as PDF. Chrome dependencies may be missing.",
+          variant: "destructive",
+        });
       }
-      
-      // Fallback: Copy to clipboard
+    },
+    [toast, currentUser],
+  );
+
+  // View contract HTML in new window with embedded signatures
+  const viewContractHtml = useCallback(
+    async (contractId: string, clientName: string) => {
       try {
-        await navigator.clipboard.writeText(shareUrl);
+        console.log("👀 Opening signed contract view for:", contractId);
+
+        const htmlResponse = await fetch(
+          `/api/dual-signature/download-html/${contractId}`,
+        );
+
+        if (!htmlResponse.ok) {
+          const errorData = await htmlResponse.json();
+          throw new Error(errorData.message || "Failed to load contract");
+        }
+
+        const htmlContent = await htmlResponse.text();
+
+        // Open in new window with proper styling
+        const newWindow = window.open(
+          "",
+          "_blank",
+          "width=800,height=1000,scrollbars=yes,resizable=yes",
+        );
+        if (newWindow) {
+          newWindow.document.write(htmlContent);
+          newWindow.document.close();
+          newWindow.document.title = `Signed Contract - ${clientName}`;
+
+          toast({
+            title: "Contract Opened",
+            description: `Signed contract for ${clientName} opened in new window`,
+          });
+        } else {
+          throw new Error("Popup blocked. Please allow popups for this site.");
+        }
+      } catch (error: any) {
+        console.error("❌ Error viewing contract:", error);
+        toast({
+          title: "View Error",
+          description:
+            (error as Error).message || "Failed to view signed contract",
+          variant: "destructive",
+        });
+      }
+    },
+    [toast],
+  );
+
+  // Function to generate PDF for completed contract
+  const generateContractPdf = useCallback(
+    async (contractId: string, clientName: string) => {
+      try {
+        toast({
+          title: "Generating PDF",
+          description: "Creating signed PDF document...",
+          variant: "default",
+        });
+
+        const response = await fetch(
+          `/api/dual-signature/regenerate-pdf/${contractId}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        );
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            toast({
+              title: "PDF Generated",
+              description:
+                "PDF generated successfully! Refreshing contract list...",
+              variant: "default",
+            });
+
+            // Refresh the completed contracts list
+            await loadCompletedContracts();
+          } else {
+            // Check if it's a Chrome dependency error
+            const isChromeDependencyError =
+              result.message?.includes("Chrome browser dependencies missing") ||
+              result.message?.includes("libgbm.so.1") ||
+              result.message?.includes("Failed to launch the browser");
+
+            toast({
+              title: isChromeDependencyError
+                ? "PDF Generation Unavailable"
+                : "Generation Error",
+              description: isChromeDependencyError
+                ? "PDF generation requires Chrome dependencies not available in Replit. Use View HTML or Share Contract instead."
+                : result.message || "Failed to generate PDF",
+              variant: "destructive",
+            });
+          }
+        } else {
+          const error = await response.json();
+          const isChromeDependencyError =
+            (error as Error).message?.includes(
+              "Chrome browser dependencies missing",
+            ) ||
+            (error as Error).message?.includes("libgbm.so.1") ||
+            (error as Error).message?.includes("Failed to launch the browser");
+
+          toast({
+            title: isChromeDependencyError
+              ? "PDF Generation Unavailable"
+              : "Generation Error",
+            description: isChromeDependencyError
+              ? "PDF generation requires Chrome dependencies not available in Replit. Use View HTML or Share Contract instead."
+              : (error as Error).message || "Failed to generate PDF",
+            variant: "destructive",
+          });
+        }
+      } catch (error: any) {
+        console.error("Error generating PDF:", error);
+        toast({
+          title: "Generation Error",
+          description: "Failed to connect to PDF generation service",
+          variant: "destructive",
+        });
+      }
+    },
+    [toast, loadCompletedContracts],
+  );
+
+  // Copy contract link to clipboard
+  const copyContractLink = useCallback(
+    async (contractId: string, clientName: string) => {
+      try {
+        const downloadUrl = `/api/dual-signature/download/${contractId}`;
+        const fullUrl = `${window.location.origin}${downloadUrl}`;
+
+        await navigator.clipboard.writeText(fullUrl);
         toast({
           title: "Link Copied",
-          description: `Contract link copied to clipboard for ${clientName}`,
+          description: `Contract link for ${clientName} copied to clipboard`,
         });
-      } catch (clipboardError) {
-        // Ultimate fallback: Show URL in alert
-        window.prompt("Copy this contract link:", shareUrl);
+      } catch (error) {
+        console.error("❌ Error copying link:", error);
         toast({
-          title: "Contract Link",
-          description: "Contract link displayed for manual copy",
+          title: "Error",
+          description: "Failed to copy link",
+          variant: "destructive",
         });
       }
-      
-    } catch (error: any) {
-      console.error("❌ Error sharing contract:", error);
-      toast({
-        title: "Share Error", 
-        description: (error as Error).message || "Failed to share contract",
-        variant: "destructive",
-      });
-    }
-  }, [toast, currentUser]);
+    },
+    [toast],
+  );
+
+  // View contract in new window/tab - ALWAYS uses signed HTML for PDF generation
+  const viewContract = useCallback(
+    async (contractId: string, clientName: string) => {
+      try {
+        console.log("👀 Opening signed contract PDF view for:", contractId);
+
+        if (!currentUser) {
+          toast({
+            title: "Authentication Required",
+            description: "Please log in to view contracts",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        toast({
+          title: "Generating PDF",
+          description: "Creating PDF from signed contract...",
+          variant: "default",
+        });
+
+        // CRITICAL FIX: Get the signed HTML content first (same as viewContractHtml)
+        const htmlResponse = await fetch(
+          `/api/dual-signature/download-html/${contractId}`,
+        );
+
+        if (!htmlResponse.ok) {
+          const errorData = await htmlResponse.json();
+          throw new Error(
+            errorData.message || "Failed to load signed contract",
+          );
+        }
+
+        const signedHtmlContent = await htmlResponse.text();
+
+        // Generate PDF from the EXACT signed HTML content
+        const pdfResponse = await fetch(
+          "/api/dual-signature/generate-pdf-from-html",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              contractId,
+              htmlContent: signedHtmlContent,
+              clientName,
+            }),
+          },
+        );
+
+        if (pdfResponse.ok) {
+          // Get the PDF blob and open in new window
+          const pdfBlob = await pdfResponse.blob();
+          const pdfUrl = window.URL.createObjectURL(pdfBlob);
+
+          const newWindow = window.open(pdfUrl, "_blank");
+
+          if (newWindow) {
+            newWindow.focus();
+
+            toast({
+              title: "PDF Opened",
+              description: `Viewing signed contract PDF for ${clientName}`,
+            });
+
+            // Clean up URL after 10 seconds
+            setTimeout(() => {
+              window.URL.revokeObjectURL(pdfUrl);
+            }, 10000);
+          } else {
+            throw new Error(
+              "Popup blocked. Please allow popups for this site.",
+            );
+          }
+        } else {
+          const errorData = await pdfResponse.json();
+          throw new Error(
+            errorData.message || "Failed to generate PDF from signed contract",
+          );
+        }
+      } catch (error: any) {
+        console.error("❌ Error viewing contract PDF:", error);
+        toast({
+          title: "PDF View Error",
+          description:
+            (error as Error).message || "Failed to view signed contract as PDF",
+          variant: "destructive",
+        });
+      }
+    },
+    [toast, currentUser],
+  );
+
+  // Share contract using native share API or copy link
+  const shareContract = useCallback(
+    async (contractId: string, clientName: string) => {
+      try {
+        console.log("🔗 Sharing contract:", contractId);
+
+        if (!currentUser) {
+          toast({
+            title: "Authentication Required",
+            description: "Please log in to share contracts",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Create shareable URL based on PDF availability
+        const baseUrl = window.location.origin;
+        const shareUrl = `${baseUrl}/api/dual-signature/download-html/${contractId}`;
+        const shareText = `Signed Contract for ${clientName}`;
+
+        // Try native Web Share API first
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: shareText,
+              text: `View the signed contract for ${clientName}`,
+              url: shareUrl,
+            });
+
+            toast({
+              title: "Contract Shared",
+              description: `Contract shared via native share options`,
+            });
+            return;
+          } catch (shareError: any) {
+            // User cancelled share or share failed, fall back to copy
+            console.log(
+              "Native share cancelled or failed, falling back to copy",
+            );
+          }
+        }
+
+        // Fallback: Copy to clipboard
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          toast({
+            title: "Link Copied",
+            description: `Contract link copied to clipboard for ${clientName}`,
+          });
+        } catch (clipboardError) {
+          // Ultimate fallback: Show URL in alert
+          window.prompt("Copy this contract link:", shareUrl);
+          toast({
+            title: "Contract Link",
+            description: "Contract link displayed for manual copy",
+          });
+        }
+      } catch (error: any) {
+        console.error("❌ Error sharing contract:", error);
+        toast({
+          title: "Share Error",
+          description: (error as Error).message || "Failed to share contract",
+          variant: "destructive",
+        });
+      }
+    },
+    [toast, currentUser],
+  );
 
   // Download contract as HTML file
-  const downloadContractHtml = useCallback(async (contractId: string, clientName: string) => {
-    try {
-      console.log("📄 Downloading contract HTML:", contractId);
-      
-      if (!currentUser) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to download contracts",
-          variant: "destructive"
-        });
-        return;
-      }
+  const downloadContractHtml = useCallback(
+    async (contractId: string, clientName: string) => {
+      try {
+        console.log("📄 Downloading contract HTML:", contractId);
 
-      // Create download link for HTML
-      const downloadUrl = `/api/dual-signature/download-html/${contractId}`;
-      
-      // Create temporary link and trigger download
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.setAttribute('download', `contract_${clientName.replace(/\s+/g, '_')}_${contractId}.html`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast({
-        title: "Download Started",
-        description: `HTML contract for ${clientName} is downloading`,
-      });
-      
-    } catch (error: any) {
-      console.error("❌ Error downloading HTML:", error);
-      toast({
-        title: "Download Error",
-        description: (error as Error).message || "Failed to download HTML contract",
-        variant: "destructive",
-      });
-    }
-  }, [toast, currentUser]);
+        if (!currentUser) {
+          toast({
+            title: "Authentication Required",
+            description: "Please log in to download contracts",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Create download link for HTML
+        const downloadUrl = `/api/dual-signature/download-html/${contractId}`;
+
+        // Create temporary link and trigger download
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.setAttribute(
+          "download",
+          `contract_${clientName.replace(/\s+/g, "_")}_${contractId}.html`,
+        );
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        toast({
+          title: "Download Started",
+          description: `HTML contract for ${clientName} is downloading`,
+        });
+      } catch (error: any) {
+        console.error("❌ Error downloading HTML:", error);
+        toast({
+          title: "Download Error",
+          description:
+            (error as Error).message || "Failed to download HTML contract",
+          variant: "destructive",
+        });
+      }
+    },
+    [toast, currentUser],
+  );
 
   // CRITICAL: Helper function to get correct project total - MALFORMED DATA DETECTION AND CORRECTION
   const getCorrectProjectTotal = useCallback((project: any) => {
     if (!project) {
-      console.warn("⚠️ getCorrectProjectTotal called with null/undefined project");
+      console.warn(
+        "⚠️ getCorrectProjectTotal called with null/undefined project",
+      );
       return 0;
     }
-    
+
     console.log("💰 Financial data analysis:", {
       displaySubtotal: project.displaySubtotal,
       displayTotal: project.displayTotal,
       totalPrice: project.totalPrice,
       estimateAmount: project.estimateAmount,
       total: project.total,
-      totalAmount: project.totalAmount
+      totalAmount: project.totalAmount,
     });
-    
+
     // Helper function to detect and fix malformed values (stored as centavos when they should be dollars)
     const correctMalformedValue = (value: number, fieldName: string) => {
       if (!value || value <= 0) return 0;
-      
+
       // Check if value seems malformed (too large, likely stored as centavos incorrectly)
       // Values over $100K are suspicious for typical projects and likely stored incorrectly
       if (value > 100000) {
         const corrected = value / 100;
-        console.log(`💰 CORRECTING MALFORMED ${fieldName}:`, value, "→", corrected, "(divided by 100)");
+        console.log(
+          `💰 CORRECTING MALFORMED ${fieldName}:`,
+          value,
+          "→",
+          corrected,
+          "(divided by 100)",
+        );
         return corrected;
       }
-      
+
       // Check if value is in centavos format (large integer multiple of 100)
       if (value > 10000 && value % 100 === 0 && Number.isInteger(value)) {
         const corrected = value / 100;
-        console.log(`💰 Converting ${fieldName} from centavos:`, value, "→", corrected);
+        console.log(
+          `💰 Converting ${fieldName} from centavos:`,
+          value,
+          "→",
+          corrected,
+        );
         return corrected;
       }
-      
+
       console.log(`💰 Using ${fieldName} as-is:`, value);
       return value;
     };
-    
+
     // PRIORITY 1: Check displaySubtotal (but correct if malformed)
     if (project.displaySubtotal && project.displaySubtotal > 0) {
-      const corrected = correctMalformedValue(project.displaySubtotal, "displaySubtotal");
+      const corrected = correctMalformedValue(
+        project.displaySubtotal,
+        "displaySubtotal",
+      );
       return corrected;
     }
-    
+
     // PRIORITY 2: Check displayTotal (but correct if malformed)
     if (project.displayTotal && project.displayTotal > 0) {
-      const corrected = correctMalformedValue(project.displayTotal, "displayTotal");
+      const corrected = correctMalformedValue(
+        project.displayTotal,
+        "displayTotal",
+      );
       return corrected;
     }
-    
+
     // PRIORITY 3: Check totalPrice
     if (project.totalPrice && project.totalPrice > 0) {
       const corrected = correctMalformedValue(project.totalPrice, "totalPrice");
       return corrected;
     }
-    
+
     // PRIORITY 4: Check estimateAmount
     if (project.estimateAmount && project.estimateAmount > 0) {
-      const corrected = correctMalformedValue(project.estimateAmount, "estimateAmount");
+      const corrected = correctMalformedValue(
+        project.estimateAmount,
+        "estimateAmount",
+      );
       return corrected;
     }
-    
+
     // PRIORITY 5: Check total
     if (project.total && project.total > 0) {
       const corrected = correctMalformedValue(project.total, "total");
       return corrected;
     }
-    
+
     // PRIORITY 6: Check totalAmount
     if (project.totalAmount && project.totalAmount > 0) {
-      const corrected = correctMalformedValue(project.totalAmount, "totalAmount");
+      const corrected = correctMalformedValue(
+        project.totalAmount,
+        "totalAmount",
+      );
       return corrected;
     }
-    
+
     console.log("💰 Final calculated total:", 0);
     return 0;
   }, []);
@@ -960,17 +1271,19 @@ export default function SimpleContractGenerator() {
 
     try {
       setIsAutoSaving(true);
-      setAutoSaveStatus('saving');
-      
+      setAutoSaveStatus("saving");
+
       console.log("💾 [AUTO-SAVE] Starting auto-save...");
-      
+
       // Build comprehensive contract data for auto-save
       const autoSaveContractData = {
         userId: currentUser.uid,
-        contractId: currentContractId || `CNT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        contractId:
+          currentContractId ||
+          `CNT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         clientName: editableData.clientName,
-        projectType: selectedProject.projectType || 'Construction',
-        status: 'draft' as const,
+        projectType: selectedProject.projectType || "Construction",
+        status: "draft" as const,
         contractData: {
           client: {
             name: editableData.clientName,
@@ -981,15 +1294,20 @@ export default function SimpleContractGenerator() {
           contractor: {
             name: profile?.company || profile?.ownerName || "Company Name",
             company: profile?.company || "Company Name",
-            address: `${profile?.address || ""} ${profile?.city || ""} ${profile?.state || ""} ${profile?.zipCode || ""}`.trim(),
+            address:
+              `${profile?.address || ""} ${profile?.city || ""} ${profile?.state || ""} ${profile?.zipCode || ""}`.trim(),
             phone: profile?.phone || profile?.mobilePhone || "",
             email: profile?.email || "",
             license: profile?.license || "",
           },
           project: {
-            type: selectedProject.projectType || 'Construction',
-            description: selectedProject.projectDescription || selectedProject.description || "",
-            location: editableData.clientAddress || selectedProject.clientAddress || "",
+            type: selectedProject.projectType || "Construction",
+            description:
+              selectedProject.projectDescription ||
+              selectedProject.description ||
+              "",
+            location:
+              editableData.clientAddress || selectedProject.clientAddress || "",
             scope: selectedProject.projectDescription || "",
           },
           financials: {
@@ -1004,12 +1322,14 @@ export default function SimpleContractGenerator() {
           timeline: {
             startDate: editableData.startDate,
             completionDate: editableData.completionDate,
-            estimatedDuration: "As specified in project details"
+            estimatedDuration: "As specified in project details",
           },
-          protections: selectedClauses.map(clauseId => ({
+          protections: selectedClauses.map((clauseId) => ({
             id: clauseId,
-            category: 'legal',
-            clause: suggestedClauses.find(c => c.id === clauseId)?.title || clauseId
+            category: "legal",
+            clause:
+              suggestedClauses.find((c) => c.id === clauseId)?.title ||
+              clauseId,
           })),
           formFields: {
             permitResponsibility: editableData.permitResponsibility,
@@ -1022,40 +1342,52 @@ export default function SimpleContractGenerator() {
           terms: {
             warranty: editableData.warrantyYears,
             permits: editableData.permitResponsibility,
-          }
-        }
+          },
+        },
       };
 
       // Save contract using existing service
-      const savedContractId = await contractHistoryService.saveContract(autoSaveContractData);
-      
+      const savedContractId =
+        await contractHistoryService.saveContract(autoSaveContractData);
+
       // Update current contract ID if this is the first save
       if (!currentContractId) {
         setCurrentContractId(savedContractId);
       }
-      
+
       setLastAutoSave(new Date());
-      setAutoSaveStatus('saved');
-      
-      console.log("✅ [AUTO-SAVE] Contract auto-saved successfully:", savedContractId);
-      
+      setAutoSaveStatus("saved");
+
+      console.log(
+        "✅ [AUTO-SAVE] Contract auto-saved successfully:",
+        savedContractId,
+      );
+
       // Clear saved status after 3 seconds
       setTimeout(() => {
-        setAutoSaveStatus('idle');
+        setAutoSaveStatus("idle");
       }, 3000);
-      
     } catch (error) {
       console.error("❌ [AUTO-SAVE] Error auto-saving contract:", error);
-      setAutoSaveStatus('error');
-      
+      setAutoSaveStatus("error");
+
       // Clear error status after 5 seconds
       setTimeout(() => {
-        setAutoSaveStatus('idle');
+        setAutoSaveStatus("idle");
       }, 5000);
     } finally {
       setIsAutoSaving(false);
     }
-  }, [currentUser?.uid, selectedProject, editableData, currentContractId, selectedClauses, suggestedClauses, profile, getCorrectProjectTotal]);
+  }, [
+    currentUser?.uid,
+    selectedProject,
+    editableData,
+    currentContractId,
+    selectedClauses,
+    suggestedClauses,
+    profile,
+    getCorrectProjectTotal,
+  ]);
 
   // Debounced auto-save trigger
   const triggerAutoSave = useCallback(() => {
@@ -1063,281 +1395,339 @@ export default function SimpleContractGenerator() {
     if (autoSaveTimer) {
       clearTimeout(autoSaveTimer);
     }
-    
+
     // Set new timer for 2 seconds after the last change
     const newTimer = setTimeout(() => {
       performAutoSave();
     }, 2000);
-    
+
     setAutoSaveTimer(newTimer);
   }, [autoSaveTimer, performAutoSave]);
 
   // Load contract from history and resume editing
-  const loadContractFromHistory = useCallback(async (contract: ContractHistoryEntry) => {
-    try {
-      console.log("🔄 Loading contract from history:", contract.id);
-      
-      // Set current contract ID for auto-save updates
-      setCurrentContractId(contract.id || null);
-      
-      // Extract contract data
-      const contractDataFromHistory = contract.contractData;
-      
-      // Set up project data from contract history
-      const projectFromHistory = {
-        id: contract.contractId,
-        clientName: contractDataFromHistory.client?.name || contract.clientName,
-        clientEmail: contractDataFromHistory.client?.email || "",
-        clientPhone: contractDataFromHistory.client?.phone || "",
-        clientAddress: contractDataFromHistory.client?.address || "",
-        projectType: contractDataFromHistory.project?.type || contract.projectType,
-        projectDescription: contractDataFromHistory.project?.description || "",
-        totalAmount: contractDataFromHistory.financials?.total || 0,
-        displaySubtotal: contractDataFromHistory.financials?.total || 0,
-        materials: contractDataFromHistory.materials || [],
-        originalData: contractDataFromHistory
-      };
+  const loadContractFromHistory = useCallback(
+    async (contract: ContractHistoryEntry) => {
+      try {
+        console.log("🔄 Loading contract from history:", contract.id);
 
-      // Set selected project and contract data
-      setSelectedProject(projectFromHistory);
-      setContractData(contractDataFromHistory);
-      
-      // Set editable data from contract history
-      const contractTotal = contractDataFromHistory.financials?.total || 0;
-      
-      // Ensure payment milestones always have amount field defined
-      let paymentMilestones = contractDataFromHistory.paymentTerms || [
-        { id: 1, description: "Initial deposit", percentage: 50, amount: contractTotal * 0.5 },
-        { id: 2, description: "Project completion", percentage: 50, amount: contractTotal * 0.5 }
-      ];
-      
-      // Fix any milestones that don't have amount field or have it as undefined
-      paymentMilestones = paymentMilestones.map((milestone: any) => ({
-        ...milestone,
-        amount: milestone.amount ?? (contractTotal * (milestone.percentage || 0) / 100)
-      }));
-      
-      setEditableData({
-        clientName: contractDataFromHistory.client?.name || contract.clientName,
-        clientEmail: contractDataFromHistory.client?.email || "",
-        clientPhone: contractDataFromHistory.client?.phone || "",
-        clientAddress: contractDataFromHistory.client?.address || "",
-        startDate: contractDataFromHistory.formFields?.startDate || contractDataFromHistory.timeline?.startDate || "",
-        completionDate: contractDataFromHistory.formFields?.completionDate || contractDataFromHistory.timeline?.completionDate || "",
-        permitRequired: (contractDataFromHistory as any).permitInfo?.required ? "yes" : "no",
-        permitResponsibility: contractDataFromHistory.formFields?.permitResponsibility || (contractDataFromHistory as any).permitInfo?.responsibility || "contractor",
-        warrantyYears: (contractDataFromHistory.formFields as any)?.warrantyYears || "1",
-        paymentMilestones: paymentMilestones as any
-      });
+        // Set current contract ID for auto-save updates
+        setCurrentContractId(contract.id || null);
 
-      // Set clauses from history
-      setSuggestedClauses(contractDataFromHistory.protections?.map(p => ({
-        id: p.id,
-        title: p.clause,
-        category: p.category
-      })) || []);
-      setSelectedClauses(contractDataFromHistory.protections?.map(p => p.id) || []);
-      
-      // Switch to contract view and go to step 2 (review)
-      setCurrentView('contracts');
-      setCurrentStep(2);
-      
-      toast({
-        title: "Contract Loaded",
-        description: `Resumed contract for ${contract.clientName}`,
-      });
-      
-      console.log("✅ Contract loaded from history successfully");
-    } catch (error) {
-      console.error("❌ Error loading contract from history:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load contract from history",
-        variant: "destructive",
-      });
-    }
-  }, [toast]);
+        // Extract contract data
+        const contractDataFromHistory = contract.contractData;
+
+        // Set up project data from contract history
+        const projectFromHistory = {
+          id: contract.contractId,
+          clientName:
+            contractDataFromHistory.client?.name || contract.clientName,
+          clientEmail: contractDataFromHistory.client?.email || "",
+          clientPhone: contractDataFromHistory.client?.phone || "",
+          clientAddress: contractDataFromHistory.client?.address || "",
+          projectType:
+            contractDataFromHistory.project?.type || contract.projectType,
+          projectDescription:
+            contractDataFromHistory.project?.description || "",
+          totalAmount: contractDataFromHistory.financials?.total || 0,
+          displaySubtotal: contractDataFromHistory.financials?.total || 0,
+          materials: contractDataFromHistory.materials || [],
+          originalData: contractDataFromHistory,
+        };
+
+        // Set selected project and contract data
+        setSelectedProject(projectFromHistory);
+        setContractData(contractDataFromHistory);
+
+        // Set editable data from contract history
+        const contractTotal = contractDataFromHistory.financials?.total || 0;
+
+        // Ensure payment milestones always have amount field defined
+        let paymentMilestones = contractDataFromHistory.paymentTerms || [
+          {
+            id: 1,
+            description: "Initial deposit",
+            percentage: 50,
+            amount: contractTotal * 0.5,
+          },
+          {
+            id: 2,
+            description: "Project completion",
+            percentage: 50,
+            amount: contractTotal * 0.5,
+          },
+        ];
+
+        // Fix any milestones that don't have amount field or have it as undefined
+        paymentMilestones = paymentMilestones.map((milestone: any) => ({
+          ...milestone,
+          amount:
+            milestone.amount ??
+            (contractTotal * (milestone.percentage || 0)) / 100,
+        }));
+
+        setEditableData({
+          clientName:
+            contractDataFromHistory.client?.name || contract.clientName,
+          clientEmail: contractDataFromHistory.client?.email || "",
+          clientPhone: contractDataFromHistory.client?.phone || "",
+          clientAddress: contractDataFromHistory.client?.address || "",
+          startDate:
+            contractDataFromHistory.formFields?.startDate ||
+            contractDataFromHistory.timeline?.startDate ||
+            "",
+          completionDate:
+            contractDataFromHistory.formFields?.completionDate ||
+            contractDataFromHistory.timeline?.completionDate ||
+            "",
+          permitRequired: (contractDataFromHistory as any).permitInfo?.required
+            ? "yes"
+            : "no",
+          permitResponsibility:
+            contractDataFromHistory.formFields?.permitResponsibility ||
+            (contractDataFromHistory as any).permitInfo?.responsibility ||
+            "contractor",
+          warrantyYears:
+            (contractDataFromHistory.formFields as any)?.warrantyYears || "1",
+          paymentMilestones: paymentMilestones as any,
+        });
+
+        // Set clauses from history
+        setSuggestedClauses(
+          contractDataFromHistory.protections?.map((p) => ({
+            id: p.id,
+            title: p.clause,
+            category: p.category,
+          })) || [],
+        );
+        setSelectedClauses(
+          contractDataFromHistory.protections?.map((p) => p.id) || [],
+        );
+
+        // Switch to contract view and go to step 2 (review)
+        setCurrentView("contracts");
+        setCurrentStep(2);
+
+        toast({
+          title: "Contract Loaded",
+          description: `Resumed contract for ${contract.clientName}`,
+        });
+
+        console.log("✅ Contract loaded from history successfully");
+      } catch (error) {
+        console.error("❌ Error loading contract from history:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load contract from history",
+          variant: "destructive",
+        });
+      }
+    },
+    [toast],
+  );
 
   // Filter and search contracts
-  const filteredContracts = contractHistory.filter(contract => {
+  const filteredContracts = contractHistory.filter((contract) => {
     // Apply status filter
-    if (historyFilter !== 'all' && contract.status !== historyFilter) {
+    if (historyFilter !== "all" && contract.status !== historyFilter) {
       return false;
     }
-    
+
     // Apply search filter
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
       return (
         contract.clientName.toLowerCase().includes(searchLower) ||
         contract.projectType.toLowerCase().includes(searchLower) ||
-        (contract.contractData.project?.description || '').toLowerCase().includes(searchLower)
+        (contract.contractData.project?.description || "")
+          .toLowerCase()
+          .includes(searchLower)
       );
     }
-    
+
     return true;
   });
 
   // Load projects for step 1
   const loadProjects = useCallback(async () => {
     if (!currentUser?.uid) return;
-    
+
     setIsLoading(true);
     console.log("🔍 Loading estimates and projects for user:", currentUser.uid);
-    
+
     try {
       // FIREBASE CONNECTION VALIDATION
       console.log("🔗 Validating Firebase connection...");
-      const { collection, query, where, getDocs } = await import("firebase/firestore");
+      const { collection, query, where, getDocs } = await import(
+        "firebase/firestore"
+      );
       const { db } = await import("@/lib/firebase");
-      
+
       // Test Firebase connection with a simple query
       try {
-        const testQuery = query(collection(db, "estimates"), where("firebaseUserId", "==", currentUser.uid));
+        const testQuery = query(
+          collection(db, "estimates"),
+          where("firebaseUserId", "==", currentUser.uid),
+        );
         console.log("✅ Firebase connection validated successfully");
       } catch (connectionError) {
         console.error("❌ Firebase connection failed:", connectionError);
-        throw new Error("No se pudo conectar a Firebase. Verifique su conexión a internet.");
+        throw new Error(
+          "No se pudo conectar a Firebase. Verifique su conexión a internet.",
+        );
       }
-      
+
       let allProjects: any[] = [];
-      
+
       // 1. Load from estimates collection (primary source)
       console.log("📋 Loading from estimates collection...");
       const estimatesQuery = query(
         collection(db, "estimates"),
-        where("firebaseUserId", "==", currentUser.uid)
+        where("firebaseUserId", "==", currentUser.uid),
       );
-      
+
       const estimatesSnapshot = await getDocs(estimatesQuery);
-      const firebaseEstimates = estimatesSnapshot.docs.map(doc => {
+      const firebaseEstimates = estimatesSnapshot.docs.map((doc) => {
         const data = doc.data();
-        
+
         // Extract client information properly
-        const clientName = data.clientName || 
-                          data.clientInformation?.name || 
-                          data.client?.name || 
-                          "Cliente sin nombre";
-        
-        const clientEmail = data.clientEmail || 
-                           data.clientInformation?.email || 
-                           data.client?.email || 
-                           "";
-                           
-        const clientPhone = data.clientPhone || 
-                           data.clientInformation?.phone || 
-                           data.client?.phone || 
-                           "";
-        
+        const clientName =
+          data.clientName ||
+          data.clientInformation?.name ||
+          data.client?.name ||
+          "Cliente sin nombre";
+
+        const clientEmail =
+          data.clientEmail ||
+          data.clientInformation?.email ||
+          data.client?.email ||
+          "";
+
+        const clientPhone =
+          data.clientPhone ||
+          data.clientInformation?.phone ||
+          data.client?.phone ||
+          "";
+
         // Extract project details
-        const projectType = data.projectType || 
-                           data.projectDetails?.type || 
-                           data.fenceType || 
-                           "Construction";
-        
-        const projectDescription = data.projectDescription || 
-                                  data.projectDetails || 
-                                  data.description || 
-                                  "";
-        
+        const projectType =
+          data.projectType ||
+          data.projectDetails?.type ||
+          data.fenceType ||
+          "Construction";
+
+        const projectDescription =
+          data.projectDescription ||
+          data.projectDetails ||
+          data.description ||
+          "";
+
         // Extract financial information - MATCH EstimatesWizard logic exactly
-        let totalValue = data.projectTotalCosts?.totalSummary?.finalTotal ||
-                        data.projectTotalCosts?.total ||
-                        data.total ||
-                        data.estimateAmount ||
-                        0;
+        let totalValue =
+          data.projectTotalCosts?.totalSummary?.finalTotal ||
+          data.projectTotalCosts?.total ||
+          data.total ||
+          data.estimateAmount ||
+          0;
 
         // No conversion - keep original values as they are stored (matching EstimatesWizard)
         const displayTotal = totalValue;
-        
+
         return {
           id: doc.id,
           estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
-          
+
           // Client information
           clientName,
           clientEmail,
           clientPhone,
           clientAddress: data.clientAddress || data.address || "",
-          
+
           // Project information
           projectType,
           projectDescription,
           description: projectDescription,
-          
+
           // Financial information - MATCH EstimatesWizard fields exactly
           total: displayTotal, // Primary field used in EstimatesWizard
-          totalAmount: displayTotal, // Backup field for compatibility  
+          totalAmount: displayTotal, // Backup field for compatibility
           totalPrice: displayTotal, // Backup field for compatibility
           displaySubtotal: displayTotal, // Backup field for compatibility
           displayTotal, // Backup field for compatibility
-          
+
           // Items and costs
-          items: data.items || data.projectTotalCosts?.materialCosts?.items || [],
-          
+          items:
+            data.items || data.projectTotalCosts?.materialCosts?.items || [],
+
           // Status
           status: data.status || "estimate",
           projectProgress: "estimate_ready",
-          
+
           // Metadata
           createdAt: data.createdAt || new Date(),
           source: "estimates",
-          originalData: data
+          originalData: data,
         };
       });
-      
+
       allProjects = [...allProjects, ...firebaseEstimates];
-      console.log(`📋 Loaded ${firebaseEstimates.length} estimates from Firebase`);
-      
+      console.log(
+        `📋 Loaded ${firebaseEstimates.length} estimates from Firebase`,
+      );
+
       // 2. Also load from projects collection as backup
       console.log("🏗️ Loading from projects collection...");
       const projectsQuery = query(
         collection(db, "projects"),
-        where("firebaseUserId", "==", currentUser.uid)
+        where("firebaseUserId", "==", currentUser.uid),
       );
-      
+
       const projectsSnapshot = await getDocs(projectsQuery);
-      const firebaseProjects = projectsSnapshot.docs.map(doc => ({
+      const firebaseProjects = projectsSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
-        source: "projects"
+        source: "projects",
       }));
-      
+
       allProjects = [...allProjects, ...firebaseProjects];
-      console.log(`🏗️ Loaded ${firebaseProjects.length} projects from Firebase`);
+      console.log(
+        `🏗️ Loaded ${firebaseProjects.length} projects from Firebase`,
+      );
 
       // 3. Filter for valid projects with comprehensive data validation
       const validProjects = allProjects.filter((project: any) => {
         // Financial validation
         const financialAmount = getCorrectProjectTotal(project);
         const hasValidAmount = financialAmount > 0;
-        
+
         // Client data validation
-        const hasClientName = project.clientName && 
-                             project.clientName !== "Cliente sin nombre" && 
-                             project.clientName.trim().length > 0;
-        
+        const hasClientName =
+          project.clientName &&
+          project.clientName !== "Cliente sin nombre" &&
+          project.clientName.trim().length > 0;
+
         // Data integrity check
         const isValidProject = hasValidAmount && hasClientName;
-        
+
         if (!isValidProject) {
           console.warn("⚠️ Invalid project filtered out:", {
             id: project.id,
             clientName: project.clientName,
             financialAmount,
             hasValidAmount,
-            hasClientName
+            hasClientName,
           });
         }
-        
+
         return isValidProject;
       });
-      
+
       setProjects(validProjects);
       console.log(`✅ Total loaded: ${validProjects.length} valid projects`);
-      
+
       if (validProjects.length === 0) {
-        console.log("❌ No valid projects found. User needs to create estimates first.");
+        console.log(
+          "❌ No valid projects found. User needs to create estimates first.",
+        );
         toast({
           title: "No Projects Found",
           description: "Create estimates first to generate contracts.",
@@ -1349,7 +1739,8 @@ export default function SimpleContractGenerator() {
       setProjects([]);
       toast({
         title: "Error Loading Projects",
-        description: "Could not connect to load your projects. Please refresh the page.",
+        description:
+          "Could not connect to load your projects. Please refresh the page.",
         variant: "destructive",
       });
     } finally {
@@ -1361,79 +1752,94 @@ export default function SimpleContractGenerator() {
   useEffect(() => {
     if (!currentUser?.uid) return;
 
-    console.log("🔄 Setting up real-time project listener for user:", currentUser.uid);
-    
+    console.log(
+      "🔄 Setting up real-time project listener for user:",
+      currentUser.uid,
+    );
+
     const projectsQuery = query(
       collection(db, "projects"),
-      where("userId", "==", currentUser.uid)
+      where("userId", "==", currentUser.uid),
     );
-    
+
     // Real-time listener with enhanced error handling and data validation
-    const unsubscribe = onSnapshot(projectsQuery, 
+    const unsubscribe = onSnapshot(
+      projectsQuery,
       (snapshot) => {
         try {
           console.log("🔄 Processing real-time Firebase update...");
-          
-          const allProjects = snapshot.docs.map(doc => {
-            const data = doc.data();
-            
-            // Data validation for each project
-            if (!data) {
-              console.warn("⚠️ Empty project data detected:", doc.id);
-              return null;
-            }
-            
-            return {
-              id: doc.id,
-              ...data,
-              timestamp: new Date().toISOString()
-            };
-          }).filter(Boolean); // Remove null entries
-          
+
+          const allProjects = snapshot.docs
+            .map((doc) => {
+              const data = doc.data();
+
+              // Data validation for each project
+              if (!data) {
+                console.warn("⚠️ Empty project data detected:", doc.id);
+                return null;
+              }
+
+              return {
+                id: doc.id,
+                ...data,
+                timestamp: new Date().toISOString(),
+              };
+            })
+            .filter(Boolean); // Remove null entries
+
           // Enhanced project filtering with data integrity checks
           const approvedProjects = allProjects.filter((project: any) => {
             // Status validation
-            const hasValidStatus = project.status === "approved" || 
-                                  project.status === "estimate_ready" || 
-                                  project.status === "estimate" ||
-                                  project.projectProgress === "approved" ||
-                                  project.projectProgress === "client_approved" ||
-                                  project.projectProgress === "estimate_ready" ||
-                                  project.displaySubtotal > 0;
-            
+            const hasValidStatus =
+              project.status === "approved" ||
+              project.status === "estimate_ready" ||
+              project.status === "estimate" ||
+              project.projectProgress === "approved" ||
+              project.projectProgress === "client_approved" ||
+              project.projectProgress === "estimate_ready" ||
+              project.displaySubtotal > 0;
+
             // Financial data validation
             const financialAmount = getCorrectProjectTotal(project);
-            const hasValidFinancials = financialAmount > 0 && financialAmount < 1000000; // Corruption check
-            
+            const hasValidFinancials =
+              financialAmount > 0 && financialAmount < 1000000; // Corruption check
+
             // Client data validation
-            const hasValidClient = project.clientName && 
-                                  project.clientName !== "Cliente sin nombre" &&
-                                  project.clientName.trim().length > 0;
-            
-            const isValid = hasValidStatus && hasValidFinancials && hasValidClient;
-            
+            const hasValidClient =
+              project.clientName &&
+              project.clientName !== "Cliente sin nombre" &&
+              project.clientName.trim().length > 0;
+
+            const isValid =
+              hasValidStatus && hasValidFinancials && hasValidClient;
+
             if (!isValid) {
-              console.warn("⚠️ Invalid project filtered from real-time update:", {
-                id: project.id,
-                hasValidStatus,
-                hasValidFinancials,
-                hasValidClient,
-                financialAmount
-              });
+              console.warn(
+                "⚠️ Invalid project filtered from real-time update:",
+                {
+                  id: project.id,
+                  hasValidStatus,
+                  hasValidFinancials,
+                  hasValidClient,
+                  financialAmount,
+                },
+              );
             }
-            
+
             return isValid;
           });
-          
+
           setProjects(approvedProjects);
-          console.log(`📊 Real-time update: ${approvedProjects.length} validated projects`);
+          console.log(
+            `📊 Real-time update: ${approvedProjects.length} validated projects`,
+          );
           setIsLoading(false);
         } catch (processError) {
           console.error("❌ Error processing real-time update:", processError);
           toast({
             title: "Error de Datos",
             description: "Error procesando actualización en tiempo real",
-            variant: "destructive"
+            variant: "destructive",
           });
         }
       },
@@ -1442,183 +1848,247 @@ export default function SimpleContractGenerator() {
         console.error("❌ Error details:", {
           code: error.code,
           message: (error as Error).message,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
-        
+
         toast({
           title: "Error de Conexión",
           description: "Conexión Firebase perdida. Intentando reconectar...",
           variant: "destructive",
         });
         setIsLoading(false);
-      }
+      },
     );
 
     // Cleanup listener on unmount
     return () => unsubscribe();
   }, [currentUser?.uid, toast]);
-  
+
   // Initialize editable data when project is selected
   useEffect(() => {
     if (selectedProject) {
-      const totalAmount = selectedProject.totalAmount || selectedProject.totalPrice || selectedProject.displaySubtotal || 0;
-      setEditableData(prev => ({
+      const totalAmount =
+        selectedProject.totalAmount ||
+        selectedProject.totalPrice ||
+        selectedProject.displaySubtotal ||
+        0;
+      setEditableData((prev) => ({
         ...prev,
-        clientName: selectedProject.clientName || selectedProject.client?.name || selectedProject.client || '',
-        clientEmail: selectedProject.clientEmail || selectedProject.client?.email || '',
-        clientPhone: selectedProject.clientPhone || selectedProject.client?.phone || '',
-        clientAddress: selectedProject.clientAddress || selectedProject.client?.address || selectedProject.address || '',
+        clientName:
+          selectedProject.clientName ||
+          selectedProject.client?.name ||
+          selectedProject.client ||
+          "",
+        clientEmail:
+          selectedProject.clientEmail || selectedProject.client?.email || "",
+        clientPhone:
+          selectedProject.clientPhone || selectedProject.client?.phone || "",
+        clientAddress:
+          selectedProject.clientAddress ||
+          selectedProject.client?.address ||
+          selectedProject.address ||
+          "",
         paymentMilestones: [
-          { id: 1, description: "Initial deposit", percentage: 50, amount: totalAmount * 0.5 },
-          { id: 2, description: "Project completion", percentage: 50, amount: totalAmount * 0.5 }
-        ]
+          {
+            id: 1,
+            description: "Initial deposit",
+            percentage: 50,
+            amount: totalAmount * 0.5,
+          },
+          {
+            id: 2,
+            description: "Project completion",
+            percentage: 50,
+            amount: totalAmount * 0.5,
+          },
+        ],
       }));
     }
   }, [selectedProject]);
 
   // Step 1: Select project and move to step 2 with direct data processing
-  const handleProjectSelect = useCallback(async (project: any) => {
-    console.log("🎯 Selecting project:", project);
-    setIsLoading(true);
-    
-    try {
-      // Validate project data
-      if (!project) {
-        throw new Error("No project data provided");
+  const handleProjectSelect = useCallback(
+    async (project: any) => {
+      console.log("🎯 Selecting project:", project);
+      setIsLoading(true);
+
+      try {
+        // Validate project data
+        if (!project) {
+          throw new Error("No project data provided");
+        }
+
+        // Extract client data from various possible sources with comprehensive fallbacks
+        const clientName =
+          project.clientName ||
+          project.clientInformation?.name ||
+          project.client?.name ||
+          project.client ||
+          "Cliente sin nombre";
+
+        const clientEmail =
+          project.clientEmail ||
+          project.clientInformation?.email ||
+          project.client?.email ||
+          "";
+
+        const clientPhone =
+          project.clientPhone ||
+          project.clientInformation?.phone ||
+          project.client?.phone ||
+          "";
+
+        const clientAddress =
+          project.clientAddress ||
+          project.address ||
+          project.clientInformation?.address ||
+          project.client?.address ||
+          "";
+
+        // Extract project details
+        const projectType =
+          project.projectType ||
+          project.projectDetails?.type ||
+          project.fenceType ||
+          "Construction";
+
+        const projectDescription =
+          project.projectDescription ||
+          project.description ||
+          project.projectDetails ||
+          `${projectType} project for ${clientName}`;
+
+        // Extract financial data - CRITICAL FIX: Use helper function for consistent calculation
+        const totalAmount = getCorrectProjectTotal(project);
+
+        // No conversion - keep original values as they are stored (matching EstimatesWizard)
+
+        // Process project data comprehensively
+        const contractData = {
+          clientInfo: {
+            name: clientName,
+            address: clientAddress,
+            email: clientEmail,
+            phone: clientPhone,
+          },
+          projectDetails: {
+            description: projectDescription,
+            type: projectType,
+          },
+          financials: {
+            total: totalAmount,
+          },
+          materials: project.items || project.materials || [],
+          originalData: project.originalData || project,
+        };
+
+        console.log("📋 Processed contract data:", contractData);
+
+        setSelectedProject(project);
+        setContractData(contractData);
+
+        // Initialize editable data with comprehensive project data
+        setEditableData({
+          clientName,
+          clientEmail,
+          clientPhone,
+          clientAddress,
+          startDate: "",
+          completionDate: "",
+          permitRequired: "",
+          permitResponsibility: "contractor",
+          warrantyYears: "1",
+          paymentMilestones: [
+            {
+              id: 1,
+              description: "Initial deposit",
+              percentage: 50,
+              amount: getCorrectProjectTotal(project) * 0.5,
+            },
+            {
+              id: 2,
+              description: "Project completion",
+              percentage: 50,
+              amount: getCorrectProjectTotal(project) * 0.5,
+            },
+          ],
+        });
+
+        setCurrentStep(2);
+
+        // Load AI-suggested clauses
+        // Note: Suggested clauses functionality can be added in the future if needed
+
+        toast({
+          title: "Project Selected",
+          description: `Ready to generate contract for ${project.clientName}`,
+        });
+
+        console.log("Project selected and processed:", {
+          projectId: project.id,
+          clientName: project.clientName,
+          totalAmount: contractData.financials.total,
+        });
+      } catch (error) {
+        console.error("❌ CRITICAL ERROR selecting project:", error);
+        console.error("❌ Project data when error occurred:", project);
+        console.error("❌ Error details:", {
+          message: (error as Error).message || "Unknown error",
+          stack: (error as Error).stack,
+          timestamp: new Date().toISOString(),
+        });
+
+        toast({
+          title: "Error de Conexión",
+          description: `Error procesando datos del proyecto: ${(error as Error).message || "Error desconocido"}`,
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
-      
-      // Extract client data from various possible sources with comprehensive fallbacks
-      const clientName = project.clientName || 
-                        project.clientInformation?.name || 
-                        project.client?.name || 
-                        project.client || 
-                        "Cliente sin nombre";
-      
-      const clientEmail = project.clientEmail || 
-                         project.clientInformation?.email || 
-                         project.client?.email || 
-                         "";
-      
-      const clientPhone = project.clientPhone || 
-                         project.clientInformation?.phone || 
-                         project.client?.phone || 
-                         "";
-      
-      const clientAddress = project.clientAddress || 
-                           project.address || 
-                           project.clientInformation?.address || 
-                           project.client?.address || 
-                           "";
-      
-      // Extract project details
-      const projectType = project.projectType || 
-                         project.projectDetails?.type || 
-                         project.fenceType || 
-                         "Construction";
-      
-      const projectDescription = project.projectDescription || 
-                                project.description || 
-                                project.projectDetails || 
-                                `${projectType} project for ${clientName}`;
-      
-      // Extract financial data - CRITICAL FIX: Use helper function for consistent calculation
-      const totalAmount = getCorrectProjectTotal(project);
-      
-      // No conversion - keep original values as they are stored (matching EstimatesWizard)
-      
-      // Process project data comprehensively
-      const contractData = {
-        clientInfo: {
-          name: clientName,
-          address: clientAddress,
-          email: clientEmail,
-          phone: clientPhone,
-        },
-        projectDetails: {
-          description: projectDescription,
-          type: projectType,
-        },
-        financials: {
-          total: totalAmount,
-        },
-        materials: project.items || project.materials || [],
-        originalData: project.originalData || project
-      };
-      
-      console.log("📋 Processed contract data:", contractData);
-      
-      setSelectedProject(project);
-      setContractData(contractData);
-      
-      // Initialize editable data with comprehensive project data
-      setEditableData({
-        clientName,
-        clientEmail,
-        clientPhone,
-        clientAddress,
-        startDate: "",
-        completionDate: "",
-        permitRequired: "",
-        permitResponsibility: "contractor",
-        warrantyYears: "1",
-        paymentMilestones: [
-          { id: 1, description: "Initial deposit", percentage: 50, amount: getCorrectProjectTotal(project) * 0.5 },
-          { id: 2, description: "Project completion", percentage: 50, amount: getCorrectProjectTotal(project) * 0.5 }
-        ]
-      });
-      
-      setCurrentStep(2);
-      
-      // Load AI-suggested clauses
-      // Note: Suggested clauses functionality can be added in the future if needed
-      
-      toast({
-        title: "Project Selected",
-        description: `Ready to generate contract for ${project.clientName}`,
-      });
-      
-      console.log("Project selected and processed:", {
-        projectId: project.id,
-        clientName: project.clientName,
-        totalAmount: contractData.financials.total
-      });
-    } catch (error) {
-      console.error("❌ CRITICAL ERROR selecting project:", error);
-      console.error("❌ Project data when error occurred:", project);
-      console.error("❌ Error details:", {
-        message: (error as Error).message || 'Unknown error',
-        stack: (error as Error).stack,
-        timestamp: new Date().toISOString()
-      });
-      
-      toast({
-        title: "Error de Conexión",
-        description: `Error procesando datos del proyecto: ${(error as Error).message || 'Error desconocido'}`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentUser?.uid, toast]);
+    },
+    [currentUser?.uid, toast],
+  );
 
   // Direct PDF download function - uses working PDF endpoint
   const handleDownloadPDF = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid) return;
-    
+
     setIsLoading(true);
-    
+
     try {
       // Collect comprehensive contract data
       const contractPayload = {
         userId: currentUser.uid,
         client: {
-          name: editableData.clientName || contractData?.clientInfo?.name || selectedProject.clientName,
-          address: editableData.clientAddress || contractData?.clientInfo?.address || selectedProject.address || selectedProject.clientAddress || "",
-          email: editableData.clientEmail || contractData?.clientInfo?.email || selectedProject.clientEmail || "",
-          phone: editableData.clientPhone || contractData?.clientInfo?.phone || selectedProject.clientPhone || "",
+          name:
+            editableData.clientName ||
+            contractData?.clientInfo?.name ||
+            selectedProject.clientName,
+          address:
+            editableData.clientAddress ||
+            contractData?.clientInfo?.address ||
+            selectedProject.address ||
+            selectedProject.clientAddress ||
+            "",
+          email:
+            editableData.clientEmail ||
+            contractData?.clientInfo?.email ||
+            selectedProject.clientEmail ||
+            "",
+          phone:
+            editableData.clientPhone ||
+            contractData?.clientInfo?.phone ||
+            selectedProject.clientPhone ||
+            "",
         },
         project: {
-          description: contractData?.projectDetails?.description || selectedProject.description || selectedProject.projectDescription || selectedProject.projectType || "",
+          description:
+            contractData?.projectDetails?.description ||
+            selectedProject.description ||
+            selectedProject.projectDescription ||
+            selectedProject.projectType ||
+            "",
           type: selectedProject.projectType || "Construction Project",
           total: getCorrectProjectTotal(selectedProject),
           materials: contractData?.materials || selectedProject.materials || [],
@@ -1626,7 +2096,8 @@ export default function SimpleContractGenerator() {
         contractor: {
           name: profile?.company || profile?.ownerName || "Company Name",
           company: profile?.company || "Company Name",
-          address: `${profile?.address || ""} ${profile?.city || ""} ${profile?.state || ""} ${profile?.zipCode || ""}`.trim(),
+          address:
+            `${profile?.address || ""} ${profile?.city || ""} ${profile?.state || ""} ${profile?.zipCode || ""}`.trim(),
           phone: profile?.phone || profile?.mobilePhone || "",
           email: profile?.email || "",
           license: profile?.license || "",
@@ -1635,38 +2106,52 @@ export default function SimpleContractGenerator() {
           total: getCorrectProjectTotal(selectedProject),
           subtotal: getCorrectProjectTotal(selectedProject),
           tax: 0,
-          discount: 0
+          discount: 0,
         },
         timeline: {
-          startDate: editableData.startDate || new Date().toISOString().split('T')[0],
+          startDate:
+            editableData.startDate || new Date().toISOString().split("T")[0],
           completionDate: editableData.completionDate || "",
-          estimatedDuration: "As specified in project details"
+          estimatedDuration: "As specified in project details",
         },
         paymentTerms: editableData.paymentMilestones || [
-          { id: 1, description: "Initial deposit", percentage: 50, amount: getCorrectProjectTotal(selectedProject) * 0.5 },
-          { id: 2, description: "Project completion", percentage: 50, amount: getCorrectProjectTotal(selectedProject) * 0.5 }
-        ]
+          {
+            id: 1,
+            description: "Initial deposit",
+            percentage: 50,
+            amount: getCorrectProjectTotal(selectedProject) * 0.5,
+          },
+          {
+            id: 2,
+            description: "Project completion",
+            percentage: 50,
+            amount: getCorrectProjectTotal(selectedProject) * 0.5,
+          },
+        ],
       };
 
-      console.log("📄 [PDF DOWNLOAD] Generating PDF with payload:", contractPayload);
+      console.log(
+        "📄 [PDF DOWNLOAD] Generating PDF with payload:",
+        contractPayload,
+      );
 
       // Call the working PDF endpoint that was confirmed in the system
-      const response = await fetch('/api/generate-pdf', {
-        method: 'POST',
+      const response = await fetch("/api/generate-pdf", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'x-firebase-uid': currentUser?.uid || '',
+          "Content-Type": "application/json",
+          "x-firebase-uid": currentUser?.uid || "",
         },
-        body: JSON.stringify(contractPayload)
+        body: JSON.stringify(contractPayload),
       });
 
       if (response.ok) {
         // Convert response to blob and download
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement("a");
         a.href = url;
-        a.download = `contract-${selectedProject.clientName?.replace(/\s+/g, '_') || 'client'}-${new Date().toISOString().split('T')[0]}.pdf`;
+        a.download = `contract-${selectedProject.clientName?.replace(/\s+/g, "_") || "client"}-${new Date().toISOString().split("T")[0]}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -1679,39 +2164,70 @@ export default function SimpleContractGenerator() {
       } else {
         const errorText = await response.text();
         console.error("❌ PDF download failed:", errorText);
-        throw new Error(`Failed to download PDF: ${response.status} - ${response.statusText}`);
+        throw new Error(
+          `Failed to download PDF: ${response.status} - ${response.statusText}`,
+        );
       }
     } catch (error) {
       console.error("❌ Error downloading PDF:", error);
       toast({
-        title: "Download Error", 
+        title: "Download Error",
         description: `Failed to download PDF: ${(error as Error).message}`,
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  }, [selectedProject, currentUser?.uid, profile, editableData, contractData, getCorrectProjectTotal, toast]);
+  }, [
+    selectedProject,
+    currentUser?.uid,
+    profile,
+    editableData,
+    contractData,
+    getCorrectProjectTotal,
+    toast,
+  ]);
 
   // Generate contract using backend API with comprehensive data (for legal workflow)
   const handleGenerateContract = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid) return;
-    
+
     setIsLoading(true);
     let contractPayload = null; // Initialize at function scope
-    
+
     try {
       // Collect comprehensive contract data
       contractPayload = {
         userId: currentUser.uid,
         client: {
-          name: editableData.clientName || contractData?.clientInfo?.name || selectedProject.clientName,
-          address: editableData.clientAddress || contractData?.clientInfo?.address || selectedProject.address || selectedProject.clientAddress || "",
-          email: editableData.clientEmail || contractData?.clientInfo?.email || selectedProject.clientEmail || "",
-          phone: editableData.clientPhone || contractData?.clientInfo?.phone || selectedProject.clientPhone || "",
+          name:
+            editableData.clientName ||
+            contractData?.clientInfo?.name ||
+            selectedProject.clientName,
+          address:
+            editableData.clientAddress ||
+            contractData?.clientInfo?.address ||
+            selectedProject.address ||
+            selectedProject.clientAddress ||
+            "",
+          email:
+            editableData.clientEmail ||
+            contractData?.clientInfo?.email ||
+            selectedProject.clientEmail ||
+            "",
+          phone:
+            editableData.clientPhone ||
+            contractData?.clientInfo?.phone ||
+            selectedProject.clientPhone ||
+            "",
         },
         project: {
-          description: contractData?.projectDetails?.description || selectedProject.description || selectedProject.projectDescription || selectedProject.projectType || "",
+          description:
+            contractData?.projectDetails?.description ||
+            selectedProject.description ||
+            selectedProject.projectDescription ||
+            selectedProject.projectType ||
+            "",
           type: selectedProject.projectType || "Construction Project",
           total: getCorrectProjectTotal(selectedProject),
           materials: contractData?.materials || selectedProject.materials || [],
@@ -1719,19 +2235,28 @@ export default function SimpleContractGenerator() {
         contractor: {
           name: profile?.company || profile?.ownerName || "Contractor Name",
           company: profile?.company || "Company Name",
-          address: profile?.address ? 
-            `${profile.address}${profile.city ? `, ${profile.city}` : ''}${profile.state ? `, ${profile.state}` : ''}${profile.zipCode ? ` ${profile.zipCode}` : ''}` : 
-            "Business Address",
-          phone: profile?.phone || profile?.mobilePhone || "Business Phone", 
+          address: profile?.address
+            ? `${profile.address}${profile.city ? `, ${profile.city}` : ""}${profile.state ? `, ${profile.state}` : ""}${profile.zipCode ? ` ${profile.zipCode}` : ""}`
+            : "Business Address",
+          phone: profile?.phone || profile?.mobilePhone || "Business Phone",
           email: profile?.email || "business@email.com",
-          license: (profile as any)?.licenseNumber || (profile as any)?.license || "License Number"
+          license:
+            (profile as any)?.licenseNumber ||
+            (profile as any)?.license ||
+            "License Number",
         },
         timeline: {
-          startDate: editableData.startDate || new Date().toISOString().split('T')[0],
-          completionDate: editableData.completionDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          estimatedDuration: editableData.startDate && editableData.completionDate ? 
-            `${Math.ceil((new Date(editableData.completionDate).getTime() - new Date(editableData.startDate).getTime()) / (1000 * 60 * 60 * 24))} days` : 
-            "To be agreed",
+          startDate:
+            editableData.startDate || new Date().toISOString().split("T")[0],
+          completionDate:
+            editableData.completionDate ||
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split("T")[0],
+          estimatedDuration:
+            editableData.startDate && editableData.completionDate
+              ? `${Math.ceil((new Date(editableData.completionDate).getTime() - new Date(editableData.startDate).getTime()) / (1000 * 60 * 60 * 24))} days`
+              : "To be agreed",
         },
         financials: {
           total: getCorrectProjectTotal(selectedProject),
@@ -1739,7 +2264,10 @@ export default function SimpleContractGenerator() {
         },
         permitInfo: {
           required: editableData.permitRequired === "yes",
-          responsibility: editableData.permitRequired === "yes" ? editableData.permitResponsibility : "",
+          responsibility:
+            editableData.permitRequired === "yes"
+              ? editableData.permitResponsibility
+              : "",
           numbers: "",
         },
         warranty: {
@@ -1747,7 +2275,9 @@ export default function SimpleContractGenerator() {
         },
         legalClauses: {
           selected: selectedClauses,
-          clauses: suggestedClauses.filter(c => selectedClauses.includes(c.id))
+          clauses: suggestedClauses.filter((c) =>
+            selectedClauses.includes(c.id),
+          ),
         },
         insuranceInfo: {
           general: { required: true, amount: "$1,000,000" },
@@ -1759,28 +2289,36 @@ export default function SimpleContractGenerator() {
           materials: "Manufacturer warranty",
         },
         additionalTerms: "",
-        
+
         // Pass the complete selected project data for contractor extraction
         originalRequest: selectedProject,
       };
 
       // CRITICAL VALIDATION: Log financial data for debugging corruption issues
-      const displayedTotal = selectedProject?.total || selectedProject?.totalAmount || selectedProject?.totalPrice || selectedProject?.displaySubtotal || 0;
-      console.log("💰 [FRONTEND] Financial data validation before sending to backend:", {
-        displayedInUI: displayedTotal,
-        sentToBackend: contractPayload.financials.total,
-        paymentMilestones: contractPayload.financials.paymentMilestones,
-        dataMatches: displayedTotal === contractPayload.financials.total
-      });
-      
+      const displayedTotal =
+        selectedProject?.total ||
+        selectedProject?.totalAmount ||
+        selectedProject?.totalPrice ||
+        selectedProject?.displaySubtotal ||
+        0;
+      console.log(
+        "💰 [FRONTEND] Financial data validation before sending to backend:",
+        {
+          displayedInUI: displayedTotal,
+          sentToBackend: contractPayload.financials.total,
+          paymentMilestones: contractPayload.financials.paymentMilestones,
+          dataMatches: displayedTotal === contractPayload.financials.total,
+        },
+      );
+
       console.log("Generating contract with payload:", contractPayload);
 
       // First generate contract HTML for legal workflow
       const htmlResponse = await fetch("/api/generate-contract-html", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${currentUser.uid}`,
+          Authorization: `Bearer ${currentUser.uid}`,
         },
         body: JSON.stringify(contractPayload),
       });
@@ -1791,7 +2329,7 @@ export default function SimpleContractGenerator() {
         setContractData(contractPayload);
         setIsContractReady(true);
         setCurrentStep(3);
-        
+
         toast({
           title: "Contract Ready for Legal Process",
           description: `Contract generated for ${selectedProject.clientName}. Legal compliance workflow enabled.`,
@@ -1800,9 +2338,9 @@ export default function SimpleContractGenerator() {
         // Fallback to PDF generation if HTML endpoint fails
         const response = await fetch("/api/generate-pdf", {
           method: "POST",
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${currentUser.uid}`,
+            Authorization: `Bearer ${currentUser.uid}`,
           },
           body: JSON.stringify(contractPayload),
         });
@@ -1812,13 +2350,15 @@ export default function SimpleContractGenerator() {
           console.log("✅ PDF Generation Response:", {
             status: response.status,
             contentType,
-            headers: Object.fromEntries(response.headers.entries())
+            headers: Object.fromEntries(response.headers.entries()),
           });
 
           if (contentType?.includes("application/pdf")) {
             console.log("📄 PDF content type confirmed - processing...");
           } else {
-            console.log("⚠️ Unexpected content type, but response is OK - proceeding...");
+            console.log(
+              "⚠️ Unexpected content type, but response is OK - proceeding...",
+            );
           }
 
           // PDF generated successfully - create basic HTML for legal workflow
@@ -1832,35 +2372,39 @@ export default function SimpleContractGenerator() {
               <p>Complete contract details have been generated. Please proceed with the legal compliance workflow.</p>
             </div>
           `;
-          
+
           // Generate professional HTML for legal workflow
           try {
-            const htmlResponse = await fetch('/api/generate-contract-html', {
-              method: 'POST',
+            const htmlResponse = await fetch("/api/generate-contract-html", {
+              method: "POST",
               headers: {
-                'Content-Type': 'application/json',
-                'x-firebase-uid': currentUser?.uid || '',
+                "Content-Type": "application/json",
+                "x-firebase-uid": currentUser?.uid || "",
               },
-              body: JSON.stringify(contractPayload)
+              body: JSON.stringify(contractPayload),
             });
-            
+
             if (htmlResponse.ok) {
               const htmlData = await htmlResponse.json();
               setContractHTML(htmlData.html);
-              console.log('✅ Professional contract HTML generated for legal workflow');
+              console.log(
+                "✅ Professional contract HTML generated for legal workflow",
+              );
             } else {
-              console.warn('⚠️ Failed to generate professional HTML, using basic fallback');
+              console.warn(
+                "⚠️ Failed to generate professional HTML, using basic fallback",
+              );
               setContractHTML(basicHTML);
             }
           } catch (htmlError) {
-            console.error('HTML generation error:', htmlError);
+            console.error("HTML generation error:", htmlError);
             setContractHTML(basicHTML);
           }
-          
+
           setContractData(contractPayload);
           setIsContractReady(true);
           setCurrentStep(3);
-          
+
           toast({
             title: "Contract Generated",
             description: `Contract ready for legal compliance workflow with ${selectedProject.clientName}`,
@@ -1871,9 +2415,11 @@ export default function SimpleContractGenerator() {
             status: response.status,
             statusText: response.statusText,
             headers: Object.fromEntries(response.headers.entries()),
-            error: errorText
+            error: errorText,
           });
-          throw new Error(`Failed to generate contract PDF: ${response.status} - ${response.statusText}. ${errorText}`);
+          throw new Error(
+            `Failed to generate contract PDF: ${response.status} - ${response.statusText}. ${errorText}`,
+          );
         }
       }
     } catch (error) {
@@ -1881,22 +2427,33 @@ export default function SimpleContractGenerator() {
       console.error("❌ Error details:", {
         message: (error as Error).message,
         stack: (error as Error).stack,
-        contractPayload: contractPayload ? {
-          clientName: contractPayload.client?.name,
-          contractorName: contractPayload.contractor?.name,
-          projectTotal: contractPayload.financials?.total
-        } : 'Not created yet'
+        contractPayload: contractPayload
+          ? {
+              clientName: contractPayload.client?.name,
+              contractorName: contractPayload.contractor?.name,
+              projectTotal: contractPayload.financials?.total,
+            }
+          : "Not created yet",
       });
-      
+
       toast({
         title: "Generation Error",
-        description: `Failed to generate contract: ${(error as Error).message || 'Unknown error'}. Please check the console for details.`,
+        description: `Failed to generate contract: ${(error as Error).message || "Unknown error"}. Please check the console for details.`,
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  }, [selectedProject, currentUser?.uid, profile, editableData, selectedClauses, suggestedClauses, getCorrectProjectTotal, toast]);
+  }, [
+    selectedProject,
+    currentUser?.uid,
+    profile,
+    editableData,
+    selectedClauses,
+    suggestedClauses,
+    getCorrectProjectTotal,
+    toast,
+  ]);
 
   // Reset to start new contract
   const handleNewContract = useCallback(() => {
@@ -1916,8 +2473,8 @@ export default function SimpleContractGenerator() {
       warrantyYears: "1",
       paymentMilestones: [
         { id: 1, description: "Initial deposit", percentage: 50, amount: 0 },
-        { id: 2, description: "Project completion", percentage: 50, amount: 0 }
-      ]
+        { id: 2, description: "Project completion", percentage: 50, amount: 0 },
+      ],
     });
     setSuggestedClauses([]);
     setSelectedClauses([]);
@@ -1933,7 +2490,8 @@ export default function SimpleContractGenerator() {
     if (!selectedProject || !currentUser?.uid || !contractHTML) {
       toast({
         title: "Error",
-        description: "Contract must be generated before initiating dual signature",
+        description:
+          "Contract must be generated before initiating dual signature",
         variant: "destructive",
       });
       return;
@@ -1949,28 +2507,43 @@ export default function SimpleContractGenerator() {
         userId: currentUser.uid,
         contractHTML: contractHTML,
         contractData: {
-          contractorName: profile?.company || profile?.ownerName || "Contractor Name",
+          contractorName:
+            profile?.company || profile?.ownerName || "Contractor Name",
           contractorEmail: profile?.email || currentUser.email || "",
           contractorPhone: profile?.phone || profile?.mobilePhone || "",
           contractorCompany: profile?.company || "Company Name",
           clientName: editableData.clientName || selectedProject.clientName,
-          clientEmail: editableData.clientEmail || selectedProject.clientEmail || "",
-          clientPhone: editableData.clientPhone || selectedProject.clientPhone || "",
-          clientAddress: editableData.clientAddress || selectedProject.clientAddress || "",
-          projectDescription: selectedProject.projectDescription || selectedProject.projectType || "Construction Project",
+          clientEmail:
+            editableData.clientEmail || selectedProject.clientEmail || "",
+          clientPhone:
+            editableData.clientPhone || selectedProject.clientPhone || "",
+          clientAddress:
+            editableData.clientAddress || selectedProject.clientAddress || "",
+          projectDescription:
+            selectedProject.projectDescription ||
+            selectedProject.projectType ||
+            "Construction Project",
           totalAmount: getCorrectProjectTotal(selectedProject),
-          startDate: editableData.startDate || new Date().toISOString().split('T')[0],
-          completionDate: editableData.completionDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        }
+          startDate:
+            editableData.startDate || new Date().toISOString().split("T")[0],
+          completionDate:
+            editableData.completionDate ||
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split("T")[0],
+        },
       };
 
-      console.log("🖊️ [DUAL-SIGNATURE] Initiating dual signature workflow:", dualSignaturePayload);
+      console.log(
+        "🖊️ [DUAL-SIGNATURE] Initiating dual signature workflow:",
+        dualSignaturePayload,
+      );
 
-      const response = await fetch('/api/dual-signature/initiate', {
-        method: 'POST',
+      const response = await fetch("/api/dual-signature/initiate", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentUser.uid}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.uid}`,
         },
         body: JSON.stringify(dualSignaturePayload),
       });
@@ -1980,7 +2553,7 @@ export default function SimpleContractGenerator() {
       }
 
       const result = await response.json();
-      
+
       setContractorSignUrl(result.contractorSignUrl || "");
       setClientSignUrl(result.clientSignUrl || "");
       setDualSignatureStatus("Dual signature links generated successfully");
@@ -1989,7 +2562,6 @@ export default function SimpleContractGenerator() {
         title: "Dual Signature Initiated",
         description: `Contract sent to both parties. Contract ID: ${result.contractId}`,
       });
-
     } catch (error) {
       console.error("❌ [DUAL-SIGNATURE] Error:", error);
       setDualSignatureStatus("Failed to initiate dual signature");
@@ -2001,14 +2573,23 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedProject, currentUser, contractHTML, profile, editableData, getCorrectProjectTotal, toast]);
+  }, [
+    selectedProject,
+    currentUser,
+    contractHTML,
+    profile,
+    editableData,
+    getCorrectProjectTotal,
+    toast,
+  ]);
 
   // Simplified Signature Protocol Handler - Generate signature links for both parties
   const handleStartSignatureProtocol = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid || !contractHTML) {
       toast({
         title: "Error",
-        description: "Contract must be generated before starting signature protocol",
+        description:
+          "Contract must be generated before starting signature protocol",
         variant: "destructive",
       });
       return;
@@ -2025,34 +2606,49 @@ export default function SimpleContractGenerator() {
         contractHTML: contractHTML,
         deliveryMethods: { email: false, sms: false, whatsapp: false }, // Not using delivery methods anymore
         contractData: {
-          contractorName: profile?.company || profile?.ownerName || "Contractor Name",
+          contractorName:
+            profile?.company || profile?.ownerName || "Contractor Name",
           contractorEmail: profile?.email || currentUser.email || "",
           contractorPhone: profile?.phone || profile?.mobilePhone || "",
           contractorCompany: profile?.company || "Company Name",
           clientName: editableData.clientName || selectedProject.clientName,
-          clientEmail: editableData.clientEmail || selectedProject.clientEmail || "",
-          clientPhone: editableData.clientPhone || selectedProject.clientPhone || "",
-          clientAddress: editableData.clientAddress || selectedProject.clientAddress || "",
-          projectDescription: selectedProject.projectDescription || selectedProject.projectType || "Construction Project",
+          clientEmail:
+            editableData.clientEmail || selectedProject.clientEmail || "",
+          clientPhone:
+            editableData.clientPhone || selectedProject.clientPhone || "",
+          clientAddress:
+            editableData.clientAddress || selectedProject.clientAddress || "",
+          projectDescription:
+            selectedProject.projectDescription ||
+            selectedProject.projectType ||
+            "Construction Project",
           totalAmount: getCorrectProjectTotal(selectedProject),
-          startDate: editableData.startDate || new Date().toISOString().split('T')[0],
-          completionDate: editableData.completionDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          startDate:
+            editableData.startDate || new Date().toISOString().split("T")[0],
+          completionDate:
+            editableData.completionDate ||
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split("T")[0],
         },
         securityFeatures: {
           encryption: "256-bit SSL",
           verification: true,
           auditTrail: true,
-          timeStamps: true
-        }
+          timeStamps: true,
+        },
       };
 
-      console.log("🔐 [SIGNATURE-PROTOCOL] Generating signature links:", secureDeliveryPayload);
+      console.log(
+        "🔐 [SIGNATURE-PROTOCOL] Generating signature links:",
+        secureDeliveryPayload,
+      );
 
-      const response = await fetch('/api/multi-channel/initiate', {
-        method: 'POST',
+      const response = await fetch("/api/multi-channel/initiate", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentUser.uid}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.uid}`,
         },
         body: JSON.stringify(secureDeliveryPayload),
       });
@@ -2062,17 +2658,16 @@ export default function SimpleContractGenerator() {
       }
 
       const result = await response.json();
-      
+
       setContractorSignUrl(result.contractorSignUrl || "");
       setClientSignUrl(result.clientSignUrl || "");
-      
+
       setDeliveryStatus("Signature links generated successfully");
 
       toast({
         title: "Signature Protocol Started",
         description: `Secure signature links generated. Contract ID: ${result.contractId}`,
       });
-
     } catch (error) {
       console.error("❌ [SIGNATURE-PROTOCOL] Error:", error);
       setDeliveryStatus("Failed to generate signature links");
@@ -2084,56 +2679,78 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedProject, currentUser, contractHTML, profile, editableData, getCorrectProjectTotal, toast]);
+  }, [
+    selectedProject,
+    currentUser,
+    contractHTML,
+    profile,
+    editableData,
+    getCorrectProjectTotal,
+    toast,
+  ]);
 
   // Share functionality for signature links
-  const handleCopyToClipboard = useCallback(async (url: string, type: string) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      toast({
-        title: "Link Copied",
-        description: `${type} signature link copied to clipboard`,
-      });
-    } catch (error) {
-      console.error("Failed to copy to clipboard:", error);
-      toast({
-        title: "Copy Failed",
-        description: "Failed to copy link to clipboard",
-        variant: "destructive",
-      });
-    }
-  }, [toast]);
+  const handleCopyToClipboard = useCallback(
+    async (url: string, type: string) => {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast({
+          title: "Link Copied",
+          description: `${type} signature link copied to clipboard`,
+        });
+      } catch (error) {
+        console.error("Failed to copy to clipboard:", error);
+        toast({
+          title: "Copy Failed",
+          description: "Failed to copy link to clipboard",
+          variant: "destructive",
+        });
+      }
+    },
+    [toast],
+  );
 
-  const handleShareLink = useCallback((url: string, type: string) => {
-    if (navigator.share) {
-      navigator.share({
-        title: `Contract Signature - ${type}`,
-        text: `Please sign the contract using this secure link`,
-        url: url,
-      }).catch(console.error);
-    } else {
-      // Fallback to copying to clipboard
-      handleCopyToClipboard(url, type);
-    }
-  }, [handleCopyToClipboard]);
+  const handleShareLink = useCallback(
+    (url: string, type: string) => {
+      if (navigator.share) {
+        navigator
+          .share({
+            title: `Contract Signature - ${type}`,
+            text: `Please sign the contract using this secure link`,
+            url: url,
+          })
+          .catch(console.error);
+      } else {
+        // Fallback to copying to clipboard
+        handleCopyToClipboard(url, type);
+      }
+    },
+    [handleCopyToClipboard],
+  );
 
   const handleEmailShare = useCallback((url: string, type: string) => {
     const subject = encodeURIComponent(`Contract Signature Required - ${type}`);
-    const body = encodeURIComponent(`Please sign the contract using this secure link: ${url}`);
+    const body = encodeURIComponent(
+      `Please sign the contract using this secure link: ${url}`,
+    );
     const mailtoUrl = `mailto:?subject=${subject}&body=${body}`;
-    window.open(mailtoUrl, '_blank');
+    window.open(mailtoUrl, "_blank");
   }, []);
 
   const handleWhatsAppShare = useCallback((url: string, type: string) => {
-    const text = encodeURIComponent(`Please sign the contract using this secure link: ${url}`);
+    const text = encodeURIComponent(
+      `Please sign the contract using this secure link: ${url}`,
+    );
     const whatsappUrl = `https://wa.me/?text=${text}`;
-    window.open(whatsappUrl, '_blank');
+    window.open(whatsappUrl, "_blank");
   }, []);
 
   const handleSMSShare = useCallback((url: string, type: string) => {
-    const text = encodeURIComponent(`Please sign the contract using this secure link: ${url}`);
+    const text = encodeURIComponent(
+      `Please sign the contract using this secure link: ${url}`,
+    );
     const smsUrl = `sms:?body=${text}`;
-    window.open(smsUrl, '_blank');
+    window.open(smsUrl, "_blank");
   }, []);
 
   // Legal Compliance Workflow - No manual signature handlers needed
@@ -2163,7 +2780,7 @@ export default function SimpleContractGenerator() {
     selectedProject,
     currentUser?.uid,
     currentStep,
-    triggerAutoSave
+    triggerAutoSave,
   ]);
 
   // Cleanup auto-save timer on component unmount
@@ -2186,15 +2803,21 @@ export default function SimpleContractGenerator() {
   // Load in-progress contracts when switching to in-progress tab
   useEffect(() => {
     if (currentUser?.uid) {
-      if (historyTab === 'drafts') {
+      if (historyTab === "drafts") {
         loadDraftContracts();
-      } else if (historyTab === 'in-progress') {
+      } else if (historyTab === "in-progress") {
         loadInProgressContracts();
-      } else if (historyTab === 'completed') {
+      } else if (historyTab === "completed") {
         loadCompletedContracts();
       }
     }
-  }, [historyTab, currentUser?.uid, loadDraftContracts, loadInProgressContracts, loadCompletedContracts]);
+  }, [
+    historyTab,
+    currentUser?.uid,
+    loadDraftContracts,
+    loadInProgressContracts,
+    loadCompletedContracts,
+  ]);
 
   // Load projects from Firebase when component mounts
   useEffect(() => {
@@ -2202,6 +2825,13 @@ export default function SimpleContractGenerator() {
       loadProjectsFromFirebase();
     }
   }, [currentUser?.uid, loadProjectsFromFirebase]);
+
+  const openUrl = (url: string) => {
+    if (!/^https?:\/\//.test(url)) {
+      url = `https://${url}`;
+    }
+    window.open(url, "_blank");
+  };
 
   return (
     <div className="min-h-screen bg-black text-white p-4">
@@ -2214,1043 +2844,1359 @@ export default function SimpleContractGenerator() {
         <div className="flex justify-center mb-6">
           <div className="bg-gray-900 border border-gray-700 rounded-lg p-1 flex gap-1 flex-wrap">
             <Button
-              variant={currentView === 'contracts' ? 'default' : 'ghost'}
+              variant={currentView === "contracts" ? "default" : "ghost"}
               size="sm"
-              onClick={() => setCurrentView('contracts')}
+              onClick={() => setCurrentView("contracts")}
               className={`flex items-center gap-2 px-4 py-2 ${
-                currentView === 'contracts'
-                  ? 'bg-cyan-400 text-black hover:bg-cyan-300'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                currentView === "contracts"
+                  ? "bg-cyan-400 text-black hover:bg-cyan-300"
+                  : "text-gray-300 hover:text-white hover:bg-gray-800"
               }`}
             >
               <FileText className="h-4 w-4" />
               New Contract
             </Button>
             <Button
-              variant={currentView === 'history' ? 'default' : 'ghost'}
+              variant={currentView === "history" ? "default" : "ghost"}
               size="sm"
               onClick={() => {
-                setCurrentView('history');
+                setCurrentView("history");
                 loadContractHistory();
                 loadCompletedContracts();
               }}
               className={`flex items-center gap-2 px-4 py-2 ${
-                currentView === 'history'
-                  ? 'bg-cyan-400 text-black hover:bg-cyan-300'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                currentView === "history"
+                  ? "bg-cyan-400 text-black hover:bg-cyan-300"
+                  : "text-gray-300 hover:text-white hover:bg-gray-800"
               }`}
             >
               <History className="h-4 w-4" />
               History
-              {(contractHistory.length > 0 || completedContracts.length > 0) && (
+              {(contractHistory.length > 0 ||
+                completedContracts.length > 0) && (
                 <Badge className="bg-cyan-600 text-white ml-1 px-1.5 py-0.5 text-xs">
                   {contractHistory.length + completedContracts.length}
                 </Badge>
               )}
             </Button>
-
           </div>
         </div>
 
         {/* Contract Generation View */}
-        {currentView === 'contracts' && (
+        {currentView === "contracts" && (
           <>
             {/* Progress Steps */}
-        <div className="flex justify-center mb-8">
-          <div className="flex items-center space-x-4">
-            {[1, 2, 3].map((step) => (
-              <div
-                key={step}
-                className={`flex items-center space-x-2 ${
-                  currentStep >= step ? "text-cyan-400" : "text-gray-500"
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                    currentStep >= step
-                      ? "border-cyan-400 bg-cyan-400 text-black"
-                      : "border-gray-500"
-                  }`}
-                >
-                  {step}
-                </div>
-                <span className="text-sm hidden md:inline">
-                  {step === 1 && "Select Project"}
-                  {step === 2 && "Review & Generate"}
-                  {step === 3 && "Download & Complete"}
-                </span>
-                {step < 3 && <div className="w-8 h-0.5 bg-gray-600"></div>}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Step 1: Project Selection */}
-        {currentStep === 1 && (
-          <Card className="bg-gray-900 border-gray-700">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-cyan-400">
-                <Database className="h-5 w-5" />
-                Step 1: Select Project
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/* Search and Refresh Controls */}
-              <div className="flex items-center gap-4 mb-6">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search projects by client name, type, or description..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
-                  />
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={loadProjectsFromFirebase}
-                  disabled={isLoading}
-                  className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
-                >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                  Refresh
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                {isLoading ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto"></div>
-                    <p className="mt-2 text-gray-400">Loading projects...</p>
-                  </div>
-                ) : projects.length > 0 ? (
-                  <div className="space-y-3">
-                    {(() => {
-                      // Filter projects based on search term
-                      const filteredProjects = projects.filter(project => {
-                        if (!searchTerm.trim()) return true;
-                        
-                        const searchLower = searchTerm.toLowerCase();
-                        const clientName = (project.clientName || '').toLowerCase();
-                        const projectType = (project.projectType || '').toLowerCase();
-                        const description = (project.projectDescription || '').toLowerCase();
-                        const address = (project.address || '').toLowerCase();
-                        
-                        return clientName.includes(searchLower) || 
-                               projectType.includes(searchLower) || 
-                               description.includes(searchLower) || 
-                               address.includes(searchLower);
-                      });
-                      
-                      // Show only 2-3 projects by default (unless searching or showing all)
-                      const displayProjects = searchTerm.trim() || showAllProjects 
-                        ? filteredProjects 
-                        : filteredProjects.slice(0, 3);
-                      
-                      return (
-                        <>
-                          {displayProjects.map((project) => (
-                            <div
-                              key={project.id}
-                              className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 hover:border-cyan-400 hover:bg-gray-800/80 cursor-pointer transition-all duration-200"
-                              onClick={() => handleProjectSelect(project)}
-                            >
-                              {/* Project content */}
-                              <div className="space-y-3">
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="flex-1 min-w-0">
-                                    <h3 className="text-base font-bold text-white truncate">
-                                      {project.clientName || project.client?.name || project.client || `Project ${project.estimateNumber || project.id}`}
-                                    </h3>
-                                    <p className="text-cyan-400 font-semibold text-sm mt-1">
-                                      ${getCorrectProjectTotal(project).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </p>
-                                  </div>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
-                                  >
-                                    Select
-                                  </Button>
-                                </div>
-                                
-                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                  <div className="flex items-center gap-1">
-                                    <Wrench className="h-3 w-3 text-gray-400" />
-                                    <span className="text-gray-400">{project.projectType || 'Construction'}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3 text-gray-400" />
-                                    <span className="text-gray-400">
-                                      {new Date(project.estimateDate || project.createdAt || Date.now()).toLocaleDateString()}
-                                    </span>
-                                  </div>
-                                </div>
-                                
-                                {project.address && (
-                                  <p className="text-xs text-gray-400 truncate">
-                                    📍 {project.address}
-                                  </p>
-                                )}
-                                
-                                {project.projectDescription && (
-                                  <p className="text-xs text-gray-300 line-clamp-2">
-                                    {project.projectDescription}
-                                  </p>
-                                )}
-                                
-                                <div className="flex items-center justify-between pt-2 border-t border-gray-700">
-                                  <Badge variant="outline" className="text-xs">
-                                    {project.estimateNumber || `EST-${project.id.slice(-6)}`}
-                                  </Badge>
-                                  <div className="flex items-center gap-1 text-xs text-gray-400">
-                                    <Shield className="h-3 w-3" />
-                                    <span>Ready for Contract</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                          
-                          {/* Show More/Less Button */}
-                          {!searchTerm.trim() && filteredProjects.length > 3 && (
-                            <div className="text-center pt-4">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setShowAllProjects(!showAllProjects)}
-                                className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
-                              >
-                                {showAllProjects ? (
-                                  <>
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    Show Less ({filteredProjects.length - 3} hidden)
-                                  </>
-                                ) : (
-                                  <>
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Show All ({filteredProjects.length} total)
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          )}
-                          
-                          {/* Search Results Info */}
-                          {searchTerm.trim() && (
-                            <div className="text-center py-4">
-                              <p className="text-sm text-cyan-400">
-                                {filteredProjects.length} project{filteredProjects.length !== 1 ? 's' : ''} found for "{searchTerm}"
-                              </p>
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-400">No approved projects found</p>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Create an estimate first to generate contracts
-                    </p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 2: Review & Generate */}
-        {currentStep === 2 && selectedProject && (
-          <Card className="bg-gray-900 border-gray-700">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-cyan-400">
-                <Eye className="h-5 w-5" />
-                Step 2: Review & Customize Contract
-              </CardTitle>
-              
-              {/* Auto-save Status Indicator */}
-              <div className="flex items-center justify-between mt-2 text-sm">
-                <div className="flex items-center gap-2">
-                  {autoSaveStatus === 'saving' && (
-                    <>
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                      <span className="text-yellow-400">Saving changes...</span>
-                    </>
-                  )}
-                  {autoSaveStatus === 'saved' && (
-                    <>
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-green-400">
-                        Changes saved {lastAutoSave && `at ${lastAutoSave.toLocaleTimeString()}`}
-                      </span>
-                    </>
-                  )}
-                  {autoSaveStatus === 'error' && (
-                    <>
-                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                      <span className="text-red-400">Error saving changes</span>
-                    </>
-                  )}
-                  {autoSaveStatus === 'idle' && (
-                    <>
-                      <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                      <span className="text-gray-400">Auto-save enabled</span>
-                    </>
-                  )}
-                </div>
-                {currentContractId && (
-                  <span className="text-xs text-gray-500 font-mono">
-                    ID: {currentContractId.slice(-8)}
-                  </span>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* Editable Client Information */}
-                <div className="border border-gray-600 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">
-                    <Edit2 className="h-4 w-4" />
-                    Client Information (Editable)
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-gray-400">Client Name</Label>
-                      <Input
-                        value={editableData.clientName}
-                        onChange={(e) => setEditableData(prev => ({ ...prev, clientName: e.target.value }))}
-                        className="bg-gray-800 border-gray-600 text-white"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-gray-400">Client Email</Label>
-                      <Input
-                        type="email"
-                        value={editableData.clientEmail}
-                        onChange={(e) => setEditableData(prev => ({ ...prev, clientEmail: e.target.value }))}
-                        className="bg-gray-800 border-gray-600 text-white"
-                        placeholder="client@email.com"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-gray-400">Client Phone</Label>
-                      <Input
-                        value={editableData.clientPhone}
-                        onChange={(e) => setEditableData(prev => ({ ...prev, clientPhone: e.target.value }))}
-                        className="bg-gray-800 border-gray-600 text-white"
-                        placeholder="(555) 123-4567"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-gray-400">Client Address</Label>
-                      <AddressAutocomplete
-                        value={editableData.clientAddress}
-                        onChange={(address) => setEditableData(prev => ({ ...prev, clientAddress: address }))}
-                        placeholder="123 Main St, City, State ZIP"
-                        className="bg-gray-800 border-gray-600 text-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Editable Timeline */}
-                <div className="border border-gray-600 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Project Timeline (Editable)
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-gray-400">Start Date</Label>
-                      <Input
-                        type="date"
-                        value={editableData.startDate}
-                        onChange={(e) => setEditableData(prev => ({ ...prev, startDate: e.target.value }))}
-                        className="bg-gray-800 border-gray-600 text-white"
-                        placeholder="To be agreed with client"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Leave empty for "To be agreed with client and contractor"</p>
-                    </div>
-                    <div>
-                      <Label className="text-gray-400">Completion Date</Label>
-                      <Input
-                        type="date"
-                        value={editableData.completionDate}
-                        onChange={(e) => setEditableData(prev => ({ ...prev, completionDate: e.target.value }))}
-                        className="bg-gray-800 border-gray-600 text-white"
-                        placeholder="To be determined"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Based on project complexity</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Contractor Information (Read-only from Profile) */}
-                <div className="border border-gray-600 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-3 text-green-400 flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Contractor Information (From Company Profile)
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-gray-400">Company Name</Label>
-                      <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
-                        {profile?.company || "Not set in profile"}
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-gray-400">Owner Name</Label>
-                      <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
-                        {profile?.ownerName || "Not set in profile"}
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-gray-400">Business Address</Label>
-                      <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
-                        {profile?.address ? 
-                          `${profile.address}${profile.city ? `, ${profile.city}` : ''}${profile.state ? `, ${profile.state}` : ''}${profile.zipCode ? ` ${profile.zipCode}` : ''}` : 
-                          "Not set in profile"}
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-gray-400">Business Phone</Label>
-                      <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
-                        {profile?.phone || profile?.mobilePhone || "Not set in profile"}
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-gray-400">Business Email</Label>
-                      <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
-                        {profile?.email || "Not set in profile"}
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-gray-400">License Number</Label>
-                      <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
-                        {(profile as any)?.licenseNumber || (profile as any)?.license || "Not set in profile"}
-                      </div>
-                    </div>
-                  </div>
-                  {(!profile?.company || !profile?.address) && (
-                    <div className="mt-3 text-sm text-yellow-400 flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4" />
-                      Please complete your Company Profile to ensure accurate contractor information
-                    </div>
-                  )}
-                </div>
-
-                {/* Dynamic Payment Milestones */}
-                <div className="border border-gray-600 rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-cyan-400 flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      Payment Milestones (Customizable)
-                    </h3>
-                    <div className="bg-green-900/30 border border-green-400 rounded-lg px-4 py-2">
-                      <p className="text-sm text-gray-400">Project Total</p>
-                      <p className="text-xl font-bold text-green-400">
-                        ${getCorrectProjectTotal(selectedProject).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    {editableData.paymentMilestones.map((milestone, index) => (
-                      <div key={milestone.id} className="border border-gray-700 rounded-lg p-4">
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="font-semibold text-cyan-400">Milestone {index + 1}</span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              if (editableData.paymentMilestones.length > 1) {
-                                const newMilestones = editableData.paymentMilestones.filter((_, i) => i !== index);
-                                setEditableData(prev => ({ ...prev, paymentMilestones: newMilestones }));
-                              }
-                            }}
-                            className="text-red-400 hover:text-red-300"
-                            disabled={editableData.paymentMilestones.length <= 1}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          <div>
-                            <Label className="text-gray-400">Description</Label>
-                            <Input
-                              value={milestone.description}
-                              onChange={(e) => {
-                                const newMilestones = [...editableData.paymentMilestones];
-                                newMilestones[index].description = e.target.value;
-                                setEditableData(prev => ({ ...prev, paymentMilestones: newMilestones }));
-                              }}
-                              className="bg-gray-800 border-gray-600 text-white"
-                              placeholder="Payment description"
-                            />
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <Label className="text-gray-400">Percentage</Label>
-                              <Input
-                                type="number"
-                                value={milestone.percentage}
-                                onChange={(e) => {
-                                  const newMilestones = [...editableData.paymentMilestones];
-                                  const newPercentage = parseInt(e.target.value) || 0;
-                                  newMilestones[index].percentage = newPercentage;
-                                  const totalAmount = getCorrectProjectTotal(selectedProject);
-                                  newMilestones[index].amount = totalAmount * (newPercentage / 100);
-                                  setEditableData(prev => ({ ...prev, paymentMilestones: newMilestones }));
-                                }}
-                                className="bg-gray-800 border-gray-600 text-white"
-                                min="0"
-                                max="100"
-                                placeholder="%"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-gray-400">Amount</Label>
-                              <div className="text-lg font-semibold text-green-400 mt-2">
-                                ${(milestone.amount || 0).toLocaleString()}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-700">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          const newId = Math.max(...editableData.paymentMilestones.map(m => m.id)) + 1;
-                          const remainingPercentage = 100 - editableData.paymentMilestones.reduce((sum, m) => sum + m.percentage, 0);
-                          const totalAmount = getCorrectProjectTotal(selectedProject);
-                          const newMilestone = {
-                            id: newId,
-                            description: `Milestone ${newId}`,
-                            percentage: remainingPercentage > 0 ? remainingPercentage : 0,
-                            amount: totalAmount * (remainingPercentage / 100)
-                          };
-                          setEditableData(prev => ({ 
-                            ...prev, 
-                            paymentMilestones: [...prev.paymentMilestones, newMilestone]
-                          }));
-                        }}
-                        className="border-cyan-400 text-cyan-400"
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add Milestone
-                      </Button>
-                      
-                      <div className="text-right">
-                        <p className="text-sm text-gray-400">
-                          Total: {editableData.paymentMilestones.reduce((sum, m) => sum + m.percentage, 0)}%
-                        </p>
-                        <p className="text-sm font-semibold text-green-400">
-                          Amount: ${editableData.paymentMilestones.reduce((sum, m) => sum + (m.amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                        <p className="text-xs text-yellow-400">
-                          {editableData.paymentMilestones.reduce((sum, m) => sum + m.percentage, 0) !== 100 && "⚠️ Should equal 100%"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Editable Warranties & Permits */}
-                <div className="border border-gray-600 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
-                    Warranties & Permits (Options)
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-gray-400">Warranty Period</Label>
-                      <Select
-                        value={editableData.warrantyYears}
-                        onValueChange={(value) => setEditableData(prev => ({ ...prev, warrantyYears: value }))}
-                      >
-                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">1 Year</SelectItem>
-                          <SelectItem value="2">2 Years</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-gray-400">Is a permit required for this project?</Label>
-                      <Select
-                        value={editableData.permitRequired}
-                        onValueChange={(value) => setEditableData(prev => ({ 
-                          ...prev, 
-                          permitRequired: value,
-                          // Reset permit responsibility when changing permit requirement
-                          permitResponsibility: value === "yes" ? prev.permitResponsibility : ""
-                        }))}
-                      >
-                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                          <SelectValue placeholder="Select..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="yes">Yes</SelectItem>
-                          <SelectItem value="no">No</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
-                  {/* Show permit responsibility only if permit is required */}
-                  {editableData.permitRequired === "yes" && (
-                    <div className="mt-4">
-                      <Label className="text-gray-400">Who will be responsible for obtaining the permit?</Label>
-                      <Select
-                        value={editableData.permitResponsibility}
-                        onValueChange={(value) => setEditableData(prev => ({ ...prev, permitResponsibility: value }))}
-                      >
-                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                          <SelectValue placeholder="Select responsibility..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="contractor">Contractor obtains permits</SelectItem>
-                          <SelectItem value="client">Client obtains permits</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                </div>
-
-                {/* AI-Powered Legal Clauses */}
-                <div className="border border-gray-600 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">
-                    <Brain className="h-4 w-4" />
-                    AI-Powered Legal Defense Clauses
-                  </h3>
-                  
-                  {/* Loading state for AI clauses */}
-                  {isLoadingClauses && (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-cyan-400 mr-2" />
-                      <span className="text-gray-400">Analyzing project for optimal legal protection...</span>
-                    </div>
-                  )}
-                  
-                  {/* AI Generated Clauses */}
-                  {!isLoadingClauses && suggestedClauses.length > 0 && (
-                    <div className="space-y-3">
-                      <p className="text-sm text-gray-400 mb-4">
-                        Based on your ${getCorrectProjectTotal(selectedProject).toLocaleString()} {selectedProject.projectType || 'construction'} project, 
-                        AI recommends these protection clauses:
-                      </p>
-                      
-                      {suggestedClauses.map((clause) => (
-                        <div key={clause.id} className="flex items-start gap-3 p-3 bg-gray-800 rounded-lg">
-                          <Checkbox
-                            checked={selectedClauses.includes(clause.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedClauses(prev => [...prev, clause.id]);
-                              } else {
-                                setSelectedClauses(prev => prev.filter(id => id !== clause.id));
-                              }
-                            }}
-                            className="mt-1"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-semibold text-white">{clause.title}</span>
-                              {clause.risk === 'high' && (
-                                <Badge variant="destructive" className="text-xs">High Risk</Badge>
-                              )}
-                              {clause.risk === 'medium' && (
-                                <Badge variant="secondary" className="text-xs">Medium Risk</Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-gray-400">{clause.description}</p>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={fetchAISuggestedClauses}
-                        className="w-full mt-4 border-cyan-400 text-cyan-400"
-                      >
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Regenerate AI Suggestions
-                      </Button>
-                    </div>
-                  )}
-                  
-                  {/* Fallback if no clauses */}
-                  {!isLoadingClauses && suggestedClauses.length === 0 && (
-                    <div className="text-center py-8">
-                      <p className="text-gray-400 mb-4">Click to get AI-powered legal protection suggestions</p>
-                      <Button
-                        size="sm"
-                        onClick={fetchAISuggestedClauses}
-                        className="bg-cyan-600 hover:bg-cyan-700"
-                      >
-                        <Brain className="h-4 w-4 mr-2" />
-                        Get AI Suggestions
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Project Description Preview */}
-                {selectedProject.projectDescription && (
-                  <div className="border border-gray-600 rounded-lg p-4">
-                    <h3 className="text-lg font-semibold mb-3 text-cyan-400">📝 Scope of Work</h3>
-                    <div className="text-gray-300 text-sm max-h-32 overflow-y-auto">
-                      {selectedProject.projectDescription.slice(0, 300)}...
-                    </div>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
-                  <Button
-                    onClick={() => setCurrentStep(1)}
-                    variant="outline"
-                    className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
+            <div className="flex justify-center mb-8">
+              <div className="flex items-center space-x-4">
+                {[1, 2, 3].map((step) => (
+                  <div
+                    key={step}
+                    className={`flex items-center space-x-2 ${
+                      currentStep >= step ? "text-cyan-400" : "text-gray-500"
+                    }`}
                   >
-                    Back to Projects
-                  </Button>
-                  <Button
-                    onClick={handleGenerateContract}
-                    disabled={isLoading}
-                    className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8"
-                  >
-                    {isLoading ? "Generating..." : "Generate Contract"}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 3: Complete */}
-        {currentStep === 3 && (
-          <Card className="bg-gray-900 border-gray-700">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-400">
-                <CheckCircle className="h-5 w-5" />
-                Step 3: Contract Generated Successfully
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Compact Action Cards */}
-                <div className="grid md:grid-cols-2 gap-4">
-                  {/* Quick Download */}
-                  <div className="bg-blue-900/30 border border-blue-400 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Download className="h-5 w-5 text-blue-400" />
-                      <h3 className="font-semibold text-blue-400">Quick Download</h3>
-                    </div>
-                    <p className="text-gray-300 text-sm mb-4">
-                      Download PDF for immediate use
-                    </p>
-                    <Button
-                      onClick={handleDownloadPDF}
-                      disabled={isLoading}
-                      className="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 px-4 w-full disabled:opacity-50 text-sm"
-                    >
-                      {isLoading ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Download className="h-4 w-4 mr-2" />
-                      )}
-                      {isLoading ? "Generating..." : "Download PDF"}
-                    </Button>
-                    <div className="flex items-center justify-center text-xs text-gray-400 mt-2 gap-1">
-                      <CheckCircle className="h-3 w-3" />
-                      <span>Instant • Print Ready</span>
-                    </div>
-                  </div>
-
-                  {/* Digital Signature Delivery */}
-                  <div className="bg-cyan-900/20 border border-cyan-400 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Send className="h-5 w-5 text-cyan-400" />
-                      <h3 className="font-semibold text-cyan-400">Send for Signature</h3>
-                      <Badge className="bg-cyan-600 text-white text-xs">Secure</Badge>
-                    </div>
-                    <p className="text-gray-300 text-sm mb-6">
-                      Generate secure signature links for both contractor and client
-                    </p>
-                    
-                    {/* Simplified Start Button */}
-                    <Button
-                      onClick={handleStartSignatureProtocol}
-                      disabled={isLoading || !contractHTML || isMultiChannelActive}
-                      className={`w-full py-3 font-medium transition-all ${
-                        isLoading 
-                          ? 'bg-yellow-600 text-black' 
-                          : isMultiChannelActive
-                          ? 'bg-green-600 text-white'
-                          : 'bg-cyan-600 hover:bg-cyan-500 text-white'
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                        currentStep >= step
+                          ? "border-cyan-400 bg-cyan-400 text-black"
+                          : "border-gray-500"
                       }`}
                     >
-                      {isLoading ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Generating...</span>
-                        </div>
-                      ) : isMultiChannelActive ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <CheckCircle className="h-4 w-4" />
-                          <span>Links Generated</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center gap-2">
-                          <Shield className="h-4 w-4" />
-                          <span>Start Signature Protocol</span>
-                        </div>
-                      )}
+                      {step}
+                    </div>
+                    <span className="text-sm hidden md:inline">
+                      {step === 1 && "Select Project"}
+                      {step === 2 && "Review & Generate"}
+                      {step === 3 && "Download & Complete"}
+                    </span>
+                    {step < 3 && <div className="w-8 h-0.5 bg-gray-600"></div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Step 1: Project Selection */}
+            {currentStep === 1 && (
+              <Card className="bg-gray-900 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-cyan-400">
+                    <Database className="h-5 w-5" />
+                    Step 1: Select Project
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {/* Search and Refresh Controls */}
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder="Search projects by client name, type, or description..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                      />
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={loadProjectsFromFirebase}
+                      disabled={isLoading}
+                      className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
+                    >
+                      <RefreshCw
+                        className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+                      />
+                      Refresh
                     </Button>
-                    
-                    <div className="flex items-center justify-center text-xs text-gray-400 mt-2 gap-1">
-                      <Shield className="h-3 w-3" />
-                      <span>Encrypted • Secure • Professional</span>
-                    </div>
                   </div>
-                </div>
 
-                {/* CLASSIFIED: Multi-Channel Transmission Status */}
-                {isMultiChannelActive && (
-                  <div className="relative bg-gradient-to-br from-black via-gray-900 to-black border-2 border-green-400 rounded-lg p-4 shadow-2xl shadow-green-400/20">
-                    {/* Status Header */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <div className="relative">
-                          <Truck className="h-5 w-5 text-green-400 animate-pulse" />
-                          <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-green-400 text-sm tracking-wider">TRANSMISSION STATUS</h3>
-                          <p className="text-xs text-gray-500 tracking-widest">REAL-TIME MONITORING</p>
-                        </div>
+                  <div className="space-y-4">
+                    {isLoading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto"></div>
+                        <p className="mt-2 text-gray-400">
+                          Loading projects...
+                        </p>
                       </div>
-                      <Badge className="bg-green-600 text-black text-xs font-mono animate-pulse">
-                        ACTIVE
-                      </Badge>
-                    </div>
+                    ) : projects.length > 0 ? (
+                      <div className="space-y-3">
+                        {(() => {
+                          // Filter projects based on search term
+                          const filteredProjects = projects.filter(
+                            (project) => {
+                              if (!searchTerm.trim()) return true;
 
+                              const searchLower = searchTerm.toLowerCase();
+                              const clientName = (
+                                project.clientName || ""
+                              ).toLowerCase();
+                              const projectType = (
+                                project.projectType || ""
+                              ).toLowerCase();
+                              const description = (
+                                project.projectDescription || ""
+                              ).toLowerCase();
+                              const address = (
+                                project.address || ""
+                              ).toLowerCase();
 
-                    
-                    {/* Secure Access Links */}
-                    <div className="space-y-3">
-                      {contractorSignUrl && (
-                        <div className="bg-black/40 border border-cyan-400/50 rounded-lg p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Shield className="h-4 w-4 text-cyan-400" />
-                              <h4 className="text-cyan-400 font-bold text-xs tracking-wider">CONTRACTOR ACCESS PORTAL</h4>
-                              <Badge className="bg-cyan-600 text-black text-xs font-mono">SECURED</Badge>
-                            </div>
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleCopyToClipboard(contractorSignUrl, "Contractor")}
-                                className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
-                                title="Copy link"
-                              >
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleShareLink(contractorSignUrl, "Contractor")}
-                                className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
-                                title="Share link"
-                              >
-                                <Share2 className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleEmailShare(contractorSignUrl, "Contractor")}
-                                className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
-                                title="Share via email"
-                              >
-                                <Mail className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleWhatsAppShare(contractorSignUrl, "Contractor")}
-                                className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
-                                title="Share via WhatsApp"
-                              >
-                                <MessageCircle className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleSMSShare(contractorSignUrl, "Contractor")}
-                                className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
-                                title="Share via SMS"
-                              >
-                                <Phone className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="bg-black/60 rounded p-2 border border-cyan-400/30">
-                            <a 
-                              href={contractorSignUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-cyan-300 hover:text-cyan-200 underline text-xs break-all font-mono"
-                            >
-                              {contractorSignUrl}
-                            </a>
-                          </div>
-                          <div className="flex items-center gap-1 mt-2 text-xs text-gray-400">
-                            <Lock className="h-3 w-3" />
-                            <span>256-bit encrypted • Device verified • Audit logged</span>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {clientSignUrl && (
-                        <div className="bg-black/40 border border-green-400/50 rounded-lg p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Shield className="h-4 w-4 text-green-400" />
-                              <h4 className="text-green-400 font-bold text-xs tracking-wider">CLIENT ACCESS PORTAL</h4>
-                              <Badge className="bg-green-600 text-black text-xs font-mono">SECURED</Badge>
-                            </div>
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleCopyToClipboard(clientSignUrl, "Client")}
-                                className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
-                                title="Copy link"
-                              >
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleShareLink(clientSignUrl, "Client")}
-                                className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
-                                title="Share link"
-                              >
-                                <Share2 className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleEmailShare(clientSignUrl, "Client")}
-                                className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
-                                title="Share via email"
-                              >
-                                <Mail className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleWhatsAppShare(clientSignUrl, "Client")}
-                                className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
-                                title="Share via WhatsApp"
-                              >
-                                <MessageCircle className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleSMSShare(clientSignUrl, "Client")}
-                                className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
-                                title="Share via SMS"
-                              >
-                                <Phone className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="bg-black/60 rounded p-2 border border-green-400/30">
-                            <a 
-                              href={clientSignUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-green-300 hover:text-green-200 underline text-xs break-all font-mono"
-                            >
-                              {clientSignUrl}
-                            </a>
-                          </div>
-                          <div className="flex items-center gap-1 mt-2 text-xs text-gray-400">
-                            <Lock className="h-3 w-3" />
-                            <span>Biometric protected • Time-locked • Audit trail active</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                              return (
+                                clientName.includes(searchLower) ||
+                                projectType.includes(searchLower) ||
+                                description.includes(searchLower) ||
+                                address.includes(searchLower)
+                              );
+                            },
+                          );
 
+                          // Show only 2-3 projects by default (unless searching or showing all)
+                          const displayProjects =
+                            searchTerm.trim() || showAllProjects
+                              ? filteredProjects
+                              : filteredProjects.slice(0, 3);
 
+                          return (
+                            <>
+                              {displayProjects.map((project) => (
+                                <div
+                                  key={project.id}
+                                  className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 hover:border-cyan-400 hover:bg-gray-800/80 cursor-pointer transition-all duration-200"
+                                  onClick={() => handleProjectSelect(project)}
+                                >
+                                  {/* Project content */}
+                                  <div className="space-y-3">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="flex-1 min-w-0">
+                                        <h3 className="text-base font-bold text-white truncate">
+                                          {project.clientName ||
+                                            project.client?.name ||
+                                            project.client ||
+                                            `Project ${project.estimateNumber || project.id}`}
+                                        </h3>
+                                        <p className="text-cyan-400 font-semibold text-sm mt-1">
+                                          $
+                                          {getCorrectProjectTotal(
+                                            project,
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })}
+                                        </p>
+                                      </div>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
+                                      >
+                                        Select
+                                      </Button>
+                                    </div>
 
-                    {/* Corner Security Indicators */}
-                    <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-green-400"></div>
-                    <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-green-400"></div>
-                    <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-green-400"></div>
-                    <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-green-400"></div>
-                  </div>
-                )}
+                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                      <div className="flex items-center gap-1">
+                                        <Wrench className="h-3 w-3 text-gray-400" />
+                                        <span className="text-gray-400">
+                                          {project.projectType ||
+                                            "Construction"}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <Calendar className="h-3 w-3 text-gray-400" />
+                                        <span className="text-gray-400">
+                                          {new Date(
+                                            project.estimateDate ||
+                                              project.createdAt ||
+                                              Date.now(),
+                                          ).toLocaleDateString()}
+                                        </span>
+                                      </div>
+                                    </div>
 
-                {/* Legacy Signature Status (fallback) */}
-                {isDualSignatureActive && !isMultiChannelActive && (
-                  <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-3">
-                    <h4 className="text-sm font-semibold text-green-400 mb-2">Signature Status</h4>
-                    <p className="text-xs text-gray-300 mb-2">{dualSignatureStatus}</p>
-                    
-                    {contractorSignUrl && clientSignUrl && (
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-400">Contractor:</span>
-                          <Badge className="bg-blue-600 text-white text-xs">Sent</Badge>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-400">Client:</span>
-                          <Badge className="bg-blue-600 text-white text-xs">Sent</Badge>
-                        </div>
+                                    {project.address && (
+                                      <p className="text-xs text-gray-400 truncate">
+                                        📍 {project.address}
+                                      </p>
+                                    )}
+
+                                    {project.projectDescription && (
+                                      <p className="text-xs text-gray-300 line-clamp-2">
+                                        {project.projectDescription}
+                                      </p>
+                                    )}
+
+                                    <div className="flex items-center justify-between pt-2 border-t border-gray-700">
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs"
+                                      >
+                                        {project.estimateNumber ||
+                                          `EST-${project.id.slice(-6)}`}
+                                      </Badge>
+                                      <div className="flex items-center gap-1 text-xs text-gray-400">
+                                        <Shield className="h-3 w-3" />
+                                        <span>Ready for Contract</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+
+                              {/* Show More/Less Button */}
+                              {!searchTerm.trim() &&
+                                filteredProjects.length > 3 && (
+                                  <div className="text-center pt-4">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        setShowAllProjects(!showAllProjects)
+                                      }
+                                      className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
+                                    >
+                                      {showAllProjects ? (
+                                        <>
+                                          <Eye className="h-4 w-4 mr-2" />
+                                          Show Less (
+                                          {filteredProjects.length - 3} hidden)
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Plus className="h-4 w-4 mr-2" />
+                                          Show All ({
+                                            filteredProjects.length
+                                          }{" "}
+                                          total)
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
+                                )}
+
+                              {/* Search Results Info */}
+                              {searchTerm.trim() && (
+                                <div className="text-center py-4">
+                                  <p className="text-sm text-cyan-400">
+                                    {filteredProjects.length} project
+                                    {filteredProjects.length !== 1
+                                      ? "s"
+                                      : ""}{" "}
+                                    found for "{searchTerm}"
+                                  </p>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-gray-400">
+                          No approved projects found
+                        </p>
+                        <p className="text-sm text-gray-500 mt-2">
+                          Create an estimate first to generate contracts
+                        </p>
                       </div>
                     )}
                   </div>
-                )}
+                </CardContent>
+              </Card>
+            )}
 
-                {/* Additional Actions */}
-                <div className="border-t border-gray-700 pt-4 text-center">
-                  <Button
-                    onClick={handleNewContract}
-                    variant="outline"
-                    size="sm"
-                    className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
-                  >
-                    Generate New Contract
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+            {/* Step 2: Review & Generate */}
+            {currentStep === 2 && selectedProject && (
+              <Card className="bg-gray-900 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-cyan-400">
+                    <Eye className="h-5 w-5" />
+                    Step 2: Review & Customize Contract
+                  </CardTitle>
 
+                  {/* Auto-save Status Indicator */}
+                  <div className="flex items-center justify-between mt-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      {autoSaveStatus === "saving" && (
+                        <>
+                          <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                          <span className="text-yellow-400">
+                            Saving changes...
+                          </span>
+                        </>
+                      )}
+                      {autoSaveStatus === "saved" && (
+                        <>
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-green-400">
+                            Changes saved{" "}
+                            {lastAutoSave &&
+                              `at ${lastAutoSave.toLocaleTimeString()}`}
+                          </span>
+                        </>
+                      )}
+                      {autoSaveStatus === "error" && (
+                        <>
+                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                          <span className="text-red-400">
+                            Error saving changes
+                          </span>
+                        </>
+                      )}
+                      {autoSaveStatus === "idle" && (
+                        <>
+                          <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                          <span className="text-gray-400">
+                            Auto-save enabled
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    {currentContractId && (
+                      <span className="text-xs text-gray-500 font-mono">
+                        ID: {currentContractId.slice(-8)}
+                      </span>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {/* Editable Client Information */}
+                    <div className="border border-gray-600 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">
+                        <Edit2 className="h-4 w-4" />
+                        Client Information (Editable)
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-gray-400">Client Name</Label>
+                          <Input
+                            value={editableData.clientName}
+                            onChange={(e) =>
+                              setEditableData((prev) => ({
+                                ...prev,
+                                clientName: e.target.value,
+                              }))
+                            }
+                            className="bg-gray-800 border-gray-600 text-white"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-gray-400">Client Email</Label>
+                          <Input
+                            type="email"
+                            value={editableData.clientEmail}
+                            onChange={(e) =>
+                              setEditableData((prev) => ({
+                                ...prev,
+                                clientEmail: e.target.value,
+                              }))
+                            }
+                            className="bg-gray-800 border-gray-600 text-white"
+                            placeholder="client@email.com"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-gray-400">Client Phone</Label>
+                          <Input
+                            value={editableData.clientPhone}
+                            onChange={(e) =>
+                              setEditableData((prev) => ({
+                                ...prev,
+                                clientPhone: e.target.value,
+                              }))
+                            }
+                            className="bg-gray-800 border-gray-600 text-white"
+                            placeholder="(555) 123-4567"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-gray-400">
+                            Client Address
+                          </Label>
+                          <AddressAutocomplete
+                            value={editableData.clientAddress}
+                            onChange={(address) =>
+                              setEditableData((prev) => ({
+                                ...prev,
+                                clientAddress: address,
+                              }))
+                            }
+                            placeholder="123 Main St, City, State ZIP"
+                            className="bg-gray-800 border-gray-600 text-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
 
+                    {/* Editable Timeline */}
+                    <div className="border border-gray-600 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        Project Timeline (Editable)
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-gray-400">Start Date</Label>
+                          <Input
+                            type="date"
+                            value={editableData.startDate}
+                            onChange={(e) =>
+                              setEditableData((prev) => ({
+                                ...prev,
+                                startDate: e.target.value,
+                              }))
+                            }
+                            className="bg-gray-800 border-gray-600 text-white"
+                            placeholder="To be agreed with client"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Leave empty for "To be agreed with client and
+                            contractor"
+                          </p>
+                        </div>
+                        <div>
+                          <Label className="text-gray-400">
+                            Completion Date
+                          </Label>
+                          <Input
+                            type="date"
+                            value={editableData.completionDate}
+                            onChange={(e) =>
+                              setEditableData((prev) => ({
+                                ...prev,
+                                completionDate: e.target.value,
+                              }))
+                            }
+                            className="bg-gray-800 border-gray-600 text-white"
+                            placeholder="To be determined"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Based on project complexity
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Contractor Information (Read-only from Profile) */}
+                    <div className="border border-gray-600 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold mb-3 text-green-400 flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Contractor Information (From Company Profile)
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-gray-400">Company Name</Label>
+                          <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
+                            {profile?.company || "Not set in profile"}
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-gray-400">Owner Name</Label>
+                          <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
+                            {profile?.ownerName || "Not set in profile"}
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-gray-400">
+                            Business Address
+                          </Label>
+                          <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
+                            {profile?.address
+                              ? `${profile.address}${profile.city ? `, ${profile.city}` : ""}${profile.state ? `, ${profile.state}` : ""}${profile.zipCode ? ` ${profile.zipCode}` : ""}`
+                              : "Not set in profile"}
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-gray-400">
+                            Business Phone
+                          </Label>
+                          <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
+                            {profile?.phone ||
+                              profile?.mobilePhone ||
+                              "Not set in profile"}
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-gray-400">
+                            Business Email
+                          </Label>
+                          <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
+                            {profile?.email || "Not set in profile"}
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-gray-400">
+                            License Number
+                          </Label>
+                          <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white">
+                            {(profile as any)?.licenseNumber ||
+                              (profile as any)?.license ||
+                              "Not set in profile"}
+                          </div>
+                        </div>
+                      </div>
+                      {(!profile?.company || !profile?.address) && (
+                        <div className="mt-3 text-sm text-yellow-400 flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4" />
+                          Please complete your Company Profile to ensure
+                          accurate contractor information
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Dynamic Payment Milestones */}
+                    <div className="border border-gray-600 rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-cyan-400 flex items-center gap-2">
+                          <DollarSign className="h-4 w-4" />
+                          Payment Milestones (Customizable)
+                        </h3>
+                        <div className="bg-green-900/30 border border-green-400 rounded-lg px-4 py-2">
+                          <p className="text-sm text-gray-400">Project Total</p>
+                          <p className="text-xl font-bold text-green-400">
+                            $
+                            {getCorrectProjectTotal(
+                              selectedProject,
+                            ).toLocaleString("en-US", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        {editableData.paymentMilestones.map(
+                          (milestone, index) => (
+                            <div
+                              key={milestone.id}
+                              className="border border-gray-700 rounded-lg p-4"
+                            >
+                              <div className="flex justify-between items-center mb-3">
+                                <span className="font-semibold text-cyan-400">
+                                  Milestone {index + 1}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    if (
+                                      editableData.paymentMilestones.length > 1
+                                    ) {
+                                      const newMilestones =
+                                        editableData.paymentMilestones.filter(
+                                          (_, i) => i !== index,
+                                        );
+                                      setEditableData((prev) => ({
+                                        ...prev,
+                                        paymentMilestones: newMilestones,
+                                      }));
+                                    }
+                                  }}
+                                  className="text-red-400 hover:text-red-300"
+                                  disabled={
+                                    editableData.paymentMilestones.length <= 1
+                                  }
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+
+                              <div className="space-y-3">
+                                <div>
+                                  <Label className="text-gray-400">
+                                    Description
+                                  </Label>
+                                  <Input
+                                    value={milestone.description}
+                                    onChange={(e) => {
+                                      const newMilestones = [
+                                        ...editableData.paymentMilestones,
+                                      ];
+                                      newMilestones[index].description =
+                                        e.target.value;
+                                      setEditableData((prev) => ({
+                                        ...prev,
+                                        paymentMilestones: newMilestones,
+                                      }));
+                                    }}
+                                    className="bg-gray-800 border-gray-600 text-white"
+                                    placeholder="Payment description"
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <Label className="text-gray-400">
+                                      Percentage
+                                    </Label>
+                                    <Input
+                                      type="number"
+                                      value={milestone.percentage}
+                                      onChange={(e) => {
+                                        const newMilestones = [
+                                          ...editableData.paymentMilestones,
+                                        ];
+                                        const newPercentage =
+                                          parseInt(e.target.value) || 0;
+                                        newMilestones[index].percentage =
+                                          newPercentage;
+                                        const totalAmount =
+                                          getCorrectProjectTotal(
+                                            selectedProject,
+                                          );
+                                        newMilestones[index].amount =
+                                          totalAmount * (newPercentage / 100);
+                                        setEditableData((prev) => ({
+                                          ...prev,
+                                          paymentMilestones: newMilestones,
+                                        }));
+                                      }}
+                                      className="bg-gray-800 border-gray-600 text-white"
+                                      min="0"
+                                      max="100"
+                                      placeholder="%"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-gray-400">
+                                      Amount
+                                    </Label>
+                                    <div className="text-lg font-semibold text-green-400 mt-2">
+                                      $
+                                      {(milestone.amount || 0).toLocaleString()}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ),
+                        )}
+
+                        <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-700">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const newId =
+                                Math.max(
+                                  ...editableData.paymentMilestones.map(
+                                    (m) => m.id,
+                                  ),
+                                ) + 1;
+                              const remainingPercentage =
+                                100 -
+                                editableData.paymentMilestones.reduce(
+                                  (sum, m) => sum + m.percentage,
+                                  0,
+                                );
+                              const totalAmount =
+                                getCorrectProjectTotal(selectedProject);
+                              const newMilestone = {
+                                id: newId,
+                                description: `Milestone ${newId}`,
+                                percentage:
+                                  remainingPercentage > 0
+                                    ? remainingPercentage
+                                    : 0,
+                                amount:
+                                  totalAmount * (remainingPercentage / 100),
+                              };
+                              setEditableData((prev) => ({
+                                ...prev,
+                                paymentMilestones: [
+                                  ...prev.paymentMilestones,
+                                  newMilestone,
+                                ],
+                              }));
+                            }}
+                            className="border-cyan-400 text-cyan-400"
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Milestone
+                          </Button>
+
+                          <div className="text-right">
+                            <p className="text-sm text-gray-400">
+                              Total:{" "}
+                              {editableData.paymentMilestones.reduce(
+                                (sum, m) => sum + m.percentage,
+                                0,
+                              )}
+                              %
+                            </p>
+                            <p className="text-sm font-semibold text-green-400">
+                              Amount: $
+                              {editableData.paymentMilestones
+                                .reduce((sum, m) => sum + (m.amount || 0), 0)
+                                .toLocaleString("en-US", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                            </p>
+                            <p className="text-xs text-yellow-400">
+                              {editableData.paymentMilestones.reduce(
+                                (sum, m) => sum + m.percentage,
+                                0,
+                              ) !== 100 && "⚠️ Should equal 100%"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Editable Warranties & Permits */}
+                    <div className="border border-gray-600 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        Warranties & Permits (Options)
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-gray-400">
+                            Warranty Period
+                          </Label>
+                          <Select
+                            value={editableData.warrantyYears}
+                            onValueChange={(value) =>
+                              setEditableData((prev) => ({
+                                ...prev,
+                                warrantyYears: value,
+                              }))
+                            }
+                          >
+                            <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">1 Year</SelectItem>
+                              <SelectItem value="2">2 Years</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-gray-400">
+                            Is a permit required for this project?
+                          </Label>
+                          <Select
+                            value={editableData.permitRequired}
+                            onValueChange={(value) =>
+                              setEditableData((prev) => ({
+                                ...prev,
+                                permitRequired: value,
+                                // Reset permit responsibility when changing permit requirement
+                                permitResponsibility:
+                                  value === "yes"
+                                    ? prev.permitResponsibility
+                                    : "",
+                              }))
+                            }
+                          >
+                            <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                              <SelectValue placeholder="Select..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="yes">Yes</SelectItem>
+                              <SelectItem value="no">No</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Show permit responsibility only if permit is required */}
+                      {editableData.permitRequired === "yes" && (
+                        <div className="mt-4">
+                          <Label className="text-gray-400">
+                            Who will be responsible for obtaining the permit?
+                          </Label>
+                          <Select
+                            value={editableData.permitResponsibility}
+                            onValueChange={(value) =>
+                              setEditableData((prev) => ({
+                                ...prev,
+                                permitResponsibility: value,
+                              }))
+                            }
+                          >
+                            <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                              <SelectValue placeholder="Select responsibility..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="contractor">
+                                Contractor obtains permits
+                              </SelectItem>
+                              <SelectItem value="client">
+                                Client obtains permits
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* AI-Powered Legal Clauses */}
+                    <div className="border border-gray-600 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">
+                        <Brain className="h-4 w-4" />
+                        AI-Powered Legal Defense Clauses
+                      </h3>
+
+                      {/* Loading state for AI clauses */}
+                      {isLoadingClauses && (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="h-6 w-6 animate-spin text-cyan-400 mr-2" />
+                          <span className="text-gray-400">
+                            Analyzing project for optimal legal protection...
+                          </span>
+                        </div>
+                      )}
+
+                      {/* AI Generated Clauses */}
+                      {!isLoadingClauses && suggestedClauses.length > 0 && (
+                        <div className="space-y-3">
+                          <p className="text-sm text-gray-400 mb-4">
+                            Based on your $
+                            {getCorrectProjectTotal(
+                              selectedProject,
+                            ).toLocaleString()}{" "}
+                            {selectedProject.projectType || "construction"}{" "}
+                            project, AI recommends these protection clauses:
+                          </p>
+
+                          {suggestedClauses.map((clause) => (
+                            <div
+                              key={clause.id}
+                              className="flex items-start gap-3 p-3 bg-gray-800 rounded-lg"
+                            >
+                              <Checkbox
+                                checked={selectedClauses.includes(clause.id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedClauses((prev) => [
+                                      ...prev,
+                                      clause.id,
+                                    ]);
+                                  } else {
+                                    setSelectedClauses((prev) =>
+                                      prev.filter((id) => id !== clause.id),
+                                    );
+                                  }
+                                }}
+                                className="mt-1"
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-semibold text-white">
+                                    {clause.title}
+                                  </span>
+                                  {clause.risk === "high" && (
+                                    <Badge
+                                      variant="destructive"
+                                      className="text-xs"
+                                    >
+                                      High Risk
+                                    </Badge>
+                                  )}
+                                  {clause.risk === "medium" && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-xs"
+                                    >
+                                      Medium Risk
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-400">
+                                  {clause.description}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={fetchAISuggestedClauses}
+                            className="w-full mt-4 border-cyan-400 text-cyan-400"
+                          >
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Regenerate AI Suggestions
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Fallback if no clauses */}
+                      {!isLoadingClauses && suggestedClauses.length === 0 && (
+                        <div className="text-center py-8">
+                          <p className="text-gray-400 mb-4">
+                            Click to get AI-powered legal protection suggestions
+                          </p>
+                          <Button
+                            size="sm"
+                            onClick={fetchAISuggestedClauses}
+                            className="bg-cyan-600 hover:bg-cyan-700"
+                          >
+                            <Brain className="h-4 w-4 mr-2" />
+                            Get AI Suggestions
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Project Description Preview */}
+                    {selectedProject.projectDescription && (
+                      <div className="border border-gray-600 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold mb-3 text-cyan-400">
+                          📝 Scope of Work
+                        </h3>
+                        <div className="text-gray-300 text-sm max-h-32 overflow-y-auto">
+                          {selectedProject.projectDescription.slice(0, 300)}...
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+                      <Button
+                        onClick={() => setCurrentStep(1)}
+                        variant="outline"
+                        className="border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
+                      >
+                        Back to Projects
+                      </Button>
+                      <Button
+                        onClick={handleGenerateContract}
+                        disabled={isLoading}
+                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8"
+                      >
+                        {isLoading ? "Generating..." : "Generate Contract"}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 3: Complete */}
+            {currentStep === 3 && (
+              <Card className="bg-gray-900 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-green-400">
+                    <CheckCircle className="h-5 w-5" />
+                    Step 3: Contract Generated Successfully
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Compact Action Cards */}
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {/* Quick Download */}
+                      <div className="bg-blue-900/30 border border-blue-400 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Download className="h-5 w-5 text-blue-400" />
+                          <h3 className="font-semibold text-blue-400">
+                            Quick Download
+                          </h3>
+                        </div>
+                        <p className="text-gray-300 text-sm mb-4">
+                          Download PDF for immediate use
+                        </p>
+                        <Button
+                          onClick={handleDownloadPDF}
+                          disabled={isLoading}
+                          className="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 px-4 w-full disabled:opacity-50 text-sm"
+                        >
+                          {isLoading ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4 mr-2" />
+                          )}
+                          {isLoading ? "Generating..." : "Download PDF"}
+                        </Button>
+                        <div className="flex items-center justify-center text-xs text-gray-400 mt-2 gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          <span>Instant • Print Ready</span>
+                        </div>
+                      </div>
+
+                      {/* Digital Signature Delivery */}
+                      <div className="bg-cyan-900/20 border border-cyan-400 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Send className="h-5 w-5 text-cyan-400" />
+                          <h3 className="font-semibold text-cyan-400">
+                            Send for Signature
+                          </h3>
+                          <Badge className="bg-cyan-600 text-white text-xs">
+                            Secure
+                          </Badge>
+                        </div>
+                        <p className="text-gray-300 text-sm mb-6">
+                          Generate secure signature links for both contractor
+                          and client
+                        </p>
+
+                        {/* Simplified Start Button */}
+                        <Button
+                          onClick={handleStartSignatureProtocol}
+                          disabled={
+                            isLoading || !contractHTML || isMultiChannelActive
+                          }
+                          className={`w-full py-3 font-medium transition-all ${
+                            isLoading
+                              ? "bg-yellow-600 text-black"
+                              : isMultiChannelActive
+                                ? "bg-green-600 text-white"
+                                : "bg-cyan-600 hover:bg-cyan-500 text-white"
+                          }`}
+                        >
+                          {isLoading ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <span>Generating...</span>
+                            </div>
+                          ) : isMultiChannelActive ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <CheckCircle className="h-4 w-4" />
+                              <span>Links Generated</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center gap-2">
+                              <Shield className="h-4 w-4" />
+                              <span>Start Signature Protocol</span>
+                            </div>
+                          )}
+                        </Button>
+
+                        <div className="flex items-center justify-center text-xs text-gray-400 mt-2 gap-1">
+                          <Shield className="h-3 w-3" />
+                          <span>Encrypted • Secure • Professional</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* CLASSIFIED: Multi-Channel Transmission Status */}
+                    {isMultiChannelActive && (
+                      <div className="relative bg-gradient-to-br from-black via-gray-900 to-black border-2 border-green-400 rounded-lg p-4 shadow-2xl shadow-green-400/20">
+                        {/* Status Header */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <div className="relative">
+                              <Truck className="h-5 w-5 text-green-400 animate-pulse" />
+                              <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-green-400 text-sm tracking-wider">
+                                TRANSMISSION STATUS
+                              </h3>
+                              <p className="text-xs text-gray-500 tracking-widest">
+                                REAL-TIME MONITORING
+                              </p>
+                            </div>
+                          </div>
+                          <Badge className="bg-green-600 text-black text-xs font-mono animate-pulse">
+                            ACTIVE
+                          </Badge>
+                        </div>
+
+                        {/* Secure Access Links */}
+                        <div className="space-y-3">
+                          {contractorSignUrl && (
+                            <div className="bg-black/40 border border-cyan-400/50 rounded-lg p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Shield className="h-4 w-4 text-cyan-400" />
+                                  <h4 className="text-cyan-400 font-bold text-xs tracking-wider">
+                                    CONTRACTOR ACCESS PORTAL
+                                  </h4>
+                                  <Badge className="bg-cyan-600 text-black text-xs font-mono">
+                                    SECURED
+                                  </Badge>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleCopyToClipboard(
+                                        contractorSignUrl,
+                                        "Contractor",
+                                      )
+                                    }
+                                    className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
+                                    title="Copy link"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleShareLink(
+                                        contractorSignUrl,
+                                        "Contractor",
+                                      )
+                                    }
+                                    className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
+                                    title="Share link"
+                                  >
+                                    <Share2 className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleEmailShare(
+                                        contractorSignUrl,
+                                        "Contractor",
+                                      )
+                                    }
+                                    className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
+                                    title="Share via email"
+                                  >
+                                    <Mail className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleWhatsAppShare(
+                                        contractorSignUrl,
+                                        "Contractor",
+                                      )
+                                    }
+                                    className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
+                                    title="Share via WhatsApp"
+                                  >
+                                    <MessageCircle className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleSMSShare(
+                                        contractorSignUrl,
+                                        "Contractor",
+                                      )
+                                    }
+                                    className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
+                                    title="Share via SMS"
+                                  >
+                                    <Phone className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="bg-black/60 rounded p-2 border border-cyan-400/30">
+                                <a
+                                  href={contractorSignUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-cyan-300 hover:text-cyan-200 underline text-xs break-all font-mono"
+                                >
+                                  {contractorSignUrl}
+                                </a>
+                              </div>
+                              <div className="flex items-center gap-1 mt-2 text-xs text-gray-400">
+                                <Lock className="h-3 w-3" />
+                                <span>
+                                  256-bit encrypted • Device verified • Audit
+                                  logged
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {clientSignUrl && (
+                            <div className="bg-black/40 border border-green-400/50 rounded-lg p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Shield className="h-4 w-4 text-green-400" />
+                                  <h4 className="text-green-400 font-bold text-xs tracking-wider">
+                                    CLIENT ACCESS PORTAL
+                                  </h4>
+                                  <Badge className="bg-green-600 text-black text-xs font-mono">
+                                    SECURED
+                                  </Badge>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleCopyToClipboard(
+                                        clientSignUrl,
+                                        "Client",
+                                      )
+                                    }
+                                    className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
+                                    title="Copy link"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleShareLink(clientSignUrl, "Client")
+                                    }
+                                    className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
+                                    title="Share link"
+                                  >
+                                    <Share2 className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleEmailShare(clientSignUrl, "Client")
+                                    }
+                                    className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
+                                    title="Share via email"
+                                  >
+                                    <Mail className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleWhatsAppShare(
+                                        clientSignUrl,
+                                        "Client",
+                                      )
+                                    }
+                                    className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
+                                    title="Share via WhatsApp"
+                                  >
+                                    <MessageCircle className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleSMSShare(clientSignUrl, "Client")
+                                    }
+                                    className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
+                                    title="Share via SMS"
+                                  >
+                                    <Phone className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="bg-black/60 rounded p-2 border border-green-400/30">
+                                <a
+                                  href={clientSignUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-green-300 hover:text-green-200 underline text-xs break-all font-mono"
+                                >
+                                  {clientSignUrl}
+                                </a>
+                              </div>
+                              <div className="flex items-center gap-1 mt-2 text-xs text-gray-400">
+                                <Lock className="h-3 w-3" />
+                                <span>
+                                  Biometric protected • Time-locked • Audit
+                                  trail active
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Corner Security Indicators */}
+                        <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-green-400"></div>
+                        <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-green-400"></div>
+                        <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-green-400"></div>
+                        <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-green-400"></div>
+                      </div>
+                    )}
+
+                    {/* Legacy Signature Status (fallback) */}
+                    {isDualSignatureActive && !isMultiChannelActive && (
+                      <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-3">
+                        <h4 className="text-sm font-semibold text-green-400 mb-2">
+                          Signature Status
+                        </h4>
+                        <p className="text-xs text-gray-300 mb-2">
+                          {dualSignatureStatus}
+                        </p>
+
+                        {contractorSignUrl && clientSignUrl && (
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-400">Contractor:</span>
+                              <Badge className="bg-blue-600 text-white text-xs">
+                                Sent
+                              </Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-400">Client:</span>
+                              <Badge className="bg-blue-600 text-white text-xs">
+                                Sent
+                              </Badge>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Additional Actions */}
+                    <div className="border-t border-gray-700 pt-4 text-center">
+                      <Button
+                        onClick={handleNewContract}
+                        variant="outline"
+                        size="sm"
+                        className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
+                      >
+                        Generate New Contract
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </>
         )}
 
         {/* Unified History View with Tabs */}
-        {currentView === 'history' && (
+        {currentView === "history" && (
           <div className="space-y-6">
             {/* History Header */}
             <Card className="bg-gray-900 border-gray-700">
@@ -3259,7 +4205,10 @@ export default function SimpleContractGenerator() {
                   <History className="h-5 w-5" />
                   Contract Management
                   <Badge className="bg-cyan-600 text-white ml-2">
-                    {draftContracts.length + inProgressContracts.length + completedContracts.length} total
+                    {draftContracts.length +
+                      inProgressContracts.length +
+                      completedContracts.length}{" "}
+                    total
                   </Badge>
                 </CardTitle>
                 <p className="text-sm text-cyan-300 mt-2">
@@ -3267,7 +4216,10 @@ export default function SimpleContractGenerator() {
                 </p>
               </CardHeader>
               <CardContent>
-                <Tabs value={historyTab} onValueChange={(value: any) => setHistoryTab(value)}>
+                <Tabs
+                  value={historyTab}
+                  onValueChange={(value: any) => setHistoryTab(value)}
+                >
                   {/* Mobile-First Responsive Tab Layout */}
                   <div className="w-full">
                     {/* Mobile: Vertical Stacked Buttons */}
@@ -3275,8 +4227,8 @@ export default function SimpleContractGenerator() {
                       <button
                         onClick={() => setHistoryTab("drafts")}
                         className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
-                          historyTab === "drafts" 
-                            ? "bg-cyan-600 text-black border-cyan-400" 
+                          historyTab === "drafts"
+                            ? "bg-cyan-600 text-black border-cyan-400"
                             : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700"
                         }`}
                       >
@@ -3284,18 +4236,22 @@ export default function SimpleContractGenerator() {
                           <Clock className="h-4 w-4 mr-2" />
                           <span className="font-medium">Drafts</span>
                         </div>
-                        <div className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          historyTab === "drafts" ? "bg-black/20 text-black" : "bg-cyan-600 text-white"
-                        }`}>
+                        <div
+                          className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            historyTab === "drafts"
+                              ? "bg-black/20 text-black"
+                              : "bg-cyan-600 text-white"
+                          }`}
+                        >
                           {draftContracts.length}
                         </div>
                       </button>
-                      
+
                       <button
                         onClick={() => setHistoryTab("in-progress")}
                         className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
-                          historyTab === "in-progress" 
-                            ? "bg-yellow-600 text-black border-yellow-400" 
+                          historyTab === "in-progress"
+                            ? "bg-yellow-600 text-black border-yellow-400"
                             : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700"
                         }`}
                       >
@@ -3303,18 +4259,22 @@ export default function SimpleContractGenerator() {
                           <FileCheck className="h-4 w-4 mr-2" />
                           <span className="font-medium">In Progress</span>
                         </div>
-                        <div className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          historyTab === "in-progress" ? "bg-black/20 text-black" : "bg-yellow-600 text-white"
-                        }`}>
+                        <div
+                          className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            historyTab === "in-progress"
+                              ? "bg-black/20 text-black"
+                              : "bg-yellow-600 text-white"
+                          }`}
+                        >
                           {inProgressContracts.length}
                         </div>
                       </button>
-                      
+
                       <button
                         onClick={() => setHistoryTab("completed")}
                         className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
-                          historyTab === "completed" 
-                            ? "bg-green-600 text-black border-green-400" 
+                          historyTab === "completed"
+                            ? "bg-green-600 text-black border-green-400"
                             : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700"
                         }`}
                       >
@@ -3322,18 +4282,25 @@ export default function SimpleContractGenerator() {
                           <CheckCircle className="h-4 w-4 mr-2" />
                           <span className="font-medium">Completed</span>
                         </div>
-                        <div className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          historyTab === "completed" ? "bg-black/20 text-black" : "bg-green-600 text-white"
-                        }`}>
-                          {completedContracts.filter(c => c.isCompleted).length}
+                        <div
+                          className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            historyTab === "completed"
+                              ? "bg-black/20 text-black"
+                              : "bg-green-600 text-white"
+                          }`}
+                        >
+                          {
+                            completedContracts.filter((c) => c.isCompleted)
+                              .length
+                          }
                         </div>
                       </button>
                     </div>
 
                     {/* Desktop: Traditional Tab Layout */}
                     <TabsList className="hidden sm:grid w-full grid-cols-3 bg-gray-800 border-gray-700 h-auto">
-                      <TabsTrigger 
-                        value="drafts" 
+                      <TabsTrigger
+                        value="drafts"
                         className="data-[state=active]:bg-cyan-600 data-[state=active]:text-black flex-col py-3 px-2"
                       >
                         <div className="flex items-center mb-1">
@@ -3344,8 +4311,8 @@ export default function SimpleContractGenerator() {
                           ({draftContracts.length})
                         </div>
                       </TabsTrigger>
-                      <TabsTrigger 
-                        value="in-progress" 
+                      <TabsTrigger
+                        value="in-progress"
                         className="data-[state=active]:bg-yellow-600 data-[state=active]:text-black flex-col py-3 px-2"
                       >
                         <div className="flex items-center mb-1">
@@ -3356,8 +4323,8 @@ export default function SimpleContractGenerator() {
                           ({inProgressContracts.length})
                         </div>
                       </TabsTrigger>
-                      <TabsTrigger 
-                        value="completed" 
+                      <TabsTrigger
+                        value="completed"
                         className="data-[state=active]:bg-green-600 data-[state=active]:text-black flex-col py-3 px-2"
                       >
                         <div className="flex items-center mb-1">
@@ -3365,7 +4332,12 @@ export default function SimpleContractGenerator() {
                           <span className="text-sm font-medium">Completed</span>
                         </div>
                         <div className="text-xs opacity-75">
-                          ({completedContracts.filter(c => c.isCompleted).length})
+                          (
+                          {
+                            completedContracts.filter((c) => c.isCompleted)
+                              .length
+                          }
+                          )
                         </div>
                       </TabsTrigger>
                     </TabsList>
@@ -3384,7 +4356,9 @@ export default function SimpleContractGenerator() {
                         disabled={isLoadingDrafts}
                         className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
                       >
-                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingDrafts ? 'animate-spin' : ''}`} />
+                        <RefreshCw
+                          className={`h-4 w-4 mr-2 ${isLoadingDrafts ? "animate-spin" : ""}`}
+                        />
                         Refresh
                       </Button>
                     </div>
@@ -3392,7 +4366,9 @@ export default function SimpleContractGenerator() {
                     {isLoadingDrafts ? (
                       <div className="text-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto"></div>
-                        <p className="mt-2 text-gray-400">Loading contract drafts...</p>
+                        <p className="mt-2 text-gray-400">
+                          Loading contract drafts...
+                        </p>
                       </div>
                     ) : draftContracts.length > 0 ? (
                       <div className="space-y-3">
@@ -3403,12 +4379,16 @@ export default function SimpleContractGenerator() {
                           >
                             <div className="flex items-center justify-between mb-3">
                               <div>
-                                <h3 className="font-bold text-white text-lg">{contract.clientName}</h3>
+                                <h3 className="font-bold text-white text-lg">
+                                  {contract.clientName}
+                                </h3>
                                 <p className="text-cyan-400 font-semibold">
-                                  ${(contract.totalAmount || 0).toLocaleString()}
+                                  $
+                                  {(contract.totalAmount || 0).toLocaleString()}
                                 </p>
                                 <p className="text-gray-400 text-sm">
-                                  {contract.projectDescription || 'Draft Contract'}
+                                  {contract.projectDescription ||
+                                    "Draft Contract"}
                                 </p>
                               </div>
                               <Badge className="bg-yellow-600 text-black">
@@ -3417,17 +4397,19 @@ export default function SimpleContractGenerator() {
                               </Badge>
                             </div>
 
-
-
                             {/* Actions - Mobile Responsive */}
                             <div className="bg-cyan-900/30 border border-cyan-700 rounded-lg p-3">
-                              <h4 className="text-cyan-400 font-semibold text-sm mb-3">Draft Actions:</h4>
+                              <h4 className="text-cyan-400 font-semibold text-sm mb-3">
+                                Draft Actions:
+                              </h4>
                               {/* Mobile: Stacked Buttons */}
                               <div className="flex flex-col sm:flex-row gap-2">
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => loadContractFromHistory(contract)}
+                                  onClick={() =>
+                                    loadContractFromHistory(contract)
+                                  }
                                   className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs w-full sm:w-auto"
                                 >
                                   <Edit2 className="h-3 w-3 mr-1" />
@@ -3436,7 +4418,9 @@ export default function SimpleContractGenerator() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => loadContractFromHistory(contract)}
+                                  onClick={() =>
+                                    loadContractFromHistory(contract)
+                                  }
                                   className="border-gray-400 text-gray-400 hover:bg-gray-400 hover:text-black text-xs w-full sm:w-auto"
                                 >
                                   <Eye className="h-3 w-3 mr-1" />
@@ -3450,9 +4434,12 @@ export default function SimpleContractGenerator() {
                     ) : (
                       <div className="text-center py-8">
                         <Clock className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                        <p className="text-gray-400 mb-2">No draft contracts found</p>
+                        <p className="text-gray-400 mb-2">
+                          No draft contracts found
+                        </p>
                         <p className="text-sm text-gray-500">
-                          Contracts stopped at step 2 will appear here for easy resuming
+                          Contracts stopped at step 2 will appear here for easy
+                          resuming
                         </p>
                       </div>
                     )}
@@ -3462,7 +4449,8 @@ export default function SimpleContractGenerator() {
                   <TabsContent value="in-progress" className="space-y-4 mt-6">
                     <div className="flex justify-between items-center">
                       <p className="text-sm text-yellow-300">
-                        Contracts with signature links sent - awaiting signatures
+                        Contracts with signature links sent - awaiting
+                        signatures
                       </p>
                       <Button
                         variant="outline"
@@ -3471,7 +4459,9 @@ export default function SimpleContractGenerator() {
                         disabled={isLoadingInProgress}
                         className="border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black"
                       >
-                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingInProgress ? 'animate-spin' : ''}`} />
+                        <RefreshCw
+                          className={`h-4 w-4 mr-2 ${isLoadingInProgress ? "animate-spin" : ""}`}
+                        />
                         Refresh
                       </Button>
                     </div>
@@ -3479,7 +4469,9 @@ export default function SimpleContractGenerator() {
                     {isLoadingInProgress ? (
                       <div className="text-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400 mx-auto"></div>
-                        <p className="mt-2 text-gray-400">Loading in-progress contracts...</p>
+                        <p className="mt-2 text-gray-400">
+                          Loading in-progress contracts...
+                        </p>
                       </div>
                     ) : inProgressContracts.length > 0 ? (
                       <div className="space-y-3">
@@ -3490,9 +4482,12 @@ export default function SimpleContractGenerator() {
                           >
                             <div className="flex items-center justify-between mb-3">
                               <div>
-                                <h3 className="font-bold text-white text-lg">{contract.clientName}</h3>
+                                <h3 className="font-bold text-white text-lg">
+                                  {contract.clientName}
+                                </h3>
                                 <p className="text-yellow-400 font-semibold">
-                                  ${(contract.totalAmount || 0).toLocaleString()}
+                                  $
+                                  {(contract.totalAmount || 0).toLocaleString()}
                                 </p>
                               </div>
                               <Badge className="bg-yellow-600 text-black">
@@ -3504,19 +4499,35 @@ export default function SimpleContractGenerator() {
                             <div className="bg-gray-700 rounded-lg p-3 mb-3">
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                  <span className="text-gray-300 text-sm">Contractor:</span>
-                                  <Badge className={`ml-2 text-xs ${
-                                    contract.contractorSigned ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-                                  }`}>
-                                    {contract.contractorSigned ? 'SIGNED' : 'PENDING'}
+                                  <span className="text-gray-300 text-sm">
+                                    Contractor:
+                                  </span>
+                                  <Badge
+                                    className={`ml-2 text-xs ${
+                                      contract.contractorSigned
+                                        ? "bg-green-600 text-white"
+                                        : "bg-red-600 text-white"
+                                    }`}
+                                  >
+                                    {contract.contractorSigned
+                                      ? "SIGNED"
+                                      : "PENDING"}
                                   </Badge>
                                 </div>
                                 <div>
-                                  <span className="text-gray-300 text-sm">Client:</span>
-                                  <Badge className={`ml-2 text-xs ${
-                                    contract.clientSigned ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-                                  }`}>
-                                    {contract.clientSigned ? 'SIGNED' : 'PENDING'}
+                                  <span className="text-gray-300 text-sm">
+                                    Client:
+                                  </span>
+                                  <Badge
+                                    className={`ml-2 text-xs ${
+                                      contract.clientSigned
+                                        ? "bg-green-600 text-white"
+                                        : "bg-red-600 text-white"
+                                    }`}
+                                  >
+                                    {contract.clientSigned
+                                      ? "SIGNED"
+                                      : "PENDING"}
                                   </Badge>
                                 </div>
                               </div>
@@ -3524,22 +4535,27 @@ export default function SimpleContractGenerator() {
 
                             {/* Direct Signature Links */}
                             <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-3">
-                              <h4 className="text-blue-400 font-semibold text-sm mb-2">Direct Signature Links:</h4>
+                              <h4 className="text-blue-400 font-semibold text-sm mb-2">
+                                Direct Signature Links:
+                              </h4>
                               {/* Mobile-Responsive Signature Links */}
                               <div className="space-y-3">
                                 <div className="space-y-2">
-                                  <span className="text-gray-300 text-sm block">Contractor Link:</span>
+                                  <span className="text-gray-300 text-sm block">
+                                    Contractor Link:
+                                  </span>
                                   <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={() => {
                                       if (contract.contractorSignUrl) {
-                                        window.open(contract.contractorSignUrl, '_blank');
+                                        openUrl(contract.contractorSignUrl);
                                       } else {
                                         toast({
                                           title: "Link Not Available",
-                                          description: "Contractor signature link not found",
-                                          variant: "destructive"
+                                          description:
+                                            "Contractor signature link not found",
+                                          variant: "destructive",
                                         });
                                       }
                                     }}
@@ -3550,18 +4566,21 @@ export default function SimpleContractGenerator() {
                                   </Button>
                                 </div>
                                 <div className="space-y-2">
-                                  <span className="text-gray-300 text-sm block">Client Link:</span>
+                                  <span className="text-gray-300 text-sm block">
+                                    Client Link:
+                                  </span>
                                   <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={() => {
                                       if (contract.clientSignUrl) {
-                                        window.open(contract.clientSignUrl, '_blank');
+                                        openUrl(contract.clientSignUrl);
                                       } else {
                                         toast({
                                           title: "Link Not Available",
-                                          description: "Client signature link not found",
-                                          variant: "destructive"
+                                          description:
+                                            "Client signature link not found",
+                                          variant: "destructive",
                                         });
                                       }
                                     }}
@@ -3579,7 +4598,9 @@ export default function SimpleContractGenerator() {
                     ) : (
                       <div className="text-center py-8">
                         <FileCheck className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                        <p className="text-gray-400 mb-2">No contracts in progress</p>
+                        <p className="text-gray-400 mb-2">
+                          No contracts in progress
+                        </p>
                         <p className="text-sm text-gray-500">
                           Contracts with sent signature links will appear here
                         </p>
@@ -3601,7 +4622,9 @@ export default function SimpleContractGenerator() {
                         disabled={isLoadingCompleted}
                         className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black"
                       >
-                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingCompleted ? 'animate-spin' : ''}`} />
+                        <RefreshCw
+                          className={`h-4 w-4 mr-2 ${isLoadingCompleted ? "animate-spin" : ""}`}
+                        />
                         Refresh
                       </Button>
                     </div>
@@ -3609,7 +4632,9 @@ export default function SimpleContractGenerator() {
                     {isLoadingCompleted ? (
                       <div className="text-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400 mx-auto"></div>
-                        <p className="mt-2 text-gray-400">Loading completed contracts...</p>
+                        <p className="mt-2 text-gray-400">
+                          Loading completed contracts...
+                        </p>
                       </div>
                     ) : completedContracts.length > 0 ? (
                       <div className="space-y-3">
@@ -3620,9 +4645,12 @@ export default function SimpleContractGenerator() {
                           >
                             <div className="flex items-center justify-between mb-3">
                               <div>
-                                <h3 className="font-bold text-white text-lg">{contract.clientName}</h3>
+                                <h3 className="font-bold text-white text-lg">
+                                  {contract.clientName}
+                                </h3>
                                 <p className="text-green-400 font-semibold">
-                                  ${(contract.totalAmount || 0).toLocaleString()}
+                                  $
+                                  {(contract.totalAmount || 0).toLocaleString()}
                                 </p>
                               </div>
                               <Badge className="bg-green-600 text-white">
@@ -3631,21 +4659,29 @@ export default function SimpleContractGenerator() {
                               </Badge>
                             </div>
 
-
-
                             {/* Contract Actions */}
                             <div className="space-y-3">
                               {/* PDF Status and Actions */}
-                              <div className={`border rounded-lg p-3 ${contract.hasPdf ? 'bg-green-900/30 border-green-700' : 'bg-orange-900/30 border-orange-700'}`}>
+                              <div
+                                className={`border rounded-lg p-3 ${contract.hasPdf ? "bg-green-900/30 border-green-700" : "bg-orange-900/30 border-orange-700"}`}
+                              >
                                 <div className="flex items-center justify-between mb-2">
-                                  <h4 className={`font-semibold text-sm ${contract.hasPdf ? 'text-green-400' : 'text-orange-400'}`}>
-                                    {contract.hasPdf ? 'Signed PDF Available:' : 'PDF Not Generated:'}
+                                  <h4
+                                    className={`font-semibold text-sm ${contract.hasPdf ? "text-green-400" : "text-orange-400"}`}
+                                  >
+                                    {contract.hasPdf
+                                      ? "Signed PDF Available:"
+                                      : "PDF Not Generated:"}
                                   </h4>
-                                  <Badge className={`text-xs ${contract.hasPdf ? 'bg-green-600 text-white' : 'bg-orange-600 text-white'}`}>
-                                    {contract.hasPdf ? 'PDF READY' : 'PDF PENDING'}
+                                  <Badge
+                                    className={`text-xs ${contract.hasPdf ? "bg-green-600 text-white" : "bg-orange-600 text-white"}`}
+                                  >
+                                    {contract.hasPdf
+                                      ? "PDF READY"
+                                      : "PDF PENDING"}
                                   </Badge>
                                 </div>
-                                
+
                                 {/* Mobile-Responsive Action Buttons */}
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                   {contract.hasPdf ? (
@@ -3653,7 +4689,12 @@ export default function SimpleContractGenerator() {
                                       <Button
                                         size="sm"
                                         variant="outline"
-                                        onClick={() => viewContract(contract.contractId, contract.clientName)}
+                                        onClick={() =>
+                                          viewContract(
+                                            contract.contractId,
+                                            contract.clientName,
+                                          )
+                                        }
                                         className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black text-xs w-full"
                                       >
                                         <Eye className="h-3 w-3 mr-1" />
@@ -3662,7 +4703,12 @@ export default function SimpleContractGenerator() {
                                       <Button
                                         size="sm"
                                         variant="outline"
-                                        onClick={() => downloadSignedPdf(contract.contractId, contract.clientName)}
+                                        onClick={() =>
+                                          downloadSignedPdf(
+                                            contract.contractId,
+                                            contract.clientName,
+                                          )
+                                        }
                                         className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs w-full"
                                       >
                                         <Download className="h-3 w-3 mr-1" />
@@ -3671,7 +4717,12 @@ export default function SimpleContractGenerator() {
                                       <Button
                                         size="sm"
                                         variant="outline"
-                                        onClick={() => shareContract(contract.contractId, contract.clientName)}
+                                        onClick={() =>
+                                          shareContract(
+                                            contract.contractId,
+                                            contract.clientName,
+                                          )
+                                        }
                                         className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs w-full"
                                       >
                                         <Share2 className="h-3 w-3 mr-1" />
@@ -3683,7 +4734,12 @@ export default function SimpleContractGenerator() {
                                       <Button
                                         size="sm"
                                         variant="outline"
-                                        onClick={() => generateContractPdf(contract.contractId, contract.clientName)}
+                                        onClick={() =>
+                                          generateContractPdf(
+                                            contract.contractId,
+                                            contract.clientName,
+                                          )
+                                        }
                                         className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-black text-xs w-full"
                                       >
                                         <FileText className="h-3 w-3 mr-1" />
@@ -3692,7 +4748,12 @@ export default function SimpleContractGenerator() {
                                       <Button
                                         size="sm"
                                         variant="outline"
-                                        onClick={() => viewContractHtml(contract.contractId, contract.clientName)}
+                                        onClick={() =>
+                                          viewContractHtml(
+                                            contract.contractId,
+                                            contract.clientName,
+                                          )
+                                        }
                                         className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black text-xs w-full"
                                       >
                                         <Eye className="h-3 w-3 mr-1" />
@@ -3701,7 +4762,12 @@ export default function SimpleContractGenerator() {
                                       <Button
                                         size="sm"
                                         variant="outline"
-                                        onClick={() => shareContract(contract.contractId, contract.clientName)}
+                                        onClick={() =>
+                                          shareContract(
+                                            contract.contractId,
+                                            contract.clientName,
+                                          )
+                                        }
                                         className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs w-full"
                                       >
                                         <Share2 className="h-3 w-3 mr-1" />
@@ -3711,18 +4777,28 @@ export default function SimpleContractGenerator() {
                                   )}
                                 </div>
                               </div>
-                              
+
                               {/* Contract Details - Mobile Responsive */}
                               <div className="bg-gray-700 rounded-lg p-3">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                                   <div className="space-y-1">
-                                    <span className="text-gray-400 block">Contract ID:</span>
-                                    <p className="text-gray-200 font-mono text-xs break-all">{contract.contractId}</p>
+                                    <span className="text-gray-400 block">
+                                      Contract ID:
+                                    </span>
+                                    <p className="text-gray-200 font-mono text-xs break-all">
+                                      {contract.contractId}
+                                    </p>
                                   </div>
                                   <div className="space-y-1">
-                                    <span className="text-gray-400 block">Completion Date:</span>
+                                    <span className="text-gray-400 block">
+                                      Completion Date:
+                                    </span>
                                     <p className="text-gray-200">
-                                      {contract.completionDate ? new Date(contract.completionDate).toLocaleDateString() : 'N/A'}
+                                      {contract.completionDate
+                                        ? new Date(
+                                            contract.completionDate,
+                                          ).toLocaleDateString()
+                                        : "N/A"}
                                     </p>
                                   </div>
                                 </div>
@@ -3734,9 +4810,12 @@ export default function SimpleContractGenerator() {
                     ) : (
                       <div className="text-center py-8">
                         <Shield className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                        <p className="text-gray-400 mb-2">No completed contracts found</p>
+                        <p className="text-gray-400 mb-2">
+                          No completed contracts found
+                        </p>
                         <p className="text-sm text-gray-500">
-                          Signed contracts will appear here for secure download and sharing
+                          Signed contracts will appear here for secure download
+                          and sharing
                         </p>
                       </div>
                     )}
@@ -3746,8 +4825,6 @@ export default function SimpleContractGenerator() {
             </Card>
           </div>
         )}
-
-
       </div>
     </div>
   );

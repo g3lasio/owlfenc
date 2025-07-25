@@ -3,13 +3,11 @@
  * Endpoints para el Sistema de Firma Dual Automática
  */
 
-import { Router } from 'express';
-import { dualSignatureService } from '../services/dualSignatureService';
-import { DocumentService } from '../services/documentService';
-import { z } from 'zod';
+import { Router } from "express";
+import { dualSignatureService } from "../services/dualSignatureService";
+import { z } from "zod";
 
 const router = Router();
-const documentService = new DocumentService();
 
 // Validation schemas
 const initiateDualSignatureSchema = z.object({
@@ -33,9 +31,9 @@ const initiateDualSignatureSchema = z.object({
 
 const signatureSubmissionSchema = z.object({
   contractId: z.string(),
-  party: z.enum(['contractor', 'client']),
+  party: z.enum(["contractor", "client"]),
   signatureData: z.string(),
-  signatureType: z.enum(['drawing', 'cursive']),
+  signatureType: z.enum(["drawing", "cursive"]),
   fullName: z.string(),
 });
 
@@ -43,16 +41,20 @@ const signatureSubmissionSchema = z.object({
  * POST /api/dual-signature/initiate
  * Iniciar el proceso de firma dual
  */
-router.post('/initiate', async (req, res) => {
+router.post("/initiate", async (req, res) => {
   try {
-    console.log('🚀 [API] Initiating dual signature workflow...');
-    
+    console.log("🚀 [API] Initiating dual signature workflow...");
+
     const validatedData = initiateDualSignatureSchema.parse(req.body);
-    
-    const result = await dualSignatureService.initiateDualSignature(validatedData);
-    
+
+    const result =
+      await dualSignatureService.initiateDualSignature(validatedData);
+
     if (result.success) {
-      console.log('✅ [API] Dual signature initiated successfully:', result.contractId);
+      console.log(
+        "✅ [API] Dual signature initiated successfully:",
+        result.contractId,
+      );
       res.json({
         success: true,
         contractId: result.contractId,
@@ -61,17 +63,20 @@ router.post('/initiate', async (req, res) => {
         message: result.message,
       });
     } else {
-      console.error('❌ [API] Failed to initiate dual signature:', result.message);
+      console.error(
+        "❌ [API] Failed to initiate dual signature:",
+        result.message,
+      );
       res.status(400).json({
         success: false,
         message: result.message,
       });
     }
   } catch (error: any) {
-    console.error('❌ [API] Error in /initiate:', error);
+    console.error("❌ [API] Error in /initiate:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: "Internal server error",
       error: error.message,
     });
   }
@@ -82,27 +87,30 @@ router.post('/initiate', async (req, res) => {
  * Obtener datos del contrato para firma
  * INCLUYE VERIFICACIÓN DE SEGURIDAD OPCIONAL
  */
-router.get('/contract/:contractId/:party', async (req, res) => {
+router.get("/contract/:contractId/:party", async (req, res) => {
   try {
     const { contractId, party } = req.params;
-    const requestingUserId = req.headers['x-user-id'] as string; // Para verificación de seguridad opcional
-    
-    if (!['contractor', 'client'].includes(party)) {
+    const requestingUserId = req.headers["x-user-id"] as string; // Para verificación de seguridad opcional
+
+    if (!["contractor", "client"].includes(party)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid party. Must be "contractor" or "client"',
       });
     }
-    
+
     console.log(`🔍 [API] Getting contract for ${party} signing:`, contractId);
-    console.log(`🔐 [API] Requesting user ID:`, requestingUserId || 'No user ID provided');
-    
-    const result = await dualSignatureService.getContractForSigning(
-      contractId, 
-      party as 'contractor' | 'client',
-      requestingUserId
+    console.log(
+      `🔐 [API] Requesting user ID:`,
+      requestingUserId || "No user ID provided",
     );
-    
+
+    const result = await dualSignatureService.getContractForSigning(
+      contractId,
+      party as "contractor" | "client",
+      requestingUserId,
+    );
+
     if (result.success) {
       res.json({
         success: true,
@@ -116,10 +124,10 @@ router.get('/contract/:contractId/:party', async (req, res) => {
       });
     }
   } catch (error: any) {
-    console.error('❌ [API] Error in /contract/:contractId/:party:', error);
+    console.error("❌ [API] Error in /contract/:contractId/:party:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: "Internal server error",
       error: error.message,
     });
   }
@@ -130,19 +138,25 @@ router.get('/contract/:contractId/:party', async (req, res) => {
  * Procesar firma enviada
  * INCLUYE VERIFICACIÓN DE SEGURIDAD OPCIONAL
  */
-router.post('/sign', async (req, res) => {
+router.post("/sign", async (req, res) => {
   try {
-    console.log('✍️ [API] Processing signature submission...');
-    
+    console.log("✍️ [API] Processing signature submission...");
+
     const validatedData = signatureSubmissionSchema.parse(req.body);
-    const requestingUserId = req.headers['x-user-id'] as string; // Para verificación de seguridad opcional
-    
-    console.log(`🔐 [API] Requesting user ID:`, requestingUserId || 'No user ID provided');
-    
-    const result = await dualSignatureService.processSignature(validatedData, requestingUserId);
-    
+    const requestingUserId = req.headers["x-user-id"] as string; // Para verificación de seguridad opcional
+
+    console.log(
+      `🔐 [API] Requesting user ID:`,
+      requestingUserId || "No user ID provided",
+    );
+
+    const result = await dualSignatureService.processSignature(
+      validatedData,
+      requestingUserId,
+    );
+
     if (result.success) {
-      console.log('✅ [API] Signature processed successfully');
+      console.log("✅ [API] Signature processed successfully");
       res.json({
         success: true,
         message: result.message,
@@ -150,17 +164,17 @@ router.post('/sign', async (req, res) => {
         bothSigned: result.bothSigned,
       });
     } else {
-      console.error('❌ [API] Failed to process signature:', result.message);
+      console.error("❌ [API] Failed to process signature:", result.message);
       res.status(400).json({
         success: false,
         message: result.message,
       });
     }
   } catch (error: any) {
-    console.error('❌ [API] Error in /sign:', error);
+    console.error("❌ [API] Error in /sign:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: "Internal server error",
       error: error.message,
     });
   }
@@ -170,31 +184,47 @@ router.post('/sign', async (req, res) => {
  * GET /api/dual-signature/download/:contractId
  * Download signed PDF contract
  */
-router.get('/download/:contractId', async (req, res) => {
+router.get("/download/:contractId", async (req, res) => {
   try {
     const { contractId } = req.params;
-    const requestingUserId = req.headers['x-user-id'] as string;
-    
-    console.log('📥 [API] Download request for contract:', contractId);
-    console.log('👤 [API] Requesting user:', requestingUserId || 'No user ID');
-    
-    const result = await dualSignatureService.downloadSignedPdf(contractId, requestingUserId);
-    
+    const requestingUserId = req.headers["x-user-id"] as string;
+
+    console.log("📥 [API] Download request for contract:", contractId);
+    console.log("👤 [API] Requesting user:", requestingUserId || "No user ID");
+
+    const result = await dualSignatureService.downloadSignedPdf(
+      contractId,
+      requestingUserId,
+    );
+
     if (result.success && result.pdfBuffer) {
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="contract_${contractId}_signed.pdf"`);
+      // Validate PDF buffer
+      if (!Buffer.isBuffer(result.pdfBuffer) || result.pdfBuffer.length === 0) {
+        return res.status(500).json({
+          success: false,
+          message: "Invalid PDF buffer",
+        });
+      }
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Length", result.pdfBuffer.length.toString());
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="contract_${contractId}_signed.pdf"`,
+      );
+      res.setHeader("Cache-Control", "no-cache");
       res.send(result.pdfBuffer);
     } else {
       res.status(404).json({
         success: false,
-        message: result.message
+        message: result.message,
       });
     }
   } catch (error: any) {
-    console.error('❌ [API] Error in /download/:contractId:', error);
+    console.error("❌ [API] Error in /download/:contractId:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: "Internal server error",
       error: error.message,
     });
   }
@@ -204,14 +234,14 @@ router.get('/download/:contractId', async (req, res) => {
  * GET /api/dual-signature/status/:contractId
  * Obtener estado del contrato
  */
-router.get('/status/:contractId', async (req, res) => {
+router.get("/status/:contractId", async (req, res) => {
   try {
     const { contractId } = req.params;
-    
-    console.log('📊 [API] Getting contract status:', contractId);
-    
+
+    console.log("📊 [API] Getting contract status:", contractId);
+
     const result = await dualSignatureService.getContractStatus(contractId);
-    
+
     if (result.success) {
       res.json({
         success: true,
@@ -225,10 +255,10 @@ router.get('/status/:contractId', async (req, res) => {
       });
     }
   } catch (error: any) {
-    console.error('❌ [API] Error in /status/:contractId:', error);
+    console.error("❌ [API] Error in /status/:contractId:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: "Internal server error",
       error: error.message,
     });
   }
@@ -238,36 +268,48 @@ router.get('/status/:contractId', async (req, res) => {
  * GET /api/dual-signature/download/:contractId
  * Descargar PDF firmado completado
  */
-router.get('/download/:contractId', async (req, res) => {
+router.get("/download/:contractId", async (req, res) => {
   try {
     const { contractId } = req.params;
-    
-    console.log('📥 [API] PDF download requested:', contractId);
-    
+
+    console.log("📥 [API] PDF download requested:", contractId);
+
     const result = await dualSignatureService.getSignedPdf(contractId);
-    
+
     if (result.success && result.pdfBuffer && result.filename) {
-      console.log('✅ [API] Serving signed PDF for download');
-      
-      // Set headers for PDF download
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
-      res.setHeader('Content-Length', result.pdfBuffer.length);
-      
+      console.log("✅ [API] Serving signed PDF for download");
+
+      // Validate PDF buffer
+      if (!Buffer.isBuffer(result.pdfBuffer) || result.pdfBuffer.length === 0) {
+        return res.status(500).json({
+          success: false,
+          message: "Invalid PDF buffer",
+        });
+      }
+
+      // Set headers for PDF preview (inline instead of attachment)
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="${result.filename}"`,
+      );
+      res.setHeader("Content-Length", result.pdfBuffer.length.toString());
+      res.setHeader("Cache-Control", "no-cache");
+
       // Send PDF buffer
       res.send(result.pdfBuffer);
     } else {
-      console.error('❌ [API] PDF not available:', result.message);
+      console.error("❌ [API] PDF not available:", result.message);
       res.status(404).json({
         success: false,
         message: result.message,
       });
     }
   } catch (error: any) {
-    console.error('❌ [API] Error in /download/:contractId:', error);
+    console.error("❌ [API] Error in /download/:contractId:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: "Internal server error",
       error: error.message,
     });
   }
@@ -277,42 +319,34 @@ router.get('/download/:contractId', async (req, res) => {
  * GET /api/dual-signature/in-progress/:userId
  * Obtener todos los contratos en progreso (pendientes de firma) de un usuario
  */
-router.get('/in-progress/:userId', async (req, res) => {
+router.get("/in-progress/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
-    
-    console.log('📋 [API] Getting in-progress contracts for user:', userId);
-    
+
+    console.log("📋 [API] Getting in-progress contracts for user:", userId);
+
     // Import database here to avoid circular dependencies
-    const { db } = await import('../db');
-    const { digitalContracts } = await import('../../shared/schema');
-    const { eq, ne } = await import('drizzle-orm');
-    
-    const inProgressContracts = await db.select()
+    const { db } = await import("../db");
+    const { digitalContracts } = await import("../../shared/schema");
+    const { eq, ne } = await import("drizzle-orm");
+
+    const inProgressContracts = await db
+      .select()
       .from(digitalContracts)
       .where(eq(digitalContracts.userId, userId))
       .orderBy(digitalContracts.createdAt);
-    
-    // Filter for contracts that are in progress (signatures sent but not completed)
-    const filteredContracts = inProgressContracts.filter(contract => {
-      // Must have signature URLs generated (not a draft)
-      const hasSignatureUrls = contract.contractorSignUrl && contract.clientSignUrl;
-      if (!hasSignatureUrls) {
-        return false; // This is draft, not in progress
-      }
-      
-      // In Progress includes:
-      // 1. One party signed
-      // 2. Both parties signed but no PDF (status: both_signed_pending_pdf)
-      // 3. Not marked as completed
-      const isCompleted = contract.status === 'completed' && contract.signedPdfPath;
-      return !isCompleted;
-    });
-    
-    console.log(`✅ [API] Found ${filteredContracts.length} in-progress contracts for user`);
-    
+
+    // Filter for contracts that are truly in progress (missing at least one signature)
+    const filteredContracts = inProgressContracts.filter(
+      (contract) => !contract.contractorSigned || !contract.clientSigned,
+    );
+
+    console.log(
+      `✅ [API] Found ${filteredContracts.length} in-progress contracts for user`,
+    );
+
     // Transform data for frontend
-    const contractsForFrontend = filteredContracts.map(contract => ({
+    const contractsForFrontend = filteredContracts.map((contract) => ({
       contractId: contract.contractId,
       status: contract.status,
       contractorName: contract.contractorName,
@@ -330,17 +364,16 @@ router.get('/in-progress/:userId', async (req, res) => {
       updatedAt: contract.updatedAt,
       isCompleted: false,
       needsAction: !contract.contractorSigned || !contract.clientSigned,
-      contractorSignUrl: `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/sign/${contract.contractId}/contractor`,
-      clientSignUrl: `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/sign/${contract.contractId}/client`
+      contractorSignUrl: `${process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000"}/sign/${contract.contractId}/contractor`,
+      clientSignUrl: `${process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000"}/sign/${contract.contractId}/client`,
     }));
-    
+
     res.json({
       success: true,
-      contracts: contractsForFrontend
+      contracts: contractsForFrontend,
     });
-    
   } catch (error: any) {
-    console.error('❌ [API] Error getting in-progress contracts:', error);
+    console.error("❌ [API] Error getting in-progress contracts:", error);
     res.status(500).json({
       success: false,
       error: error.message,
@@ -352,41 +385,50 @@ router.get('/in-progress/:userId', async (req, res) => {
  * GET /api/dual-signature/completed/:userId
  * Obtener todos los contratos completados de un usuario
  */
-router.get('/completed/:userId', async (req, res) => {
+router.get("/completed/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
-    
-    console.log('📋 [API] Getting completed contracts for user:', userId);
-    
+
+    console.log("📋 [API] Getting completed contracts for user:", userId);
+
     // Import database here to avoid circular dependencies
-    const { db } = await import('../db');
-    const { digitalContracts } = await import('../../shared/schema');
-    const { eq } = await import('drizzle-orm');
-    
-    const completedContracts = await db.select()
+    const { db } = await import("../db");
+    const { digitalContracts } = await import("../../shared/schema");
+    const { eq } = await import("drizzle-orm");
+
+    const completedContracts = await db
+      .select()
       .from(digitalContracts)
       .where(eq(digitalContracts.userId, userId))
       .orderBy(digitalContracts.updatedAt);
-    
-    console.log(`✅ [API] Found ${completedContracts.length} contracts for user`);
-    
-    // CRITICAL: Only truly completed contracts have BOTH signatures AND generated PDF
-    const fullyCompletedContracts = completedContracts.filter(contract => 
-      contract.status === 'completed' && 
-      contract.contractorSigned && 
-      contract.clientSigned &&
-      contract.signedPdfPath // PDF must exist for contract to be considered completed
+
+    console.log(
+      `✅ [API] Found ${completedContracts.length} contracts for user`,
     );
 
-    console.log(`🔍 [API] Filtered to ${fullyCompletedContracts.length} truly completed contracts`);
+    // Filter for contracts with both signatures (completed or ready for completion)
+    const fullyCompletedContracts = completedContracts.filter(
+      (contract) => contract.contractorSigned && contract.clientSigned,
+    );
 
-    // Transform data for frontend - show all signed contracts
-    const contractsForFrontend = fullyCompletedContracts.map(contract => ({
+    console.log(
+      `🔍 [API] Filtered to ${fullyCompletedContracts.length} fully signed contracts`,
+    );
+
+    // Debug logging for contract statuses
+    fullyCompletedContracts.forEach((contract) => {
+      console.log(
+        `📋 Contract ${contract.contractId}: contractor=${contract.contractorSigned}, client=${contract.clientSigned}, status=${contract.status}, pdf=${!!contract.signedPdfPath}`,
+      );
+    });
+
+    // Transform data for frontend - all fully signed contracts
+    const contractsForFrontend = fullyCompletedContracts.map((contract) => ({
       contractId: contract.contractId,
       status: contract.status,
       contractorName: contract.contractorName,
       clientName: contract.clientName,
-      totalAmount: parseFloat(contract.totalAmount || '0'),
+      totalAmount: parseFloat(contract.totalAmount || "0"),
       contractorSigned: contract.contractorSigned,
       clientSigned: contract.clientSigned,
       contractorSignedAt: contract.contractorSignedAt,
@@ -395,56 +437,20 @@ router.get('/completed/:userId', async (req, res) => {
       updatedAt: contract.updatedAt,
       signedPdfPath: contract.signedPdfPath,
       isCompleted: true,
-      isDownloadable: !!contract.signedPdfPath, // PDF available for download
-      hasPdf: !!contract.signedPdfPath,
-      completionDate: contract.clientSignedAt || contract.updatedAt
+      isDownloadable: true, // All signed contracts are downloadable (PDF generated on demand)
+      hasPdf: !!contract.signedPdfPath, // Track if PDF already exists
     }));
-    
+
     res.json({
       success: true,
       contracts: contractsForFrontend,
       total: contractsForFrontend.length,
     });
-    
   } catch (error: any) {
-    console.error('❌ [API] Error in /completed/:userId:', error);
+    console.error("❌ [API] Error in /completed/:userId:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
-      error: error.message,
-    });
-  }
-});
-
-/**
- * POST /api/dual-signature/regenerate-pdf/:contractId
- * Regenerar PDF con firmas para contrato completado
- */
-router.post('/regenerate-pdf/:contractId', async (req, res) => {
-  try {
-    const { contractId } = req.params;
-    
-    console.log('🔄 [API] Regenerating PDF for contract:', contractId);
-    
-    const result = await dualSignatureService.regenerateSignedPdf(contractId);
-    
-    if (result.success) {
-      res.json({
-        success: true,
-        message: result.message,
-        pdfPath: result.pdfPath,
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: result.message,
-      });
-    }
-  } catch (error: any) {
-    console.error('❌ [API] Error in /regenerate-pdf:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
+      message: "Internal server error",
       error: error.message,
     });
   }
@@ -452,170 +458,48 @@ router.post('/regenerate-pdf/:contractId', async (req, res) => {
 
 /**
  * GET /api/dual-signature/drafts/:userId
- * Get all draft contracts (created but no signatures sent)
+ * Obtener todos los contratos en borrador de un usuario
  */
-router.get('/drafts/:userId', async (req, res) => {
+router.get("/drafts/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
-    
-    console.log('📋 [API] Getting draft contracts for user:', userId);
-    
-    // Import database here to avoid circular dependencies
-    const { db } = await import('../db');
-    const { digitalContracts } = await import('../../shared/schema');
-    const { eq, or, isNull } = await import('drizzle-orm');
-    
-    const draftContracts = await db.select()
-      .from(digitalContracts)
-      .where(eq(digitalContracts.userId, userId))
-      .orderBy(digitalContracts.createdAt);
-    
-    // Filter for contracts that are drafts (no signature URLs generated)
-    const filteredDrafts = draftContracts.filter(contract => 
-      (!contract.contractorSignUrl || !contract.clientSignUrl) &&
-      !contract.contractorSigned && 
-      !contract.clientSigned &&
-      contract.status !== 'completed'
+
+    console.log("📋 [API] Getting draft contracts for user:", userId);
+
+    // Import contract history service to get drafts
+    const { contractHistoryService } = await import(
+      "../../client/src/services/contractHistoryService"
     );
-    
-    console.log(`✅ [API] Found ${filteredDrafts.length} draft contracts for user`);
-    
+
+    const allHistory = await contractHistoryService.getContractHistory(userId);
+    const draftContracts = allHistory.filter(
+      (contract) => contract.status === "draft",
+    );
+
+    console.log(
+      `✅ [API] Found ${draftContracts.length} draft contracts for user`,
+    );
+
     // Transform data for frontend
-    const contractsForFrontend = filteredDrafts.map(contract => ({
+    const contractsForFrontend = draftContracts.map((contract) => ({
+      id: contract.id,
       contractId: contract.contractId,
-      status: 'draft',
-      contractorName: contract.contractorName,
       clientName: contract.clientName,
-      totalAmount: parseFloat(contract.totalAmount || '0'),
+      projectType: contract.projectType,
+      totalAmount: contract.contractData.financials.total || 0,
+      projectDescription: contract.contractData.project?.description || "",
+      status: contract.status,
       createdAt: contract.createdAt,
       updatedAt: contract.updatedAt,
-      projectDescription: (contract.contractData as any)?.projectDescription || 'Contract Draft'
+      contractData: contract.contractData,
     }));
-    
+
     res.json({
       success: true,
       contracts: contractsForFrontend,
-      total: contractsForFrontend.length,
     });
-    
   } catch (error: any) {
-    console.error('❌ [API] Error getting draft contracts:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: error.message,
-    });
-  }
-});
-
-/**
- * GET /api/dual-signature/test
- * Health check endpoint
- */
-router.get('/test', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Dual Signature API is working',
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * POST /api/dual-signature/resend-links
- * Reenviar links de firma para un contrato existente
- */
-router.post('/resend-links', async (req, res) => {
-  try {
-    const { contractId, methods } = req.body;
-    
-    console.log('📱 [API] Resending signature links for contract:', contractId, 'methods:', methods);
-    
-    // Import database here to avoid circular dependencies
-    const { db } = await import('../db');
-    const { digitalContracts } = await import('../../shared/schema');
-    const { eq } = await import('drizzle-orm');
-    
-    // Get contract data
-    const [contract] = await db.select()
-      .from(digitalContracts)
-      .where(eq(digitalContracts.contractId, contractId))
-      .limit(1);
-    
-    if (!contract) {
-      return res.status(404).json({
-        success: false,
-        error: 'Contract not found'
-      });
-    }
-    
-    // Generate signature URLs
-    const contractorSignUrl = `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/sign/${contract.contractId}/contractor`;
-    const clientSignUrl = `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/sign/${contract.contractId}/client`;
-    
-    const results = [];
-    
-    // Send via email if requested
-    if (methods.includes('email')) {
-      try {
-        const { ResendEmailAdvanced } = await import('../services/resendEmailAdvanced');
-        const emailService = new ResendEmailAdvanced();
-        
-        // Send to contractor if not signed
-        if (!contract.contractorSigned) {
-          await emailService.sendContractForSigning({
-            to: contract.contractorEmail,
-            contractorName: contract.contractorName,
-            clientName: contract.clientName,
-            projectDescription: contract.projectDescription,
-            totalAmount: parseFloat(contract.totalAmount),
-            signUrl: contractorSignUrl,
-            party: 'contractor'
-          });
-          results.push('Email sent to contractor');
-        }
-        
-        // Send to client if not signed
-        if (!contract.clientSigned) {
-          await emailService.sendContractForSigning({
-            to: contract.clientEmail,
-            contractorName: contract.contractorName,
-            clientName: contract.clientName,
-            projectDescription: contract.projectDescription,
-            totalAmount: parseFloat(contract.totalAmount),
-            signUrl: clientSignUrl,
-            party: 'client'
-          });
-          results.push('Email sent to client');
-        }
-      } catch (emailError) {
-        console.error('❌ Error sending emails:', emailError);
-        results.push('Email sending failed');
-      }
-    }
-    
-    // Generate SMS/WhatsApp links if requested
-    if (methods.includes('sms') || methods.includes('whatsapp')) {
-      const smsMessage = `🔒 CONTRATO DIGITAL PENDIENTE\n\nHola ${contract.clientName},\n\nTu contrato para "${contract.projectDescription}" está listo para firma.\n\nMonto: $${parseFloat(contract.totalAmount).toLocaleString()}\n\n👆 Firmar: ${clientSignUrl}\n\n📧 Owl Fence - Contratos Seguros`;
-      
-      if (methods.includes('sms')) {
-        results.push(`SMS link generated: sms:${contract.clientPhone}?body=${encodeURIComponent(smsMessage)}`);
-      }
-      
-      if (methods.includes('whatsapp')) {
-        results.push(`WhatsApp link generated: https://wa.me/${contract.clientPhone?.replace(/\D/g, '')}?text=${encodeURIComponent(smsMessage)}`);
-      }
-    }
-    
-    res.json({
-      success: true,
-      results,
-      contractorSignUrl: !contract.contractorSigned ? contractorSignUrl : null,
-      clientSignUrl: !contract.clientSigned ? clientSignUrl : null,
-      message: 'Links resent successfully'
-    });
-    
-  } catch (error: any) {
-    console.error('❌ [API] Error resending signature links:', error);
+    console.error("❌ [API] Error getting draft contracts:", error);
     res.status(500).json({
       success: false,
       error: error.message,
@@ -625,442 +509,163 @@ router.post('/resend-links', async (req, res) => {
 
 /**
  * GET /api/dual-signature/download-html/:contractId
- * Descargar contrato como archivo HTML con firmas
+ * Download signed contract as HTML
  */
-router.get('/download-html/:contractId', async (req, res) => {
+router.get("/download-html/:contractId", async (req, res) => {
   try {
     const { contractId } = req.params;
-    const requestingUserId = req.headers['x-user-id'] as string;
-    
-    console.log('📥 [API] HTML download request for contract:', contractId);
-    console.log('👤 [API] Requesting user:', requestingUserId || 'No user ID');
-    
-    // Get contract data
-    const contractResult = await dualSignatureService.getContractData(contractId, requestingUserId);
-    
-    if (!contractResult.success || !contractResult.contract) {
+    const requestingUserId = req.headers["x-user-id"] as string;
+
+    console.log("📄 [API] HTML download request for contract:", contractId);
+
+    // Import database here to avoid circular dependencies
+    const { db } = await import("../db");
+    const { digitalContracts } = await import("../../shared/schema");
+    const { eq } = await import("drizzle-orm");
+
+    const [contract] = await db
+      .select()
+      .from(digitalContracts)
+      .where(eq(digitalContracts.contractId, contractId))
+      .limit(1);
+
+    if (!contract) {
       return res.status(404).json({
         success: false,
-        message: 'Contract not found or access denied'
+        message: "Contract not found",
       });
     }
-    
-    const contract = contractResult.contract;
-    
-    // Helper function to create signature image for contract
-    const createSignatureImage = (signatureData: string, signatureType: string, name: string) => {
-      if (signatureType === 'cursive') {
-        // Create styled SVG for typed signature
-        return `data:image/svg+xml;base64,${Buffer.from(`
-          <svg width="300" height="60" xmlns="http://www.w3.org/2000/svg">
-            <text x="150" y="35" text-anchor="middle" font-family="Brush Script MT, cursive" font-size="28" fill="#000080">${name}</text>
-          </svg>
-        `).toString('base64')}`;
-      } else {
-        // Return actual canvas signature data
-        return signatureData;
-      }
-    };
 
-    // Use cheerio to properly inject signatures into the contract HTML
-    const cheerio = await import('cheerio');
-    const $ = cheerio.load(contract.contractHtml || '<h1>Contract Content Not Available</h1>');
-    
-    console.log('📝 [SIGNATURE-INJECTION] Processing contract signatures for display');
-    
-    // Find signature blocks
-    const signBlocks = $('.sign-block');
-    console.log(`Found ${signBlocks.length} signature blocks`);
-    
-    if (signBlocks.length >= 2) {
-      // First sign-block is for Client
-      if (contract.clientSigned && contract.clientSignatureData) {
-        const clientSigImage = createSignatureImage(
-          contract.clientSignatureData, 
-          contract.clientSignatureType, 
-          contract.clientName
-        );
-        
-        const clientBlock = signBlocks.eq(0);
-        const clientSignSpace = clientBlock.find('.sign-space');
-        if (clientSignSpace.length > 0) {
-          clientSignSpace.html(`<img src="${clientSigImage}" alt="Client Signature" style="max-height: 45px; max-width: 250px; display: block; margin: 0 auto;" />`);
-          console.log('✅ Injected client signature');
-        }
-        
-        // Update date
-        const clientDateText = clientBlock.find('div').filter((i, el) => $(el).text().includes('Date:')).first();
-        if (clientDateText.length > 0 && contract.clientSignedAt) {
-          clientDateText.text(`Date: ${new Date(contract.clientSignedAt).toLocaleDateString()}`);
-        }
-      }
-      
-      // Second sign-block is for Contractor
-      if (contract.contractorSigned && contract.contractorSignatureData) {
-        const contractorSigImage = createSignatureImage(
-          contract.contractorSignatureData, 
-          contract.contractorSignatureType, 
-          contract.contractorName
-        );
-        
-        const contractorBlock = signBlocks.eq(1);
-        const contractorSignSpace = contractorBlock.find('.sign-space');
-        if (contractorSignSpace.length > 0) {
-          contractorSignSpace.html(`<img src="${contractorSigImage}" alt="Contractor Signature" style="max-height: 45px; max-width: 250px; display: block; margin: 0 auto;" />`);
-          console.log('✅ Injected contractor signature');
-        }
-        
-        // Update date
-        const contractorDateText = contractorBlock.find('div').filter((i, el) => $(el).text().includes('Date:')).first();
-        if (contractorDateText.length > 0 && contract.contractorSignedAt) {
-          contractorDateText.text(`Date: ${new Date(contract.contractorSignedAt).toLocaleDateString()}`);
-        }
-      }
+    // Security check - only allow access to contract owner
+    if (requestingUserId && contract.userId !== requestingUserId) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
     }
-    
-    let contractHtmlWithSignatures = $.html();
 
-    // Generate complete HTML document with enhanced signatures
-    const completeHtml = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Signed Contract - ${contract.clientName}</title>
-  <style>
-    body {
-      font-family: 'Times New Roman', serif;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-      line-height: 1.6;
-      background: white;
-      color: black;
-    }
-    .header {
-      text-align: center;
-      border-bottom: 2px solid #333;
-      padding-bottom: 20px;
-      margin-bottom: 30px;
-    }
-    .signatures {
-      margin-top: 40px;
-      padding: 20px;
-      border: 2px solid #333;
-      background: #f9f9f9;
-      page-break-inside: avoid;
-    }
-    .signature-section {
-      margin: 20px 0;
-      padding: 15px;
-      border: 1px solid #ddd;
-      background: white;
-      border-radius: 8px;
-    }
-    .signature-preview {
-      max-width: 300px;
-      height: 80px;
-      border: 2px solid #4a90e2;
-      margin: 10px 0;
-      background: #f8f9fa;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-    }
-    .signature-preview img {
-      max-width: 280px;
-      max-height: 70px;
-      object-fit: contain;
-    }
-    .contract-id {
-      position: fixed;
-      bottom: 10px;
-      right: 10px;
-      font-size: 10px;
-      color: #666;
-      background: rgba(255,255,255,0.8);
-      padding: 5px;
-      border-radius: 3px;
-    }
-    .verification-section {
-      margin-top: 30px;
-      padding: 20px;
-      background: linear-gradient(135deg, #e8f4f8 0%, #d1e7dd 100%);
-      border: 2px solid #4a90e2;
-      border-radius: 10px;
-    }
-    .signature-info {
-      display: grid;
-      gap: 8px;
-      margin: 10px 0;
-    }
-    @media print {
-      body { margin: 0; padding: 15px; }
-      .contract-id { position: absolute; }
-    }
-  </style>
-</head>
-<body>
-  ${contractHtmlWithSignatures}
-  
-  <div class="verification-section">
-    <h4 style="color: #2c3e50; margin-bottom: 15px; text-align: center;">📋 Document Verification</h4>
-    <div style="display: grid; gap: 8px;">
-      <p><strong>Contract ID:</strong> ${contractId}</p>
-      <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
-      <p><strong>Status:</strong> <span style="color: #27ae60; font-weight: bold;">${contract.status === 'completed' ? 'Fully Executed' : 'In Progress'}</span></p>
-      <p><strong>Digital Integrity:</strong> This document contains embedded digital signatures and is legally binding under electronic signature laws.</p>
-      <p><strong>Verification:</strong> Signatures are cryptographically secured and tamper-evident.</p>
-    </div>
-  </div>
-  
-  <div class="contract-id">
-    Contract ID: ${contractId} | Generated: ${new Date().toISOString()}
-  </div>
-</body>
-</html>
-    `;
-    
-    // Set headers for HTML download
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="contract_${contract.clientName.replace(/\s+/g, '_')}_${contractId}.html"`);
-    res.setHeader('Content-Length', Buffer.byteLength(completeHtml, 'utf8'));
-    
-    console.log('✅ [API] Serving signed contract HTML for download');
-    res.send(completeHtml);
-    
-  } catch (error: any) {
-    console.error('❌ [API] Error in /download-html/:contractId:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: error.message,
-    });
-  }
-});
+    // Return the signed HTML with embedded signatures
+    let htmlContent =
+      contract.contractHtml ||
+      contract.contractHTML ||
+      "<p>Contract content not available</p>";
 
-/**
- * GET /api/dual-signature/download-pdf/:contractId
- * Download signed contract as PDF
- */
-router.get('/download-pdf/:contractId', async (req, res) => {
-  try {
-    const { contractId } = req.params;
-    console.log('📥 [API] PDF download request for contract:', contractId);
-    console.log('👤 [API] Requesting user:', req.user?.uid || 'No user ID');
+    console.log("📄 [API] Contract HTML length:", htmlContent?.length || 0);
+    console.log(
+      "📄 [API] Contract HTML preview:",
+      htmlContent?.substring(0, 200) || "No content",
+    );
 
-    const contractResult = await dualSignatureService.getContractData(contractId, req.user?.uid);
-    if (!contractResult.success || !contractResult.contract) {
-      return res.status(404).json({ success: false, message: contractResult.message });
+    console.log("📄 [DEBUG] Contract HTML length:", htmlContent?.length || 0);
+    console.log(
+      "📄 [DEBUG] Contract HTML preview:",
+      htmlContent?.substring(0, 100) || "NULL",
+    );
+
+    // If HTML is missing, generate a basic contract HTML
+    if (!htmlContent || htmlContent.trim() === "") {
+      console.log("⚠️ [API] Contract HTML is missing, generating basic HTML");
+      htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Contract - ${contract.clientName}</title>
+          <style>
+            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .section { margin-bottom: 20px; }
+            .signature-section { margin-top: 40px; padding: 20px; border: 1px solid #ccc; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Independent Contractor Agreement</h1>
+          </div>
+
+          <div class="section">
+            <h3>Contractor Information:</h3>
+            <p><strong>Name:</strong> ${contract.contractorName}</p>
+            <p><strong>Company:</strong> ${contract.contractorCompany}</p>
+            <p><strong>Email:</strong> ${contract.contractorEmail}</p>
+            <p><strong>Phone:</strong> ${contract.contractorPhone || "N/A"}</p>
+          </div>
+
+          <div class="section">
+            <h3>Client Information:</h3>
+            <p><strong>Name:</strong> ${contract.clientName}</p>
+            <p><strong>Email:</strong> ${contract.clientEmail}</p>
+            <p><strong>Phone:</strong> ${contract.clientPhone || "N/A"}</p>
+            <p><strong>Address:</strong> ${contract.clientAddress || "N/A"}</p>
+          </div>
+
+          <div class="section">
+            <h3>Project Details:</h3>
+            <p><strong>Description:</strong> ${contract.projectDescription}</p>
+            <p><strong>Total Amount:</strong> $${parseFloat(contract.totalAmount || "0").toLocaleString()}</p>
+            <p><strong>Start Date:</strong> ${contract.startDate ? new Date(contract.startDate).toLocaleDateString() : "To be determined"}</p>
+            <p><strong>Completion Date:</strong> ${contract.completionDate ? new Date(contract.completionDate).toLocaleDateString() : "To be determined"}</p>
+          </div>
+
+          <div class="section">
+            <h3>Terms and Conditions:</h3>
+            <p>This agreement constitutes the entire agreement between the parties for the described work.</p>
+            <p>Payment terms and project specifications are as outlined above.</p>
+            <p>Both parties agree to the terms and conditions set forth in this contract.</p>
+          </div>
+        </body>
+        </html>
+      `;
     }
-    
-    const contract = contractResult.contract;
 
-    // Helper function to create signature SVG
-    const createSignatureImage = (signatureData: string, signatureType: string, name: string): string => {
-      const color = '#000080';
-      const svgContent = `<svg width="300" height="60" xmlns="http://www.w3.org/2000/svg">
-        <text x="10" y="40" font-family="Brush Script MT, cursive" font-size="28" fill="${color}" style="font-style: italic;">
-          ${name}
-        </text>
-      </svg>`;
-      return `data:image/svg+xml;base64,${Buffer.from(svgContent).toString('base64')}`;
-    };
+    console.log("📄 [DEBUG] Contract HTML length:", htmlContent.length);
+    console.log(
+      "📄 [DEBUG] Contract HTML preview:",
+      htmlContent.substring(0, 200),
+    );
 
-    // Use surgical signature injection approach for EXACT format preservation
-    console.log('🔬 [SURGICAL-PDF] Using surgical signature injection for exact format preservation');
-    
-    try {
-      // Import the surgical signature injection utilities
-      const { injectSignaturesIntoHtml, generatePdfFromSignedHtml } = await import('../utils/surgicalSignatureInjection');
-      
-      // Prepare signature data
-      const signatureData = {
-        contractorSignature: contract.contractorSignature || undefined,
-        contractorSignedAt: contract.contractorSignedAt || undefined,
-        clientSignature: contract.clientSignature || undefined,
-        clientSignedAt: contract.clientSignedAt || undefined,
-      };
-      
-      // First inject signatures into HTML
-      console.log('💉 [SURGICAL-PDF] Injecting signatures into contract HTML');
-      const signedHtml = await injectSignaturesIntoHtml(
-        contract.contractHtml || '<h1>Contract Content Not Available</h1>',
-        signatureData
+    // Add signature information if both parties have signed
+    if (contract.contractorSigned && contract.clientSigned) {
+      const signatureSection = `
+        <div style="margin-top: 40px; padding: 20px; border: 2px solid #4CAF50; background-color: #f9f9f9;">
+          <h3 style="color: #4CAF50; margin-bottom: 15px;">✅ DIGITALLY SIGNED CONTRACT</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+              <h4>Contractor Signature:</h4>
+              <p><strong>Name:</strong> ${contract.contractorName}</p>
+              <p><strong>Signed:</strong> ${contract.contractorSignedAt?.toLocaleString()}</p>
+              <div style="border: 1px solid #ccc; padding: 10px; background: white;">
+                ${contract.contractorSignatureData || "Digital signature on file"}
+              </div>
+            </div>
+            <div>
+              <h4>Client Signature:</h4>
+              <p><strong>Name:</strong> ${contract.clientName}</p>
+              <p><strong>Signed:</strong> ${contract.clientSignedAt?.toLocaleString()}</p>
+              <div style="border: 1px solid #ccc; padding: 10px; background: white;">
+                ${contract.clientSignatureData || "Digital signature on file"}
+              </div>
+            </div>
+          </div>
+          <p style="margin-top: 15px; font-size: 12px; color: #666;">
+            This contract was digitally signed using secure authentication. Contract ID: ${contractId}
+          </p>
+        </div>
+      `;
+
+      htmlContent = htmlContent.replace(
+        "</body>",
+        signatureSection + "</body>",
       );
-      
-      // Then generate PDF from the signed HTML
-      console.log('🔄 [SURGICAL-PDF] Generating PDF from signed HTML');
-      const pdfBuffer = await generatePdfFromSignedHtml(signedHtml, contractId);
-      
-      console.log('✅ [SURGICAL-PDF] PDF generated successfully with exact format preserved');
-      
-      // Set headers for PDF download
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="contract_${contract.clientName.replace(/\s+/g, '_')}_${contractId}.pdf"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
-      
-      console.log('✅ [API] Serving signed contract PDF for download');
-      res.send(pdfBuffer);
-      
-    } catch (surgicalError: any) {
-      console.error('❌ [SURGICAL-PDF] Surgical injection failed:', surgicalError);
-      
-      // Fallback to simple text-based PDF with correct formatting
-      try {
-        console.log('🔄 [FALLBACK-PDF] Creating properly formatted PDF fallback...');
-        const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
-        
-        // Extract text content from HTML for display
-        const cheerio = await import('cheerio');
-        const $ = cheerio.load(contract.contractHtml || '');
-        
-        // Create new PDF document
-        const pdfDoc = await PDFDocument.create();
-        const page = pdfDoc.addPage([612, 792]); // Letter size
-        const { width, height } = page.getSize();
-        
-        // Embed Times New Roman font
-        const timesRoman = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-        const timesRomanBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
-        
-        // Add header
-        page.drawText('INDEPENDENT CONTRACTOR AGREEMENT', {
-          x: width / 2 - 150,
-          y: height - 80,
-          size: 18,
-          font: timesRomanBold,
-          color: rgb(0, 0, 0),
-        });
-        
-        // Add contract details
-        let yPosition = height - 120;
-        
-        // Contract date
-        page.drawText(`Agreement Date: ${$('div:contains("Agreement Date:")').text().replace('Agreement Date:', '').trim()}`, {
-          x: 50,
-          y: yPosition,
-          size: 12,
-          font: timesRoman,
-          color: rgb(0, 0, 0),
-        });
-        yPosition -= 30;
-        
-        // Add parties info
-        page.drawText('CONTRACTOR:', {
-          x: 50,
-          y: yPosition,
-          size: 12,
-          font: timesRomanBold,
-          color: rgb(0, 0, 0),
-        });
-        yPosition -= 20;
-        
-        page.drawText(contract.contractorName || 'Not specified', {
-          x: 50,
-          y: yPosition,
-          size: 12,
-          font: timesRoman,
-          color: rgb(0, 0, 0),
-        });
-        yPosition -= 40;
-        
-        page.drawText('CLIENT:', {
-          x: 50,
-          y: yPosition,
-          size: 12,
-          font: timesRomanBold,
-          color: rgb(0, 0, 0),
-        });
-        yPosition -= 20;
-        
-        page.drawText(contract.clientName || 'Not specified', {
-          x: 50,
-          y: yPosition,
-          size: 12,
-          font: timesRoman,
-          color: rgb(0, 0, 0),
-        });
-        yPosition -= 40;
-        
-        // Add signatures if available
-        if (contract.contractorSigned || contract.clientSigned) {
-          page.drawText('SIGNATURES:', {
-            x: 50,
-            y: yPosition,
-            size: 14,
-            font: timesRomanBold,
-            color: rgb(0, 0, 0),
-          });
-          yPosition -= 30;
-          
-          if (contract.contractorSigned) {
-            page.drawText(`Contractor: ${contract.contractorSignature || contract.contractorName}`, {
-              x: 50,
-              y: yPosition,
-              size: 12,
-              font: timesRoman,
-              color: rgb(0, 0, 0.5),
-            });
-            if (contract.contractorSignedAt) {
-              page.drawText(`Date: ${new Date(contract.contractorSignedAt).toLocaleDateString()}`, {
-                x: 300,
-                y: yPosition,
-                size: 12,
-                font: timesRoman,
-                color: rgb(0, 0, 0),
-              });
-            }
-            yPosition -= 30;
-          }
-          
-          if (contract.clientSigned) {
-            page.drawText(`Client: ${contract.clientSignature || contract.clientName}`, {
-              x: 50,
-              y: yPosition,
-              size: 12,
-              font: timesRoman,
-              color: rgb(0, 0, 0.5),
-            });
-            if (contract.clientSignedAt) {
-              page.drawText(`Date: ${new Date(contract.clientSignedAt).toLocaleDateString()}`, {
-                x: 300,
-                y: yPosition,
-                size: 12,
-                font: timesRoman,
-                color: rgb(0, 0, 0),
-              });
-            }
-          }
-        }
-        
-        const pdfBytes = await pdfDoc.save();
-        console.log('✅ [FALLBACK-PDF] Fallback PDF generated successfully');
-        
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="contract_${contract.clientName.replace(/\s+/g, '_')}_${contractId}.pdf"`);
-        res.setHeader('Content-Length', pdfBytes.length);
-        res.send(Buffer.from(pdfBytes));
-        
-      } catch (fallbackError: any) {
-        console.error('❌ [FALLBACK-PDF] All PDF generation methods failed:', fallbackError);
-        
-        // Final fallback: Return error message
-        res.status(500).json({
-          success: false,
-          message: 'PDF generation failed. Please use Download HTML option instead.',
-          error: fallbackError.message
-        });
-      }
     }
-    
+
+    res.setHeader("Content-Type", "text/html");
+    res.send(htmlContent);
   } catch (error: any) {
-    console.error('❌ [API] Error in /download-pdf/:contractId:', error);
+    console.error("❌ [API] Error in /download-html/:contractId:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: "Internal server error",
       error: error.message,
     });
   }
@@ -1068,86 +673,382 @@ router.get('/download-pdf/:contractId', async (req, res) => {
 
 /**
  * POST /api/dual-signature/generate-pdf-from-html
- * Generate PDF from signed HTML content - CRITICAL FIX for PDF/HTML mismatch
+ * Generate PDF from HTML content (for signed contracts)
  */
-router.post('/generate-pdf-from-html', async (req, res) => {
+router.post("/generate-pdf-from-html", async (req, res) => {
   try {
     const { contractId, htmlContent, clientName } = req.body;
-    
-    console.log('📄 [CRITICAL-FIX] Generating PDF from signed HTML for contract:', contractId);
-    
-    if (!contractId || !htmlContent || !clientName) {
+
+    console.log("📄 [API] Generating PDF from HTML for contract:", contractId);
+
+    // Import PDF service
+    const { default: PremiumPdfService } = await import(
+      "../services/premiumPdfService"
+    );
+    const pdfService = new PremiumPdfService();
+
+    const pdfBuffer = await pdfService.generatePdfFromHtml(htmlContent, {
+      format: "A4",
+      margin: { top: "1in", right: "1in", bottom: "1in", left: "1in" },
+      displayHeaderFooter: true,
+      headerTemplate: "<div></div>",
+      footerTemplate: `
+        <div style="font-size: 10px; text-align: center; width: 100%; margin: 0 1in;">
+          <span>Signed Contract - ${clientName} - Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+        </div>
+      `,
+    });
+
+    // Validate PDF buffer
+    if (!Buffer.isBuffer(pdfBuffer) || pdfBuffer.length === 0) {
+      return res.status(500).json({
+        success: false,
+        message: "Generated PDF is invalid or empty",
+      });
+    }
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Length", pdfBuffer.length.toString());
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="contract_${clientName.replace(/\s+/g, "_")}_signed.pdf"`,
+    );
+    res.setHeader("Cache-Control", "no-cache");
+    res.send(pdfBuffer);
+  } catch (error: any) {
+    console.error("❌ [API] Error generating PDF from HTML:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate PDF",
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/dual-signature/regenerate-pdf/:contractId
+ * Regenerate PDF for completed contract
+ */
+router.post("/regenerate-pdf/:contractId", async (req, res) => {
+  try {
+    const { contractId } = req.params;
+
+    console.log("🔄 [API] Regenerating PDF for contract:", contractId);
+
+    // Import database here to avoid circular dependencies
+    const { db } = await import("../db");
+    const { digitalContracts } = await import("../../shared/schema");
+    const { eq } = await import("drizzle-orm");
+
+    const [contract] = await db
+      .select()
+      .from(digitalContracts)
+      .where(eq(digitalContracts.contractId, contractId))
+      .limit(1);
+
+    if (!contract) {
+      return res.status(404).json({
+        success: false,
+        message: "Contract not found",
+      });
+    }
+
+    if (!contract.contractorSigned || !contract.clientSigned) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields: contractId, htmlContent, or clientName'
+        message: "Contract must be fully signed before PDF generation",
       });
     }
 
     try {
-      // SOLUCIÓN DEFINITIVA: PDF-LIB - Genera PDFs profesionales sin dependencias externas  
-      console.log('🚀 [PDF-LIB] Using pdf-lib for reliable professional PDF generation');
-      
-      const { generateProfessionalContractPdf } = await import('../utils/pdfLibService');
-      
-      const pdfBuffer = await generateProfessionalContractPdf(htmlContent, contractId, clientName);
-      
-      console.log('✅ [PDF-LIB] PDF generated successfully with professional formatting');
-      
-      // Return professionally formatted PDF
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="contract_${clientName.replace(/\s+/g, '_')}_signed.pdf"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
-      res.send(pdfBuffer);
-      
-    } catch (pdfLibError: any) {
-      console.error('❌ [PDF-LIB] PDF generation failed:', pdfLibError.message);
-      
-      // Emergency fallback: Return properly formatted HTML 
-      try {
-        console.log('🆘 [EMERGENCY-FALLBACK] Returning formatted HTML');
-        
-        const formattedHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>Contract - ${clientName}</title>
-          <style>
-            body { font-family: 'Times New Roman', serif; margin: 20px; }
-            .print-btn { background: #007cba; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer; }
-            @media print { .no-print { display: none; } }
-          </style>
-        </head>
-        <body>
-          <div class="no-print">
-            <button class="print-btn" onclick="window.print()">Print to PDF</button>
-            <p><strong>Note:</strong> Use your browser's "Print to PDF" option to save as PDF.</p>
+      // Import PDF service
+      const { default: PremiumPdfService } = await import(
+        "../services/premiumPdfService"
+      );
+      const pdfService = new PremiumPdfService();
+      const fs = await import("fs");
+      const path = await import("path");
+
+      // Generate signed HTML with signatures
+      let htmlContent =
+        contract.contractHTML || "<p>Contract content not available</p>";
+
+      const signatureSection = `
+        <div style="margin-top: 40px; padding: 20px; border: 2px solid #4CAF50; background-color: #f9f9f9;">
+          <h3 style="color: #4CAF50; margin-bottom: 15px;">✅ DIGITALLY SIGNED CONTRACT</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+              <h4>Contractor Signature:</h4>
+              <p><strong>Name:</strong> ${contract.contractorName}</p>
+              <p><strong>Signed:</strong> ${contract.contractorSignedAt?.toLocaleString()}</p>
+              <div style="border: 1px solid #ccc; padding: 10px; background: white;">
+                ${contract.contractorSignature || "Digital signature on file"}
+              </div>
+            </div>
+            <div>
+              <h4>Client Signature:</h4>
+              <p><strong>Name:</strong> ${contract.clientName}</p>
+              <p><strong>Signed:</strong> ${contract.clientSignedAt?.toLocaleString()}</p>
+              <div style="border: 1px solid #ccc; padding: 10px; background: white;">
+                ${contract.clientSignature || "Digital signature on file"}
+              </div>
+            </div>
           </div>
-          ${htmlContent}
-        </body>
-        </html>
-        `;
-        
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('Content-Disposition', `inline; filename="contract_${contractId}_signed.html"`);
-        res.send(formattedHtml);
-        
-      } catch (htmlError: any) {
-        console.error('❌ [EMERGENCY-FALLBACK] HTML fallback failed:', htmlError.message);
-        
-        return res.status(500).json({
-          success: false,
-          message: 'All PDF generation methods failed. Please try again.',
-          error: newServiceError.message
-        });
+          <p style="margin-top: 15px; font-size: 12px; color: #666;">
+            This contract was digitally signed using secure authentication. Contract ID: ${contractId}
+          </p>
+        </div>
+      `;
+
+      htmlContent = htmlContent.replace(
+        "</body>",
+        signatureSection + "</body>",
+      );
+
+      // Generate PDF
+      const pdfBuffer = await pdfService.generatePdfFromHtml(htmlContent, {
+        format: "A4",
+        margin: { top: "1in", right: "1in", bottom: "1in", left: "1in" },
+        displayHeaderFooter: true,
+        headerTemplate: "<div></div>",
+        footerTemplate: `
+          <div style="font-size: 10px; text-align: center; width: 100%; margin: 0 1in;">
+            <span>Signed Contract - ${contract.clientName} - Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+          </div>
+        `,
+      });
+
+      // Save PDF to file system
+      const uploadsDir = path.join(
+        process.cwd(),
+        "uploads",
+        "signed-contracts",
+      );
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
       }
+
+      const filename = `${contractId}_signed.pdf`;
+      const signedPdfPath = `signed-contracts/${filename}`;
+      const fullPath = path.join(uploadsDir, filename);
+
+      fs.writeFileSync(fullPath, pdfBuffer);
+
+      // Update database with PDF path
+      await db
+        .update(digitalContracts)
+        .set({
+          signedPdfPath,
+          updatedAt: new Date(),
+        })
+        .where(eq(digitalContracts.contractId, contractId));
+
+      console.log("✅ [API] PDF regenerated successfully:", signedPdfPath);
+
+      res.json({
+        success: true,
+        message: "PDF generated successfully",
+        pdfPath: signedPdfPath,
+      });
+    } catch (pdfError: any) {
+      console.error("❌ [API] PDF generation failed:", pdfError);
+      res.status(500).json({
+        success: false,
+        message: "PDF generation failed: " + pdfError.message,
+      });
     }
-    
   } catch (error: any) {
-    console.error('❌ [CRITICAL-FIX] Error in /generate-pdf-from-html:', error);
+    console.error("❌ [API] Error in /regenerate-pdf/:contractId:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error while generating PDF from signed HTML',
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/dual-signature/force-complete/:contractId
+ * Force completion of a fully signed contract (for debugging)
+ */
+router.post("/force-complete/:contractId", async (req, res) => {
+  try {
+    const { contractId } = req.params;
+
+    console.log("🔧 [API] Force completing contract:", contractId);
+
+    // Import database here to avoid circular dependencies
+    const { db } = await import("../db");
+    const { digitalContracts } = await import("../../shared/schema");
+    const { eq } = await import("drizzle-orm");
+
+    const [contract] = await db
+      .select()
+      .from(digitalContracts)
+      .where(eq(digitalContracts.contractId, contractId))
+      .limit(1);
+
+    if (!contract) {
+      return res.status(404).json({
+        success: false,
+        message: "Contract not found",
+      });
+    }
+
+    if (!contract.contractorSigned || !contract.clientSigned) {
+      return res.status(400).json({
+        success: false,
+        message: "Contract must be fully signed before force completion",
+      });
+    }
+
+    // Force update status to completed
+    await db
+      .update(digitalContracts)
+      .set({
+        status: "completed",
+        updatedAt: new Date(),
+      })
+      .where(eq(digitalContracts.contractId, contractId));
+
+    console.log("✅ [API] Contract force completed successfully");
+
+    res.json({
+      success: true,
+      message: "Contract force completed successfully",
+    });
+  } catch (error: any) {
+    console.error("❌ [API] Error force completing contract:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/dual-signature/test
+ * Health check endpoint
+ */
+router.get("/test", (req, res) => {
+  res.json({
+    success: true,
+    message: "Dual Signature API is working",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * POST /api/dual-signature/resend-links
+ * Reenviar links de firma para un contrato existente
+ */
+router.post("/resend-links", async (req, res) => {
+  try {
+    const { contractId, methods } = req.body;
+
+    console.log(
+      "📱 [API] Resending signature links for contract:",
+      contractId,
+      "methods:",
+      methods,
+    );
+
+    // Import database here to avoid circular dependencies
+    const { db } = await import("../db");
+    const { digitalContracts } = await import("../../shared/schema");
+    const { eq } = await import("drizzle-orm");
+
+    // Get contract data
+    const [contract] = await db
+      .select()
+      .from(digitalContracts)
+      .where(eq(digitalContracts.contractId, contractId))
+      .limit(1);
+
+    if (!contract) {
+      return res.status(404).json({
+        success: false,
+        error: "Contract not found",
+      });
+    }
+
+    // Generate signature URLs - REPLIT_DEV_DOMAIN already includes protocol
+    const baseUrl = process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000";
+    const contractorSignUrl = `${baseUrl}/sign/${contract.contractId}/contractor`;
+    const clientSignUrl = `${baseUrl}/sign/${contract.contractId}/client`;
+
+    const results = [];
+
+    // Send via email if requested
+    if (methods.includes("email")) {
+      try {
+        const { ResendEmailAdvanced } = await import(
+          "../services/resendEmailAdvanced"
+        );
+        const emailService = new ResendEmailAdvanced();
+
+        // Send to contractor if not signed
+        if (!contract.contractorSigned) {
+          await emailService.sendContractForSigning({
+            to: contract.contractorEmail,
+            contractorName: contract.contractorName,
+            clientName: contract.clientName,
+            projectDescription: contract.projectDescription,
+            totalAmount: parseFloat(contract.totalAmount),
+            signUrl: contractorSignUrl,
+            party: "contractor",
+          });
+          results.push("Email sent to contractor");
+        }
+
+        // Send to client if not signed
+        if (!contract.clientSigned) {
+          await emailService.sendContractForSigning({
+            to: contract.clientEmail,
+            contractorName: contract.contractorName,
+            clientName: contract.clientName,
+            projectDescription: contract.projectDescription,
+            totalAmount: parseFloat(contract.totalAmount),
+            signUrl: clientSignUrl,
+            party: "client",
+          });
+          results.push("Email sent to client");
+        }
+      } catch (emailError) {
+        console.error("❌ Error sending emails:", emailError);
+        results.push("Email sending failed");
+      }
+    }
+
+    // Generate SMS/WhatsApp links if requested
+    if (methods.includes("sms") || methods.includes("whatsapp")) {
+      const smsMessage = `🔒 CONTRATO DIGITAL PENDIENTE\n\nHola ${contract.clientName},\n\nTu contrato para "${contract.projectDescription}" está listo para firma.\n\nMonto: $${parseFloat(contract.totalAmount).toLocaleString()}\n\n👆 Firmar: ${clientSignUrl}\n\n📧 Owl Fence - Contratos Seguros`;
+
+      if (methods.includes("sms")) {
+        results.push(
+          `SMS link generated: sms:${contract.clientPhone}?body=${encodeURIComponent(smsMessage)}`,
+        );
+      }
+
+      if (methods.includes("whatsapp")) {
+        results.push(
+          `WhatsApp link generated: https://wa.me/${contract.clientPhone?.replace(/\D/g, "")}?text=${encodeURIComponent(smsMessage)}`,
+        );
+      }
+    }
+
+    res.json({
+      success: true,
+      results,
+      contractorSignUrl: !contract.contractorSigned ? contractorSignUrl : null,
+      clientSignUrl: !contract.clientSigned ? clientSignUrl : null,
+      message: "Links resent successfully",
+    });
+  } catch (error: any) {
+    console.error("❌ [API] Error resending signature links:", error);
+    res.status(500).json({
+      success: false,
       error: error.message,
     });
   }

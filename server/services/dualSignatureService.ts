@@ -1,6 +1,6 @@
 /**
  * Dual Signature Service - Sistema de Firma Dual Automática (Más Avanzado)
- * 
+ *
  * Características:
  * - Enlaces únicos para contratista y cliente
  * - Firma asíncrona (no necesitan firmar al mismo tiempo)
@@ -10,11 +10,15 @@
  * - Escalable para contratos multi-parte (joint ventures, subcontratistas)
  */
 
-import { db } from '../db';
-import { digitalContracts, type InsertDigitalContract, type DigitalContract } from '@shared/schema';
-import { eq } from 'drizzle-orm';
-import { ResendEmailAdvanced } from './resendEmailAdvanced';
-import crypto from 'crypto';
+import { db } from "../db";
+import {
+  digitalContracts,
+  type InsertDigitalContract,
+  type DigitalContract,
+} from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { ResendEmailAdvanced } from "./resendEmailAdvanced";
+import crypto from "crypto";
 
 export interface InitiateDualSignatureRequest {
   userId: string;
@@ -37,15 +41,20 @@ export interface InitiateDualSignatureRequest {
 
 export interface SignatureSubmission {
   contractId: string;
-  party: 'contractor' | 'client';
+  party: "contractor" | "client";
   signatureData: string;
-  signatureType: 'drawing' | 'cursive';
+  signatureType: "drawing" | "cursive";
   fullName: string;
 }
 
 export interface DualSignatureStatus {
   contractId: string;
-  status: 'pending' | 'contractor_signed' | 'client_signed' | 'both_signed' | 'completed';
+  status:
+    | "pending"
+    | "contractor_signed"
+    | "client_signed"
+    | "both_signed"
+    | "completed";
   contractorSigned: boolean;
   clientSigned: boolean;
   contractorSignedAt?: Date;
@@ -74,13 +83,27 @@ export class DualSignatureService {
     message: string;
   }> {
     try {
-      console.log('🚀 [DUAL-SIGNATURE] Starting dual signature workflow...');
-      console.log('👤 [DUAL-SIGNATURE] Contractor:', request.contractData.contractorName);
-      console.log('👥 [DUAL-SIGNATURE] Client:', request.contractData.clientName);
+      console.log("🚀 [DUAL-SIGNATURE] Starting dual signature workflow...");
+      console.log(
+        "👤 [DUAL-SIGNATURE] Contractor:",
+        request.contractData.contractorName
+      );
+      console.log(
+        "👥 [DUAL-SIGNATURE] Client:",
+        request.contractData.clientName
+      );
+      console.log(
+        "📄 [DUAL-SIGNATURE] Contract HTML length:",
+        request.contractHTML?.length || 0
+      );
+      console.log(
+        "📄 [DUAL-SIGNATURE] Contract HTML preview:",
+        request.contractHTML?.substring(0, 200) || "No HTML content"
+      );
 
       // Generate unique contract ID
       const contractId = this.generateUniqueContractId();
-      console.log('🆔 [DUAL-SIGNATURE] Contract ID generated:', contractId);
+      console.log("🆔 [DUAL-SIGNATURE] Contract ID generated:", contractId);
 
       // Prepare contract data for database
       const contractRecord: InsertDigitalContract = {
@@ -97,49 +120,65 @@ export class DualSignatureService {
         clientAddress: request.contractData.clientAddress || null,
         projectDescription: request.contractData.projectDescription,
         totalAmount: request.contractData.totalAmount.toString(),
-        startDate: request.contractData.startDate ? new Date(request.contractData.startDate) : null,
-        completionDate: request.contractData.completionDate ? new Date(request.contractData.completionDate) : null,
+        startDate: request.contractData.startDate
+          ? new Date(request.contractData.startDate)
+          : null,
+        completionDate: request.contractData.completionDate
+          ? new Date(request.contractData.completionDate)
+          : null,
         contractHtml: request.contractHTML,
-        status: 'pending',
+        status: "pending",
       };
 
       // Save to database
-      const [savedContract] = await db.insert(digitalContracts).values(contractRecord).returning();
-      console.log('💾 [DUAL-SIGNATURE] Contract saved to database:', savedContract.contractId);
+      const [savedContract] = await db
+        .insert(digitalContracts)
+        .values(contractRecord)
+        .returning();
+      console.log(
+        "💾 [DUAL-SIGNATURE] Contract saved to database:",
+        savedContract.contractId
+      );
 
       // Generate signature URLs using Replit domain
       const getBaseUrl = () => {
         // Debug logging
-        console.log('🔍 [URL-DEBUG] REPLIT_DEV_DOMAIN:', process.env.REPLIT_DEV_DOMAIN);
-        console.log('🔍 [URL-DEBUG] NODE_ENV:', process.env.NODE_ENV);
-        
-        // Always use HTTPS Replit domain when available
+        console.log(
+          "🔍 [URL-DEBUG] REPLIT_DEV_DOMAIN:",
+          process.env.REPLIT_DEV_DOMAIN
+        );
+        console.log("🔍 [URL-DEBUG] NODE_ENV:", process.env.NODE_ENV);
+
+        // CRITICAL FIX: REPLIT_DEV_DOMAIN already contains the full URL with protocol
         const replitDomain = process.env.REPLIT_DEV_DOMAIN;
         if (replitDomain) {
-          console.log('✅ [URL-DEBUG] Using Replit domain:', replitDomain);
-          return `https://${replitDomain}`;
+          console.log(
+            "✅ [URL-DEBUG] Using Replit domain as-is:",
+            replitDomain
+          );
+          return replitDomain; // Use as-is, no protocol addition needed
         }
-        
+
         // Fallback for production
-        if (process.env.NODE_ENV === 'production') {
-          console.log('✅ [URL-DEBUG] Using production URL');
-          return 'https://owlfenc.replit.app';
+        if (process.env.NODE_ENV === "production") {
+          console.log("✅ [URL-DEBUG] Using production URL");
+          return "https://owlfenc.replit.app";
         }
-        
+
         // Local development fallback
-        console.log('⚠️ [URL-DEBUG] Using localhost fallback');
-        return 'http://localhost:5000';
+        console.log("⚠️ [URL-DEBUG] Using localhost fallback");
+        return "http://localhost:5000";
       };
-      
+
       const baseUrl = getBaseUrl();
-      console.log('🌍 [DUAL-SIGNATURE] Base URL for signature links:', baseUrl);
-      
+      console.log("🌍 [DUAL-SIGNATURE] Base URL for signature links:", baseUrl);
+
       const contractorSignUrl = `${baseUrl}/sign/${contractId}/contractor`;
       const clientSignUrl = `${baseUrl}/sign/${contractId}/client`;
 
-      console.log('🔗 [DUAL-SIGNATURE] Signature URLs generated:');
-      console.log('🏗️ [DUAL-SIGNATURE] Contractor URL:', contractorSignUrl);
-      console.log('👥 [DUAL-SIGNATURE] Client URL:', clientSignUrl);
+      console.log("🔗 [DUAL-SIGNATURE] Signature URLs generated:");
+      console.log("🏗️ [DUAL-SIGNATURE] Contractor URL:", contractorSignUrl);
+      console.log("👥 [DUAL-SIGNATURE] Client URL:", clientSignUrl);
 
       // Send dual notifications
       await this.sendDualNotifications({
@@ -156,29 +195,104 @@ export class DualSignatureService {
       });
 
       // Update email sent status
-      await db.update(digitalContracts)
-        .set({ 
-          emailSent: true, 
+      await db
+        .update(digitalContracts)
+        .set({
+          emailSent: true,
           emailSentAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(digitalContracts.contractId, contractId));
 
-      console.log('✅ [DUAL-SIGNATURE] Dual signature workflow initiated successfully');
+      console.log(
+        "✅ [DUAL-SIGNATURE] Dual signature workflow initiated successfully"
+      );
+
+      // CRITICAL FIX: Save to contract history when signature workflow starts
+      try {
+        console.log("📋 [DUAL-SIGNATURE] Saving to contract history...");
+
+        // Import contract history service
+        const { contractHistoryService } = await import(
+          "../../client/src/services/contractHistoryService"
+        );
+
+        const historyEntry = {
+          userId: request.userId,
+          contractId,
+          clientName: request.contractData.clientName,
+          projectType: request.contractData.projectType || "Construction",
+          status: "processing" as const,
+          contractData: {
+            client: {
+              name: request.contractData.clientName,
+              address: request.contractData.clientAddress || "",
+              email: request.contractData.clientEmail,
+              phone: request.contractData.clientPhone || "",
+            },
+            contractor: {
+              name: request.contractData.contractorName,
+              address: request.contractData.contractorAddress || "",
+              email: request.contractData.contractorEmail,
+              phone: request.contractData.contractorPhone || "",
+              license: request.contractData.contractorLicense || "",
+              company: request.contractData.contractorCompany,
+            },
+            project: {
+              type: request.contractData.projectType || "Construction",
+              description: request.contractData.projectDescription,
+              location: request.contractData.clientAddress || "",
+              scope: request.contractData.projectDescription,
+            },
+            financials: {
+              total: request.contractData.totalAmount,
+              subtotal: request.contractData.totalAmount,
+              tax: 0,
+              materials: 0,
+              labor: 0,
+              permits: 0,
+              other: 0,
+            },
+            protections: [],
+            timeline: {
+              startDate: request.contractData.startDate || "",
+              completionDate: request.contractData.completionDate || "",
+              estimatedDuration: "As specified in contract",
+            },
+            terms: {
+              warranty: "1",
+              permits: "contractor",
+            },
+          },
+        };
+
+        await contractHistoryService.saveContract(historyEntry);
+        console.log(
+          "✅ [DUAL-SIGNATURE] Contract saved to history successfully"
+        );
+      } catch (historyError: any) {
+        console.error(
+          "❌ [DUAL-SIGNATURE] Error saving to contract history:",
+          historyError
+        );
+        // Don't fail the signature process if history save fails
+      }
 
       return {
         success: true,
         contractId,
         contractorSignUrl,
         clientSignUrl,
-        message: `Dual signature workflow initiated. Contract ID: ${contractId}`
+        message: `Dual signature workflow initiated. Contract ID: ${contractId}`,
       };
-
     } catch (error: any) {
-      console.error('❌ [DUAL-SIGNATURE] Error initiating dual signature:', error);
+      console.error(
+        "❌ [DUAL-SIGNATURE] Error initiating dual signature:",
+        error
+      );
       return {
         success: false,
-        message: `Failed to initiate dual signature: ${error.message}`
+        message: `Failed to initiate dual signature: ${error.message}`,
       };
     }
   }
@@ -187,15 +301,23 @@ export class DualSignatureService {
    * Obtener datos del contrato para mostrar en la página de firma
    * INCLUYE VERIFICACIÓN DE SEGURIDAD PARA PREVENIR ACCESO CRUZADO
    */
-  async getContractForSigning(contractId: string, party: 'contractor' | 'client', requestingUserId?: string): Promise<{
+  async getContractForSigning(
+    contractId: string,
+    party: "contractor" | "client",
+    requestingUserId?: string
+  ): Promise<{
     success: boolean;
     contract?: DigitalContract;
     message: string;
   }> {
     try {
-      console.log(`🔍 [DUAL-SIGNATURE] Getting contract for ${party} signing:`, contractId);
+      console.log(
+        `🔍 [DUAL-SIGNATURE] Getting contract for ${party} signing:`,
+        contractId
+      );
 
-      const [contract] = await db.select()
+      const [contract] = await db
+        .select()
         .from(digitalContracts)
         .where(eq(digitalContracts.contractId, contractId))
         .limit(1);
@@ -203,46 +325,52 @@ export class DualSignatureService {
       if (!contract) {
         return {
           success: false,
-          message: 'Contract not found'
+          message: "Contract not found",
         };
       }
 
       // CRÍTICO: Verificar que el usuario tenga permiso para acceder a este contrato
       // NOTA: Para firma pública, no siempre tendremos requestingUserId, así que es opcional
       if (requestingUserId && contract.userId !== requestingUserId) {
-        console.error(`🚫 [SECURITY-VIOLATION] User ${requestingUserId} attempted to access contract ${contractId} owned by ${contract.userId}`);
+        console.error(
+          `🚫 [SECURITY-VIOLATION] User ${requestingUserId} attempted to access contract ${contractId} owned by ${contract.userId}`
+        );
         return {
           success: false,
-          message: 'Unauthorized access to contract'
+          message: "Unauthorized access to contract",
         };
       }
 
       // Check if already signed
-      const alreadySigned = party === 'contractor' 
-        ? contract.contractorSigned 
-        : contract.clientSigned;
+      const alreadySigned =
+        party === "contractor"
+          ? contract.contractorSigned
+          : contract.clientSigned;
 
       if (alreadySigned) {
-        console.log(`⚠️ [DUAL-SIGNATURE] ${party} has already signed this contract - returning completed status`);
+        console.log(
+          `⚠️ [DUAL-SIGNATURE] ${party} has already signed this contract - returning completed status`
+        );
         return {
           success: true,
           contract,
-          message: `This contract has already been signed by the ${party}`
+          message: `This contract has already been signed by the ${party}`,
         };
       }
 
-      console.log(`✅ [DUAL-SIGNATURE] Contract retrieved for ${party} signing`);
+      console.log(
+        `✅ [DUAL-SIGNATURE] Contract retrieved for ${party} signing`
+      );
       return {
         success: true,
         contract,
-        message: 'Contract ready for signing'
+        message: "Contract ready for signing",
       };
-
     } catch (error: any) {
-      console.error('❌ [DUAL-SIGNATURE] Error getting contract:', error);
+      console.error("❌ [DUAL-SIGNATURE] Error getting contract:", error);
       return {
         success: false,
-        message: `Error retrieving contract: ${error.message}`
+        message: `Error retrieving contract: ${error.message}`,
       };
     }
   }
@@ -251,17 +379,24 @@ export class DualSignatureService {
    * Procesar la firma enviada por una de las partes
    * INCLUYE VERIFICACIÓN DE SEGURIDAD PARA PREVENIR ACCESO CRUZADO
    */
-  async processSignature(submission: SignatureSubmission, requestingUserId?: string): Promise<{
+  async processSignature(
+    submission: SignatureSubmission,
+    requestingUserId?: string
+  ): Promise<{
     success: boolean;
     message: string;
     status?: string;
     bothSigned?: boolean;
   }> {
     try {
-      console.log(`✍️ [DUAL-SIGNATURE] Processing ${submission.party} signature:`, submission.contractId);
+      console.log(
+        `✍️ [DUAL-SIGNATURE] Processing ${submission.party} signature:`,
+        submission.contractId
+      );
 
       // Get current contract
-      const [contract] = await db.select()
+      const [contract] = await db
+        .select()
         .from(digitalContracts)
         .where(eq(digitalContracts.contractId, submission.contractId))
         .limit(1);
@@ -269,91 +404,113 @@ export class DualSignatureService {
       if (!contract) {
         return {
           success: false,
-          message: 'Contract not found'
+          message: "Contract not found",
         };
       }
 
       // CRÍTICO: Verificar que el usuario tenga permiso para acceder a este contrato
       if (requestingUserId && contract.userId !== requestingUserId) {
-        console.error(`🚫 [SECURITY-VIOLATION] User ${requestingUserId} attempted to process signature for contract ${submission.contractId} owned by ${contract.userId}`);
+        console.error(
+          `🚫 [SECURITY-VIOLATION] User ${requestingUserId} attempted to process signature for contract ${submission.contractId} owned by ${contract.userId}`
+        );
         return {
           success: false,
-          message: 'Unauthorized access to contract'
+          message: "Unauthorized access to contract",
         };
       }
 
       // Check if already signed
-      const alreadySigned = submission.party === 'contractor' 
-        ? contract.contractorSigned 
-        : contract.clientSigned;
+      const alreadySigned =
+        submission.party === "contractor"
+          ? contract.contractorSigned
+          : contract.clientSigned;
 
       if (alreadySigned) {
         return {
           success: false,
-          message: `This contract has already been signed by the ${submission.party}`
+          message: `This contract has already been signed by the ${submission.party}`,
         };
       }
 
       // Prepare update data
-      const updateData = submission.party === 'contractor' ? {
-        contractorSigned: true,
-        contractorSignedAt: new Date(),
-        contractorSignatureData: submission.signatureData,
-        contractorSignatureType: submission.signatureType,
-        updatedAt: new Date()
-      } : {
-        clientSigned: true,
-        clientSignedAt: new Date(),
-        clientSignatureData: submission.signatureData,
-        clientSignatureType: submission.signatureType,
-        updatedAt: new Date()
-      };
+      const updateData =
+        submission.party === "contractor"
+          ? {
+              contractorSigned: true,
+              contractorSignedAt: new Date(),
+              contractorSignatureData: submission.signatureData,
+              contractorSignatureType: submission.signatureType,
+              updatedAt: new Date(),
+            }
+          : {
+              clientSigned: true,
+              clientSignedAt: new Date(),
+              clientSignatureData: submission.signatureData,
+              clientSignatureType: submission.signatureType,
+              updatedAt: new Date(),
+            };
 
       // Update signature in database
-      await db.update(digitalContracts)
+      await db
+        .update(digitalContracts)
         .set(updateData)
         .where(eq(digitalContracts.contractId, submission.contractId));
 
-      // Check if both parties have now signed
-      const bothSigned = submission.party === 'contractor' 
-        ? contract.clientSigned 
-        : contract.contractorSigned;
+      // Check if both parties will be signed after this signature
+      const bothSigned =
+        submission.party === "contractor"
+          ? contract.clientSigned // Contractor just signed, check if client was already signed
+          : contract.contractorSigned; // Client just signed, check if contractor was already signed
 
-      const newStatus = bothSigned ? 'both_signed' : 
-        (submission.party === 'contractor' ? 'contractor_signed' : 'client_signed');
+      console.log(
+        `🔍 [DUAL-SIGNATURE] Signature check: ${submission.party} signing, other party signed: ${bothSigned}`
+      );
+
+      const newStatus = bothSigned
+        ? "both_signed"
+        : submission.party === "contractor"
+          ? "contractor_signed"
+          : "client_signed";
 
       // Update status
-      await db.update(digitalContracts)
-        .set({ 
+      await db
+        .update(digitalContracts)
+        .set({
           status: newStatus,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(digitalContracts.contractId, submission.contractId));
 
-      console.log(`✅ [DUAL-SIGNATURE] ${submission.party} signature processed successfully`);
+      console.log(
+        `✅ [DUAL-SIGNATURE] ${submission.party} signature processed successfully`
+      );
       console.log(`📊 [DUAL-SIGNATURE] New status:`, newStatus);
 
       // If both signed, trigger completion workflow
       if (bothSigned) {
-        console.log('🎉 [DUAL-SIGNATURE] Both parties signed! Triggering completion workflow...');
+        console.log(
+          "🎉 [DUAL-SIGNATURE] Both parties signed! Triggering completion workflow..."
+        );
         await this.completeContract(submission.contractId);
       } else {
         // Notify the other party that signature is pending
-        await this.notifyRemainingParty(submission.contractId, submission.party);
+        await this.notifyRemainingParty(
+          submission.contractId,
+          submission.party
+        );
       }
 
       return {
         success: true,
         message: `${submission.party} signature recorded successfully`,
         status: newStatus,
-        bothSigned
+        bothSigned,
       };
-
     } catch (error: any) {
-      console.error('❌ [DUAL-SIGNATURE] Error processing signature:', error);
+      console.error("❌ [DUAL-SIGNATURE] Error processing signature:", error);
       return {
         success: false,
-        message: `Error processing signature: ${error.message}`
+        message: `Error processing signature: ${error.message}`,
       };
     }
   }
@@ -361,15 +518,22 @@ export class DualSignatureService {
   /**
    * Download signed PDF
    */
-  async downloadSignedPdf(contractId: string, requestingUserId?: string): Promise<{
+  async downloadSignedPdf(
+    contractId: string,
+    requestingUserId?: string
+  ): Promise<{
     success: boolean;
     pdfBuffer?: Buffer;
     message: string;
   }> {
     try {
-      console.log('📥 [DUAL-SIGNATURE] Download request for contract:', contractId);
-      
-      const [contract] = await db.select()
+      console.log(
+        "📥 [DUAL-SIGNATURE] Download request for contract:",
+        contractId
+      );
+
+      const [contract] = await db
+        .select()
         .from(digitalContracts)
         .where(eq(digitalContracts.contractId, contractId))
         .limit(1);
@@ -377,59 +541,60 @@ export class DualSignatureService {
       if (!contract) {
         return {
           success: false,
-          message: 'Contract not found'
+          message: "Contract not found",
         };
       }
 
       // Security check - optional for public contracts
       if (requestingUserId && contract.userId !== requestingUserId) {
-        console.error(`🚫 [SECURITY-VIOLATION] User ${requestingUserId} attempted to download contract ${contractId} owned by ${contract.userId}`);
+        console.error(
+          `🚫 [SECURITY-VIOLATION] User ${requestingUserId} attempted to download contract ${contractId} owned by ${contract.userId}`
+        );
         return {
           success: false,
-          message: 'Unauthorized access to contract'
+          message: "Unauthorized access to contract",
         };
       }
 
-      if (contract.status !== 'completed') {
+      if (contract.status !== "completed") {
         return {
           success: false,
-          message: 'Contract is not completed yet'
+          message: "Contract is not completed yet",
         };
       }
 
       if (!contract.signedPdfPath) {
         return {
           success: false,
-          message: 'Signed PDF not available'
+          message: "Signed PDF not available",
         };
       }
 
       // Read PDF file
-      const fs = await import('fs');
-      const path = await import('path');
+      const fs = await import("fs");
+      const path = await import("path");
       const fullPath = path.join(process.cwd(), contract.signedPdfPath);
-      
+
       if (!fs.existsSync(fullPath)) {
         return {
           success: false,
-          message: 'Signed PDF file not found'
+          message: "Signed PDF file not found",
         };
       }
 
       const pdfBuffer = fs.readFileSync(fullPath);
-      console.log('✅ [DUAL-SIGNATURE] PDF downloaded successfully');
+      console.log("✅ [DUAL-SIGNATURE] PDF downloaded successfully");
 
       return {
         success: true,
         pdfBuffer,
-        message: 'PDF downloaded successfully'
+        message: "PDF downloaded successfully",
       };
-
     } catch (error: any) {
-      console.error('❌ [DUAL-SIGNATURE] Error downloading PDF:', error);
+      console.error("❌ [DUAL-SIGNATURE] Error downloading PDF:", error);
       return {
         success: false,
-        message: `Error downloading PDF: ${error.message}`
+        message: `Error downloading PDF: ${error.message}`,
       };
     }
   }
@@ -443,7 +608,8 @@ export class DualSignatureService {
     message: string;
   }> {
     try {
-      const [contract] = await db.select()
+      const [contract] = await db
+        .select()
         .from(digitalContracts)
         .where(eq(digitalContracts.contractId, contractId))
         .limit(1);
@@ -451,7 +617,7 @@ export class DualSignatureService {
       if (!contract) {
         return {
           success: false,
-          message: 'Contract not found'
+          message: "Contract not found",
         };
       }
 
@@ -464,20 +630,23 @@ export class DualSignatureService {
         clientSignedAt: contract.clientSignedAt || undefined,
         emailSent: contract.emailSent,
         createdAt: contract.createdAt,
-        completedAt: contract.status === 'completed' ? contract.updatedAt : undefined,
+        completedAt:
+          contract.status === "completed" ? contract.updatedAt : undefined,
       };
 
       return {
         success: true,
         status,
-        message: 'Contract status retrieved successfully'
+        message: "Contract status retrieved successfully",
       };
-
     } catch (error: any) {
-      console.error('❌ [DUAL-SIGNATURE] Error getting contract status:', error);
+      console.error(
+        "❌ [DUAL-SIGNATURE] Error getting contract status:",
+        error
+      );
       return {
         success: false,
-        message: `Error retrieving contract status: ${error.message}`
+        message: `Error retrieving contract status: ${error.message}`,
       };
     }
   }
@@ -487,129 +656,209 @@ export class DualSignatureService {
    */
   private async completeContract(contractId: string): Promise<void> {
     try {
-      console.log('🏁 [DUAL-SIGNATURE] Completing contract:', contractId);
+      console.log("🏁 [DUAL-SIGNATURE] Completing contract:", contractId);
 
       // Get contract data with signatures
-      const [contract] = await db.select()
+      const [contract] = await db
+        .select()
         .from(digitalContracts)
         .where(eq(digitalContracts.contractId, contractId))
         .limit(1);
 
       if (!contract) {
-        console.error('❌ [DUAL-SIGNATURE] Contract not found for completion:', contractId);
+        console.error(
+          "❌ [DUAL-SIGNATURE] Contract not found for completion:",
+          contractId
+        );
         return;
       }
 
       if (!contract.contractorSigned || !contract.clientSigned) {
-        console.error('❌ [DUAL-SIGNATURE] Contract is not fully signed:', contractId);
+        console.error(
+          "❌ [DUAL-SIGNATURE] Contract is not fully signed:",
+          contractId
+        );
         return;
       }
 
-      console.log('📄 [DUAL-SIGNATURE] Generating signed PDF with integrated signatures...');
+      console.log(
+        "📄 [DUAL-SIGNATURE] Generating signed PDF with integrated signatures..."
+      );
 
       let pdfBuffer: Buffer | null = null;
       let signedPdfPath: string | null = null;
 
       try {
-        // Import EXACT FORMAT signature service to preserve original contract format
-        const { ExactFormatSignatureService } = await import('./exactFormatSignatureService');
-
-        // Generate PDF with signatures using EXACT format preservation
-        pdfBuffer = await ExactFormatSignatureService.createSignedContractWithExactFormat(
-          contract.contractHtml || '',
-          {
-            name: contract.contractorName,
-            signatureData: contract.contractorSignatureData || '',
-            typedName: contract.contractorSignatureType === 'typed' ? contract.contractorName : undefined,
-            signedAt: contract.contractorSignedAt || new Date()
-          },
-          {
-            name: contract.clientName,
-            signatureData: contract.clientSignatureData || '',
-            typedName: contract.clientSignatureType === 'typed' ? contract.clientName : undefined,
-            signedAt: contract.clientSignedAt || new Date()
-          }
+        // Import PDF service
+        const { default: PremiumPdfService } = await import(
+          "./premiumPdfService"
         );
+        const pdfService = new PremiumPdfService();
+
+        // Generate PDF with signatures integrated
+        pdfBuffer = await pdfService.generateContractWithSignatures({
+          contractHTML: contract.contractHtml || "",
+          contractorSignature: {
+            name: contract.contractorName,
+            signatureData: contract.contractorSignatureData || "",
+            typedName:
+              contract.contractorSignatureType === "typed"
+                ? contract.contractorName
+                : undefined,
+            signedAt: contract.contractorSignedAt || new Date(),
+          },
+          clientSignature: {
+            name: contract.clientName,
+            signatureData: contract.clientSignatureData || "",
+            typedName:
+              contract.clientSignatureType === "typed"
+                ? contract.clientName
+                : undefined,
+            signedAt: contract.clientSignedAt || new Date(),
+          },
+        });
 
         // Save PDF to file system
-        const fs = await import('fs');
-        const path = await import('path');
+        const fs = await import("fs");
+        const path = await import("path");
         signedPdfPath = `signed_contracts/contract_${contractId}_signed.pdf`;
         const fullPath = path.join(process.cwd(), signedPdfPath);
-        
+
         // Ensure directory exists
         const dir = path.dirname(fullPath);
         if (!fs.existsSync(dir)) {
           fs.mkdirSync(dir, { recursive: true });
         }
-        
-        fs.writeFileSync(fullPath, pdfBuffer);
-        console.log('💾 [DUAL-SIGNATURE] Signed PDF saved to:', signedPdfPath);
 
+        fs.writeFileSync(fullPath, pdfBuffer);
+        console.log("💾 [DUAL-SIGNATURE] Signed PDF saved to:", signedPdfPath);
       } catch (pdfError: any) {
-        console.error('⚠️ [DUAL-SIGNATURE] PDF generation failed, completing contract without PDF:', pdfError.message);
-        
-        // Provide specific logging for Chrome dependency issues
-        const isChromeDependencyError = pdfError.message?.includes('libgbm.so.1') || 
-                                       pdfError.message?.includes('Failed to launch the browser') ||
-                                       pdfError.message?.includes('chrome');
-        
-        if (isChromeDependencyError) {
-          console.error('🚨 [CHROME-DEPS] Chrome browser dependencies missing in Replit environment - HTML download will be available instead');
-        }
-        
+        console.error(
+          "⚠️ [DUAL-SIGNATURE] PDF generation failed, completing contract without PDF:",
+          pdfError.message
+        );
         // Contract will still be marked as completed but without PDF
         pdfBuffer = null;
         signedPdfPath = null;
       }
 
-      // CRITICAL: Only mark as completed if PDF was generated successfully
-      if (signedPdfPath && pdfBuffer) {
-        // PDF generated successfully - mark as completed
-        await db.update(digitalContracts)
-          .set({ 
-            status: 'completed',
-            signedPdfPath: signedPdfPath,
-            updatedAt: new Date()
-          })
-          .where(eq(digitalContracts.contractId, contractId));
-        
-        console.log('✅ [DUAL-SIGNATURE] Contract marked as COMPLETED with PDF');
-      } else {
-        // PDF generation failed - keep as in progress
-        await db.update(digitalContracts)
-          .set({ 
-            status: 'both_signed_pending_pdf',
-            signedPdfPath: null,
-            updatedAt: new Date()
-          })
-          .where(eq(digitalContracts.contractId, contractId));
-        
-        console.log('⚠️ [DUAL-SIGNATURE] Contract remains IN PROGRESS (both signed but no PDF)');
-      }
+      // Update database with completion status (with or without PDF)
+      await db
+        .update(digitalContracts)
+        .set({
+          status: "completed",
+          signedPdfPath: signedPdfPath,
+          updatedAt: new Date(),
+        })
+        .where(eq(digitalContracts.contractId, contractId));
 
-      console.log('📧 [DUAL-SIGNATURE] Sending completed contract to both parties...');
+      console.log(
+        "📧 [DUAL-SIGNATURE] Sending completed contract to both parties..."
+      );
 
       // Send completion emails (with or without PDF attachment)
       await this.sendCompletionEmails(contract, pdfBuffer);
 
-      console.log('✅ [DUAL-SIGNATURE] Contract completion workflow finished successfully');
+      console.log(
+        "✅ [DUAL-SIGNATURE] Contract completion workflow finished successfully"
+      );
 
+      // CRITICAL FIX: Update contract history when contract is completed
+      try {
+        console.log("📋 [DUAL-SIGNATURE] Updating contract history...");
+
+        // Import contract history service
+        const { contractHistoryService } = await import(
+          "../../client/src/services/contractHistoryService"
+        );
+
+        // Update contract status to completed in history
+        const contractData = contract.contractData as any;
+
+        const historyEntry = {
+          userId: contract.userId,
+          contractId: contract.contractId,
+          clientName: contract.clientName,
+          projectType: contractData?.projectType || "Construction",
+          status: "completed" as const,
+          contractData: {
+            client: {
+              name: contract.clientName,
+              address: contractData?.clientAddress || "",
+              email: contract.clientEmail,
+              phone: contract.clientPhone || "",
+            },
+            contractor: {
+              name: contract.contractorName,
+              address: contractData?.contractorAddress || "",
+              email: contract.contractorEmail,
+              phone: contract.contractorPhone || "",
+              license: contractData?.contractorLicense || "",
+              company: contract.contractorCompany || contract.contractorName,
+            },
+            project: {
+              type: contractData?.projectType || "Construction",
+              description: contract.projectDescription,
+              location: contractData?.clientAddress || "",
+              scope: contract.projectDescription,
+            },
+            financials: {
+              total: parseFloat(contract.totalAmount || "0"),
+              subtotal: parseFloat(contract.totalAmount || "0"),
+              tax: 0,
+              materials: 0,
+              labor: 0,
+              permits: 0,
+              other: 0,
+            },
+            protections: [],
+            timeline: {
+              startDate: contractData?.startDate || "",
+              completionDate: contractData?.completionDate || "",
+              estimatedDuration: "As specified in contract",
+            },
+            terms: {
+              warranty: contractData?.warrantyYears || "1",
+              permits: contractData?.permitResponsibility || "contractor",
+            },
+          },
+          pdfUrl: signedPdfPath || undefined,
+        };
+
+        await contractHistoryService.saveContract(historyEntry);
+        console.log(
+          "✅ [DUAL-SIGNATURE] Contract history updated successfully"
+        );
+      } catch (historyError: any) {
+        console.error(
+          "❌ [DUAL-SIGNATURE] Error updating contract history:",
+          historyError
+        );
+        // Don't fail the completion process if history update fails
+      }
     } catch (error: any) {
-      console.error('❌ [DUAL-SIGNATURE] Error completing contract:', error);
+      console.error("❌ [DUAL-SIGNATURE] Error completing contract:", error);
     }
   }
 
   /**
    * Enviar emails de finalización con PDF adjunto (opcional)
    */
-  private async sendCompletionEmails(contract: any, pdfBuffer: Buffer | null): Promise<void> {
+  private async sendCompletionEmails(
+    contract: any,
+    pdfBuffer: Buffer | null
+  ): Promise<void> {
     try {
       const hasPdf = pdfBuffer !== null;
-      console.log(`📧 [DUAL-SIGNATURE] Sending completion emails ${hasPdf ? 'with PDF attachment' : 'without PDF (generation failed)'}...`);
+      console.log(
+        `📧 [DUAL-SIGNATURE] Sending completion emails ${hasPdf ? "with PDF attachment" : "without PDF (generation failed)"}...`
+      );
 
       const contractData = contract.contractData as any;
-      const downloadUrl = hasPdf ? `https://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}/api/dual-signature/download/${contract.contractId}` : null;
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000";
+      const downloadUrl = hasPdf
+        ? `${baseUrl}/api/dual-signature/download/${contract.contractId}`
+        : null;
 
       // Send to contractor
       await this.emailService.sendContractEmail({
@@ -617,27 +866,25 @@ export class DualSignatureService {
         toName: contract.contractorName,
         contractorEmail: contract.contractorEmail,
         contractorName: contract.contractorName,
-        contractorCompany: contractData?.contractorCompany || 'Construction Company',
+        contractorCompany:
+          contractData?.contractorCompany || "Construction Company",
         subject: `🎉 Contract Completed! - ${contract.clientName}`,
         htmlContent: this.generateCompletionEmailHTML({
           recipientName: contract.contractorName,
-          recipientType: 'contractor',
+          recipientType: "contractor",
           contractId: contract.contractId,
           clientName: contract.clientName,
           contractorName: contract.contractorName,
-          contractorCompany: contractData?.contractorCompany || 'Construction Company',
-          projectDescription: contractData?.projectDescription || 'Construction Project',
+          contractorCompany:
+            contractData?.contractorCompany || "Construction Company",
+          projectDescription:
+            contractData?.projectDescription || "Construction Project",
           totalAmount: contractData?.totalAmount || contract.totalAmount,
           downloadUrl: downloadUrl,
           contractorSignedAt: contract.contractorSignedAt,
           clientSignedAt: contract.clientSignedAt,
-          hasPdf: hasPdf
+          hasPdf: hasPdf,
         }),
-        attachments: hasPdf ? [{
-          filename: `contract_${contract.contractId}_signed.pdf`,
-          content: pdfBuffer!,
-          contentType: 'application/pdf'
-        }] : undefined
       });
 
       // Send to client
@@ -646,33 +893,33 @@ export class DualSignatureService {
         toName: contract.clientName,
         contractorEmail: contract.contractorEmail,
         contractorName: contract.contractorName,
-        contractorCompany: contractData?.contractorCompany || 'Construction Company',
-        subject: `🎉 Contract Completed! - ${contractData?.contractorCompany || 'Construction Company'}`,
+        contractorCompany:
+          contractData?.contractorCompany || "Construction Company",
+        subject: `🎉 Contract Completed! - ${contractData?.contractorCompany || "Construction Company"}`,
         htmlContent: this.generateCompletionEmailHTML({
           recipientName: contract.clientName,
-          recipientType: 'client',
+          recipientType: "client",
           contractId: contract.contractId,
           clientName: contract.clientName,
           contractorName: contract.contractorName,
-          contractorCompany: contractData?.contractorCompany || 'Construction Company',
-          projectDescription: contractData?.projectDescription || 'Construction Project',
+          contractorCompany:
+            contractData?.contractorCompany || "Construction Company",
+          projectDescription:
+            contractData?.projectDescription || "Construction Project",
           totalAmount: contractData?.totalAmount || contract.totalAmount,
           downloadUrl: downloadUrl,
           contractorSignedAt: contract.contractorSignedAt,
           clientSignedAt: contract.clientSignedAt,
-          hasPdf: hasPdf
+          hasPdf: hasPdf,
         }),
-        attachments: hasPdf ? [{
-          filename: `contract_${contract.contractId}_signed.pdf`,
-          content: pdfBuffer!,
-          contentType: 'application/pdf'
-        }] : undefined
       });
 
-      console.log('✅ [DUAL-SIGNATURE] Completion emails sent to both parties');
-
+      console.log("✅ [DUAL-SIGNATURE] Completion emails sent to both parties");
     } catch (error: any) {
-      console.error('❌ [DUAL-SIGNATURE] Error sending completion emails:', error);
+      console.error(
+        "❌ [DUAL-SIGNATURE] Error sending completion emails:",
+        error
+      );
     }
   }
 
@@ -681,7 +928,7 @@ export class DualSignatureService {
    */
   private generateCompletionEmailHTML(params: {
     recipientName: string;
-    recipientType: 'contractor' | 'client';
+    recipientType: "contractor" | "client";
     contractId: string;
     clientName: string;
     contractorName: string;
@@ -693,12 +940,25 @@ export class DualSignatureService {
     clientSignedAt: Date;
     hasPdf: boolean;
   }): string {
-    const contractorDate = new Date(params.contractorSignedAt).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    const contractorDate = new Date(
+      params.contractorSignedAt
+    ).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
-    const clientDate = new Date(params.clientSignedAt).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
+    const clientDate = new Date(params.clientSignedAt).toLocaleDateString(
+      "en-US",
+      {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
 
     return `
       <!DOCTYPE html>
@@ -713,10 +973,10 @@ export class DualSignatureService {
             <h1 style="margin: 0; font-size: 28px;">🎉 Contract Successfully Completed!</h1>
             <p style="margin: 15px 0 0 0; opacity: 0.9; font-size: 18px;">Both parties have signed - Your contract is now active</p>
           </div>
-          
+
           <div style="background: #f8fafc; padding: 40px; border-radius: 0 0 15px 15px; border: 1px solid #e2e8f0;">
             <h2 style="color: #059669; margin-top: 0; font-size: 24px;">Hello ${params.recipientName},</h2>
-            
+
             <div style="background: #d1fae5; padding: 25px; border-radius: 12px; border-left: 6px solid #10b981; margin: 25px 0;">
               <h3 style="margin: 0 0 15px 0; color: #059669; font-size: 20px;">✅ Contract Execution Complete</h3>
               <p style="margin: 0; color: #065f46; font-size: 16px;">
@@ -749,15 +1009,18 @@ export class DualSignatureService {
                 </div>
               </div>
             </div>
-            
-            ${params.hasPdf ? `
+
+            ${
+              params.hasPdf
+                ? `
             <div style="text-align: center; margin: 40px 0;">
               <a href="${params.downloadUrl}" 
                  style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px 40px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 18px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
                 📄 Download Signed Contract PDF
               </a>
             </div>
-            ` : `
+            `
+                : `
             <div style="background: #fef2f2; padding: 25px; border-radius: 12px; border-left: 6px solid #ef4444; margin: 25px 0; text-align: center;">
               <h4 style="margin: 0 0 15px 0; color: #dc2626;">⚠️ PDF Generation Notice</h4>
               <p style="margin: 0; color: #991b1b; font-size: 16px;">
@@ -766,7 +1029,8 @@ export class DualSignatureService {
                 signatures are securely stored in our system. Please contact support if you need the PDF document.
               </p>
             </div>
-            `}
+            `
+            }
 
             <div style="background: #eff6ff; padding: 20px; border-radius: 12px; border-left: 6px solid #3b82f6; margin: 25px 0;">
               <h4 style="margin: 0 0 10px 0; color: #1e40af;">🔐 Security & Authenticity</h4>
@@ -778,7 +1042,9 @@ export class DualSignatureService {
               </ul>
             </div>
 
-            ${params.recipientType === 'contractor' ? `
+            ${
+              params.recipientType === "contractor"
+                ? `
             <div style="background: #fef3c7; padding: 20px; border-radius: 12px; border-left: 6px solid #f59e0b; margin: 25px 0;">
               <h4 style="margin: 0 0 10px 0; color: #92400e;">📋 Next Steps for Contractor</h4>
               <ul style="color: #92400e; margin: 10px 0; padding-left: 20px;">
@@ -788,7 +1054,8 @@ export class DualSignatureService {
                 <li>Keep this signed contract for your records</li>
               </ul>
             </div>
-            ` : `
+            `
+                : `
             <div style="background: #fef3c7; padding: 20px; border-radius: 12px; border-left: 6px solid #f59e0b; margin: 25px 0;">
               <h4 style="margin: 0 0 10px 0; color: #92400e;">📋 Next Steps for Client</h4>
               <ul style="color: #92400e; margin: 10px 0; padding-left: 20px;">
@@ -798,8 +1065,9 @@ export class DualSignatureService {
                 <li>Contact contractor for any project questions</li>
               </ul>
             </div>
-            `}
-            
+            `
+            }
+
             <div style="background: #f9fafb; padding: 20px; border-radius: 12px; margin-top: 30px; text-align: center;">
               <p style="margin: 0; font-size: 14px; color: #6b7280;">
                 This contract was completed using the Legal Defense Digital Signature System.<br>
@@ -823,9 +1091,13 @@ export class DualSignatureService {
     message: string;
   }> {
     try {
-      console.log('📥 [DUAL-SIGNATURE] Getting signed PDF for download:', contractId);
+      console.log(
+        "📥 [DUAL-SIGNATURE] Getting signed PDF for download:",
+        contractId
+      );
 
-      const [contract] = await db.select()
+      const [contract] = await db
+        .select()
         .from(digitalContracts)
         .where(eq(digitalContracts.contractId, contractId))
         .limit(1);
@@ -833,44 +1105,43 @@ export class DualSignatureService {
       if (!contract) {
         return {
           success: false,
-          message: 'Contract not found'
+          message: "Contract not found",
         };
       }
 
-      if (contract.status !== 'completed' || !contract.signedPdfPath) {
+      if (contract.status !== "completed" || !contract.signedPdfPath) {
         return {
           success: false,
-          message: 'Contract is not completed or PDF not available'
+          message: "Contract is not completed or PDF not available",
         };
       }
 
-      const fs = await import('fs');
-      const path = await import('path');
+      const fs = await import("fs");
+      const path = await import("path");
       const fullPath = path.join(process.cwd(), contract.signedPdfPath);
 
       if (!fs.existsSync(fullPath)) {
         return {
           success: false,
-          message: 'PDF file not found on server'
+          message: "PDF file not found on server",
         };
       }
 
       const pdfBuffer = fs.readFileSync(fullPath);
       const filename = `contract_${contractId}_signed.pdf`;
 
-      console.log('✅ [DUAL-SIGNATURE] Signed PDF retrieved successfully');
+      console.log("✅ [DUAL-SIGNATURE] Signed PDF retrieved successfully");
       return {
         success: true,
         pdfBuffer,
         filename,
-        message: 'PDF retrieved successfully'
+        message: "PDF retrieved successfully",
       };
-
     } catch (error: any) {
-      console.error('❌ [DUAL-SIGNATURE] Error getting signed PDF:', error);
+      console.error("❌ [DUAL-SIGNATURE] Error getting signed PDF:", error);
       return {
         success: false,
-        message: `Error retrieving PDF: ${error.message}`
+        message: `Error retrieving PDF: ${error.message}`,
       };
     }
   }
@@ -878,28 +1149,40 @@ export class DualSignatureService {
   /**
    * Notificar a la parte restante que falta por firmar
    */
-  private async notifyRemainingParty(contractId: string, signedParty: 'contractor' | 'client'): Promise<void> {
+  private async notifyRemainingParty(
+    contractId: string,
+    signedParty: "contractor" | "client"
+  ): Promise<void> {
     try {
-      const remainingParty = signedParty === 'contractor' ? 'client' : 'contractor';
-      console.log(`📧 [DUAL-SIGNATURE] Notifying ${remainingParty} that ${signedParty} has signed`);
-      
+      const remainingParty =
+        signedParty === "contractor" ? "client" : "contractor";
+      console.log(
+        `📧 [DUAL-SIGNATURE] Notifying ${remainingParty} that ${signedParty} has signed`
+      );
+
       // Get contract data from database
-      const [contract] = await db.select()
+      const [contract] = await db
+        .select()
         .from(digitalContracts)
         .where(eq(digitalContracts.contractId, contractId))
         .limit(1);
-        
+
       if (!contract) {
-        console.error('❌ [DUAL-SIGNATURE] Contract not found for notification:', contractId);
+        console.error(
+          "❌ [DUAL-SIGNATURE] Contract not found for notification:",
+          contractId
+        );
         return;
       }
-      
+
       const contractData = contract.contractData as any;
-      
-      if (remainingParty === 'contractor') {
+
+      if (remainingParty === "contractor") {
         // Notify contractor that client has signed
-        const contractorSignUrl = `https://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}/sign/${contractId}/contractor`;
-        
+        const baseUrl =
+          process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000";
+        const contractorSignUrl = `${baseUrl}/sign/${contractId}/contractor`;
+
         await this.emailService.sendContractEmail({
           to: contractData.contractorEmail,
           toName: contractData.contractorName,
@@ -912,16 +1195,20 @@ export class DualSignatureService {
             clientName: contractData.clientName,
             signUrl: contractorSignUrl,
             contractId: contractId,
-            notificationType: 'client_signed'
-          })
+            notificationType: "client_signed",
+          }),
         });
-        
-        console.log('✅ [DUAL-SIGNATURE] Contractor notification sent:', contractData.contractorEmail);
-        
+
+        console.log(
+          "✅ [DUAL-SIGNATURE] Contractor notification sent:",
+          contractData.contractorEmail
+        );
       } else {
         // Notify client that contractor has signed
-        const clientSignUrl = `https://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}/sign/${contractId}/client`;
-        
+        const baseUrl =
+          process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000";
+        const clientSignUrl = `${baseUrl}/sign/${contractId}/client`;
+
         await this.emailService.sendContractEmail({
           to: contractData.clientEmail,
           toName: contractData.clientName,
@@ -935,15 +1222,20 @@ export class DualSignatureService {
             contractorCompany: contractData.contractorCompany,
             signUrl: clientSignUrl,
             contractId: contractId,
-            notificationType: 'contractor_signed'
-          })
+            notificationType: "contractor_signed",
+          }),
         });
-        
-        console.log('✅ [DUAL-SIGNATURE] Client notification sent:', contractData.clientEmail);
+
+        console.log(
+          "✅ [DUAL-SIGNATURE] Client notification sent:",
+          contractData.clientEmail
+        );
       }
-      
     } catch (error: any) {
-      console.error('❌ [DUAL-SIGNATURE] Error notifying remaining party:', error);
+      console.error(
+        "❌ [DUAL-SIGNATURE] Error notifying remaining party:",
+        error
+      );
     }
   }
 
@@ -963,10 +1255,13 @@ export class DualSignatureService {
     clientSignUrl: string;
   }): Promise<void> {
     try {
-      console.log('📧 [DUAL-SIGNATURE] Sending dual notifications...');
-      console.log('📧 [EMAIL-DEBUG] Contractor email:', params.contractorEmail);
-      console.log('📧 [EMAIL-DEBUG] Client email:', params.clientEmail);
-      console.log('📧 [EMAIL-DEBUG] Are emails the same?', params.contractorEmail === params.clientEmail);
+      console.log("📧 [DUAL-SIGNATURE] Sending dual notifications...");
+      console.log("📧 [EMAIL-DEBUG] Contractor email:", params.contractorEmail);
+      console.log("📧 [EMAIL-DEBUG] Client email:", params.clientEmail);
+      console.log(
+        "📧 [EMAIL-DEBUG] Are emails the same?",
+        params.contractorEmail === params.clientEmail
+      );
 
       // Send to contractor
       await this.emailService.sendContractEmail({
@@ -1005,10 +1300,12 @@ export class DualSignatureService {
         }),
       });
 
-      console.log('✅ [DUAL-SIGNATURE] Dual notifications sent successfully');
-
+      console.log("✅ [DUAL-SIGNATURE] Dual notifications sent successfully");
     } catch (error: any) {
-      console.error('❌ [DUAL-SIGNATURE] Error sending dual notifications:', error);
+      console.error(
+        "❌ [DUAL-SIGNATURE] Error sending dual notifications:",
+        error
+      );
     }
   }
 
@@ -1020,7 +1317,7 @@ export class DualSignatureService {
     clientName: string;
     signUrl: string;
     contractId: string;
-    notificationType: 'client_signed';
+    notificationType: "client_signed";
   }): string {
     return `
       <!DOCTYPE html>
@@ -1035,31 +1332,31 @@ export class DualSignatureService {
             <h1 style="margin: 0; font-size: 24px;">✅ Great News! Client Has Signed</h1>
             <p style="margin: 10px 0 0 0; opacity: 0.9;">Your signature is now required to complete the contract</p>
           </div>
-          
+
           <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e2e8f0;">
             <h2 style="color: #059669; margin-top: 0;">Hello ${params.contractorName},</h2>
-            
+
             <p><strong>${params.clientName}</strong> has successfully signed the contract! The contract is now ready for your signature to complete the process.</p>
-            
+
             <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981; margin: 20px 0;">
               <h3 style="margin: 0 0 10px 0; color: #059669;">🎉 Contract Status Update</h3>
               <p><strong>Client:</strong> ${params.clientName} ✅ <span style="color: #10b981;">SIGNED</span></p>
               <p><strong>Contractor:</strong> ${params.contractorName} ⏳ <span style="color: #f59e0b;">PENDING</span></p>
               <p><strong>Contract ID:</strong> ${params.contractId}</p>
             </div>
-            
+
             <div style="text-align: center; margin: 30px 0;">
               <a href="${params.signUrl}" 
                  style="display: inline-block; background: #10b981; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
                 🖊️ Complete Your Signature
               </a>
             </div>
-            
+
             <div style="background: #d1fae5; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; margin: 20px 0;">
               <h4 style="margin: 0 0 10px 0; color: #059669;">⚡ Quick Action Required</h4>
               <p style="margin: 0; color: #065f46;">Click the button above to review and sign the contract. Once you sign, both parties will receive the completed contract automatically.</p>
             </div>
-            
+
             <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin-top: 20px;">
               <p style="margin: 0; font-size: 12px; color: #6b7280;">
                 This email was sent because ${params.clientName} completed their signature on contract ${params.contractId}. 
@@ -1081,7 +1378,7 @@ export class DualSignatureService {
     contractorCompany: string;
     signUrl: string;
     contractId: string;
-    notificationType: 'contractor_signed';
+    notificationType: "contractor_signed";
   }): string {
     return `
       <!DOCTYPE html>
@@ -1096,31 +1393,31 @@ export class DualSignatureService {
             <h1 style="margin: 0; font-size: 24px;">✅ Contractor Has Signed</h1>
             <p style="margin: 10px 0 0 0; opacity: 0.9;">Your signature is now required to complete the contract</p>
           </div>
-          
+
           <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e2e8f0;">
             <h2 style="color: #1d4ed8; margin-top: 0;">Hello ${params.clientName},</h2>
-            
+
             <p><strong>${params.contractorCompany}</strong> has successfully signed the contract! The contract is now ready for your signature to complete the process.</p>
-            
+
             <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0;">
               <h3 style="margin: 0 0 10px 0; color: #1d4ed8;">🎉 Contract Status Update</h3>
               <p><strong>Contractor:</strong> ${params.contractorName} ✅ <span style="color: #10b981;">SIGNED</span></p>
               <p><strong>Client:</strong> ${params.clientName} ⏳ <span style="color: #f59e0b;">PENDING</span></p>
               <p><strong>Contract ID:</strong> ${params.contractId}</p>
             </div>
-            
+
             <div style="text-align: center; margin: 30px 0;">
               <a href="${params.signUrl}" 
                  style="display: inline-block; background: #3b82f6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
                 🖊️ Complete Your Signature
               </a>
             </div>
-            
+
             <div style="background: #dbeafe; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0;">
               <h4 style="margin: 0 0 10px 0; color: #1d4ed8;">⚡ Final Step</h4>
               <p style="margin: 0; color: #1e3a8a;">Click the button above to review and sign the contract. Once you sign, both parties will receive the completed contract automatically.</p>
             </div>
-            
+
             <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin-top: 20px;">
               <p style="margin: 0; font-size: 12px; color: #6b7280;">
                 This email was sent because ${params.contractorCompany} completed their signature on contract ${params.contractId}. 
@@ -1157,12 +1454,12 @@ export class DualSignatureService {
             <h1 style="margin: 0; font-size: 24px;">🏗️ Contract Ready for Your Signature</h1>
             <p style="margin: 10px 0 0 0; opacity: 0.9;">Professional Contract Management by Owl Fence</p>
           </div>
-          
+
           <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e2e8f0;">
             <h2 style="color: #1e40af; margin-top: 0;">Hello ${params.contractorName},</h2>
-            
+
             <p>Your contract is ready for signature! Please review and sign the contract for:</p>
-            
+
             <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0;">
               <h3 style="margin: 0 0 10px 0; color: #1e40af;">📋 Project Details</h3>
               <p><strong>Client:</strong> ${params.clientName}</p>
@@ -1170,21 +1467,21 @@ export class DualSignatureService {
               <p><strong>Amount:</strong> $${params.totalAmount.toLocaleString()}</p>
               <p><strong>Contract ID:</strong> ${params.contractId}</p>
             </div>
-            
+
             <div style="text-align: center; margin: 30px 0;">
               <a href="${params.signUrl}" 
                  style="display: inline-block; background: #1e40af; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
                 📝 Review & Sign Contract
               </a>
             </div>
-            
+
             <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
               <p style="margin: 0; font-size: 14px;">
                 <strong>⚠️ Important:</strong> Please review the complete contract before signing. 
                 Both you and your client will receive copies once both parties have signed.
               </p>
             </div>
-            
+
             <p style="font-size: 14px; color: #666; margin-top: 30px;">
               This email was sent from Owl Fence Legal Defense System. 
               The signature link is secure and expires in 72 hours.
@@ -1220,12 +1517,12 @@ export class DualSignatureService {
             <h1 style="margin: 0; font-size: 24px;">👥 Contract for Your Review</h1>
             <p style="margin: 10px 0 0 0; opacity: 0.9;">Professional Contract Management by Owl Fence</p>
           </div>
-          
+
           <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e2e8f0;">
             <h2 style="color: #16a34a; margin-top: 0;">Hello ${params.clientName},</h2>
-            
+
             <p>${params.contractorCompany} has prepared a contract for your project. Please review the terms and sign if you agree:</p>
-            
+
             <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #22c55e; margin: 20px 0;">
               <h3 style="margin: 0 0 10px 0; color: #16a34a;">📋 Contract Details</h3>
               <p><strong>Contractor:</strong> ${params.contractorName}</p>
@@ -1234,14 +1531,14 @@ export class DualSignatureService {
               <p><strong>Amount:</strong> $${params.totalAmount.toLocaleString()}</p>
               <p><strong>Contract ID:</strong> ${params.contractId}</p>
             </div>
-            
+
             <div style="text-align: center; margin: 30px 0;">
               <a href="${params.signUrl}" 
                  style="display: inline-block; background: #16a34a; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
                 📝 Review & Sign Contract
               </a>
             </div>
-            
+
             <div style="background: #d1ecf1; padding: 15px; border-radius: 8px; border-left: 4px solid #17a2b8; margin: 20px 0;">
               <p style="margin: 0; font-size: 14px;">
                 <strong>ℹ️ How it works:</strong><br>
@@ -1251,7 +1548,7 @@ export class DualSignatureService {
                 4. Both parties will receive the final signed contract
               </p>
             </div>
-            
+
             <p style="font-size: 14px; color: #666; margin-top: 30px;">
               This contract was generated by ${params.contractorCompany} using Owl Fence Legal Defense System. 
               The signature link is secure and expires in 72 hours.
@@ -1283,7 +1580,7 @@ export class DualSignatureService {
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f4f4;">
         <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          
+
           <!-- Header -->
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #2563eb; margin-bottom: 10px;">🔒 Contract Ready for Signature</h1>
@@ -1362,7 +1659,7 @@ export class DualSignatureService {
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f4f4;">
         <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          
+
           <!-- Header -->
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #059669; margin-bottom: 10px;">📋 Contract for Review and Signature</h1>
@@ -1420,175 +1717,11 @@ export class DualSignatureService {
   }
 
   /**
-   * Regenerar PDF con firmas para contrato completado
-   */
-  /**
-   * Get contract data for viewing/downloading
-   */
-  async getContractData(contractId: string, requestingUserId?: string): Promise<{
-    success: boolean;
-    contract?: DigitalContract;
-    message: string;
-  }> {
-    try {
-      console.log('📥 [DUAL-SIGNATURE] Getting contract data:', contractId);
-      console.log('👤 [DUAL-SIGNATURE] Requesting user:', requestingUserId || 'No user ID');
-
-      const [contract] = await db.select()
-        .from(digitalContracts)
-        .where(eq(digitalContracts.contractId, contractId))
-        .limit(1);
-
-      if (!contract) {
-        return {
-          success: false,
-          message: 'Contract not found'
-        };
-      }
-
-      // If a requesting user is provided, verify access
-      if (requestingUserId && contract.userId !== requestingUserId) {
-        console.log('❌ [DUAL-SIGNATURE] Access denied for user:', requestingUserId);
-        return {
-          success: false,
-          message: 'Access denied: Contract not owned by user'
-        };
-      }
-
-      console.log('✅ [DUAL-SIGNATURE] Contract data retrieved successfully');
-      return {
-        success: true,
-        contract,
-        message: 'Contract found'
-      };
-
-    } catch (error: any) {
-      console.error('❌ [DUAL-SIGNATURE] Error getting contract data:', error);
-      return {
-        success: false,
-        message: `Error retrieving contract: ${error.message}`
-      };
-    }
-  }
-
-  async regenerateSignedPdf(contractId: string): Promise<{
-    success: boolean;
-    message: string;
-    pdfPath?: string;
-  }> {
-    try {
-      console.log('🔄 [DUAL-SIGNATURE] Regenerating signed PDF for contract:', contractId);
-
-      // Get contract data
-      const [contract] = await db.select()
-        .from(digitalContracts)
-        .where(eq(digitalContracts.contractId, contractId))
-        .limit(1);
-
-      if (!contract) {
-        return {
-          success: false,
-          message: 'Contract not found'
-        };
-      }
-
-      if (contract.status !== 'completed' || !contract.contractorSigned || !contract.clientSigned) {
-        return {
-          success: false,
-          message: 'Contract is not fully signed yet'
-        };
-      }
-
-      console.log('📄 [DUAL-SIGNATURE] Generating PDF with signatures...');
-
-      // Try to generate PDF with enhanced error handling
-      let pdfBuffer: Buffer | null = null;
-      let signedPdfPath: string | null = null;
-
-      try {
-        console.log('🎯 [DUAL-SIGNATURE] Using EXACT FORMAT signature service to regenerate PDF...');
-        
-        // Import EXACT FORMAT signature service to preserve original contract format
-        const { ExactFormatSignatureService } = await import('./exactFormatSignatureService');
-
-        // Generate PDF with signatures using EXACT format preservation
-        pdfBuffer = await ExactFormatSignatureService.createSignedContractWithExactFormat(
-          contract.contractHtml || '',
-          {
-            name: contract.contractorName,
-            signatureData: contract.contractorSignatureData || '',
-            typedName: contract.contractorSignatureType === 'typed' ? contract.contractorName : undefined,
-            signedAt: contract.contractorSignedAt || new Date()
-          },
-          {
-            name: contract.clientName,
-            signatureData: contract.clientSignatureData || '',
-            typedName: contract.clientSignatureType === 'typed' ? contract.clientName : undefined,
-            signedAt: contract.clientSignedAt || new Date()
-          }
-        );
-
-        signedPdfPath = `signed_contracts/contract_${contractId}_signed.pdf`;
-        const fs = await import('fs');
-        const path = await import('path');
-        const fullPdfPath = path.join(process.cwd(), signedPdfPath);
-        
-        // Ensure directory exists
-        const dir = path.dirname(fullPdfPath);
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, { recursive: true });
-        }
-        
-        fs.writeFileSync(fullPdfPath, pdfBuffer);
-        console.log('✅ [DUAL-SIGNATURE] PDF generated and saved:', signedPdfPath);
-
-        // Update database with PDF path
-        await db.update(digitalContracts)
-          .set({ 
-            signedPdfPath: signedPdfPath,
-            updatedAt: new Date()
-          })
-          .where(eq(digitalContracts.contractId, contractId));
-
-        return {
-          success: true,
-          message: 'Signed PDF generated successfully',
-          pdfPath: signedPdfPath
-        };
-
-      } catch (pdfError: any) {
-        console.warn('⚠️ [DUAL-SIGNATURE] PDF generation failed:', pdfError.message);
-        
-        // Provide specific error message for Chrome dependency issues
-        const isChromeDependencyError = pdfError.message?.includes('libgbm.so.1') || 
-                                       pdfError.message?.includes('Failed to launch the browser') ||
-                                       pdfError.message?.includes('chrome');
-        
-        const errorMessage = isChromeDependencyError 
-          ? 'PDF generation unavailable: Chrome browser dependencies missing in Replit environment. Use HTML download instead.'
-          : `PDF generation failed: ${pdfError.message}`;
-        
-        return {
-          success: false,
-          message: errorMessage
-        };
-      }
-
-    } catch (error: any) {
-      console.error('❌ [DUAL-SIGNATURE] Error regenerating PDF:', error);
-      return {
-        success: false,
-        message: `Error regenerating PDF: ${error.message}`
-      };
-    }
-  }
-
-  /**
    * Generar ID único para el contrato
    */
   private generateUniqueContractId(): string {
     const timestamp = Date.now().toString(36);
-    const randomStr = crypto.randomBytes(4).toString('hex').toUpperCase();
+    const randomStr = crypto.randomBytes(4).toString("hex").toUpperCase();
     return `CNT-${timestamp}-${randomStr}`;
   }
 }
