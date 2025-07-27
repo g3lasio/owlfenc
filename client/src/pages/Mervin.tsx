@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Client } from "@/lib/clientFirebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { MaterialInventoryService } from "../../src/services/materialInventoryService";
@@ -46,6 +47,14 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import axios from "axios";
+import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { CheckCircle2, Download } from "lucide-react";
+import {
+  generatePDFReport,
+  downloadPDFReport,
+} from "@/utils/permitReportGenerator";
 
 // Tipos para los mensajes
 type MessageSender = "user" | "assistant";
@@ -90,8 +99,61 @@ type ContractFlowStep =
   | "legal-clauses"
   | "project-scope"
   | "final-review"
+  | "signature-question"
+  | "awaiting-signature-choice"
   | "generate-contract"
   | null;
+
+// Permit Advisor Flow Types
+type PermitFlowStep =
+  | "address-selection"
+  | "awaiting-address-choice"
+  | "manual-address-entry"
+  | "existing-projects-list"
+  | "project-selected"
+  | "project-description"
+  | "awaiting-description"
+  | "document-upload"
+  | "deepsearch-analysis"
+  | "results-display"
+  | null;
+
+interface PermitProject {
+  id: string;
+  clientName: string;
+  address: string;
+  projectType: string;
+  projectDescription?: string;
+  status: string;
+  createdAt: { toDate: () => Date };
+  totalPrice?: number;
+  clientEmail?: string;
+  clientPhone?: string;
+}
+
+interface PermitData {
+  name: string;
+  issuingAuthority: string;
+  estimatedTimeline: string;
+  averageCost?: string;
+  description?: string;
+  requirements?: string;
+  url?: string;
+}
+
+interface PermitResponse {
+  requiredPermits: PermitData[];
+  specialConsiderations: string[];
+  process: string[];
+  meta: {
+    sources: string[];
+    generated: string;
+    projectType: string;
+    location: string;
+    fullAddress?: string;
+    timestamp?: string;
+  };
+}
 
 interface EstimateData {
   id: string;
@@ -212,7 +274,9 @@ export default function Mervin() {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [materials, setMaterials] = useState<Material[]>([]);
-  const [caseType, setCaseType] = useState<"Estimates" | "Contract" | "">("");
+  const [caseType, setCaseType] = useState<
+    "Estimates" | "Contract" | "Permits" | ""
+  >("");
   const { toast } = useToast();
   const [projectDescription, setProjectDescription] = useState<string>("");
   const [tax, setTax] = useState<{
@@ -242,6 +306,26 @@ export default function Mervin() {
   const [selectedEstimate, setSelectedEstimate] = useState<EstimateData | null>(
     null,
   );
+
+  // Permit Advisor states
+  const [permitFlowStep, setPermitFlowStep] = useState<PermitFlowStep>(null);
+  const [permitProjects, setPermitProjects] = useState<PermitProject[]>([]);
+  const [selectedPermitProject, setSelectedPermitProject] =
+    useState<PermitProject | null>(null);
+  const [permitAddress, setPermitAddress] = useState("");
+  const [permitProjectType, setPermitProjectType] = useState("");
+  const [permitProjectDescription, setPermitProjectDescription] = useState("");
+  const [permitDocuments, setPermitDocuments] = useState<File[]>([]);
+  const [permitResults, setPermitResults] = useState<PermitResponse | null>(
+    null,
+  );
+  const [isPermitAnalyzing, setIsPermitAnalyzing] = useState(false);
+  const [permitCoordinates, setPermitCoordinates] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [activePermitTab, setActivePermitTab] = useState("permits");
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [projectTimeline, setProjectTimeline] = useState<
     ProjectTimelineField[]
   >([
@@ -265,13 +349,30 @@ export default function Mervin() {
       required: false,
     },
   ]);
+
+  // Separate state for date values
+  const [projectDates, setProjectDates] = useState<{
+    start?: Date;
+    completion?: Date;
+  }>({});
+
+  // State for logo file upload
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string>("");
+
+  // State for signature protocol
+  const [contractorSignUrl, setContractorSignUrl] = useState<string>("");
+  const [clientSignUrl, setClientSignUrl] = useState<string>("");
+  const [contractHTML, setContractHTML] = useState<string>("");
   const [contractorInfo, setContractorInfo] = useState({
     company: "",
     license: "",
+    licenseUrl: "",
     insurance: "",
     address: "",
     phone: "",
     email: "",
+    logo: "",
   });
   const [projectMilestones, setProjectMilestones] = useState<
     ProjectMilestone[]
@@ -390,7 +491,7 @@ export default function Mervin() {
       setIsLoadingMaterials(false);
     }
   };
-  const { profile, isLoading: isProfileLoading } = useProfile();
+  const { profile, isLoading: isProfileLoading, updateProfile } = useProfile();
 
   // Inicializar con mensaje de bienvenida
   useEffect(() => {
@@ -404,6 +505,388 @@ export default function Mervin() {
 
     setMessages([welcomeMessage]);
   }, []);
+
+  // Initialize contractor info with profile data when profile loads
+  useEffect(() => {
+    if (profile && !isProfileLoading) {
+      setContractorInfo((prev) => ({
+        ...prev,
+        company: profile.company || prev.company,
+        license: profile.license || prev.license,
+        licenseUrl: profile.documents?.licenseUrl || prev.licenseUrl,
+        insurance: profile.insurancePolicy || prev.insurance,
+        address: profile.address || prev.address,
+        phone: profile.phone || prev.phone,
+        email: profile.email || prev.email,
+        logo: profile.logo || prev.logo,
+      }));
+
+      // Set logo preview if exists in profile
+      if (profile.logo) {
+        setLogoPreview(profile.logo);
+      }
+    }
+  }, [profile, isProfileLoading]);
+
+  // Handle logo file upload
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Error",
+          description: "Por favor selecciona un archivo de imagen válido",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "El archivo es demasiado grande. Máximo 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setLogoFile(file);
+
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setLogoPreview(result);
+
+        // Update contractor info with the data URL for immediate use
+        setContractorInfo((prev) => ({
+          ...prev,
+          logo: result,
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Convert file to base64 for storage
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Signature protocol function adapted for Mervin
+  const handleStartSignatureProtocol = async () => {
+    if (!selectedEstimate || !currentUser?.uid || !selectedClient) {
+      toast({
+        title: "Error",
+        description:
+          "Contract data must be complete before starting signature protocol",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Generate contract HTML
+      const contractHtml = generateContractHTML();
+      setContractHTML(contractHtml);
+
+      // Prepare contract data for signature protocol
+      const secureDeliveryPayload = {
+        userId: currentUser.uid,
+        contractHTML: contractHtml,
+        deliveryMethods: { email: false, sms: false, whatsapp: false },
+        contractData: {
+          contractorName:
+            contractorInfo.company || profile?.company || "Contractor Name",
+          contractorEmail:
+            contractorInfo.email || profile?.email || currentUser.email || "",
+          contractorPhone: contractorInfo.phone || profile?.phone || "",
+          contractorCompany:
+            contractorInfo.company || profile?.company || "Company Name",
+          clientName: selectedClient.name,
+          clientEmail: selectedClient.email || "",
+          clientPhone: selectedClient.phone || "",
+          clientAddress: selectedClient.address || "",
+          projectDescription:
+            projectScope ||
+            selectedEstimate.projectDescription ||
+            "Construction Project",
+          totalAmount: selectedEstimate.total || 0,
+          startDate:
+            projectTimeline[0]?.value || new Date().toISOString().split("T")[0],
+          completionDate:
+            projectTimeline[1]?.value ||
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split("T")[0],
+        },
+        securityFeatures: {
+          encryption: "256-bit SSL",
+          verification: true,
+          auditTrail: true,
+          timeStamps: true,
+        },
+      };
+
+      console.log(
+        "🔐 [SIGNATURE-PROTOCOL] Generating signature links:",
+        secureDeliveryPayload,
+      );
+
+      const response = await fetch("/api/multi-channel/initiate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.uid}`,
+        },
+        body: JSON.stringify(secureDeliveryPayload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Signature protocol failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      setContractorSignUrl(result.contractorSignUrl || "");
+      setClientSignUrl(result.clientSignUrl || "");
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content: `✅ **PROTOCOLO DE FIRMA INICIADO**\n\n🔐 Enlaces de firma seguros generados:\n\n**Para el Contratista:**\n${result.contractorSignUrl}\n\n**Para el Cliente:**\n${result.clientSignUrl}\n\n📋 **ID del Contrato:** ${result.contractId}\n\nAmbas partes pueden usar estos enlaces para firmar el contrato digitalmente.`,
+          sender: "assistant",
+        },
+      ]);
+
+      toast({
+        title: "Protocolo de Firma Iniciado",
+        description: `Enlaces seguros generados. ID del Contrato: ${result.contractId}`,
+      });
+    } catch (error) {
+      console.error("❌ [SIGNATURE-PROTOCOL] Error:", error);
+      toast({
+        title: "Error en Protocolo de Firma",
+        description: `No se pudieron generar los enlaces de firma: ${(error as Error).message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // PDF download function adapted for Mervin
+  const handleDownloadPDF = async () => {
+    if (!selectedEstimate || !currentUser?.uid || !selectedClient) {
+      toast({
+        title: "Error",
+        description: "Contract data must be complete before generating PDF",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Prepare contract payload
+      const contractPayload = {
+        userId: currentUser.uid,
+        client: {
+          name: selectedClient.name,
+          address: selectedClient.address || "",
+          email: selectedClient.email || "",
+          phone: selectedClient.phone || "",
+        },
+        project: {
+          description:
+            projectScope || selectedEstimate.projectDescription || "",
+          type: "Construction Project",
+          total: selectedEstimate.total || 0,
+          materials: selectedEstimate.items || [],
+        },
+        contractor: {
+          name: contractorInfo.company || profile?.company || "Company Name",
+          company: contractorInfo.company || profile?.company || "Company Name",
+          address: contractorInfo.address || profile?.address || "",
+          phone: contractorInfo.phone || profile?.phone || "",
+          email: contractorInfo.email || profile?.email || "",
+          license: contractorInfo.license || profile?.license || "",
+        },
+        financials: {
+          total: selectedEstimate.total || 0,
+          subtotal: selectedEstimate.total || 0,
+          tax: 0,
+          discount: 0,
+        },
+        timeline: {
+          startDate:
+            projectTimeline[0]?.value || new Date().toISOString().split("T")[0],
+          completionDate: projectTimeline[1]?.value || "",
+          estimatedDuration: projectTimeline[2]?.value
+            ? `${projectTimeline[2].value} días`
+            : "As specified in project details",
+        },
+        paymentTerms: projectMilestones.map((milestone, index) => ({
+          id: index + 1,
+          description: milestone.title,
+          percentage: milestone.percentage,
+          amount: (selectedEstimate.total || 0) * (milestone.percentage / 100),
+        })),
+      };
+
+      console.log(
+        "📄 [PDF DOWNLOAD] Generating PDF with payload:",
+        contractPayload,
+      );
+
+      const response = await fetch("/api/generate-pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-firebase-uid": currentUser?.uid || "",
+        },
+        body: JSON.stringify(contractPayload),
+      });
+
+      if (response.ok) {
+        // Convert response to blob and download
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `contract-${selectedClient.name?.replace(/\s+/g, "_") || "client"}-${new Date().toISOString().split("T")[0]}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content: `✅ **CONTRATO PDF GENERADO**\n\n📄 El contrato se ha descargado exitosamente:\n\n• **Cliente:** ${selectedClient.name}\n• **Valor:** $${(selectedEstimate.total || 0).toFixed(2)}\n• **Empresa:** ${contractorInfo.company}\n• **Archivo:** contract-${selectedClient.name?.replace(/\s+/g, "_") || "client"}-${new Date().toISOString().split("T")[0]}.pdf\n\nEl contrato está listo para su uso.`,
+            sender: "assistant",
+          },
+        ]);
+
+        toast({
+          title: "PDF Descargado",
+          description: `Contrato PDF descargado exitosamente para ${selectedClient.name}`,
+        });
+      } else {
+        const errorText = await response.text();
+        console.error("❌ PDF download failed:", errorText);
+        throw new Error(
+          `Failed to download PDF: ${response.status} - ${response.statusText}`,
+        );
+      }
+    } catch (error) {
+      console.error("❌ Error downloading PDF:", error);
+      toast({
+        title: "Error de Descarga",
+        description: `No se pudo descargar el PDF: ${(error as Error).message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Generate contract HTML for signature protocol
+  const generateContractHTML = () => {
+    return `
+      <html>
+        <head>
+          <title>Contrato de Construcción</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .section { margin-bottom: 20px; }
+            .signature { margin-top: 50px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>CONTRATO DE CONSTRUCCIÓN</h1>
+            <p>Número: CON-${Date.now()}</p>
+          </div>
+
+          <div class="section">
+            <h3>INFORMACIÓN DEL CONTRATISTA</h3>
+            <p><strong>Empresa:</strong> ${contractorInfo.company}</p>
+            <p><strong>Dirección:</strong> ${contractorInfo.address}</p>
+            <p><strong>Teléfono:</strong> ${contractorInfo.phone}</p>
+            <p><strong>Email:</strong> ${contractorInfo.email}</p>
+            <p><strong>Licencia:</strong> ${contractorInfo.license}</p>
+          </div>
+
+          <div class="section">
+            <h3>INFORMACIÓN DEL CLIENTE</h3>
+            <p><strong>Nombre:</strong> ${selectedClient?.name}</p>
+            <p><strong>Dirección:</strong> ${selectedClient?.address}</p>
+            <p><strong>Teléfono:</strong> ${selectedClient?.phone}</p>
+            <p><strong>Email:</strong> ${selectedClient?.email}</p>
+          </div>
+
+          <div class="section">
+            <h3>ALCANCE DEL PROYECTO</h3>
+            <p>${projectScope}</p>
+          </div>
+
+          <div class="section">
+            <h3>VALOR DEL CONTRATO</h3>
+            <p><strong>Total:</strong> $${selectedEstimate?.total?.toFixed(2)}</p>
+          </div>
+
+          <div class="section">
+            <h3>CRONOGRAMA</h3>
+            <p><strong>Fecha de inicio:</strong> ${projectTimeline[0]?.value}</p>
+            <p><strong>Fecha de finalización:</strong> ${projectTimeline[1]?.value}</p>
+            <p><strong>Duración:</strong> ${projectTimeline[2]?.value} días</p>
+          </div>
+
+          <div class="section">
+            <h3>CLÁUSULAS LEGALES</h3>
+            ${legalClauses
+              .map(
+                (clause, index) => `
+              <p><strong>${index + 1}. ${clause.title}:</strong> ${clause.content}</p>
+            `,
+              )
+              .join("")}
+          </div>
+
+          <div class="signature">
+            <table width="100%">
+              <tr>
+                <td width="45%">
+                  <p>_________________________</p>
+                  <p><strong>Contratista</strong></p>
+                  <p>${contractorInfo.company}</p>
+                </td>
+                <td width="10%"></td>
+                <td width="45%">
+                  <p>_________________________</p>
+                  <p><strong>Cliente</strong></p>
+                  <p>${selectedClient?.name}</p>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </body>
+      </html>
+    `;
+  };
   const [visibleCount, setVisibleCount] = useState(6);
   const [materialSearchTerm, setMaterialSearchTerm] = useState("");
   const [shoppingCart, setShoppingCart] = useState<
@@ -545,6 +1028,13 @@ export default function Mervin() {
       return;
     }
 
+    // Continue based on permit flow (NEW)
+    if (caseType === "Permits") {
+      await handlePermitFlow(inputValue.trim());
+      setInputValue("");
+      return;
+    }
+
     // Default flow
     setInputValue("");
     setIsLoading(true);
@@ -633,10 +1123,12 @@ export default function Mervin() {
           response =
             "Puedo ayudarte a generar un contrato profesional y legal. ¿Te gustaría crear un nuevo contrato desde cero, usar una plantilla existente o modificar un contrato anterior?";
           break;
+
         case "permits":
           response =
-            "Para ayudarte con información sobre permisos y regulaciones, necesito saber la ubicación exacta, tipo de cerca que planeas instalar y si la propiedad está en una zona con restricciones.";
+            "Para ayudarte con información sobre permisos y regulaciones, necesito saber la ubicación exacta, el tipo de cerca que planeas instalar y si la propiedad está en una zona con restricciones.";
           break;
+
         case "properties":
           response =
             "Para verificar los detalles de una propiedad, necesito la dirección completa del inmueble. Esto me permitirá confirmar al propietario actual y verificar los límites de la propiedad.";
@@ -735,6 +1227,38 @@ export default function Mervin() {
           }, 100);
         }, 1000);
       });
+
+      return; // Prevent default simulated reply
+    }
+
+    // Handle permit advisor (NEW)
+    if (action === "permits") {
+      setCaseType("Permits");
+      setPermitFlowStep("address-selection");
+
+      setTimeout(() => {
+        setMessages((prev) => prev.filter((m) => m.id !== thinkingMessage.id));
+
+        // Second message: Show the choice options after a brief delay
+        setTimeout(() => {
+          const choiceMessage: Message = {
+            id: `assistant-${Date.now()}`,
+            content:
+              "Ingresa la dirección de tu propiedad para comenzar el análisis integral de permisos. Elige una opción:",
+            sender: "assistant",
+            action: "permit-address-selection",
+          };
+
+          setMessages((prev) => [...prev, choiceMessage]);
+          setPermitFlowStep("awaiting-address-choice");
+
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+          }, 100);
+        }, 1500);
+
+        setIsLoading(false);
+      }, 1000);
 
       return; // Prevent default simulated reply
     }
@@ -1060,7 +1584,7 @@ export default function Mervin() {
           discount: discountCalculation(),
           taxRate: tax.type === "percentage" ? tax.amount : 0,
           taxAmount: Number(taxWithPercentage(tax)), // ✅ ADD THIS - send as number
-          tax: Number(taxWithPercentage(tax)), // rr� CHANGE - send as number
+          tax: Number(taxWithPercentage(tax)), // ✅ CHANGE - send as number
           total: Number(
             (
               Number(getCartTotal()) +
@@ -1695,10 +2219,12 @@ export default function Mervin() {
         setContractorInfo({
           company: profile?.company || "",
           license: profile?.license || "",
-          insurance: profile?.insurance || "",
+          licenseUrl: profile?.documents?.licenseUrl || "",
+          insurance: profile?.insurancePolicy || "",
           address: profile?.address || "",
           phone: profile?.phone || "",
           email: profile?.email || "",
+          logo: profile?.logo || "",
         });
 
         setContractFlowStep("project-milestones");
@@ -1757,10 +2283,12 @@ export default function Mervin() {
         setContractorInfo({
           company: "Tu Empresa",
           license: "Licencia pendiente",
+          licenseUrl: "",
           insurance: "Seguro pendiente",
           address: "Dirección pendiente",
           phone: "Teléfono pendiente",
           email: "Email pendiente",
+          logo: "",
         });
 
         setContractFlowStep("project-milestones");
@@ -1888,8 +2416,49 @@ export default function Mervin() {
           },
         ]);
       }
+    } else if (
+      contractFlowStep === "legal-clauses" &&
+      input.includes("editar")
+    ) {
+      // User wants to edit clauses after preview
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content:
+            "📝 **EDITAR CLÁUSULAS LEGALES**\n\nPuedes continuar editando las cláusulas:",
+          sender: "assistant",
+          action: "legal-clauses-form",
+        },
+      ]);
+    } else if (
+      contractFlowStep === "legal-clauses" &&
+      (input === "sí" || input === "si" || input === "yes")
+    ) {
+      // User is satisfied with clauses preview, continue to project scope
+      setContractFlowStep("project-scope");
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content: `✅ Cláusulas legales confirmadas.\n\n📋 **ALCANCE DEL PROYECTO**\n\nRevisemos el alcance del proyecto: "${projectScope || selectedEstimate?.projectDescription || "No definido"}"\n\n¿Deseas editarlo? Responde **SÍ** o **NO**`,
+          sender: "assistant",
+        },
+      ]);
     } else if (contractFlowStep === "project-scope") {
-      if (
+      if (input.includes("editar")) {
+        // User wants to edit project scope after preview
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "📝 **EDITAR ALCANCE DEL PROYECTO**\n\nPuedes continuar editando la descripción:",
+            sender: "assistant",
+            action: "project-scope-form",
+          },
+        ]);
+      } else if (
         input === "sí" ||
         input === "si" ||
         input === "yes" ||
@@ -1918,14 +2487,637 @@ export default function Mervin() {
         ]);
       }
     } else if (contractFlowStep === "final-review") {
-      if (input === "generar" || input === "confirmar") {
-        await generateAndDownloadContract();
+      if (input === "generar" || input === "generate" || input === "GENERATE") {
+        // Ask about signature before generating
+        setContractFlowStep("signature-question");
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "📝 **FIRMA DEL CONTRATO**\n\n¿Te gustaría configurar la firma digital del contrato?\n\nEsto generará enlaces seguros para que tanto tú como el cliente puedan firmar el contrato digitalmente.\n\nResponde **SÍ** para configurar firmas o **NO** para solo generar el PDF.",
+            sender: "assistant",
+          },
+        ]);
+      }
+    } else if (contractFlowStep === "signature-question") {
+      if (
+        input === "sí" ||
+        input === "si" ||
+        input === "yes" ||
+        input === "s"
+      ) {
+        await handleStartSignatureProtocol();
+      } else {
+        await handleDownloadPDF();
       }
     }
 
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
+  };
+
+  // Permit Advisor flow handler
+  const handlePermitFlow = async (userInput: string) => {
+    const input = userInput.trim().toLowerCase();
+
+    if (permitFlowStep === "awaiting-address-choice") {
+      if (
+        input === "manual address" ||
+        input === "dirección manual" ||
+        input === "1"
+      ) {
+        setPermitFlowStep("manual-address-entry");
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content: "Perfecto. Ahora ingresa los detalles de tu proyecto:",
+            sender: "assistant",
+            action: "permit-manual-entry",
+          },
+        ]);
+      } else if (
+        input === "existing projects" ||
+        input === "proyectos existentes" ||
+        input === "2"
+      ) {
+        setPermitFlowStep("existing-projects-list");
+
+        // Show loading message
+        const loadingMessageId = `loading-${Date.now()}`;
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: loadingMessageId,
+            content: "🔄 Cargando proyectos existentes...",
+            sender: "assistant",
+            state: "analyzing",
+          },
+        ]);
+
+        try {
+          await loadPermitProjects();
+
+          // Remove loading message and add project selection if projects were found
+          setMessages((prev) => {
+            const filteredMessages = prev.filter(
+              (msg) => msg.id !== loadingMessageId,
+            );
+
+            // Only add project selection message if we have projects
+            if (permitProjects.length > 0) {
+              return [
+                ...filteredMessages,
+                {
+                  id: `assistant-${Date.now()}`,
+                  content: "Selecciona un proyecto existente:",
+                  sender: "assistant",
+                  action: "permit-existing-projects",
+                },
+              ];
+            }
+
+            return filteredMessages;
+          });
+        } catch (error) {
+          // Remove loading message on error (error message is handled in loadPermitProjects)
+          setMessages((prev) =>
+            prev.filter((msg) => msg.id !== loadingMessageId),
+          );
+        }
+      }
+    } else if (
+      permitFlowStep === "project-selected" ||
+      permitFlowStep === "manual-address-entry"
+    ) {
+      // Move to project description step
+      setPermitFlowStep("awaiting-description");
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content:
+            "Proporciona una descripción detallada del proyecto y opcionalmente sube documentos relevantes:",
+          sender: "assistant",
+          action: "permit-description-upload",
+        },
+      ]);
+    } else if (permitFlowStep === "awaiting-description") {
+      // Check if user wants to proceed with current description or modify it
+      if (
+        input.includes("continuar") ||
+        input.includes("continue") ||
+        input.includes("análisis") ||
+        input.includes("analysis") ||
+        input.includes("proceder")
+      ) {
+        setPermitFlowStep("document-upload");
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "✅ Usando la descripción actual del proyecto. ¿Deseas subir documentos adicionales o continuar con el análisis DeepSearch?",
+            sender: "assistant",
+            action: "permit-ready-analysis",
+          },
+        ]);
+      } else {
+        // User provided a new description
+        setPermitProjectDescription(input);
+        setPermitFlowStep("document-upload");
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "✅ Nueva descripción guardada. ¿Deseas subir documentos adicionales o continuar con el análisis DeepSearch?",
+            sender: "assistant",
+            action: "permit-ready-analysis",
+          },
+        ]);
+      }
+    } else if (permitFlowStep === "document-upload") {
+      // Handle document upload or proceed to analysis
+      if (
+        input.includes("continuar") ||
+        input.includes("continue") ||
+        input.includes("análisis") ||
+        input.includes("analysis")
+      ) {
+        await runPermitDeepSearch();
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "Puedes subir documentos usando el botón de adjuntar archivos o escribir 'continuar' para proceder con el análisis.",
+            sender: "assistant",
+          },
+        ]);
+      }
+    }
+
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
+
+  // Load permit projects from Firebase
+  const loadPermitProjects = async () => {
+    if (!currentUser?.uid) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to view your projects",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { collection, query, where, getDocs } = await import(
+        "firebase/firestore"
+      );
+
+      let allProjects: any[] = [];
+
+      // Load from projects collection
+      try {
+        const projectsQuery = query(
+          collection(db, "projects"),
+          where("firebaseUserId", "==", currentUser.uid),
+        );
+
+        const projectsSnapshot = await getDocs(projectsQuery);
+        const projectEstimates = projectsSnapshot.docs
+          .filter((doc) => {
+            const data = doc.data();
+            return data.status === "estimate" || data.estimateNumber;
+          })
+          .map((doc) => {
+            const data = doc.data();
+
+            const clientName =
+              data.clientInformation?.name ||
+              data.clientName ||
+              data.client?.name ||
+              "Cliente sin nombre";
+
+            const address =
+              data.clientInformation?.address ||
+              data.clientAddress ||
+              data.client?.address ||
+              data.address ||
+              data.projectAddress ||
+              data.location ||
+              data.workAddress ||
+              data.propertyAddress ||
+              "";
+
+            const projectType =
+              data.projectType || data.projectDetails?.type || "fence";
+
+            const projectDescription =
+              data.projectDetails?.description ||
+              data.projectDescription ||
+              data.description ||
+              `${projectType} project for ${clientName}`;
+
+            return {
+              id: doc.id,
+              clientName: clientName,
+              address: address,
+              projectType: projectType,
+              projectDescription: projectDescription,
+              status: data.status || "draft",
+              createdAt: data.createdAt || { toDate: () => new Date() },
+              totalPrice:
+                data.projectTotalCosts?.totalSummary?.finalTotal ||
+                data.projectTotalCosts?.total ||
+                data.total ||
+                data.estimateAmount ||
+                0,
+              clientEmail:
+                data.clientInformation?.email || data.clientEmail || "",
+              clientPhone:
+                data.clientInformation?.phone || data.clientPhone || "",
+            };
+          });
+
+        allProjects = [...allProjects, ...projectEstimates];
+      } catch (projectError) {
+        console.warn("Could not load from projects collection:", projectError);
+      }
+
+      // Load from estimates collection
+      try {
+        const estimatesQuery = query(
+          collection(db, "estimates"),
+          where("firebaseUserId", "==", currentUser.uid),
+        );
+
+        const estimatesSnapshot = await getDocs(estimatesQuery);
+        const firebaseEstimates = estimatesSnapshot.docs.map((doc) => {
+          const data = doc.data();
+
+          const clientName =
+            data.clientName || data.client?.name || "Cliente sin nombre";
+          const address =
+            data.address ||
+            data.clientAddress ||
+            data.projectAddress ||
+            data.location ||
+            data.workAddress ||
+            data.propertyAddress ||
+            "";
+          const projectType = data.projectType || "fence";
+          const projectDescription =
+            data.projectDescription ||
+            `${projectType} project for ${clientName}`;
+
+          return {
+            id: doc.id,
+            clientName: clientName,
+            address: address,
+            projectType: projectType,
+            projectDescription: projectDescription,
+            status: data.status || "draft",
+            createdAt: data.createdAt || { toDate: () => new Date() },
+            totalPrice: data.total || data.estimateAmount || 0,
+            clientEmail: data.clientEmail || "",
+            clientPhone: data.clientPhone || "",
+          };
+        });
+
+        allProjects = [...allProjects, ...firebaseEstimates];
+      } catch (estimatesError) {
+        console.warn(
+          "Could not load from estimates collection:",
+          estimatesError,
+        );
+      }
+
+      // Filter for valid projects
+      const validProjects = allProjects.filter((project: any) => {
+        const hasClientName =
+          project.clientName &&
+          project.clientName !== "Cliente sin nombre" &&
+          project.clientName.trim().length > 0;
+
+        const hasAddress = project.address && project.address.trim().length > 0;
+
+        return hasClientName && hasAddress;
+      });
+
+      // Remove duplicates by ID
+      const uniqueProjects = validProjects.filter(
+        (project, index, self) =>
+          index === self.findIndex((p) => p.id === project.id),
+      );
+
+      setPermitProjects(uniqueProjects);
+
+      if (uniqueProjects.length === 0) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            content:
+              "No se encontraron proyectos existentes. Por favor, usa la opción de dirección manual.",
+            sender: "assistant",
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("Error loading permit projects:", error);
+      toast({
+        title: "Error Loading Projects",
+        description: "Failed to load your existing projects",
+        variant: "destructive",
+      });
+
+      // Show error message in chat
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content:
+            "❌ Error al cargar proyectos existentes. Por favor, intenta nuevamente o usa la opción de dirección manual.",
+          sender: "assistant",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle permit project selection
+  const handlePermitProjectSelect = (project: PermitProject) => {
+    setSelectedPermitProject(project);
+    setPermitAddress(project.address);
+    setPermitProjectType(project.projectType);
+    setPermitProjectDescription(
+      project.projectDescription ||
+        `${project.projectType} project for ${project.clientName}`,
+    );
+    setPermitFlowStep("project-selected");
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `assistant-${Date.now()}`,
+        content: `✅ Proyecto seleccionado: ${project.projectType} para ${project.clientName} en ${project.address}`,
+        sender: "assistant",
+      },
+    ]);
+
+    // Automatically move to description step
+    setTimeout(() => {
+      setPermitFlowStep("awaiting-description");
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content: `📝 **Proyecto seleccionado:** ${project.projectType} para ${project.clientName}\n\n**Dirección:** ${project.address}\n\n**Descripción actual:** ${project.projectDescription || `${project.projectType} project for ${project.clientName}`}\n\n¿Deseas modificar la descripción del proyecto o continuar con el análisis DeepSearch?`,
+          sender: "assistant",
+          action: "permit-description-upload",
+        },
+      ]);
+    }, 1000);
+  };
+
+  // Run DeepSearch analysis for permits
+  const runPermitDeepSearch = async () => {
+    if (!permitAddress || !permitProjectType) {
+      toast({
+        title: "Información Incompleta",
+        description: "Se requiere dirección y tipo de proyecto",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsPermitAnalyzing(true);
+    setPermitFlowStep("deepsearch-analysis");
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `assistant-${Date.now()}`,
+        content:
+          "🔍 Ejecutando análisis DeepSearch de permisos... Esto puede tomar unos momentos.",
+        sender: "assistant",
+        state: "analyzing",
+      },
+    ]);
+
+    try {
+      const response = await fetch("/api/permit/check", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          address: permitAddress,
+          projectType: permitProjectType,
+          projectDescription:
+            permitProjectDescription || `${permitProjectType} project`,
+          coordinates: permitCoordinates,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setPermitResults(data);
+      setPermitFlowStep("results-display");
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content:
+            "✅ Análisis de permisos completado. Aquí están los resultados:",
+          sender: "assistant",
+          action: "permit-results",
+        },
+      ]);
+
+      toast({
+        title: "✅ Análisis Completado",
+        description: "Los resultados del análisis de permisos están listos",
+      });
+    } catch (error) {
+      console.error("Error in permit analysis:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          content:
+            "❌ Error al analizar los permisos. Por favor intenta nuevamente.",
+          sender: "assistant",
+        },
+      ]);
+
+      toast({
+        title: "Error en Análisis",
+        description: "No se pudo completar el análisis de permisos",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPermitAnalyzing(false);
+    }
+  };
+
+  // Export permit report
+  const exportPermitReport = async () => {
+    if (!permitResults || !profile) {
+      toast({
+        title: "Cannot Export PDF",
+        description: "No permit data or company profile available",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Import the PDF generation utilities
+      const { generatePDFReport, downloadPDFReport } = await import(
+        "@/utils/permitReportGenerator"
+      );
+
+      // Prepare company information from profile
+      const companyInfo = {
+        company: profile.company || "",
+        ownerName: profile.ownerName || "",
+        email: profile.email || "",
+        phone: profile.phone || "",
+        mobilePhone: profile.mobilePhone || "",
+        address: profile.address || "",
+        city: profile.city || "",
+        state: profile.state || "",
+        zipCode: profile.zipCode || "",
+        license: profile.license || "",
+        website: profile.website || "",
+        logo: profile.logo || "",
+      };
+
+      // Ensure permitResults has timestamp in meta
+      const permitDataWithTimestamp = {
+        ...permitResults,
+        meta: {
+          ...permitResults.meta,
+          timestamp: permitResults.meta?.timestamp || new Date().toISOString(),
+          projectType: permitProjectType,
+          location: permitAddress,
+          fullAddress: permitAddress,
+        },
+      };
+
+      // Generate PDF using the utility functions
+      const pdfBlob = await generatePDFReport(
+        permitDataWithTimestamp,
+        companyInfo,
+      );
+
+      // Download the PDF
+      downloadPDFReport(pdfBlob, permitDataWithTimestamp);
+
+      toast({
+        title: "PDF Export Successful",
+        description: "Permit analysis report has been downloaded",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+
+      // Fallback to simple text export if PDF generation fails
+      try {
+        const reportContent = `
+REPORTE DE ANÁLISIS DE PERMISOS
+
+Dirección: ${permitAddress}
+Tipo de Proyecto: ${permitProjectType}
+Descripción: ${permitProjectDescription}
+
+PERMISOS REQUERIDOS:
+${
+  permitResults.requiredPermits && Array.isArray(permitResults.requiredPermits)
+    ? permitResults.requiredPermits
+        .map((permit, index) => {
+          if (typeof permit === "string") return `${index + 1}. ${permit}`;
+          return `${index + 1}. ${permit.name || "Permiso"} - ${permit.issuingAuthority || "N/A"} (${permit.estimatedTimeline || "N/A"})`;
+        })
+        .join("\n")
+    : "No hay información de permisos disponible"
+}
+
+CONSIDERACIONES ESPECIALES:
+${
+  permitResults.specialConsiderations
+    ? Array.isArray(permitResults.specialConsiderations)
+      ? permitResults.specialConsiderations.join("\n")
+      : typeof permitResults.specialConsiderations === "object"
+        ? Object.entries(permitResults.specialConsiderations)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join("\n")
+        : permitResults.specialConsiderations
+    : "No hay consideraciones especiales"
+}
+
+PROCESO:
+${
+  permitResults.process && Array.isArray(permitResults.process)
+    ? permitResults.process
+        .map(
+          (step, index) =>
+            `${index + 1}. ${typeof step === "string" ? step : step.step || "Paso del proceso"}`,
+        )
+        .join("\n")
+    : "No hay información del proceso disponible"
+}
+        `;
+
+        // Create and download text file as fallback
+        const blob = new Blob([reportContent], { type: "text/plain" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `permit-analysis-${Date.now()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        toast({
+          title: "Text Report Downloaded",
+          description:
+            "PDF generation failed, but text report was downloaded successfully",
+          variant: "default",
+        });
+      } catch (fallbackError) {
+        console.error("Fallback export also failed:", fallbackError);
+        toast({
+          title: "Export Failed",
+          description: "Could not export the permit report",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   // Helper functions for contract generation
@@ -1975,13 +3167,14 @@ export default function Mervin() {
 
       setLegalClauses(standardClauses);
 
-      setContractFlowStep("project-scope");
+      // Show editable form instead of going directly to project scope
       setMessages((prev) => [
         ...prev,
         {
           id: `assistant-${Date.now()}`,
-          content: `✅ Se generaron ${standardClauses.length} cláusulas legales estándar.\n\n📋 **ALCANCE DEL PROYECTO**\n\nRevisemos el alcance del proyecto:\n\n"${projectScope}"\n\n¿Deseas editarlo? Responde **SÍ** o **NO**`,
+          content: `✅ ${standardClauses.length} cláusulas legales estándar fueron generadas. Puedes editarlas a continuación:`,
           sender: "assistant",
+          action: "legal-clauses-form",
         },
       ]);
 
@@ -2033,6 +3226,7 @@ export default function Mervin() {
 🎯 **Hitos del proyecto:** ${projectMilestones.length} hitos configurados
 ⚖️ **Cláusulas legales:** ${legalClauses.length} cláusulas incluidas
 🛡️ **Garantía:** ${warrantyPermits.warranty}
+📝 **Firma del Contrato:** Requerida
 
 ¿Todo se ve correcto? Escribe **GENERAR** para crear el contrato PDF.`;
   };
@@ -3318,26 +4512,62 @@ export default function Mervin() {
                             <span className="text-red-400">*</span>
                           )}
                         </label>
-                        <input
-                          type={field.id.includes("fecha") ? "date" : "text"}
-                          value={field.value}
-                          onChange={(e) => {
-                            const updatedTimeline = projectTimeline.map((t) =>
-                              t.id === field.id
-                                ? { ...t, value: e.target.value }
-                                : t,
-                            );
-                            setProjectTimeline(updatedTimeline);
-                          }}
-                          className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
-                          placeholder={
-                            field.id === "duration"
-                              ? "ej: 10"
-                              : field.id === "workingHours"
-                                ? "ej: 8:00 AM - 5:00 PM"
-                                : ""
-                          }
-                        />
+                        {field.id === "start" || field.id === "completion" ? (
+                          <DatePicker
+                            date={
+                              projectDates[
+                                field.id as keyof typeof projectDates
+                              ]
+                            }
+                            onDateChange={(date) => {
+                              setProjectDates((prev) => ({
+                                ...prev,
+                                [field.id]: date,
+                              }));
+
+                              // Also update the string value for compatibility
+                              const updatedTimeline = projectTimeline.map(
+                                (t) =>
+                                  t.id === field.id
+                                    ? {
+                                        ...t,
+                                        value: date
+                                          ? date.toISOString().split("T")[0]
+                                          : "",
+                                      }
+                                    : t,
+                              );
+                              setProjectTimeline(updatedTimeline);
+                            }}
+                            placeholder={
+                              field.id === "start"
+                                ? "Seleccionar fecha de inicio"
+                                : "Seleccionar fecha de finalización"
+                            }
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            value={field.value}
+                            onChange={(e) => {
+                              const updatedTimeline = projectTimeline.map(
+                                (t) =>
+                                  t.id === field.id
+                                    ? { ...t, value: e.target.value }
+                                    : t,
+                              );
+                              setProjectTimeline(updatedTimeline);
+                            }}
+                            className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                            placeholder={
+                              field.id === "duration"
+                                ? "ej: 10"
+                                : field.id === "workingHours"
+                                  ? "ej: 8:00 AM - 5:00 PM"
+                                  : ""
+                            }
+                          />
+                        )}
                       </div>
                     ))}
                     <button
@@ -3387,6 +4617,23 @@ export default function Mervin() {
                         }
                         className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
                         placeholder="ej: CA-123456"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        URL de Licencia
+                      </label>
+                      <input
+                        type="url"
+                        value={contractorInfo.licenseUrl}
+                        onChange={(e) =>
+                          setContractorInfo((prev) => ({
+                            ...prev,
+                            licenseUrl: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                        placeholder="ej: https://ejemplo.com/licencia"
                       />
                     </div>
                     <div>
@@ -3457,8 +4704,83 @@ export default function Mervin() {
                         placeholder="ej: info@tuempresa.com"
                       />
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Logo de la Empresa *
+                      </label>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-center w-full">
+                          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-700 hover:bg-gray-600 transition-colors">
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                              {logoPreview ? (
+                                <img
+                                  src={logoPreview}
+                                  alt="Logo preview"
+                                  className="h-16 w-auto rounded border border-gray-500 mb-2"
+                                />
+                              ) : (
+                                <>
+                                  <svg
+                                    className="w-8 h-8 mb-4 text-gray-400"
+                                    aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 20 16"
+                                  >
+                                    <path
+                                      stroke="currentColor"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                      d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"
+                                    />
+                                  </svg>
+                                  <p className="mb-2 text-sm text-gray-400">
+                                    <span className="font-semibold">
+                                      Click para subir
+                                    </span>{" "}
+                                    o arrastra y suelta
+                                  </p>
+                                  <p className="text-xs text-gray-400">
+                                    PNG, JPG, GIF (MAX. 5MB)
+                                  </p>
+                                </>
+                              )}
+                            </div>
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*"
+                              onChange={handleLogoUpload}
+                            />
+                          </label>
+                        </div>
+
+                        {logoPreview && (
+                          <div className="flex items-center justify-between bg-gray-600 p-2 rounded">
+                            <span className="text-sm text-gray-300">
+                              {logoFile?.name || "Logo cargado"}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLogoFile(null);
+                                setLogoPreview("");
+                                setContractorInfo((prev) => ({
+                                  ...prev,
+                                  logo: "",
+                                }));
+                              }}
+                              className="text-red-400 hover:text-red-300 text-sm"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         if (!contractorInfo.company.trim()) {
                           toast({
                             title: "Error",
@@ -3469,17 +4791,58 @@ export default function Mervin() {
                           return;
                         }
 
-                        setContractFlowStep("project-milestones");
-                        setMessages((prev) => [
-                          ...prev,
-                          {
-                            id: `assistant-${Date.now()}`,
-                            content:
-                              "✅ Información del contratista guardada.\n\n🎯 **HITOS DEL PROYECTO**\n\nConfigura los hitos del proyecto:",
-                            sender: "assistant",
-                            action: "project-milestones",
-                          },
-                        ]);
+                        if (!logoPreview) {
+                          toast({
+                            title: "Error",
+                            description: "El logo de la empresa es obligatorio",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+
+                        try {
+                          // Save contractor information to profile
+                          await updateProfile({
+                            company: contractorInfo.company,
+                            license: contractorInfo.license,
+                            phone: contractorInfo.phone,
+                            email: contractorInfo.email,
+                            address: contractorInfo.address,
+                            logo: logoPreview, // Use the base64 data from file upload
+                            insurancePolicy: contractorInfo.insurance,
+                            // Add licenseUrl to documents or create a new field
+                            documents: {
+                              ...profile?.documents,
+                              licenseUrl: contractorInfo.licenseUrl,
+                            },
+                          });
+
+                          toast({
+                            title: "Éxito",
+                            description:
+                              "Información del contratista guardada en el perfil",
+                          });
+
+                          setContractFlowStep("project-milestones");
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content:
+                                "✅ Información del contratista guardada en el perfil.\n\n🎯 **HITOS DEL PROYECTO**\n\nConfigura los hitos del proyecto:",
+                              sender: "assistant",
+                              action: "project-milestones",
+                            },
+                          ]);
+                        } catch (error) {
+                          console.error("Error saving contractor info:", error);
+                          toast({
+                            title: "Error",
+                            description:
+                              "No se pudo guardar la información del contratista",
+                            variant: "destructive",
+                          });
+                        }
                       }}
                       className="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2 rounded transition-colors"
                     >
@@ -3755,6 +5118,1271 @@ export default function Mervin() {
                       </button>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Legal Clauses Form - Editable AI Generated Clauses */}
+              {message.action === "legal-clauses-form" && (
+                <div className="mt-4 bg-gray-800 p-4 rounded-lg">
+                  <div className="space-y-4">
+                    <div className="text-sm text-gray-300 mb-4">
+                      ✅ {legalClauses.length} cláusulas legales generadas.
+                      Puedes editarlas a continuación:
+                    </div>
+
+                    {legalClauses.map((clause, index) => (
+                      <div
+                        key={clause.id}
+                        className="bg-gray-700 p-4 rounded-lg"
+                      >
+                        <div className="mb-2">
+                          <label className="block text-sm font-medium text-gray-300 mb-1">
+                            {clause.title}{" "}
+                            {clause.isRequired && (
+                              <span className="text-red-400">*</span>
+                            )}
+                          </label>
+                          <div className="text-xs text-gray-400 mb-2">
+                            Categoría: {clause.category}
+                          </div>
+                        </div>
+                        <textarea
+                          value={clause.content}
+                          onChange={(e) => {
+                            const updatedClauses = legalClauses.map((c) =>
+                              c.id === clause.id
+                                ? { ...c, content: e.target.value }
+                                : c,
+                            );
+                            setLegalClauses(updatedClauses);
+                          }}
+                          className="w-full bg-gray-600 text-white px-3 py-2 rounded border border-gray-500 min-h-[100px] resize-y"
+                          placeholder="Contenido de la cláusula..."
+                        />
+                        {!clause.isRequired && (
+                          <button
+                            onClick={() => {
+                              const updatedClauses = legalClauses.filter(
+                                (c) => c.id !== clause.id,
+                              );
+                              setLegalClauses(updatedClauses);
+                            }}
+                            className="mt-2 text-red-400 hover:text-red-300 text-sm"
+                          >
+                            Eliminar cláusula
+                          </button>
+                        )}
+                      </div>
+                    ))}
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const newClause: LegalClause = {
+                            id: `custom-${Date.now()}`,
+                            title: "Cláusula Personalizada",
+                            content: "",
+                            category: "custom",
+                            isRequired: false,
+                          };
+                          setLegalClauses([...legalClauses, newClause]);
+                        }}
+                        className="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        + Agregar Cláusula
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          // Show preview with better formatting
+                          const previewContent = legalClauses
+                            .map(
+                              (clause, index) =>
+                                `**${index + 1}. ${clause.title}** *(${clause.category})*\n${clause.content}`,
+                            )
+                            .join("\n\n---\n\n");
+
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content: `📋 **VISTA PREVIA DE CLÁUSULAS LEGALES**\n\n${previewContent}\n\n---\n\n✅ **Total: ${legalClauses.length} cláusulas legales**\n\n¿Estás satisfecho con estas cláusulas? Responde **SÍ** para continuar o **EDITAR** para modificarlas.`,
+                              sender: "assistant",
+                              action: "legal-clauses-preview",
+                            },
+                          ]);
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        👁️ Vista Previa
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          // Initialize project scope with estimate description if empty
+                          if (
+                            !projectScope &&
+                            selectedEstimate?.projectDescription
+                          ) {
+                            setProjectScope(
+                              selectedEstimate.projectDescription,
+                            );
+                          }
+
+                          setContractFlowStep("project-scope");
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content: `✅ Cláusulas legales guardadas (${legalClauses.length} cláusulas).\n\n📋 **ALCANCE DEL PROYECTO**\n\nRevisemos el alcance del proyecto:\n\n"${projectScope || selectedEstimate?.projectDescription || "No definido"}"\n\n¿Deseas editarlo? Responde **SÍ** o **NO**`,
+                              sender: "assistant",
+                            },
+                          ]);
+                        }}
+                        className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        Continuar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Legal Clauses Preview */}
+              {message.action === "legal-clauses-preview" && (
+                <div className="mt-4 bg-gray-800 p-4 rounded-lg">
+                  <div className="space-y-4">
+                    <div className="text-sm text-gray-300 mb-4">
+                      📋 **Vista previa de las cláusulas legales:**
+                    </div>
+
+                    <div className="bg-gray-700 p-4 rounded-lg max-h-96 overflow-y-auto">
+                      {legalClauses.map((clause, index) => (
+                        <div
+                          key={clause.id}
+                          className="mb-4 pb-4 border-b border-gray-600 last:border-b-0"
+                        >
+                          <h4 className="font-semibold text-cyan-400 mb-2">
+                            {index + 1}. {clause.title}
+                          </h4>
+                          <p className="text-xs text-gray-400 mb-2">
+                            Categoría: {clause.category}{" "}
+                            {clause.isRequired && "• Obligatoria"}
+                          </p>
+                          <p className="text-gray-300 text-sm leading-relaxed">
+                            {clause.content}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content:
+                                "📝 **EDITAR CLÁUSULAS LEGALES**\n\nPuedes continuar editando las cláusulas:",
+                              sender: "assistant",
+                              action: "legal-clauses-form",
+                            },
+                          ]);
+                        }}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        ✏️ Editar
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          // Initialize project scope with estimate description if empty
+                          if (
+                            !projectScope &&
+                            selectedEstimate?.projectDescription
+                          ) {
+                            setProjectScope(
+                              selectedEstimate.projectDescription,
+                            );
+                          }
+
+                          setContractFlowStep("project-scope");
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content: `✅ Cláusulas legales confirmadas (${legalClauses.length} cláusulas).\n\n📋 **ALCANCE DEL PROYECTO**\n\nRevisemos el alcance del proyecto:\n\n"${projectScope || selectedEstimate?.projectDescription || "No definido"}"\n\n¿Deseas editarlo? Responde **SÍ** o **NO**`,
+                              sender: "assistant",
+                            },
+                          ]);
+                        }}
+                        className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        ✅ Confirmar y Continuar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Project Scope Form - Editable Project Description */}
+              {message.action === "project-scope-form" && (
+                <div className="mt-4 bg-gray-800 p-4 rounded-lg">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Descripción del Proyecto *
+                      </label>
+                      <textarea
+                        value={
+                          projectScope ||
+                          selectedEstimate?.projectDescription ||
+                          ""
+                        }
+                        onChange={(e) => setProjectScope(e.target.value)}
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 min-h-[150px] resize-y"
+                        placeholder="Describe detalladamente el alcance del proyecto, materiales, trabajo a realizar, etc..."
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const currentScope =
+                            projectScope ||
+                            selectedEstimate?.projectDescription ||
+                            "";
+                          if (!currentScope.trim()) {
+                            toast({
+                              title: "Error",
+                              description:
+                                "La descripción del proyecto es obligatoria",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+
+                          // Show preview with better formatting
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content: `📋 **VISTA PREVIA DEL ALCANCE DEL PROYECTO**\n\n---\n\n${currentScope}\n\n---\n\n¿Estás satisfecho con esta descripción? Responde **SÍ** para continuar o **EDITAR** para modificarla.`,
+                              sender: "assistant",
+                              action: "project-scope-preview",
+                            },
+                          ]);
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        👁️ Vista Previa
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (!projectScope.trim()) {
+                            toast({
+                              title: "Error",
+                              description:
+                                "La descripción del proyecto es obligatoria",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+
+                          setContractFlowStep("final-review");
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content: `✅ Alcance del proyecto guardado.\n\n🎯 **REVISIÓN FINAL**\n\nTodo está listo para generar el contrato. Revisa el resumen final:`,
+                              sender: "assistant",
+                              action: "final-review",
+                            },
+                          ]);
+                        }}
+                        className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        Continuar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Project Scope Preview */}
+              {message.action === "project-scope-preview" && (
+                <div className="mt-4 bg-gray-800 p-4 rounded-lg">
+                  <div className="space-y-4">
+                    <div className="text-sm text-gray-300 mb-4">
+                      📋 **Vista previa del alcance del proyecto:**
+                    </div>
+
+                    <div className="bg-gray-700 p-4 rounded-lg">
+                      <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                        {projectScope ||
+                          selectedEstimate?.projectDescription ||
+                          ""}
+                      </p>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content:
+                                "📝 **EDITAR ALCANCE DEL PROYECTO**\n\nPuedes continuar editando la descripción:",
+                              sender: "assistant",
+                              action: "project-scope-form",
+                            },
+                          ]);
+                        }}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        ✏️ Editar
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setContractFlowStep("final-review");
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: `assistant-${Date.now()}`,
+                              content: `✅ Alcance del proyecto confirmado.\n\n🎯 **REVISIÓN FINAL**\n\nTodo está listo para generar el contrato. Revisa el resumen final:`,
+                              sender: "assistant",
+                              action: "final-review",
+                            },
+                          ]);
+                        }}
+                        className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        ✅ Confirmar y Continuar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Permit Address Selection */}
+              {message.action === "permit-address-selection" && (
+                <div className="mt-4 space-y-3">
+                  <button
+                    onClick={() => {
+                      setMessages((prev) => [
+                        ...prev,
+                        {
+                          id: `user-${Date.now()}`,
+                          content: "Manual Address",
+                          sender: "user",
+                        },
+                      ]);
+                      handlePermitFlow("manual address");
+                    }}
+                    className="w-full bg-gradient-to-r from-red-900/30 to-pink-900/30 hover:from-red-800/50 hover:to-pink-800/50 text-white rounded-lg p-4 text-sm font-medium transition-all duration-200 flex items-center justify-center space-x-3"
+                  >
+                    <span>📍 Manual Steering</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setMessages((prev) => [
+                        ...prev,
+                        {
+                          id: `user-${Date.now()}`,
+                          content: "Existing Projects",
+                          sender: "user",
+                        },
+                      ]);
+                      handlePermitFlow("existing projects");
+                    }}
+                    disabled={isLoading}
+                    className="w-full bg-gradient-to-r from-green-900/30 to-teal-900/30 hover:from-green-800/50 hover:to-teal-800/50 text-white rounded-lg p-4 text-sm font-medium transition-all duration-200 flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Loading Projects...</span>
+                      </>
+                    ) : (
+                      <span>📋 Existing Projects</span>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Permit Manual Entry Form */}
+              {message.action === "permit-manual-entry" && (
+                <div className="mt-4 bg-gray-800 p-4 rounded-lg">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Dirección de la Propiedad *
+                      </label>
+                      <MapboxPlacesAutocomplete
+                        value={permitAddress}
+                        onChange={(address) => setPermitAddress(address)}
+                        onPlaceSelect={(placeData) => {
+                          setPermitAddress(placeData.address);
+                          setPermitCoordinates(placeData.coordinates);
+                        }}
+                        placeholder="Ingresa la dirección completa..."
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Tipo de Proyecto *
+                      </label>
+                      <select
+                        value={permitProjectType}
+                        onChange={(e) => setPermitProjectType(e.target.value)}
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                      >
+                        <option value="">Selecciona un tipo de proyecto</option>
+                        <option value="fence">Fence Installation</option>
+                        <option value="deck">Deck Construction</option>
+                        <option value="addition">Home Addition</option>
+                        <option value="renovation">Renovation</option>
+                        <option value="electrical">Electrical Work</option>
+                        <option value="plumbing">Plumbing</option>
+                        <option value="roofing">Roofing</option>
+                        <option value="hvac">HVAC Installation</option>
+                        <option value="concrete">Concrete Work</option>
+                        <option value="landscaping">Landscaping</option>
+                        <option value="pool">Pool Installation</option>
+                        <option value="solar">Solar Panel Installation</option>
+                        <option value="siding">Siding</option>
+                        <option value="windows">Window Replacement</option>
+                        <option value="demolition">Demolition</option>
+                        <option value="garage">Garage Construction</option>
+                        <option value="shed">Shed Installation</option>
+                        <option value="driveway">Driveway</option>
+                        <option value="bathroom">Bathroom Remodel</option>
+                        <option value="kitchen">Kitchen Remodel</option>
+                        <option value="basement">Basement Finishing</option>
+                        <option value="attic">Attic Conversion</option>
+                        <option value="porch">Porch/Patio</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          if (!permitAddress.trim() || !permitProjectType) {
+                            toast({
+                              title: "Campos Requeridos",
+                              description:
+                                "Por favor completa la dirección y tipo de proyecto",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          handlePermitFlow("continue");
+                        }}
+                        className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded transition-colors"
+                      >
+                        Continuar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Permit Existing Projects List */}
+              {message.action === "permit-existing-projects" && (
+                <div className="mt-4 bg-gray-800 p-4 rounded-lg">
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {permitProjects.length === 0 ? (
+                      <div className="text-center text-gray-400 py-8">
+                        <p>No se encontraron proyectos existentes.</p>
+                        <p className="text-sm mt-2">
+                          Usa la opción de dirección manual.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {permitProjects.map((project) => (
+                          <div
+                            key={project.id}
+                            onClick={() => handlePermitProjectSelect(project)}
+                            className="bg-gray-700 hover:bg-gray-600 p-3 rounded-lg cursor-pointer transition-colors"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-white text-sm">
+                                  {project.clientName}
+                                </h4>
+                                <p className="text-xs text-gray-400 mt-1">
+                                  📍 {project.address}
+                                </p>
+                                <div className="flex items-center mt-2">
+                                  <span
+                                    className={`text-xs px-2 py-1 rounded-full ${
+                                      project.projectType === "fence"
+                                        ? "bg-teal-500/20 text-teal-300"
+                                        : project.projectType === "deck"
+                                          ? "bg-orange-500/20 text-orange-300"
+                                          : project.projectType === "electrical"
+                                            ? "bg-yellow-500/20 text-yellow-300"
+                                            : "bg-gray-500/20 text-gray-300"
+                                    }`}
+                                  >
+                                    {project.projectType}
+                                  </span>
+                                  {project.totalPrice && (
+                                    <span className="text-xs text-green-400 ml-2">
+                                      ${project.totalPrice.toFixed(2)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Permit Description and Upload */}
+              {message.action === "permit-description-upload" && (
+                <div className="mt-4 bg-gray-800 p-4 rounded-lg">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Descripción del Proyecto *
+                      </label>
+                      <textarea
+                        value={permitProjectDescription}
+                        onChange={(e) =>
+                          setPermitProjectDescription(e.target.value)
+                        }
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 min-h-[100px] resize-y"
+                        placeholder="Describe detalladamente tu proyecto..."
+                      />
+                      <button
+                        onClick={async () => {
+                          if (!permitProjectDescription.trim()) {
+                            toast({
+                              title: "Descripción Requerida",
+                              description:
+                                "Ingresa una descripción básica primero",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+
+                          try {
+                            setIsLoading(true);
+                            const response = await fetch("/api/ai-enhance", {
+                              method: "POST",
+                              headers: {
+                                "Content-Type": "application/json",
+                              },
+                              body: JSON.stringify({
+                                description: permitProjectDescription,
+                                projectType: permitProjectType,
+                                context: "permit_application",
+                                enhancementType: "description_improvement",
+                              }),
+                            });
+
+                            if (response.ok) {
+                              const data = await response.json();
+                              if (data.enhancedDescription) {
+                                setPermitProjectDescription(
+                                  data.enhancedDescription,
+                                );
+                                toast({
+                                  title: "✅ Descripción Mejorada",
+                                  description:
+                                    "La descripción ha sido mejorada con IA",
+                                });
+                              } else {
+                                throw new Error(
+                                  "No enhanced description received",
+                                );
+                              }
+                            } else {
+                              throw new Error(
+                                `HTTP ${response.status}: ${response.statusText}`,
+                              );
+                            }
+                          } catch (error) {
+                            console.error(
+                              "Error improving description:",
+                              error,
+                            );
+                            toast({
+                              title: "Error",
+                              description:
+                                "No se pudo mejorar la descripción. Intenta nuevamente.",
+                              variant: "destructive",
+                            });
+                          } finally {
+                            setIsLoading(false);
+                          }
+                        }}
+                        className="mt-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm transition-colors flex items-center space-x-2"
+                        disabled={isLoading}
+                      >
+                        <Brain className="w-4 h-4" />
+                        <span>Mejorar con IA</span>
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Documentos (Opcional)
+                      </label>
+                      <input
+                        type="file"
+                        multiple
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          setPermitDocuments(files);
+                        }}
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
+                      />
+                      {permitDocuments.length > 0 && (
+                        <div className="mt-2 text-sm text-gray-400">
+                          {permitDocuments.length} archivo(s) seleccionado(s)
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          if (!permitProjectDescription.trim()) {
+                            toast({
+                              title: "Descripción Requerida",
+                              description:
+                                "Por favor proporciona una descripción del proyecto",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          handlePermitFlow("continue");
+                        }}
+                        className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-4 py-2 rounded transition-all duration-200 flex items-center justify-center space-x-2"
+                      >
+                        <Zap className="w-4 h-4" />
+                        <span>Continuar con Análisis</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Permit Ready for Analysis */}
+              {message.action === "permit-ready-analysis" && (
+                <div className="mt-4 space-y-3">
+                  <button
+                    onClick={runPermitDeepSearch}
+                    disabled={isPermitAnalyzing}
+                    className="w-full bg-gradient-to-r from-purple-900/30 to-blue-900/30 hover:from-purple-800/50 hover:to-blue-800/50 text-white rounded-lg p-4 text-sm font-medium transition-all duration-200 flex items-center justify-center space-x-3 disabled:opacity-50"
+                  >
+                    {isPermitAnalyzing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Analizando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>🔍 Ejecutar Análisis DeepSearch</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Permit Results Display */}
+              {message.action === "permit-results" && permitResults && (
+                <div className="mt-4 space-y-6">
+                  {/* Header with Export Button */}
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm text-gray-300">
+                      ✅ Análisis de permisos completado para {permitAddress}
+                    </div>
+                    <Button
+                      onClick={exportPermitReport}
+                      disabled={isGeneratingPDF}
+                      className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-medium px-4 sm:px-6 py-2 sm:py-3 shadow-lg text-sm"
+                    >
+                      {isGeneratingPDF ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1 sm:mr-2"></div>
+                          <span className="hidden sm:inline">
+                            Generating PDF...
+                          </span>
+                          <span className="sm:hidden">Generating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                          <span className="hidden sm:inline">
+                            Export PDF Report
+                          </span>
+                          <span className="sm:hidden">Export PDF</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Tabs */}
+                  <Tabs
+                    value={activePermitTab}
+                    onValueChange={setActivePermitTab}
+                    className="w-full"
+                  >
+                    {/* Mobile-optimized TabsList */}
+                    <div className="bg-gray-800/50 border border-cyan-500/20 rounded-lg p-1">
+                      <TabsList className="flex w-full bg-transparent gap-1 overflow-x-auto scrollbar-none sm:grid sm:grid-cols-5">
+                        <TabsTrigger
+                          value="permits"
+                          className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300 whitespace-nowrap"
+                        >
+                          <span className="hidden sm:inline">Permits</span>
+                          <span className="sm:hidden">📋</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="codes"
+                          className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300 whitespace-nowrap"
+                        >
+                          <span className="hidden sm:inline">
+                            Building Codes
+                          </span>
+                          <span className="sm:hidden">📏</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="process"
+                          className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300 whitespace-nowrap"
+                        >
+                          <span className="hidden sm:inline">Process</span>
+                          <span className="sm:hidden">🔄</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="contact"
+                          className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300 whitespace-nowrap"
+                        >
+                          <span className="hidden sm:inline">Contact</span>
+                          <span className="sm:hidden">📞</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="considerations"
+                          className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300 whitespace-nowrap"
+                        >
+                          <span className="hidden sm:inline">Alerts</span>
+                          <span className="sm:hidden">⚠️</span>
+                        </TabsTrigger>
+                      </TabsList>
+                    </div>
+
+                    <TabsContent value="permits" className="space-y-4 mt-6">
+                      {permitResults.requiredPermits &&
+                      permitResults.requiredPermits.length > 0 ? (
+                        <div className="space-y-4">
+                          {permitResults.requiredPermits.map(
+                            (permit: any, idx: number) => (
+                              <div key={idx} className="relative">
+                                <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-blue-400/10 to-teal-400/10 rounded-lg"></div>
+                                <Card className="relative bg-gray-800/70 border-cyan-400/30 backdrop-blur-sm">
+                                  <CardContent className="p-6">
+                                    <div className="flex items-start gap-4">
+                                      <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center shadow-lg">
+                                        <span className="text-xl">📋</span>
+                                      </div>
+                                      <div className="flex-1 space-y-3">
+                                        <div>
+                                          <h3 className="text-xl font-semibold text-cyan-300 mb-2">
+                                            {permit.type ||
+                                              permit.name ||
+                                              `Permit ${idx + 1}`}
+                                          </h3>
+                                          <p className="text-gray-300 leading-relaxed">
+                                            {permit.description ||
+                                              permit.requirements ||
+                                              "Permit details"}
+                                          </p>
+                                        </div>
+
+                                        {(permit.fees ||
+                                          permit.averageCost) && (
+                                          <div className="bg-green-500/10 border border-green-400/30 rounded-lg p-4">
+                                            <h4 className="text-green-400 font-medium mb-2 flex items-center gap-2">
+                                              💰 Estimated Fees
+                                            </h4>
+                                            <p className="text-green-200 font-semibold">
+                                              {permit.fees ||
+                                                permit.averageCost}
+                                            </p>
+                                          </div>
+                                        )}
+
+                                        {(permit.timeline ||
+                                          permit.estimatedTimeline) && (
+                                          <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-4">
+                                            <h4 className="text-blue-400 font-medium mb-2 flex items-center gap-2">
+                                              ⏱️ Processing Time
+                                            </h4>
+                                            <p className="text-blue-200">
+                                              {permit.timeline ||
+                                                permit.estimatedTimeline}
+                                            </p>
+                                          </div>
+                                        )}
+
+                                        {(permit.contact ||
+                                          permit.issuingAuthority) && (
+                                          <div className="bg-purple-500/10 border border-purple-400/30 rounded-lg p-4">
+                                            <h4 className="text-purple-400 font-medium mb-2 flex items-center gap-2">
+                                              📞 Contact Information
+                                            </h4>
+                                            <p className="text-purple-200">
+                                              {permit.contact ||
+                                                permit.issuingAuthority}
+                                            </p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-green-300">
+                            Permit information loading...
+                          </h3>
+                          <p className="text-gray-400">
+                            Required permits will appear here.
+                          </p>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="codes" className="space-y-4 mt-6">
+                      <div className="space-y-4">
+                        <h4 className="text-emerald-300 font-semibold border-b border-emerald-500/30 pb-2 mb-4 flex items-center gap-2">
+                          <span className="text-xl">📋</span>
+                          Project-Specific Building Codes
+                        </h4>
+
+                        {permitResults.buildingCodes &&
+                        Array.isArray(permitResults.buildingCodes) &&
+                        permitResults.buildingCodes.length > 0 ? (
+                          <div className="space-y-4">
+                            {permitResults.buildingCodes.map(
+                              (codeSection: any, idx: number) => (
+                                <div key={idx} className="relative">
+                                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-green-400/10 to-teal-400/10 rounded-lg"></div>
+                                  <Card className="relative bg-gray-800/70 border-emerald-400/30 backdrop-blur-sm">
+                                    <CardContent className="p-6">
+                                      <div className="flex items-start gap-4">
+                                        <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-emerald-500 to-green-500 rounded-lg flex items-center justify-center shadow-lg">
+                                          <span className="text-xl">📏</span>
+                                        </div>
+                                        <div className="flex-1 space-y-3">
+                                          <div>
+                                            <h3 className="text-xl font-semibold text-emerald-300 mb-2">
+                                              {codeSection.section ||
+                                                codeSection.title ||
+                                                `Building Code Section ${idx + 1}`}
+                                            </h3>
+                                            <p className="text-gray-300 leading-relaxed">
+                                              {codeSection.description ||
+                                                codeSection.summary ||
+                                                "Code section details"}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                </div>
+                              ),
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-green-300">
+                              No Specific Building Codes
+                            </h3>
+                            <p className="text-gray-400">
+                              No specific building codes identified for this
+                              project type and location.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="process" className="space-y-4 mt-6">
+                      <div className="space-y-4">
+                        <h4 className="text-blue-300 font-semibold border-b border-blue-500/30 pb-2 mb-4 flex items-center gap-2">
+                          <span className="text-xl">🔄</span>
+                          Permit Application Process
+                        </h4>
+
+                        {permitResults.process &&
+                        Array.isArray(permitResults.process) &&
+                        permitResults.process.length > 0 ? (
+                          <div className="space-y-4">
+                            {permitResults.process.map(
+                              (step: any, idx: number) => (
+                                <div key={idx} className="relative">
+                                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-indigo-400/10 to-purple-400/10 rounded-lg"></div>
+                                  <Card className="relative bg-gray-800/70 border-blue-400/30 backdrop-blur-sm">
+                                    <CardContent className="p-6">
+                                      <div className="flex items-start gap-4">
+                                        <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center shadow-lg">
+                                          <span className="text-xl font-bold text-white">
+                                            {idx + 1}
+                                          </span>
+                                        </div>
+                                        <div className="flex-1 space-y-3">
+                                          <div>
+                                            <h3 className="text-xl font-semibold text-blue-300 mb-2">
+                                              {typeof step === "string"
+                                                ? `Step ${idx + 1}`
+                                                : step.step ||
+                                                  step.title ||
+                                                  `Step ${idx + 1}`}
+                                            </h3>
+                                            <p className="text-gray-300 leading-relaxed">
+                                              {typeof step === "string"
+                                                ? step
+                                                : step.description ||
+                                                  step.summary ||
+                                                  "Process step details"}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                </div>
+                              ),
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-green-300">
+                              No Process Information
+                            </h3>
+                            <p className="text-gray-400">
+                              No specific process information available for this
+                              project.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="contact" className="space-y-4 mt-6">
+                      <div className="space-y-4">
+                        <h4 className="text-purple-300 font-semibold border-b border-purple-500/30 pb-2 mb-4 flex items-center gap-2">
+                          <span className="text-xl">📞</span>
+                          Contact Information
+                        </h4>
+
+                        {permitResults.contactInformation ? (
+                          <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-purple-400/10 via-pink-400/10 to-red-400/10 rounded-lg"></div>
+                            <Card className="relative bg-gray-800/70 border-purple-400/30 backdrop-blur-sm">
+                              <CardContent className="p-6">
+                                <div className="flex items-start gap-4">
+                                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg">
+                                    <span className="text-xl">📞</span>
+                                  </div>
+                                  <div className="flex-1 space-y-3">
+                                    <div>
+                                      <h3 className="text-xl font-semibold text-purple-300 mb-2">
+                                        Municipal Contact Information
+                                      </h3>
+                                      <div className="space-y-2 text-gray-300">
+                                        {Array.isArray(
+                                          permitResults.contactInformation,
+                                        ) ? (
+                                          permitResults.contactInformation.map(
+                                            (
+                                              contact: any,
+                                              contactIdx: number,
+                                            ) => (
+                                              <div
+                                                key={contactIdx}
+                                                className="space-y-2"
+                                              >
+                                                {contact.department && (
+                                                  <div>
+                                                    <strong>Department:</strong>{" "}
+                                                    {contact.department}
+                                                  </div>
+                                                )}
+                                                {contact.directPhone && (
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="text-purple-400">
+                                                      📞
+                                                    </span>
+                                                    <span>
+                                                      <strong>Phone:</strong>{" "}
+                                                      {contact.directPhone}
+                                                    </span>
+                                                  </div>
+                                                )}
+                                                {contact.email && (
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="text-purple-400">
+                                                      📧
+                                                    </span>
+                                                    <span>
+                                                      <strong>Email:</strong>{" "}
+                                                      {contact.email}
+                                                    </span>
+                                                  </div>
+                                                )}
+                                                {contact.physicalAddress && (
+                                                  <div className="flex items-start gap-2">
+                                                    <span className="text-purple-400">
+                                                      📍
+                                                    </span>
+                                                    <span>
+                                                      <strong>Address:</strong>{" "}
+                                                      {contact.physicalAddress}
+                                                    </span>
+                                                  </div>
+                                                )}
+                                                {contact.website && (
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="text-purple-400">
+                                                      🌐
+                                                    </span>
+                                                    <span>
+                                                      <strong>Website:</strong>{" "}
+                                                      <a
+                                                        href={contact.website}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-cyan-400 hover:underline"
+                                                      >
+                                                        {contact.website}
+                                                      </a>
+                                                    </span>
+                                                  </div>
+                                                )}
+                                                {contact.hours && (
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="text-purple-400">
+                                                      🕒
+                                                    </span>
+                                                    <span>
+                                                      <strong>Hours:</strong>{" "}
+                                                      {contact.hours}
+                                                    </span>
+                                                  </div>
+                                                )}
+                                                {contact.inspectorName && (
+                                                  <div className="bg-purple-500/10 border border-purple-400/30 rounded-lg p-3 mt-3">
+                                                    <h4 className="text-purple-300 font-medium mb-2">
+                                                      Inspector Information
+                                                    </h4>
+                                                    <div className="space-y-1 text-sm">
+                                                      <div>
+                                                        <strong>Name:</strong>{" "}
+                                                        {contact.inspectorName}
+                                                      </div>
+                                                      {contact.inspectorPhone && (
+                                                        <div>
+                                                          <strong>
+                                                            Phone:
+                                                          </strong>{" "}
+                                                          {
+                                                            contact.inspectorPhone
+                                                          }
+                                                        </div>
+                                                      )}
+                                                      {contact.inspectorEmail && (
+                                                        <div>
+                                                          <strong>
+                                                            Email:
+                                                          </strong>{" "}
+                                                          {
+                                                            contact.inspectorEmail
+                                                          }
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                )}
+                                                {contact.onlinePortal && (
+                                                  <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-3 mt-3">
+                                                    <h4 className="text-blue-300 font-medium mb-2">
+                                                      Online Services
+                                                    </h4>
+                                                    <a
+                                                      href={
+                                                        contact.onlinePortal
+                                                      }
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className="text-cyan-400 hover:underline text-sm"
+                                                    >
+                                                      {contact.onlinePortal}
+                                                    </a>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            ),
+                                          )
+                                        ) : typeof permitResults.contactInformation ===
+                                          "object" ? (
+                                          <div className="space-y-2">
+                                            {Object.entries(
+                                              permitResults.contactInformation,
+                                            ).map(([key, value]) => (
+                                              <div
+                                                key={key}
+                                                className="flex items-start gap-2"
+                                              >
+                                                <span className="text-purple-400 capitalize font-medium min-w-[120px]">
+                                                  {key
+                                                    .replace(/([A-Z])/g, " $1")
+                                                    .trim()}
+                                                  :
+                                                </span>
+                                                <span>
+                                                  {typeof value === "string"
+                                                    ? value
+                                                    : JSON.stringify(value)}
+                                                </span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <p className="text-gray-300 leading-relaxed">
+                                            {permitResults.contactInformation}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-green-300">
+                              No Contact Information
+                            </h3>
+                            <p className="text-gray-400">
+                              No specific contact information available for this
+                              location.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent
+                      value="considerations"
+                      className="space-y-4 mt-6"
+                    >
+                      {permitResults.specialConsiderations &&
+                      Array.isArray(permitResults.specialConsiderations) &&
+                      permitResults.specialConsiderations.length > 0 ? (
+                        <div className="space-y-4">
+                          {permitResults.specialConsiderations.map(
+                            (consideration: any, idx: number) => (
+                              <div key={idx} className="relative">
+                                <div className="absolute inset-0 bg-gradient-to-r from-amber-400/10 via-orange-400/10 to-red-400/10 rounded-lg"></div>
+                                <Card className="relative bg-gray-800/70 border-amber-400/30 backdrop-blur-sm">
+                                  <CardContent className="p-4">
+                                    <div className="flex items-start gap-4">
+                                      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center text-sm font-bold text-black shadow-lg">
+                                        ⚠️
+                                      </div>
+                                      <div className="flex-1 space-y-3">
+                                        <h4 className="text-amber-300 font-semibold">
+                                          Critical Alert #{idx + 1}
+                                        </h4>
+                                        <div className="bg-amber-500/10 border border-amber-400/30 rounded-lg p-3">
+                                          <div className="text-amber-200 text-sm leading-relaxed space-y-2">
+                                            {typeof consideration ===
+                                            "string" ? (
+                                              <p>{consideration}</p>
+                                            ) : typeof consideration ===
+                                              "object" ? (
+                                              <div className="space-y-2">
+                                                {Object.entries(
+                                                  consideration,
+                                                ).map(([key, value]) => (
+                                                  <div
+                                                    key={key}
+                                                    className="border-l-2 border-amber-400/30 pl-3"
+                                                  >
+                                                    <div className="font-medium text-amber-300 capitalize mb-1">
+                                                      {key
+                                                        .replace(
+                                                          /([A-Z])/g,
+                                                          " $1",
+                                                        )
+                                                        .trim()}
+                                                    </div>
+                                                    <div className="text-amber-200">
+                                                      {typeof value === "string"
+                                                        ? value
+                                                        : JSON.stringify(value)}
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            ) : (
+                                              <p>
+                                                {JSON.stringify(consideration)}
+                                              </p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-green-300">
+                            No Critical Alerts
+                          </h3>
+                          <p className="text-gray-400">
+                            No special considerations or alerts identified for
+                            this project.
+                          </p>
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
                 </div>
               )}
             </div>

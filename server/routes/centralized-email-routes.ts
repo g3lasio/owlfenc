@@ -125,10 +125,18 @@ router.post('/send-estimate', async (req, res) => {
       contractorCompany,
       estimateData,
       customMessage,
-      sendCopy = false
+      sendCopy = true  // ✅ CORREGIDO: Default true para enviar copia al contratista
     } = req.body;
 
-    console.log('📧 [CENTRALIZED-EMAIL] Raw body:', JSON.stringify(req.body, null, 2));
+    console.log('📧 [CENTRALIZED-EMAIL] Datos recibidos:', {
+      clientEmail,
+      clientName,
+      contractorEmail,
+      contractorName,
+      contractorCompany,
+      sendCopy,
+      estimateNumber: estimateData?.estimateNumber
+    });
 
     // Validar campos requeridos
     if (!clientEmail || !clientName || !contractorEmail || !contractorName || !estimateData) {
@@ -145,115 +153,130 @@ router.post('/send-estimate', async (req, res) => {
       });
     }
 
-    // Asegurar que estimateData tenga valores por defecto para evitar errores de undefined
-    const safeEstimateData = {
-      estimateNumber: 'EST-DEFAULT',
-      total: 0,
-      projectType: 'Proyecto',
-      items: [],
-      ...estimateData
+    // Convertir datos del frontend al formato EstimateData para EstimateEmailService
+    // Asegurar que todos los campos requeridos estén definidos
+    const estimateEmailData = {
+      estimateNumber: estimateData.estimateNumber || `EST-${Date.now()}`,
+      date: estimateData.date || new Date().toLocaleDateString('es-ES'),
+      client: {
+        name: clientName || 'Cliente',
+        email: clientEmail || 'cliente@example.com',
+        address: estimateData.client?.address || 'Dirección por especificar',
+        phone: estimateData.client?.phone || 'Teléfono por especificar'
+      },
+      contractor: {
+        companyName: contractorCompany || contractorName || 'Empresa',
+        name: contractorName || 'Contratista',
+        email: contractorEmail || 'contratista@example.com',
+        phone: estimateData.contractor?.phone || 'Por especificar',
+        address: estimateData.contractor?.address || 'Por especificar',
+        city: estimateData.contractor?.city || 'Por especificar',
+        state: estimateData.contractor?.state || 'CA',
+        zipCode: estimateData.contractor?.zipCode || '00000',
+        license: estimateData.contractor?.license || 'Por especificar',
+        insurancePolicy: estimateData.contractor?.insurancePolicy || 'Por especificar',
+        logo: estimateData.contractor?.logo || null,  // Usar null en lugar de string vacío
+        website: estimateData.contractor?.website || 'owlfenc.com'
+      },
+      project: {
+        type: estimateData.project?.type || estimateData.projectType || 'Proyecto de construcción',
+        description: estimateData.project?.description || estimateData.title || customMessage || 'Proyecto profesional',
+        location: estimateData.project?.location || estimateData.client?.address || 'Ubicación por especificar',
+        scopeOfWork: estimateData.project?.scopeOfWork || estimateData.projectDetails || customMessage || 'Alcance por especificar'
+      },
+      items: Array.isArray(estimateData.items) ? estimateData.items : [],
+      subtotal: Number(estimateData.subtotal) || 0,
+      discount: Number(estimateData.discountAmount) || 0,
+      discountType: estimateData.discountType || 'percentage',
+      discountValue: Number(estimateData.discountValue) || 0,
+      tax: Number(estimateData.tax) || 0,
+      taxRate: Number(estimateData.taxRate) || 0,
+      total: Number(estimateData.total) || 0,
+      notes: customMessage || estimateData.notes || 'Sin notas adicionales',
+      validUntil: estimateData.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('es-ES') // 30 días
     };
 
-    // Para simplificar el debugging, crear HTML simple
-    const simpleHtml = `
-      <h1>Estimado Profesional</h1>
-      <p><strong>Cliente:</strong> ${clientName}</p>
-      <p><strong>Contratista:</strong> ${contractorName}</p>
-      <p><strong>Empresa:</strong> ${contractorCompany || contractorName}</p>
-      <p><strong>Número:</strong> ${safeEstimateData.estimateNumber}</p>
-      <p><strong>Total:</strong> $${safeEstimateData.total}</p>
-      <p><strong>Proyecto:</strong> ${safeEstimateData.projectType}</p>
-    `;
+    console.log('📧 [CENTRALIZED-EMAIL] Datos convertidos para EstimateEmailService:', {
+      estimateNumber: estimateEmailData.estimateNumber,
+      clientEmail: estimateEmailData.client.email,
+      contractorEmail: estimateEmailData.contractor.email,
+      projectType: estimateEmailData.project.type,
+      total: estimateEmailData.total,
+      sendCopy
+    });
 
-    console.log('📧 [CENTRALIZED-EMAIL] HTML simple creado, longitud:', simpleHtml.length);
-
-    console.log('📧 [CENTRALIZED-EMAIL] Enviando email usando Resend...');
-
-    // Enviar con servicio básico de Resend
-    try {
-      const result = await resendService.sendEmail({
+    // Usar EstimateEmailService que tiene funcionalidad completa de sendCopy
+    if (sendCopy) {
+      console.log('✅ [CENTRALIZED-EMAIL] Enviando estimado CON copia al contratista usando EstimateEmailService...');
+      const result = await EstimateEmailService.sendEstimateToClient(estimateEmailData);
+      
+      if (result.success) {
+        console.log('✅ [CENTRALIZED-EMAIL] Estimado y copia enviados exitosamente');
+        
+        // Registrar para seguimiento
+        try {
+          const estimateForTracking = {
+            estimateNumber: estimateEmailData.estimateNumber,
+            client: {
+              name: clientName,
+              email: clientEmail
+            },
+            contractor: {
+              email: contractorEmail
+            },
+            total: estimateEmailData.total
+          };
+          simpleTracker.saveEstimate(estimateForTracking);
+          console.log('✅ [CENTRALIZED-EMAIL] Estimado registrado para seguimiento:', estimateEmailData.estimateNumber);
+        } catch (trackingError) {
+          console.log('⚠️ [CENTRALIZED-EMAIL] Error registrando estimado para seguimiento, continuando...', trackingError);
+        }
+        
+        res.json({
+          success: true,
+          message: 'Estimado enviado exitosamente al cliente y copia enviada al contratista',
+          result
+        });
+      } else {
+        console.error('❌ [CENTRALIZED-EMAIL] Error en EstimateEmailService:', result.message);
+        res.status(500).json({
+          success: false,
+          message: result.message
+        });
+      }
+    } else {
+      console.log('📧 [CENTRALIZED-EMAIL] Enviando estimado SIN copia al contratista...');
+      
+      // Solo enviar al cliente sin copia
+      const success = await resendService.sendEmail({
         to: clientEmail,
-        from: "onboarding@resend.dev",
-        subject: `Estimado Profesional - ${safeEstimateData.estimateNumber}`,
-        html: simpleHtml
+        from: "mervin@owlfenc.com",
+        subject: `Estimado ${estimateEmailData.estimateNumber} - ${estimateEmailData.project.type} | ${estimateEmailData.contractor.companyName}`,
+        html: EstimateEmailService.generateEstimateHTML(estimateEmailData),
+        replyTo: contractorEmail
       });
 
-      console.log('📧 [CENTRALIZED-EMAIL] Email enviado exitosamente:', result);
-      
-      res.json({
-        success: true,
-        message: 'Estimado enviado exitosamente',
-        result
-      });
-      
-    } catch (emailError) {
-      console.error('❌ [CENTRALIZED-EMAIL] Error enviando email:', emailError);
-      res.status(500).json({
-        success: false,
-        message: 'Error enviando email',
-        error: emailError instanceof Error ? emailError.message : 'Unknown email error'
-      });
+      if (success) {
+        console.log('✅ [CENTRALIZED-EMAIL] Estimado enviado solo al cliente');
+        res.json({
+          success: true,
+          message: 'Estimado enviado exitosamente al cliente (sin copia)'
+        });
+      } else {
+        console.error('❌ [CENTRALIZED-EMAIL] Error enviando estimado solo al cliente');
+        res.status(500).json({
+          success: false,
+          message: 'Error enviando estimado al cliente'
+        });
+      }
     }
 
   } catch (error) {
-    console.error('Error enviando estimado centralizado:', error);
+    console.error('❌ [CENTRALIZED-EMAIL] Error enviando estimado centralizado:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno enviando estimado',
       error: error instanceof Error ? error.message : 'Error desconocido'
-    });
-  }
-});
-
-/**
-    try {
-      const estimateForTracking = {
-        estimateNumber: estimateData.estimateNumber,
-        client: {
-          name: clientName,
-          email: clientEmail
-        },
-        contractor: {
-          email: contractorEmail
-        },
-        total: estimateData.total
-      };
-      simpleTracker.saveEstimate(estimateForTracking);
-      console.log('✅ [CENTRALIZED-EMAIL] Estimado registrado para seguimiento:', estimateData.estimateNumber);
-    } catch (trackingError) {
-      console.log('⚠️ [CENTRALIZED-EMAIL] Error registrando estimado para seguimiento, continuando...', trackingError);
-    }
-
-    console.log('📧 [CENTRALIZED-EMAIL] Datos recibidos:', {
-      clientEmail,
-      clientName,
-      contractorEmail,
-      contractorName,
-      contractorCompany,
-      sendCopy,
-      estimateNumber: estimateData.estimateNumber
-    });
-
-    // Enviar email usando sistema centralizado
-    const result = await resendService.sendCentralizedEmail({
-      toEmail: clientEmail,
-      toName: clientName,
-      contractorEmail,
-      contractorName,
-      contractorCompany: contractorCompany || contractorName,
-      subject: `Estimado Profesional - ${estimateData.estimateNumber} - ${contractorCompany || contractorName}`,
-      htmlContent: estimateHtml,
-      sendCopyToContractor: sendCopy
-    });
-
-    console.log('📧 [CENTRALIZED-EMAIL] Resultado del envío:', result);
-    res.json(result);
-
-  } catch (error) {
-    console.error('Error enviando estimado centralizado:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno enviando estimado'
     });
   }
 });

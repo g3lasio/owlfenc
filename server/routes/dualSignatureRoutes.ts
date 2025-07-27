@@ -518,7 +518,6 @@ router.get("/download-html/:contractId", async (req, res) => {
 
     console.log("📄 [API] HTML download request for contract:", contractId);
 
-    // Import database here to avoid circular dependencies
     const { db } = await import("../db");
     const { digitalContracts } = await import("../../shared/schema");
     const { eq } = await import("drizzle-orm");
@@ -536,7 +535,6 @@ router.get("/download-html/:contractId", async (req, res) => {
       });
     }
 
-    // Security check - only allow access to contract owner
     if (requestingUserId && contract.userId !== requestingUserId) {
       return res.status(403).json({
         success: false,
@@ -544,25 +542,11 @@ router.get("/download-html/:contractId", async (req, res) => {
       });
     }
 
-    // Return the signed HTML with embedded signatures
     let htmlContent =
       contract.contractHtml ||
       contract.contractHTML ||
       "<p>Contract content not available</p>";
 
-    console.log("📄 [API] Contract HTML length:", htmlContent?.length || 0);
-    console.log(
-      "📄 [API] Contract HTML preview:",
-      htmlContent?.substring(0, 200) || "No content",
-    );
-
-    console.log("📄 [DEBUG] Contract HTML length:", htmlContent?.length || 0);
-    console.log(
-      "📄 [DEBUG] Contract HTML preview:",
-      htmlContent?.substring(0, 100) || "NULL",
-    );
-
-    // If HTML is missing, generate a basic contract HTML
     if (!htmlContent || htmlContent.trim() === "") {
       console.log("⚠️ [API] Contract HTML is missing, generating basic HTML");
       htmlContent = `
@@ -618,49 +602,68 @@ router.get("/download-html/:contractId", async (req, res) => {
       `;
     }
 
-    console.log("📄 [DEBUG] Contract HTML length:", htmlContent.length);
-    console.log(
-      "📄 [DEBUG] Contract HTML preview:",
-      htmlContent.substring(0, 200),
-    );
+    let contentHtml = htmlContent;
 
-    // Add signature information if both parties have signed
     if (contract.contractorSigned && contract.clientSigned) {
+      const pattern = `All notices required or permitted under this Agreement shall be in writing and shall be deemed to have been duly given when personally delivered, or three (3) days after being sent by certified mail, return receipt requested, postage prepaid, to the addresses set forth above or to such other address as either party may designate by written notice to the other party.`;
+
+      const stopIndex = htmlContent.indexOf(pattern);
+      if (stopIndex !== -1) {
+        const afterStopIndex = stopIndex + pattern.length;
+        contentHtml = htmlContent.slice(0, afterStopIndex);
+      } else {
+        console.warn("⚠️ textStop pattern not found. Using full HTML content.");
+        contentHtml = htmlContent;
+      }
+
       const signatureSection = `
-        <div style="margin-top: 40px; padding: 20px; border: 2px solid #4CAF50; background-color: #f9f9f9;">
-          <h3 style="color: #4CAF50; margin-bottom: 15px;">✅ DIGITALLY SIGNED CONTRACT</h3>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div>
-              <h4>Contractor Signature:</h4>
-              <p><strong>Name:</strong> ${contract.contractorName}</p>
-              <p><strong>Signed:</strong> ${contract.contractorSignedAt?.toLocaleString()}</p>
-              <div style="border: 1px solid #ccc; padding: 10px; background: white;">
-                ${contract.contractorSignatureData || "Digital signature on file"}
-              </div>
+        <div class="signature-section">
+            <div class="section-title">EXECUTION</div>
+            <p class="legal-text" style="text-align: center; margin-bottom: 30px;">
+                <strong>IN WITNESS WHEREOF,</strong> the parties have executed this Independent Contractor Agreement as of the date first written above.
+            </p>
+
+            <div class="signature-container">
+                <div class="signature-box">
+                    <div class="signature-title">CONTRACTOR</div>
+                    <div class="signature-line">
+                      ${contract.contractorSignatureData || "Digital signature on file"}
+                    </div>
+                    <p><strong>${contract.contractorName}</strong></p>
+                    <p>Print Name</p>
+                    <br>
+                    <p>Date: <span class="date-line">${contract.contractorSignedAt?.toLocaleString()}</span></p>
+                </div>
+                <div class="signature-box">
+                    <div class="signature-title">CLIENT</div>
+                    <div class="signature-line">
+                      ${contract.clientSignatureData || "Digital signature on file"}
+                    </div>
+                    <p><strong>${contract.clientName}</strong></p>
+                    <p>Print Name</p>
+                    <br>
+                    <p>Date: <span class="date-line">${contract.clientSignedAt?.toLocaleString()}</span></p>
+                </div>
             </div>
-            <div>
-              <h4>Client Signature:</h4>
-              <p><strong>Name:</strong> ${contract.clientName}</p>
-              <p><strong>Signed:</strong> ${contract.clientSignedAt?.toLocaleString()}</p>
-              <div style="border: 1px solid #ccc; padding: 10px; background: white;">
-                ${contract.clientSignatureData || "Digital signature on file"}
-              </div>
-            </div>
-          </div>
-          <p style="margin-top: 15px; font-size: 12px; color: #666;">
-            This contract was digitally signed using secure authentication. Contract ID: ${contractId}
-          </p>
+        </div>
+
+        <div class="footer-discrete">
+            Powered by Mervin AI
         </div>
       `;
 
-      htmlContent = htmlContent.replace(
-        "</body>",
-        signatureSection + "</body>",
-      );
+      if (contentHtml.includes("</body>")) {
+        contentHtml = contentHtml.replace(
+          "</body>",
+          signatureSection + "</body>",
+        );
+      } else {
+        contentHtml += signatureSection;
+      }
     }
 
     res.setHeader("Content-Type", "text/html");
-    res.send(htmlContent);
+    res.send(contentHtml);
   } catch (error: any) {
     console.error("❌ [API] Error in /download-html/:contractId:", error);
     res.status(500).json({
