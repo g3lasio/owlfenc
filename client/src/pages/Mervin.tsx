@@ -1117,7 +1117,7 @@ export default function Mervin() {
       switch (action) {
         case "estimates":
           response =
-            "Vous pouvez générer des estimations précises pour vos projets en saisissant simplement quelques détails de base tels que les informations sur le client, la description du projet et l'inventaire.";
+            "¡Órale primo! Puedo ayudarte a generar estimados súper precisos para tus proyectos. Solo necesito que me compartas algunos datos básicos como la información del cliente, descripción del proyecto y el inventario. ¡Está al tiro!";
           break;
         case "contracts":
           response =
