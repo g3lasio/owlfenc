@@ -7242,94 +7242,78 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         </DialogContent>
       </Dialog>
 
-      {/* Simplified Email Dialog */}
+      {/* Email Dialog - Completamente Nuevo */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Send Email</DialogTitle>
+            <DialogTitle>Enviar Estimado por Email</DialogTitle>
           </DialogHeader>
-
-          <div className="py-4 space-y-4">
-            <div>
-              <p><strong>Client:</strong> {estimate?.client?.name}</p>
-              <p><strong>Items:</strong> {estimate?.items?.length}</p>
+          
+          <div className="space-y-4 py-4">
+            <div className="text-sm text-muted-foreground">
+              <p>Cliente: {estimate?.client?.name}</p>
+              <p>Items: {estimate?.items?.length || 0}</p>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Email:</label>
+            
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium">Email del Cliente</label>
               <input
+                id="email"
                 type="email"
                 value={emailData.toEmail}
-                onChange={(e) =>
-                  setEmailData((prev) => ({
-                    ...prev,
-                    toEmail: e.target.value,
-                  }))
-                }
-                className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400"
-                placeholder="client@email.com"
+                onChange={(e) => setEmailData(prev => ({...prev, toEmail: e.target.value}))}
+                placeholder="cliente@email.com"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Subject:</label>
+            
+            <div className="space-y-2">
+              <label htmlFor="subject" className="text-sm font-medium">Asunto</label>
               <input
+                id="subject"
                 type="text"
                 value={emailData.subject}
-                onChange={(e) =>
-                  setEmailData((prev) => ({
-                    ...prev,
-                    subject: e.target.value,
-                  }))
-                }
-                className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400"
-                placeholder="Professional Estimate"
+                onChange={(e) => setEmailData(prev => ({...prev, subject: e.target.value}))}
+                placeholder="Estimado Profesional"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Message:</label>
+            
+            <div className="space-y-2">
+              <label htmlFor="message" className="text-sm font-medium">Mensaje</label>
               <textarea
+                id="message"
                 value={emailData.message}
-                onChange={(e) =>
-                  setEmailData((prev) => ({
-                    ...prev,
-                    message: e.target.value,
-                  }))
-                }
-                className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 h-20"
-                placeholder="Your message..."
+                onChange={(e) => setEmailData(prev => ({...prev, message: e.target.value}))}
+                placeholder="Mensaje personalizado..."
+                rows={3}
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
-
-            <div className="flex items-center gap-2 p-3 bg-gray-800 border border-gray-600 rounded">
+            
+            <div className="flex items-center space-x-2">
               <input
-                type="checkbox"
-                id="sendCopy"
+                id="sendCopyCheckbox"
+                type="checkbox" 
                 checked={emailData.sendCopy}
-                onChange={(e) =>
-                  setEmailData((prev) => ({
-                    ...prev,
-                    sendCopy: e.target.checked,
-                  }))
-                }
-                className="w-4 h-4"
+                onChange={(e) => setEmailData(prev => ({...prev, sendCopy: e.target.checked}))}
+                className="peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
               />
-              <label htmlFor="sendCopy" className="text-sm text-white">
-                Send me a copy
+              <label htmlFor="sendCopyCheckbox" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Enviarme una copia
               </label>
             </div>
           </div>
-
+          
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEmailDialog(false)}>
-              Cancel
+              Cancelar
             </Button>
-            <Button
+            <Button 
               onClick={sendEstimateEmail}
               disabled={!emailData.toEmail || !emailData.subject}
             >
-              Send Email
+              Enviar Email
             </Button>
           </DialogFooter>
         </DialogContent>
