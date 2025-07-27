@@ -7242,78 +7242,80 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         </DialogContent>
       </Dialog>
 
-      {/* Email Dialog - Completamente Nuevo */}
+      {/* Email Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Enviar Estimado por Email</DialogTitle>
+            <DialogTitle className="text-lg font-semibold">Send Email</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <div className="text-sm text-muted-foreground">
-              <p>Cliente: {estimate?.client?.name}</p>
-              <p>Items: {estimate?.items?.length || 0}</p>
+          <div className="space-y-4">
+            <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+              <p><strong>Client:</strong> {estimate?.client?.name || 'No client'}</p>
+              <p><strong>Items:</strong> {estimate?.items?.length || 0}</p>
             </div>
             
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">Email del Cliente</label>
+            <div>
+              <label className="block text-sm font-medium mb-1">Client Email</label>
               <input
-                id="email"
                 type="email"
                 value={emailData.toEmail}
                 onChange={(e) => setEmailData(prev => ({...prev, toEmail: e.target.value}))}
-                placeholder="cliente@email.com"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="client@email.com"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
             
-            <div className="space-y-2">
-              <label htmlFor="subject" className="text-sm font-medium">Asunto</label>
+            <div>
+              <label className="block text-sm font-medium mb-1">Subject</label>
               <input
-                id="subject"
                 type="text"
                 value={emailData.subject}
                 onChange={(e) => setEmailData(prev => ({...prev, subject: e.target.value}))}
-                placeholder="Estimado Profesional"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Professional Estimate"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
             
-            <div className="space-y-2">
-              <label htmlFor="message" className="text-sm font-medium">Mensaje</label>
+            <div>
+              <label className="block text-sm font-medium mb-1">Message</label>
               <textarea
-                id="message"
                 value={emailData.message}
                 onChange={(e) => setEmailData(prev => ({...prev, message: e.target.value}))}
-                placeholder="Mensaje personalizado..."
+                placeholder="Your message..."
                 rows={3}
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
               />
             </div>
             
-            <div className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50">
+            <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <input
-                id="sendCopyCheckbox"
                 type="checkbox" 
+                id="sendCopy"
                 checked={emailData.sendCopy}
                 onChange={(e) => setEmailData(prev => ({...prev, sendCopy: e.target.checked}))}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                className="w-5 h-5 text-blue-600 border-2 border-gray-300 rounded focus:ring-blue-500"
               />
-              <label htmlFor="sendCopyCheckbox" className="text-sm font-medium text-gray-900 cursor-pointer">
-                Send me a copy / Enviarme una copia
+              <label htmlFor="sendCopy" className="text-sm font-medium text-gray-900 cursor-pointer select-none">
+                Send me a copy
               </label>
             </div>
           </div>
           
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEmailDialog(false)}>
-              Cancelar
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowEmailDialog(false)}
+              className="w-full sm:w-auto"
+            >
+              Cancel
             </Button>
             <Button 
               onClick={sendEstimateEmail}
               disabled={!emailData.toEmail || !emailData.subject}
+              className="w-full sm:w-auto"
             >
-              Enviar Email
+              Send Email
             </Button>
           </DialogFooter>
         </DialogContent>
