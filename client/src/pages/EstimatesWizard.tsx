@@ -7244,21 +7244,20 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       {/* Simplified Email Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto bg-gray-900 border-gray-700">
           <DialogHeader>
-            <DialogTitle>Send Email</DialogTitle>
+            <DialogTitle className="text-cyan-400">Send Email</DialogTitle>
           </DialogHeader>
 
-          <div className="py-4">
-            <p className="text-red-600 font-bold">
-              TEST: Can you see this text?
-            </p>
-            <p>Client: {estimate?.client?.name}</p>
-            <p>Items: {estimate?.items?.length}</p>
+          <div className="py-4 space-y-4">
+            <div className="text-gray-300">
+              <p><strong>Client:</strong> {estimate?.client?.name}</p>
+              <p><strong>Items:</strong> {estimate?.items?.length}</p>
+            </div>
 
-            <div className="mt-4 space-y-4">
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Email:</label>
+                <label className="block text-sm font-medium mb-2 text-gray-300">Email:</label>
                 <input
                   type="email"
                   value={emailData.toEmail}
@@ -7268,13 +7267,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       toEmail: e.target.value,
                     }))
                   }
-                  className="w-full p-2 border border-gray-300 rounded"
+                  className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
                   placeholder="client@email.com"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium mb-2 text-gray-300">
                   Subject:
                 </label>
                 <input
@@ -7286,13 +7285,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       subject: e.target.value,
                     }))
                   }
-                  className="w-full p-2 border border-gray-300 rounded"
+                  className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
                   placeholder="Professional Estimate"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium mb-2 text-gray-300">
                   Message:
                 </label>
                 <textarea
@@ -7303,14 +7302,15 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       message: e.target.value,
                     }))
                   }
-                  className="w-full p-2 border border-gray-300 rounded h-20"
+                  className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 h-20 resize-vertical"
                   placeholder="Your message..."
                 />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 p-3 bg-gray-800 border border-gray-600 rounded">
                 <input
                   type="checkbox"
+                  id="sendCopy"
                   checked={emailData.sendCopy}
                   onChange={(e) =>
                     setEmailData((prev) => ({
@@ -7318,19 +7318,27 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       sendCopy: e.target.checked,
                     }))
                   }
+                  className="w-4 h-4 text-cyan-400 bg-gray-700 border-gray-600 rounded focus:ring-cyan-400 focus:ring-2"
                 />
-                <label className="text-sm">Send me a copy</label>
+                <label htmlFor="sendCopy" className="text-sm text-gray-300 font-medium">
+                  Send me a copy
+                </label>
               </div>
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEmailDialog(false)}>
+          <DialogFooter className="border-t border-gray-700 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowEmailDialog(false)}
+              className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+            >
               Cancel
             </Button>
             <Button
               onClick={sendEstimateEmail}
               disabled={!emailData.toEmail || !emailData.subject}
+              className="bg-cyan-400 text-black hover:bg-cyan-300 disabled:bg-gray-600 disabled:text-gray-400"
             >
               Send Email
             </Button>
