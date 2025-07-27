@@ -7291,16 +7291,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               />
             </div>
             
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50">
               <input
                 id="sendCopyCheckbox"
                 type="checkbox" 
                 checked={emailData.sendCopy}
                 onChange={(e) => setEmailData(prev => ({...prev, sendCopy: e.target.checked}))}
-                className="peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
               />
-              <label htmlFor="sendCopyCheckbox" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                Enviarme una copia
+              <label htmlFor="sendCopyCheckbox" className="text-sm font-medium text-gray-900 cursor-pointer">
+                Send me a copy / Enviarme una copia
               </label>
             </div>
           </div>
