@@ -186,7 +186,7 @@ export default function SimpleContractGenerator() {
     clientAddress: "",
     projectDescription: "",
     projectCost: "",
-    projectType: "Fence Installation",
+    projectType: "General Construction",
   });
   const [clientSelectionMode, setClientSelectionMode] = useState<"existing" | "new">("new");
   const [existingClients, setExistingClients] = useState<any[]>([]);
@@ -3419,13 +3419,138 @@ export default function SimpleContractGenerator() {
                               onChange={(e) => setScratchContractData(prev => ({ ...prev, projectType: e.target.value }))}
                               className="w-full p-2 bg-gray-800 border border-gray-600 rounded-md text-white"
                             >
-                              <option value="Fence Installation">Fence Installation</option>
-                              <option value="Fence Repair">Fence Repair</option>
-                              <option value="Gate Installation">Gate Installation</option>
-                              <option value="Deck Construction">Deck Construction</option>
-                              <option value="Pergola Installation">Pergola Installation</option>
-                              <option value="General Construction">General Construction</option>
-                              <option value="Other">Other</option>
+                              {/* Fencing & Outdoor Structures */}
+                              <optgroup label="🏡 Cercas y Estructuras Exteriores">
+                                <option value="Fence Installation - Wood">Fence Installation - Wood</option>
+                                <option value="Fence Installation - Vinyl">Fence Installation - Vinyl</option>
+                                <option value="Fence Installation - Chain Link">Fence Installation - Chain Link</option>
+                                <option value="Fence Installation - Aluminum">Fence Installation - Aluminum</option>
+                                <option value="Fence Installation - Iron/Steel">Fence Installation - Iron/Steel</option>
+                                <option value="Fence Repair & Maintenance">Fence Repair & Maintenance</option>
+                                <option value="Gate Installation & Automation">Gate Installation & Automation</option>
+                                <option value="Retaining Wall Construction">Retaining Wall Construction</option>
+                                <option value="Privacy Screen Installation">Privacy Screen Installation</option>
+                              </optgroup>
+
+                              {/* Residential Construction */}
+                              <optgroup label="🏠 Construcción Residencial">
+                                <option value="New Home Construction">New Home Construction</option>
+                                <option value="Home Addition">Home Addition</option>
+                                <option value="ADU Construction">ADU Construction (Accessory Dwelling Unit)</option>
+                                <option value="Garage Construction">Garage Construction</option>
+                                <option value="Basement Finishing">Basement Finishing</option>
+                                <option value="Attic Conversion">Attic Conversion</option>
+                                <option value="Custom Home Building">Custom Home Building</option>
+                              </optgroup>
+
+                              {/* Commercial Construction */}
+                              <optgroup label="🏢 Construcción Comercial">
+                                <option value="Commercial Building Construction">Commercial Building Construction</option>
+                                <option value="Office Build-Out">Office Build-Out</option>
+                                <option value="Retail Space Construction">Retail Space Construction</option>
+                                <option value="Restaurant Construction">Restaurant Construction</option>
+                                <option value="Warehouse Construction">Warehouse Construction</option>
+                                <option value="Industrial Facility Construction">Industrial Facility Construction</option>
+                                <option value="Mixed-Use Development">Mixed-Use Development</option>
+                              </optgroup>
+
+                              {/* Remodeling & Renovation */}
+                              <optgroup label="🔨 Remodelación y Renovación">
+                                <option value="Kitchen Remodeling">Kitchen Remodeling</option>
+                                <option value="Bathroom Remodeling">Bathroom Remodeling</option>
+                                <option value="Whole House Renovation">Whole House Renovation</option>
+                                <option value="Room Addition">Room Addition</option>
+                                <option value="Interior Renovation">Interior Renovation</option>
+                                <option value="Exterior Renovation">Exterior Renovation</option>
+                                <option value="Historic Restoration">Historic Restoration</option>
+                              </optgroup>
+
+                              {/* Outdoor & Landscaping */}
+                              <optgroup label="🌿 Exteriores y Paisajismo">
+                                <option value="Deck Construction - Wood">Deck Construction - Wood</option>
+                                <option value="Deck Construction - Composite">Deck Construction - Composite</option>
+                                <option value="Patio Construction">Patio Construction</option>
+                                <option value="Pergola Installation">Pergola Installation</option>
+                                <option value="Gazebo Construction">Gazebo Construction</option>
+                                <option value="Outdoor Kitchen">Outdoor Kitchen</option>
+                                <option value="Pool Deck Construction">Pool Deck Construction</option>
+                                <option value="Landscape Construction">Landscape Construction</option>
+                                <option value="Hardscaping">Hardscaping</option>
+                                <option value="Driveway Installation">Driveway Installation</option>
+                                <option value="Walkway Installation">Walkway Installation</option>
+                              </optgroup>
+
+                              {/* Specialized Services */}
+                              <optgroup label="⚙️ Servicios Especializados">
+                                <option value="Concrete Work">Concrete Work</option>
+                                <option value="Masonry Work">Masonry Work</option>
+                                <option value="Stonework">Stonework</option>
+                                <option value="Tile Installation">Tile Installation</option>
+                                <option value="Flooring Installation">Flooring Installation</option>
+                                <option value="Drywall Installation">Drywall Installation</option>
+                                <option value="Insulation Installation">Insulation Installation</option>
+                                <option value="Siding Installation">Siding Installation</option>
+                                <option value="Windows & Doors Installation">Windows & Doors Installation</option>
+                                <option value="Cabinetry Installation">Cabinetry Installation</option>
+                              </optgroup>
+
+                              {/* Roofing & Exteriors */}
+                              <optgroup label="🏠 Techos y Exteriores">
+                                <option value="Roof Installation">Roof Installation</option>
+                                <option value="Roof Repair">Roof Repair</option>
+                                <option value="Roof Replacement">Roof Replacement</option>
+                                <option value="Gutter Installation">Gutter Installation</option>
+                                <option value="Exterior Painting">Exterior Painting</option>
+                                <option value="Pressure Washing">Pressure Washing</option>
+                              </optgroup>
+
+                              {/* Maintenance & Repair */}
+                              <optgroup label="🔧 Mantenimiento y Reparación">
+                                <option value="General Maintenance">General Maintenance</option>
+                                <option value="Handyman Services">Handyman Services</option>
+                                <option value="Property Maintenance">Property Maintenance</option>
+                                <option value="Emergency Repairs">Emergency Repairs</option>
+                                <option value="Preventive Maintenance">Preventive Maintenance</option>
+                                <option value="Seasonal Maintenance">Seasonal Maintenance</option>
+                              </optgroup>
+
+                              {/* Cleaning Services */}
+                              <optgroup label="🧹 Servicios de Limpieza">
+                                <option value="Construction Cleanup">Construction Cleanup</option>
+                                <option value="Post-Construction Cleaning">Post-Construction Cleaning</option>
+                                <option value="Deep Cleaning Services">Deep Cleaning Services</option>
+                                <option value="Move-In/Move-Out Cleaning">Move-In/Move-Out Cleaning</option>
+                                <option value="Commercial Cleaning">Commercial Cleaning</option>
+                                <option value="Janitorial Services">Janitorial Services</option>
+                              </optgroup>
+
+                              {/* Demolition & Site Prep */}
+                              <optgroup label="💥 Demolición y Preparación">
+                                <option value="Demolition Services">Demolition Services</option>
+                                <option value="Site Preparation">Site Preparation</option>
+                                <option value="Excavation Services">Excavation Services</option>
+                                <option value="Land Clearing">Land Clearing</option>
+                                <option value="Debris Removal">Debris Removal</option>
+                                <option value="Junk Removal">Junk Removal</option>
+                              </optgroup>
+
+                              {/* Electrical & Plumbing */}
+                              <optgroup label="⚡ Servicios Técnicos">
+                                <option value="Electrical Work">Electrical Work</option>
+                                <option value="Plumbing Installation">Plumbing Installation</option>
+                                <option value="HVAC Installation">HVAC Installation</option>
+                                <option value="Solar Panel Installation">Solar Panel Installation</option>
+                                <option value="Smart Home Installation">Smart Home Installation</option>
+                              </optgroup>
+
+                              {/* Other/Custom */}
+                              <optgroup label="📋 Otros">
+                                <option value="General Construction">General Construction</option>
+                                <option value="Custom Project">Custom Project</option>
+                                <option value="Consultation Services">Consultation Services</option>
+                                <option value="Project Management">Project Management</option>
+                                <option value="Other">Other</option>
+                              </optgroup>
                             </select>
                           </div>
                           
