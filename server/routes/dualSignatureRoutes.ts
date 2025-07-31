@@ -602,6 +602,56 @@ router.get("/download-html/:contractId", async (req, res) => {
       `;
     }
 
+    // Helper function to process signature data correctly
+    const processSignatureForDisplay = (signatureData: string | null, fallbackText: string = "Digital signature on file"): string => {
+      if (!signatureData) {
+        return `<span style="font-style: italic; color: #666;">${fallbackText}</span>`;
+      }
+
+      // Check if it's a base64 image (drawn signature)
+      if (signatureData.startsWith("data:image")) {
+        console.log("🖋️ [SIGNATURE-DISPLAY] Processing drawn signature as image");
+        
+        // Clean and validate the base64 data
+        let cleanData = signatureData.trim();
+        
+        // Ensure proper data URI format
+        if (!cleanData.startsWith("data:image/png;base64,") && !cleanData.startsWith("data:image/jpeg;base64,")) {
+          if (cleanData.includes("base64,")) {
+            const base64Part = cleanData.split("base64,")[1];
+            if (base64Part && base64Part.length > 50) {
+              cleanData = `data:image/png;base64,${base64Part}`;
+            }
+          }
+        }
+        
+        // Validate and return image tag
+        if (cleanData.includes("base64,") && cleanData.length > 100) {
+          return `<img src="${cleanData}" 
+            style="
+              max-height: 55px; 
+              max-width: 280px; 
+              height: auto; 
+              width: auto; 
+              object-fit: contain; 
+              display: block; 
+              margin: 0 auto;
+              border: none;
+              background: transparent;
+            " 
+            alt="Drawn Signature" />`;
+        } else {
+          console.warn("❌ [SIGNATURE-DISPLAY] Invalid base64 signature data");
+          return `<span style="font-style: italic; color: #666;">Invalid Signature Data</span>`;
+        }
+      } else {
+        // Typed signature - display as styled text
+        console.log("📝 [SIGNATURE-DISPLAY] Processing typed signature as text");
+        const cleanText = String(signatureData).replace(/[<>&"'`]/g, "").substring(0, 25);
+        return `<span style="font-family: 'Times New Roman', serif; font-style: italic; font-size: 20px; color: #1a365d; font-weight: bold;">${cleanText}</span>`;
+      }
+    };
+
     let contentHtml = htmlContent;
 
     if (contract.contractorSigned && contract.clientSigned) {
@@ -626,8 +676,8 @@ router.get("/download-html/:contractId", async (req, res) => {
             <div class="signature-container">
                 <div class="signature-box">
                     <div class="signature-title">CONTRACTOR</div>
-                    <div class="signature-line">
-                      ${contract.contractorSignatureData || "Digital signature on file"}
+                    <div class="signature-line" style="min-height: 60px; display: flex; align-items: center; justify-content: center; padding: 10px;">
+                      ${processSignatureForDisplay(contract.contractorSignatureData, "Digital signature on file")}
                     </div>
                     <p><strong>${contract.contractorName}</strong></p>
                     <p>Print Name</p>
@@ -636,8 +686,8 @@ router.get("/download-html/:contractId", async (req, res) => {
                 </div>
                 <div class="signature-box">
                     <div class="signature-title">CLIENT</div>
-                    <div class="signature-line">
-                      ${contract.clientSignatureData || "Digital signature on file"}
+                    <div class="signature-line" style="min-height: 60px; display: flex; align-items: center; justify-content: center; padding: 10px;">
+                      ${processSignatureForDisplay(contract.clientSignatureData, "Digital signature on file")}
                     </div>
                     <p><strong>${contract.clientName}</strong></p>
                     <p>Print Name</p>
