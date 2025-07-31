@@ -193,6 +193,9 @@ export default function SimpleContractGenerator() {
   const [selectedExistingClient, setSelectedExistingClient] = useState<any>(null);
   const [isLoadingClients, setIsLoadingClients] = useState(false);
 
+  // AI Enhancement states
+  const [isAIProcessing, setIsAIProcessing] = useState(false);
+
   const { currentUser } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
@@ -2853,6 +2856,64 @@ export default function SimpleContractGenerator() {
     window.open(url, "_blank");
   };
 
+  // AI Enhancement function for project description
+  const enhanceProjectDescription = useCallback(async () => {
+    if (!scratchContractData.projectDescription || scratchContractData.projectDescription.trim().length < 5) {
+      toast({
+        title: "Texto insuficiente",
+        description: "Por favor, escribe una descripción más detallada para mejorar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAIProcessing(true);
+    
+    try {
+      console.log('🤖 Starting Mervin AI enhancement...');
+      
+      const response = await fetch('/api/ai-enhance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          originalText: scratchContractData.projectDescription,
+          projectType: scratchContractData.projectType
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al procesar con Mervin AI');
+      }
+      
+      const result = await response.json();
+      console.log('✅ Mervin AI Response:', result);
+      
+      if (result.enhancedDescription) {
+        setScratchContractData(prev => ({ 
+          ...prev, 
+          projectDescription: result.enhancedDescription 
+        }));
+        
+        toast({
+          title: '✨ Mejorado con Mervin AI',
+          description: 'La descripción del proyecto ha sido mejorada profesionalmente'
+        });
+      } else {
+        throw new Error('No se pudo generar contenido mejorado');
+      }
+      
+    } catch (error) {
+      console.error('Error enhancing with AI:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo procesar con Mervin AI. Inténtalo de nuevo.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsAIProcessing(false);
+    }
+  }, [scratchContractData.projectDescription, scratchContractData.projectType, toast]);
+
   // Load existing clients for scratch contract creation
   const loadExistingClients = useCallback(async () => {
     if (!currentUser?.uid) return;
@@ -3574,13 +3635,38 @@ export default function SimpleContractGenerator() {
                           <label className="block text-sm font-medium text-gray-300 mb-2">
                             Project Description *
                           </label>
-                          <textarea
-                            value={scratchContractData.projectDescription}
-                            onChange={(e) => setScratchContractData(prev => ({ ...prev, projectDescription: e.target.value }))}
-                            placeholder="Describe the project scope, materials, and work to be performed..."
-                            rows={4}
-                            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 resize-none"
-                          />
+                          <div className="relative">
+                            <textarea
+                              value={scratchContractData.projectDescription}
+                              onChange={(e) => setScratchContractData(prev => ({ ...prev, projectDescription: e.target.value }))}
+                              placeholder="Describe the project scope, materials, and work to be performed..."
+                              rows={4}
+                              className="w-full p-3 pr-12 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 resize-none"
+                            />
+                            
+                            {/* AI Enhancement Button */}
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={enhanceProjectDescription}
+                              disabled={isAIProcessing || !scratchContractData.projectDescription || scratchContractData.projectDescription.trim().length < 5}
+                              className="absolute bottom-2 right-2 h-8 w-8 p-0 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 text-cyan-400 hover:text-cyan-300"
+                              title="Enhance with Mervin AI"
+                            >
+                              {isAIProcessing ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-400"></div>
+                              ) : (
+                                <Brain className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                          
+                          {/* AI Enhancement Hint */}
+                          <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                            <Sparkles className="h-3 w-3" />
+                            Tip: Write a basic description, then click the AI button to enhance it professionally
+                          </p>
                         </div>
                       </div>
 
