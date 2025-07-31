@@ -193,7 +193,7 @@ class PremiumPdfService {
       signedAt: Date;
     },
   ): string {
-    // Helper function to create signature image
+    // Helper function to create signature image with enhanced base64 handling
     const createSignatureImage = (
       signatureData: string,
       name: string,
@@ -201,30 +201,78 @@ class PremiumPdfService {
     ) => {
       try {
         if (signatureData && signatureData.startsWith("data:image")) {
-          // Canvas/drawn signature - clean and validate
-          const cleanData = signatureData.trim().replace(/\s+/g, "");
-          if (cleanData.includes("base64,") && cleanData.length > 50) {
-            return `<img src="${cleanData}" style="max-height: 45px; max-width: 250px; object-fit: contain; border: 1px solid #ddd; display: block;" alt="Signature" />`;
+          // Canvas/drawn signature - enhanced validation and cleaning
+          console.log(`🖋️ [SIGNATURE-DEBUG] Processing drawn signature for ${name}`);
+          
+          let cleanData = signatureData.trim();
+          
+          // Ensure proper data URI format
+          if (!cleanData.startsWith("data:image/png;base64,") && !cleanData.startsWith("data:image/jpeg;base64,")) {
+            // Try to fix common malformed data URIs
+            if (cleanData.includes("base64,")) {
+              const base64Part = cleanData.split("base64,")[1];
+              if (base64Part && base64Part.length > 50) {
+                cleanData = `data:image/png;base64,${base64Part}`;
+              }
+            }
+          }
+          
+          // Validate the base64 content
+          if (cleanData.includes("base64,") && cleanData.length > 100) {
+            console.log(`✅ [SIGNATURE-DEBUG] Valid drawn signature detected, length: ${cleanData.length}`);
+            
+            // Create img tag with enhanced styling for PDF rendering
+            return `<img src="${cleanData}" 
+              style="
+                max-height: 50px; 
+                max-width: 240px; 
+                height: auto; 
+                width: auto; 
+                object-fit: contain; 
+                display: block; 
+                margin: 0 auto;
+                border: none;
+                background: transparent;
+              " 
+              alt="Drawn Signature" 
+              crossorigin="anonymous" />`;
           } else {
-            console.warn("❌ Invalid signature data format or too short");
-            return `<div style="height: 45px; width: 250px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font-style: italic; background: #f5f5f5;">Invalid Signature</div>`;
+            console.warn(`❌ [SIGNATURE-DEBUG] Invalid signature data for ${name}:`, {
+              startsWithDataImage: signatureData.startsWith("data:image"),
+              includesBase64: signatureData.includes("base64,"),
+              length: signatureData.length
+            });
+            return `<div style="height: 50px; width: 240px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font-style: italic; background: #f9f9f9; color: #666;">Invalid Signature Data</div>`;
           }
         } else {
-          // Typed signature - create simple, reliable SVG
+          // Typed signature - create clean SVG
+          console.log(`📝 [SIGNATURE-DEBUG] Processing typed signature for ${name}`);
+          
           const sigName = String(typedName || name || "Signature")
             .replace(/[<>&"'`]/g, "")
             .substring(0, 25);
 
-          const svgContent = `<svg width="250" height="50" xmlns="http://www.w3.org/2000/svg">
-            <text x="125" y="30" text-anchor="middle" font-family="serif" font-style="italic" font-size="20" fill="#1a365d">${sigName}</text>
+          const svgContent = `<svg width="240" height="50" xmlns="http://www.w3.org/2000/svg" style="background: transparent;">
+            <text x="120" y="32" text-anchor="middle" font-family="Times New Roman, serif" font-style="italic" font-size="18" fill="#1a365d">${sigName}</text>
           </svg>`;
 
           const svgData = `data:image/svg+xml;base64,${Buffer.from(svgContent).toString("base64")}`;
-          return `<img src="${svgData}" style="max-height: 45px; max-width: 250px; object-fit: contain; border: 1px solid #ddd; display: block;" alt="Typed Signature" />`;
+          return `<img src="${svgData}" 
+            style="
+              max-height: 50px; 
+              max-width: 240px; 
+              height: auto; 
+              width: auto; 
+              display: block; 
+              margin: 0 auto;
+              border: none;
+              background: transparent;
+            " 
+            alt="Typed Signature" />`;
         }
       } catch (error) {
-        console.error("Error creating signature image:", error);
-        return `<div style="height: 45px; width: 250px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font-style: italic; color: #666;">Signature Error</div>`;
+        console.error(`❌ [SIGNATURE-DEBUG] Error creating signature image for ${name}:`, error);
+        return `<div style="height: 50px; width: 240px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font-style: italic; color: #666; background: #f9f9f9;">Signature Processing Error</div>`;
       }
     };
 
@@ -246,74 +294,58 @@ class PremiumPdfService {
       clientSignature.typedName,
     );
 
-    // Look for EXECUTION section and signature boxes
-    if (
-      modifiedHTML.includes("EXECUTION") ||
-      (modifiedHTML.includes("CONTRACTOR") && modifiedHTML.includes("CLIENT"))
-    ) {
+    // Look for signature section with correct selectors
+    if (modifiedHTML.includes("signatures") || modifiedHTML.includes("sign-space")) {
       console.log(
-        "🔍 [SIGNATURE-DEBUG] Found EXECUTION section, replacing signature lines...",
+        "🔍 [SIGNATURE-DEBUG] Found signature section, replacing sign-space elements...",
       );
 
-      // Replace empty signature lines with actual signatures
+      // Find all sign-space elements and replace them with proper signatures
+      let signatureCount = 0;
+      
+      // Replace sign-space elements with actual signatures
       modifiedHTML = modifiedHTML.replace(
-        /<div class="signature-line"><\/div>/,
-        `<div class="signature-line" style="border-bottom: 2px solid #000; height: 50px; margin: 25px 0; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px;">
-          ${contractorSigImage}
-        </div>`,
+        /<div class="sign-space"><\/div>/g,
+        () => {
+          signatureCount++;
+          const sigImage = signatureCount === 1 ? clientSigImage : contractorSigImage;
+          return `<div class="sign-space" style="height: 60px; margin: 10px 0; display: flex; align-items: center; justify-content: center; border-bottom: 2px solid #000; padding: 5px;">
+            ${sigImage}
+          </div>`;
+        }
       );
 
-      // Replace empty date lines with actual dates
+      // Replace date placeholders with actual dates
+      let dateCount = 0;
       modifiedHTML = modifiedHTML.replace(
-        /<span class="date-line"><\/span>/,
-        `<span class="date-line" style="border-bottom: 1px solid #000; display: inline-block; width: 150px; height: 20px; text-align: center; font-weight: bold;">${contractorSignature.signedAt.toLocaleDateString()}</span>`,
+        /Date:\s*____________________/g,
+        () => {
+          dateCount++;
+          const signedDate = dateCount === 1 ? clientSignature.signedAt : contractorSignature.signedAt;
+          return `Date: <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 2px 10px;">${signedDate.toLocaleDateString()}</span>`;
+        }
       );
-
-      // Replace second signature line (client)
-      const signatureLineCount = (
-        modifiedHTML.match(/<div class="signature-line">/g) || []
-      ).length;
-      if (signatureLineCount >= 2) {
-        let count = 0;
-        modifiedHTML = modifiedHTML.replace(
-          /<div class="signature-line">.*?<\/div>/g,
-          (match) => {
-            count++;
-            if (count === 2) {
-              return `<div class="signature-line" style="border-bottom: 2px solid #000; height: 50px; margin: 25px 0; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px;">
-                ${clientSigImage}
-              </div>`;
-            }
-            return match;
-          },
-        );
-      }
-
-      // Replace second date line (client)
-      const dateLineCount = (
-        modifiedHTML.match(/<span class="date-line">/g) || []
-      ).length;
-      if (dateLineCount >= 2) {
-        let count = 0;
-        modifiedHTML = modifiedHTML.replace(
-          /<span class="date-line">.*?<\/span>/g,
-          (match) => {
-            count++;
-            if (count === 2) {
-              return `<span class="date-line" style="border-bottom: 1px solid #000; display: inline-block; width: 150px; height: 20px; text-align: center; font-weight: bold;">${clientSignature.signedAt.toLocaleDateString()}</span>`;
-            }
-            return match;
-          },
-        );
-      }
 
       console.log(
-        "✅ [SIGNATURE-DEBUG] Signatures embedded in EXECUTION section",
+        `✅ [SIGNATURE-DEBUG] Replaced ${signatureCount} signatures and ${dateCount} dates`,
       );
     } else {
       console.log(
-        "⚠️ [SIGNATURE-DEBUG] No EXECUTION section found, will add signatures at end",
+        "⚠️ [SIGNATURE-DEBUG] No signature section found, searching for alternative selectors...",
       );
+      
+      // Fallback: Look for any div that might contain signature data
+      if (modifiedHTML.includes("data:image/png;base64")) {
+        console.log("🔧 [SIGNATURE-DEBUG] Found base64 signature data, cleaning up...");
+        
+        // Remove any raw base64 data that might be showing as text
+        modifiedHTML = modifiedHTML.replace(
+          /data:image\/png;base64,[A-Za-z0-9+/=]+/g,
+          (match) => {
+            return `<img src="${match}" style="max-height: 45px; max-width: 250px; object-fit: contain; border: 1px solid #ddd; display: block;" alt="Signature" />`;
+          }
+        );
+      }
     }
 
     // Only add verification footer if signatures were successfully embedded
