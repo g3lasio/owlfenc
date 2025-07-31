@@ -51,6 +51,9 @@ import {
   Share2,
   ExternalLink,
   Copy,
+  ArrowRight,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -66,6 +69,7 @@ import {
   contractHistoryService,
   ContractHistoryEntry,
 } from "@/services/contractHistoryService";
+import { getClients as getFirebaseClients } from "@/lib/clientFirebase";
 
 // Interface for completed contracts
 interface CompletedContract {
@@ -172,6 +176,22 @@ export default function SimpleContractGenerator() {
 
   const [suggestedClauses, setSuggestedClauses] = useState<any[]>([]);
   const [selectedClauses, setSelectedClauses] = useState<string[]>([]);
+
+  // Create from scratch states
+  const [contractCreationMode, setContractCreationMode] = useState<"existing" | "scratch">("existing");
+  const [scratchContractData, setScratchContractData] = useState({
+    clientName: "",
+    clientEmail: "",
+    clientPhone: "",
+    clientAddress: "",
+    projectDescription: "",
+    projectCost: "",
+    projectType: "Fence Installation",
+  });
+  const [clientSelectionMode, setClientSelectionMode] = useState<"existing" | "new">("new");
+  const [existingClients, setExistingClients] = useState<any[]>([]);
+  const [selectedExistingClient, setSelectedExistingClient] = useState<any>(null);
+  const [isLoadingClients, setIsLoadingClients] = useState(false);
 
   const { currentUser } = useAuth();
   const { profile } = useProfile();
@@ -2833,6 +2853,125 @@ export default function SimpleContractGenerator() {
     window.open(url, "_blank");
   };
 
+  // Load existing clients for scratch contract creation
+  const loadExistingClients = useCallback(async () => {
+    if (!currentUser?.uid) return;
+
+    try {
+      setIsLoadingClients(true);
+      const clientsData = await getFirebaseClients();
+      setExistingClients(clientsData);
+    } catch (error) {
+      console.error("Error loading clients:", error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los clientes",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingClients(false);
+    }
+  }, [currentUser?.uid, toast]);
+
+  // Handle existing client selection
+  const handleExistingClientSelect = (client: any) => {
+    setSelectedExistingClient(client);
+    setScratchContractData(prev => ({
+      ...prev,
+      clientName: client.name || "",
+      clientEmail: client.email || "",
+      clientPhone: client.phone || "",
+      clientAddress: client.address || "",
+    }));
+  };
+
+  // Create virtual project from scratch data
+  const createProjectFromScratch = () => {
+    const cost = parseFloat(scratchContractData.projectCost) || 0;
+    
+    const virtualProject = {
+      id: `scratch-${Date.now()}`,
+      clientName: scratchContractData.clientName,
+      client: scratchContractData.clientName,
+      projectType: scratchContractData.projectType,
+      projectDescription: scratchContractData.projectDescription,
+      address: scratchContractData.clientAddress,
+      clientAddress: scratchContractData.clientAddress,
+      total: cost,
+      totalAmount: cost,
+      totalPrice: cost,
+      displaySubtotal: cost,
+      estimateDate: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      estimateNumber: `SCRATCH-${Date.now()}`,
+      isFromScratch: true,
+    };
+
+    return virtualProject;
+  };
+
+  // Handle scratch contract progression to Step 2
+  const handleScratchContractProceed = () => {
+    // Validate required fields
+    if (!scratchContractData.clientName.trim()) {
+      toast({
+        title: "Campo requerido",
+        description: "El nombre del cliente es obligatorio",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!scratchContractData.projectDescription.trim()) {
+      toast({
+        title: "Campo requerido", 
+        description: "La descripción del proyecto es obligatoria",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!scratchContractData.projectCost.trim() || parseFloat(scratchContractData.projectCost) <= 0) {
+      toast({
+        title: "Campo requerido",
+        description: "El costo del proyecto debe ser mayor a 0",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create virtual project and proceed
+    const virtualProject = createProjectFromScratch();
+    setSelectedProject(virtualProject);
+    
+    // Pre-populate editable data
+    setEditableData(prev => ({
+      ...prev,
+      clientName: scratchContractData.clientName,
+      clientEmail: scratchContractData.clientEmail,
+      clientPhone: scratchContractData.clientPhone,
+      clientAddress: scratchContractData.clientAddress,
+      paymentMilestones: [
+        { id: 1, description: "Initial deposit", percentage: 50, amount: parseFloat(scratchContractData.projectCost) * 0.5 },
+        { id: 2, description: "Project completion", percentage: 50, amount: parseFloat(scratchContractData.projectCost) * 0.5 },
+      ],
+    }));
+
+    setCurrentStep(2);
+    
+    toast({
+      title: "Contrato creado",
+      description: "Proyecto creado exitosamente. Puedes revisar y personalizar los detalles.",
+    });
+  };
+
+  // Load clients when switching to existing client mode
+  useEffect(() => {
+    if (contractCreationMode === "scratch" && clientSelectionMode === "existing") {
+      loadExistingClients();
+    }
+  }, [contractCreationMode, clientSelectionMode, loadExistingClients]);
+
   return (
     <div className="min-h-screen bg-black text-white p-4">
       <div className="max-w-4xl mx-auto">
@@ -2921,10 +3060,22 @@ export default function SimpleContractGenerator() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-cyan-400">
                     <Database className="h-5 w-5" />
-                    Step 1: Select Project
+                    Step 1: Create Contract
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
+                  {/* Creation Mode Selection */}
+                  <Tabs value={contractCreationMode} onValueChange={(value) => setContractCreationMode(value as "existing" | "scratch")} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-800 border-gray-700">
+                      <TabsTrigger value="existing" className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black">
+                        From Existing Project
+                      </TabsTrigger>
+                      <TabsTrigger value="scratch" className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black">
+                        Create from Scratch
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="existing" className="space-y-4">
                   {/* Search and Refresh Controls */}
                   <div className="flex items-center gap-4 mb-6">
                     <div className="relative flex-1">
@@ -3139,6 +3290,187 @@ export default function SimpleContractGenerator() {
                       </div>
                     )}
                   </div>
+                    </TabsContent>
+
+                    {/* Create from Scratch Tab */}
+                    <TabsContent value="scratch" className="space-y-6">
+                      <div className="text-center mb-6">
+                        <p className="text-gray-400">
+                          Create a contract from scratch by providing basic project information
+                        </p>
+                      </div>
+
+                      {/* Client Selection Mode */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-cyan-400">Client Information</h3>
+                        
+                        <Tabs value={clientSelectionMode} onValueChange={(value) => setClientSelectionMode(value as "existing" | "new")}>
+                          <TabsList className="grid w-full grid-cols-2 bg-gray-800 border-gray-700">
+                            <TabsTrigger value="new" className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black">
+                              New Client
+                            </TabsTrigger>
+                            <TabsTrigger value="existing" className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black">
+                              Existing Client
+                            </TabsTrigger>
+                          </TabsList>
+
+                          <TabsContent value="new" className="space-y-4 mt-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                  Client Name *
+                                </label>
+                                <Input
+                                  value={scratchContractData.clientName}
+                                  onChange={(e) => setScratchContractData(prev => ({ ...prev, clientName: e.target.value }))}
+                                  placeholder="John Doe"
+                                  className="bg-gray-800 border-gray-600 text-white"
+                                />
+                              </div>
+                              
+                              <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                  Email
+                                </label>
+                                <Input
+                                  type="email"
+                                  value={scratchContractData.clientEmail}
+                                  onChange={(e) => setScratchContractData(prev => ({ ...prev, clientEmail: e.target.value }))}
+                                  placeholder="john@example.com"
+                                  className="bg-gray-800 border-gray-600 text-white"
+                                />
+                              </div>
+                              
+                              <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                  Phone
+                                </label>
+                                <Input
+                                  value={scratchContractData.clientPhone}
+                                  onChange={(e) => setScratchContractData(prev => ({ ...prev, clientPhone: e.target.value }))}
+                                  placeholder="(555) 123-4567"
+                                  className="bg-gray-800 border-gray-600 text-white"
+                                />
+                              </div>
+                              
+                              <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                  Address
+                                </label>
+                                <Input
+                                  value={scratchContractData.clientAddress}
+                                  onChange={(e) => setScratchContractData(prev => ({ ...prev, clientAddress: e.target.value }))}
+                                  placeholder="123 Main St, City, State"
+                                  className="bg-gray-800 border-gray-600 text-white"
+                                />
+                              </div>
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="existing" className="space-y-4 mt-4">
+                            {isLoadingClients ? (
+                              <div className="text-center py-4">
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-cyan-400 mx-auto"></div>
+                                <p className="mt-2 text-gray-400">Loading clients...</p>
+                              </div>
+                            ) : existingClients.length > 0 ? (
+                              <div className="space-y-2 max-h-48 overflow-y-auto">
+                                {existingClients.map((client) => (
+                                  <div
+                                    key={client.id}
+                                    className={`p-3 border rounded-lg cursor-pointer transition-all ${
+                                      selectedExistingClient?.id === client.id
+                                        ? "border-cyan-400 bg-cyan-400/10"
+                                        : "border-gray-600 hover:border-gray-500"
+                                    }`}
+                                    onClick={() => handleExistingClientSelect(client)}
+                                  >
+                                    <div className="font-medium text-cyan-400">{client.name}</div>
+                                    {client.email && (
+                                      <div className="text-sm text-gray-400">{client.email}</div>
+                                    )}
+                                    {client.phone && (
+                                      <div className="text-sm text-gray-400">{client.phone}</div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-center py-4">
+                                <p className="text-gray-400">No existing clients found</p>
+                                <p className="text-sm text-gray-500 mt-1">Create your first client in the new client tab</p>
+                              </div>
+                            )}
+                          </TabsContent>
+                        </Tabs>
+                      </div>
+
+                      {/* Project Information */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-cyan-400">Project Information</h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                              Project Type *
+                            </label>
+                            <select
+                              value={scratchContractData.projectType}
+                              onChange={(e) => setScratchContractData(prev => ({ ...prev, projectType: e.target.value }))}
+                              className="w-full p-2 bg-gray-800 border border-gray-600 rounded-md text-white"
+                            >
+                              <option value="Fence Installation">Fence Installation</option>
+                              <option value="Fence Repair">Fence Repair</option>
+                              <option value="Gate Installation">Gate Installation</option>
+                              <option value="Deck Construction">Deck Construction</option>
+                              <option value="Pergola Installation">Pergola Installation</option>
+                              <option value="General Construction">General Construction</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                              Project Cost *
+                            </label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={scratchContractData.projectCost}
+                              onChange={(e) => setScratchContractData(prev => ({ ...prev, projectCost: e.target.value }))}
+                              placeholder="2500.00"
+                              className="bg-gray-800 border-gray-600 text-white"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            Project Description *
+                          </label>
+                          <textarea
+                            value={scratchContractData.projectDescription}
+                            onChange={(e) => setScratchContractData(prev => ({ ...prev, projectDescription: e.target.value }))}
+                            placeholder="Describe the project scope, materials, and work to be performed..."
+                            rows={4}
+                            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 resize-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="flex justify-end pt-4">
+                        <Button
+                          onClick={handleScratchContractProceed}
+                          className="bg-cyan-500 hover:bg-cyan-600 text-black font-semibold px-6 py-2"
+                        >
+                          Create Contract
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
             )}
@@ -4024,14 +4356,14 @@ export default function SimpleContractGenerator() {
                                 </div>
                               </div>
                               <div className="bg-black/60 rounded p-2 border border-cyan-400/30">
-                                <a
-                                  href={contractorSignUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                <button
+                                 onClick={()=>{
+                                   openUrl(contractorSignUrl)
+                                 }}
                                   className="text-cyan-300 hover:text-cyan-200 underline text-xs break-all font-mono"
                                 >
                                   {contractorSignUrl}
-                                </a>
+                                </button>
                               </div>
                               <div className="flex items-center gap-1 mt-2 text-xs text-gray-400">
                                 <Lock className="h-3 w-3" />
@@ -4120,14 +4452,14 @@ export default function SimpleContractGenerator() {
                                 </div>
                               </div>
                               <div className="bg-black/60 rounded p-2 border border-green-400/30">
-                                <a
-                                  href={clientSignUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                              <button
+                                onClick={()=>{
+                                  openUrl(contractorSignUrl)
+                                }}
                                   className="text-green-300 hover:text-green-200 underline text-xs break-all font-mono"
                                 >
                                   {clientSignUrl}
-                                </a>
+                                </button>
                               </div>
                               <div className="flex items-center gap-1 mt-2 text-xs text-gray-400">
                                 <Lock className="h-3 w-3" />
