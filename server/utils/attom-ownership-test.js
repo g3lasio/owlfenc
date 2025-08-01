@@ -24,7 +24,7 @@ const address2 = testAddress.slice(testAddress.indexOf(',') + 1).trim();
 console.log('================ PRUEBA DE API ATTOM - DATOS DE PROPIEDAD ================');
 console.log('Dirección de prueba:', testAddress);
 console.log(`Parámetros: address1=${address1}, address2=${address2}`);
-console.log(`Clave API disponible (longitud: ${apiKey.length}, primeros 5 caracteres: ${apiKey.substring(0, 5)})`);
+console.log(`Clave API disponible: ${apiKey ? 'Sí' : 'No'} (longitud: ${apiKey ? apiKey.length : 0})`);
 console.log('====================================================================');
 
 // Crear agente HTTPS con keepAlive

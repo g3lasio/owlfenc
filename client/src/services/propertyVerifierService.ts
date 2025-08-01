@@ -29,64 +29,71 @@ export interface PropertyDetails {
   ownerHistory?: OwnerHistoryEntry[];
 }
 
-// URL del wrapper externo de ATTOM
-const ATTOM_WRAPPER_URL = 'https://attom-wrapper.replit.app';
+// Secure Property Verification Service
+// All API communication goes through our secure backend
 
 class PropertyVerifierService {
   async verifyProperty(address: string): Promise<PropertyDetails> {
+    console.log('🔍 Starting secure property verification for:', address);
+    
+    if (!address?.trim()) {
+      throw new Error('Por favor ingresa una dirección válida');
+    }
+
     try {
-      console.log(`Verificando propiedad con dirección: ${address}`);
-      
-      // IMPORTANTE: NO usamos la conexión directa al servicio externo desde el frontend
-      // Dejamos que el backend maneje toda la comunicación con ATTOM
-      
-      console.log("Enviando solicitud de verificación al backend de la aplicación");
-      const internalResponse = await axios.get('/api/property/details', {
+      console.log('📡 Sending request to secure backend API');
+      const response = await axios.get('/api/property/details', {
         params: { address: address.trim() },
-        timeout: 30000 // Aumentamos el timeout a 30 segundos porque el backend puede tardar en conectar con ATTOM
+        timeout: 25000, // 25 seconds timeout
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
       });
       
-      console.log('Respuesta recibida del backend interno:', internalResponse.status);
-      console.log('Datos recibidos:', internalResponse.data);
+      console.log('✅ Backend response received:', {
+        status: response.status,
+        hasData: !!response.data
+      });
       
-      if (internalResponse.data && internalResponse.status === 200) {
-        return internalResponse.data;
+      if (response.data && response.status === 200) {
+        console.log('✅ Property verification successful');
+        return response.data;
       }
       
       throw new Error('No se recibieron datos válidos del servidor');
-    } catch (error: any) {
-      console.error('Error en servicio de verificación de propiedad:', error);
       
-      // Mostrar errores detallados en la consola para depuración
+    } catch (error: any) {
+      console.error('🚨 Property verification failed:', error.message);
+      
+      // Log detailed error information for debugging
       if (error.response) {
-        // La solicitud fue realizada y el servidor respondió con un código de estado
-        // que está fuera del rango 2xx
-        console.error('Detalles del error de respuesta:', {
+        console.error('📋 Error details:', {
           status: error.response.status,
-          data: error.response.data,
-          headers: error.response.headers
+          message: error.response.data?.message,
+          details: error.response.data?.details
         });
         
-        // Si el backend devuelve un mensaje de error específico, lo mostramos al usuario
-        if (error.response.data && error.response.data.message) {
+        // Use specific error message from backend if available
+        if (error.response.data?.message) {
           throw new Error(error.response.data.message);
         }
       } else if (error.request) {
-        // La solicitud fue realizada pero no se recibió respuesta
-        console.error('Error de solicitud (sin respuesta):', error.request);
+        console.error('🌐 Network error - no response received');
         throw new Error('No se pudo conectar con el servidor. Verifica tu conexión a internet.');
       } else {
-        // Algo sucedió en la configuración de la solicitud que provocó un error
-        console.error('Error de configuración de solicitud:', error.message);
+        console.error('⚙️ Request configuration error:', error.message);
       }
       
-      // Manejamos casos específicos
+      // Handle specific error cases
       if (error.response?.status === 404) {
-        throw new Error('No se encontró información para la dirección proporcionada');
-      } else if (error.response?.status === 502 || error.code === 'ECONNABORTED') {
-        throw new Error('Error de conectividad con el servicio de verificación de propiedad');
-      } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
-        throw new Error('La verificación tomó demasiado tiempo. Por favor, intenta nuevamente.');
+        throw new Error('No se encontró información para la dirección proporcionada. Verifica que esté correctamente escrita con ciudad, estado y código postal.');
+      } else if (error.response?.status === 408 || error.code === 'ECONNABORTED') {
+        throw new Error('La solicitud tardó demasiado tiempo. Intenta nuevamente.');
+      } else if (error.response?.status === 429) {
+        throw new Error('Límite de solicitudes excedido. Espera unos minutos antes de intentar nuevamente.');
+      } else if (error.response?.status >= 500) {
+        throw new Error('Error del servidor. Si el problema persiste, contacta al soporte técnico.');
       } else {
         throw new Error(error.message || 'Error al verificar la propiedad');
       }

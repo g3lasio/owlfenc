@@ -22,7 +22,7 @@ console.log('Probando API de ATTOM con:');
 console.log(`Dirección: ${testAddress}`);
 console.log(`address1=${address1}`);
 console.log(`address2=${address2}`);
-console.log(`API Key length: ${apiKey.length} chars, primeros 5 caracteres: ${apiKey.substring(0, 5)}`);
+console.log(`API Key configured: ${apiKey ? 'Yes' : 'No'} (length: ${apiKey ? apiKey.length : 0})`);
 
 // Crear un agente HTTPS con keep-alive
 const agent = new https.Agent({

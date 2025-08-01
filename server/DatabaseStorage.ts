@@ -651,7 +651,7 @@ export class DatabaseStorage implements IStorage {
     return db.select()
       .from(propertySearchHistory)
       .where(eq(propertySearchHistory.userId, userId))
-      .orderBy(desc(propertySearchHistory.createdAt));
+      .orderBy(desc(propertySearchHistory.searchDate));
   }
 
   async createPropertySearchHistory(insertHistory: InsertPropertySearchHistory): Promise<PropertySearchHistory> {

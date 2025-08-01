@@ -5946,302 +5946,78 @@ Output must be between 200-900 characters in English.`;
       });
     }
 
-    console.log("===== INICIO DE SOLICITUD DE DETALLES DE PROPIEDAD =====");
-    console.log("Solicitando datos de propiedad para dirección:", address);
+    console.log("🔍 Starting secure property verification for address:", address);
 
     try {
-      // Usar el servicio externo ATTOM directamente
-      const ATTOM_WRAPPER_URL = "https://attom-wrapper.replit.app";
-      console.log(
-        `Intentando conexión directa con el servicio ATTOM en: ${ATTOM_WRAPPER_URL}`,
-      );
+      // Use the secure ATTOM service
+      const { secureAttomService } = await import('./services/secure-attom-service');
+      
+      const propertyData = await secureAttomService.getPropertyDetails(address);
 
-      try {
-        // Probar la conexión con el wrapper
-        const testResponse = await axios.get(
-          `${ATTOM_WRAPPER_URL}/api/health`,
-          {
-            timeout: 5000,
-          },
-        );
-        console.log(
-          "Estado del servicio ATTOM:",
-          testResponse.data || "Sin datos de estado",
-        );
-      } catch (healthError) {
-        console.error(
-          "Error verificando estado del servicio ATTOM:",
-          healthError.message,
-        );
-        // Continuamos aunque falle la verificación de salud
-      }
-
-      // Procedemos con múltiples intentos para obtener datos
-      const startTime = Date.now();
-      console.log("Intentos para obtener datos de propiedad:");
-
-      // Intento 1: Enviar dirección completa
-      console.log("Intento 1 - Dirección completa");
-      try {
-        const response = await axios.get(
-          `${ATTOM_WRAPPER_URL}/api/property/details`,
-          {
-            params: { address },
-            timeout: 15000,
-          },
-        );
-
-        console.log(
-          "Intento 1 exitoso. Datos recibidos:",
-          response.data ? "Sí" : "No",
-        );
-
-        if (response.data) {
-          const propertyData = {
-            owner: response.data.owner || "No disponible",
-            address: response.data.address || address,
-            sqft: response.data.buildingAreaSqFt || response.data.sqft || 0,
-            bedrooms:
-              response.data.rooms?.bedrooms || response.data.bedrooms || 0,
-            bathrooms:
-              response.data.rooms?.bathrooms || response.data.bathrooms || 0,
-            lotSize: response.data.lotSizeAcres
-              ? `${response.data.lotSizeAcres} acres`
-              : response.data.lotSize || "No disponible",
-            landSqft: response.data.lotSizeSqFt || 0,
-            yearBuilt: response.data.yearBuilt || 0,
-            propertyType: response.data.propertyType || "Residencial",
-            ownerOccupied: !!response.data.ownerOccupied,
-            verified: true,
-            ownershipVerified: !!response.data.owner,
-            // Info adicional si está disponible
-            purchaseDate: response.data.saleTransHistory?.[0]?.saleTransDate,
-            purchasePrice: response.data.saleTransHistory?.[0]?.saleTransAmount,
-            previousOwner: response.data.saleTransHistory?.[1]?.seller,
-            ownerHistory: response.data.saleTransHistory?.map((entry: any) => ({
-              owner: entry.buyer || "Desconocido",
-              purchaseDate: entry.saleTransDate,
-              purchasePrice: entry.saleTransAmount,
-              saleDate: entry.recordingDate,
-              salePrice: entry.saleTransAmount,
-            })),
-          };
-
-          const endTime = Date.now();
-          console.log(
-            `Solicitud completada en ${endTime - startTime}ms con estado: SUCCESS`,
-          );
-          console.log("Enviando respuesta al cliente...");
-          console.log(
-            "===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n",
-          );
-
-          // Guardar la búsqueda en el historial
-          try {
-            // En una aplicación real, obtendríamos el userId de la sesión
-            const userId = 1; // ID de usuario por defecto para pruebas
-
-            // Crear un título basado en la dirección
-            const title = `Propiedad en ${address}`;
-
-            // Preparar datos para el historial
-            const historyData = {
-              userId,
-              address,
-              ownerName: propertyData.owner,
-              results: propertyData,
-              title,
-              isFavorite: false,
-              parcelNumber: propertyData.parcelNumber || "",
-              tags: [], // Inicialmente sin etiquetas
-            };
-
-            // Validar los datos antes de guardar
-            const validHistoryData =
-              insertPropertySearchHistorySchema.parse(historyData);
-
-            // Guardar en la base de datos
-            await storage.createPropertySearchHistory(validHistoryData);
-            console.log("Búsqueda guardada en el historial de propiedades");
-          } catch (historyError) {
-            // En caso de error al guardar el historial, solo lo registramos pero no interrumpimos la respuesta
-            console.error(
-              "Error al guardar en historial de propiedades:",
-              historyError,
-            );
-          }
-
-          return res.json(propertyData);
-        }
-      } catch (error1) {
-        console.log("Intento 1 falló:", error1.message || "Error desconocido");
-        console.log("Código de estado:", error1.response?.status || "N/A");
-      }
-
-      // Intento 2: Usar el formato de componentes
-      console.log("Intento 2 - Formato de componentes de dirección");
-      try {
-        // Parsear dirección en componentes
-        const addressParts = address.split(",").map((part) => part.trim());
-        const streetAddress = addressParts[0];
-        const city = addressParts.length > 1 ? addressParts[1] : "";
-        const stateZip =
-          addressParts.length > 2 ? addressParts[2].split(" ") : ["", ""];
-        const state = stateZip[0] || "";
-        const zip = stateZip.length > 1 ? stateZip[1] : "";
-
-        console.log("Componentes de dirección:", {
-          streetAddress,
-          city,
-          state,
-          zip,
+      if (!propertyData) {
+        console.log("📭 Property not found");
+        return res.status(404).json({
+          message: "No se encontró información para la dirección proporcionada",
+          details: "Verifica que la dirección esté correctamente escrita e incluya ciudad, estado y código postal",
         });
-
-        const response = await axios.get(
-          `${ATTOM_WRAPPER_URL}/api/property/details`,
-          {
-            params: {
-              street: streetAddress,
-              city,
-              state,
-              zip,
-            },
-            timeout: 15000,
-          },
-        );
-
-        if (response.data) {
-          const propertyData = {
-            owner: response.data.owner || "No disponible",
-            address: response.data.address || address,
-            sqft: response.data.buildingAreaSqFt || response.data.sqft || 0,
-            bedrooms:
-              response.data.rooms?.bedrooms || response.data.bedrooms || 0,
-            bathrooms:
-              response.data.rooms?.bathrooms || response.data.bathrooms || 0,
-            lotSize: response.data.lotSizeAcres
-              ? `${response.data.lotSizeAcres} acres`
-              : response.data.lotSize || "No disponible",
-            landSqft: response.data.lotSizeSqFt || 0,
-            yearBuilt: response.data.yearBuilt || 0,
-            propertyType: response.data.propertyType || "Residencial",
-            ownerOccupied: !!response.data.ownerOccupied,
-            verified: true,
-            ownershipVerified: !!response.data.owner,
-          };
-
-          const endTime = Date.now();
-          console.log(
-            `Solicitud completada en ${endTime - startTime}ms con estado: SUCCESS`,
-          );
-          console.log("Enviando respuesta al cliente...");
-          console.log(
-            "===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n",
-          );
-
-          // Guardar la búsqueda en el historial
-          try {
-            // En una aplicación real, obtendríamos el userId de la sesión
-            const userId = 1; // ID de usuario por defecto para pruebas
-
-            // Crear un título basado en la dirección
-            const title = `Propiedad en ${address}`;
-
-            // Preparar datos para el historial
-            const historyData = {
-              userId,
-              address,
-              ownerName: propertyData.owner,
-              results: propertyData,
-              title,
-              isFavorite: false,
-              parcelNumber: propertyData.parcelNumber || "",
-              tags: [], // Inicialmente sin etiquetas
-            };
-
-            // Validar los datos antes de guardar
-            const validHistoryData =
-              insertPropertySearchHistorySchema.parse(historyData);
-
-            // Guardar en la base de datos
-            await storage.createPropertySearchHistory(validHistoryData);
-            console.log(
-              "Búsqueda guardada en el historial de propiedades (intento 2)",
-            );
-          } catch (historyError) {
-            // En caso de error al guardar el historial, solo lo registramos pero no interrumpimos la respuesta
-            console.error(
-              "Error al guardar en historial de propiedades:",
-              historyError,
-            );
-          }
-
-          return res.json(propertyData);
-        }
-      } catch (error2) {
-        console.log("Intento 2 falló:", error2.message || "Error desconocido");
       }
 
-      // Intento 3: Usar servicio interno
-      console.log("Intento 3 - Servicio interno propertyService");
+      console.log("✅ Property verification successful");
+
+      // Save search to history
       try {
-        const result =
-          await propertyService.getPropertyDetailsWithDiagnostics(address);
-        const endTime = Date.now();
+        const userId = 1; // In a real app, get from session
+        const title = `Propiedad en ${address}`;
 
-        console.log(
-          `Solicitud interna completada en ${endTime - startTime}ms con estado: ${result.status}`,
-        );
-        console.log("Diagnóstico de la solicitud:", {
-          status: result.status,
-          parsedAddress: result.diagnostics?.parsedAddress
-            ? "disponible"
-            : "no disponible",
-          errorType: result.error?.code || "ninguno",
-          processingTime: endTime - startTime,
-        });
+        const historyData = {
+          userId,
+          address,
+          ownerName: propertyData.owner,
+          results: propertyData,
+          title,
+          isFavorite: false,
+          parcelNumber: "",
+          tags: [],
+        };
 
-        if (result.status === "SUCCESS" && result.data) {
-          console.log("ÉXITO: Datos verificados obtenidos de servicio interno");
-          console.log("Enviando respuesta al cliente...");
-          console.log(
-            "===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n",
-          );
-
-          return res.json(result.data);
-        }
-
-        if (result.status === "NOT_FOUND") {
-          console.log(
-            "No se encontró información para la dirección proporcionada",
-          );
-          console.log(
-            "===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====\n",
-          );
-
-          return res.status(404).json({
-            message:
-              "No se encontró información para la dirección proporcionada",
-            details:
-              "Verifica que la dirección esté correctamente escrita e incluya ciudad, estado y código postal",
-          });
-        }
-      } catch (error3) {
-        console.log("Intento 3 falló:", error3.message || "Error desconocido");
+        const validHistoryData = insertPropertySearchHistorySchema.parse(historyData);
+        await storage.createPropertySearchHistory(validHistoryData);
+        console.log("📝 Search saved to property history");
+      } catch (historyError) {
+        console.error("⚠️ Error saving to property history:", historyError);
+        // Don't fail the request if history save fails
       }
 
-      // Si llegamos aquí, todos los intentos han fallado
-      console.log(
-        "Todos los intentos fallaron. No se pudo obtener información de propiedad.",
-      );
-      return res.status(404).json({
-        message: "No se encontró información para la dirección proporcionada",
-        details:
-          'Verifica que la dirección esté correctamente escrita. Por ejemplo: "123 Main St, Seattle, WA 98101"',
-      });
+      return res.json(propertyData);
+
     } catch (error: any) {
-      console.error("ERROR EN VERIFICACIÓN DE PROPIEDAD:");
-      console.error("Mensaje:", error.message);
+      console.error("🚨 Property verification error:", error.message);
+
+      if (error.message.includes('API key')) {
+        return res.status(500).json({
+          message: "Servicio de verificación no configurado correctamente",
+          details: "Por favor contacta al administrador del sistema",
+        });
+      }
+
+      if (error.message.includes('timeout')) {
+        return res.status(408).json({
+          message: "Tiempo de espera agotado",
+          details: "El servicio tardó demasiado en responder. Intenta nuevamente.",
+        });
+      }
+
+      if (error.message.includes('Rate limit')) {
+        return res.status(429).json({
+          message: "Límite de solicitudes excedido",
+          details: "Por favor espera unos minutos antes de hacer otra búsqueda.",
+        });
+      }
+
+      return res.status(500).json({
+        message: "Error interno del servidor",
+        details: "No se pudo completar la verificación de la propiedad",
+      });
 
       res.status(500).json({
         message: "Error al obtener detalles de la propiedad",
