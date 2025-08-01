@@ -10,7 +10,6 @@
  */
 
 import { secureAttomService } from '../services/secure-attom-service';
-import { envConfig } from '../../env.config';
 
 interface TestResult {
   testName: string;
@@ -51,8 +50,8 @@ class AttomAPITester {
     
     const startTime = Date.now();
     try {
-      const hasApiKey = Boolean(envConfig.ATTOM_API_KEY);
-      const keyLength = envConfig.ATTOM_API_KEY?.length || 0;
+      const hasApiKey = Boolean(process.env.ATTOM_API_KEY);
+      const keyLength = process.env.ATTOM_API_KEY?.length || 0;
       
       if (!hasApiKey) {
         this.addResult('API Key Configuration', false, Date.now() - startTime, 'ATTOM_API_KEY not configured');
@@ -282,7 +281,7 @@ class AttomAPITester {
 }
 
 // Run the tests if this file is executed directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   const tester = new AttomAPITester();
   tester.runAllTests().catch(console.error);
 }

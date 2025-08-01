@@ -5946,12 +5946,14 @@ Output must be between 200-900 characters in English.`;
       });
     }
 
-    console.log("🔍 Starting secure property verification for address:", address);
+    console.log("🔍 [PROPERTY-API] Starting secure property verification for address:", address);
 
     try {
-      // Use the secure ATTOM service
+      // Import and use the secure ATTOM service
+      console.log("📦 [PROPERTY-API] Loading secure ATTOM service");
       const { secureAttomService } = await import('./services/secure-attom-service');
       
+      console.log("🌐 [PROPERTY-API] Calling ATTOM service");
       const propertyData = await secureAttomService.getPropertyDetails(address);
 
       if (!propertyData) {
@@ -6017,11 +6019,6 @@ Output must be between 200-900 characters in English.`;
       return res.status(500).json({
         message: "Error interno del servidor",
         details: "No se pudo completar la verificación de la propiedad",
-      });
-
-      res.status(500).json({
-        message: "Error al obtener detalles de la propiedad",
-        error: error.message,
       });
     }
   });

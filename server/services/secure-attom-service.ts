@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { envConfig } from '../../env.config';
 import type { PropertyDetails } from '../../client/src/services/propertyVerifierService';
 
 /**
@@ -12,9 +11,19 @@ class SecureAttomService {
   private readonly timeout = 10000; // 10 seconds
   
   constructor() {
-    this.apiKey = envConfig.ATTOM_API_KEY || '';
+    // Use process.env directly for server-side environment variables
+    this.apiKey = process.env.ATTOM_API_KEY || '';
+    
+    console.log('🔧 [ATTOM-CONFIG] Initializing Secure ATTOM Service');
+    console.log('🔧 [ATTOM-CONFIG] API Key configured:', !!this.apiKey);
+    console.log('🔧 [ATTOM-CONFIG] API Key length:', this.apiKey ? this.apiKey.length : 0);
+    
     if (!this.apiKey) {
-      console.warn('⚠️ ATTOM_API_KEY not configured. Property verification will not work.');
+      console.warn('⚠️ [ATTOM-CONFIG] ATTOM_API_KEY not configured. Property verification will not work.');
+    } else if (this.apiKey.length < 10) {
+      console.warn('⚠️ [ATTOM-CONFIG] ATTOM_API_KEY appears to be too short.');
+    } else {
+      console.log('✅ [ATTOM-CONFIG] ATTOM API key properly configured');
     }
   }
 
@@ -41,7 +50,7 @@ class SecureAttomService {
    * Parses address into components required by ATTOM API
    */
   private parseAddress(fullAddress: string) {
-    console.log('🏠 Parsing address for ATTOM API');
+    console.log('🏠 [ATTOM-PARSER] Parsing address for ATTOM API:', fullAddress);
     
     const parts = fullAddress.split(',').map(part => part.trim());
     
@@ -60,26 +69,35 @@ class SecureAttomService {
       zip = stateZipPart[1] || '';
     }
 
-    return {
+    const parsed = {
       address1: address1.trim(),
       city: city.trim(),
       state: state.trim().toUpperCase(),
       zip: zip.trim()
     };
+
+    console.log('🏠 [ATTOM-PARSER] Parsed address:', parsed);
+    return parsed;
   }
 
   /**
    * Makes a secure request to ATTOM API
    */
   private async makeSecureRequest(endpoint: string, params: any): Promise<any> {
+    console.log('🌐 [ATTOM-REQUEST] Making secure request to:', endpoint);
+    console.log('🌐 [ATTOM-REQUEST] Request params:', JSON.stringify(params, null, 2));
+    
     if (!this.isConfigured()) {
-      throw new Error('ATTOM API key not properly configured');
+      console.error('❌ [ATTOM-REQUEST] API not configured properly');
+      throw new Error('ATTOM API no está configurado correctamente');
     }
-
-    console.log('🔐 Making secure request to ATTOM API');
-    console.log(`📍 Endpoint: ${endpoint}`);
+    
+    const startTime = Date.now();
     
     try {
+      console.log('🔐 [ATTOM-REQUEST] Making secure request to ATTOM API');
+      console.log('📍 [ATTOM-REQUEST] Endpoint:', `${this.baseURL}${endpoint}`);
+      
       const response = await axios.get(`${this.baseURL}${endpoint}`, {
         params,
         headers: this.getSecureHeaders(),
@@ -87,33 +105,45 @@ class SecureAttomService {
         validateStatus: (status) => status < 500, // Don't throw on 4xx errors
       });
 
+      const responseTime = Date.now() - startTime;
+      console.log(`⏱️ [ATTOM-REQUEST] Response time: ${responseTime}ms`);
+      console.log(`📊 [ATTOM-REQUEST] Status: ${response.status}`);
+
       if (response.status === 401 || response.status === 403) {
-        console.error('🚫 ATTOM API authentication failed');
+        console.error('🚫 [ATTOM-REQUEST] API authentication failed');
         throw new Error('API authentication failed. Please check your ATTOM API key.');
       }
 
       if (response.status === 404) {
-        console.log('📭 Property not found in ATTOM database');
+        console.log('📭 [ATTOM-REQUEST] Property not found in ATTOM database');
         return null;
       }
 
       if (response.status !== 200) {
-        console.error(`⚠️ ATTOM API returned status ${response.status}`);
+        console.error(`⚠️ [ATTOM-REQUEST] API returned status ${response.status}`);
+        console.error('📋 [ATTOM-REQUEST] Response data:', response.data);
         throw new Error(`API request failed with status ${response.status}`);
       }
 
-      console.log('✅ ATTOM API request successful');
+      console.log('✅ [ATTOM-REQUEST] ATTOM API request successful');
+      console.log('📊 [ATTOM-REQUEST] Response contains data:', !!response.data);
       return response.data;
+      
     } catch (error: any) {
+      const responseTime = Date.now() - startTime;
+      console.error(`❌ [ATTOM-REQUEST] Request failed after ${responseTime}ms`);
+      
       if (error.code === 'ECONNABORTED') {
+        console.error('⏰ [ATTOM-REQUEST] Request timeout');
         throw new Error('Request timeout. Please try again.');
       }
       
       if (error.response?.status === 429) {
+        console.error('🚦 [ATTOM-REQUEST] Rate limit exceeded');
         throw new Error('Rate limit exceeded. Please wait before making another request.');
       }
 
-      console.error('🚨 ATTOM API request failed:', error.message);
+      console.error('🚨 [ATTOM-REQUEST] Request failed:', error.message);
       throw error;
     }
   }
@@ -122,170 +152,130 @@ class SecureAttomService {
    * Gets property details using ATTOM API
    */
   async getPropertyDetails(address: string): Promise<PropertyDetails | null> {
-    console.log('🔍 Starting secure property verification');
+    console.log('🔍 [ATTOM-SERVICE] Starting secure property verification');
+    console.log('📍 [ATTOM-SERVICE] Address:', address);
     
     if (!address?.trim()) {
+      console.error('❌ [ATTOM-SERVICE] Empty address provided');
       throw new Error('Address is required');
     }
 
-    const parsedAddress = this.parseAddress(address);
-    
-    // Validate parsed address has minimum required fields
-    if (!parsedAddress.address1) {
-      throw new Error('Invalid address format. Please provide a complete street address.');
-    }
-
     try {
-      // Try to get detailed property information with owner data
-      const data = await this.makeSecureRequest('/property/detailowner', parsedAddress);
+      // Parse the address
+      const addressComponents = this.parseAddress(address);
       
-      if (!data || !data.property || data.property.length === 0) {
-        console.log('📭 No property found for the given address');
-        return null;
+      // First try property/basicprofile endpoint
+      console.log('🔍 [ATTOM-SERVICE] Trying property basic profile endpoint');
+      
+      const propertyData = await this.makeSecureRequest('/property/basicprofile', {
+        address1: addressComponents.address1,
+        address2: addressComponents.city,
+        locality: addressComponents.city,
+        countrySubd: addressComponents.state,
+        postalcode: addressComponents.zip,
+        page: 1,
+        pagesize: 10
+      });
+
+      if (!propertyData || !propertyData.property || propertyData.property.length === 0) {
+        console.log('📭 [ATTOM-SERVICE] No property data found in basic profile');
+        
+        // Try alternative endpoint
+        console.log('🔍 [ATTOM-SERVICE] Trying alternative property endpoint');
+        const altData = await this.makeSecureRequest('/property/detail', {
+          address: address,
+          page: 1,
+          pagesize: 10
+        });
+
+        if (!altData || !altData.property || altData.property.length === 0) {
+          console.log('📭 [ATTOM-SERVICE] No property data found in any endpoint');
+          throw new Error('No se encontraron datos para esta dirección. Verifica que esté correctamente escrita con ciudad, estado y código postal.');
+        }
       }
 
-      const property = data.property[0];
-      
-      // Extract property details
-      const propertyDetails: PropertyDetails = {
-        owner: this.extractOwnerName(property),
-        address: this.formatAddress(property) || address,
-        sqft: property.building?.size?.bldgSqFt || 0,
+      // Process the property data
+      const property = propertyData.property[0];
+      console.log('✅ [ATTOM-SERVICE] Processing property data');
+      console.log('📊 [ATTOM-SERVICE] Property ID:', property.identifier?.obPropId);
+
+      const result: PropertyDetails = {
+        address: address,
+        owner: property.assessment?.owner?.name || 'Owner information not available',
+        sqft: property.building?.size?.bldgsize || 0,
         bedrooms: property.building?.rooms?.beds || 0,
-        bathrooms: property.building?.rooms?.baths || 0,
-        lotSize: property.lot?.lotSizeAcres ? `${property.lot.lotSizeAcres} acres` : 'N/A',
-        landSqft: property.lot?.lotSizeSqFt || 0,
-        yearBuilt: property.building?.summary?.yearBuilt || 0,
-        propertyType: property.summary?.propClass || 'Residential',
+        bathrooms: property.building?.rooms?.bathstotal || 0,
+        lotSize: property.lot?.lotsize1 || 'Unknown',
+        landSqft: property.lot?.lotsize1 ? parseInt(property.lot.lotsize1) : undefined,
+        yearBuilt: property.building?.construction?.yearbuilt || 0,
+        propertyType: property.summary?.propclass || 'Unknown',
         verified: true,
-        ownershipVerified: Boolean(property.owner && property.owner.length > 0),
-        ownerOccupied: this.isOwnerOccupied(property),
-        purchaseDate: this.getLastSaleDate(property),
-        purchasePrice: this.getLastSalePrice(property),
-        ownerHistory: this.extractOwnerHistory(property)
+        ownerOccupied: property.assessment?.owner?.ownership === 'Owner Occupied',
+        ownershipVerified: true,
+        purchaseDate: property.sale?.salesearchdate,
+        purchasePrice: property.sale?.amount?.saleamt
       };
 
-      console.log('✅ Property details extracted successfully');
-      return propertyDetails;
+      console.log('✅ [ATTOM-SERVICE] Property verification completed successfully');
+      console.log('👤 [ATTOM-SERVICE] Owner:', result.owner);
+      console.log('🏠 [ATTOM-SERVICE] Property type:', result.propertyType);
+      
+      return result;
 
     } catch (error: any) {
-      console.error('🚨 Failed to get property details:', error.message);
+      console.error('🚨 [ATTOM-SERVICE] Property verification failed:', error.message);
+      
+      if (error.message.includes('API authentication failed')) {
+        throw new Error('Error de autenticación con el servicio de verificación. Contacta al soporte técnico.');
+      }
+      
+      if (error.message.includes('Rate limit exceeded')) {
+        throw new Error('Límite de solicitudes excedido. Espera unos minutos antes de intentar nuevamente.');
+      }
+      
+      if (error.message.includes('timeout')) {
+        throw new Error('La solicitud tardó demasiado tiempo. Intenta nuevamente.');
+      }
+      
       throw error;
     }
   }
 
   /**
-   * Extracts owner name from ATTOM property data
-   */
-  private extractOwnerName(property: any): string {
-    if (property.owner && property.owner.length > 0) {
-      const owner = property.owner[0];
-      return owner.name || 'Owner name not available';
-    }
-    return 'Owner information not available';
-  }
-
-  /**
-   * Formats address from ATTOM property data
-   */
-  private formatAddress(property: any): string | null {
-    const address = property.address;
-    if (!address) return null;
-    
-    const parts = [
-      address.line1,
-      address.line2,
-      address.locality,
-      address.countrySubd,
-      address.postal1
-    ].filter(Boolean);
-    
-    return parts.join(', ');
-  }
-
-  /**
-   * Determines if property is owner-occupied
-   */
-  private isOwnerOccupied(property: any): boolean {
-    if (property.owner && property.owner.length > 0) {
-      const owner = property.owner[0];
-      const propertyAddress = property.address;
-      const ownerMailingAddress = owner.mailingAddress;
-      
-      // Basic comparison - in a real implementation, you'd want more sophisticated matching
-      if (propertyAddress && ownerMailingAddress) {
-        return propertyAddress.line1 === ownerMailingAddress.line1 &&
-               propertyAddress.postal1 === ownerMailingAddress.postal1;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Gets the last sale date
-   */
-  private getLastSaleDate(property: any): string | undefined {
-    if (property.sale && property.sale.length > 0) {
-      const lastSale = property.sale[0];
-      return lastSale.saleTransDate;
-    }
-    return undefined;
-  }
-
-  /**
-   * Gets the last sale price
-   */
-  private getLastSalePrice(property: any): number | undefined {
-    if (property.sale && property.sale.length > 0) {
-      const lastSale = property.sale[0];
-      return lastSale.amount;
-    }
-    return undefined;
-  }
-
-  /**
-   * Extracts owner history from property data
-   */
-  private extractOwnerHistory(property: any): any[] {
-    const history: any[] = [];
-    
-    if (property.sale && property.sale.length > 0) {
-      property.sale.forEach((sale: any) => {
-        history.push({
-          owner: sale.buyer || 'Unknown',
-          purchaseDate: sale.saleTransDate,
-          purchasePrice: sale.amount,
-          saleDate: sale.recordingDate,
-          salePrice: sale.amount
-        });
-      });
-    }
-    
-    return history;
-  }
-
-  /**
-   * Health check method
+   * Health check to verify API connectivity
    */
   async healthCheck(): Promise<boolean> {
+    console.log('🩺 [ATTOM-HEALTH] Starting health check');
+    
     if (!this.isConfigured()) {
+      console.log('❌ [ATTOM-HEALTH] API not configured');
       return false;
     }
 
     try {
-      // Simple test with a basic endpoint
-      await this.makeSecureRequest('/property/basicprofile', {
-        address1: '123 Main St',
-        city: 'Beverly Hills',
-        state: 'CA',
-        zip: '90210'
+      // Try a simple request to check connectivity
+      const response = await axios.get(`${this.baseURL}/property/basicprofile`, {
+        params: {
+          address1: '123 Test St',
+          locality: 'Beverly Hills',
+          countrySubd: 'CA',
+          page: 1,
+          pagesize: 1
+        },
+        headers: this.getSecureHeaders(),
+        timeout: 5000,
+        validateStatus: (status) => status < 500
       });
-      return true;
-    } catch (error) {
-      console.error('🚨 ATTOM API health check failed:', error);
+
+      console.log('✅ [ATTOM-HEALTH] Health check passed');
+      return response.status < 500;
+      
+    } catch (error: any) {
+      console.error('❌ [ATTOM-HEALTH] Health check failed:', error.message);
       return false;
     }
   }
 }
 
+// Export singleton instance
 export const secureAttomService = new SecureAttomService();
