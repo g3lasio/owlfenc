@@ -3418,10 +3418,10 @@ export default function SimpleContractGenerator() {
                                 <label className="block text-sm font-medium text-gray-300 mb-2">
                                   Address
                                 </label>
-                                <Input
+                                <AddressAutocomplete
                                   value={scratchContractData.clientAddress}
-                                  onChange={(e) => setScratchContractData(prev => ({ ...prev, clientAddress: e.target.value }))}
-                                  placeholder="123 Main St, City, State"
+                                  onChange={(address) => setScratchContractData(prev => ({ ...prev, clientAddress: address }))}
+                                  placeholder="123 Main St, City, State ZIP"
                                   className="bg-gray-800 border-gray-600 text-white"
                                 />
                               </div>
