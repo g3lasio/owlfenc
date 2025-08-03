@@ -117,43 +117,6 @@ export default function PropertyOwnershipVerifier() {
     },
   ];
 
-  // Manejar la selección de lugar desde el autocompletado
-  const handlePlaceSelect = useCallback((placeData: any) => {
-    console.log("📍 [PropertyVerifier] Lugar seleccionado:", placeData);
-
-    if (placeData && placeData.address) {
-      setSelectedPlace(placeData);
-      setError(null);
-      setCurrentStep(2); // Auto-advance to verification step
-      
-      // Auto-search after place selection
-      setTimeout(() => {
-        handleSearch();
-      }, 300);
-    }
-  }, [handleSearch]);
-
-  // Manejar la selección de un elemento del historial
-  const handleSelectHistory = useCallback((historyItem: any) => {
-    if (historyItem && historyItem.results) {
-      setAddress(historyItem.address);
-      setPropertyDetails(historyItem.results);
-      setError(null);
-      setCurrentStep(3); // Move to final report step
-      
-      toast({
-        title: "Historial cargado",
-        description: `Cargada información de: ${historyItem.address}`,
-      });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Error al cargar",
-        description: "No se pudieron cargar los datos del historial",
-      });
-    }
-  }, [toast]);
-
   // Main search function
   const handleSearch = useCallback(async () => {
     if (!selectedPlace || !selectedPlace.address) {
@@ -205,6 +168,43 @@ export default function PropertyOwnershipVerifier() {
       setLoading(false);
     }
   }, [selectedPlace, queryClient, toast]);
+
+  // Manejar la selección de lugar desde el autocompletado
+  const handlePlaceSelect = useCallback((placeData: any) => {
+    console.log("📍 [PropertyVerifier] Lugar seleccionado:", placeData);
+
+    if (placeData && placeData.address) {
+      setSelectedPlace(placeData);
+      setError(null);
+      setCurrentStep(2); // Auto-advance to verification step
+      
+      // Auto-search after place selection
+      setTimeout(() => {
+        handleSearch();
+      }, 300);
+    }
+  }, [handleSearch]);
+
+  // Manejar la selección de un elemento del historial
+  const handleSelectHistory = useCallback((historyItem: any) => {
+    if (historyItem && historyItem.results) {
+      setAddress(historyItem.address);
+      setPropertyDetails(historyItem.results);
+      setError(null);
+      setCurrentStep(3); // Move to final report step
+      
+      toast({
+        title: "Historial cargado",
+        description: `Cargada información de: ${historyItem.address}`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error al cargar",
+        description: "No se pudieron cargar los datos del historial",
+      });
+    }
+  }, [toast]);
 
   // Render different views based on current state
   const renderWorkflowView = () => {
@@ -461,19 +461,19 @@ export default function PropertyOwnershipVerifier() {
                             </span>
                           </div>
                         )}
-                        {propertyDetails.squareFootage && (
+                        {propertyDetails.sqft && (
                           <div className="flex items-center gap-2">
                             <Ruler className="h-4 w-4 text-gray-400" />
                             <span className="text-sm">
-                              <span className="text-gray-400">Size:</span> {propertyDetails.squareFootage} sq ft
+                              <span className="text-gray-400">Size:</span> {propertyDetails.sqft.toLocaleString()} sq ft
                             </span>
                           </div>
                         )}
-                        {propertyDetails.estimatedValue && (
+                        {propertyDetails.purchasePrice && (
                           <div className="flex items-center gap-2">
                             <DollarSign className="h-4 w-4 text-gray-400" />
                             <span className="text-sm">
-                              <span className="text-gray-400">Value:</span> ${propertyDetails.estimatedValue.toLocaleString()}
+                              <span className="text-gray-400">Purchase Price:</span> ${propertyDetails.purchasePrice.toLocaleString()}
                             </span>
                           </div>
                         )}
