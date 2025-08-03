@@ -143,12 +143,14 @@ class SecureAttomService {
     }
 
     try {
-      // Use provided components or parse from address string
+      // Parse address to extract street component properly
       let components;
       if (addressComponents && (addressComponents.city || addressComponents.state || addressComponents.zip)) {
         console.log('🏠 [ATTOM-SERVICE] Using enhanced address components from frontend');
+        // Extract only street address from full address
+        const parsedStreet = this.parseAddress(address);
         components = {
-          address1: address,
+          address1: parsedStreet.address1, // Use parsed street address only
           city: addressComponents.city || '',
           state: addressComponents.state || '',
           zip: addressComponents.zip || ''
@@ -167,38 +169,69 @@ class SecureAttomService {
         address2: address2
       });
       
-      // Try property/basicprofile endpoint first
-      console.log('🔍 [ATTOM-SERVICE] Trying basicprofile endpoint');
-      const propertyData = await this.makeSecureRequest('/property/basicprofile', {
-        address1: components.address1,
-        address2: address2,
-        page: 1,
-        pagesize: 10
-      });
-
-      if (!propertyData || !propertyData.property || propertyData.property.length === 0) {
-        console.log('📭 [ATTOM-SERVICE] No data found in basicprofile, trying expandedprofile');
-        
-        const expandedData = await this.makeSecureRequest('/property/expandedprofile', {
+      // Try property/detail endpoint first (most complete data including owner)
+      console.log('🔍 [ATTOM-SERVICE] Trying property/detail endpoint for complete owner data');
+      
+      let propertyData;
+      let propertyRecord;
+      
+      try {
+        propertyData = await this.makeSecureRequest('/property/detail', {
           address1: components.address1,
           address2: address2,
           page: 1,
-          pagesize: 10
+          pagesize: 1
         });
         
-        if (!expandedData || !expandedData.property || expandedData.property.length === 0) {
+        if (propertyData && propertyData.property && propertyData.property.length > 0) {
+          propertyRecord = propertyData.property[0];
+          console.log('✅ [ATTOM-SERVICE] Found data in property/detail endpoint');
+        }
+      } catch (error) {
+        console.log('⚠️ [ATTOM-SERVICE] property/detail failed, trying expandedprofile');
+      }
+      
+      // Fallback to expandedprofile if detail failed
+      if (!propertyRecord) {
+        try {
+          propertyData = await this.makeSecureRequest('/property/expandedprofile', {
+            address1: components.address1,
+            address2: address2,
+            page: 1,
+            pagesize: 1
+          });
+          
+          if (propertyData && propertyData.property && propertyData.property.length > 0) {
+            propertyRecord = propertyData.property[0];
+            console.log('✅ [ATTOM-SERVICE] Found data in expandedprofile endpoint');
+          }
+        } catch (error) {
+          console.log('⚠️ [ATTOM-SERVICE] expandedprofile failed, trying basicprofile');
+        }
+      }
+      
+      // Final fallback to basicprofile
+      if (!propertyRecord) {
+        propertyData = await this.makeSecureRequest('/property/basicprofile', {
+          address1: components.address1,
+          address2: address2,
+          page: 1,
+          pagesize: 1
+        });
+        
+        if (!propertyData || !propertyData.property || propertyData.property.length === 0) {
           throw new Error('No se encontraron datos para esta dirección. Verifica que esté correctamente escrita con ciudad, estado y código postal.');
         }
         
-        return this.processPropertyData(expandedData.property[0], address);
+        propertyRecord = propertyData.property[0];
+        console.log('✅ [ATTOM-SERVICE] Found data in basicprofile endpoint (limited data)');
       }
 
       // Process the property data
-      const property = propertyData.property[0];
       console.log('✅ [ATTOM-SERVICE] Processing property data');
-      console.log('📊 [ATTOM-SERVICE] Property ID:', property.identifier?.attomId);
+      console.log('📊 [ATTOM-SERVICE] Property ID:', propertyRecord.identifier?.attomId);
 
-      return this.processPropertyData(property, address);
+      return this.processPropertyData(propertyRecord, address);
       
     } catch (error: any) {
       console.error('🚨 [ATTOM-SERVICE] Property verification failed:', error.message);
@@ -211,10 +244,15 @@ class SecureAttomService {
    */
   private processPropertyData(property: any, address: string): PropertyDetails {
     console.log('🔧 [ATTOM-SERVICE] Processing property data structure');
+    console.log('🔍 [ATTOM-SERVICE] Raw owner data:', JSON.stringify(property.owner, null, 2));
     
     const result: PropertyDetails = {
       address: address,
-      owner: property.owner?.owner1?.fullName || property.assessment?.owner?.name || 'Owner information not available',
+      owner: property.owner?.owner1?.fullName || 
+             property.owner?.owner1?.lastName || 
+             property.assessment?.owner?.name || 
+             property.assessment?.owner?.owner1?.fullName ||
+             'Owner data requires premium ATTOM API access',
       sqft: property.building?.size?.bldgSize || property.building?.size?.livingSize || property.building?.size?.universalSize || 0,
       bedrooms: property.building?.rooms?.beds || 0,
       bathrooms: property.building?.rooms?.bathsTotal || property.building?.rooms?.bathsFull || 0,
