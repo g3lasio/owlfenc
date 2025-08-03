@@ -1,0 +1,38 @@
+Subject: ATTOM API Key - Owner Data Access Issue
+
+Hi Christine,
+
+Thank you for following up on our ATTOM API access inquiry.
+
+**Current API Key Status:**
+Our current ATTOM API key is working properly for basic property data retrieval. We are successfully connecting to the ATTOM Data API and receiving Status 200 responses with valid property information.
+
+**Specific Issue Identified:**
+The current API key does NOT include access to property owner information. We have tested the following endpoints extensively:
+
+**Endpoints Tested (All lacking owner data):**
+1. `/property/detail` - Returns property data but owner field is null/undefined
+2. `/property/expandedprofile` - Returns property data but owner field is null/undefined  
+3. `/property/basicprofile` - Returns property data but owner field is null/undefined
+4. `/sale/detail` - Endpoint appears to be unavailable with current permissions
+
+**Working Test Case:**
+- **Address:** 2901 Owens Ct, Fairfield, CA 94534
+- **Property ID:** 52312319 (successfully retrieved)
+- **Available Data:** Square footage, bedrooms, bathrooms, year built, property type
+- **Missing Data:** Owner name, ownership details, buyer/seller information
+
+**Technical Question:**
+Does our current API subscription include access to property owner data? If not, what subscription tier or additional permissions do we need to access:
+- Property owner names
+- Ownership verification data
+- Historical ownership transfers
+
+**API Key Action Needed:**
+We do not need a new API key regenerated. We need to upgrade our current subscription to include owner data access permissions.
+
+Please let me know what subscription level or add-on services we need to purchase to access complete owner information through the ATTOM Data API.
+
+Best regards,
+Gelasio
+Technical Lead
