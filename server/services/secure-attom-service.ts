@@ -152,7 +152,7 @@ class SecureAttomService {
   /**
    * Gets property details using ATTOM API
    */
-  async getPropertyDetails(address: string): Promise<PropertyDetails | null> {
+  async getPropertyDetails(address: string, addressComponents?: {city?: string, state?: string, zip?: string}): Promise<PropertyDetails | null> {
     console.log('🔍 [ATTOM-SERVICE] Starting secure property verification');
     console.log('📍 [ATTOM-SERVICE] Address:', address);
     
@@ -162,15 +162,36 @@ class SecureAttomService {
     }
 
     try {
-      // Parse the address
-      const addressComponents = this.parseAddress(address);
+      // Use provided components or parse from address string
+      let components;
+      if (addressComponents && (addressComponents.city || addressComponents.state || addressComponents.zip)) {
+        console.log('🏠 [ATTOM-SERVICE] Using enhanced address components from frontend');
+        components = {
+          address1: address,
+          city: addressComponents.city || '',
+          state: addressComponents.state || '',
+          zip: addressComponents.zip || ''
+        };
+      } else {
+        console.log('🏠 [ATTOM-SERVICE] Parsing address components from string');
+        components = this.parseAddress(address);
+      }
       
       // First try property/basicprofile endpoint with correct parameters
       console.log('🔍 [ATTOM-SERVICE] Trying property basic profile endpoint');
       
+      // Build address2 parameter correctly
+      const address2Parts = [components.city, components.state, components.zip].filter(part => part && part.trim());
+      const address2 = address2Parts.length > 0 ? address2Parts.join(', ') : '';
+      
+      console.log('🏠 [ATTOM-SERVICE] Final address components:', {
+        address1: components.address1,
+        address2: address2
+      });
+      
       const propertyData = await this.makeSecureRequest('/property/basicprofile', {
-        address1: addressComponents.address1,
-        address2: `${addressComponents.city}, ${addressComponents.state} ${addressComponents.zip}`.trim(),
+        address1: components.address1,
+        address2: address2,
         page: 1,
         pagesize: 10
       });
@@ -181,8 +202,8 @@ class SecureAttomService {
         // Try alternative expandedprofile endpoint  
         console.log('🔍 [ATTOM-SERVICE] Trying expanded profile endpoint');
         const altData = await this.makeSecureRequest('/property/expandedprofile', {
-          address1: addressComponents.address1,
-          address2: `${addressComponents.city}, ${addressComponents.state} ${addressComponents.zip}`.trim(),
+          address1: components.address1,
+          address2: address2,
           page: 1,
           pagesize: 10
         });

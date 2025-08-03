@@ -51,6 +51,7 @@ export default function PropertyOwnershipVerifier() {
   });
 
   const [address, setAddress] = useState("");
+  const [selectedPlace, setSelectedPlace] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [propertyDetails, setPropertyDetails] =
@@ -62,6 +63,9 @@ export default function PropertyOwnershipVerifier() {
     console.log("📍 [PropertyVerifier] Lugar seleccionado:", placeData);
 
     if (placeData && placeData.address) {
+      // Guardar toda la información del lugar para enviar al backend
+      setSelectedPlace(placeData);
+      
       // Limpiar cualquier error previo
       setError(null);
 
@@ -112,9 +116,17 @@ export default function PropertyOwnershipVerifier() {
     try {
       console.log("Verificando propiedad con dirección:", address.trim());
 
+      // Si tenemos datos completos del lugar de Mapbox, usarlos
+      let searchAddress = address.trim();
+      if (selectedPlace) {
+        // Enviar información completa del lugar para mejor precisión
+        console.log("📍 Usando datos completos de Mapbox:", selectedPlace);
+        searchAddress = selectedPlace.address;
+      }
+
       // Usar el servicio actualizado que se conecta al wrapper de ATTOM externo
       const propertyData =
-        await propertyVerifierService.verifyProperty(address);
+        await propertyVerifierService.verifyProperty(searchAddress, selectedPlace);
 
       console.log("Datos de propiedad obtenidos:", propertyData);
       setPropertyDetails(propertyData);

@@ -5939,6 +5939,9 @@ Output must be between 200-900 characters in English.`;
 
   app.get("/api/property/details", async (req: Request, res: Response) => {
     const address = req.query.address as string;
+    const city = req.query.city as string;
+    const state = req.query.state as string;
+    const zip = req.query.zip as string;
 
     if (!address) {
       return res.status(400).json({
@@ -5947,6 +5950,9 @@ Output must be between 200-900 characters in English.`;
     }
 
     console.log("🔍 [PROPERTY-API] Starting secure property verification for address:", address);
+    if (city || state || zip) {
+      console.log("🏠 [PROPERTY-API] Enhanced address components:", { city, state, zip });
+    }
 
     try {
       // Import and use the secure ATTOM service
@@ -5954,7 +5960,7 @@ Output must be between 200-900 characters in English.`;
       const { secureAttomService } = await import('./services/secure-attom-service');
       
       console.log("🌐 [PROPERTY-API] Calling ATTOM service");
-      const propertyData = await secureAttomService.getPropertyDetails(address);
+      const propertyData = await secureAttomService.getPropertyDetails(address, { city, state, zip });
 
       if (!propertyData) {
         console.log("📭 Property not found");

@@ -33,7 +33,7 @@ export interface PropertyDetails {
 // All API communication goes through our secure backend
 
 class PropertyVerifierService {
-  async verifyProperty(address: string): Promise<PropertyDetails> {
+  async verifyProperty(address: string, placeData?: any): Promise<PropertyDetails> {
     console.log('🔍 Starting secure property verification for:', address);
     
     if (!address?.trim()) {
@@ -42,8 +42,25 @@ class PropertyVerifierService {
 
     try {
       console.log('📡 Sending request to secure backend API');
+      
+      // Preparar parámetros con información completa si está disponible
+      const params: any = { address: address.trim() };
+      
+      if (placeData && placeData.context) {
+        // Extraer información específica de Mapbox para mejor precisión
+        const city = placeData.context.find((c: any) => c.id.startsWith('place.'))?.text;
+        const state = placeData.context.find((c: any) => c.id.startsWith('region.'))?.short_code?.replace('US-', '');
+        const zip = placeData.context.find((c: any) => c.id.startsWith('postcode.'))?.text;
+        
+        if (city) params.city = city;
+        if (state) params.state = state;
+        if (zip) params.zip = zip;
+        
+        console.log('🏠 Enhanced address components:', { city, state, zip });
+      }
+      
       const response = await axios.get('/api/property/details', {
-        params: { address: address.trim() },
+        params,
         timeout: 25000, // 25 seconds timeout
         headers: {
           'Content-Type': 'application/json',
