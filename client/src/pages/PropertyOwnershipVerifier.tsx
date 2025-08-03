@@ -121,6 +121,7 @@ export default function PropertyOwnershipVerifier() {
       if (selectedPlace) {
         // Enviar información completa del lugar para mejor precisión
         console.log("📍 Usando datos completos de Mapbox:", selectedPlace);
+        // Usar la dirección completa de Mapbox, no solo el texto del input
         searchAddress = selectedPlace.address;
       }
 

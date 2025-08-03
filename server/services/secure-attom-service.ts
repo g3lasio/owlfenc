@@ -210,20 +210,69 @@ class SecureAttomService {
 
         if (!altData || !altData.property || altData.property.length === 0) {
           console.log('📭 [ATTOM-SERVICE] No property data found in any endpoint');
-          throw new Error('No se encontraron datos para esta dirección. Verifica que esté correctamente escrita con ciudad, estado y código postal.');
+          
+          // Try detailowner endpoint as last resort
+          console.log('🔍 [ATTOM-SERVICE] Trying detail owner endpoint as fallback');
+          const ownerData = await this.makeSecureRequest('/property/detailowner', {
+            address1: components.address1,
+            address2: address2,
+            page: 1,
+            pagesize: 10
+          });
+          
+          if (!ownerData || !ownerData.property || ownerData.property.length === 0) {
+            console.log('📭 [ATTOM-SERVICE] No property data found in any endpoint including owner details');
+            throw new Error('No se encontraron datos para esta dirección. Esta propiedad puede no existir en la base de datos de ATTOM o la dirección puede estar incorrecta. Prueba con una dirección diferente.');
+          }
+          
+          // Use owner data if found
+          console.log('✅ [ATTOM-SERVICE] Found property data in detail owner endpoint');
+          return this.processPropertyData(ownerData.property[0], address);
         }
       }
 
       // Process the property data
       const property = propertyData.property[0];
       console.log('✅ [ATTOM-SERVICE] Processing property data');
-      console.log('📊 [ATTOM-SERVICE] Property ID:', property.identifier?.obPropId);
+      console.log('📊 [ATTOM-SERVICE] Property ID:', property.identifier?.attomId);
 
-      const result: PropertyDetails = {
+      return this.processPropertyData(property, address);
+    } catch (error: any) {
+      console.error('🚨 [ATTOM-SERVICE] Property verification failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Process ATTOM property data into our PropertyDetails format
+   */
+  private processPropertyData(property: any, address: string): PropertyDetails {
+    console.log('🔧 [ATTOM-SERVICE] Processing property data structure');
+    
+    const result: PropertyDetails = {
         address: address,
-        owner: property.assessment?.owner?.name || 'Owner information not available',
-        sqft: property.building?.size?.bldgsize || 0,
+        owner: property.owner?.owner1?.fullName || property.assessment?.owner?.name || 'Owner information not available',
+        sqft: property.building?.size?.bldgSize || property.building?.size?.livingSize || property.building?.size?.universalSize || 0,
         bedrooms: property.building?.rooms?.beds || 0,
+        bathrooms: property.building?.rooms?.bathsTotal || property.building?.rooms?.bathsFull || 0,
+        lotSize: `${property.lot?.lotSize1 || 0} acres`,
+        landSqft: property.lot?.lotSize2 || 0,
+        yearBuilt: property.summary?.yearBuilt || 0,
+        propertyType: property.summary?.propertyType || property.summary?.propType || 'Unknown',
+        verified: true,
+        ownerOccupied: property.summary?.absenteeInd !== 'ABSENTEE(MAIL AND SITUS NOT =)',
+        ownershipVerified: true,
+        purchaseDate: property.sale?.saleTransDate || undefined,
+        purchasePrice: property.sale?.saleAmountData?.saleAmt || undefined
+      };
+      
+      console.log('✅ [ATTOM-SERVICE] Property verification completed successfully');
+      console.log('👤 [ATTOM-SERVICE] Owner:', result.owner);
+      console.log('🏠 [ATTOM-SERVICE] Property type:', result.propertyType);
+      console.log('📐 [ATTOM-SERVICE] Size:', result.sqft, 'sqft');
+      
+      return result;
+  }
         bathrooms: property.building?.rooms?.bathstotal || 0,
         lotSize: property.lot?.lotsize1 || 'Unknown',
         landSqft: property.lot?.lotsize1 ? parseInt(property.lot.lotsize1) : undefined,
