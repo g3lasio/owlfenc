@@ -48,37 +48,55 @@ class SecureAttomService {
   }
 
   /**
-   * Parses address into components required by ATTOM API
+   * Parse address into components required by ATTOM API
+   * ATTOM Documentation Format:
+   * - address1: Street address only (e.g., "2901 Owens Ct")
+   * - address2: City, State, ZIP (e.g., "Fairfield, CA 94534")
    */
   private parseAddress(fullAddress: string) {
     console.log('🏠 [ATTOM-PARSER] Parsing address for ATTOM API:', fullAddress);
     
     const parts = fullAddress.split(',').map(part => part.trim());
     
-    let address1 = parts[0] || '';
+    let address1 = '';
     let city = '';
     let state = '';
     let zip = '';
-
+    
+    if (parts.length >= 1) {
+      // First part is always the street address
+      address1 = parts[0];
+    }
+    
     if (parts.length >= 2) {
+      // Second part is the city
       city = parts[1];
     }
     
     if (parts.length >= 3) {
-      const stateZipPart = parts[2].split(' ');
-      state = stateZipPart[0] || '';
-      zip = stateZipPart[1] || '';
+      // Extract state and ZIP from the last part using proper regex
+      const lastPart = parts[2];
+      const stateZipMatch = lastPart.match(/([A-Z]{2})\s*(\d{5}(?:-\d{4})?)?/);
+      if (stateZipMatch) {
+        state = stateZipMatch[1];
+        if (stateZipMatch[2]) {
+          zip = stateZipMatch[2];
+        }
+      } else {
+        // If no state/zip pattern, treat as additional city info
+        city += ` ${lastPart}`;
+      }
     }
-
-    const parsed = {
+    
+    const result = {
       address1: address1.trim(),
       city: city.trim(),
-      state: state.trim().toUpperCase(),
+      state: state.trim(),
       zip: zip.trim()
     };
-
-    console.log('🏠 [ATTOM-PARSER] Parsed address:', parsed);
-    return parsed;
+    
+    console.log('🏠 [ATTOM-PARSER] Parsed components:', result);
+    return result;
   }
 
   /**
@@ -254,8 +272,8 @@ class SecureAttomService {
         owner: property.owner?.owner1?.fullName || property.assessment?.owner?.name || 'Owner information not available',
         sqft: property.building?.size?.bldgSize || property.building?.size?.livingSize || property.building?.size?.universalSize || 0,
         bedrooms: property.building?.rooms?.beds || 0,
-        bathrooms: property.building?.rooms?.bathsTotal || property.building?.rooms?.bathsFull || 0,
-        lotSize: `${property.lot?.lotSize1 || 0} acres`,
+        bathrooms: (property.building?.rooms?.bathsTotal || property.building?.rooms?.bathsFull || 0),
+        lotSize: `${(property.lot?.lotSize1 || 0)} acres`,
         landSqft: property.lot?.lotSize2 || 0,
         yearBuilt: property.summary?.yearBuilt || 0,
         propertyType: property.summary?.propertyType || property.summary?.propType || 'Unknown',
@@ -272,42 +290,6 @@ class SecureAttomService {
       console.log('📐 [ATTOM-SERVICE] Size:', result.sqft, 'sqft');
       
       return result;
-  }
-        bathrooms: property.building?.rooms?.bathstotal || 0,
-        lotSize: property.lot?.lotsize1 || 'Unknown',
-        landSqft: property.lot?.lotsize1 ? parseInt(property.lot.lotsize1) : undefined,
-        yearBuilt: property.building?.construction?.yearbuilt || 0,
-        propertyType: property.summary?.propclass || 'Unknown',
-        verified: true,
-        ownerOccupied: property.assessment?.owner?.ownership === 'Owner Occupied',
-        ownershipVerified: true,
-        purchaseDate: property.sale?.salesearchdate,
-        purchasePrice: property.sale?.amount?.saleamt
-      };
-
-      console.log('✅ [ATTOM-SERVICE] Property verification completed successfully');
-      console.log('👤 [ATTOM-SERVICE] Owner:', result.owner);
-      console.log('🏠 [ATTOM-SERVICE] Property type:', result.propertyType);
-      
-      return result;
-
-    } catch (error: any) {
-      console.error('🚨 [ATTOM-SERVICE] Property verification failed:', error.message);
-      
-      if (error.message.includes('API authentication failed')) {
-        throw new Error('Error de autenticación con el servicio de verificación. Contacta al soporte técnico.');
-      }
-      
-      if (error.message.includes('Rate limit exceeded')) {
-        throw new Error('Límite de solicitudes excedido. Espera unos minutos antes de intentar nuevamente.');
-      }
-      
-      if (error.message.includes('timeout')) {
-        throw new Error('La solicitud tardó demasiado tiempo. Intenta nuevamente.');
-      }
-      
-      throw error;
-    }
   }
 
   /**

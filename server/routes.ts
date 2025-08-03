@@ -5957,7 +5957,7 @@ Output must be between 200-900 characters in English.`;
     try {
       // Import and use the secure ATTOM service
       console.log("📦 [PROPERTY-API] Loading secure ATTOM service");
-      const { secureAttomService } = await import('./services/secure-attom-service');
+      const { secureAttomService } = await import('./services/secure-attom-service-clean');
       
       console.log("🌐 [PROPERTY-API] Calling ATTOM service");
       const propertyData = await secureAttomService.getPropertyDetails(address, { city, state, zip });
