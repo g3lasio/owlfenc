@@ -17,13 +17,14 @@ class SecureAttomService {
     console.log('🔧 [ATTOM-CONFIG] Initializing Secure ATTOM Service');
     console.log('🔧 [ATTOM-CONFIG] API Key configured:', !!this.apiKey);
     console.log('🔧 [ATTOM-CONFIG] API Key length:', this.apiKey ? this.apiKey.length : 0);
+    console.log('🔧 [ATTOM-CONFIG] API Key preview:', this.apiKey ? `${this.apiKey.substring(0, 8)}...` : 'none');
     
     if (!this.apiKey) {
       console.warn('⚠️ [ATTOM-CONFIG] ATTOM_API_KEY not configured. Property verification will not work.');
     } else if (this.apiKey.length < 10) {
       console.warn('⚠️ [ATTOM-CONFIG] ATTOM_API_KEY appears to be too short.');
     } else {
-      console.log('✅ [ATTOM-CONFIG] ATTOM API key properly configured');
+      console.log('✅ [ATTOM-CONFIG] ATTOM API key properly configured and ready');
     }
   }
 
@@ -164,15 +165,12 @@ class SecureAttomService {
       // Parse the address
       const addressComponents = this.parseAddress(address);
       
-      // First try property/basicprofile endpoint
+      // First try property/basicprofile endpoint with correct parameters
       console.log('🔍 [ATTOM-SERVICE] Trying property basic profile endpoint');
       
       const propertyData = await this.makeSecureRequest('/property/basicprofile', {
         address1: addressComponents.address1,
-        address2: addressComponents.city,
-        locality: addressComponents.city,
-        countrySubd: addressComponents.state,
-        postalcode: addressComponents.zip,
+        address2: `${addressComponents.city}, ${addressComponents.state} ${addressComponents.zip}`.trim(),
         page: 1,
         pagesize: 10
       });
@@ -180,10 +178,11 @@ class SecureAttomService {
       if (!propertyData || !propertyData.property || propertyData.property.length === 0) {
         console.log('📭 [ATTOM-SERVICE] No property data found in basic profile');
         
-        // Try alternative endpoint
-        console.log('🔍 [ATTOM-SERVICE] Trying alternative property endpoint');
-        const altData = await this.makeSecureRequest('/property/detail', {
-          address: address,
+        // Try alternative expandedprofile endpoint  
+        console.log('🔍 [ATTOM-SERVICE] Trying expanded profile endpoint');
+        const altData = await this.makeSecureRequest('/property/expandedprofile', {
+          address1: addressComponents.address1,
+          address2: `${addressComponents.city}, ${addressComponents.state} ${addressComponents.zip}`.trim(),
           page: 1,
           pagesize: 10
         });
