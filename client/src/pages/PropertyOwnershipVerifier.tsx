@@ -215,61 +215,73 @@ export default function PropertyOwnershipVerifier() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 max-w-6xl">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Building className="h-6 w-6 text-primary" />
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6 max-w-6xl">
+        {/* Header - Mobile Optimized */}
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
+                <Building className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+                Property Ownership Verifier
+              </h1>
             </div>
-            <h1 className="text-3xl font-bold text-foreground">
-              Property Ownership Verifier
-            </h1>
           </div>
-          <p className="text-muted-foreground text-lg max-w-2xl">
+          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl leading-relaxed">
             Verificación profesional de propiedad y análisis de titularidad para proyectos legales y de construcción.
           </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="search">Verificación de Propiedad</TabsTrigger>
-            <TabsTrigger value="history">Historial de Búsquedas</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-2 h-auto">
+            <TabsTrigger value="search" className="text-xs sm:text-sm py-2 sm:py-3">
+              <span className="hidden sm:inline">Verificación de Propiedad</span>
+              <span className="sm:hidden">Verificación</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="text-xs sm:text-sm py-2 sm:py-3">
+              <span className="hidden sm:inline">Historial de Búsquedas</span>
+              <span className="sm:hidden">Historial</span>
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="search" className="space-y-6">
-            {/* Simple Search Interface */}
+          <TabsContent value="search" className="space-y-4 sm:space-y-6">
+            {/* Simple Search Interface - Mobile Optimized */}
             <Card>
-              <CardHeader>
-                <CardTitle>Verificación de Propiedad</CardTitle>
-                <CardDescription>
+              <CardHeader className="pb-4 sm:pb-6">
+                <CardTitle className="text-lg sm:text-xl">Verificación de Propiedad</CardTitle>
+                <CardDescription className="text-sm sm:text-base">
                   Ingrese la dirección para verificar información de propiedad y titularidad
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <MapboxPlacesAutocomplete
-                  value={address}
-                  onChange={setAddress}
-                  onPlaceSelect={handlePlaceSelect}
-                  placeholder="Ingrese la dirección de la propiedad..."
-                  countries={["mx", "us", "es"]}
-                  language="es"
-                />
+                <div className="w-full">
+                  <MapboxPlacesAutocomplete
+                    value={address}
+                    onChange={setAddress}
+                    onPlaceSelect={handlePlaceSelect}
+                    placeholder="Ingrese la dirección de la propiedad..."
+                    countries={["mx", "us", "es"]}
+                    language="es"
+                    className="w-full"
+                  />
+                </div>
                 
                 <Button
                   onClick={handleSearch}
                   disabled={loading || !selectedPlace}
                   className="w-full"
+                  size="lg"
                 >
                   {loading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                      Verificando...
+                      <span className="text-sm sm:text-base">Verificando...</span>
                     </>
                   ) : (
                     <>
                       <Search className="w-4 h-4 mr-2" />
-                      Verificar Propiedad
+                      <span className="text-sm sm:text-base">Verificar Propiedad</span>
                     </>
                   )}
                 </Button>
@@ -277,7 +289,7 @@ export default function PropertyOwnershipVerifier() {
                 {error && (
                   <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
+                    <AlertDescription className="text-sm break-words">{error}</AlertDescription>
                   </Alert>
                 )}
               </CardContent>
@@ -285,78 +297,78 @@ export default function PropertyOwnershipVerifier() {
 
             {/* Results - Futuristic Holographic Design */}
             {propertyDetails && (
-              <div className="space-y-6">
-                {/* Success Header */}
+              <div className="space-y-4 sm:space-y-6">
+                {/* Success Header - Mobile Optimized */}
                 <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 rounded-xl blur-sm"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 rounded-xl blur-sm md:blur-md"></div>
                   <Card className="relative border-2 border-cyan-400/50 bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-sm">
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-center gap-3">
-                        <div className="relative">
-                          <CheckCircle className="h-8 w-8 text-green-400 animate-pulse" />
-                          <div className="absolute inset-0 h-8 w-8 rounded-full bg-green-400/20 animate-ping"></div>
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+                        <div className="relative flex-shrink-0">
+                          <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-400 animate-pulse" />
+                          <div className="absolute inset-0 h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-green-400/20 animate-ping"></div>
                         </div>
-                        <div className="text-center">
-                          <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                        <div className="text-center sm:text-left">
+                          <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
                             Verificación Completada
                           </h2>
-                          <p className="text-slate-400 text-sm">Datos extraídos de ATTOM Data API</p>
+                          <p className="text-slate-400 text-xs sm:text-sm mt-1">Datos extraídos de ATTOM Data API</p>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Ownership Information */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                  {/* Ownership Information - Mobile Optimized */}
                   <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/30 to-blue-500/30 rounded-xl blur-md group-hover:blur-lg transition-all duration-300"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 sm:from-cyan-500/30 to-blue-500/20 sm:to-blue-500/30 rounded-xl blur-sm sm:blur-md group-hover:blur-lg transition-all duration-300"></div>
                     <Card className="relative border-2 border-cyan-400/60 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm hover:border-cyan-300/80 transition-all duration-300">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-3">
+                      <CardHeader className="pb-2 sm:pb-3">
+                        <CardTitle className="flex items-center gap-2 sm:gap-3">
                           <div className="relative">
-                            <User className="h-6 w-6 text-cyan-400" />
-                            <div className="absolute inset-0 h-6 w-6 bg-cyan-400/20 rounded-full animate-pulse"></div>
+                            <User className="h-5 w-5 sm:h-6 sm:w-6 text-cyan-400" />
+                            <div className="absolute inset-0 h-5 w-5 sm:h-6 sm:w-6 bg-cyan-400/20 rounded-full animate-pulse"></div>
                           </div>
-                          <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent font-bold">
+                          <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent font-bold text-sm sm:text-base">
                             Información de Titularidad
                           </span>
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="space-y-3">
+                      <CardContent className="space-y-3 sm:space-y-4">
+                        <div className="space-y-2 sm:space-y-3">
                           <div className="group/item">
-                            <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-cyan-500/50 transition-colors">
+                            <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-cyan-500/50 transition-colors">
                               <Users className="h-4 w-4 text-cyan-400 mt-0.5 flex-shrink-0" />
-                              <div>
+                              <div className="min-w-0 flex-1">
                                 <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Propietario(s)</div>
-                                <div className="text-white font-medium mt-1">{propertyDetails.owner}</div>
+                                <div className="text-white font-medium mt-1 text-sm sm:text-base break-words">{propertyDetails.owner}</div>
                               </div>
                             </div>
                           </div>
                           
                           <div className="group/item">
-                            <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-cyan-500/50 transition-colors">
+                            <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-cyan-500/50 transition-colors">
                               <MapPin className="h-4 w-4 text-cyan-400 mt-0.5 flex-shrink-0" />
-                              <div>
+                              <div className="min-w-0 flex-1">
                                 <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Dirección</div>
-                                <div className="text-white font-medium mt-1">{propertyDetails.address}</div>
+                                <div className="text-white font-medium mt-1 text-sm sm:text-base break-words leading-relaxed">{propertyDetails.address}</div>
                               </div>
                             </div>
                           </div>
 
                           <div className="group/item">
-                            <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-cyan-500/50 transition-colors">
+                            <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-cyan-500/50 transition-colors">
                               <Shield className="h-4 w-4 text-cyan-400 mt-0.5 flex-shrink-0" />
-                              <div>
+                              <div className="min-w-0 flex-1">
                                 <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Estado de Verificación</div>
                                 <div className="flex items-center gap-2 mt-1">
                                   <Badge 
                                     variant={propertyDetails.verified ? "default" : "outline"} 
-                                    className={propertyDetails.verified 
+                                    className={`text-xs ${propertyDetails.verified 
                                       ? "bg-green-500/20 text-green-400 border-green-500/50" 
                                       : "bg-red-500/20 text-red-400 border-red-500/50"
-                                    }
+                                    }`}
                                   >
                                     {propertyDetails.verified ? "✓ Verificado" : "⚠ No Verificado"}
                                   </Badge>
@@ -369,30 +381,30 @@ export default function PropertyOwnershipVerifier() {
                     </Card>
                   </div>
 
-                  {/* Property Details */}
+                  {/* Property Details - Mobile Optimized */}
                   <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/30 to-pink-500/30 rounded-xl blur-md group-hover:blur-lg transition-all duration-300"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 sm:from-purple-500/30 to-pink-500/20 sm:to-pink-500/30 rounded-xl blur-sm sm:blur-md group-hover:blur-lg transition-all duration-300"></div>
                     <Card className="relative border-2 border-purple-400/60 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm hover:border-purple-300/80 transition-all duration-300">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-3">
+                      <CardHeader className="pb-2 sm:pb-3">
+                        <CardTitle className="flex items-center gap-2 sm:gap-3">
                           <div className="relative">
-                            <Home className="h-6 w-6 text-purple-400" />
-                            <div className="absolute inset-0 h-6 w-6 bg-purple-400/20 rounded-full animate-pulse"></div>
+                            <Home className="h-5 w-5 sm:h-6 sm:w-6 text-purple-400" />
+                            <div className="absolute inset-0 h-5 w-5 sm:h-6 sm:w-6 bg-purple-400/20 rounded-full animate-pulse"></div>
                           </div>
-                          <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent font-bold">
+                          <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent font-bold text-sm sm:text-base">
                             Detalles de la Propiedad
                           </span>
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="space-y-3">
+                      <CardContent className="space-y-3 sm:space-y-4">
+                        <div className="space-y-2 sm:space-y-3">
                           {propertyDetails.yearBuilt && (
                             <div className="group/item">
-                              <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-purple-500/50 transition-colors">
+                              <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-purple-500/50 transition-colors">
                                 <Calendar className="h-4 w-4 text-purple-400 mt-0.5 flex-shrink-0" />
-                                <div>
+                                <div className="min-w-0 flex-1">
                                   <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Año de Construcción</div>
-                                  <div className="text-white font-medium mt-1">{propertyDetails.yearBuilt}</div>
+                                  <div className="text-white font-medium mt-1 text-sm sm:text-base">{propertyDetails.yearBuilt}</div>
                                 </div>
                               </div>
                             </div>
@@ -400,11 +412,11 @@ export default function PropertyOwnershipVerifier() {
                           
                           {propertyDetails.sqft && (
                             <div className="group/item">
-                              <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-purple-500/50 transition-colors">
+                              <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-purple-500/50 transition-colors">
                                 <Ruler className="h-4 w-4 text-purple-400 mt-0.5 flex-shrink-0" />
-                                <div>
+                                <div className="min-w-0 flex-1">
                                   <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Área Total</div>
-                                  <div className="text-white font-medium mt-1">{propertyDetails.sqft.toLocaleString()} pies²</div>
+                                  <div className="text-white font-medium mt-1 text-sm sm:text-base">{propertyDetails.sqft.toLocaleString()} pies²</div>
                                 </div>
                               </div>
                             </div>
@@ -412,11 +424,11 @@ export default function PropertyOwnershipVerifier() {
 
                           {propertyDetails.bedrooms > 0 && (
                             <div className="group/item">
-                              <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-purple-500/50 transition-colors">
+                              <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-purple-500/50 transition-colors">
                                 <Bed className="h-4 w-4 text-purple-400 mt-0.5 flex-shrink-0" />
-                                <div>
+                                <div className="min-w-0 flex-1">
                                   <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Habitaciones</div>
-                                  <div className="text-white font-medium mt-1">{propertyDetails.bedrooms} dormitorios</div>
+                                  <div className="text-white font-medium mt-1 text-sm sm:text-base">{propertyDetails.bedrooms} dormitorios</div>
                                 </div>
                               </div>
                             </div>
@@ -424,11 +436,11 @@ export default function PropertyOwnershipVerifier() {
 
                           {propertyDetails.purchasePrice && (
                             <div className="group/item">
-                              <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-purple-500/50 transition-colors">
+                              <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-purple-500/50 transition-colors">
                                 <DollarSign className="h-4 w-4 text-purple-400 mt-0.5 flex-shrink-0" />
-                                <div>
+                                <div className="min-w-0 flex-1">
                                   <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Precio de Compra</div>
-                                  <div className="text-white font-medium mt-1">${propertyDetails.purchasePrice.toLocaleString()}</div>
+                                  <div className="text-white font-medium mt-1 text-sm sm:text-base">${propertyDetails.purchasePrice.toLocaleString()}</div>
                                 </div>
                               </div>
                             </div>
@@ -439,18 +451,19 @@ export default function PropertyOwnershipVerifier() {
                   </div>
                 </div>
 
-                {/* Action Buttons */}
+                {/* Action Buttons - Mobile Optimized */}
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-slate-500/20 to-slate-600/20 rounded-xl blur-sm"></div>
                   <Card className="relative border border-slate-600/50 bg-slate-900/90 backdrop-blur-sm">
-                    <CardContent className="p-4">
-                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
                         <Button 
                           onClick={handleExportReport}
-                          className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border-cyan-400/50 text-white shadow-lg shadow-cyan-500/20"
+                          className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border-cyan-400/50 text-white shadow-lg shadow-cyan-500/20 w-full sm:w-auto"
+                          size="sm"
                         >
                           <Download className="w-4 h-4 mr-2" />
-                          Exportar Reporte
+                          <span className="text-sm">Exportar Reporte</span>
                         </Button>
                         <Button 
                           variant="outline" 
@@ -461,9 +474,10 @@ export default function PropertyOwnershipVerifier() {
                             setAddress("");
                             setError(null);
                           }}
-                          className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white"
+                          className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white w-full sm:w-auto"
+                          size="sm"
                         >
-                          Nueva Verificación
+                          <span className="text-sm">Nueva Verificación</span>
                         </Button>
                       </div>
                     </CardContent>
@@ -473,14 +487,14 @@ export default function PropertyOwnershipVerifier() {
             )}
           </TabsContent>
 
-          <TabsContent value="history" className="space-y-6">
+          <TabsContent value="history" className="space-y-4 sm:space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <HistoryIcon className="h-5 w-5 text-primary" />
-                  Historial de Verificaciones
+              <CardHeader className="pb-4 sm:pb-6">
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                  <HistoryIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                  <span className="truncate">Historial de Verificaciones</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm sm:text-base">
                   Historial de todas las verificaciones de propiedad realizadas
                 </CardDescription>
               </CardHeader>
