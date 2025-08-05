@@ -237,205 +237,87 @@ export default function PropertyOwnershipVerifier() {
           </TabsList>
 
           <TabsContent value="search" className="space-y-6">
-            {/* Workflow Steps */}
+            {/* Simple Search Interface */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-primary" />
-                  Proceso de Verificación
-                </CardTitle>
+                <CardTitle>Verificación de Propiedad</CardTitle>
                 <CardDescription>
-                  Flujo de trabajo de 3 pasos para verificación completa de propiedad
+                  Ingrese la dirección para verificar información de propiedad y titularidad
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between mb-8">
-                  {steps.map((step, index) => (
-                    <div key={step.number} className="flex items-center">
-                      <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                        step.completed 
-                          ? 'bg-primary text-primary-foreground border-primary' 
-                          : currentStep === step.number
-                            ? 'border-primary text-primary bg-primary/10'
-                            : 'border-muted-foreground text-muted-foreground'
-                      }`}>
-                        {step.completed ? (
-                          <CheckCircle2 className="h-5 w-5" />
-                        ) : (
-                          <span className="font-semibold">{step.number}</span>
-                        )}
-                      </div>
-                      {index < steps.length - 1 && (
-                        <div className={`flex-1 h-0.5 mx-4 ${
-                          steps[index + 1].completed ? 'bg-primary' : 'bg-muted'
-                        }`} />
-                      )}
-                    </div>
-                  ))}
-                </div>
+              <CardContent className="space-y-4">
+                <MapboxPlacesAutocomplete
+                  value={address}
+                  onChange={setAddress}
+                  onPlaceSelect={handlePlaceSelect}
+                  placeholder="Ingrese la dirección de la propiedad..."
+                  countries={["mx", "us", "es"]}
+                  language="es"
+                />
+                
+                <Button
+                  onClick={handleSearch}
+                  disabled={loading || !selectedPlace}
+                  className="w-full"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                      Verificando...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4 mr-2" />
+                      Verificar Propiedad
+                    </>
+                  )}
+                </Button>
 
-                <div className="space-y-4">
-                  {steps.map((step) => (
-                    <div key={step.number} className={`p-4 rounded-lg border ${
-                      currentStep === step.number ? 'border-primary bg-primary/5' : 'border-muted'
-                    }`}>
-                      <div className="flex items-center gap-3 mb-2">
-                        {step.icon}
-                        <div>
-                          <h3 className="font-semibold">{step.title}</h3>
-                          <p className="text-sm text-muted-foreground">{step.description}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
               </CardContent>
             </Card>
 
-            {/* Step 1: Property Address */}
-            {currentStep === 1 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-primary" />
-                    Paso 1: Dirección de la Propiedad
-                  </CardTitle>
-                  <CardDescription>
-                    Ingrese la dirección de la propiedad que desea verificar
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <MapboxPlacesAutocomplete
-                    value={address}
-                    onChange={setAddress}
-                    onPlaceSelect={handlePlaceSelect}
-                    placeholder="Ingrese la dirección de la propiedad..."
-                    countries={["mx", "us", "es"]}
-                    language="es"
-                  />
-                  
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={handleSearch}
-                      disabled={loading || !selectedPlace}
-                      className="min-w-[140px]"
-                    >
-                      {loading ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                          Verificando...
-                        </>
-                      ) : (
-                        <>
-                          <Search className="w-4 h-4 mr-2" />
-                          Verificar Propiedad
-                        </>
-                      )}
-                    </Button>
-                  </div>
-
-                  {error && (
-                    <Alert variant="destructive">
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Step 2: Running Verification */}
-            {currentStep === 2 && loading && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Search className="h-5 w-5 text-primary animate-pulse" />
-                    Paso 2: Ejecutando Verificación
-                  </CardTitle>
-                  <CardDescription>
-                    Analizando datos de propiedad y verificando titularidad...
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Array(6).fill(0).map((_, i) => (
-                      <div key={i} className="space-y-2">
-                        <Skeleton className="h-4 w-1/3" />
-                        <Skeleton className="h-6 w-2/3" />
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Step 3: Results and Export */}
-            {currentStep === 3 && propertyDetails && (
+            {/* Results */}
+            {propertyDetails && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5 text-green-600" />
-                    Paso 3: Resultados y Exportación
+                    Resultados de Verificación
                   </CardTitle>
-                  <CardDescription>
-                    Verificación completa. Puede exportar los detalles de la propiedad.
-                  </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="text-lg font-semibold text-primary mb-3">Información del Propietario</h3>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">
-                            <span className="text-muted-foreground">Propietario:</span> {propertyDetails.owner}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Home className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">
-                            <span className="text-muted-foreground">Propiedad:</span> {propertyDetails.address}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                          <span className="text-sm">
-                            <span className="text-muted-foreground">Estado:</span> 
-                            <Badge variant={propertyDetails.verified ? "default" : "outline"} className="ml-2">
-                              {propertyDetails.verified ? "Verificado" : "No Verificado"}
-                            </Badge>
-                          </span>
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-primary">Información del Propietario</h3>
+                      <div className="space-y-2 text-sm">
+                        <div><strong>Propietario:</strong> {propertyDetails.owner}</div>
+                        <div><strong>Propiedad:</strong> {propertyDetails.address}</div>
+                        <div>
+                          <strong>Estado:</strong> 
+                          <Badge variant={propertyDetails.verified ? "default" : "outline"} className="ml-2">
+                            {propertyDetails.verified ? "Verificado" : "No Verificado"}
+                          </Badge>
                         </div>
                       </div>
                     </div>
                     
-                    <div>
-                      <h3 className="text-lg font-semibold text-primary mb-3">Detalles de la Propiedad</h3>
-                      <div className="space-y-2">
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-primary">Detalles de la Propiedad</h3>
+                      <div className="space-y-2 text-sm">
                         {propertyDetails.yearBuilt && (
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">
-                              <span className="text-muted-foreground">Año de construcción:</span> {propertyDetails.yearBuilt}
-                            </span>
-                          </div>
+                          <div><strong>Año de construcción:</strong> {propertyDetails.yearBuilt}</div>
                         )}
                         {propertyDetails.sqft && (
-                          <div className="flex items-center gap-2">
-                            <Ruler className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">
-                              <span className="text-muted-foreground">Tamaño:</span> {propertyDetails.sqft.toLocaleString()} pies²
-                            </span>
-                          </div>
+                          <div><strong>Tamaño:</strong> {propertyDetails.sqft.toLocaleString()} pies²</div>
                         )}
                         {propertyDetails.purchasePrice && (
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">
-                              <span className="text-muted-foreground">Precio de compra:</span> ${propertyDetails.purchasePrice.toLocaleString()}
-                            </span>
-                          </div>
+                          <div><strong>Precio de compra:</strong> ${propertyDetails.purchasePrice.toLocaleString()}</div>
                         )}
                       </div>
                     </div>
