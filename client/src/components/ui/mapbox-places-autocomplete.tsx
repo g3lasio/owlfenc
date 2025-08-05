@@ -93,7 +93,18 @@ export default function MapboxPlacesAutocomplete({
       const startTime = Date.now();
       const response = await fetch(url, {
         signal: controller.signal
+      }).catch(error => {
+        // Manejar explícitamente los errores de fetch para evitar unhandled rejections
+        if (error.name === 'AbortError') {
+          return null; // Ignorar errores de abort
+        }
+        throw error; // Re-lanzar otros errores
       });
+      
+      // Si fetch fue abortado, retornar early
+      if (!response) {
+        return;
+      }
       
       // Verificar si la petición fue cancelada después de la respuesta
       if (controller.signal.aborted) {
@@ -236,8 +247,13 @@ export default function MapboxPlacesAutocomplete({
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+      // Cancelar petición pendiente de forma segura
+      if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+        try {
+          abortControllerRef.current.abort();
+        } catch (e) {
+          // Ignorar errores de abort
+        }
       }
     };
   }, []);
