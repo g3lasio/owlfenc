@@ -34,7 +34,7 @@ import {
   Eye,
   FileText,
   Download,
-  Building,
+  Scan,
   ChevronRight,
   CheckCircle2,
 } from "lucide-react";
@@ -216,84 +216,129 @@ export default function PropertyOwnershipVerifier() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6 max-w-6xl">
-        {/* Header - Mobile Optimized */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
-                <Building className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+        {/* Header - Futuristic Holographic Design */}
+        <div className="mb-6 sm:mb-8 relative">
+          {/* Holographic Background Effects */}
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-blue-500/5 to-purple-500/10 rounded-2xl blur-xl"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900/20 to-slate-800/20 rounded-2xl backdrop-blur-sm"></div>
+          
+          <div className="relative p-6 sm:p-8 border border-cyan-400/30 rounded-2xl bg-gradient-to-br from-slate-900/50 to-slate-800/50 backdrop-blur-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
+              <div className="flex items-center gap-4">
+                {/* Futuristic Scan Icon with Holographic Effects */}
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/30 to-blue-400/30 rounded-xl blur-md group-hover:blur-lg transition-all duration-300"></div>
+                  <div className="relative p-3 bg-gradient-to-br from-slate-900/90 to-slate-800/90 rounded-xl border-2 border-cyan-400/50 backdrop-blur-sm">
+                    <Scan className="h-6 w-6 sm:h-8 sm:w-8 text-cyan-400" />
+                    <div className="absolute inset-0 bg-cyan-400/10 rounded-xl animate-pulse"></div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent leading-tight">
+                    Property Ownership Verifier
+                  </h1>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="h-1 w-12 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full"></div>
+                    <div className="h-1 w-6 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full"></div>
+                  </div>
+                </div>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
-                Property Ownership Verifier
-              </h1>
             </div>
+            
+            <p className="text-slate-300 text-base sm:text-lg max-w-3xl leading-relaxed font-medium">
+              Advanced AI-powered property intelligence with quantum verification technology
+            </p>
+            
+            {/* Holographic Corner Accents */}
+            <div className="absolute top-4 left-4 w-8 h-8 border-l-2 border-t-2 border-cyan-400/50 rounded-tl-lg"></div>
+            <div className="absolute top-4 right-4 w-8 h-8 border-r-2 border-t-2 border-purple-400/50 rounded-tr-lg"></div>
+            <div className="absolute bottom-4 left-4 w-8 h-8 border-l-2 border-b-2 border-cyan-400/50 rounded-bl-lg"></div>
+            <div className="absolute bottom-4 right-4 w-8 h-8 border-r-2 border-b-2 border-purple-400/50 rounded-br-lg"></div>
           </div>
-          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl leading-relaxed">
-            Verificación profesional de propiedad y análisis de titularidad para proyectos legales y de construcción.
-          </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-2 h-auto">
-            <TabsTrigger value="search" className="text-xs sm:text-sm py-2 sm:py-3">
-              <span className="hidden sm:inline">Verificación de Propiedad</span>
-              <span className="sm:hidden">Verificación</span>
+          <TabsList className="grid w-full grid-cols-2 h-auto bg-gradient-to-r from-slate-900/80 to-slate-800/80 border border-slate-600/50 backdrop-blur-sm">
+            <TabsTrigger 
+              value="search" 
+              className="text-xs sm:text-sm py-2 sm:py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:text-cyan-300 data-[state=active]:border data-[state=active]:border-cyan-400/50"
+            >
+              <span className="hidden sm:inline">Neural Verification</span>
+              <span className="sm:hidden">Verify</span>
             </TabsTrigger>
-            <TabsTrigger value="history" className="text-xs sm:text-sm py-2 sm:py-3">
-              <span className="hidden sm:inline">Historial de Búsquedas</span>
-              <span className="sm:hidden">Historial</span>
+            <TabsTrigger 
+              value="history" 
+              className="text-xs sm:text-sm py-2 sm:py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600/20 data-[state=active]:to-pink-600/20 data-[state=active]:text-purple-300 data-[state=active]:border data-[state=active]:border-purple-400/50"
+            >
+              <span className="hidden sm:inline">Data Archives</span>
+              <span className="sm:hidden">Archives</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="search" className="space-y-4 sm:space-y-6">
-            {/* Simple Search Interface - Mobile Optimized */}
-            <Card>
-              <CardHeader className="pb-4 sm:pb-6">
-                <CardTitle className="text-lg sm:text-xl">Verificación de Propiedad</CardTitle>
-                <CardDescription className="text-sm sm:text-base">
-                  Ingrese la dirección para verificar información de propiedad y titularidad
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="w-full">
-                  <MapboxPlacesAutocomplete
-                    value={address}
-                    onChange={setAddress}
-                    onPlaceSelect={handlePlaceSelect}
-                    placeholder="Ingrese la dirección de la propiedad..."
-                    countries={["mx", "us", "es"]}
-                    language="es"
-                    className="w-full"
-                  />
-                </div>
+            {/* Search Interface - Holographic Design */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-500/20 to-slate-600/20 rounded-2xl blur-sm group-hover:blur-md transition-all duration-300"></div>
+              <Card className="relative border-2 border-slate-600/50 bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-sm hover:border-slate-500/70 transition-all duration-300">
+                {/* Holographic Corner Accents */}
+                <div className="absolute top-3 left-3 w-6 h-6 border-l border-t border-slate-400/50"></div>
+                <div className="absolute top-3 right-3 w-6 h-6 border-r border-t border-slate-400/50"></div>
+                <div className="absolute bottom-3 left-3 w-6 h-6 border-l border-b border-slate-400/50"></div>
+                <div className="absolute bottom-3 right-3 w-6 h-6 border-r border-b border-slate-400/50"></div>
                 
-                <Button
-                  onClick={handleSearch}
-                  disabled={loading || !selectedPlace}
-                  className="w-full"
-                  size="lg"
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                      <span className="text-sm sm:text-base">Verificando...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4 mr-2" />
-                      <span className="text-sm sm:text-base">Verificar Propiedad</span>
-                    </>
-                  )}
-                </Button>
+                <CardHeader className="pb-4 sm:pb-6">
+                  <CardTitle className="text-lg sm:text-xl bg-gradient-to-r from-slate-200 to-slate-400 bg-clip-text text-transparent">
+                    Property Verification Interface
+                  </CardTitle>
+                  <CardDescription className="text-sm sm:text-base text-slate-400">
+                    Enter property address to initiate quantum verification protocol
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="w-full">
+                    <MapboxPlacesAutocomplete
+                      value={address}
+                      onChange={setAddress}
+                      onPlaceSelect={handlePlaceSelect}
+                      placeholder="Enter property address for verification..."
+                      countries={["mx", "us", "es"]}
+                      language="es"
+                      className="w-full"
+                    />
+                  </div>
+                  
+                  <Button
+                    onClick={handleSearch}
+                    disabled={loading || !selectedPlace}
+                    className="w-full bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 border-slate-500/50 text-white shadow-lg shadow-slate-500/20"
+                    size="lg"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                        <span className="text-sm sm:text-base">Quantum Scanning...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-4 h-4 mr-2" />
+                        <span className="text-sm sm:text-base">Initiate Verification</span>
+                      </>
+                    )}
+                  </Button>
 
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription className="text-sm break-words">{error}</AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
+                  {error && (
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 to-orange-500/20 rounded-lg blur-sm"></div>
+                      <Alert variant="destructive" className="relative border-red-500/50 bg-gradient-to-br from-red-900/20 to-orange-900/20 backdrop-blur-sm">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription className="text-sm break-words">{error}</AlertDescription>
+                      </Alert>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Results - Futuristic Holographic Design */}
             {propertyDetails && (
@@ -488,20 +533,29 @@ export default function PropertyOwnershipVerifier() {
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4 sm:space-y-6">
-            <Card>
-              <CardHeader className="pb-4 sm:pb-6">
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                  <HistoryIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                  <span className="truncate">Historial de Verificaciones</span>
-                </CardTitle>
-                <CardDescription className="text-sm sm:text-base">
-                  Historial de todas las verificaciones de propiedad realizadas
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <PropertySearchHistory onSelectHistory={handleSelectHistory} />
-              </CardContent>
-            </Card>
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-500/20 to-slate-600/20 rounded-2xl blur-sm group-hover:blur-md transition-all duration-300"></div>
+              <Card className="relative border-2 border-slate-600/50 bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-sm hover:border-slate-500/70 transition-all duration-300">
+                {/* Holographic Corner Accents */}
+                <div className="absolute top-3 left-3 w-6 h-6 border-l border-t border-slate-400/50"></div>
+                <div className="absolute top-3 right-3 w-6 h-6 border-r border-t border-slate-400/50"></div>
+                <div className="absolute bottom-3 left-3 w-6 h-6 border-l border-b border-slate-400/50"></div>
+                <div className="absolute bottom-3 right-3 w-6 h-6 border-r border-b border-slate-400/50"></div>
+                
+                <CardHeader className="pb-4 sm:pb-6">
+                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl bg-gradient-to-r from-slate-200 to-slate-400 bg-clip-text text-transparent">
+                    <HistoryIcon className="h-4 w-4 sm:h-5 sm:w-5 text-slate-300 flex-shrink-0" />
+                    <span className="truncate">Verification Archives</span>
+                  </CardTitle>
+                  <CardDescription className="text-sm sm:text-base text-slate-400">
+                    Historical database of all property verification protocols
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PropertySearchHistory onSelectHistory={handleSelectHistory} />
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
