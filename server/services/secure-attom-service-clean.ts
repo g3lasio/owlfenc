@@ -245,28 +245,41 @@ class SecureAttomService {
    */
   private processPropertyData(property: any, address: string): PropertyDetails {
     console.log('🔧 [ATTOM-SERVICE] Processing property data structure');
-    console.log('🔍 [ATTOM-SERVICE] Raw owner data:', JSON.stringify(property.owner, null, 2));
+    console.log('🔍 [ATTOM-SERVICE] Raw assessment owner data:', JSON.stringify(property.assessment?.owner, null, 2));
     
-    // Extract owner data according to ATTOM documentation:
-    // For corporate ownership, names are in FULLName and LASTName fields
-    let ownerName = 'Owner data not available';
+    // Extract owner data from correct location: assessment.owner (confirmed by ATTOM response)
+    let ownerNames: string[] = [];
     
-    if (property.owner?.owner1) {
-      const owner1 = property.owner.owner1;
-      // Corporate ownership: FULLName and LASTName (exact capitalization per ATTOM)
-      ownerName = owner1.FULLName || owner1.LASTName || owner1.fullName || owner1.lastName;
-    } else if (property.assessment?.owner) {
+    if (property.assessment?.owner) {
       const assessmentOwner = property.assessment.owner;
-      ownerName = assessmentOwner.name || assessmentOwner.FULLName || assessmentOwner.LASTName;
+      
+      // Extract all owners (owner1, owner2, owner3, etc.)
+      for (let i = 1; i <= 4; i++) {
+        const ownerKey = `owner${i}`;
+        const owner = assessmentOwner[ownerKey];
+        
+        if (owner && owner.fullName) {
+          ownerNames.push(owner.fullName.trim());
+        } else if (owner && owner.lastName) {
+          // Fallback to lastName if fullName not available
+          ownerNames.push(owner.lastName.trim());
+        }
+      }
+      
+      console.log('👥 [ATTOM-SERVICE] Found owners:', ownerNames);
     }
     
-    // If still no owner data, check other possible locations
-    if (!ownerName || ownerName === 'Owner data not available') {
-      ownerName = property.owner?.name || 
-                  property.owner?.FULLName || 
-                  property.owner?.LASTName || 
-                  'Owner data requires premium ATTOM API access';
+    // Fallback: check other possible locations
+    if (ownerNames.length === 0 && property.owner?.owner1) {
+      const owner1 = property.owner.owner1;
+      const name = owner1.FULLName || owner1.LASTName || owner1.fullName || owner1.lastName;
+      if (name) ownerNames.push(name.trim());
     }
+    
+    // Final fallback
+    const ownerName = ownerNames.length > 0 
+      ? ownerNames.join(' & ') 
+      : 'Datos del propietario no disponibles';
     
     const result: PropertyDetails = {
       address: address,
