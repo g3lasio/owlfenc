@@ -1200,18 +1200,50 @@ export default function PermitAdvisor() {
         <div className="flex justify-end">
           <Dialog>
             <DialogTrigger asChild>
-              <Button
-                variant="outline"
-                className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3"
-              >
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <div className="w-3 h-3 sm:w-4 sm:h-4 bg-cyan-500/20 rounded-md flex items-center justify-center">
-                    🕒
-                  </div>
-                  <span className="hidden sm:inline">DeepSearch History</span>
-                  <span className="sm:hidden">History</span>
+              <div className="relative group">
+                {/* Holographic Background Effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-blue-500/10 to-purple-500/20 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-all duration-500 animate-pulse"></div>
+                
+                {/* Animated Border Ring */}
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-cyan-400/50 via-blue-500/30 to-purple-500/50 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                  <div className="absolute inset-[1px] rounded-lg bg-slate-900/80"></div>
                 </div>
-              </Button>
+                
+                <Button
+                  variant="outline"
+                  className="relative border-2 border-cyan-500/40 bg-gradient-to-br from-slate-900/80 via-slate-800/70 to-slate-900/80 text-cyan-300 hover:text-cyan-200 hover:border-cyan-400/60 h-8 sm:h-10 text-xs sm:text-sm px-3 sm:px-4 backdrop-blur-sm shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all duration-300 group-hover:scale-[1.02] overflow-hidden"
+                >
+                  {/* Inner Glow Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-transparent to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  
+                  {/* Corner Accents */}
+                  <div className="absolute top-1 left-1 w-2 h-2 border-l border-t border-cyan-400/60 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+                  <div className="absolute top-1 right-1 w-2 h-2 border-r border-t border-blue-400/60 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+                  
+                  <div className="relative flex items-center gap-1 sm:gap-2 z-10">
+                    <div className="relative">
+                      {/* Icon Container with Holographic Effect */}
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-br from-cyan-500/30 to-blue-500/30 rounded-md flex items-center justify-center border border-cyan-400/40 group-hover:border-cyan-300/60 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-cyan-400/50">
+                        <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-cyan-300 group-hover:text-cyan-200 transition-colors duration-300" />
+                      </div>
+                      
+                      {/* Animated Pulse Ring */}
+                      <div className="absolute inset-0 rounded-md border border-cyan-400/30 opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
+                    </div>
+                    
+                    <span className="hidden sm:inline font-medium tracking-wide">DeepSearch History</span>
+                    <span className="sm:hidden font-medium">History</span>
+                    
+                    {/* Animated Arrow */}
+                    <div className="ml-1 opacity-0 group-hover:opacity-100 transform translate-x-0 group-hover:translate-x-1 transition-all duration-300">
+                      <ArrowRight className="h-3 w-3 text-cyan-400" />
+                    </div>
+                  </div>
+                  
+                  {/* Scanning Line Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
+                </Button>
+              </div>
             </DialogTrigger>
 
             <DialogContent className="max-w-2xl bg-slate-900/95 border-cyan-400/30 backdrop-blur-md">
