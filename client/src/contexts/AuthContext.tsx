@@ -205,28 +205,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         getIdToken: () => user.getIdToken(),
       };
 
-      // Enviar correo de bienvenida
-      try {
-        // Importamos de forma dinámica para evitar problemas de dependencia circular
-        const emailService = await import("../services/emailService");
-
-        // Enviamos el correo de bienvenida en segundo plano
-        emailService
-          .sendWelcomeEmail(email, displayName || "")
-          .then((success) => {
-            if (success) {
-              console.log("Correo de bienvenida enviado con éxito");
-            } else {
-              console.error("No se pudo enviar el correo de bienvenida");
-            }
-          })
-          .catch((error) => {
-            console.error("Error al enviar correo de bienvenida:", error);
-          });
-      } catch (emailError) {
-        // No bloqueamos el registro si falla el envío del correo
-        console.error("Error al cargar servicio de correo:", emailError);
-      }
+      // Note: Welcome email functionality would be implemented here
+      // Currently not available in the email service
+      console.log("Usuario registrado exitosamente:", email);
 
       return appUser;
     } catch (err: any) {

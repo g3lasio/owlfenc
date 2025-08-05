@@ -452,7 +452,7 @@ export const updateProjectProgress = async (id: string, progress: string) => {
       }
     }
     
-    if (!projectDoc) {
+    if (!projectDoc || !collectionName) {
       console.error("🔍 [FIREBASE REAL] Proyecto no encontrado en ninguna colección. ID:", id);
       throw new Error(`Project with ID ${id} not found in any collection`);
     }
@@ -1070,7 +1070,7 @@ export const loginWithApple = async () => {
         setTimeout(() => reject(new Error('APPLE_POPUP_TIMEOUT')), 30000); // 30 segundos para Apple
       });
       
-      const result = await Promise.race([popupPromise, timeoutPromise]);
+      const result = await Promise.race([popupPromise, timeoutPromise]) as any;
       console.log("¡Autenticación con Apple popup exitosa!");
       return result.user;
       

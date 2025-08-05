@@ -115,16 +115,16 @@ export default function AuthPage() {
   });
 
   // Change handler
-  const handleNameChange = (e) => {
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSignUpFields({ ...signUpFields, name: e.target.value });
   };
-  const handleEmailChange = (e) => {
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSignUpFields({ ...signUpFields, email: e.target.value });
   };
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSignUpFields({ ...signUpFields, password: e.target.value });
   };
-  const handleConfirmPasswordChange = (e) => {
+  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSignUpFields({ ...signUpFields, confirmPassword: e.target.value });
   };
 
@@ -213,7 +213,7 @@ export default function AuthPage() {
   };
 
   // Manejar registro con email y contraseña
-  const onSignupSubmit = async (e) => {
+  const onSignupSubmit = async (e: React.FormEvent) => {
     setIsLoading(true);
     try {
       e.preventDefault();
