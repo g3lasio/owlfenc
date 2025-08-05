@@ -181,10 +181,14 @@ export default function MapboxPlacesAutocomplete({
     } else {
       console.log("⏳ [MapboxPlaces] Esperando más caracteres:", newValue.length, "/3");
       // Cancelar cualquier petición pendiente de forma segura
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        abortControllerRef.current = null;
+      if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+        try {
+          abortControllerRef.current.abort();
+        } catch (e) {
+          // Ignorar errores de abort
+        }
       }
+      abortControllerRef.current = null;
       setSuggestions([]);
       setShowSuggestions(false);
     }
