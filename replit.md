@@ -37,6 +37,7 @@ Critical Business Rule: This is multi-tenant contractor software - NEVER use Owl
 - **Payment Management**: Stripe integration for secure processing, payment link generation, 50/50 payment split workflow, and status tracking.
 - **Project Management**: Complete project lifecycle management, material tracking with dynamic pricing, client and contractor profile management, and project approval workflow. Includes an advanced drag-and-drop timeline system with Firebase persistence.
 - **Email Communication System**: Professional estimate delivery, mobile-responsive email templates, integration with Resend, and automated approval workflows.
+- **Property Ownership Verifier**: Professional Legal Defense styled interface for property verification using ATTOM Data API with proper endpoint selection (`/property/expandedprofile` and `/property/basicprofile` for ownership data), simplified 3-step workflow, and organized history management.
 
 ### System Design Choices
 - **UI/UX**: Cyberpunk aesthetic with cyan/blue gradient styling, futuristic elements, and professional card layouts. Emphasizes clean, streamlined interfaces, removing redundant elements and focusing on essential information.

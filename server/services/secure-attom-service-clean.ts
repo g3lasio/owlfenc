@@ -169,14 +169,14 @@ class SecureAttomService {
         address2: address2
       });
       
-      // Try property/detail endpoint first (most complete data including owner)
-      console.log('🔍 [ATTOM-SERVICE] Trying property/detail endpoint for complete owner data');
+      // Try property/expandedprofile endpoint first (has owner data per ATTOM documentation)
+      console.log('🔍 [ATTOM-SERVICE] Trying property/expandedprofile endpoint for owner data');
       
       let propertyData;
       let propertyRecord;
       
       try {
-        propertyData = await this.makeSecureRequest('/property/detail', {
+        propertyData = await this.makeSecureRequest('/property/expandedprofile', {
           address1: components.address1,
           address2: address2,
           page: 1,
@@ -185,16 +185,16 @@ class SecureAttomService {
         
         if (propertyData && propertyData.property && propertyData.property.length > 0) {
           propertyRecord = propertyData.property[0];
-          console.log('✅ [ATTOM-SERVICE] Found data in property/detail endpoint');
+          console.log('✅ [ATTOM-SERVICE] Found data in expandedprofile endpoint');
         }
       } catch (error) {
-        console.log('⚠️ [ATTOM-SERVICE] property/detail failed, trying expandedprofile');
+        console.log('⚠️ [ATTOM-SERVICE] expandedprofile failed, trying basicprofile');
       }
       
-      // Fallback to expandedprofile if detail failed
+      // Fallback to basicprofile if expandedprofile failed
       if (!propertyRecord) {
         try {
-          propertyData = await this.makeSecureRequest('/property/expandedprofile', {
+          propertyData = await this.makeSecureRequest('/property/basicprofile', {
             address1: components.address1,
             address2: address2,
             page: 1,
@@ -203,16 +203,16 @@ class SecureAttomService {
           
           if (propertyData && propertyData.property && propertyData.property.length > 0) {
             propertyRecord = propertyData.property[0];
-            console.log('✅ [ATTOM-SERVICE] Found data in expandedprofile endpoint');
+            console.log('✅ [ATTOM-SERVICE] Found data in basicprofile endpoint');
           }
         } catch (error) {
-          console.log('⚠️ [ATTOM-SERVICE] expandedprofile failed, trying basicprofile');
+          console.log('⚠️ [ATTOM-SERVICE] basicprofile failed, trying property/detail as last resort');
         }
       }
       
-      // Final fallback to basicprofile
+      // Final fallback to property/detail (doesn't have owner data but has other property info)
       if (!propertyRecord) {
-        propertyData = await this.makeSecureRequest('/property/basicprofile', {
+        propertyData = await this.makeSecureRequest('/property/detail', {
           address1: components.address1,
           address2: address2,
           page: 1,
@@ -224,7 +224,7 @@ class SecureAttomService {
         }
         
         propertyRecord = propertyData.property[0];
-        console.log('✅ [ATTOM-SERVICE] Found data in basicprofile endpoint (limited data)');
+        console.log('✅ [ATTOM-SERVICE] Found data in property/detail endpoint (no owner data)');
       }
 
       // Process the property data
@@ -246,13 +246,30 @@ class SecureAttomService {
     console.log('🔧 [ATTOM-SERVICE] Processing property data structure');
     console.log('🔍 [ATTOM-SERVICE] Raw owner data:', JSON.stringify(property.owner, null, 2));
     
+    // Extract owner data according to ATTOM documentation:
+    // For corporate ownership, names are in FULLName and LASTName fields
+    let ownerName = 'Owner data not available';
+    
+    if (property.owner?.owner1) {
+      const owner1 = property.owner.owner1;
+      // Corporate ownership: FULLName and LASTName (exact capitalization per ATTOM)
+      ownerName = owner1.FULLName || owner1.LASTName || owner1.fullName || owner1.lastName;
+    } else if (property.assessment?.owner) {
+      const assessmentOwner = property.assessment.owner;
+      ownerName = assessmentOwner.name || assessmentOwner.FULLName || assessmentOwner.LASTName;
+    }
+    
+    // If still no owner data, check other possible locations
+    if (!ownerName || ownerName === 'Owner data not available') {
+      ownerName = property.owner?.name || 
+                  property.owner?.FULLName || 
+                  property.owner?.LASTName || 
+                  'Owner data requires premium ATTOM API access';
+    }
+    
     const result: PropertyDetails = {
       address: address,
-      owner: property.owner?.owner1?.fullName || 
-             property.owner?.owner1?.lastName || 
-             property.assessment?.owner?.name || 
-             property.assessment?.owner?.owner1?.fullName ||
-             'Owner data requires premium ATTOM API access',
+      owner: ownerName,
       sqft: property.building?.size?.bldgSize || property.building?.size?.livingSize || property.building?.size?.universalSize || 0,
       bedrooms: property.building?.rooms?.beds || 0,
       bathrooms: property.building?.rooms?.bathsTotal || property.building?.rooms?.bathsFull || 0,
