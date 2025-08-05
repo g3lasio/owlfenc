@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -24,6 +24,7 @@ import {
   ArrowRight,
   Ruler,
   Clock as HistoryIcon,
+  Clock,
   DollarSign,
   Info,
   BedDouble as Bed,
@@ -47,16 +48,34 @@ import {
   PropertyDetails,
   OwnerHistoryEntry,
 } from "@/services/propertyVerifierService";
-import PropertySearchHistory from "@/components/property/PropertySearchHistory";
+// Removed PropertySearchHistory import - implementing directly
 import { useQueryClient } from "@tanstack/react-query";
+import { format } from 'date-fns';
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 
 // Simple step tracking
 interface Step {
   number: 1 | 2 | 3;
   title: string;
   description: string;
-  icon: React.ReactNode;
+  icon: any;
   completed: boolean;
+}
+
+// History interface for direct implementation
+interface PropertySearchHistoryItem {
+  id: number;
+  userId: number;
+  address: string;
+  ownerName: string | null;
+  parcelNumber: string | null;
+  results: any;
+  title: string | null;
+  notes: string | null;
+  tags: string[] | null;
+  isFavorite: boolean;
+  createdAt: string;
 }
 
 export default function PropertyOwnershipVerifier() {
@@ -74,9 +93,16 @@ export default function PropertyOwnershipVerifier() {
   const [error, setError] = useState<string | null>(null);
   const [propertyDetails, setPropertyDetails] = useState<PropertyDetails | null>(null);
   const [activeTab, setActiveTab] = useState("search");
+  const [historySearchTerm, setHistorySearchTerm] = useState("");
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Load property history
+  const { data: historyItems = [], isLoading: historyLoading, error: historyError } = useQuery({
+    queryKey: ['/api/property/history'],
+    staleTime: 30000,
+  });
 
   // Define simple 3-step flow
   const steps: Step[] = [
@@ -212,6 +238,31 @@ export default function PropertyOwnershipVerifier() {
       description: "El reporte de propiedad ha sido descargado exitosamente.",
     });
   }, [propertyDetails, address, toast]);
+
+  // Filter history items based on search term
+  const filteredHistoryItems = useMemo(() => {
+    if (!historyItems || !Array.isArray(historyItems)) return [];
+    
+    if (!historySearchTerm) return historyItems;
+    
+    const searchLower = historySearchTerm.toLowerCase();
+    return historyItems.filter((item: PropertySearchHistoryItem) => {
+      const addressMatch = item.address?.toLowerCase().includes(searchLower);
+      const titleMatch = item.title?.toLowerCase().includes(searchLower);
+      const ownerMatch = item.ownerName?.toLowerCase().includes(searchLower);
+      return addressMatch || titleMatch || ownerMatch;
+    });
+  }, [historyItems, historySearchTerm]);
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return format(date, 'MMM dd, yyyy HH:mm');
+    } catch (error) {
+      return 'Unknown date';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -551,8 +602,138 @@ export default function PropertyOwnershipVerifier() {
                     Historical database of all property verification protocols
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <PropertySearchHistory onSelectHistory={handleSelectHistory} />
+                <CardContent className="space-y-4">
+                  {/* Search Filter */}
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg blur-sm"></div>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-2.5 h-4 w-4 text-purple-400" />
+                      <Input
+                        placeholder="Search archives by address or owner..."
+                        value={historySearchTerm}
+                        onChange={(e) => setHistorySearchTerm(e.target.value)}
+                        className="pl-10 bg-gradient-to-br from-slate-900/70 to-slate-800/70 border-purple-400/30 text-slate-200 placeholder:text-slate-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* History Content */}
+                  {historyLoading ? (
+                    <div className="space-y-4">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="relative">
+                          <div className="absolute inset-0 bg-gradient-to-r from-slate-600/20 to-slate-700/20 rounded-lg blur-sm"></div>
+                          <div className="relative p-4 border border-slate-600/30 rounded-lg bg-gradient-to-br from-slate-900/60 to-slate-800/60 backdrop-blur-sm">
+                            <Skeleton className="h-4 w-3/4 mb-2 bg-slate-700" />
+                            <Skeleton className="h-3 w-1/2 mb-2 bg-slate-700" />
+                            <Skeleton className="h-3 w-1/3 bg-slate-700" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : historyError ? (
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 to-orange-500/20 rounded-lg blur-sm"></div>
+                      <div className="relative p-6 text-center border border-red-500/30 rounded-lg bg-gradient-to-br from-red-900/20 to-orange-900/20 backdrop-blur-sm">
+                        <AlertTriangle className="mx-auto h-8 w-8 text-red-400 mb-3" />
+                        <p className="text-red-300 font-medium">Archive Access Error</p>
+                        <p className="text-red-400/80 text-sm mt-1">Unable to access verification archives</p>
+                      </div>
+                    </div>
+                  ) : filteredHistoryItems.length === 0 ? (
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-slate-500/10 to-slate-600/10 rounded-lg blur-sm"></div>
+                      <div className="relative p-8 text-center border border-slate-600/30 rounded-lg bg-gradient-to-br from-slate-900/40 to-slate-800/40 backdrop-blur-sm">
+                        <Database className="mx-auto h-12 w-12 text-slate-400 mb-4 opacity-50" />
+                        <p className="text-slate-300 font-medium mb-2">No Archive Entries Found</p>
+                        <p className="text-slate-500 text-sm">
+                          {historySearchTerm ? 'No results match your search criteria' : 'Your verification history will appear here'}
+                        </p>
+                        {historySearchTerm && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setHistorySearchTerm('')}
+                            className="mt-4 text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
+                          >
+                            Clear Search
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <ScrollArea className="h-[400px]">
+                      <div className="space-y-3 pr-4">
+                        {filteredHistoryItems.map((item: PropertySearchHistoryItem) => (
+                          <div
+                            key={item.id}
+                            className="relative group cursor-pointer"
+                            onClick={() => handleSelectHistory(item)}
+                          >
+                            {/* Holographic Background Effect */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/5 to-cyan-500/10 rounded-lg blur-sm group-hover:blur-md transition-all duration-300"></div>
+                            
+                            <div className="relative p-4 border border-purple-400/20 rounded-lg bg-gradient-to-br from-slate-900/70 to-slate-800/70 backdrop-blur-sm hover:border-purple-400/40 transition-all duration-300 group-hover:bg-gradient-to-br group-hover:from-slate-900/80 group-hover:to-slate-800/80">
+                              {/* Corner Accents */}
+                              <div className="absolute top-2 left-2 w-4 h-4 border-l border-t border-purple-400/30 group-hover:border-purple-400/60 transition-colors"></div>
+                              <div className="absolute top-2 right-2 w-4 h-4 border-r border-t border-pink-400/30 group-hover:border-pink-400/60 transition-colors"></div>
+                              <div className="absolute bottom-2 left-2 w-4 h-4 border-l border-b border-purple-400/30 group-hover:border-purple-400/60 transition-colors"></div>
+                              <div className="absolute bottom-2 right-2 w-4 h-4 border-r border-b border-pink-400/30 group-hover:border-pink-400/60 transition-colors"></div>
+                              
+                              <div className="space-y-2">
+                                {/* Header */}
+                                <div className="flex items-start justify-between">
+                                  <div className="space-y-1 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <Home className="h-4 w-4 text-purple-400 flex-shrink-0" />
+                                      <h4 className="font-medium text-slate-200 truncate">
+                                        {item.title || item.address}
+                                      </h4>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2 text-sm text-slate-400">
+                                      <MapPin className="h-3 w-3 opacity-70 flex-shrink-0" />
+                                      <span className="truncate">{item.address}</span>
+                                    </div>
+                                  </div>
+                                  
+                                  <Badge 
+                                    variant="secondary" 
+                                    className="bg-purple-500/20 text-purple-300 border-purple-400/30 text-xs"
+                                  >
+                                    Verified
+                                  </Badge>
+                                </div>
+                                
+                                {/* Details */}
+                                <div className="space-y-1">
+                                  {item.ownerName && (
+                                    <div className="flex items-center gap-2 text-sm text-slate-400">
+                                      <User className="h-3 w-3 opacity-70 flex-shrink-0" />
+                                      <span className="truncate">{item.ownerName}</span>
+                                    </div>
+                                  )}
+                                  
+                                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                                    <Clock className="h-3 w-3 opacity-70 flex-shrink-0" />
+                                    <span>{formatDate(item.createdAt)}</span>
+                                  </div>
+                                </div>
+                                
+                                {/* Action */}
+                                <div className="pt-2">
+                                  <div className="flex items-center justify-between text-xs text-purple-400">
+                                    <span>Click to load verification</span>
+                                    <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
                 </CardContent>
               </Card>
             </div>
