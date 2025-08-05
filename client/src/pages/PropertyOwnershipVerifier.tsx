@@ -584,35 +584,35 @@ export default function PropertyOwnershipVerifier() {
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4 sm:space-y-6">
-            <div className="relative group">
+            <div className="relative group w-full overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-slate-500/20 to-slate-600/20 rounded-2xl blur-sm group-hover:blur-md transition-all duration-300"></div>
-              <Card className="relative border-2 border-slate-600/50 bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-sm hover:border-slate-500/70 transition-all duration-300">
+              <Card className="relative border-2 border-slate-600/50 bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-sm hover:border-slate-500/70 transition-all duration-300 w-full overflow-hidden">
                 {/* Holographic Corner Accents */}
-                <div className="absolute top-3 left-3 w-6 h-6 border-l border-t border-slate-400/50"></div>
-                <div className="absolute top-3 right-3 w-6 h-6 border-r border-t border-slate-400/50"></div>
-                <div className="absolute bottom-3 left-3 w-6 h-6 border-l border-b border-slate-400/50"></div>
-                <div className="absolute bottom-3 right-3 w-6 h-6 border-r border-b border-slate-400/50"></div>
+                <div className="absolute top-2 left-2 w-4 h-4 sm:w-6 sm:h-6 border-l border-t border-slate-400/50"></div>
+                <div className="absolute top-2 right-2 w-4 h-4 sm:w-6 sm:h-6 border-r border-t border-slate-400/50"></div>
+                <div className="absolute bottom-2 left-2 w-4 h-4 sm:w-6 sm:h-6 border-l border-b border-slate-400/50"></div>
+                <div className="absolute bottom-2 right-2 w-4 h-4 sm:w-6 sm:h-6 border-r border-b border-slate-400/50"></div>
                 
-                <CardHeader className="pb-4 sm:pb-6">
-                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl bg-gradient-to-r from-slate-200 to-slate-400 bg-clip-text text-transparent">
+                <CardHeader className="pb-4 sm:pb-6 px-4 sm:px-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg lg:text-xl bg-gradient-to-r from-slate-200 to-slate-400 bg-clip-text text-transparent">
                     <HistoryIcon className="h-4 w-4 sm:h-5 sm:w-5 text-slate-300 flex-shrink-0" />
                     <span className="truncate">Verification Archives</span>
                   </CardTitle>
-                  <CardDescription className="text-sm sm:text-base text-slate-400">
+                  <CardDescription className="text-xs sm:text-sm lg:text-base text-slate-400 leading-relaxed">
                     Historical database of all property verification protocols
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Search Filter */}
-                  <div className="relative">
+                <CardContent className="space-y-4 p-4 sm:p-6">
+                  {/* Search Filter - Mobile Optimized */}
+                  <div className="relative w-full">
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg blur-sm"></div>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-2.5 h-4 w-4 text-purple-400" />
+                    <div className="relative w-full">
+                      <Search className="absolute left-3 top-2.5 h-4 w-4 text-purple-400 z-10" />
                       <Input
-                        placeholder="Search archives by address or owner..."
+                        placeholder="Search by address or owner..."
                         value={historySearchTerm}
                         onChange={(e) => setHistorySearchTerm(e.target.value)}
-                        className="pl-10 bg-gradient-to-br from-slate-900/70 to-slate-800/70 border-purple-400/30 text-slate-200 placeholder:text-slate-500"
+                        className="w-full pl-10 pr-4 py-2 bg-gradient-to-br from-slate-900/70 to-slate-800/70 border-purple-400/30 text-slate-200 placeholder:text-slate-500 text-sm sm:text-base"
                       />
                     </div>
                   </div>
@@ -662,44 +662,44 @@ export default function PropertyOwnershipVerifier() {
                       </div>
                     </div>
                   ) : (
-                    <ScrollArea className="h-[400px]">
-                      <div className="space-y-3 pr-4">
+                    <ScrollArea className="h-[350px] sm:h-[400px]">
+                      <div className="space-y-3 px-1">
                         {filteredHistoryItems.map((item: PropertySearchHistoryItem) => (
                           <div
                             key={item.id}
-                            className="relative group cursor-pointer"
+                            className="relative group cursor-pointer w-full"
                             onClick={() => handleSelectHistory(item)}
                           >
                             {/* Holographic Background Effect */}
                             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/5 to-cyan-500/10 rounded-lg blur-sm group-hover:blur-md transition-all duration-300"></div>
                             
-                            <div className="relative p-4 border border-purple-400/20 rounded-lg bg-gradient-to-br from-slate-900/70 to-slate-800/70 backdrop-blur-sm hover:border-purple-400/40 transition-all duration-300 group-hover:bg-gradient-to-br group-hover:from-slate-900/80 group-hover:to-slate-800/80">
+                            <div className="relative p-3 sm:p-4 border border-purple-400/20 rounded-lg bg-gradient-to-br from-slate-900/70 to-slate-800/70 backdrop-blur-sm hover:border-purple-400/40 transition-all duration-300 group-hover:bg-gradient-to-br group-hover:from-slate-900/80 group-hover:to-slate-800/80 overflow-hidden">
                               {/* Corner Accents */}
-                              <div className="absolute top-2 left-2 w-4 h-4 border-l border-t border-purple-400/30 group-hover:border-purple-400/60 transition-colors"></div>
-                              <div className="absolute top-2 right-2 w-4 h-4 border-r border-t border-pink-400/30 group-hover:border-pink-400/60 transition-colors"></div>
-                              <div className="absolute bottom-2 left-2 w-4 h-4 border-l border-b border-purple-400/30 group-hover:border-purple-400/60 transition-colors"></div>
-                              <div className="absolute bottom-2 right-2 w-4 h-4 border-r border-b border-pink-400/30 group-hover:border-pink-400/60 transition-colors"></div>
+                              <div className="absolute top-2 left-2 w-3 h-3 sm:w-4 sm:h-4 border-l border-t border-purple-400/30 group-hover:border-purple-400/60 transition-colors"></div>
+                              <div className="absolute top-2 right-2 w-3 h-3 sm:w-4 sm:h-4 border-r border-t border-pink-400/30 group-hover:border-pink-400/60 transition-colors"></div>
+                              <div className="absolute bottom-2 left-2 w-3 h-3 sm:w-4 sm:h-4 border-l border-b border-purple-400/30 group-hover:border-purple-400/60 transition-colors"></div>
+                              <div className="absolute bottom-2 right-2 w-3 h-3 sm:w-4 sm:h-4 border-r border-b border-pink-400/30 group-hover:border-pink-400/60 transition-colors"></div>
                               
-                              <div className="space-y-2">
+                              <div className="space-y-2 min-w-0 w-full">
                                 {/* Header */}
-                                <div className="flex items-start justify-between">
-                                  <div className="space-y-1 flex-1">
-                                    <div className="flex items-center gap-2">
+                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                                  <div className="space-y-1 flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 min-w-0">
                                       <Home className="h-4 w-4 text-purple-400 flex-shrink-0" />
-                                      <h4 className="font-medium text-slate-200 truncate">
+                                      <h4 className="font-medium text-slate-200 truncate text-sm sm:text-base min-w-0">
                                         {item.title || item.address}
                                       </h4>
                                     </div>
                                     
-                                    <div className="flex items-center gap-2 text-sm text-slate-400">
-                                      <MapPin className="h-3 w-3 opacity-70 flex-shrink-0" />
-                                      <span className="truncate">{item.address}</span>
+                                    <div className="flex items-start gap-2 text-xs sm:text-sm text-slate-400 min-w-0">
+                                      <MapPin className="h-3 w-3 opacity-70 flex-shrink-0 mt-0.5" />
+                                      <span className="break-words leading-4 min-w-0 flex-1">{item.address}</span>
                                     </div>
                                   </div>
                                   
                                   <Badge 
                                     variant="secondary" 
-                                    className="bg-purple-500/20 text-purple-300 border-purple-400/30 text-xs"
+                                    className="bg-purple-500/20 text-purple-300 border-purple-400/30 text-xs flex-shrink-0 w-fit self-start"
                                   >
                                     Verified
                                   </Badge>
@@ -708,23 +708,24 @@ export default function PropertyOwnershipVerifier() {
                                 {/* Details */}
                                 <div className="space-y-1">
                                   {item.ownerName && (
-                                    <div className="flex items-center gap-2 text-sm text-slate-400">
-                                      <User className="h-3 w-3 opacity-70 flex-shrink-0" />
-                                      <span className="truncate">{item.ownerName}</span>
+                                    <div className="flex items-start gap-2 text-xs sm:text-sm text-slate-400 min-w-0">
+                                      <User className="h-3 w-3 opacity-70 flex-shrink-0 mt-0.5" />
+                                      <span className="break-words leading-4 min-w-0 flex-1">{item.ownerName}</span>
                                     </div>
                                   )}
                                   
-                                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                                  <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
                                     <Clock className="h-3 w-3 opacity-70 flex-shrink-0" />
-                                    <span>{formatDate(item.createdAt)}</span>
+                                    <span className="truncate">{formatDate(item.createdAt)}</span>
                                   </div>
                                 </div>
                                 
                                 {/* Action */}
-                                <div className="pt-2">
+                                <div className="pt-2 border-t border-slate-700/50">
                                   <div className="flex items-center justify-between text-xs text-purple-400">
-                                    <span>Click to load verification</span>
-                                    <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                                    <span className="hidden sm:inline">Click to load verification</span>
+                                    <span className="sm:hidden">Tap to load</span>
+                                    <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform flex-shrink-0" />
                                   </div>
                                 </div>
                               </div>
