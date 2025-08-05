@@ -230,6 +230,7 @@ class SecureAttomService {
       // Process the property data
       console.log('✅ [ATTOM-SERVICE] Processing property data');
       console.log('📊 [ATTOM-SERVICE] Property ID:', propertyRecord.identifier?.attomId);
+      console.log('🔍 [ATTOM-SERVICE] Full property structure:', JSON.stringify(propertyRecord, null, 2));
 
       return this.processPropertyData(propertyRecord, address);
       
