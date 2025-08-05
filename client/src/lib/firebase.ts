@@ -1047,68 +1047,13 @@ export const loginWithApple = async () => {
       return devUser;
     }
     
-    console.log("=== APPLE SIGN-IN CON CONFIGURACIÓN ESPECÍFICA ===");
+    console.log("=== APPLE SIGN-IN - VERIFICANDO DISPONIBILIDAD ===");
     console.log("Dominio:", window.location.hostname);
     console.log("AuthDomain:", auth.app.options.authDomain);
     
-    // Crear proveedor de Apple con configuración específica para evitar cuelgues
-    const provider = new OAuthProvider('apple.com');
-    provider.addScope('email');
-    provider.addScope('name');
-    
-    // Configurar parámetros específicos para Apple
-    provider.setCustomParameters({
-      'response_mode': 'form_post'
-    });
-    
-    // Apple necesita timeout específico debido a su interfaz más lenta
-    try {
-      console.log("Intentando autenticación con popup de Apple (con timeout de 30s)...");
-      
-      const popupPromise = signInWithPopup(auth, provider);
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('APPLE_POPUP_TIMEOUT')), 30000); // 30 segundos para Apple
-      });
-      
-      const result = await Promise.race([popupPromise, timeoutPromise]) as any;
-      console.log("¡Autenticación con Apple popup exitosa!");
-      return result.user;
-      
-    } catch (popupError: any) {
-      console.log("Popup de Apple falló:", popupError.code || popupError.message, "- Evaluando alternativas...");
-      
-      // Apple timeout o popup cerrado - usar redirección inmediatamente
-      if (popupError.code === 'auth/popup-closed-by-user' || 
-          popupError.message === 'APPLE_POPUP_TIMEOUT') {
-        console.log("Apple popup timeout o cerrado - usando redirección como es común con Apple...");
-        await signInWithRedirect(auth, provider);
-        return null; // La redirección manejará el resultado
-      }
-      
-      // Si hay bloqueo de popup, usar redirección directamente
-      if (popupError.code === 'auth/popup-blocked') {
-        console.log("Popup bloqueado - usando redirección directa a Apple...");
-        await signInWithRedirect(auth, provider);
-        return null;
-      }
-      
-      // Apple a menudo necesita redirección por su configuración especial
-      if (popupError.code === 'auth/network-request-failed' || 
-          popupError.code === 'auth/internal-error' ||
-          popupError.code === 'auth/invalid-oauth-provider' ||
-          popupError.code === 'auth/account-exists-with-different-credential') {
-        console.log("Error específico de Apple - intentando redirección (recomendado para Apple)...");
-        try {
-          await signInWithRedirect(auth, provider);
-          return null;
-        } catch (redirectError) {
-          console.error("Redirección de Apple también falló:", redirectError);
-          throw new Error("Apple Sign-In no está disponible. Usa Google o email/password.");
-        }
-      }
-      
-      throw popupError;
-    }
+    // Apple ID requiere configuración específica en Firebase Console
+    // Lanzar error informativo hasta que esté configurado correctamente
+    throw new Error("Apple Sign-In está siendo configurado. Por favor usa Google o email/contraseña por ahora.");
     
   } catch (error: any) {
     console.error("Error en Apple Sign-In:", error);
