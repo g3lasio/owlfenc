@@ -32,10 +32,10 @@ import {
   Database,
   Eye,
   FileText,
-  Zap,
-  Brain,
-  ArrowLeft,
-  Play,
+  Download,
+  Building,
+  ChevronRight,
+  CheckCircle2,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
@@ -49,16 +49,13 @@ import {
 import PropertySearchHistory from "@/components/property/PropertySearchHistory";
 import { useQueryClient } from "@tanstack/react-query";
 
-// Workflow step interface
-interface WorkflowStep {
-  id: string;
-  step: number;
+// Simple step tracking
+interface Step {
+  number: 1 | 2 | 3;
   title: string;
   description: string;
-  status: "pending" | "processing" | "completed" | "error";
-  progress: number;
   icon: React.ReactNode;
-  estimatedTime: string;
+  completed: boolean;
 }
 
 export default function PropertyOwnershipVerifier() {
@@ -68,52 +65,40 @@ export default function PropertyOwnershipVerifier() {
     throwOnError: false,
   });
 
-  // Cyberpunk workflow states
-  const [currentStep, setCurrentStep] = useState(1);
-  const [view, setView] = useState<"dashboard" | "workflow">("dashboard");
-  
-  // Existing logic states
+  // Simple states
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [address, setAddress] = useState("");
   const [selectedPlace, setSelectedPlace] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [propertyDetails, setPropertyDetails] = useState<PropertyDetails | null>(null);
-  const [searchHistory, setSearchHistory] = useState<PropertyDetails[]>([]);
+  const [activeTab, setActiveTab] = useState("search");
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Define workflow steps for cyberpunk UI
-  const workflowSteps: WorkflowStep[] = [
+  // Define simple 3-step flow
+  const steps: Step[] = [
     {
-      id: "property-search",
-      step: 1,
-      title: "Property Search Command",
-      description: "Lock onto target property. Advanced address intelligence extracts precise location data from global mapping systems.",
-      status: selectedPlace ? "completed" : currentStep === 1 ? "processing" : "pending",
-      progress: selectedPlace ? 100 : currentStep === 1 ? 50 : 0,
-      icon: <Search className="h-6 w-6" />,
-      estimatedTime: "15 sec",
+      number: 1,
+      title: "Property Address",
+      description: "Enter or select the property address",
+      icon: <MapPin className="h-5 w-5" />,
+      completed: !!selectedPlace,
     },
     {
-      id: "data-verification",
-      step: 2,
-      title: "Data Verification & Analysis",
-      description: "Deep scan property databases. Cross-reference owner records, property history, and verification protocols.",
-      status: propertyDetails ? "completed" : currentStep === 2 ? "processing" : "pending",
-      progress: propertyDetails ? 100 : currentStep === 2 ? 50 : 0,
-      icon: <Shield className="h-6 w-6" />,
-      estimatedTime: "30 sec",
+      number: 2,
+      title: "Run Ownership",
+      description: "Verify ownership and property details",
+      icon: <Search className="h-5 w-5" />,
+      completed: !!propertyDetails,
     },
     {
-      id: "intelligence-report",
-      step: 3,
-      title: "Intelligence Report & Actions",
-      description: "Generate comprehensive ownership intelligence. Export actionable reports and verification data.",
-      status: currentStep === 3 && propertyDetails ? "processing" : "pending",
-      progress: currentStep === 3 && propertyDetails ? 50 : 0,
-      icon: <Brain className="h-6 w-6" />,
-      estimatedTime: "10 sec",
+      number: 3,
+      title: "Export Results",
+      description: "Export ownership and property details",
+      icon: <Download className="h-5 w-5" />,
+      completed: false,
     },
   ];
 
@@ -176,14 +161,9 @@ export default function PropertyOwnershipVerifier() {
     if (placeData && placeData.address) {
       setSelectedPlace(placeData);
       setError(null);
-      setCurrentStep(2); // Auto-advance to verification step
-      
-      // Auto-search after place selection
-      setTimeout(() => {
-        handleSearch();
-      }, 300);
+      setAddress(placeData.address);
     }
-  }, [handleSearch]);
+  }, []);
 
   // Manejar la selección de un elemento del historial
   const handleSelectHistory = useCallback((historyItem: any) => {
@@ -191,7 +171,8 @@ export default function PropertyOwnershipVerifier() {
       setAddress(historyItem.address);
       setPropertyDetails(historyItem.results);
       setError(null);
-      setCurrentStep(3); // Move to final report step
+      setCurrentStep(3);
+      setActiveTab("search");
       
       toast({
         title: "Historial cargado",
@@ -206,244 +187,223 @@ export default function PropertyOwnershipVerifier() {
     }
   }, [toast]);
 
-  // Render different views based on current state
-  const renderWorkflowView = () => {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-        {/* Cyberpunk Header */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 border-b border-cyan-500/20">
-          <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:50px_50px]" />
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent" />
-          
-          <div className="relative container mx-auto px-6 py-8">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-cyan-500/20 rounded-lg border border-cyan-500/30">
-                    <Shield className="h-6 w-6 text-cyan-400" />
-                  </div>
-                  <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    Property Intelligence System
-                  </h1>
-                </div>
-                <p className="text-gray-300 text-lg max-w-2xl">
-                  Advanced property ownership verification through deep database scanning and cross-referencing protocols.
-                </p>
-              </div>
-              
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setView("dashboard")}
-                  className="border-gray-600 hover:border-cyan-400 hover:bg-cyan-500/10"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Dashboard
-                </Button>
-              </div>
+  // Export property details
+  const handleExportReport = useCallback(() => {
+    if (!propertyDetails) return;
+    
+    const reportData = {
+      property: propertyDetails,
+      exportDate: new Date().toISOString(),
+      searchedAddress: address,
+    };
+    
+    const dataStr = JSON.stringify(reportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `property-report-${propertyDetails.address?.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "✅ Reporte Exportado",
+      description: "El reporte de propiedad ha sido descargado exitosamente.",
+    });
+  }, [propertyDetails, address, toast]);
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-6 max-w-6xl">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Building className="h-6 w-6 text-primary" />
             </div>
+            <h1 className="text-3xl font-bold text-foreground">
+              Property Ownership Verifier
+            </h1>
           </div>
+          <p className="text-muted-foreground text-lg max-w-2xl">
+            Verificación profesional de propiedad y análisis de titularidad para proyectos legales y de construcción.
+          </p>
         </div>
 
-        {/* Workflow Steps */}
-        <div className="container mx-auto px-6 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {workflowSteps.map((step, index) => (
-              <Card
-                key={step.id}
-                className={`relative overflow-hidden transition-all duration-500 ${
-                  step.status === "completed"
-                    ? "bg-gradient-to-br from-green-900/40 to-green-800/20 border-green-500/30"
-                    : step.status === "processing"
-                    ? "bg-gradient-to-br from-cyan-900/40 to-cyan-800/20 border-cyan-500/30 animate-pulse"
-                    : "bg-gradient-to-br from-gray-800/40 to-gray-700/20 border-gray-600/30"
-                }`}
-              >
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg border ${
-                        step.status === "completed"
-                          ? "bg-green-500/20 border-green-500/30 text-green-400"
-                          : step.status === "processing"
-                          ? "bg-cyan-500/20 border-cyan-500/30 text-cyan-400"
-                          : "bg-gray-500/20 border-gray-500/30 text-gray-400"
-                      }`}>
-                        {step.icon}
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg font-semibold">
-                          {step.title}
-                        </CardTitle>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-xs">
-                            Step {step.step}
-                          </Badge>
-                          <span className="text-xs text-gray-400">
-                            {step.estimatedTime}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {step.status === "completed" && (
-                      <CheckCircle className="h-5 w-5 text-green-400" />
-                    )}
-                    {step.status === "processing" && (
-                      <div className="h-5 w-5 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin" />
-                    )}
-                  </div>
-                </CardHeader>
-                
-                <CardContent>
-                  <p className="text-sm text-gray-300 mb-4">
-                    {step.description}
-                  </p>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-gray-400">Progress</span>
-                      <span className="text-gray-300">{step.progress}%</span>
-                    </div>
-                    <Progress 
-                      value={step.progress} 
-                      className={`h-2 ${
-                        step.status === "completed"
-                          ? "[&>div]:bg-green-500"
-                          : step.status === "processing"
-                          ? "[&>div]:bg-cyan-500"
-                          : "[&>div]:bg-gray-500"
-                      }`}
-                    />
-                  </div>
-                </CardContent>
-                
-                {/* Holographic corner elements */}
-                <div className="absolute top-0 left-0 w-6 h-6 pointer-events-none">
-                  <div className="absolute top-0 left-0 w-4 h-0.5 bg-gradient-to-r from-cyan-400 to-transparent opacity-60"></div>
-                  <div className="absolute top-0 left-0 w-0.5 h-4 bg-gradient-to-b from-cyan-400 to-transparent opacity-60"></div>
-                </div>
-                <div className="absolute top-0 right-0 w-6 h-6 pointer-events-none">
-                  <div className="absolute top-0 right-0 w-4 h-0.5 bg-gradient-to-l from-cyan-400 to-transparent opacity-60"></div>
-                  <div className="absolute top-0 right-0 w-0.5 h-4 bg-gradient-to-b from-cyan-400 to-transparent opacity-60"></div>
-                </div>
-              </Card>
-            ))}
-          </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="search">Verificación de Propiedad</TabsTrigger>
+            <TabsTrigger value="history">Historial de Búsquedas</TabsTrigger>
+          </TabsList>
 
-          {/* Current Step Content */}
-          {currentStep === 1 && (
-            <Card className="bg-gradient-to-br from-gray-800/50 to-gray-700/30 border border-cyan-500/20">
+          <TabsContent value="search" className="space-y-6">
+            {/* Workflow Steps */}
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <Search className="h-6 w-6 text-cyan-400" />
-                  Property Search Command
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  Proceso de Verificación
                 </CardTitle>
-                <CardDescription className="text-gray-300">
-                  Enter target property address for deep intelligence extraction
+                <CardDescription>
+                  Flujo de trabajo de 3 pasos para verificación completa de propiedad
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <MapboxPlacesAutocomplete
-                    value={address}
-                    onChange={setAddress}
-                    onPlaceSelect={handlePlaceSelect}
-                    placeholder="Iniciar escaneo de dirección..."
-                    countries={["mx", "us", "es"]}
-                    language="es"
-                  />
-                  
-                  <div className="flex gap-3">
-                    <PropertySearchHistory onSelectHistory={handleSelectHistory} />
-                    <Button
-                      onClick={handleSearch}
-                      disabled={loading || !selectedPlace}
-                      className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border border-cyan-400/30"
-                    >
-                      {loading ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                          Escaneando...
-                        </>
-                      ) : (
-                        <>
-                          <Play className="w-4 h-4 mr-2" />
-                          Iniciar Escaneo
-                        </>
+              <CardContent>
+                <div className="flex items-center justify-between mb-8">
+                  {steps.map((step, index) => (
+                    <div key={step.number} className="flex items-center">
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                        step.completed 
+                          ? 'bg-primary text-primary-foreground border-primary' 
+                          : currentStep === step.number
+                            ? 'border-primary text-primary bg-primary/10'
+                            : 'border-muted-foreground text-muted-foreground'
+                      }`}>
+                        {step.completed ? (
+                          <CheckCircle2 className="h-5 w-5" />
+                        ) : (
+                          <span className="font-semibold">{step.number}</span>
+                        )}
+                      </div>
+                      {index < steps.length - 1 && (
+                        <div className={`flex-1 h-0.5 mx-4 ${
+                          steps[index + 1].completed ? 'bg-primary' : 'bg-muted'
+                        }`} />
                       )}
-                    </Button>
-                  </div>
+                    </div>
+                  ))}
                 </div>
 
-                {error && (
-                  <Alert variant="destructive" className="border-red-400/50 bg-red-900/20">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {currentStep === 2 && loading && (
-            <Card className="bg-gradient-to-br from-cyan-900/30 to-blue-900/20 border border-cyan-500/30">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <Shield className="h-6 w-6 text-cyan-400 animate-pulse" />
-                  Analyzing Property Data...
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Array(6).fill(0).map((_, i) => (
-                    <div key={i} className="space-y-2">
-                      <Skeleton className="h-4 w-1/3 bg-gray-600" />
-                      <Skeleton className="h-6 w-2/3 bg-gray-700" />
+                <div className="space-y-4">
+                  {steps.map((step) => (
+                    <div key={step.number} className={`p-4 rounded-lg border ${
+                      currentStep === step.number ? 'border-primary bg-primary/5' : 'border-muted'
+                    }`}>
+                      <div className="flex items-center gap-3 mb-2">
+                        {step.icon}
+                        <div>
+                          <h3 className="font-semibold">{step.title}</h3>
+                          <p className="text-sm text-muted-foreground">{step.description}</p>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
-          )}
 
-          {currentStep === 3 && propertyDetails && (
-            <Card className="bg-gradient-to-br from-green-900/30 to-blue-900/20 border border-green-500/30">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <Brain className="h-6 w-6 text-green-400" />
-                  Intelligence Report Generated
-                </CardTitle>
-                <CardDescription className="text-gray-300">
-                  Comprehensive property ownership analysis complete
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* Property details will be rendered here */}
-                <div className="space-y-6">
+            {/* Step 1: Property Address */}
+            {currentStep === 1 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-primary" />
+                    Paso 1: Dirección de la Propiedad
+                  </CardTitle>
+                  <CardDescription>
+                    Ingrese la dirección de la propiedad que desea verificar
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <MapboxPlacesAutocomplete
+                    value={address}
+                    onChange={setAddress}
+                    onPlaceSelect={handlePlaceSelect}
+                    placeholder="Ingrese la dirección de la propiedad..."
+                    countries={["mx", "us", "es"]}
+                    language="es"
+                  />
+                  
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={handleSearch}
+                      disabled={loading || !selectedPlace}
+                      className="min-w-[140px]"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                          Verificando...
+                        </>
+                      ) : (
+                        <>
+                          <Search className="w-4 h-4 mr-2" />
+                          Verificar Propiedad
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 2: Running Verification */}
+            {currentStep === 2 && loading && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Search className="h-5 w-5 text-primary animate-pulse" />
+                    Paso 2: Ejecutando Verificación
+                  </CardTitle>
+                  <CardDescription>
+                    Analizando datos de propiedad y verificando titularidad...
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {Array(6).fill(0).map((_, i) => (
+                      <div key={i} className="space-y-2">
+                        <Skeleton className="h-4 w-1/3" />
+                        <Skeleton className="h-6 w-2/3" />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 3: Results and Export */}
+            {currentStep === 3 && propertyDetails && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    Paso 3: Resultados y Exportación
+                  </CardTitle>
+                  <CardDescription>
+                    Verificación completa. Puede exportar los detalles de la propiedad.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <h3 className="text-lg font-semibold text-cyan-400 mb-3">Ownership Intelligence</h3>
+                      <h3 className="text-lg font-semibold text-primary mb-3">Información del Propietario</h3>
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-400" />
+                          <User className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            <span className="text-gray-400">Owner:</span> {propertyDetails.owner}
+                            <span className="text-muted-foreground">Propietario:</span> {propertyDetails.owner}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Home className="h-4 w-4 text-gray-400" />
+                          <Home className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            <span className="text-gray-400">Property:</span> {propertyDetails.address}
+                            <span className="text-muted-foreground">Propiedad:</span> {propertyDetails.address}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-green-400" />
+                          <CheckCircle className="h-4 w-4 text-green-600" />
                           <span className="text-sm">
-                            <span className="text-gray-400">Status:</span> 
+                            <span className="text-muted-foreground">Estado:</span> 
                             <Badge variant={propertyDetails.verified ? "default" : "outline"} className="ml-2">
-                              {propertyDetails.verified ? "Verified" : "Unverified"}
+                              {propertyDetails.verified ? "Verificado" : "No Verificado"}
                             </Badge>
                           </span>
                         </div>
@@ -451,155 +411,76 @@ export default function PropertyOwnershipVerifier() {
                     </div>
                     
                     <div>
-                      <h3 className="text-lg font-semibold text-cyan-400 mb-3">Property Intelligence</h3>
+                      <h3 className="text-lg font-semibold text-primary mb-3">Detalles de la Propiedad</h3>
                       <div className="space-y-2">
                         {propertyDetails.yearBuilt && (
                           <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-gray-400" />
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm">
-                              <span className="text-gray-400">Built:</span> {propertyDetails.yearBuilt}
+                              <span className="text-muted-foreground">Año de construcción:</span> {propertyDetails.yearBuilt}
                             </span>
                           </div>
                         )}
                         {propertyDetails.sqft && (
                           <div className="flex items-center gap-2">
-                            <Ruler className="h-4 w-4 text-gray-400" />
+                            <Ruler className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm">
-                              <span className="text-gray-400">Size:</span> {propertyDetails.sqft.toLocaleString()} sq ft
+                              <span className="text-muted-foreground">Tamaño:</span> {propertyDetails.sqft.toLocaleString()} pies²
                             </span>
                           </div>
                         )}
                         {propertyDetails.purchasePrice && (
                           <div className="flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-gray-400" />
+                            <DollarSign className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm">
-                              <span className="text-gray-400">Purchase Price:</span> ${propertyDetails.purchasePrice.toLocaleString()}
+                              <span className="text-muted-foreground">Precio de compra:</span> ${propertyDetails.purchasePrice.toLocaleString()}
                             </span>
                           </div>
                         )}
                       </div>
                     </div>
                   </div>
-                </div>
+
+                  <div className="flex gap-3 pt-4 border-t">
+                    <Button onClick={handleExportReport}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Exportar Reporte
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setCurrentStep(1);
+                        setPropertyDetails(null);
+                        setSelectedPlace(null);
+                        setAddress("");
+                        setError(null);
+                      }}
+                    >
+                      Nueva Verificación
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HistoryIcon className="h-5 w-5 text-primary" />
+                  Historial de Verificaciones
+                </CardTitle>
+                <CardDescription>
+                  Historial de todas las verificaciones de propiedad realizadas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PropertySearchHistory onSelectHistory={handleSelectHistory} />
               </CardContent>
             </Card>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  return view === "workflow" ? renderWorkflowView() : (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-      <div className="container mx-auto p-6">
-        {/* Cyberpunk Dashboard Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-xl border border-cyan-500/30">
-              <Shield className="h-8 w-8 text-cyan-400" />
-            </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
-              Property Intelligence Hub
-            </h1>
-          </div>
-          <p className="text-gray-300 text-lg max-w-2xl mx-auto">
-            Advanced property verification system with deep ownership analysis and fraud protection protocols.
-          </p>
-        </div>
-
-        {/* Quick Start Action */}
-        <div className="flex justify-center mb-8">
-          <Button
-            onClick={() => setView("workflow")}
-            size="lg"
-            className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border border-cyan-400/30 text-lg px-8 py-6 h-auto"
-          >
-            <Play className="h-6 w-6 mr-3" />
-            Launch Property Scan
-            <ArrowRight className="h-6 w-6 ml-3" />
-          </Button>
-        </div>
-
-        {/* Dashboard Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="relative bg-gradient-to-br from-gray-800/50 to-gray-700/30 border border-cyan-500/20 overflow-hidden">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <Database className="h-6 w-6 text-cyan-400" />
-                Quick Search
-              </CardTitle>
-              <CardDescription className="text-gray-300">
-                Instant property lookup
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-400">
-                Fast property verification using advanced address intelligence.
-              </p>
-            </CardContent>
-            {/* Holographic corners */}
-            <div className="absolute top-0 left-0 w-4 h-4 pointer-events-none">
-              <div className="absolute top-0 left-0 w-3 h-0.5 bg-gradient-to-r from-cyan-400 to-transparent opacity-60"></div>
-              <div className="absolute top-0 left-0 w-0.5 h-3 bg-gradient-to-b from-cyan-400 to-transparent opacity-60"></div>
-            </div>
-            <div className="absolute top-0 right-0 w-4 h-4 pointer-events-none">
-              <div className="absolute top-0 right-0 w-3 h-0.5 bg-gradient-to-l from-cyan-400 to-transparent opacity-60"></div>
-              <div className="absolute top-0 right-0 w-0.5 h-3 bg-gradient-to-b from-cyan-400 to-transparent opacity-60"></div>
-            </div>
-          </Card>
-
-          <Card className="relative bg-gradient-to-br from-gray-800/50 to-gray-700/30 border border-blue-500/20 overflow-hidden">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <Shield className="h-6 w-6 text-blue-400" />
-                Deep Analysis
-              </CardTitle>
-              <CardDescription className="text-gray-300">
-                Comprehensive verification
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-400">
-                Cross-reference multiple databases for complete ownership validation.
-              </p>
-            </CardContent>
-            {/* Holographic corners */}
-            <div className="absolute bottom-0 left-0 w-4 h-4 pointer-events-none">
-              <div className="absolute bottom-0 left-0 w-3 h-0.5 bg-gradient-to-r from-blue-400 to-transparent opacity-60"></div>
-              <div className="absolute bottom-0 left-0 w-0.5 h-3 bg-gradient-to-t from-blue-400 to-transparent opacity-60"></div>
-            </div>
-            <div className="absolute bottom-0 right-0 w-4 h-4 pointer-events-none">
-              <div className="absolute bottom-0 right-0 w-3 h-0.5 bg-gradient-to-l from-blue-400 to-transparent opacity-60"></div>
-              <div className="absolute bottom-0 right-0 w-0.5 h-3 bg-gradient-to-t from-blue-400 to-transparent opacity-60"></div>
-            </div>
-          </Card>
-
-          <Card className="relative bg-gradient-to-br from-gray-800/50 to-gray-700/30 border border-purple-500/20 overflow-hidden">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <FileText className="h-6 w-6 text-purple-400" />
-                Export Reports
-              </CardTitle>
-              <CardDescription className="text-gray-300">
-                Professional documentation
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-400">
-                Generate detailed ownership reports for legal documentation.
-              </p>
-            </CardContent>
-            {/* Holographic corners */}
-            <div className="absolute top-0 left-0 w-4 h-4 pointer-events-none">
-              <div className="absolute top-0 left-0 w-3 h-0.5 bg-gradient-to-r from-purple-400 to-transparent opacity-60"></div>
-              <div className="absolute top-0 left-0 w-0.5 h-3 bg-gradient-to-b from-purple-400 to-transparent opacity-60"></div>
-            </div>
-            <div className="absolute bottom-0 right-0 w-4 h-4 pointer-events-none">
-              <div className="absolute bottom-0 right-0 w-3 h-0.5 bg-gradient-to-l from-purple-400 to-transparent opacity-60"></div>
-              <div className="absolute bottom-0 right-0 w-0.5 h-3 bg-gradient-to-t from-purple-400 to-transparent opacity-60"></div>
-            </div>
-          </Card>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
