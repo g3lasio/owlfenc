@@ -141,6 +141,9 @@ function Router() {
       <Route path="/property-verifier">
         {() => <ProtectedRoute component={PropertyOwnershipVerifier} />}
       </Route>
+      <Route path="/property-ownership-verifier">
+        {() => <ProtectedRoute component={PropertyOwnershipVerifier} />}
+      </Route>
       <Route path="/permit-advisor">
         {() => <ProtectedRoute component={PermitAdvisor} />}
       </Route>
