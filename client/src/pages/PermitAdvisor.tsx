@@ -1013,7 +1013,7 @@ export default function PermitAdvisor() {
         <div className="mb-4 sm:mb-8">
           {/* Mobile: Compact Horizontal Stepper */}
           <div className="md:hidden">
-            <div className="flex items-center justify-between px-2 overflow-x-auto scrollbar-none">
+            <div className="flex items-center justify-center px-2 gap-1 overflow-x-auto scrollbar-none">
               {workflowSteps.map((step, index) => (
                 <div key={step.id} className="flex items-center flex-shrink-0">
                   {/* Step Circle - Mobile Enhanced */}
@@ -1032,16 +1032,18 @@ export default function PermitAdvisor() {
                       {step.status === "completed" ? (
                         <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-green-400" />
                       ) : (
-                        <span className={`text-sm sm:text-base font-bold ${
+                        <div className={`transition-all duration-500 ${
                           step.status === "processing" ? "text-cyan-300" : 
                           step.step === currentStep ? "text-cyan-300" : "text-gray-400"
                         }`}>
-                          {step.step}
-                        </span>
+                          {step.step === 1 && <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />}
+                          {step.step === 2 && <FileText className="h-4 w-4 sm:h-5 sm:w-5" />}
+                          {step.step === 3 && <Eye className="h-4 w-4 sm:h-5 sm:w-5" />}
+                        </div>
                       )}
                     </div>
                     <div className="mt-2 text-center">
-                      <p className="text-sm sm:text-base font-medium text-gray-300 max-w-16 sm:max-w-20 leading-tight break-words">
+                      <p className="text-xs sm:text-sm font-medium text-gray-300 max-w-16 sm:max-w-20 leading-tight break-words">
                         {step.title.split(' ').slice(0, 2).join(' ')}
                       </p>
                     </div>
@@ -1049,10 +1051,10 @@ export default function PermitAdvisor() {
                   
                   {/* Enhanced Connection Arrow - Mobile Enhanced */}
                   {index < workflowSteps.length - 1 && (
-                    <div className="px-2 sm:px-3 flex items-center">
+                    <div className="px-1 sm:px-2 flex items-center">
                       <div className="relative">
                         <ArrowRight
-                          className={`h-4 w-4 sm:h-5 sm:w-5 transition-all duration-500 ${
+                          className={`h-3 w-3 sm:h-4 sm:w-4 transition-all duration-500 ${
                             step.status === "completed"
                               ? "text-green-400 scale-110"
                               : "text-gray-500"
@@ -1060,7 +1062,7 @@ export default function PermitAdvisor() {
                         />
                         {step.status === "completed" && (
                           <div className="absolute inset-0 animate-ping">
-                            <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 text-green-400/50" />
+                            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-green-400/50" />
                           </div>
                         )}
                       </div>
@@ -1073,13 +1075,13 @@ export default function PermitAdvisor() {
 
           {/* Desktop: Enhanced Centered Flow Layout */}
           <div className="hidden md:block">
-            <div className="flex items-center justify-center max-w-4xl mx-auto">
+            <div className="flex items-center justify-center max-w-3xl mx-auto gap-2">
               {workflowSteps.map((step, index) => (
-                <div key={step.id} className="flex items-center flex-1">
+                <div key={step.id} className="flex items-center">
                   {/* Step Card - More Compact */}
-                  <div className="flex-1 relative">
+                  <div className="relative">
                     <div
-                      className={`p-4 rounded-2xl border-2 transition-all duration-500 cursor-pointer transform hover:scale-105 ${
+                      className={`p-3 rounded-xl border-2 transition-all duration-500 cursor-pointer transform hover:scale-105 ${
                         step.status === "completed"
                           ? "border-green-400/70 bg-gradient-to-br from-green-400/10 to-green-500/5 shadow-xl shadow-green-400/20"
                           : step.status === "processing"
@@ -1096,38 +1098,38 @@ export default function PermitAdvisor() {
                         }
                       }}
                     >
-                      {/* Compact Header */}
-                      <div className="flex items-center justify-center mb-3">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${
-                              step.status === "completed"
-                                ? "border-green-400 bg-green-400/25 shadow-lg shadow-green-400/30"
-                                : step.status === "processing"
-                                  ? "border-cyan-400 bg-cyan-400/25 shadow-lg shadow-cyan-400/40"
-                                  : step.step === currentStep
-                                    ? "border-cyan-400 bg-cyan-400/15 shadow-lg shadow-cyan-400/25"
-                                    : "border-gray-600 bg-gray-800/40"
-                            }`}
-                          >
-                            {step.status === "completed" ? (
-                              <CheckCircle2 className="h-6 w-6 text-green-400" />
-                            ) : (
-                              <span className={`text-lg font-bold ${
-                                step.status === "processing" ? "text-cyan-300" : 
-                                step.step === currentStep ? "text-cyan-300" : "text-gray-400"
-                              }`}>
-                                {step.step}
-                              </span>
-                            )}
-                          </div>
+                      {/* Icon Circle */}
+                      <div className="flex items-center justify-center mb-2">
+                        <div
+                          className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${
+                            step.status === "completed"
+                              ? "border-green-400 bg-green-400/25 shadow-lg shadow-green-400/30"
+                              : step.status === "processing"
+                                ? "border-cyan-400 bg-cyan-400/25 shadow-lg shadow-cyan-400/40"
+                                : step.step === currentStep
+                                  ? "border-cyan-400 bg-cyan-400/15 shadow-lg shadow-cyan-400/25"
+                                  : "border-gray-600 bg-gray-800/40"
+                          }`}
+                        >
+                          {step.status === "completed" ? (
+                            <CheckCircle2 className="h-6 w-6 text-green-400" />
+                          ) : (
+                            <div className={`transition-all duration-500 ${
+                              step.status === "processing" ? "text-cyan-300" : 
+                              step.step === currentStep ? "text-cyan-300" : "text-gray-400"
+                            }`}>
+                              {step.step === 1 && <MapPin className="h-5 w-5" />}
+                              {step.step === 2 && <FileText className="h-5 w-5" />}
+                              {step.step === 3 && <Eye className="h-5 w-5" />}
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      {/* Centered Title */}
-                      <div className="text-center">
+                      {/* Compact Title */}
+                      <div className="text-center max-w-28">
                         <h3
-                          className={`font-semibold text-sm mb-2 ${
+                          className={`font-semibold text-xs mb-1 leading-tight ${
                             step.status === "completed"
                               ? "text-green-400"
                               : step.status === "processing"
@@ -1139,13 +1141,8 @@ export default function PermitAdvisor() {
                         >
                           {step.title}
                         </h3>
-                        <p className="text-xs text-gray-500 leading-relaxed">
-                          {step.description}
-                        </p>
-                      </div>
-
-                      {/* Status Badge */}
-                      <div className="flex justify-center mt-3">
+                        
+                        {/* Status Badge */}
                         <Badge
                           variant="secondary"
                           className={`text-xs ${
@@ -1161,7 +1158,7 @@ export default function PermitAdvisor() {
                       </div>
 
                       {/* Progress Indicator */}
-                      <div className="mt-3">
+                      <div className="mt-2">
                         <Progress 
                           value={step.progress} 
                           className={`h-1 ${
@@ -1175,29 +1172,18 @@ export default function PermitAdvisor() {
 
                   {/* Enhanced Flow Arrow */}
                   {index < workflowSteps.length - 1 && (
-                    <div className="flex justify-center px-3">
+                    <div className="flex justify-center px-2">
                       <div className="relative">
-                        {/* Main Arrow */}
-                        <div
-                          className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${
+                        <ArrowRight
+                          className={`h-5 w-5 transition-all duration-500 ${
                             step.status === "completed"
-                              ? "border-green-400/60 bg-green-400/10 shadow-lg shadow-green-400/20"
-                              : "border-gray-600/40 bg-gray-800/30"
+                              ? "text-green-400 scale-110"
+                              : "text-gray-500"
                           }`}
-                        >
-                          <ArrowRight
-                            className={`h-4 w-4 transition-all duration-500 ${
-                              step.status === "completed"
-                                ? "text-green-400"
-                                : "text-gray-500"
-                            }`}
-                          />
-                        </div>
-                        
-                        {/* Animated Ring for Completed Steps */}
+                        />
                         {step.status === "completed" && (
                           <div className="absolute inset-0 animate-ping">
-                            <div className="w-8 h-8 rounded-full border border-green-400/40"></div>
+                            <ArrowRight className="h-5 w-5 text-green-400/50" />
                           </div>
                         )}
                       </div>
