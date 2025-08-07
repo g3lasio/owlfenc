@@ -7,6 +7,12 @@ Owl Fence is a comprehensive SaaS platform designed for contractors in the const
 Preferred communication style: Simple, everyday language.
 Critical Business Rule: This is multi-tenant contractor software - NEVER use Owl Fence or any specific company name as fallback data. Each contractor must have their own company information. PDFs must only show authentic contractor data or require profile completion.
 
+## Recent Critical Security Fixes (August 2025)
+- **Property Verifier Security**: Eliminated hardcoded userId=1 from all property endpoints, implemented full Firebase authentication
+- **Database Schema Sync**: Fixed missing columns (default_payment_terms, invoice_message_template) causing server crashes
+- **Data Isolation**: Complete separation of user data with ownership verification on all property operations
+- **Authentication Middleware**: All property endpoints require valid Firebase tokens with proper user validation
+
 ## System Architecture
 
 ### Frontend Architecture
