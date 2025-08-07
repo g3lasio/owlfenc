@@ -7,6 +7,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useProfile } from "@/hooks/use-profile";
+import { usePermissions } from "@/contexts/PermissionContext";
 import axios from "axios";
 import {
   Card,
@@ -103,6 +104,7 @@ const Invoices: React.FC = () => {
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
   const { profile, isLoading: profileLoading } = useProfile();
+  const { hasAccess, userPlan, showUpgradeModal } = usePermissions();
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -131,6 +133,10 @@ const Invoices: React.FC = () => {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [emailPreviewContent, setEmailPreviewContent] = useState("");
+
+  // Verificar permisos de invoices
+  const hasInvoiceAccess = hasAccess('invoices');
+  const canUseInvoices = hasInvoiceAccess;
 
   // Load estimates on mount
   useEffect(() => {
@@ -700,15 +706,15 @@ const Invoices: React.FC = () => {
                         className={`cursor-pointer transition-all bg-gray-800 border-gray-600 ${
                           selectedEstimate?.id === estimate.id
                             ? "border-cyan-400 ring-2 ring-cyan-400 ring-offset-2 ring-offset-black"
-                            : "hover:border-cyan-400/50"
-                        }`}
-                        onClick={() => {
+                            : canUseInvoices ? "hover:border-cyan-400/50" : "hover:border-red-400/50"
+                        } ${!canUseInvoices ? 'opacity-60' : ''}`}
+                        onClick={canUseInvoices ? () => {
                           setSelectedEstimate(estimate);
                           setInvoiceConfig((prev) => ({
                             ...prev,
                             recipientEmail: estimate.clientEmail,
                           }));
-                        }}
+                        } : () => showUpgradeModal('invoices', 'Selecciona estimados para facturación con planes superiores')}
                       >
                         <CardContent className="p-3">
                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
@@ -912,46 +918,51 @@ const Invoices: React.FC = () => {
 
                 {/* Quick payment buttons */}
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-cyan-400">Opciones rápidas:</p>
+                  <p className="text-sm font-medium text-cyan-400">
+                    Opciones rápidas{!canUseInvoices && ' (🔒 Premium)'}:
+                  </p>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
+                      onClick={canUseInvoices ? () =>
                         setInvoiceConfig((prev) => ({
                           ...prev,
                           paidAmount: 0,
-                        }))
+                        })) : () => showUpgradeModal('invoices', 'Configura pagos automáticamente con planes superiores')
                       }
-                      className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                      disabled={!canUseInvoices}
+                      className={`${canUseInvoices ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700' : 'bg-gray-600 border-gray-600 text-gray-400 cursor-not-allowed'}`}
                     >
-                      Sin pago
+                      {!canUseInvoices ? '🔒 Sin pago' : 'Sin pago'}
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
+                      onClick={canUseInvoices ? () =>
                         setInvoiceConfig((prev) => ({
                           ...prev,
                           paidAmount: (selectedEstimate?.total || 0) * 0.5,
-                        }))
+                        })) : () => showUpgradeModal('invoices', 'Calcula pagos automáticamente con planes superiores')
                       }
-                      className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                      disabled={!canUseInvoices}
+                      className={`${canUseInvoices ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700' : 'bg-gray-600 border-gray-600 text-gray-400 cursor-not-allowed'}`}
                     >
-                      50% pagado
+                      {!canUseInvoices ? '🔒 50% pagado' : '50% pagado'}
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
+                      onClick={canUseInvoices ? () =>
                         setInvoiceConfig((prev) => ({
                           ...prev,
                           paidAmount: selectedEstimate?.total || 0,
-                        }))
+                        })) : () => showUpgradeModal('invoices', 'Marca proyectos como pagados con planes superiores')
                       }
-                      className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                      disabled={!canUseInvoices}
+                      className={`${canUseInvoices ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700' : 'bg-gray-600 border-gray-600 text-gray-400 cursor-not-allowed'}`}
                     >
-                      Pagado completo
+                      {!canUseInvoices ? '🔒 Pagado completo' : 'Pagado completo'}
                     </Button>
                   </div>
                 </div>
@@ -1071,22 +1082,24 @@ const Invoices: React.FC = () => {
                 {/* Action buttons */}
                 <div className="flex gap-3">
                   <Button 
-                    onClick={handleGenerateInvoice} 
-                    className="flex-1 bg-cyan-400 text-black hover:bg-cyan-300"
+                    onClick={canUseInvoices ? handleGenerateInvoice : () => showUpgradeModal('invoices', 'Genera facturas profesionales ilimitadas con planes superiores')} 
+                    disabled={!canUseInvoices}
+                    className={`flex-1 ${canUseInvoices ? 'bg-cyan-400 text-black hover:bg-cyan-300' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
                   >
                     <Download className="mr-2 h-4 w-4" />
-                    Generar Factura
+                    {!canUseInvoices ? '🔒 Generar Factura (Premium)' : 'Generar Factura'}
                   </Button>
                   <Button
-                    onClick={() => {
+                    onClick={canUseInvoices ? () => {
                       setEmailPreviewContent(generateEmailPreview());
                       setShowEmailPreview(true);
-                    }}
-                    className="flex-1 bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                    } : () => showUpgradeModal('invoices', 'Accede a vista previa de emails profesionales con planes superiores')}
+                    disabled={!canUseInvoices}
+                    className={`flex-1 ${canUseInvoices ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700' : 'bg-gray-600 text-gray-400 cursor-not-allowed border-gray-600'}`}
                     variant="outline"
                   >
                     <Mail className="mr-2 h-4 w-4" />
-                    Vista Previa Email
+                    {!canUseInvoices ? '🔒 Vista Previa Email (Premium)' : 'Vista Previa Email'}
                   </Button>
                 </div>
 
@@ -1115,6 +1128,30 @@ const Invoices: React.FC = () => {
               <p className="text-gray-400">
                 Genere facturas profesionales desde sus estimados guardados
               </p>
+              {!canUseInvoices && (
+                <div className="mt-4 p-4 bg-gradient-to-r from-purple-900/20 to-cyan-900/20 border border-purple-500/30 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-cyan-400 flex items-center justify-center">
+                        <span className="text-sm font-bold text-black">✨</span>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-purple-300">Vista Demo - Sistema de Facturación</h3>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Estás viendo una demostración visual. Actualiza tu plan para generar facturas reales.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => showUpgradeModal('invoices', 'Desbloquea el sistema completo de facturación profesional')}
+                      size="sm"
+                      className="bg-gradient-to-r from-purple-500 to-cyan-400 text-black hover:from-purple-600 hover:to-cyan-500 font-semibold text-xs"
+                    >
+                      Actualizar Plan
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1189,21 +1226,21 @@ const Invoices: React.FC = () => {
               <div className="flex justify-between">
                 <Button
                   variant="outline"
-                  onClick={prevStep}
-                  disabled={currentStep === 1}
-                  className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                  onClick={canUseInvoices ? prevStep : () => showUpgradeModal('invoices', 'Navega por el wizard de facturas con planes superiores')}
+                  disabled={currentStep === 1 || !canUseInvoices}
+                  className={`${canUseInvoices ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700' : 'bg-gray-600 border-gray-600 text-gray-400 cursor-not-allowed'}`}
                 >
                   <ChevronLeft className="mr-2 h-4 w-4" />
-                  Anterior
+                  {!canUseInvoices ? '🔒 Anterior' : 'Anterior'}
                 </Button>
 
                 {currentStep < WIZARD_STEPS.length && (
                   <Button 
-                    onClick={nextStep} 
-                    disabled={!canProceedToNext()}
-                    className="bg-cyan-400 text-black hover:bg-cyan-300"
+                    onClick={canUseInvoices ? nextStep : () => showUpgradeModal('invoices', 'Avanza por el wizard de facturas con planes superiores')} 
+                    disabled={!canProceedToNext() || !canUseInvoices}
+                    className={`${canUseInvoices ? 'bg-cyan-400 text-black hover:bg-cyan-300' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
                   >
-                    Siguiente
+                    {!canUseInvoices ? '🔒 Siguiente' : 'Siguiente'}
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 )}
