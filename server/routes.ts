@@ -69,6 +69,7 @@ import multiChannelRoutes from "./routes/multiChannelRoutes"; // Import Multi-Ch
 import deepSearchAiRoutes from "./routes/deepsearch-ai"; // Import DeepSearch AI routes
 import invoiceRoutes from "./routes/billing-test"; // Import Invoice Management routes (using working filename)
 import express from "express"; // Import express to use express.raw
+import { verifyFirebaseAuth as requireAuth } from "./middleware/firebase-auth"; // Import Firebase authentication middleware
 
 // Initialize OpenAI API
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
@@ -5831,42 +5832,69 @@ Output must be between 200-900 characters in English.`;
   });
 
   // Endpoint para obtener detalles de una propiedad por dirección
-  // Endpoints para el historial de búsqueda de propiedades
-  app.get("/api/property/history", async (req: Request, res: Response) => {
+  // 🛡️ ENDPOINTS SEGUROS PARA HISTORIAL DE BÚSQUEDA DE PROPIEDADES
+  app.get("/api/property/history", requireAuth, async (req: Request, res: Response) => {
     try {
-      // En una aplicación real, obtendríamos el userId de la sesión
-      const userId = 1; // ID de usuario por defecto para pruebas
+      // 🔐 OBTENER userId REAL DEL TOKEN AUTENTICADO 
+      const firebaseUid = (req as any).firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ error: "Usuario no autenticado" });
+      }
 
-      const history = await storage.getPropertySearchHistoryByUserId(userId);
+      // Obtener el usuario de la base de datos
+      const user = await storage.getUserByFirebaseUid(firebaseUid);
+      if (!user) {
+        return res.status(404).json({ error: "Usuario no encontrado en base de datos" });
+      }
+
+      console.log(`🔍 [PROPERTY-HISTORY-SECURED] Obteniendo historial para usuario autenticado: ${firebaseUid} (ID: ${user.id})`);
+
+      // 🔒 FILTRAR POR userId DEL USUARIO AUTENTICADO - SIN CROSS-CONTAMINATION
+      const history = await storage.getPropertySearchHistoryByUserId(user.id);
+      
+      console.log(`✅ [PROPERTY-HISTORY-SECURED] Devolviendo ${history.length} búsquedas del usuario ${user.id}`);
       res.json(history);
     } catch (error) {
-      console.error(
-        "Error al obtener historial de búsqueda de propiedades:",
-        error,
-      );
+      console.error("❌ [PROPERTY-HISTORY-SECURED] Error:", error);
       res.status(500).json({
         message: "Error al obtener historial de búsqueda de propiedades",
       });
     }
   });
 
-  app.get("/api/property/history/:id", async (req: Request, res: Response) => {
+  app.get("/api/property/history/:id", requireAuth, async (req: Request, res: Response) => {
     try {
+      // 🔐 VERIFICAR AUTENTICACIÓN Y OWNERSHIP
+      const firebaseUid = (req as any).firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ error: "Usuario no autenticado" });
+      }
+
+      const user = await storage.getUserByFirebaseUid(firebaseUid);
+      if (!user) {
+        return res.status(404).json({ error: "Usuario no encontrado" });
+      }
+
       const { id } = req.params;
       const historyItem = await storage.getPropertySearchHistory(parseInt(id));
 
       if (!historyItem) {
-        return res
-          .status(404)
-          .json({ message: "Historial de búsqueda no encontrado" });
+        return res.status(404).json({ message: "Historial de búsqueda no encontrado" });
       }
 
+      // 🚨 VERIFICACIÓN CRÍTICA DE OWNERSHIP - PREVENIR ACCESO CRUZADO
+      if (historyItem.userId !== user.id) {
+        console.error(`🚨 [SECURITY-VIOLATION] Usuario ${user.id} intentó acceder a historial ${id} del usuario ${historyItem.userId}`);
+        return res.status(403).json({ 
+          error: "No tienes permiso para acceder a este historial",
+          code: "FORBIDDEN_CROSS_USER_ACCESS" 
+        });
+      }
+
+      console.log(`✅ [PROPERTY-HISTORY-SECURED] Usuario ${user.id} accedió correctamente a su historial ${id}`);
       res.json(historyItem);
     } catch (error) {
-      console.error(
-        "Error al obtener detalle de historial de propiedad:",
-        error,
-      );
+      console.error("❌ [PROPERTY-HISTORY-SECURED] Error:", error);
       res.status(500).json({
         message: "Error al obtener detalle de historial de propiedad",
       });
@@ -5875,32 +5903,48 @@ Output must be between 200-900 characters in English.`;
 
   app.post(
     "/api/property/history/:id/favorite",
+    requireAuth,
     async (req: Request, res: Response) => {
       try {
+        // 🔐 VERIFICAR AUTENTICACIÓN Y OWNERSHIP
+        const firebaseUid = (req as any).firebaseUser?.uid;
+        if (!firebaseUid) {
+          return res.status(401).json({ error: "Usuario no autenticado" });
+        }
+
+        const user = await storage.getUserByFirebaseUid(firebaseUid);
+        if (!user) {
+          return res.status(404).json({ error: "Usuario no encontrado" });
+        }
+
         const { id } = req.params;
         const { isFavorite } = req.body;
 
         // Verificar que el historial existe
-        const historyItem = await storage.getPropertySearchHistory(
-          parseInt(id),
-        );
+        const historyItem = await storage.getPropertySearchHistory(parseInt(id));
         if (!historyItem) {
-          return res
-            .status(404)
-            .json({ message: "Historial de búsqueda no encontrado" });
+          return res.status(404).json({ message: "Historial de búsqueda no encontrado" });
+        }
+
+        // 🚨 VERIFICACIÓN CRÍTICA DE OWNERSHIP 
+        if (historyItem.userId !== user.id) {
+          console.error(`🚨 [SECURITY-VIOLATION] Usuario ${user.id} intentó modificar favorito ${id} del usuario ${historyItem.userId}`);
+          return res.status(403).json({ 
+            error: "No tienes permiso para modificar este historial",
+            code: "FORBIDDEN_CROSS_USER_MODIFICATION" 
+          });
         }
 
         // Actualizar el estado de favorito
         const updatedHistory = await storage.updatePropertySearchHistory(
           parseInt(id),
-          {
-            isFavorite: !!isFavorite,
-          },
+          { isFavorite: !!isFavorite }
         );
 
+        console.log(`✅ [PROPERTY-HISTORY-SECURED] Usuario ${user.id} actualizó favorito en historial ${id}`);
         res.json(updatedHistory);
       } catch (error) {
-        console.error("Error al actualizar favorito:", error);
+        console.error("❌ [PROPERTY-HISTORY-SECURED] Error al actualizar favorito:", error);
         res.status(500).json({ message: "Error al actualizar favorito" });
       }
     },
@@ -5908,38 +5952,65 @@ Output must be between 200-900 characters in English.`;
 
   app.post(
     "/api/property/history/:id/notes",
+    requireAuth,
     async (req: Request, res: Response) => {
       try {
+        // 🔐 VERIFICAR AUTENTICACIÓN Y OWNERSHIP
+        const firebaseUid = (req as any).firebaseUser?.uid;
+        if (!firebaseUid) {
+          return res.status(401).json({ error: "Usuario no autenticado" });
+        }
+
+        const user = await storage.getUserByFirebaseUid(firebaseUid);
+        if (!user) {
+          return res.status(404).json({ error: "Usuario no encontrado" });
+        }
+
         const { id } = req.params;
         const { notes } = req.body;
 
         // Verificar que el historial existe
-        const historyItem = await storage.getPropertySearchHistory(
-          parseInt(id),
-        );
+        const historyItem = await storage.getPropertySearchHistory(parseInt(id));
         if (!historyItem) {
-          return res
-            .status(404)
-            .json({ message: "Historial de búsqueda no encontrado" });
+          return res.status(404).json({ message: "Historial de búsqueda no encontrado" });
+        }
+
+        // 🚨 VERIFICACIÓN CRÍTICA DE OWNERSHIP 
+        if (historyItem.userId !== user.id) {
+          console.error(`🚨 [SECURITY-VIOLATION] Usuario ${user.id} intentó modificar notas ${id} del usuario ${historyItem.userId}`);
+          return res.status(403).json({ 
+            error: "No tienes permiso para modificar este historial",
+            code: "FORBIDDEN_CROSS_USER_MODIFICATION" 
+          });
         }
 
         // Actualizar las notas
         const updatedHistory = await storage.updatePropertySearchHistory(
           parseInt(id),
-          {
-            notes,
-          },
+          { notes }
         );
 
+        console.log(`✅ [PROPERTY-HISTORY-SECURED] Usuario ${user.id} actualizó notas en historial ${id}`);
         res.json(updatedHistory);
       } catch (error) {
-        console.error("Error al actualizar notas:", error);
+        console.error("❌ [PROPERTY-HISTORY-SECURED] Error al actualizar notas:", error);
         res.status(500).json({ message: "Error al actualizar notas" });
       }
     },
   );
 
-  app.get("/api/property/details", async (req: Request, res: Response) => {
+  app.get("/api/property/details", requireAuth, async (req: Request, res: Response) => {
+    // 🔐 VERIFICAR AUTENTICACIÓN ANTES DE CUALQUIER OPERACIÓN
+    const firebaseUid = (req as any).firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ error: "Usuario no autenticado para verificación de propiedad" });
+    }
+
+    const user = await storage.getUserByFirebaseUid(firebaseUid);
+    if (!user) {
+      return res.status(404).json({ error: "Usuario no encontrado en base de datos" });
+    }
+
     const address = req.query.address as string;
     const city = req.query.city as string;
     const state = req.query.state as string;
@@ -5951,17 +6022,17 @@ Output must be between 200-900 characters in English.`;
       });
     }
 
-    console.log("🔍 [PROPERTY-API] Starting secure property verification for address:", address);
+    console.log(`🔍 [PROPERTY-API-SECURED] Starting property verification for address: ${address} (User: ${firebaseUid})`);
     if (city || state || zip) {
-      console.log("🏠 [PROPERTY-API] Enhanced address components:", { city, state, zip });
+      console.log("🏠 [PROPERTY-API-SECURED] Enhanced address components:", { city, state, zip });
     }
 
     try {
       // Import and use the secure ATTOM service
-      console.log("📦 [PROPERTY-API] Loading secure ATTOM service");
+      console.log("📦 [PROPERTY-API-SECURED] Loading secure ATTOM service");
       const { secureAttomService } = await import('./services/secure-attom-service-clean');
       
-      console.log("🌐 [PROPERTY-API] Calling ATTOM service");
+      console.log("🌐 [PROPERTY-API-SECURED] Calling ATTOM service");
       const propertyData = await secureAttomService.getPropertyDetails(address, { city, state, zip });
 
       if (!propertyData) {
@@ -5972,15 +6043,14 @@ Output must be between 200-900 characters in English.`;
         });
       }
 
-      console.log("✅ Property verification successful");
+      console.log(`✅ [PROPERTY-API-SECURED] Property verification successful for user ${user.id}`);
 
-      // Save search to history
+      // 🛡️ SAVE SEARCH TO HISTORY WITH AUTHENTICATED USER ID
       try {
-        const userId = 1; // In a real app, get from session
         const title = `Propiedad en ${address}`;
 
         const historyData = {
-          userId,
+          userId: user.id, // 🔒 USAR userId REAL DEL USUARIO AUTENTICADO
           address,
           ownerName: propertyData.owner,
           results: propertyData,
@@ -5992,9 +6062,9 @@ Output must be between 200-900 characters in English.`;
 
         const validHistoryData = insertPropertySearchHistorySchema.parse(historyData);
         await storage.createPropertySearchHistory(validHistoryData);
-        console.log("📝 Search saved to property history");
+        console.log(`📝 [PROPERTY-API-SECURED] Search saved to history for user ${user.id}`);
       } catch (historyError) {
-        console.error("⚠️ Error saving to property history:", historyError);
+        console.error("⚠️ [PROPERTY-API-SECURED] Error saving to property history:", historyError);
         // Don't fail the request if history save fails
       }
 
