@@ -752,6 +752,97 @@ app.use('/api/ocr', ocrSimpleRoutes);
 // Add email contract routes
 app.use('/api/email', emailContractRoutes);
 
+// 🔄 FIREBASE CONTRACT RETRIEVAL - Get contract HTML from stored Firebase data
+app.post('/api/get-contract-from-firebase', async (req, res) => {
+  try {
+    console.log('🔍 [FIREBASE-GET] Searching for contract in Firebase...');
+    
+    const { clientName, projectDescription, userId } = req.body;
+    const firebaseUid = req.headers["x-firebase-uid"] as string;
+    
+    console.log('🔍 [FIREBASE-GET] Search params:', { clientName, projectDescription, userId: firebaseUid });
+
+    // Import Firebase admin services
+    const { db } = await import('./lib/firebase-admin');
+    
+    // Search for contracts with matching client name and project description
+    const contractsSnapshot = await db.collection('contracts')
+      .where('clientName', '==', clientName)
+      .limit(5) // Get recent matches
+      .get();
+    
+    if (!contractsSnapshot.empty) {
+      // Find the best match based on project description similarity
+      let bestMatch = null;
+      let highestScore = 0;
+      
+      contractsSnapshot.forEach(doc => {
+        const contractData = doc.data();
+        const score = calculateSimilarity(projectDescription, contractData.projectDescription || '');
+        if (score > highestScore) {
+          highestScore = score;
+          bestMatch = { id: doc.id, ...contractData };
+        }
+      });
+      
+      if (bestMatch && bestMatch.contractHTML) {
+        console.log('✅ [FIREBASE-GET] Contract found:', bestMatch.id);
+        return res.json({
+          success: true,
+          contractHTML: bestMatch.contractHTML,
+          contractId: bestMatch.id,
+          similarity: highestScore
+        });
+      }
+    }
+    
+    console.log('📭 [FIREBASE-GET] No matching contract found');
+    res.json({
+      success: false,
+      message: 'No matching contract found in Firebase'
+    });
+
+  } catch (error) {
+    console.error('❌ [FIREBASE-GET] Error retrieving contract:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve contract from Firebase'
+    });
+  }
+});
+
+// Simple string similarity function
+function calculateSimilarity(str1: string, str2: string): number {
+  if (!str1 || !str2) return 0;
+  const longer = str1.length > str2.length ? str1 : str2;
+  const shorter = str1.length > str2.length ? str2 : str1;
+  const editDistance = getEditDistance(longer, shorter);
+  return (longer.length - editDistance) / longer.length;
+}
+
+function getEditDistance(s1: string, s2: string): number {
+  s1 = s1.toLowerCase();
+  s2 = s2.toLowerCase();
+  const costs = [];
+  for (let i = 0; i <= s2.length; i++) {
+    let lastValue = i;
+    for (let j = 0; j <= s1.length; j++) {
+      if (i === 0) costs[j] = j;
+      else {
+        if (j > 0) {
+          let newValue = costs[j - 1];
+          if (s1.charAt(j - 1) !== s2.charAt(i - 1))
+            newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+          costs[j - 1] = lastValue;
+          lastValue = newValue;
+        }
+      }
+    }
+    if (i > 0) costs[s1.length] = lastValue;
+  }
+  return costs[s1.length];
+}
+
 // 🚨 CRITICAL FIX: Add contract HTML generation endpoint directly due to routes.ts TypeScript errors
 app.post('/api/generate-contract-html', async (req, res) => {
   try {

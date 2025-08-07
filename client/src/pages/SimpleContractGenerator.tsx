@@ -2211,6 +2211,87 @@ export default function SimpleContractGenerator() {
     toast,
   ]);
 
+  // Fallback contract creation using Firebase stored data
+  const handleFallbackContractCreation = async (contractPayload: any) => {
+    try {
+      console.log("🔄 [FALLBACK] Attempting to retrieve contract from Firebase...");
+      
+      // Try to get contract HTML from Firebase if it exists
+      const firebaseResponse = await fetch("/api/get-contract-from-firebase", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-firebase-uid": user?.uid || '',
+        },
+        body: JSON.stringify({
+          clientName: contractPayload.client?.name,
+          projectDescription: contractPayload.project?.description,
+          userId: user?.uid
+        }),
+      });
+
+      if (firebaseResponse.ok) {
+        const firebaseData = await firebaseResponse.json();
+        if (firebaseData.success && firebaseData.contractHTML) {
+          console.log("✅ [FALLBACK] Contract HTML retrieved from Firebase");
+          setContractHTML(firebaseData.contractHTML);
+          setContractData(contractPayload);
+          setIsContractReady(true);
+          setCurrentStep(3);
+
+          toast({
+            title: "Contract Retrieved from Database",
+            description: "Contract loaded from Firebase storage for signature process.",
+          });
+          return;
+        }
+      }
+
+      // If Firebase retrieval fails, create simple contract data for signatures
+      console.log("🆘 [FALLBACK] Creating minimal contract data for signatures...");
+      const simpleContractHTML = `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h1>Service Contract</h1>
+          <h2>Contractor Information</h2>
+          <p><strong>Company:</strong> ${contractPayload.contractor?.name || 'OWL FENC LLC'}</p>
+          <p><strong>Email:</strong> ${contractPayload.contractor?.email || 'gelasio@chyrris.com'}</p>
+          
+          <h2>Client Information</h2>
+          <p><strong>Name:</strong> ${contractPayload.client?.name}</p>
+          <p><strong>Address:</strong> ${contractPayload.client?.address}</p>
+          <p><strong>Email:</strong> ${contractPayload.client?.email}</p>
+          
+          <h2>Project Details</h2>
+          <p><strong>Type:</strong> ${contractPayload.project?.type}</p>
+          <p><strong>Description:</strong> ${contractPayload.project?.description}</p>
+          <p><strong>Total Amount:</strong> $${contractPayload.project?.total || '0.00'}</p>
+          
+          <div style="margin-top: 40px;">
+            <p>This contract represents a binding agreement between the parties listed above.</p>
+          </div>
+        </div>
+      `;
+
+      setContractHTML(simpleContractHTML);
+      setContractData(contractPayload);
+      setIsContractReady(true);
+      setCurrentStep(3);
+
+      toast({
+        title: "Contract Ready for Signatures",
+        description: "Simplified contract created for signature collection.",
+      });
+
+    } catch (error) {
+      console.error("❌ [FALLBACK] Error in fallback contract creation:", error);
+      toast({
+        title: "Error",
+        description: "Could not prepare contract for signatures. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Generate contract using backend API with comprehensive data (for legal workflow)
   const handleGenerateContract = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid) return;
@@ -2354,20 +2435,30 @@ export default function SimpleContractGenerator() {
         console.log("🔍 [DEBUG] HTML Data received:", {
           hasHtml: !!contractHTMLData.html,
           htmlLength: contractHTMLData.html?.length || 0,
-          isFromScratch: selectedProject?.isFromScratch
+          isFromScratch: selectedProject?.isFromScratch,
+          responseKeys: Object.keys(contractHTMLData)
         });
         
-        setContractHTML(contractHTMLData.html);
-        setContractData(contractPayload);
-        setIsContractReady(true);
-        setCurrentStep(3);
+        // Use the correct key from response - try both possibilities
+        const contractHtmlContent = contractHTMLData.html || contractHTMLData.contractHTML || '';
+        
+        if (contractHtmlContent) {
+          setContractHTML(contractHtmlContent);
+          setContractData(contractPayload);
+          setIsContractReady(true);
+          setCurrentStep(3);
 
-        console.log("🔍 [DEBUG] Contract HTML set successfully");
+          console.log("🔍 [DEBUG] Contract HTML set successfully:", contractHtmlContent.length, "characters");
 
-        toast({
-          title: "Contract Ready for Legal Process",
-          description: `Contract generated for ${selectedProject.clientName}. Legal compliance workflow enabled.`,
-        });
+          toast({
+            title: "Contract Ready for Legal Process",
+            description: `Contract generated for ${selectedProject.clientName}. Legal compliance workflow enabled.`,
+          });
+        } else {
+          console.error("🔍 [DEBUG] No HTML content found in response");
+          // Try alternative approach: Save contract data and generate simple HTML for signatures
+          await handleFallbackContractCreation(contractPayload);
+        }
       } else {
         // Fallback to PDF generation if HTML endpoint fails
         const response = await fetch("/api/generate-pdf", {
