@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
+import { usePermissions } from "@/contexts/PermissionContext";
 import {
   Database,
   Eye,
@@ -199,6 +200,39 @@ export default function SimpleContractGenerator() {
   const { currentUser } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
+  const { 
+    userPlan,
+    userUsage,
+    incrementUsage, 
+    canUse,
+    hasAccess
+  } = usePermissions();
+
+  // Get current plan information for UI restrictions
+  const currentPlan = userPlan;
+  const isPrimoChambeador = currentPlan?.id === 1;
+  const isMeroPatron = currentPlan?.id === 2;
+  const isMasterContractor = currentPlan?.id === 3;
+  const isFreePlan = currentPlan?.id === 0 || !currentPlan;
+  
+  // Contract limits by plan
+  const contractLimit = isMeroPatron ? 50 : isPrimoChambeador ? 5 : null;
+  const contractsUsed = userUsage?.contracts || 0;
+  const hasReachedContractLimit = contractLimit && contractsUsed >= contractLimit;
+  
+  // Check if signature protocol is available (Master Contractor only)
+  const isSignatureProtocolAvailable = () => isMasterContractor;
+  
+  // Check contract access function
+  const checkContractAccess = () => {
+    if (isPrimoChambeador) {
+      return {
+        allowed: false,
+        reason: "Upgrade to Mero Patrón to unlock contract generation"
+      };
+    }
+    return { allowed: true };
+  };
 
   // Fetch AI-suggested legal clauses
   const fetchAISuggestedClauses = useCallback(async () => {
@@ -2077,6 +2111,16 @@ export default function SimpleContractGenerator() {
   const handleDownloadPDF = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid) return;
 
+    // Check contract access permissions
+    if (isPrimoChambeador) {
+      toast({
+        title: "Upgrade Required",
+        description: "Upgrade to Mero Patrón to unlock PDF downloads",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -2221,12 +2265,12 @@ export default function SimpleContractGenerator() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-firebase-uid": user?.uid || '',
+          "x-firebase-uid": currentUser?.uid || '',
         },
         body: JSON.stringify({
           clientName: contractPayload.client?.name,
           projectDescription: contractPayload.project?.description,
-          userId: user?.uid
+          userId: currentUser?.uid
         }),
       });
 
@@ -2295,6 +2339,16 @@ export default function SimpleContractGenerator() {
   // Generate contract using backend API with comprehensive data (for legal workflow)
   const handleGenerateContract = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid) return;
+
+    // Check contract access permissions
+    if (isPrimoChambeador) {
+      toast({
+        title: "Upgrade Required",
+        description: "Upgrade to Mero Patrón to unlock contract generation",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsLoading(true);
     let contractPayload = null; // Initialize at function scope
@@ -2621,6 +2675,16 @@ export default function SimpleContractGenerator() {
         title: "Error",
         description:
           "Contract must be generated before initiating dual signature",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if signature protocol is available (Master Contractor only)
+    if (!isSignatureProtocolAvailable()) {
+      toast({
+        title: "Premium Feature",
+        description: "Signature Protocol is available exclusively in Master Contractor plan. Upgrade to unlock professional signature workflows.",
         variant: "destructive",
       });
       return;
@@ -4453,10 +4517,24 @@ export default function SimpleContractGenerator() {
                       </Button>
                       <Button
                         onClick={handleGenerateContract}
-                        disabled={isLoading}
-                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8"
+                        disabled={isLoading || (isPrimoChambeador && !isLoading)}
+                        className={`font-bold py-3 px-8 relative ${
+                          isPrimoChambeador 
+                            ? "bg-gray-600 text-gray-400 cursor-not-allowed" 
+                            : "bg-green-600 hover:bg-green-500 text-white"
+                        }`}
                       >
-                        {isLoading ? "Generating..." : "Generate Contract"}
+                        <div className="flex items-center gap-2">
+                          {isPrimoChambeador && (
+                            <Lock className="h-4 w-4" />
+                          )}
+                          {isLoading ? "Generating..." : "Generate Contract"}
+                        </div>
+                        {isPrimoChambeador && (
+                          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-yellow-600 text-black px-2 py-1 rounded text-xs font-medium whitespace-nowrap">
+                            Upgrade to Mero Patrón
+                          </div>
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -4490,15 +4568,28 @@ export default function SimpleContractGenerator() {
                         </p>
                         <Button
                           onClick={handleDownloadPDF}
-                          disabled={isLoading}
-                          className="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 px-4 w-full disabled:opacity-50 text-sm"
+                          disabled={isLoading || (isPrimoChambeador && !isLoading)}
+                          className={`font-medium py-2 px-4 w-full text-sm relative ${
+                            isPrimoChambeador 
+                              ? "bg-gray-600 text-gray-400 cursor-not-allowed" 
+                              : "bg-blue-600 hover:bg-blue-500 text-white"
+                          }`}
                         >
-                          {isLoading ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <Download className="h-4 w-4 mr-2" />
+                          <div className="flex items-center justify-center gap-2">
+                            {isPrimoChambeador ? (
+                              <Lock className="h-4 w-4" />
+                            ) : isLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Download className="h-4 w-4" />
+                            )}
+                            {isPrimoChambeador ? "Upgrade Required" : isLoading ? "Generating..." : "Download PDF"}
+                          </div>
+                          {isPrimoChambeador && (
+                            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-yellow-600 text-black px-2 py-1 rounded text-xs font-medium whitespace-nowrap">
+                              Unlock with Mero Patrón
+                            </div>
                           )}
-                          {isLoading ? "Generating..." : "Download PDF"}
                         </Button>
                         <div className="flex items-center justify-center text-xs text-gray-400 mt-2 gap-1">
                           <CheckCircle className="h-3 w-3" />
@@ -4551,16 +4642,18 @@ export default function SimpleContractGenerator() {
                         <Button
                           onClick={handleStartSignatureProtocol}
                           disabled={
-                            isLoading || !contractHTML || isMultiChannelActive
+                            isLoading || !contractHTML || isMultiChannelActive || !isMasterContractor
                           }
-                          className={`w-full py-3 font-medium transition-all ${
+                          className={`w-full py-3 font-medium transition-all relative ${
                             isLoading
                               ? "bg-yellow-600 text-black"
                               : isMultiChannelActive
                                 ? "bg-green-600 text-white"
                                 : !contractHTML
                                   ? "bg-gray-600 cursor-not-allowed text-gray-400"
-                                  : "bg-cyan-600 hover:bg-cyan-500 text-white"
+                                  : !isMasterContractor
+                                    ? "bg-gray-600 cursor-not-allowed text-gray-400"
+                                    : "bg-cyan-600 hover:bg-cyan-500 text-white"
                           }`}
                         >
                           {isLoading ? (
@@ -4578,6 +4671,11 @@ export default function SimpleContractGenerator() {
                               <AlertCircle className="h-4 w-4" />
                               <span>Contract Required</span>
                             </div>
+                          ) : !isMasterContractor ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <Lock className="h-4 w-4" />
+                              <span>Master Contractor Only</span>
+                            </div>
                           ) : (
                             <div className="flex items-center justify-center gap-2">
                               <Shield className="h-4 w-4" />
@@ -4585,6 +4683,13 @@ export default function SimpleContractGenerator() {
                             </div>
                           )}
                         </Button>
+
+                        {/* Premium Feature Notice */}
+                        {!isMasterContractor && (
+                          <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-purple-600 text-white px-3 py-1 rounded text-xs font-medium whitespace-nowrap">
+                            🚀 Exclusive to Master Contractor
+                          </div>
+                        )}
 
                         <div className="flex items-center justify-center text-xs text-gray-400 mt-2 gap-1">
                           <Shield className="h-3 w-3" />
