@@ -306,13 +306,15 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     if (!currentUser || !userUsage) return;
 
     try {
-      console.log(`📊 [USAGE-INCREMENT] Incrementando ${feature} por ${count} para usuario: ${currentUser.uid}`);
+      // Usar la misma lógica de detección de desarrollo que loadUserUsage
+      const isDevelopment = window.location.hostname.includes('replit') || window.location.hostname.includes('localhost');
+      const userId = isDevelopment ? 'dev-user-123' : currentUser.uid;
+      
+      console.log(`📊 [USAGE-INCREMENT] Incrementando ${feature} por ${count} para usuario: ${userId}`);
 
       // Usar apiRequest para asegurar autenticación automática
       const { apiRequest } = await import('@/lib/queryClient');
       
-      // En desarrollo, no enviar userId para evitar conflictos con usuario simulado
-      const isDevelopment = window.location.hostname.includes('replit') || window.location.hostname.includes('localhost');
       const requestBody: any = {
         feature,
         count,
@@ -327,14 +329,13 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
       const response = await apiRequest('POST', '/api/usage/increment', requestBody);
 
       if (response.ok) {
-        // Después del incremento exitoso, recargar el uso actualizado
-        const realUserId = isDevelopment ? 'dev-user-123' : currentUser.uid;
-        const updatedUsage = await apiRequest('GET', `/api/usage/${realUserId}`);
+        // Después del incremento exitoso, recargar el uso actualizado con el mismo userId
+        const updatedUsage = await apiRequest('GET', `/api/usage/${userId}`);
         
         if (updatedUsage.ok) {
           const usageData = await updatedUsage.json();
           setUserUsage(usageData);
-          console.log(`✅ [USAGE-INCREMENT] ${feature} incrementado y recargado exitosamente`);
+          console.log(`✅ [USAGE-INCREMENT] ${feature} incrementado y recargado exitosamente. Nuevo valor: ${usageData[feature]}`);
         } else {
           // Fallback: actualizar localmente si falla la recarga
           setUserUsage(prev => ({
