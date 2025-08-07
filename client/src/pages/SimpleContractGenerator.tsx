@@ -4416,6 +4416,31 @@ export default function SimpleContractGenerator() {
                           and client
                         </p>
 
+                        {/* Contract Status Display */}
+                        {!contractHTML && (
+                          <div className="bg-red-900/20 border border-red-400 rounded-lg p-3 mb-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <AlertCircle className="h-4 w-4 text-red-400" />
+                              <span className="text-red-400 text-sm font-medium">Contract Not Generated</span>
+                            </div>
+                            <p className="text-gray-300 text-xs">
+                              The contract HTML was not generated properly. Please regenerate the contract first.
+                            </p>
+                            <Button
+                              onClick={handleGenerateContract}
+                              disabled={isLoading}
+                              className="bg-red-600 hover:bg-red-500 text-white font-medium py-2 px-4 w-full mt-3 text-sm"
+                            >
+                              {isLoading ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                              )}
+                              {isLoading ? "Generating..." : "Regenerate Contract"}
+                            </Button>
+                          </div>
+                        )}
+
                         {/* Simplified Start Button */}
                         <Button
                           onClick={handleStartSignatureProtocol}
@@ -4427,7 +4452,9 @@ export default function SimpleContractGenerator() {
                               ? "bg-yellow-600 text-black"
                               : isMultiChannelActive
                                 ? "bg-green-600 text-white"
-                                : "bg-cyan-600 hover:bg-cyan-500 text-white"
+                                : !contractHTML
+                                  ? "bg-gray-600 cursor-not-allowed text-gray-400"
+                                  : "bg-cyan-600 hover:bg-cyan-500 text-white"
                           }`}
                         >
                           {isLoading ? (
@@ -4439,6 +4466,11 @@ export default function SimpleContractGenerator() {
                             <div className="flex items-center justify-center gap-2">
                               <CheckCircle className="h-4 w-4" />
                               <span>Links Generated</span>
+                            </div>
+                          ) : !contractHTML ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <AlertCircle className="h-4 w-4" />
+                              <span>Contract Required</span>
                             </div>
                           ) : (
                             <div className="flex items-center justify-center gap-2">
@@ -4452,6 +4484,16 @@ export default function SimpleContractGenerator() {
                           <Shield className="h-3 w-3" />
                           <span>Encrypted • Secure • Professional</span>
                         </div>
+                        
+                        {/* Debug Info for Development */}
+                        {process.env.NODE_ENV === 'development' && (
+                          <div className="mt-2 p-2 bg-gray-800 rounded text-xs text-gray-400">
+                            <div>Debug Info:</div>
+                            <div>Contract HTML: {contractHTML ? 'Generated ✓' : 'Missing ✗'}</div>
+                            <div>Loading: {isLoading ? 'Yes' : 'No'}</div>
+                            <div>Multi-channel: {isMultiChannelActive ? 'Active' : 'Inactive'}</div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
