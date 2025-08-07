@@ -67,6 +67,7 @@ import centralizedEmailRoutes from "./routes/centralized-email-routes"; // Impor
 import dualSignatureRoutes from "./routes/dualSignatureRoutes"; // Import Dual Signature routes
 import multiChannelRoutes from "./routes/multiChannelRoutes"; // Import Multi-Channel Delivery routes
 import deepSearchAiRoutes from "./routes/deepsearch-ai"; // Import DeepSearch AI routes
+import invoiceRoutes from "./routes/billing-test"; // Import Invoice Management routes (using working filename)
 import express from "express"; // Import express to use express.raw
 
 // Initialize OpenAI API
@@ -6326,6 +6327,9 @@ Output must be between 200-900 characters in English.`;
 
   // Registrar rutas del sistema de permisos y uso
   registerUsageRoutes(app);
+
+  // 🛡️ SEGURIDAD CRÍTICA: Registrar rutas del sistema de facturación CON AUTENTICACIÓN COMPLETA
+  app.use('/api/invoices', invoiceRoutes);
 
   // Professional Contract Generation with Premium Cards and Visual Design
   app.post("/api/contracts/generate-professional", async (req, res) => {
