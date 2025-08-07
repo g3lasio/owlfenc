@@ -4044,43 +4044,122 @@ Output must be between 200-900 characters in English.`;
           await firebaseSubscriptionService.getUserSubscription(userId);
 
         if (subscription) {
-          // User has a paid subscription
-          const defaultPlan = {
-            id: subscription.planId,
-            name:
-              subscription.planId === 2 ? "Mero Patrón" : "Master Contractor",
-            price: subscription.planId === 2 ? 4999 : 9999,
-            interval: subscription.billingCycle,
-            features:
-              subscription.planId === 2
-                ? [
-                    "Unlimited basic estimates",
-                    "50 AI estimates/month",
-                    "Complete invoicing",
-                    "Mervin AI 7.0",
-                  ]
-                : [
-                    "Complete management features",
-                    "Automated reminders",
-                    "QuickBooks integration",
-                    "Predictive analysis",
-                  ],
-          };
+          // Check for trial expiration before returning subscription data
+          await firebaseSubscriptionService.checkAndExpireTrial(userId);
+          
+          // Get updated subscription after potential trial expiration
+          const updatedSubscription = await firebaseSubscriptionService.getUserSubscription(userId);
+          
+          if (updatedSubscription && updatedSubscription.planId !== 1) {
+            // User has active subscription (paid or trial)
+            let defaultPlan;
+            let trialDaysRemaining = 0;
+            
+            if (updatedSubscription.planId === 4) {
+              // Trial Master plan
+              defaultPlan = {
+                id: 4,
+                name: "Trial Master",
+                price: 0,
+                interval: "trial",
+                features: [
+                  "ACCESO TOTAL por 21 días",
+                  "Todas las funciones premium",
+                  "Sin marcas de agua",
+                  "Soporte premium"
+                ],
+              };
+              trialDaysRemaining = await firebaseSubscriptionService.getTrialDaysRemaining(userId);
+            } else {
+              // Paid plan
+              defaultPlan = {
+                id: updatedSubscription.planId,
+                name: updatedSubscription.planId === 2 ? "Mero Patrón" : "Master Contractor",
+                price: updatedSubscription.planId === 2 ? 4999 : 9999,
+                interval: updatedSubscription.billingCycle,
+                features:
+                  updatedSubscription.planId === 2
+                    ? [
+                        "Unlimited basic estimates",
+                        "50 AI estimates/month",
+                        "Complete invoicing",
+                        "Mervin AI 7.0",
+                      ]
+                    : [
+                        "Complete management features",
+                        "Automated reminders",
+                        "QuickBooks integration",
+                        "Predictive analysis",
+                      ],
+              };
+            }
 
-          res.json({
-            active: true,
-            subscription: {
-              id: subscription.id,
-              status: subscription.status,
-              planId: subscription.planId,
-              currentPeriodStart: subscription.currentPeriodStart,
-              currentPeriodEnd: subscription.currentPeriodEnd,
-              billingCycle: subscription.billingCycle,
-            },
-            plan: defaultPlan,
-          });
+            const responseData: any = {
+              active: true,
+              subscription: {
+                id: updatedSubscription.id,
+                status: updatedSubscription.status,
+                planId: updatedSubscription.planId,
+                currentPeriodStart: updatedSubscription.currentPeriodStart,
+                currentPeriodEnd: updatedSubscription.currentPeriodEnd,
+                billingCycle: updatedSubscription.billingCycle,
+              },
+              plan: defaultPlan,
+            };
+            
+            // Add trial info if it's a trial plan
+            if (updatedSubscription.planId === 4) {
+              responseData.trialDaysRemaining = trialDaysRemaining;
+            }
+            
+            res.json(responseData);
+            return;
+          }
         } else {
-          // User has no paid subscription - return free plan
+          // No existing subscription - create Trial Master for new users
+          console.log(`🎆 [SUBSCRIPTION-USER] No subscription found, creating 21-day Trial Master for: ${userId}`);
+          
+          try {
+            // Create Trial Master subscription
+            await firebaseSubscriptionService.createTrialMasterSubscription(userId);
+            
+            // Get the created trial subscription
+            const trialSubscription = await firebaseSubscriptionService.getUserSubscription(userId);
+            
+            if (trialSubscription) {
+              const trialPlan = {
+                id: 4,
+                name: "Trial Master",
+                price: 0,
+                interval: "trial",
+                features: [
+                  "ACCESO TOTAL por 21 días",
+                  "Todas las funciones premium",
+                  "Sin marcas de agua",
+                  "Soporte premium"
+                ],
+              };
+
+              res.json({
+                active: true,
+                subscription: {
+                  id: trialSubscription.id,
+                  status: trialSubscription.status,
+                  planId: 4,
+                  currentPeriodStart: trialSubscription.currentPeriodStart,
+                  currentPeriodEnd: trialSubscription.currentPeriodEnd,
+                  billingCycle: "trial",
+                },
+                plan: trialPlan,
+                trialDaysRemaining: await firebaseSubscriptionService.getTrialDaysRemaining(userId)
+              });
+              return;
+            }
+          } catch (error) {
+            console.error(`❌ [SUBSCRIPTION-USER] Failed to create trial for ${userId}:`, error);
+          }
+          
+          // Fallback to free plan if trial creation fails
           const defaultPlan = {
             id: 1,
             name: "Primo Chambeador",
@@ -4109,6 +4188,61 @@ Output must be between 200-900 characters in English.`;
       } catch (error) {
         console.error("Error al obtener suscripción del usuario:", error);
         res.status(500).json({ message: "Error al obtener suscripción" });
+      }
+    },
+  );
+
+  // API endpoint to create 21-day trial subscription
+  app.post(
+    "/api/subscription/create-trial",
+    async (req: Request, res: Response) => {
+      try {
+        const { userId } = req.body;
+
+        if (!userId) {
+          return res
+            .status(400)
+            .json({ error: "userId is required" });
+        }
+
+        // Create 21-day Trial Master subscription
+        await firebaseSubscriptionService.createTrialMasterSubscription(userId);
+        
+        const trialSubscription = await firebaseSubscriptionService.getUserSubscription(userId);
+        const trialDaysRemaining = await firebaseSubscriptionService.getTrialDaysRemaining(userId);
+
+        res.json({
+          success: true,
+          message: "21-day Trial Master created successfully",
+          subscription: trialSubscription,
+          trialDaysRemaining
+        });
+      } catch (error) {
+        console.error("Error creating trial subscription:", error);
+        res.status(500).json({ error: "Failed to create trial subscription" });
+      }
+    },
+  );
+
+  // API endpoint to get trial status
+  app.get(
+    "/api/subscription/trial-status/:userId",
+    async (req: Request, res: Response) => {
+      try {
+        const { userId } = req.params;
+        
+        const subscription = await firebaseSubscriptionService.getUserSubscription(userId);
+        const trialDaysRemaining = await firebaseSubscriptionService.getTrialDaysRemaining(userId);
+        
+        res.json({
+          isTrialUser: subscription?.planId === 4,
+          trialDaysRemaining,
+          trialStatus: subscription?.status,
+          trialEndDate: subscription?.currentPeriodEnd
+        });
+      } catch (error) {
+        console.error("Error getting trial status:", error);
+        res.status(500).json({ error: "Failed to get trial status" });
       }
     },
   );

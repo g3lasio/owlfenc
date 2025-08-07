@@ -200,6 +200,40 @@ export class FirebaseSubscriptionService {
   }
 
   /**
+   * Create 21-day Trial Master subscription for new users
+   */
+  async createTrialMasterSubscription(userId: string): Promise<void> {
+    try {
+      console.log(`🧪 [FIREBASE-SUBSCRIPTION] Creating 21-day Trial Master for user: ${userId}`);
+      
+      const currentDate = new Date();
+      const trialEndDate = new Date(currentDate);
+      trialEndDate.setDate(currentDate.getDate() + 21); // 21 days trial
+      
+      const subscriptionData = {
+        id: `trial_${Date.now()}`,
+        status: 'trialing' as const,
+        planId: 4, // Trial Master plan
+        stripeSubscriptionId: `trial_test_${Date.now()}`,
+        stripeCustomerId: `cus_trial_${Date.now()}`,
+        currentPeriodStart: currentDate,
+        currentPeriodEnd: trialEndDate,
+        cancelAtPeriodEnd: true, // Automatically cancel after trial
+        billingCycle: 'monthly' as const,
+        createdAt: currentDate,
+        updatedAt: currentDate
+      };
+
+      subscriptionStorage.set(userId, subscriptionData);
+      
+      console.log(`✅ [FIREBASE-SUBSCRIPTION] Trial Master created - expires: ${trialEndDate.toISOString()}`);
+    } catch (error) {
+      console.error('❌ [FIREBASE-SUBSCRIPTION] Error creating trial subscription:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Create subscription with current date - API method
    */
   async createCurrentSubscription(userId: string, planId: number): Promise<void> {
@@ -230,6 +264,60 @@ export class FirebaseSubscriptionService {
     } catch (error) {
       console.error('❌ [FIREBASE-SUBSCRIPTION] Error creating current subscription:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Check if trial has expired and downgrade to free plan
+   */
+  async checkAndExpireTrial(userId: string): Promise<void> {
+    try {
+      const subscription = await this.getUserSubscription(userId);
+      
+      if (!subscription || subscription.planId !== 4) {
+        return; // Not a trial user
+      }
+
+      const now = new Date();
+      const isExpired = subscription.currentPeriodEnd <= now;
+      
+      if (isExpired && subscription.status === 'trialing') {
+        console.log(`⏰ [FIREBASE-SUBSCRIPTION] Trial expired for user: ${userId}, downgrading to free plan`);
+        
+        // Downgrade to Primo Chambeador (free plan)
+        await this.createOrUpdateSubscription(userId, {
+          status: 'canceled',
+          planId: 1, // Primo Chambeador
+          cancelAtPeriodEnd: true
+        });
+        
+        console.log(`✅ [FIREBASE-SUBSCRIPTION] User downgraded to free plan after trial expiration`);
+      }
+    } catch (error) {
+      console.error('❌ [FIREBASE-SUBSCRIPTION] Error checking trial expiration:', error);
+    }
+  }
+
+  /**
+   * Get remaining trial days for Trial Master users
+   */
+  async getTrialDaysRemaining(userId: string): Promise<number> {
+    try {
+      const subscription = await this.getUserSubscription(userId);
+      
+      if (!subscription || subscription.planId !== 4 || subscription.status !== 'trialing') {
+        return 0; // Not a trial user
+      }
+
+      const now = new Date();
+      const endDate = new Date(subscription.currentPeriodEnd);
+      const diffTime = endDate.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      return Math.max(0, diffDays); // Never return negative days
+    } catch (error) {
+      console.error('❌ [FIREBASE-SUBSCRIPTION] Error getting trial days remaining:', error);
+      return 0;
     }
   }
 }

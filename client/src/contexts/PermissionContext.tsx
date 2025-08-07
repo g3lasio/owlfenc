@@ -38,6 +38,10 @@ export interface PermissionContextValue {
   userUsage: UserUsage | null;
   loading: boolean;
   
+  // Trial information
+  isTrialUser: boolean;
+  trialDaysRemaining: number;
+  
   // Permission methods
   hasAccess: (feature: string) => boolean;
   canUse: (feature: string, count?: number) => boolean;
@@ -159,6 +163,8 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
   const [userPlan, setUserPlan] = useState<Plan | null>(null);
   const [userUsage, setUserUsage] = useState<UserUsage | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isTrialUser, setIsTrialUser] = useState(false);
+  const [trialDaysRemaining, setTrialDaysRemaining] = useState(0);
 
   // Estado para modal de upgrade
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
@@ -205,9 +211,21 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         // Mapear plan del servidor a nuestro formato local
         const plan = PLANS.find(p => p.id === planData.id) || PLANS[0];
         setUserPlan(plan);
+        
+        // Manejar información de trial
+        if (planData.id === 4) {
+          setIsTrialUser(true);
+          setTrialDaysRemaining(data.trialDaysRemaining || 0);
+          console.log(`🆓 [PERMISSION-CONTEXT] Trial Master detected - ${data.trialDaysRemaining} días restantes`);
+        } else {
+          setIsTrialUser(false);
+          setTrialDaysRemaining(0);
+        }
       } else {
         // Por defecto, plan gratuito
         setUserPlan(PLANS[0]);
+        setIsTrialUser(false);
+        setTrialDaysRemaining(0);
       }
     } catch (error) {
       console.error('Error loading user plan:', error);
@@ -370,6 +388,8 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     userPlan,
     userUsage,
     loading,
+    isTrialUser,
+    trialDaysRemaining,
     hasAccess,
     canUse,
     getRemainingUsage,

@@ -205,7 +205,9 @@ export default function SimpleContractGenerator() {
     userUsage,
     incrementUsage, 
     canUse,
-    hasAccess
+    hasAccess,
+    isTrialUser,
+    trialDaysRemaining
   } = usePermissions();
 
   // Get current plan information for UI restrictions
@@ -213,6 +215,7 @@ export default function SimpleContractGenerator() {
   const isPrimoChambeador = currentPlan?.id === 1;
   const isMeroPatron = currentPlan?.id === 2;
   const isMasterContractor = currentPlan?.id === 3;
+  const isTrialMaster = currentPlan?.id === 4;
   const isFreePlan = currentPlan?.id === 0 || !currentPlan;
   
   // Contract limits by plan
@@ -220,8 +223,8 @@ export default function SimpleContractGenerator() {
   const contractsUsed = userUsage?.contracts || 0;
   const hasReachedContractLimit = contractLimit && contractsUsed >= contractLimit;
   
-  // Check if signature protocol is available (Master Contractor only)
-  const isSignatureProtocolAvailable = () => isMasterContractor;
+  // Check if signature protocol is available (Master Contractor and Trial Master)
+  const isSignatureProtocolAvailable = () => isMasterContractor || isTrialMaster || isTrialUser;
   
   // Check contract access function
   const checkContractAccess = () => {
@@ -231,6 +234,7 @@ export default function SimpleContractGenerator() {
         reason: "Upgrade to Mero Patrón to unlock contract generation"
       };
     }
+    // Trial Master and paid plans have full access
     return { allowed: true };
   };
 
@@ -2111,7 +2115,7 @@ export default function SimpleContractGenerator() {
   const handleDownloadPDF = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid) return;
 
-    // Check contract access permissions
+    // Check contract access permissions (Trial Master and paid plans have full access)
     if (isPrimoChambeador) {
       toast({
         title: "Upgrade Required",
@@ -2340,7 +2344,7 @@ export default function SimpleContractGenerator() {
   const handleGenerateContract = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid) return;
 
-    // Check contract access permissions
+    // Check contract access permissions (Trial Master has full access)
     if (isPrimoChambeador) {
       toast({
         title: "Upgrade Required",
@@ -4521,12 +4525,17 @@ export default function SimpleContractGenerator() {
                         className={`font-bold py-3 px-8 relative ${
                           isPrimoChambeador 
                             ? "bg-gray-600 text-gray-400 cursor-not-allowed" 
-                            : "bg-green-600 hover:bg-green-500 text-white"
+                            : isTrialMaster 
+                              ? "bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white"
+                              : "bg-green-600 hover:bg-green-500 text-white"
                         }`}
                       >
                         <div className="flex items-center gap-2">
                           {isPrimoChambeador && (
                             <Lock className="h-4 w-4" />
+                          )}
+                          {isTrialMaster && (
+                            <span className="text-xs bg-yellow-400 text-black px-1 rounded mr-1">TRIAL</span>
                           )}
                           {isLoading ? "Generating..." : "Generate Contract"}
                         </div>
@@ -4572,7 +4581,9 @@ export default function SimpleContractGenerator() {
                           className={`font-medium py-2 px-4 w-full text-sm relative ${
                             isPrimoChambeador 
                               ? "bg-gray-600 text-gray-400 cursor-not-allowed" 
-                              : "bg-blue-600 hover:bg-blue-500 text-white"
+                              : isTrialMaster 
+                                ? "bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white"
+                                : "bg-blue-600 hover:bg-blue-500 text-white"
                           }`}
                         >
                           <div className="flex items-center justify-center gap-2">
@@ -4583,7 +4594,7 @@ export default function SimpleContractGenerator() {
                             ) : (
                               <Download className="h-4 w-4" />
                             )}
-                            {isPrimoChambeador ? "Upgrade Required" : isLoading ? "Generating..." : "Download PDF"}
+                            {isPrimoChambeador ? "Upgrade Required" : (isTrialMaster || isTrialUser) ? `Download PDF (Trial - ${trialDaysRemaining}d)` : isLoading ? "Generating..." : "Download PDF"}
                           </div>
                           {isPrimoChambeador && (
                             <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-yellow-600 text-black px-2 py-1 rounded text-xs font-medium whitespace-nowrap">
@@ -4642,7 +4653,7 @@ export default function SimpleContractGenerator() {
                         <Button
                           onClick={handleStartSignatureProtocol}
                           disabled={
-                            isLoading || !contractHTML || isMultiChannelActive || !isMasterContractor
+                            isLoading || !contractHTML || isMultiChannelActive || (!isMasterContractor && !isTrialMaster && !isTrialUser)
                           }
                           className={`w-full py-3 font-medium transition-all relative ${
                             isLoading
@@ -4651,9 +4662,11 @@ export default function SimpleContractGenerator() {
                                 ? "bg-green-600 text-white"
                                 : !contractHTML
                                   ? "bg-gray-600 cursor-not-allowed text-gray-400"
-                                  : !isMasterContractor
+                                  : (!isMasterContractor && !isTrialMaster && !isTrialUser)
                                     ? "bg-gray-600 cursor-not-allowed text-gray-400"
-                                    : "bg-cyan-600 hover:bg-cyan-500 text-white"
+                                    : isTrialMaster
+                                      ? "bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white"
+                                      : "bg-cyan-600 hover:bg-cyan-500 text-white"
                           }`}
                         >
                           {isLoading ? (
@@ -4671,7 +4684,7 @@ export default function SimpleContractGenerator() {
                               <AlertCircle className="h-4 w-4" />
                               <span>Contract Required</span>
                             </div>
-                          ) : !isMasterContractor ? (
+                          ) : (!isMasterContractor && !isTrialMaster && !isTrialUser) ? (
                             <div className="flex items-center justify-center gap-2">
                               <Lock className="h-4 w-4" />
                               <span>Master Contractor Only</span>
@@ -4679,15 +4692,33 @@ export default function SimpleContractGenerator() {
                           ) : (
                             <div className="flex items-center justify-center gap-2">
                               <Shield className="h-4 w-4" />
-                              <span>Start Signature Protocol</span>
+                              <span>{(isTrialMaster || isTrialUser) ? `Start Signature Protocol (Trial - ${trialDaysRemaining}d)` : "Start Signature Protocol"}</span>
                             </div>
                           )}
                         </Button>
 
                         {/* Premium Feature Notice */}
-                        {!isMasterContractor && (
+                        {!isMasterContractor && !isTrialMaster && !isTrialUser && (
                           <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-purple-600 text-white px-3 py-1 rounded text-xs font-medium whitespace-nowrap">
                             🚀 Exclusive to Master Contractor
+                          </div>
+                        )}
+                        
+                        {/* Trial Master Notice - Enhanced with countdown */}
+                        {(isTrialMaster || isTrialUser) && (
+                          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-purple-600 to-cyan-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-lg border-2 border-white/20">
+                            <div className="flex items-center gap-2 whitespace-nowrap">
+                              <span className="text-yellow-300">🚀</span>
+                              <span>Trial Master</span>
+                              <span className="bg-white/20 px-2 py-1 rounded text-xs font-bold">
+                                {trialDaysRemaining > 0 ? `${trialDaysRemaining} días` : '¡Último día!'}
+                              </span>
+                            </div>
+                            {trialDaysRemaining <= 3 && trialDaysRemaining > 0 && (
+                              <div className="text-yellow-200 text-xs mt-1 animate-pulse">
+                                ⚡ Trial terminando pronto
+                              </div>
+                            )}
                           </div>
                         )}
 
