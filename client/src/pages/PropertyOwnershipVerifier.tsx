@@ -483,143 +483,94 @@ export default function PropertyOwnershipVerifier() {
                           <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
                             Verificación Completada
                           </h2>
-                          <p className="text-slate-400 text-xs sm:text-sm mt-1">Datos extraídos de ATTOM Data API</p>
+                          <p className="text-slate-400 text-xs sm:text-sm mt-1">Información verificada exitosamente</p>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                  {/* Ownership Information - Mobile Optimized */}
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 sm:from-cyan-500/30 to-blue-500/20 sm:to-blue-500/30 rounded-xl blur-sm sm:blur-md group-hover:blur-lg transition-all duration-300"></div>
-                    <Card className="relative border-2 border-cyan-400/60 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm hover:border-cyan-300/80 transition-all duration-300">
-                      <CardHeader className="pb-2 sm:pb-3">
-                        <CardTitle className="flex items-center gap-2 sm:gap-3">
-                          <div className="relative">
-                            <User className="h-5 w-5 sm:h-6 sm:w-6 text-cyan-400" />
-                            <div className="absolute inset-0 h-5 w-5 sm:h-6 sm:w-6 bg-cyan-400/20 rounded-full animate-pulse"></div>
-                          </div>
-                          <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent font-bold text-sm sm:text-base">
-                            Información de Titularidad
-                          </span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3 sm:space-y-4">
-                        <div className="space-y-2 sm:space-y-3">
-                          <div className="group/item">
-                            <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-cyan-500/50 transition-colors">
-                              <Users className="h-4 w-4 text-cyan-400 mt-0.5 flex-shrink-0" />
-                              <div className="min-w-0 flex-1">
-                                <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Propietario(s)</div>
-                                <div className="text-white font-medium mt-1 text-sm sm:text-base break-words">{propertyDetails.owner}</div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="group/item">
-                            <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-cyan-500/50 transition-colors">
-                              <MapPin className="h-4 w-4 text-cyan-400 mt-0.5 flex-shrink-0" />
-                              <div className="min-w-0 flex-1">
-                                <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Dirección</div>
-                                <div className="text-white font-medium mt-1 text-sm sm:text-base break-words leading-relaxed">{propertyDetails.address}</div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="group/item">
-                            <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-cyan-500/50 transition-colors">
-                              <Shield className="h-4 w-4 text-cyan-400 mt-0.5 flex-shrink-0" />
-                              <div className="min-w-0 flex-1">
-                                <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Estado de Verificación</div>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <Badge 
-                                    variant={propertyDetails.verified ? "default" : "outline"} 
-                                    className={`text-xs ${propertyDetails.verified 
-                                      ? "bg-green-500/20 text-green-400 border-green-500/50" 
-                                      : "bg-red-500/20 text-red-400 border-red-500/50"
-                                    }`}
-                                  >
-                                    {propertyDetails.verified ? "✓ Verificado" : "⚠ No Verificado"}
-                                  </Badge>
-                                </div>
-                              </div>
-                            </div>
+                {/* Compact Verification Summary */}
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 rounded-xl blur-sm group-hover:blur-md transition-all duration-300"></div>
+                  <Card className="relative border-2 border-cyan-400/60 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm hover:border-cyan-300/80 transition-all duration-300">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 sm:gap-3">
+                        <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-cyan-400" />
+                        <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent font-bold text-base sm:text-lg">
+                          Resumen de Verificación
+                        </span>
+                        <Badge 
+                          variant="default" 
+                          className="bg-green-500/20 text-green-400 border-green-500/50 ml-auto text-xs"
+                        >
+                          ✓ Verificado
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {/* Owner & Address Row */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
+                          <Users className="h-4 w-4 text-cyan-400 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs text-slate-400 uppercase tracking-wider">Propietario</div>
+                            <div className="text-white font-medium text-sm truncate">{propertyDetails.owner}</div>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Property Details - Mobile Optimized */}
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 sm:from-purple-500/30 to-pink-500/20 sm:to-pink-500/30 rounded-xl blur-sm sm:blur-md group-hover:blur-lg transition-all duration-300"></div>
-                    <Card className="relative border-2 border-purple-400/60 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm hover:border-purple-300/80 transition-all duration-300">
-                      <CardHeader className="pb-2 sm:pb-3">
-                        <CardTitle className="flex items-center gap-2 sm:gap-3">
-                          <div className="relative">
-                            <Home className="h-5 w-5 sm:h-6 sm:w-6 text-purple-400" />
-                            <div className="absolute inset-0 h-5 w-5 sm:h-6 sm:w-6 bg-purple-400/20 rounded-full animate-pulse"></div>
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
+                          <MapPin className="h-4 w-4 text-cyan-400 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs text-slate-400 uppercase tracking-wider">Dirección</div>
+                            <div className="text-white font-medium text-sm truncate">{propertyDetails.address}</div>
                           </div>
-                          <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent font-bold text-sm sm:text-base">
-                            Detalles de la Propiedad
-                          </span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3 sm:space-y-4">
-                        <div className="space-y-2 sm:space-y-3">
-                          {propertyDetails.yearBuilt && (
-                            <div className="group/item">
-                              <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-purple-500/50 transition-colors">
-                                <Calendar className="h-4 w-4 text-purple-400 mt-0.5 flex-shrink-0" />
-                                <div className="min-w-0 flex-1">
-                                  <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Año de Construcción</div>
-                                  <div className="text-white font-medium mt-1 text-sm sm:text-base">{propertyDetails.yearBuilt}</div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {propertyDetails.sqft && (
-                            <div className="group/item">
-                              <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-purple-500/50 transition-colors">
-                                <Ruler className="h-4 w-4 text-purple-400 mt-0.5 flex-shrink-0" />
-                                <div className="min-w-0 flex-1">
-                                  <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Área Total</div>
-                                  <div className="text-white font-medium mt-1 text-sm sm:text-base">{propertyDetails.sqft.toLocaleString()} pies²</div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {propertyDetails.bedrooms > 0 && (
-                            <div className="group/item">
-                              <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-purple-500/50 transition-colors">
-                                <Bed className="h-4 w-4 text-purple-400 mt-0.5 flex-shrink-0" />
-                                <div className="min-w-0 flex-1">
-                                  <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Habitaciones</div>
-                                  <div className="text-white font-medium mt-1 text-sm sm:text-base">{propertyDetails.bedrooms} dormitorios</div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {propertyDetails.purchasePrice && (
-                            <div className="group/item">
-                              <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-purple-500/50 transition-colors">
-                                <DollarSign className="h-4 w-4 text-purple-400 mt-0.5 flex-shrink-0" />
-                                <div className="min-w-0 flex-1">
-                                  <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Precio de Compra</div>
-                                  <div className="text-white font-medium mt-1 text-sm sm:text-base">${propertyDetails.purchasePrice.toLocaleString()}</div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  </div>
+                      </div>
+
+                      {/* Property Details Row */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {propertyDetails.yearBuilt && (
+                          <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/30">
+                            <Calendar className="h-3 w-3 text-purple-400" />
+                            <div>
+                              <div className="text-xs text-slate-400">Año</div>
+                              <div className="text-white text-sm font-medium">{propertyDetails.yearBuilt}</div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {propertyDetails.sqft && (
+                          <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/30">
+                            <Ruler className="h-3 w-3 text-purple-400" />
+                            <div>
+                              <div className="text-xs text-slate-400">Área</div>
+                              <div className="text-white text-sm font-medium">{propertyDetails.sqft.toLocaleString()}</div>
+                            </div>
+                          </div>
+                        )}
+
+                        {propertyDetails.bedrooms > 0 && (
+                          <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/30">
+                            <Bed className="h-3 w-3 text-purple-400" />
+                            <div>
+                              <div className="text-xs text-slate-400">Cuartos</div>
+                              <div className="text-white text-sm font-medium">{propertyDetails.bedrooms}</div>
+                            </div>
+                          </div>
+                        )}
+
+                        {propertyDetails.purchasePrice && (
+                          <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/30">
+                            <DollarSign className="h-3 w-3 text-purple-400" />
+                            <div>
+                              <div className="text-xs text-slate-400">Precio</div>
+                              <div className="text-white text-sm font-medium">${(propertyDetails.purchasePrice / 1000).toFixed(0)}k</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
 
                 {/* Action Buttons - Mobile Optimized */}
