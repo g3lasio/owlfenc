@@ -61,6 +61,20 @@ class SecureAttomService {
     let state = '';
     let zip = '';
     
+    // Map of full state names to abbreviations
+    const stateMap: { [key: string]: string } = {
+      'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA',
+      'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'Florida': 'FL', 'Georgia': 'GA',
+      'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA',
+      'Kansas': 'KS', 'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+      'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS', 'Missouri': 'MO',
+      'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ',
+      'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH',
+      'Oklahoma': 'OK', 'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+      'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT', 'Vermont': 'VT',
+      'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY'
+    };
+    
     if (parts.length >= 1) {
       address1 = parts[0]; // Street address
     }
@@ -69,14 +83,34 @@ class SecureAttomService {
       city = parts[1]; // City
     }
     
-    if (parts.length >= 3) {
-      // Extract state and ZIP from last part
-      const lastPart = parts[2];
-      const stateZipMatch = lastPart.match(/([A-Z]{2})\s*(\d{5}(?:-\d{4})?)?/);
-      if (stateZipMatch) {
-        state = stateZipMatch[1];
-        if (stateZipMatch[2]) {
-          zip = stateZipMatch[2];
+    // Process remaining parts to extract state and zip
+    for (let i = 2; i < parts.length; i++) {
+      const part = parts[i];
+      
+      // Skip country names
+      if (part.toLowerCase().includes('estados unidos') || 
+          part.toLowerCase().includes('united states') || 
+          part.toLowerCase().includes('usa')) {
+        continue;
+      }
+      
+      // Look for ZIP code in this part
+      const zipMatch = part.match(/\b(\d{5}(?:-\d{4})?)\b/);
+      if (zipMatch) {
+        zip = zipMatch[1];
+      }
+      
+      // Look for state (either abbreviation or full name)
+      const stateAbbrevMatch = part.match(/\b([A-Z]{2})\b/);
+      if (stateAbbrevMatch) {
+        state = stateAbbrevMatch[1];
+      } else {
+        // Check if the part contains a full state name
+        for (const [fullName, abbrev] of Object.entries(stateMap)) {
+          if (part.toLowerCase().includes(fullName.toLowerCase())) {
+            state = abbrev;
+            break;
+          }
         }
       }
     }
