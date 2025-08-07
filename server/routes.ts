@@ -6031,12 +6031,36 @@ Output must be between 200-900 characters in English.`;
   });
 
   // Endpoint para Mervin DeepSearch - Permite consultar permisos y regulaciones para proyectos de construcción
-  // Endpoints para el historial de búsqueda de permisos
+  // Endpoints para el historial de búsqueda de permisos (PROTEGIDO POR AUTENTICACIÓN)
   app.get("/api/permit/history", async (req: Request, res: Response) => {
     try {
-      // En una aplicación real, obtendríamos el userId de la sesión
-      const userId = 1; // ID de usuario por defecto
+      // Obtener el token de autorización
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ 
+          message: "Token de autorización requerido",
+          error: "NO_AUTH_TOKEN" 
+        });
+      }
 
+      const token = authHeader.split(' ')[1];
+      
+      // Verificar el token con Firebase Admin
+      let decodedToken;
+      try {
+        decodedToken = await admin.auth().verifyIdToken(token);
+      } catch (tokenError) {
+        console.error("Error verificando token Firebase:", tokenError);
+        return res.status(401).json({ 
+          message: "Token inválido",
+          error: "INVALID_TOKEN" 
+        });
+      }
+
+      const userId = decodedToken.uid;
+      console.log(`📋 [PERMIT-HISTORY] Obteniendo historial para usuario: ${userId}`);
+
+      // Solo obtener historial del usuario autenticado
       const history = await storage.getPermitSearchHistoryByUserId(userId);
       res.json(history);
     } catch (error) {
@@ -6073,6 +6097,32 @@ Output must be between 200-900 characters in English.`;
   app.post("/api/permit/check", async (req: Request, res: Response) => {
     try {
       console.log("===== INICIO DE SOLICITUD MERVIN DEEPSEARCH ENHANCED =====");
+
+      // Verificar autenticación Firebase ANTES de procesar
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ 
+          message: "Autenticación requerida para consultar permisos",
+          error: "NO_AUTH_TOKEN" 
+        });
+      }
+
+      const token = authHeader.split(' ')[1];
+      
+      // Verificar el token con Firebase Admin
+      let decodedToken;
+      try {
+        decodedToken = await admin.auth().verifyIdToken(token);
+      } catch (tokenError) {
+        console.error("Error verificando token Firebase:", tokenError);
+        return res.status(401).json({ 
+          message: "Token inválido",
+          error: "INVALID_TOKEN" 
+        });
+      }
+
+      const authenticatedUserId = decodedToken.uid;
+      console.log(`🔐 [PERMIT-SEARCH] Usuario autenticado: ${authenticatedUserId}`);
 
       // Validar el esquema de la solicitud
       const permitSchema = z.object({
@@ -6135,10 +6185,9 @@ Output must be between 200-900 characters in English.`;
       console.log(`🚀 Solicitud ENHANCED completada en ${endTime - startTime}ms`);
       console.log("📋 Building codes específicos del proyecto generados correctamente");
 
-      // Guardar la búsqueda en el historial
+      // Guardar la búsqueda en el historial DEL USUARIO AUTENTICADO
       try {
-        // En una aplicación real, obtendríamos el userId de la sesión
-        const userId = 1; // ID de usuario por defecto
+        console.log(`💾 [PERMIT-SAVE] Guardando historial para usuario: ${authenticatedUserId}`);
 
         // Crear un título basado en los parámetros de búsqueda
         const title = `${projectType} en ${address}`;
@@ -6146,9 +6195,9 @@ Output must be between 200-900 characters in English.`;
         // Obtener la descripción del proyecto si está disponible
         const projectDescription = req.body.projectDescription || "";
 
-        // Guardar en el historial
+        // Guardar en el historial con el userId real del usuario autenticado
         const historyData = {
-          userId,
+          userId: authenticatedUserId, // ¡CRÍTICO! Usar el usuario autenticado real
           address,
           projectType,
           projectDescription,
@@ -6160,9 +6209,9 @@ Output must be between 200-900 characters in English.`;
         const validHistoryData =
           insertPermitSearchHistorySchema.parse(historyData);
 
-        // Guardar en la base de datos
+        // Guardar en la base de datos con aislamiento por usuario
         await storage.createPermitSearchHistory(validHistoryData);
-        console.log("Búsqueda guardada en el historial");
+        console.log(`✅ [PERMIT-SAVED] Búsqueda guardada en historial para usuario: ${authenticatedUserId}`);
       } catch (historyError) {
         // En caso de error al guardar el historial, solo lo registramos pero no interrumpimos la respuesta
         console.error("Error al guardar historial de búsqueda:", historyError);

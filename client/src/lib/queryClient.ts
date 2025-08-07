@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { auth } from "@/lib/firebase";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -7,14 +8,44 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {};
+  
+  // Obtener token de Firebase si el usuario está autenticado
+  if (auth.currentUser) {
+    try {
+      const token = await auth.currentUser.getIdToken();
+      headers["Authorization"] = `Bearer ${token}`;
+      console.log("🔐 [API-REQUEST] Token de autenticación incluido en request");
+    } catch (error) {
+      console.warn("⚠️ [API-REQUEST] Error obteniendo token de Firebase:", error);
+    }
+  } else {
+    console.warn("⚠️ [API-REQUEST] Usuario no autenticado - enviando request sin token");
+  }
+  
+  return headers;
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  // Obtener headers de autenticación
+  const authHeaders = await getAuthHeaders();
+  
+  // Combinar headers
+  const headers = {
+    ...authHeaders,
+    ...(data ? { "Content-Type": "application/json" } : {}),
+  };
+
+  console.log(`🌐 [API-REQUEST] ${method} ${url} - Con autenticación: ${!!authHeaders.Authorization}`);
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -35,7 +66,13 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    // Obtener headers de autenticación para queries también
+    const authHeaders = await getAuthHeaders();
+    
+    console.log(`🔍 [QUERY] GET ${queryKey[0]} - Con autenticación: ${!!authHeaders.Authorization}`);
+
     const res = await fetch(queryKey[0] as string, {
+      headers: authHeaders,
       credentials: "include",
     });
 
