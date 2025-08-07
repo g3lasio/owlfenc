@@ -799,7 +799,7 @@ app.post('/api/generate-contract-html', async (req, res) => {
 
     res.json({
       success: true,
-      contractHTML: contractHTML,
+      html: contractHTML,
       contractData: contractData
     });
 
