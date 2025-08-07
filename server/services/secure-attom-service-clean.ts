@@ -34,6 +34,7 @@ class SecureAttomService {
     console.log('🔧 [ATTOM-CONFIG] API Key configured:', Boolean(this.apiKey));
     console.log('🔧 [ATTOM-CONFIG] API Key length:', this.apiKey.length);
     console.log('🔧 [ATTOM-CONFIG] API Key preview:', this.apiKey.substring(0, 8) + '...');
+    console.log('🔧 [ATTOM-CONFIG] Base URL:', this.baseURL);
   }
 
   private isConfigured(): boolean {
@@ -43,6 +44,7 @@ class SecureAttomService {
   private getSecureHeaders() {
     return {
       'Accept': 'application/json',
+      'Content-Type': 'application/json',
       'apikey': this.apiKey,
       'User-Agent': 'PropertyVerifier/1.0'
     };
@@ -131,6 +133,7 @@ class SecureAttomService {
    */
   private async makeSecureRequest(endpoint: string, params: any): Promise<any> {
     console.log('🌐 [ATTOM-REQUEST] Making request to:', endpoint);
+    console.log('🌐 [ATTOM-REQUEST] Full URL:', `${this.baseURL}${endpoint}`);
     console.log('🌐 [ATTOM-REQUEST] Params:', JSON.stringify(params, null, 2));
     
     if (!this.isConfigured()) {
@@ -143,25 +146,68 @@ class SecureAttomService {
       const response = await axios.get(`${this.baseURL}${endpoint}`, {
         params,
         headers: this.getSecureHeaders(),
-        timeout: this.timeout
+        timeout: this.timeout,
+        validateStatus: (status) => status < 500, // Don't throw on 4xx errors
       });
       
       const responseTime = Date.now() - startTime;
       console.log(`⏱️ [ATTOM-REQUEST] Response time: ${responseTime}ms`);
       console.log(`📊 [ATTOM-REQUEST] Status: ${response.status}`);
       
+      // Log detailed response for debugging
+      if (response.status !== 200) {
+        console.log('📋 [ATTOM-REQUEST] Response data:', JSON.stringify(response.data, null, 2));
+        console.log('📋 [ATTOM-REQUEST] Response headers:', JSON.stringify(response.headers, null, 2));
+      }
+      
+      if (response.status === 401 || response.status === 403) {
+        console.error('🚫 [ATTOM-REQUEST] API authentication failed');
+        throw new Error('ATTOM API authentication failed. Please check your API key.');
+      }
+      
+      if (response.status === 404) {
+        console.log('📭 [ATTOM-REQUEST] Property not found in ATTOM database');
+        return null;
+      }
+      
+      if (response.status === 400) {
+        // ATTOM returns 400 with "SuccessWithoutResult" when property is not found
+        if (response.data?.status?.msg === 'SuccessWithoutResult') {
+          console.log('📭 [ATTOM-REQUEST] Property not found (SuccessWithoutResult)');
+          return null;
+        } else {
+          console.error('⚠️ [ATTOM-REQUEST] Bad request - Invalid parameters');
+          console.error('📋 [ATTOM-REQUEST] Error details:', response.data);
+          throw new Error(`Bad request: ${response.data?.message || 'Invalid parameters sent to ATTOM API'}`);
+        }
+      }
+      
       if (response.status === 200 && response.data) {
         console.log('✅ [ATTOM-REQUEST] Request successful');
         return response.data;
       }
       
-      console.log('⚠️ [ATTOM-REQUEST] API returned status', response.status);
+      console.log('⚠️ [ATTOM-REQUEST] API returned unexpected status', response.status);
       throw new Error(`API request failed with status ${response.status}`);
       
     } catch (error: any) {
       const responseTime = Date.now() - startTime;
       console.error(`❌ [ATTOM-REQUEST] Request failed after ${responseTime}ms`);
-      console.error('🚨 [ATTOM-REQUEST] Request failed:', error.message);
+      
+      if (error.code === 'ECONNABORTED') {
+        console.error('⏰ [ATTOM-REQUEST] Request timed out');
+        throw new Error('ATTOM API request timed out');
+      }
+      
+      if (error.response) {
+        console.error('🚨 [ATTOM-REQUEST] HTTP Error:', error.response.status);
+        console.error('📋 [ATTOM-REQUEST] Error data:', error.response.data);
+      } else if (error.request) {
+        console.error('🌐 [ATTOM-REQUEST] No response received');
+      } else {
+        console.error('🚨 [ATTOM-REQUEST] Error:', error.message);
+      }
+      
       throw error;
     }
   }
