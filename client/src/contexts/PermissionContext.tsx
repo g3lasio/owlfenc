@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 
 // Tipos para el sistema de permisos
@@ -165,16 +165,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
   const [upgradeMessage, setUpgradeMessage] = useState('');
   const [upgradeFeature, setUpgradeFeature] = useState('');
 
-  useEffect(() => {
-    if (currentUser) {
-      loadUserPlan();
-      loadUserUsage();
-    } else {
-      setLoading(false);
-    }
-  }, [currentUser]);
-
-  const loadUserPlan = async () => {
+  const loadUserPlan = useCallback(async () => {
     try {
       // Verificar simulación de desarrollo primero
       const devSimulation = localStorage.getItem('dev_user_plan_simulation');
@@ -222,9 +213,9 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
       console.error('Error loading user plan:', error);
       setUserPlan(PLANS[0]); // Fallback al plan gratuito
     }
-  };
+  }, []);
 
-  const loadUserUsage = async () => {
+  const loadUserUsage = useCallback(async () => {
     if (!currentUser) return;
 
     try {
@@ -237,6 +228,8 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
       
       if (response.ok) {
         const usage = await response.json();
+        console.log(`✅ [PERMISSION-CONTEXT] Datos de uso cargados exitosamente:`, usage);
+        console.log(`📊 [PERMISSION-CONTEXT] propertyVerifications: ${usage.propertyVerifications}, permitAdvisor: ${usage.permitAdvisor}`);
         setUserUsage(usage);
       } else {
         // Inicializar uso vacío para el mes actual
@@ -255,7 +248,29 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser]);
+
+  // Simplified useEffect to prevent dependency loops
+  useEffect(() => {
+    if (currentUser) {
+      console.log(`🔄 [PERMISSION-CONTEXT] Cargando datos para usuario: ${currentUser.uid}`);
+      loadUserPlan();
+      loadUserUsage();
+    } else {
+      console.log(`🔄 [PERMISSION-CONTEXT] No hay usuario - usando estado por defecto`);
+      setUserPlan(PLANS[0]); // Plan por defecto
+      setUserUsage({
+        basicEstimates: 0,
+        aiEstimates: 0,
+        contracts: 0,
+        propertyVerifications: 0,
+        permitAdvisor: 0,
+        projects: 0,
+        month: new Date().toISOString().slice(0, 7)
+      });
+      setLoading(false);
+    }
+  }, [currentUser?.uid]); // Solo depender del UID del usuario
 
   const hasAccess = (feature: string): boolean => {
     if (!userPlan) return false;
@@ -277,7 +292,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     if (limit === 0) return false;
 
     // Verificar si tiene uso disponible
-    return (usage + count) <= limit;
+    return (Number(usage) + count) <= limit;
   };
 
   const getRemainingUsage = (feature: string): number => {
@@ -289,7 +304,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     if (limit === -1) return 999999; // Ilimitado
     if (limit === 0) return 0; // Sin acceso
 
-    return Math.max(0, limit - usage);
+    return Math.max(0, limit - Number(usage));
   };
 
   const isLimitReached = (feature: string): boolean => {
