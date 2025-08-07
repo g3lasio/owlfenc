@@ -5,6 +5,7 @@
 
 import { Router } from "express";
 import { dualSignatureService } from "../services/dualSignatureService";
+import { verifyFirebaseAuth } from "../middleware/firebase-auth";
 import { z } from "zod";
 
 const router = Router();
@@ -318,10 +319,21 @@ router.get("/download/:contractId", async (req, res) => {
 /**
  * GET /api/dual-signature/in-progress/:userId
  * Obtener todos los contratos en progreso (pendientes de firma) de un usuario
+ * SECURED: Requires authentication and ownership verification
  */
-router.get("/in-progress/:userId", async (req, res) => {
+router.get("/in-progress/:userId", verifyFirebaseAuth, async (req, res) => {
   try {
     const { userId } = req.params;
+    const authenticatedUserId = req.firebaseUser?.uid;
+
+    // SECURITY: Verify that the authenticated user matches the requested userId
+    if (authenticatedUserId !== userId) {
+      console.warn(`🚨 [SECURITY] User ${authenticatedUserId} attempted to access contracts for user ${userId}`);
+      return res.status(403).json({
+        success: false,
+        message: "Access denied: You can only view your own contracts"
+      });
+    }
 
     console.log("📋 [API] Getting in-progress contracts for user:", userId);
 
@@ -384,10 +396,21 @@ router.get("/in-progress/:userId", async (req, res) => {
 /**
  * GET /api/dual-signature/completed/:userId
  * Obtener todos los contratos completados de un usuario
+ * SECURED: Requires authentication and ownership verification
  */
-router.get("/completed/:userId", async (req, res) => {
+router.get("/completed/:userId", verifyFirebaseAuth, async (req, res) => {
   try {
     const { userId } = req.params;
+    const authenticatedUserId = req.firebaseUser?.uid;
+
+    // SECURITY: Verify that the authenticated user matches the requested userId
+    if (authenticatedUserId !== userId) {
+      console.warn(`🚨 [SECURITY] User ${authenticatedUserId} attempted to access contracts for user ${userId}`);
+      return res.status(403).json({
+        success: false,
+        message: "Access denied: You can only view your own contracts"
+      });
+    }
 
     console.log("📋 [API] Getting completed contracts for user:", userId);
 
@@ -395,6 +418,20 @@ router.get("/completed/:userId", async (req, res) => {
     const { db } = await import("../db");
     const { digitalContracts } = await import("../../shared/schema");
     const { eq } = await import("drizzle-orm");
+    
+    // PLAN RESTRICTIONS: Get user's plan to enforce contract limits
+    const userPlanResponse = await fetch(`http://localhost:5000/api/user/subscription`, {
+      headers: {
+        'Authorization': `Bearer ${authenticatedUserId}`,
+        'x-firebase-uid': authenticatedUserId
+      }
+    });
+    
+    let userPlan = null;
+    if (userPlanResponse.ok) {
+      const planData = await userPlanResponse.json();
+      userPlan = planData.subscription;
+    }
 
     const completedContracts = await db
       .select()
@@ -422,8 +459,22 @@ router.get("/completed/:userId", async (req, res) => {
       );
     });
 
+    // PLAN RESTRICTIONS: Apply contract access limits based on user plan
+    let filteredContracts = fullyCompletedContracts;
+    
+    if (userPlan?.id === 1) {
+      // Primo Chambeador: Limited access (up to 5 contracts)
+      console.log(`📋 [PLAN-RESTRICTION] Applying Primo Chambeador limits: showing max 5 contracts`);
+      filteredContracts = fullyCompletedContracts.slice(0, 5);
+    } else if (userPlan?.id === 2) {
+      // Mero Patrón: Limited access (up to 50 contracts)
+      console.log(`📋 [PLAN-RESTRICTION] Applying Mero Patrón limits: showing max 50 contracts`);
+      filteredContracts = fullyCompletedContracts.slice(0, 50);
+    }
+    // Master Contractor (id === 3): No restrictions
+    
     // Transform data for frontend - all fully signed contracts
-    const contractsForFrontend = fullyCompletedContracts.map((contract) => ({
+    const contractsForFrontend = filteredContracts.map((contract) => ({
       contractId: contract.contractId,
       status: contract.status,
       contractorName: contract.contractorName,
@@ -445,6 +496,13 @@ router.get("/completed/:userId", async (req, res) => {
       success: true,
       contracts: contractsForFrontend,
       total: contractsForFrontend.length,
+      planInfo: {
+        planId: userPlan?.id || 'free',
+        planName: userPlan?.name || 'Free Trial',
+        totalAvailable: fullyCompletedContracts.length,
+        shownCount: contractsForFrontend.length,
+        isLimited: userPlan?.id === 1 || userPlan?.id === 2
+      }
     });
   } catch (error: any) {
     console.error("❌ [API] Error in /completed/:userId:", error);
@@ -459,10 +517,21 @@ router.get("/completed/:userId", async (req, res) => {
 /**
  * GET /api/dual-signature/drafts/:userId
  * Obtener todos los contratos en borrador de un usuario
+ * SECURED: Requires authentication and ownership verification
  */
-router.get("/drafts/:userId", async (req, res) => {
+router.get("/drafts/:userId", verifyFirebaseAuth, async (req, res) => {
   try {
     const { userId } = req.params;
+    const authenticatedUserId = req.firebaseUser?.uid;
+
+    // SECURITY: Verify that the authenticated user matches the requested userId
+    if (authenticatedUserId !== userId) {
+      console.warn(`🚨 [SECURITY] User ${authenticatedUserId} attempted to access contracts for user ${userId}`);
+      return res.status(403).json({
+        success: false,
+        message: "Access denied: You can only view your own contracts"
+      });
+    }
 
     console.log("📋 [API] Getting draft contracts for user:", userId);
 

@@ -1816,7 +1816,7 @@ export default function SimpleContractGenerator() {
 
     const projectsQuery = query(
       collection(db, "projects"),
-      where("userId", "==", currentUser.uid),
+      where("firebaseUserId", "==", currentUser.uid),
     );
 
     // Real-time listener with enhanced error handling and data validation
