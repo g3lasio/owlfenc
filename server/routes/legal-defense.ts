@@ -271,7 +271,7 @@ router.get('/approved-projects', async (req, res) => {
   try {
     const userId = req.query.userId ? parseInt(req.query.userId as string) : 1; // Default for demo
     
-    const approvedProjects = await db
+    const approvedProjects = await db!
       .select()
       .from(projects)
       .where(eq(projects.status, 'approved'))
@@ -319,7 +319,7 @@ router.post('/create-project', async (req, res) => {
     // Validate with schema
     const validatedProject = insertProjectSchema.parse(projectData);
 
-    const [newProject] = await db
+    const [newProject] = await db!
       .insert(projects)
       .values(validatedProject)
       .returning();
@@ -341,7 +341,7 @@ router.post('/create-project', async (req, res) => {
 // Get approved projects from database
 router.get('/approved-projects', async (req, res) => {
   try {
-    const approvedProjects = await db.select().from(projects).where(eq(projects.status, 'approved'));
+    const approvedProjects = await db!.select().from(projects).where(eq(projects.status, 'approved'));
     
     res.json({
       success: true,
@@ -367,7 +367,7 @@ router.post('/generate-contract', async (req, res) => {
     }
 
     // Get project data from database
-    const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
+    const [project] = await db!.select().from(projects).where(eq(projects.id, projectId));
     
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });

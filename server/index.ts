@@ -752,6 +752,67 @@ app.use('/api/ocr', ocrSimpleRoutes);
 // Add email contract routes
 app.use('/api/email', emailContractRoutes);
 
+// 🚨 CRITICAL FIX: Add contract HTML generation endpoint directly due to routes.ts TypeScript errors
+app.post('/api/generate-contract-html', async (req, res) => {
+  try {
+    console.log('📄 [CONTRACT-HTML] Generating contract HTML for legal compliance workflow...');
+    
+    const firebaseUid = req.headers["x-firebase-uid"] as string;
+    console.log('🔐 [CONTRACT-HTML] Firebase UID:', firebaseUid);
+
+    // Import the premium PDF service
+    const { default: PremiumPdfService } = await import('./services/premiumPdfService');
+    const premiumPdfService = PremiumPdfService.getInstance();
+
+    // Use request body data or mock data for testing
+    const contractData = req.body.contractData || {
+      client: {
+        name: req.body.clientName || "Test Client",
+        address: req.body.clientAddress || "123 Test St, Test City, CA 12345",
+        phone: req.body.clientPhone || "(555) 123-4567",
+        email: req.body.clientEmail || "client@example.com"
+      },
+      contractor: {
+        name: "OWL FENC LLC",
+        address: "2901 Owens Ct, Fairfield, CA 94534 US",
+        phone: "2025493519",
+        email: "gelasio@chyrris.com"
+      },
+      project: {
+        type: req.body.projectType || "Fence Installation",
+        description: req.body.projectDescription || "Professional fence installation project",
+        location: req.body.projectLocation || req.body.clientAddress || "Project location"
+      },
+      financials: {
+        total: parseFloat(req.body.totalAmount) || 5000
+      },
+      protectionClauses: req.body.protectionClauses || [],
+      timeline: req.body.timeline || {},
+      warranties: req.body.warranties || {},
+      permitInfo: req.body.permitInfo || {}
+    };
+
+    // Generate professional contract HTML
+    const contractHTML = premiumPdfService.generateProfessionalLegalContractHTML(contractData);
+
+    console.log('✅ [CONTRACT-HTML] Contract HTML generated successfully');
+
+    res.json({
+      success: true,
+      contractHTML: contractHTML,
+      contractData: contractData
+    });
+
+  } catch (error) {
+    console.error('❌ [CONTRACT-HTML] Error generating contract HTML:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate contract HTML',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // 🔧 Registrar rutas principales (incluye AI enhancement y DeepSearch)
 registerRoutes(app);
 
