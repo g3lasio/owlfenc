@@ -39,15 +39,19 @@ export default function MapboxPlacesAutocomplete({
   // Función para limpiar controlador de forma segura
   const safeAbort = useCallback(() => {
     const controller = abortControllerRef.current;
-    if (controller && !controller.signal.aborted) {
+    if (controller) {
       try {
-        controller.abort();
+        // Solo abortar si no está ya abortado
+        if (!controller.signal.aborted) {
+          controller.abort();
+        }
       } catch (error) {
-        // Silenciar errores de abort - es normal que esto pueda fallar
-        console.debug("⚠️ [MapboxPlaces] AbortController ya fue abortado");
+        // Silenciar completamente errores de abort - esto es esperado
+      } finally {
+        // Siempre limpiar la referencia
+        abortControllerRef.current = null;
       }
     }
-    abortControllerRef.current = null;
   }, []);
 
   // Cleanup al desmontar el componente
@@ -196,6 +200,7 @@ export default function MapboxPlacesAutocomplete({
     // Cancelar timer anterior
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
     }
 
     if (newValue.length >= 3) {
@@ -207,16 +212,10 @@ export default function MapboxPlacesAutocomplete({
     } else {
       console.log("⏳ [MapboxPlaces] Esperando más caracteres:", newValue.length, "/3");
       // Cancelar cualquier petición pendiente de forma segura
-      if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-        try {
-          abortControllerRef.current.abort();
-        } catch (e) {
-          // Ignorar errores de abort
-        }
-      }
-      abortControllerRef.current = null;
+      safeAbort();
       setSuggestions([]);
       setShowSuggestions(false);
+      setIsLoading(false);
     }
   };
 
@@ -263,13 +262,7 @@ export default function MapboxPlacesAutocomplete({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       // Cancelar petición pendiente de forma segura
-      if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-        try {
-          abortControllerRef.current.abort();
-        } catch (e) {
-          // Ignorar errores de abort
-        }
-      }
+      safeAbort();
     };
   }, []);
 
