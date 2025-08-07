@@ -2335,6 +2335,7 @@ export default function SimpleContractGenerator() {
       );
 
       console.log("Generating contract with payload:", contractPayload);
+      console.log("🔍 [DEBUG] Project type:", selectedProject?.isFromScratch ? 'From Scratch' : 'Existing Project');
 
       // First generate contract HTML for legal workflow
       const htmlResponse = await fetch("/api/generate-contract-html", {
@@ -2346,12 +2347,22 @@ export default function SimpleContractGenerator() {
         body: JSON.stringify(contractPayload),
       });
 
+      console.log("🔍 [DEBUG] HTML Response status:", htmlResponse.status);
+
       if (htmlResponse.ok) {
         const contractHTMLData = await htmlResponse.json();
+        console.log("🔍 [DEBUG] HTML Data received:", {
+          hasHtml: !!contractHTMLData.html,
+          htmlLength: contractHTMLData.html?.length || 0,
+          isFromScratch: selectedProject?.isFromScratch
+        });
+        
         setContractHTML(contractHTMLData.html);
         setContractData(contractPayload);
         setIsContractReady(true);
         setCurrentStep(3);
+
+        console.log("🔍 [DEBUG] Contract HTML set successfully");
 
         toast({
           title: "Contract Ready for Legal Process",
@@ -2410,18 +2421,22 @@ export default function SimpleContractGenerator() {
             if (htmlResponse.ok) {
               const htmlData = await htmlResponse.json();
               setContractHTML(htmlData.html);
+              setIsContractReady(true);
               console.log(
                 "✅ Professional contract HTML generated for legal workflow",
+                { htmlLength: htmlData.html?.length, isFromScratch: selectedProject?.isFromScratch }
               );
             } else {
               console.warn(
                 "⚠️ Failed to generate professional HTML, using basic fallback",
               );
               setContractHTML(basicHTML);
+              setIsContractReady(true);
             }
           } catch (htmlError) {
             console.error("HTML generation error:", htmlError);
             setContractHTML(basicHTML);
+            setIsContractReady(true);
           }
 
           setContractData(contractPayload);
@@ -4489,9 +4504,11 @@ export default function SimpleContractGenerator() {
                         {process.env.NODE_ENV === 'development' && (
                           <div className="mt-2 p-2 bg-gray-800 rounded text-xs text-gray-400">
                             <div>Debug Info:</div>
-                            <div>Contract HTML: {contractHTML ? 'Generated ✓' : 'Missing ✗'}</div>
+                            <div>Contract HTML: {contractHTML ? `Generated ✓ (${contractHTML.length} chars)` : 'Missing ✗'}</div>
                             <div>Loading: {isLoading ? 'Yes' : 'No'}</div>
                             <div>Multi-channel: {isMultiChannelActive ? 'Active' : 'Inactive'}</div>
+                            <div>Project type: {selectedProject?.isFromScratch ? 'From Scratch' : 'Existing'}</div>
+                            <div>Contract ready: {isContractReady ? 'Yes' : 'No'}</div>
                           </div>
                         )}
                       </div>
