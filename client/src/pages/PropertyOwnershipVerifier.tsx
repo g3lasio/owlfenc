@@ -42,6 +42,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
 import {
   propertyVerifierService,
@@ -79,11 +80,9 @@ interface PropertySearchHistoryItem {
 }
 
 export default function PropertyOwnershipVerifier() {
-  // Obtener la suscripción del usuario
-  const { data: userSubscription } = useQuery({
-    queryKey: ["/api/subscription/user-subscription"],
-    throwOnError: false,
-  });
+  // 🛡️ PERMISOS: Sistema de permisos integrado
+  const permissions = usePermissions();
+  const { canUse, getRemainingUsage, isLimitReached, showUpgradeModal, incrementUsage, userPlan } = permissions;
 
   // Simple states
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
@@ -97,6 +96,11 @@ export default function PropertyOwnershipVerifier() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // 🔍 PERMISOS: Obtener información de uso para Property Verifications
+  const remaining = getRemainingUsage('propertyVerifications');
+  const isLimited = isLimitReached('propertyVerifications');
+  const canSearch = canUse('propertyVerifications');
 
   // Load property history
   const { data: historyItems = [], isLoading: historyLoading, error: historyError } = useQuery({
@@ -129,8 +133,18 @@ export default function PropertyOwnershipVerifier() {
     },
   ];
 
-  // Main search function
+  // 🛡️ MAIN SEARCH FUNCTION WITH PERMISSION SYSTEM
   const handleSearch = useCallback(async () => {
+    // 🔒 VERIFICAR PERMISOS ANTES DE LA BÚSQUEDA
+    if (!canSearch) {
+      showUpgradeModal('propertyVerifications', 
+        userPlan?.name === 'Primo Chambeador' 
+          ? `Has alcanzado tu límite de 5 verificaciones de propiedad. Upgrade para obtener hasta 50 verificaciones mensuales.`
+          : `Has alcanzado tu límite mensual. Upgrade a Master Contractor para verificaciones ilimitadas.`
+      );
+      return;
+    }
+
     if (!selectedPlace || !selectedPlace.address) {
       setError("Por favor, selecciona una dirección válida del autocompletado.");
       return;
@@ -162,11 +176,14 @@ export default function PropertyOwnershipVerifier() {
       setPropertyDetails(response);
       setCurrentStep(3);
       
+      // 📊 INCREMENTAR USO DESPUÉS DE BÚSQUEDA EXITOSA
+      await incrementUsage('propertyVerifications', 1);
+      
       queryClient.invalidateQueries({ queryKey: ["/api/property/history"] });
 
       toast({
         title: "✅ Verificación Completada",
-        description: "Los datos de la propiedad han sido obtenidos exitosamente.",
+        description: `Datos obtenidos exitosamente. ${remaining > 0 ? `Te quedan ${remaining - 1} verificaciones este mes.` : ''}`,
       });
     } catch (err: any) {
       setError(err.message || "Error al verificar la propiedad. Por favor, intenta nuevamente.");
@@ -179,7 +196,7 @@ export default function PropertyOwnershipVerifier() {
     } finally {
       setLoading(false);
     }
-  }, [selectedPlace, queryClient, toast]);
+  }, [selectedPlace, queryClient, toast, canSearch, showUpgradeModal, userPlan, remaining, incrementUsage]);
 
   // Manejar la selección de lugar desde el autocompletado
   const handlePlaceSelect = useCallback((placeData: any) => {
@@ -273,6 +290,21 @@ export default function PropertyOwnershipVerifier() {
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-blue-500/5 to-purple-500/10 rounded-2xl blur-xl"></div>
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900/20 to-slate-800/20 rounded-2xl backdrop-blur-sm"></div>
           
+          {/* 📊 PERMISSIONS: Usage Counter */}
+          <div className="absolute top-4 right-4 z-10">
+            <div className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm border ${
+              isLimited 
+                ? 'bg-red-500/10 border-red-500/20 text-red-400' 
+                : remaining <= 2 && remaining > 0
+                  ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
+                  : 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400'
+            }`}>
+              {userPlan?.limits.propertyVerifications === -1 
+                ? '∞ Ilimitado'
+                : `${remaining}/${userPlan?.limits.propertyVerifications || 0} verificaciones`
+              }
+            </div>
+          </div>
           <div className="relative p-6 sm:p-8 border border-cyan-400/30 rounded-2xl bg-gradient-to-br from-slate-900/50 to-slate-800/50 backdrop-blur-sm">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
               <div className="flex items-center gap-4">
@@ -361,8 +393,12 @@ export default function PropertyOwnershipVerifier() {
                   
                   <Button
                     onClick={handleSearch}
-                    disabled={loading || !selectedPlace}
-                    className="w-full bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 border-slate-500/50 text-white shadow-lg shadow-slate-500/20"
+                    disabled={loading || !selectedPlace || !canSearch}
+                    className={`w-full shadow-lg transition-all duration-300 ${
+                      !canSearch 
+                        ? 'bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-600 hover:to-gray-700 border-gray-500/50 shadow-gray-500/20'
+                        : 'bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 border-slate-500/50 shadow-slate-500/20'
+                    } text-white`}
                     size="lg"
                   >
                     {loading ? (
@@ -370,13 +406,51 @@ export default function PropertyOwnershipVerifier() {
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
                         <span className="text-sm sm:text-base">Quantum Scanning...</span>
                       </>
+                    ) : !canSearch ? (
+                      <>
+                        <AlertCircle className="w-4 h-4 mr-2" />
+                        <span className="text-sm sm:text-base">Límite Alcanzado - Upgrade Requerido</span>
+                      </>
                     ) : (
                       <>
                         <Search className="w-4 h-4 mr-2" />
-                        <span className="text-sm sm:text-base">Initiate Verification</span>
+                        <span className="text-sm sm:text-base">
+                          Initiate Verification ({remaining} restantes)
+                        </span>
                       </>
                     )}
                   </Button>
+                  
+                  {/* 🚨 UPGRADE PROMPT cuando se alcanza el límite */}
+                  {!canSearch && (
+                    <div className="relative mt-4">
+                      <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-lg blur-sm"></div>
+                      <Alert className="relative border-orange-500/50 bg-gradient-to-br from-orange-900/20 to-red-900/20 backdrop-blur-sm">
+                        <AlertCircle className="h-4 w-4 text-orange-400" />
+                        <AlertDescription className="text-sm text-orange-200">
+                          <div className="font-medium mb-2">Límite de verificaciones alcanzado</div>
+                          <div className="text-xs text-orange-300/80 mb-3">
+                            {userPlan?.name === 'Primo Chambeador' 
+                              ? 'Has usado tus 5 verificaciones gratuitas mensuales. Upgrade a Mero Patrón para obtener 50 verificaciones.'
+                              : userPlan?.name === 'Mero Patrón'
+                                ? 'Has usado tus 50 verificaciones mensuales. Upgrade a Master Contractor para verificaciones ilimitadas.'
+                                : 'Has alcanzado tu límite mensual de verificaciones.'
+                            }
+                          </div>
+                          <Button 
+                            onClick={() => showUpgradeModal('propertyVerifications', 
+                              `Upgrade tu plan para obtener ${userPlan?.name === 'Primo Chambeador' ? '50' : 'ilimitadas'} verificaciones mensuales`
+                            )}
+                            variant="outline"
+                            size="sm" 
+                            className="border-orange-500/30 hover:bg-orange-500/10 text-orange-300 hover:text-orange-200"
+                          >
+                            Ver Planes de Upgrade
+                          </Button>
+                        </AlertDescription>
+                      </Alert>
+                    </div>
+                  )}
 
                   {error && (
                     <div className="relative">

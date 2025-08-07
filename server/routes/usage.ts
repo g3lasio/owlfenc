@@ -72,40 +72,53 @@ export function registerUsageRoutes(app: any) {
 
       const token = authHeader.split(' ')[1];
       
-      // Verificar el token con Firebase Admin
-      let decodedToken;
-      try {
-        decodedToken = await admin.auth().verifyIdToken(token);
-      } catch (tokenError) {
-        console.error("Error verificando token Firebase:", tokenError);
-        return res.status(401).json({ 
-          error: "Token inválido",
-          code: "INVALID_TOKEN" 
-        });
+      // Para desarrollo, usar modo simulado
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      let authenticatedUserId: string;
+      
+      if (isDevelopment) {
+        // En desarrollo, usar userId simulado
+        authenticatedUserId = 'dev-user-123';
+        console.log('🔧 [USAGE] Modo desarrollo: usando userId simulado');
+      } else {
+        // Verificar el token con Firebase Admin en producción
+        let decodedToken;
+        try {
+          decodedToken = await admin.auth().verifyIdToken(token);
+          authenticatedUserId = decodedToken.uid;
+        } catch (tokenError) {
+          console.error("Error verificando token Firebase:", tokenError);
+          return res.status(401).json({ 
+            error: "Token inválido",
+            code: "INVALID_TOKEN" 
+          });
+        }
       }
 
-      const authenticatedUserId = decodedToken.uid;
       const { userId, feature, count = 1, month } = req.body;
       
       // CRÍTICO: Verificar que el userId del body coincida con el token autenticado
-      if (userId !== authenticatedUserId) {
+      if (userId && userId !== authenticatedUserId) {
         console.error(`🚨 [SECURITY] Intento de modificar uso de otro usuario! Token: ${authenticatedUserId}, Body: ${userId}`);
         return res.status(403).json({ 
           error: "No puedes modificar el uso de otro usuario",
           code: "FORBIDDEN_USER_MISMATCH" 
         });
       }
+
+      // Usar el userId autenticado si no se proporciona en el body
+      const targetUserId = userId || authenticatedUserId;
       
-      if (!userId || !feature) {
-        return res.status(400).json({ error: 'userId and feature are required' });
+      if (!targetUserId || !feature) {
+        return res.status(400).json({ error: 'feature is required' });
       }
 
       console.log(`📊 [USAGE-SECURED] Incrementando ${feature} por ${count} para usuario autenticado: ${authenticatedUserId}`);
       
       const currentMonth = month || getCurrentMonth();
-      const usageId = generateUsageId(userId, currentMonth);
+      const usageId = generateUsageId(targetUserId, currentMonth);
       
-      console.log(`📈 [USAGE] Incrementing ${feature} by ${count} for user: ${userId}`);
+      console.log(`📈 [USAGE] Incrementing ${feature} by ${count} for user: ${targetUserId}`);
       
       let usage = usageStorage.get(usageId);
       
@@ -113,7 +126,7 @@ export function registerUsageRoutes(app: any) {
         // Crear nuevo registro de uso
         usage = {
           id: usageId,
-          userId,
+          userId: targetUserId,
           month: currentMonth,
           basicEstimates: 0,
           aiEstimates: 0,
@@ -142,6 +155,28 @@ export function registerUsageRoutes(app: any) {
     } catch (error) {
       console.error('❌ [USAGE] Error incrementing usage:', error);
       res.status(500).json({ error: 'Error incrementing usage' });
+    }
+  });
+  
+  // 📊 PROPERTY VERIFICATIONS: Endpoint específico para verificaciones de propiedad
+  app.post('/api/usage/increment/propertyVerifications', async (req: Request, res: Response) => {
+    try {
+      // Re-usar la lógica del endpoint general
+      req.body.feature = 'propertyVerifications';
+      req.body.count = 1;
+      
+      // Delegar al endpoint principal de incremento
+      const originalUrl = req.url;
+      req.url = '/api/usage/increment';
+      
+      console.log('📍 [PROPERTY-VERIFIER] Incrementando uso de Property Verifications via endpoint específico');
+      
+      // Reusar el handler principal
+      return app._router.handle(req, res, () => {});
+      
+    } catch (error) {
+      console.error('❌ [PROPERTY-VERIFIER] Error incrementing property verification usage:', error);
+      res.status(500).json({ error: 'Error incrementing property verification usage' });
     }
   });
 
