@@ -176,6 +176,30 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
 
   const loadUserPlan = async () => {
     try {
+      // Verificar simulación de desarrollo primero
+      const devSimulation = localStorage.getItem('dev_user_plan_simulation');
+      if (devSimulation && process.env.NODE_ENV === 'development') {
+        const simData = JSON.parse(devSimulation);
+        
+        // Mapear IDs de string a IDs numéricos
+        const planIdMapping: { [key: string]: number } = {
+          'free-trial': 4,          // Trial Master
+          'primo-chambeador': 1,    // Primo Chambeador  
+          'mero-patron': 2,         // Mero Patrón
+          'emperador-del-negocio': 3 // Master Contractor
+        };
+        
+        const numericPlanId = planIdMapping[simData.currentPlan] || 1;
+        const simulatedPlan = PLANS.find(p => p.id === numericPlanId) || PLANS[0];
+        
+        // Agregar información de simulación para debugging
+        console.log(`🧪 [DEV-SIMULATION] Usando plan simulado: ${simulatedPlan.name} (ID: ${numericPlanId})`);
+        
+        setUserPlan(simulatedPlan);
+        return;
+      }
+
+      // Comportamiento normal - llamar a la API
       const response = await fetch('/api/subscription/user-subscription', {
         method: 'GET',
         headers: {

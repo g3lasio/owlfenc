@@ -45,7 +45,7 @@ export function UserPlanSwitcher() {
 
   const simulatePlan = async (planId: string, planName: string) => {
     try {
-      // En desarrollo, puedes usar localStorage para simular cambios de plan
+      // En desarrollo, usar localStorage para simular cambios de plan
       const mockUserData = {
         currentPlan: planId,
         planName: planName,
@@ -59,9 +59,12 @@ export function UserPlanSwitcher() {
         description: `Ahora estás probando como usuario de plan: ${planName}`,
       });
       
-      // Refrescar la página para que los cambios surtan efecto
-      window.location.reload();
+      // Forzar recarga del contexto de permisos sin refrescar toda la página
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } catch (error) {
+      console.error('Error simulando plan:', error);
       toast({
         title: "Error",
         description: "No se pudo simular el plan de usuario",

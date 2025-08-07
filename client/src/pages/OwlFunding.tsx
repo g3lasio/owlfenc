@@ -26,7 +26,7 @@ export default function OwlFunding() {
   });
 
   // Verificar si es plan básico (Primo Chambeador)
-  const isPrimoChambeador = userPlan?.id === 1; // Plan ID 1 = Primo Chambeador
+  const isPrimoChambeador = userPlan?.id === 1 || userPlan?.id === 'primo-chambeador'; // Plan ID 1 = Primo Chambeador
   const isFreeTrial = userPlan?.id === 'free-trial';
   
   // Los usuarios pagados (no primo chambeador) o en prueba gratis tienen acceso completo
