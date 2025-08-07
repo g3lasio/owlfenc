@@ -34,6 +34,28 @@ export default function MapboxPlacesAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef<number>(0);
+
+  // Función para limpiar controlador de forma segura
+  const safeAbort = useCallback(() => {
+    const controller = abortControllerRef.current;
+    if (controller && !controller.signal.aborted) {
+      try {
+        controller.abort();
+      } catch (error) {
+        // Silenciar errores de abort - es normal que esto pueda fallar
+        console.debug("⚠️ [MapboxPlaces] AbortController ya fue abortado");
+      }
+    }
+    abortControllerRef.current = null;
+  }, []);
+
+  // Cleanup al desmontar el componente
+  useEffect(() => {
+    return () => {
+      safeAbort();
+    };
+  }, [safeAbort]);
 
   // Verificar API key de Mapbox
   const checkMapboxAPI = useCallback(() => {
@@ -67,14 +89,11 @@ export default function MapboxPlacesAutocomplete({
       return;
     }
 
+    // Incrementar ID único para cada request
+    const currentRequestId = ++requestIdRef.current;
+
     // Cancelar petición anterior de forma segura
-    if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-      try {
-        abortControllerRef.current.abort();
-      } catch (e) {
-        // Ignorar errores de abort
-      }
-    }
+    safeAbort();
 
     // Crear nuevo controlador
     const controller = new AbortController();
@@ -93,21 +112,17 @@ export default function MapboxPlacesAutocomplete({
       const startTime = Date.now();
       const response = await fetch(url, {
         signal: controller.signal
-      }).catch(error => {
-        // Manejar explícitamente los errores de fetch para evitar unhandled rejections
-        if (error.name === 'AbortError') {
-          return null; // Ignorar errores de abort
-        }
-        throw error; // Re-lanzar otros errores
       });
-      
-      // Si fetch fue abortado, retornar early
-      if (!response) {
+
+      // Verificar si este request sigue siendo el más reciente
+      if (currentRequestId !== requestIdRef.current) {
+        console.log("🚫 [MapboxPlaces] Request obsoleto, ignorando respuesta");
         return;
       }
       
       // Verificar si la petición fue cancelada después de la respuesta
       if (controller.signal.aborted) {
+        console.log("🚫 [MapboxPlaces] Request fue cancelado");
         return;
       }
       
