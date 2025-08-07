@@ -302,17 +302,15 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     if (!currentUser || !userUsage) return;
 
     try {
-      const response = await fetch('/api/usage/increment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId: currentUser.uid,
-          feature,
-          count,
-          month: userUsage.month
-        })
+      console.log(`📊 [USAGE-INCREMENT] Incrementando ${feature} por ${count} para usuario: ${currentUser.uid}`);
+
+      // Usar apiRequest para asegurar autenticación automática
+      const { apiRequest } = await import('@/lib/queryClient');
+      const response = await apiRequest('POST', '/api/usage/increment', {
+        userId: currentUser.uid,
+        feature,
+        count,
+        month: userUsage.month
       });
 
       if (response.ok) {
@@ -321,9 +319,13 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
           ...prev!,
           [feature]: (prev![feature as keyof UserUsage] as number) + count
         }));
+        
+        console.log(`✅ [USAGE-INCREMENT] ${feature} incrementado exitosamente`);
+      } else {
+        console.error(`❌ [USAGE-INCREMENT] Error al incrementar ${feature}:`, response.status);
       }
     } catch (error) {
-      console.error('Error incrementing usage:', error);
+      console.error(`❌ [USAGE-INCREMENT] Error incrementando uso de ${feature}:`, error);
     }
   };
 

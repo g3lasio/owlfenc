@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
+import admin from 'firebase-admin';
 import { 
   userMonthlyUsage, 
   userTrials,
@@ -57,14 +58,49 @@ export function registerUsageRoutes(app: any) {
     }
   });
 
-  // Incrementar uso de una funcionalidad
+  // Incrementar uso de una funcionalidad (PROTEGIDO POR AUTENTICACIÓN)
   app.post('/api/usage/increment', async (req: Request, res: Response) => {
     try {
+      // Verificar autenticación Firebase ANTES de incrementar uso
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ 
+          error: "Autenticación requerida para incrementar uso",
+          code: "NO_AUTH_TOKEN" 
+        });
+      }
+
+      const token = authHeader.split(' ')[1];
+      
+      // Verificar el token con Firebase Admin
+      let decodedToken;
+      try {
+        decodedToken = await admin.auth().verifyIdToken(token);
+      } catch (tokenError) {
+        console.error("Error verificando token Firebase:", tokenError);
+        return res.status(401).json({ 
+          error: "Token inválido",
+          code: "INVALID_TOKEN" 
+        });
+      }
+
+      const authenticatedUserId = decodedToken.uid;
       const { userId, feature, count = 1, month } = req.body;
+      
+      // CRÍTICO: Verificar que el userId del body coincida con el token autenticado
+      if (userId !== authenticatedUserId) {
+        console.error(`🚨 [SECURITY] Intento de modificar uso de otro usuario! Token: ${authenticatedUserId}, Body: ${userId}`);
+        return res.status(403).json({ 
+          error: "No puedes modificar el uso de otro usuario",
+          code: "FORBIDDEN_USER_MISMATCH" 
+        });
+      }
       
       if (!userId || !feature) {
         return res.status(400).json({ error: 'userId and feature are required' });
       }
+
+      console.log(`📊 [USAGE-SECURED] Incrementando ${feature} por ${count} para usuario autenticado: ${authenticatedUserId}`);
       
       const currentMonth = month || getCurrentMonth();
       const usageId = generateUsageId(userId, currentMonth);
