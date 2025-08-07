@@ -1035,10 +1035,48 @@ export default function PermitAdvisor() {
         </div>
       </div>
 
-      {/* Permission Testing Panel - For Development */}
-      {import.meta.env.DEV && (
-        <div className="max-w-6xl mx-auto px-4 py-2">
-          <UserPlanSwitcher />
+      {/* Permit Counter - Only for Limited Plans */}
+      {userPlan && userPlan.limits.permitAdvisor !== -1 && (
+        <div className="max-w-5xl mx-auto px-2 sm:px-4 py-2">
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-lg blur-sm"></div>
+            <Card className="relative border border-cyan-400/30 bg-gradient-to-br from-slate-900/80 to-slate-800/80 backdrop-blur-sm">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <FileText className="h-5 w-5 text-cyan-400" />
+                      <div className="absolute inset-0 h-5 w-5 bg-cyan-400/20 rounded-full animate-pulse"></div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-200">Permit Analysis</p>
+                      <p className="text-xs text-slate-400">Monthly Usage</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold text-cyan-300">
+                        {getRemainingUsage('permitAdvisor')}
+                      </span>
+                      <span className="text-sm text-slate-400">remaining</span>
+                      {isLimitReached('permitAdvisor') && (
+                        <Lock className="h-4 w-4 text-red-400" />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Progress 
+                        value={(1 - getRemainingUsage('permitAdvisor') / userPlan.limits.permitAdvisor) * 100} 
+                        className="w-20 h-2" 
+                      />
+                      <span className="text-xs text-slate-500">
+                        {userPlan.limits.permitAdvisor - getRemainingUsage('permitAdvisor')}/{userPlan.limits.permitAdvisor}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
 
