@@ -59,6 +59,7 @@ import { setupTemplatesRoutes } from "./routes/templates";
 import { aiEnhancementRoutes } from "./routes/aiEnhancementRoutes"; // Import new AI enhancement routes
 import { registerDeepSearchRoutes } from "./routes/deepSearchRoutes"; // Import DeepSearch AI routes
 import { registerLaborDeepSearchRoutes } from "./routes/laborDeepSearchRoutes"; // Import Labor DeepSearch AI routes
+import { registerUsageRoutes } from "./routes/usage"; // Import Usage & Permissions routes
 // import legalDefenseRoutes from "./routes/legal-defense-routes"; // Temporarily disabled for horizontal navigation
 import unifiedContractRoutes from "./routes/unifiedContractRoutes"; // Import Unified Contract Management routes
 import pdfContractProcessorRoutes from "./routes/pdf-contract-processor"; // Import PDF Contract Processor routes
@@ -6273,6 +6274,9 @@ Output must be between 200-900 characters in English.`;
 
   // Registrar rutas del módulo Labor DeepSearch IA
   registerLaborDeepSearchRoutes(app);
+
+  // Registrar rutas del sistema de permisos y uso
+  registerUsageRoutes(app);
 
   // Professional Contract Generation with Premium Cards and Visual Design
   app.post("/api/contracts/generate-professional", async (req, res) => {

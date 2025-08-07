@@ -47,9 +47,11 @@ import UnifiedContractManager from "@/pages/UnifiedContractManager";
 import SmartContractWizard from "@/pages/SmartContractWizard";
 import AITestingPage from "@/pages/AITestingPage";
 import DeepSearchDemo from "@/pages/DeepSearchDemo";
+import PermissionsDemo from "@/pages/PermissionsDemo";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
+import { PermissionProvider } from "@/contexts/PermissionContext";
 import AuthDiagnostic from './pages/AuthDiagnostic';
 import AppleAuthTest from './pages/AppleAuthTest';
 import { lazy } from 'react';
@@ -213,6 +215,9 @@ function Router() {
       <Route path="/deepsearch-demo">
         {() => <ProtectedRoute component={DeepSearchDemo} />}
       </Route>
+      <Route path="/permissions-demo">
+        {() => <ProtectedRoute component={PermissionsDemo} />}
+      </Route>
       <Route path="/estimates">
         {() => <ProtectedRoute component={EstimatesWizard} />}
       </Route>
@@ -244,12 +249,14 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
         <AuthProvider>
-          <SidebarProvider>
-            <AppLayout>
-              <Router />
-            </AppLayout>
-            <Toaster />
-          </SidebarProvider>
+          <PermissionProvider>
+            <SidebarProvider>
+              <AppLayout>
+                <Router />
+              </AppLayout>
+              <Toaster />
+            </SidebarProvider>
+          </PermissionProvider>
         </AuthProvider>
       </LanguageProvider>
     </QueryClientProvider>

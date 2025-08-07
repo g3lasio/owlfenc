@@ -1,0 +1,266 @@
+import { Request, Response } from 'express';
+import { z } from 'zod';
+import { 
+  userMonthlyUsage, 
+  userTrials,
+  insertUserMonthlyUsageSchema,
+  insertUserTrialSchema,
+  getCurrentMonth,
+  generateUsageId,
+  generateTrialId,
+  type UserMonthlyUsage,
+  type UserTrial 
+} from '@shared/usage-schema';
+
+// Para este ejemplo usaremos storage en memoria
+// En un entorno real usarías una base de datos
+let usageStorage = new Map<string, UserMonthlyUsage>();
+let trialStorage = new Map<string, UserTrial>();
+
+export function registerUsageRoutes(app: any) {
+  
+  // Obtener uso mensual del usuario
+  app.get('/api/usage/:userId', async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const month = (req.query.month as string) || getCurrentMonth();
+      
+      console.log(`📊 [USAGE] Getting usage for user: ${userId}, month: ${month}`);
+      
+      const usageId = generateUsageId(userId, month);
+      const usage = usageStorage.get(usageId);
+      
+      if (!usage) {
+        // Crear uso vacío para el mes actual
+        const newUsage: UserMonthlyUsage = {
+          id: usageId,
+          userId,
+          month,
+          basicEstimates: 0,
+          aiEstimates: 0,
+          contracts: 0,
+          propertyVerifications: 0,
+          permitAdvisor: 0,
+          projects: 0,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        
+        usageStorage.set(usageId, newUsage);
+        return res.json(newUsage);
+      }
+      
+      res.json(usage);
+    } catch (error) {
+      console.error('❌ [USAGE] Error getting usage:', error);
+      res.status(500).json({ error: 'Error getting usage data' });
+    }
+  });
+
+  // Incrementar uso de una funcionalidad
+  app.post('/api/usage/increment', async (req: Request, res: Response) => {
+    try {
+      const { userId, feature, count = 1, month } = req.body;
+      
+      if (!userId || !feature) {
+        return res.status(400).json({ error: 'userId and feature are required' });
+      }
+      
+      const currentMonth = month || getCurrentMonth();
+      const usageId = generateUsageId(userId, currentMonth);
+      
+      console.log(`📈 [USAGE] Incrementing ${feature} by ${count} for user: ${userId}`);
+      
+      let usage = usageStorage.get(usageId);
+      
+      if (!usage) {
+        // Crear nuevo registro de uso
+        usage = {
+          id: usageId,
+          userId,
+          month: currentMonth,
+          basicEstimates: 0,
+          aiEstimates: 0,
+          contracts: 0,
+          propertyVerifications: 0,
+          permitAdvisor: 0,
+          projects: 0,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+      }
+      
+      // Incrementar el contador específico
+      if (usage.hasOwnProperty(feature)) {
+        (usage as any)[feature] += count;
+        usage.updatedAt = new Date();
+        
+        usageStorage.set(usageId, usage);
+        
+        console.log(`✅ [USAGE] ${feature} incremented. New value: ${(usage as any)[feature]}`);
+        res.json(usage);
+      } else {
+        res.status(400).json({ error: `Invalid feature: ${feature}` });
+      }
+      
+    } catch (error) {
+      console.error('❌ [USAGE] Error incrementing usage:', error);
+      res.status(500).json({ error: 'Error incrementing usage' });
+    }
+  });
+
+  // Resetear uso mensual (para testing o nuevo mes)
+  app.post('/api/usage/reset/:userId', async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const month = getCurrentMonth();
+      
+      const usageId = generateUsageId(userId, month);
+      
+      const resetUsage: UserMonthlyUsage = {
+        id: usageId,
+        userId,
+        month,
+        basicEstimates: 0,
+        aiEstimates: 0,
+        contracts: 0,
+        propertyVerifications: 0,
+        permitAdvisor: 0,
+        projects: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      usageStorage.set(usageId, resetUsage);
+      
+      console.log(`🔄 [USAGE] Reset usage for user: ${userId}, month: ${month}`);
+      res.json(resetUsage);
+      
+    } catch (error) {
+      console.error('❌ [USAGE] Error resetting usage:', error);
+      res.status(500).json({ error: 'Error resetting usage' });
+    }
+  });
+
+  // Crear trial para usuario
+  app.post('/api/usage/create-trial', async (req: Request, res: Response) => {
+    try {
+      const { userId, planId = 4, durationDays = 21 } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: 'userId is required' });
+      }
+      
+      // Verificar si ya tiene un trial activo
+      const existingTrial = Array.from(trialStorage.values())
+        .find(trial => trial.userId === userId && trial.status === 'active');
+      
+      if (existingTrial) {
+        return res.status(400).json({ 
+          error: 'User already has an active trial',
+          trial: existingTrial 
+        });
+      }
+      
+      const now = new Date();
+      const endDate = new Date(now.getTime() + (durationDays * 24 * 60 * 60 * 1000));
+      
+      const trial: UserTrial = {
+        id: generateTrialId(userId),
+        userId,
+        planId,
+        startDate: now,
+        endDate,
+        status: 'active',
+        createdAt: now,
+        updatedAt: now
+      };
+      
+      trialStorage.set(trial.id, trial);
+      
+      console.log(`🎯 [USAGE] Created trial for user: ${userId}, expires: ${endDate}`);
+      res.json(trial);
+      
+    } catch (error) {
+      console.error('❌ [USAGE] Error creating trial:', error);
+      res.status(500).json({ error: 'Error creating trial' });
+    }
+  });
+
+  // Obtener trial del usuario
+  app.get('/api/usage/trial/:userId', async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      
+      const trial = Array.from(trialStorage.values())
+        .find(trial => trial.userId === userId);
+      
+      if (!trial) {
+        return res.status(404).json({ error: 'No trial found for user' });
+      }
+      
+      // Verificar si ha expirado
+      const now = new Date();
+      if (trial.endDate < now && trial.status === 'active') {
+        trial.status = 'expired';
+        trial.updatedAt = now;
+        trialStorage.set(trial.id, trial);
+      }
+      
+      res.json(trial);
+      
+    } catch (error) {
+      console.error('❌ [USAGE] Error getting trial:', error);
+      res.status(500).json({ error: 'Error getting trial data' });
+    }
+  });
+
+  // Obtener estadísticas de uso para dashboard
+  app.get('/api/usage/stats/:userId', async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const month = getCurrentMonth();
+      
+      const usageId = generateUsageId(userId, month);
+      const usage = usageStorage.get(usageId);
+      
+      if (!usage) {
+        return res.json({
+          month,
+          totalUsage: 0,
+          breakdown: {
+            basicEstimates: 0,
+            aiEstimates: 0,
+            contracts: 0,
+            propertyVerifications: 0,
+            permitAdvisor: 0,
+            projects: 0
+          }
+        });
+      }
+      
+      const totalUsage = Object.values(usage)
+        .filter(val => typeof val === 'number')
+        .reduce((sum: number, val) => sum + (val as number), 0);
+      
+      res.json({
+        month,
+        totalUsage,
+        breakdown: {
+          basicEstimates: usage.basicEstimates,
+          aiEstimates: usage.aiEstimates,
+          contracts: usage.contracts,
+          propertyVerifications: usage.propertyVerifications,
+          permitAdvisor: usage.permitAdvisor,
+          projects: usage.projects
+        }
+      });
+      
+    } catch (error) {
+      console.error('❌ [USAGE] Error getting stats:', error);
+      res.status(500).json({ error: 'Error getting usage stats' });
+    }
+  });
+
+  console.log('📊 [USAGE] Usage API routes registered successfully');
+}
