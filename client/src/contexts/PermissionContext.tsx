@@ -228,8 +228,12 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     if (!currentUser) return;
 
     try {
+      // En desarrollo, usar el usuario simulado del backend
+      const isDevelopment = window.location.hostname.includes('replit') || window.location.hostname.includes('localhost');
+      const userId = isDevelopment ? 'dev-user-123' : currentUser.uid;
+      
       const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-      const response = await fetch(`/api/usage/${currentUser.uid}?month=${currentMonth}`);
+      const response = await fetch(`/api/usage/${userId}?month=${currentMonth}`);
       
       if (response.ok) {
         const usage = await response.json();
@@ -306,21 +310,38 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
 
       // Usar apiRequest para asegurar autenticación automática
       const { apiRequest } = await import('@/lib/queryClient');
-      const response = await apiRequest('POST', '/api/usage/increment', {
-        userId: currentUser.uid,
+      
+      // En desarrollo, no enviar userId para evitar conflictos con usuario simulado
+      const isDevelopment = window.location.hostname.includes('replit') || window.location.hostname.includes('localhost');
+      const requestBody: any = {
         feature,
         count,
         month: userUsage.month
-      });
+      };
+      
+      // Solo enviar userId en producción
+      if (!isDevelopment) {
+        requestBody.userId = currentUser.uid;
+      }
+      
+      const response = await apiRequest('POST', '/api/usage/increment', requestBody);
 
       if (response.ok) {
-        // Actualizar uso local
-        setUserUsage(prev => ({
-          ...prev!,
-          [feature]: (prev![feature as keyof UserUsage] as number) + count
-        }));
+        // Después del incremento exitoso, recargar el uso actualizado
+        const realUserId = isDevelopment ? 'dev-user-123' : currentUser.uid;
+        const updatedUsage = await apiRequest('GET', `/api/usage/${realUserId}`);
         
-        console.log(`✅ [USAGE-INCREMENT] ${feature} incrementado exitosamente`);
+        if (updatedUsage.ok) {
+          const usageData = await updatedUsage.json();
+          setUserUsage(usageData);
+          console.log(`✅ [USAGE-INCREMENT] ${feature} incrementado y recargado exitosamente`);
+        } else {
+          // Fallback: actualizar localmente si falla la recarga
+          setUserUsage(prev => ({
+            ...prev!,
+            [feature]: (prev![feature as keyof UserUsage] as number) + count
+          }));
+        }
       } else {
         console.error(`❌ [USAGE-INCREMENT] Error al incrementar ${feature}:`, response.status);
       }
