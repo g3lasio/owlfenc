@@ -39,6 +39,7 @@ interface EstimateData {
     address?: string;
   };
   isMembership?:boolean;
+  selectedTemplate?: string;
 }
 
 export class PuppeteerPdfService {
@@ -110,13 +111,35 @@ export class PuppeteerPdfService {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
 
-    const templatePath =data.isMembership? path.join(
-        __dirname,
-        "../client/src/components/templates/estimate-template.html",
-      ): path.join(
-        __dirname,
-        "../client/src/components/templates/estimate-template-free.html",
-      );
+    // Template mapping based on selectedTemplate
+    const templateMapping: Record<string, string> = {
+      basic: "basictemplateestimate.html",
+      professional: "professional_estimate_template.html", 
+      luxury: "luxurytemplate.html",
+      standard: "estimate-template.html",
+      free: "estimate-template-free.html"
+    };
+
+    // Determine which template to use
+    let templateFile = templateMapping[data.selectedTemplate || "professional"];
+    
+    // Fallback logic for membership compatibility
+    if (!templateFile) {
+      templateFile = data.isMembership ? "estimate-template.html" : "estimate-template-free.html";
+    }
+
+    // For free plan users, restrict premium templates
+    if (!data.isMembership && !["basic", "free"].includes(data.selectedTemplate || "")) {
+      templateFile = "estimate-template-free.html";
+    }
+
+    const templatePath = path.join(
+      __dirname,
+      "../client/src/components/templates/",
+      templateFile
+    );
+    
+    console.log(`🎨 Using template: ${templateFile} for selectedTemplate: ${data.selectedTemplate}`);
     const html = await fs.readFile(templatePath, "utf-8");
 
     const template = handlebars.compile(html);
