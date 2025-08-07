@@ -31,10 +31,13 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Search, Clock, Trash2, Paperclip, X, FileText, Upload, Download, MapPin, ArrowRight, ArrowLeft, Eye, Database, Building, RefreshCw, History, DollarSign } from "lucide-react";
+import { CheckCircle2, Search, Clock, Trash2, Paperclip, X, FileText, Upload, Download, MapPin, ArrowRight, ArrowLeft, Eye, Database, Building, RefreshCw, History, DollarSign, Lock, Crown, Zap } from "lucide-react";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
 import { useToast } from "@/hooks/use-toast";
 import { auth, db } from "@/lib/firebase";
+import { usePermissions } from "@/hooks/usePermissions";
+import { UpgradePrompt } from "@/components/permissions/UpgradePrompt";
+import { UserPlanSwitcher } from "@/components/dev/UserPlanSwitcher";
 import {
   collection,
   addDoc,
@@ -146,6 +149,13 @@ export default function PermitAdvisor() {
   const { toast } = useToast();
   const { profile } = useProfile();
   const { user } = useAuth();
+  const { 
+    userPlan, 
+    canUse, 
+    incrementUsage,
+    getRemainingUsage,
+    isLimitReached 
+  } = usePermissions();
   
   // New states for project selection option
   const [selectionMode, setSelectionMode] = useState<"manual" | "existing">("manual");
@@ -881,6 +891,17 @@ export default function PermitAdvisor() {
       return;
     }
 
+    // Verificar permisos antes de proceder
+    const canUsePermitAdvisor = canUse('permitAdvisor');
+    if (!canUsePermitAdvisor) {
+      toast({
+        title: "Límite alcanzado",
+        description: `Has alcanzado tu límite de consultas de Permit Advisor para este mes. Actualiza tu plan para continuar.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     setError("");
     setPermitData(null);
@@ -899,6 +920,9 @@ export default function PermitAdvisor() {
       console.log("✅ Respuesta recibida del servidor:", data);
       setPermitData(data);
 
+      // Incrementar uso después de una búsqueda exitosa
+      await incrementUsage('permitAdvisor');
+
       // Guardar automáticamente en historial
       await saveToHistory(data);
 
@@ -906,6 +930,9 @@ export default function PermitAdvisor() {
         title: "✅ DeepSearch Complete",
         description: "Permit analysis generated and saved to history!",
       });
+
+      // Avanzar al paso 3
+      setCurrentStep(3);
     } catch (error) {
       console.error("Error in permit search:", error);
       setError("Failed to analyze permits. Please try again.");
@@ -1007,6 +1034,13 @@ export default function PermitAdvisor() {
           </div>
         </div>
       </div>
+
+      {/* Permission Testing Panel - For Development */}
+      {import.meta.env.DEV && (
+        <div className="max-w-6xl mx-auto px-4 py-2">
+          <UserPlanSwitcher />
+        </div>
+      )}
 
       {/* Wizard Step Indicator - Mobile Optimized */}
       <div className="max-w-5xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
@@ -1750,14 +1784,46 @@ You can also drag & drop documents here (permits, plans, estimates)"
             </CardHeader>
             <CardContent className="space-y-4 sm:space-y-6 px-3 sm:px-6 pb-4 sm:pb-6">
               
+              {/* Usage Counter */}
+              <div className="text-center mb-4">
+                <div className="inline-flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-600/50">
+                  <div className="flex items-center gap-2">
+                    {userPlan?.name === 'Master Contractor' || userPlan?.name === 'Trial Master' ? (
+                      <>
+                        <Crown className="h-4 w-4 text-yellow-400" />
+                        <span className="text-sm text-yellow-400 font-medium">Ilimitado</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="h-4 w-4 text-cyan-400" />
+                        <span className="text-sm text-gray-300">
+                          <span className="text-cyan-400 font-semibold">{getRemainingUsage('permitAdvisor')}</span>
+                          <span className="text-gray-400"> / {userPlan?.limits.permitAdvisor === -1 ? '∞' : userPlan?.limits.permitAdvisor} consultas restantes</span>
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Analysis Controls - Mobile Optimized */}
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                 <Button
                   onClick={handleSearch}
-                  disabled={isLoading || !selectedAddress || !projectType || !projectDescription.trim()}
-                  className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium px-4 sm:px-6 py-2 sm:py-3 shadow-lg text-sm"
+                  disabled={isLoading || !selectedAddress || !projectType || !projectDescription.trim() || !canUse('permitAdvisor')}
+                  className={`font-medium px-4 sm:px-6 py-2 sm:py-3 shadow-lg text-sm ${
+                    canUse('permitAdvisor')
+                      ? "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white"
+                      : "bg-gradient-to-r from-gray-600 to-gray-500 text-gray-300 cursor-not-allowed"
+                  }`}
                 >
-                  {isLoading ? (
+                  {!canUse('permitAdvisor') ? (
+                    <>
+                      <Lock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Límite Alcanzado</span>
+                      <span className="sm:hidden">Bloqueado</span>
+                    </>
+                  ) : isLoading ? (
                     <>
                       <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1 sm:mr-2"></div>
                       <span className="hidden sm:inline">Running Analysis...</span>
@@ -1794,6 +1860,37 @@ You can also drag & drop documents here (permits, plans, estimates)"
                   </Button>
                 )}
               </div>
+
+              {/* Upgrade Prompt for Limited Users */}
+              {!canUse('permitAdvisor') && (
+                <div className="mt-4">
+                  <div className="bg-gradient-to-r from-cyan-900/30 to-blue-900/30 border border-cyan-500/30 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0">
+                        <Lock className="h-5 w-5 text-cyan-400 mt-0.5" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-cyan-300 font-semibold mb-1">Límite de consultas alcanzado</h3>
+                        <p className="text-gray-300 text-sm mb-3">
+                          Has alcanzado tu límite de {userPlan?.limits.permitAdvisor} consultas de Permit Advisor este mes. 
+                          Actualiza tu plan para obtener acceso completo.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <button 
+                            onClick={() => window.location.href = '/subscription'}
+                            className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                          >
+                            Ver Planes de Actualización
+                          </button>
+                          <div className="text-xs text-gray-400 sm:self-center">
+                            Los límites se reinician el 1ro de cada mes
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Loading State */}
               {isLoading && (
