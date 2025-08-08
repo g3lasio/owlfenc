@@ -29,7 +29,7 @@ const tokenStore: TokenStore = {};
 export const getAuthUrl = (req: Request, res: Response) => {
   try {
     // Obtenemos el userId o usamos uno predeterminado para desarrollo
-    const userId = req.query.userId as string || 'dev-user-123';
+    const userId = req.query.userId as string;
     
     console.log(`[QuickBooks] Generando URL de autorización para usuario: ${userId}`);
     
@@ -197,7 +197,7 @@ const createQBClient = (userId: string): QuickBooks | null => {
 // Verificar si el usuario está conectado a QuickBooks
 export const checkConnection = (req: Request, res: Response) => {
   // Obtenemos el userId o usamos uno predeterminado para desarrollo
-  const userId = req.query.userId as string || 'dev-user-123';
+  const userId = req.query.userId as string;
   
   console.log(`[QuickBooks] Verificando conexión para usuario: ${userId}`);
   

@@ -248,7 +248,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     try {
       // En desarrollo, usar el usuario simulado del backend
       const isDevelopment = window.location.hostname.includes('replit') || window.location.hostname.includes('localhost');
-      const userId = isDevelopment ? 'dev-user-123' : currentUser.uid;
+      const userId = currentUser.uid;
       
       const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
       const response = await fetch(`/api/usage/${userId}?month=${currentMonth}`);
@@ -350,7 +350,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     try {
       // Usar la misma lógica de detección de desarrollo que loadUserUsage
       const isDevelopment = window.location.hostname.includes('replit') || window.location.hostname.includes('localhost');
-      const userId = isDevelopment ? 'dev-user-123' : currentUser.uid;
+      const userId = currentUser.uid;
       
       console.log(`📊 [USAGE-INCREMENT] Incrementando ${feature} por ${count} para usuario: ${userId}`);
 

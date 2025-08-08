@@ -77,9 +77,18 @@ export function registerUsageRoutes(app: any) {
       let authenticatedUserId: string;
       
       if (isDevelopment) {
-        // En desarrollo, usar userId simulado
-        authenticatedUserId = 'dev-user-123';
-        console.log('🔧 [USAGE] Modo desarrollo: usando userId simulado');
+        // En desarrollo, requerir autenticación real también
+        try {
+          const decodedToken = await admin.auth().verifyIdToken(token);
+          authenticatedUserId = decodedToken.uid;
+          console.log('🔧 [USAGE] Modo desarrollo: usando autenticación real');
+        } catch (tokenError) {
+          console.error("Error verificando token en desarrollo:", tokenError);
+          return res.status(401).json({ 
+            error: "Token requerido incluso en desarrollo",
+            code: "INVALID_TOKEN" 
+          });
+        }
       } else {
         // Verificar el token con Firebase Admin en producción
         let decodedToken;

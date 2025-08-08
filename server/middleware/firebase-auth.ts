@@ -52,7 +52,7 @@ export const verifyFirebaseAuth = async (req: Request, res: Response, next: Next
     if (isDevelopment) {
       console.log('🔧 Modo desarrollo: usando usuario simulado');
       req.firebaseUser = {
-        uid: 'dev-user-123',
+        uid: null, // No mock user - require real authentication
         email: 'dev@example.com',
         name: 'Usuario Desarrollo'
       };

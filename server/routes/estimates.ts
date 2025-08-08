@@ -39,8 +39,8 @@ router.post('/', async (req, res) => {
   try {
     console.log('🔐 Creando estimado, datos recibidos:', req.body);
     
-    // Usar el firebaseUserId del frontend
-    const firebaseUserId = req.body.firebaseUserId || 'dev-user-123';
+    // Usar el firebaseUserId del frontend (autenticación requerida)
+    const firebaseUserId = req.body.firebaseUserId;
     const userId = 1; // ID numérico para PostgreSQL
     
     console.log(`👤 Usuario Firebase: ${firebaseUserId}, User ID: ${userId}`);

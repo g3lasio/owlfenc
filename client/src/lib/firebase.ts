@@ -93,7 +93,7 @@ export const toggleFirebaseMode = () => {
 // Crear un usuario simulado para modo de desarrollo
 export const createDevUser = () => {
   return {
-    uid: "dev-user-123",
+    uid: null, // Requiere autenticación real
     email: "dev@example.com",
     displayName: "Usuario Desarrollo",
     photoURL: null,
@@ -101,7 +101,7 @@ export const createDevUser = () => {
     emailVerified: true,
     getIdToken: () => Promise.resolve("dev-token-123"),
     toJSON: () => ({
-      uid: "dev-user-123",
+      uid: null, // Requiere autenticación real
       email: "dev@example.com",
       displayName: "Usuario Desarrollo"
     })

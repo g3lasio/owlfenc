@@ -151,7 +151,7 @@ export const QuickbooksImport = ({
       });
       
       console.log("Iniciando proceso de conexión con QuickBooks");
-      const response = await axios.get(`/api/quickbooks/auth?userId=${currentUser?.uid || 'dev-user-123'}`);
+      const response = await axios.get(`/api/quickbooks/auth?userId=${currentUser?.uid}`);
       
       if (!response.data || !response.data.authUrl) {
         throw new Error("No se recibió una URL de autorización válida");

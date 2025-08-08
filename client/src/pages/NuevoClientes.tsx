@@ -622,7 +622,7 @@ export default function NuevoClientes() {
       // Asignar el userId a los clientes importados si existe un perfil
       const clientsWithUserId = importedClients.map((client) => ({
         ...client,
-        userId: profile?.id?.toString() || "dev-user-123",
+        userId: profile?.id?.toString(),
       }));
 
       // Guardar los clientes en Firebase

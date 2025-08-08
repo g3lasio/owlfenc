@@ -126,7 +126,7 @@ export default function Profile() {
       console.log("🔄 Cargando perfil de empresa...");
 
       // Usar ID fijo para desarrollo
-      const userId = "dev-user-123";
+      const userId = currentUser?.uid;
       console.log(`👤 Usuario actual: ${userId}`);
 
       // Usar clave específica por usuario para localStorage
@@ -263,7 +263,7 @@ export default function Profile() {
         setCompanyInfo(updatedInfo);
 
         // Guardar inmediatamente en localStorage y servidor
-        const userId = "dev-user-123";
+        const userId = currentUser?.uid;
         const profileKey = `userProfile_${userId}`;
         localStorage.setItem(profileKey, JSON.stringify(updatedInfo));
 
@@ -321,7 +321,7 @@ export default function Profile() {
       console.log("💾 Guardando perfil de empresa...");
 
       // Usar ID fijo para desarrollo
-      const userId = "dev-user-123";
+      const userId = currentUser?.uid;
       console.log(`👤 Guardando para usuario: ${userId}`);
 
       // Asegurarnos de que cualquier valor undefined se convierta en cadena vacía

@@ -838,7 +838,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     if (isEditingCompany) {
       // Save mode - save the editable company info
       try {
-        const userId = currentUser?.uid || profile?.id || "dev-user-123";
+        const userId = currentUser?.uid || profile?.id;
 
         // Create the updated company data
         const companyData = {
@@ -3033,7 +3033,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       const estimateData = {
         // ===== IDENTIFICACIÓN Y METADATOS =====
-        firebaseUserId: currentUser?.uid || "dev-user-123",
+        firebaseUserId: currentUser?.uid,
         estimateNumber: `EST-${Date.now()}`,
         projectId: `proj_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
         status: "estimate",

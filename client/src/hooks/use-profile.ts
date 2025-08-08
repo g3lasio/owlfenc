@@ -47,7 +47,7 @@ export function useProfile() {
       // En modo desarrollo, verificar localStorage primero con clave específica del usuario
       if (isDevMode) {
         try {
-          const userId = currentUser?.uid || 'dev-user-123';
+          const userId = currentUser?.uid;
           const profileKey = `userProfile_${userId}`;
           const localProfile = localStorage.getItem(profileKey);
           if (localProfile) {
@@ -100,7 +100,7 @@ export function useProfile() {
         
         // Si todo falla y estamos en modo desarrollo, devolver un perfil vacío
         if (isDevMode) {
-          const userId = currentUser?.uid || 'dev-user-123';
+          const userId = currentUser?.uid;
           const profileKey = `userProfile_${userId}`;
           
           const emptyProfile = {
@@ -157,7 +157,7 @@ export function useProfile() {
       if (isDevMode) {
         try {
           // Usar clave específica por usuario para localStorage
-          const userId = currentUser?.uid || 'dev-user-123';
+          const userId = currentUser?.uid;
           const profileKey = `userProfile_${userId}`;
           
           // Obtener el perfil actual del localStorage si existe
@@ -202,7 +202,7 @@ export function useProfile() {
         console.error("Error guardando perfil en API:", err);
         // Si estamos en modo desarrollo y fallamos en guardar en la API, devolver los datos que guardamos en localStorage
         if (isDevMode) {
-          const userId = currentUser?.uid || 'dev-user-123';
+          const userId = currentUser?.uid;
           const profileKey = `userProfile_${userId}`;
           const localProfile = localStorage.getItem(profileKey);
           if (localProfile) {

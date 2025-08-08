@@ -5542,7 +5542,7 @@ Output must be between 200-900 characters in English.`;
   app.get("/api/profile", async (req: Request, res: Response) => {
     try {
       // Get Firebase UID from authorization header
-      let firebaseUserId = "dev-user-123";
+      let firebaseUserId;
       const authHeader = req.headers.authorization;
 
       if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -5756,7 +5756,7 @@ Output must be between 200-900 characters in English.`;
     try {
       // Obtener el usuario autenticado desde Firebase
       const authHeader = req.headers.authorization;
-      let firebaseUserId = "dev-user-123"; // Usuario por defecto en desarrollo
+      let firebaseUserId; // Autenticación requerida
 
       // En producción, extraer el ID real del usuario de Firebase
       if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -5764,7 +5764,7 @@ Output must be between 200-900 characters in English.`;
           // Aquí normalmente verificaríamos el token de Firebase
           // Por ahora, usar el header customizado que enviamos desde el frontend
           firebaseUserId =
-            (req.headers["x-firebase-uid"] as string) || "dev-user-123";
+            (req.headers["x-firebase-uid"] as string);
         } catch (authError) {
           console.warn(
             "No se pudo verificar token Firebase, usando usuario de desarrollo",

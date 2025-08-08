@@ -37,14 +37,14 @@ router.post('/', async (req, res) => {
   try {
     // Obtener el usuario autenticado desde Firebase (modo desarrollo o producción)
     const authHeader = req.headers.authorization;
-    let firebaseUserId = 'dev-user-123'; // Usuario por defecto en desarrollo
+    let firebaseUserId; // Autenticación requerida
     
     // En producción, extraer el ID real del usuario de Firebase
     if (authHeader && authHeader.startsWith('Bearer ')) {
       try {
         // Aquí normalmente verificaríamos el token de Firebase
         // Por ahora, extraemos el userId del frontend si se proporciona
-        firebaseUserId = req.body.firebaseUserId || 'dev-user-123';
+        firebaseUserId = req.body.firebaseUserId;
       } catch (authError) {
         console.warn('No se pudo verificar token Firebase, usando usuario de desarrollo');
       }
