@@ -328,7 +328,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     const limit = userPlan.limits[feature as keyof UserLimits];
     const usage = userUsage[feature as keyof UserUsage] || 0;
 
-    if (limit === -1) return 999999; // Ilimitado
+    if (limit === -1) return -1; // Ilimitado
     if (limit === 0) return 0; // Sin acceso
 
     return Math.max(0, limit - Number(usage));

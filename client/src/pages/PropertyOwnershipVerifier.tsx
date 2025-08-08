@@ -416,7 +416,7 @@ export default function PropertyOwnershipVerifier() {
                       <>
                         <Search className="w-4 h-4 mr-2" />
                         <span className="text-sm sm:text-base">
-                          Initiate Verification ({remaining} restantes)
+                          Initiate Verification ({userPlan?.limits.propertyVerifications === -1 ? '∞ Ilimitado' : `${remaining} restantes`})
                         </span>
                       </>
                     )}

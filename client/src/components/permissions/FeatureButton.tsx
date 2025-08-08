@@ -88,7 +88,7 @@ export function FeatureButton({
       return {
         disabled: false,
         showWarning: true,
-        message: `${remaining} restantes`
+        message: remaining === -1 ? 'Ilimitado' : `${remaining} restantes`
       };
     }
     

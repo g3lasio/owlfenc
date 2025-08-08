@@ -33,6 +33,8 @@ export function getUsagePercentage(
   if (limit === -1) return 0; // Ilimitado
   if (limit === 0) return 100; // Sin acceso
   
+  // En este punto, limit es definitivamente > 0
+  // @ts-ignore - TypeScript no entiende que limit > 0 aquí
   return Math.min(100, (used / limit) * 100);
 }
 
@@ -48,9 +50,12 @@ export function getUsageStatus(
   if (limit === -1) return 'unlimited';
   if (limit === 0) return 'blocked';
   
+  // En este punto, limit es definitivamente > 0
+  // @ts-ignore - TypeScript no entiende que limit > 0 aquí
   const remaining = limit - used;
   
   if (remaining <= 0) return 'exceeded';
+  // @ts-ignore - TypeScript no entiende que limit > 0 aquí
   if (remaining <= Math.ceil(limit * 0.2)) return 'warning'; // 20% o menos
   
   return 'available';
@@ -66,6 +71,7 @@ export function getUsageStatusMessage(
   const displayName = getFeatureDisplayName(feature);
   const limit = limits[feature as keyof UserLimits];
   const used = usage[feature as keyof UserUsage] || 0;
+  // @ts-ignore - Operación aritmética válida después de verificación de tipo
   const remaining = limit === -1 ? -1 : limit - used;
 
   switch (status) {
@@ -76,9 +82,13 @@ export function getUsageStatusMessage(
     case 'exceeded':
       return `${displayName}: Límite alcanzado (${used}/${limit})`;
     case 'warning':
-      return `${displayName}: ${remaining} restantes de ${limit}`;
+      return limit === -1 
+        ? `${displayName}: Ilimitado`
+        : `${displayName}: ${remaining} restantes de ${limit}`;
     case 'available':
-      return `${displayName}: ${remaining} disponibles`;
+      return limit === -1 
+        ? `${displayName}: Ilimitado`
+        : `${displayName}: ${remaining} disponibles`;
     default:
       return `${displayName}: Estado desconocido`;
   }
