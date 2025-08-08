@@ -114,7 +114,7 @@ export class PuppeteerPdfService {
     // Template mapping based on selectedTemplate - Simplified to 2 options
     const templateMapping: Record<string, string> = {
       basic: "estimate-template-free.html",
-      premium: "estimate-template-premium.html",
+      premium: "estimate-template-premium-advanced.html",
       // Legacy support for old template names
       professional: "professional_estimate_template.html", 
       luxury: "luxurytemplate.html",
