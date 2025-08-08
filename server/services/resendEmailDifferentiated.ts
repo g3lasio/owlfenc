@@ -24,32 +24,24 @@ export class ResendEmailDifferentiated {
 
   /**
    * Check if domain is verified with Resend
+   * For contractor platforms, ALWAYS deliver emails directly to prevent data isolation issues
    */
   private isDomainVerified(): boolean {
-    console.log('🔍 [EMAIL-MODE] Checking email delivery mode...');
-    console.log('🔍 [EMAIL-MODE] NODE_ENV:', process.env.NODE_ENV);
-    console.log('🔍 [EMAIL-MODE] ENABLE_REAL_EMAIL:', process.env.ENABLE_REAL_EMAIL);
-    console.log('🔍 [EMAIL-MODE] FORCE_PRODUCTION_EMAIL:', process.env.FORCE_PRODUCTION_EMAIL);
-    
-    const isProduction = process.env.NODE_ENV === 'production' || 
-                        process.env.FORCE_PRODUCTION_EMAIL === 'true' || 
-                        process.env.ENABLE_REAL_EMAIL === 'true';
-    
-    console.log('🔍 [EMAIL-MODE] Result - Production mode:', isProduction);
-    return isProduction;
+    console.log('🔍 [EMAIL-MODE] Multi-tenant contractor platform - using direct email delivery');
+    // CRITICAL: For contractor platforms, emails must go directly to recipients
+    // Test mode redirection causes data isolation violations
+    return true;
   }
 
   /**
-   * Get appropriate recipient (handles test mode)
+   * Get appropriate recipient - ALWAYS direct for contractor platform
+   * NO test mode redirection to prevent data isolation issues
    */
   private getRecipient(originalEmail: string, role: 'contractor' | 'client'): string {
-    if (this.isDomainVerified()) {
-      return originalEmail;
-    }
-    
-    // In test mode, route to gelasio@chyrris.com
-    console.log(`🔧 [TEST-MODE] Routing ${role} email from ${originalEmail} to gelasio@chyrris.com`);
-    return 'gelasio@chyrris.com';
+    // CRITICAL: Multi-tenant contractor platform requires direct email delivery
+    // Redirecting emails violates data isolation between contractors
+    console.log(`📧 [DIRECT-DELIVERY] Sending ${role} email directly to: ${originalEmail}`);
+    return originalEmail;
   }
 
   /**

@@ -21,10 +21,10 @@ router.post('/test-secure-contract', async (req, res) => {
     const testContract = {
       contractId: `TEST-${Date.now()}`,
       contractorName: 'Test Contractor LLC',
-      contractorEmail: 'gelasio@chyrris.com', // Test mode will redirect here
+      contractorEmail: 'test-contractor@example.com', // System test data
       contractorPhone: '+1234567890',
       clientName: 'Test Client',
-      clientEmail: 'gelasio@chyrris.com', // Test mode will redirect here
+      clientEmail: 'test-client@example.com', // System test data
       clientPhone: '+1234567890',
       projectValue: '$5,000',
       projectDescription: 'Test fence installation project',

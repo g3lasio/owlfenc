@@ -29,8 +29,9 @@ router.post('/test-send', async (req, res) => {
     console.log('📧 [CENTRALIZED-EMAIL] Test send invoked');
     
     // Test básico del servicio de email sin dependencias complejas
+    // SYSTEM TEST ONLY - using admin email for internal testing
     const testEmail = await resendService.sendEmail({
-      to: "gelasio@chyrris.com",
+      to: req.body.testEmail || "admin@owlfenc.com",
       from: "onboarding@resend.dev",
       subject: "Test - Sistema Owl Fence",
       html: "<h1>Test Email</h1><p>Email test funcionando correctamente</p>"
@@ -68,7 +69,7 @@ router.post('/test-estimate', async (req, res) => {
         <div style="border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
           <h2>Información del Cliente</h2>
           <p><strong>Nombre:</strong> Cliente Test</p>
-          <p><strong>Email:</strong> gelasio@chyrris.com</p>
+          <p><strong>Email:</strong> test-client@example.com</p>
           
           <h2>Información del Contratista</h2>
           <p><strong>Nombre:</strong> Contratista Test</p>

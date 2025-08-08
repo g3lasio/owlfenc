@@ -1175,7 +1175,16 @@ export class DualSignatureService {
         return;
       }
 
+      // FIXED: Use correct data structure from database
       const contractData = contract.contractData as any;
+      
+      // Log contract data for debugging
+      console.log("🔍 [DUAL-SIGNATURE] Contract data debug:", {
+        contractorEmail: contract.contractorEmail,
+        clientEmail: contract.clientEmail,
+        contractorName: contract.contractorName,
+        clientName: contract.clientName
+      });
 
       if (remainingParty === "contractor") {
         // Notify contractor that client has signed
@@ -1184,15 +1193,15 @@ export class DualSignatureService {
         const contractorSignUrl = `${baseUrl}/sign/${contractId}/contractor`;
 
         await this.emailService.sendContractEmail({
-          to: contractData.contractorEmail,
-          toName: contractData.contractorName,
-          contractorEmail: contractData.contractorEmail,
-          contractorName: contractData.contractorName,
-          contractorCompany: contractData.contractorCompany,
-          subject: `✅ Client Signed! Your Signature Needed - ${contractData.clientName}`,
+          to: contract.contractorEmail, // FIXED: Use contract.contractorEmail
+          toName: contract.contractorName, // FIXED: Use contract.contractorName
+          contractorEmail: contract.contractorEmail,
+          contractorName: contract.contractorName,
+          contractorCompany: contract.contractorCompany || contractData?.contractorCompany || "Construction Company",
+          subject: `✅ Client Signed! Your Signature Needed - ${contract.clientName}`,
           htmlContent: this.generateContractorNotificationHTML({
-            contractorName: contractData.contractorName,
-            clientName: contractData.clientName,
+            contractorName: contract.contractorName,
+            clientName: contract.clientName,
             signUrl: contractorSignUrl,
             contractId: contractId,
             notificationType: "client_signed",
@@ -1201,7 +1210,7 @@ export class DualSignatureService {
 
         console.log(
           "✅ [DUAL-SIGNATURE] Contractor notification sent:",
-          contractData.contractorEmail
+          contract.contractorEmail
         );
       } else {
         // Notify client that contractor has signed
@@ -1209,17 +1218,27 @@ export class DualSignatureService {
           process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000";
         const clientSignUrl = `${baseUrl}/sign/${contractId}/client`;
 
+        // CRITICAL FIX: Ensure clientEmail exists
+        if (!contract.clientEmail) {
+          console.error("❌ [DUAL-SIGNATURE] Critical error: clientEmail is missing from contract", {
+            contractId,
+            contractorEmail: contract.contractorEmail,
+            clientName: contract.clientName
+          });
+          throw new Error("Client email is required for contract notifications");
+        }
+
         await this.emailService.sendContractEmail({
-          to: contractData.clientEmail,
-          toName: contractData.clientName,
-          contractorEmail: contractData.contractorEmail,
-          contractorName: contractData.contractorName,
-          contractorCompany: contractData.contractorCompany,
-          subject: `✅ Contractor Signed! Your Signature Needed - ${contractData.contractorCompany}`,
+          to: contract.clientEmail, // FIXED: Use contract.clientEmail
+          toName: contract.clientName, // FIXED: Use contract.clientName
+          contractorEmail: contract.contractorEmail,
+          contractorName: contract.contractorName,
+          contractorCompany: contract.contractorCompany || contractData?.contractorCompany || "Construction Company",
+          subject: `✅ Contractor Signed! Your Signature Needed - ${contract.contractorCompany || 'Construction Company'}`,
           htmlContent: this.generateClientNotificationHTML({
-            clientName: contractData.clientName,
-            contractorName: contractData.contractorName,
-            contractorCompany: contractData.contractorCompany,
+            clientName: contract.clientName,
+            contractorName: contract.contractorName,
+            contractorCompany: contract.contractorCompany || contractData?.contractorCompany || "Construction Company",
             signUrl: clientSignUrl,
             contractId: contractId,
             notificationType: "contractor_signed",
@@ -1228,7 +1247,7 @@ export class DualSignatureService {
 
         console.log(
           "✅ [DUAL-SIGNATURE] Client notification sent:",
-          contractData.clientEmail
+          contract.clientEmail
         );
       }
     } catch (error: any) {

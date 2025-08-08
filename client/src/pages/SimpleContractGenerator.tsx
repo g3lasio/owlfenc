@@ -2302,7 +2302,7 @@ export default function SimpleContractGenerator() {
           <h1>Service Contract</h1>
           <h2>Contractor Information</h2>
           <p><strong>Company:</strong> ${contractPayload.contractor?.name || 'OWL FENC LLC'}</p>
-          <p><strong>Email:</strong> ${contractPayload.contractor?.email || 'gelasio@chyrris.com'}</p>
+          <p><strong>Email:</strong> ${contractPayload.contractor?.email || 'contractor@example.com'}</p>
           
           <h2>Client Information</h2>
           <p><strong>Name:</strong> ${contractPayload.client?.name}</p>

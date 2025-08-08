@@ -27,30 +27,25 @@ export class ResendEmailService {
   private noReplyEmail = `noreply@${this.platformDomain}`; // Email principal no-reply
   private defaultFromEmail = `noreply@${this.platformDomain}`;
   private supportEmail = `support@${this.platformDomain}`;
-  private testModeEmail = 'gelasio@chyrris.com'; // Email autorizado en modo test
+  // REMOVED: No test mode redirection for contractor platform to prevent data isolation issues
 
   /**
-   * Detectar si estamos en modo de prueba de Resend
-   * Solo activo para emails de prueba específicos del sistema
+   * Multi-tenant contractor platform - NO test mode to prevent data isolation
+   * Each contractor must send emails to their own clients
    */
   private isTestMode(): boolean {
-    // Modo de prueba solo para desarrollo interno del sistema
-    return process.env.NODE_ENV === 'development' && process.env.FORCE_TEST_MODE === 'true';
+    // CRITICAL: Always false for contractor platform to ensure proper email routing
+    return false;
   }
 
   /**
-   * Obtener destinatario apropiado según el modo
-   * Solo redirige emails de prueba del sistema, NO emails de contratistas reales
+   * Multi-tenant contractor platform - ALWAYS direct delivery
+   * No redirection to prevent data isolation between contractors
    */
   private getAppropriateRecipient(originalEmail: string, isSystemTest: boolean = false): string {
-    // Solo redirigir si es una prueba específica del sistema
-    if (this.isTestMode() && isSystemTest && originalEmail !== this.testModeEmail) {
-      console.log(`🧪 [SYSTEM-TEST] Redirigiendo email de prueba del sistema ${originalEmail} a ${this.testModeEmail}`);
-      return this.testModeEmail;
-    }
-    
-    // IMPORTANTE: Los emails de contratistas a clientes reales SIEMPRE van directamente
-    console.log(`📧 [PRODUCTION] Enviando email directamente a: ${originalEmail}`);
+    // CRITICAL: Multi-tenant platform requires direct email delivery
+    // Each contractor's emails must go to their own clients only
+    console.log(`📧 [DIRECT-DELIVERY] Sending email directly to: ${originalEmail}`);
     return originalEmail;
   }
 

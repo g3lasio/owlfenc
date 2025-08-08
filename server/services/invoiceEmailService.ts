@@ -293,9 +293,10 @@ export async function sendInvoiceEmail(data: InvoiceEmailData & {
     // Generar el HTML del email
     const htmlContent = generateInvoiceEmailHTML(data);
     
-    // Preparar los destinatarios
-    const to = testMode ? 'gelasio@chyrris.com' : client.email;
-    const cc = ccContractor && contractor.email && !testMode ? [contractor.email] : undefined;
+    // CRITICAL: Multi-tenant platform - emails must go to actual recipients
+    // No test mode redirection to prevent data isolation violations
+    const to = client.email;
+    const cc = ccContractor && contractor.email ? [contractor.email] : undefined;
     
     // Enviar el email
     const response = await resend.emails.send({
