@@ -13,7 +13,6 @@ import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { UpgradePrompt } from "@/components/permissions/UpgradePrompt";
 import { Lock } from "lucide-react";
-import { UserPlanSwitcher } from "@/components/dev/UserPlanSwitcher";
 
 export default function OwlFunding() {
   const { toast } = useToast();
@@ -26,8 +25,8 @@ export default function OwlFunding() {
   });
 
   // Verificar si es plan básico (Primo Chambeador)
-  const isPrimoChambeador = userPlan?.id === 1 || userPlan?.id === 'primo-chambeador'; // Plan ID 1 = Primo Chambeador
-  const isFreeTrial = userPlan?.id === 'free-trial';
+  const isPrimoChambeador = userPlan?.id === 1; // Plan ID 1 = Primo Chambeador
+  const isFreeTrial = userPlan?.id === 4; // Plan ID 4 = Trial
   
   // Los usuarios pagados (no primo chambeador) o en prueba gratis tienen acceso completo
   const hasFullAccess = !isPrimoChambeador;
@@ -114,11 +113,6 @@ export default function OwlFunding() {
 
   return (
     <div className="container pb-40 mx-auto p-6 flex flex-col items-center">
-      {/* Panel de testing solo en desarrollo */}
-      <div className="w-full max-w-4xl">
-        <UserPlanSwitcher />
-      </div>
-      
       <div className="flex flex-col items-center justify-center mb-8 text-center">
         <img
           src="/images/owl-funding-logo-white.png"
@@ -189,6 +183,26 @@ export default function OwlFunding() {
                 <h3 className="font-medium text-center">Capital de Trabajo</h3>
                 <p className="text-sm text-center text-muted-foreground">
                   Flujo de efectivo flexible
+                </p>
+              </div>
+
+              <div className="flex flex-col items-center p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="text-green-600 text-xl mb-2">
+                  <i className="ri-group-line"></i>
+                </div>
+                <h3 className="font-medium text-center text-green-800">Financiamiento para Clientes</h3>
+                <p className="text-sm text-center text-green-700">
+                  Ahora puedes ofrecer opciones de financiamiento a tus clientes
+                </p>
+              </div>
+
+              <div className="flex flex-col items-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="text-blue-600 text-xl mb-2">
+                  <i className="ri-hand-coin-line"></i>
+                </div>
+                <h3 className="font-medium text-center text-blue-800">Pagos Flexibles</h3>
+                <p className="text-sm text-center text-blue-700">
+                  Permite a tus clientes pagar en cuotas cómodas
                 </p>
               </div>
             </div>
