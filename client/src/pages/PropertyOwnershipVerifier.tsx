@@ -284,7 +284,7 @@ export default function PropertyOwnershipVerifier() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6 max-w-6xl">
+      <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-6 max-w-6xl">
         {/* Header - Futuristic Holographic Design */}
         <div className="mb-6 sm:mb-8 relative">
           {/* Holographic Background Effects */}
@@ -344,17 +344,17 @@ export default function PropertyOwnershipVerifier() {
           <TabsList className="grid w-full grid-cols-2 h-auto bg-gradient-to-r from-slate-900/80 to-slate-800/80 border border-slate-600/50 backdrop-blur-sm">
             <TabsTrigger 
               value="search" 
-              className="text-xs sm:text-sm py-2 sm:py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:text-cyan-300 data-[state=active]:border data-[state=active]:border-cyan-400/50"
+              className="text-xs sm:text-sm py-3 px-2 sm:px-4 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:text-cyan-300 data-[state=active]:border data-[state=active]:border-cyan-400/50"
             >
               <span className="hidden sm:inline">Neural Verification</span>
-              <span className="sm:hidden">Verify</span>
+              <span className="sm:hidden flex items-center gap-1">🔍 Verify</span>
             </TabsTrigger>
             <TabsTrigger 
               value="history" 
-              className="text-xs sm:text-sm py-2 sm:py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600/20 data-[state=active]:to-pink-600/20 data-[state=active]:text-purple-300 data-[state=active]:border data-[state=active]:border-purple-400/50"
+              className="text-xs sm:text-sm py-3 px-2 sm:px-4 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600/20 data-[state=active]:to-pink-600/20 data-[state=active]:text-purple-300 data-[state=active]:border data-[state=active]:border-purple-400/50"
             >
               <span className="hidden sm:inline">Data Archives</span>
-              <span className="sm:hidden">Archives</span>
+              <span className="sm:hidden flex items-center gap-1">📊 History</span>
             </TabsTrigger>
           </TabsList>
 
@@ -414,7 +414,8 @@ export default function PropertyOwnershipVerifier() {
                       <>
                         <Search className="w-4 h-4 mr-2" />
                         <span className="text-sm sm:text-base">
-                          Initiate Verification ({userPlan?.limits.propertyVerifications === -1 ? '∞ Ilimitado' : `${remaining} restantes`})
+                          <span className="hidden sm:inline">Initiate Verification ({userPlan?.limits.propertyVerifications === -1 ? '∞ Ilimitado' : `${remaining} restantes`})</span>
+                          <span className="sm:hidden">Verificar ({userPlan?.limits.propertyVerifications === -1 ? '∞' : remaining})</span>
                         </span>
                       </>
                     )}
