@@ -2599,7 +2599,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       address: client.address,
       city: client.city,
       state: client.state,
-      zipCode: client.zipCode || client.zipcode,
+      zipCode: client.zipCode,
       email: client.email,
       phone: client.phone,
     });
@@ -5140,6 +5140,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   )}
                 </div>
               </CardTitle>
+            </CardHeader>
+            <CardContent>
               <Dialog
                   open={showMaterialDialog}
                   onOpenChange={setShowMaterialDialog}
@@ -5973,7 +5975,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                 id="edit-client-zip"
                                 value={
                                   estimate.client?.zipCode ||
-                                  estimate.client?.zipcode ||
+                                  estimate.client?.zipCode ||
                                   ""
                                 }
                                 onChange={(e) =>
@@ -6077,7 +6079,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                             <p className="text-xs text-gray-400">
                               {estimate.client?.address &&
                               estimate.client.address.trim() !== ""
-                                ? `${estimate.client.address}${estimate.client.city ? ", " + estimate.client.city : ""}${estimate.client.state ? ", " + estimate.client.state : ""}${estimate.client.zipcode || estimate.client.zipCode ? " " + (estimate.client.zipcode || estimate.client.zipCode) : ""}`
+                                ? `${estimate.client.address}${estimate.client.city ? ", " + estimate.client.city : ""}${estimate.client.state ? ", " + estimate.client.state : ""}${estimate.client.zipCode ? " " + estimate.client.zipCode : ""}`
                                 : "Complete address in Client step"}
                             </p>
                             <p className="text-xs text-cyan-400">
@@ -6133,7 +6135,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         <p>
                           Ubicación:{" "}
                           {estimate.client?.address
-                            ? `${estimate.client.address}${estimate.client.city ? ", " + estimate.client.city : ""}${estimate.client.state ? ", " + estimate.client.state : ""}${estimate.client.zipcode || estimate.client.zipCode ? " " + (estimate.client.zipcode || estimate.client.zipCode) : ""}`
+                            ? `${estimate.client.address}${estimate.client.city ? ", " + estimate.client.city : ""}${estimate.client.state ? ", " + estimate.client.state : ""}${estimate.client.zipCode ? " " + estimate.client.zipCode : ""}`
                             : "No especificada"}
                         </p>
                         <p>
