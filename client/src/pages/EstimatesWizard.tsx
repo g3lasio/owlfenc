@@ -3748,6 +3748,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         return;
       }
 
+      // Debug logging for template selection
+      console.log("🎨 TEMPLATE DEBUG:", {
+        selectedTemplate,
+        userSubscription: userSubscription?.plan?.id,
+        isMembership: userSubscription?.plan?.id === 1 ? false : true
+      });
+
       // Create payload in the exact format expected by Puppeteer service
       const payload = {
         user: currentUser
@@ -3783,7 +3790,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           license: profile?.license || "",
         },
         isMembership: userSubscription?.plan?.id === 1 ? false : true,
-        selectedTemplate: selectedTemplate,
+        selectedTemplate: selectedTemplate || "basic", // Ensure fallback
       };
 
       console.log("📤 Sending payload to PDF service:", payload);
