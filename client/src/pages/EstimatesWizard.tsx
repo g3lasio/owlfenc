@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
+import { usePermissions } from "@/contexts/PermissionContext";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -186,6 +187,7 @@ export default function EstimatesWizardFixed() {
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const { profile, isLoading: isProfileLoading } = useProfile();
+  const { userPlan, loading: isPermissionsLoading } = usePermissions();
   console.log(currentUser);
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -7088,7 +7090,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                 );
 
                                 // AUTO-DETECT PREMIUM: Check user's subscription level
-                                const isPremiumUser = membership?.subscription?.planId >= 3; // Master Contractor (3) or Trial Master (4)
+                                console.log("🔍 MEMBERSHIP DEBUG:", {
+                                  userPlan: userPlan,
+                                  planId: userPlan?.id,
+                                  planName: userPlan?.name
+                                });
+                                
+                                const isPremiumUser = userPlan?.id >= 3; // Master Contractor (3) or Trial Master (4)
                                 const premiumPayload = {
                                   ...payload,
                                   templateMode: isPremiumUser ? "premium" : "basic",
@@ -7097,12 +7105,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                 };
 
                                 console.log("🎨 TEMPLATE DETECTION:", {
-                                  planId: membership?.subscription?.planId,
-                                  planName: membership?.plan?.name,
+                                  planId: userPlan?.id,
+                                  planName: userPlan?.name,
                                   isPremiumUser,
                                   templateMode: premiumPayload.templateMode,
                                   isMembership: premiumPayload.isMembership,
-                                  selectedTemplate: premiumPayload.selectedTemplate
+                                  selectedTemplate: premiumPayload.selectedTemplate,
+                                  payloadSent: JSON.stringify(premiumPayload, null, 2)
                                 });
 
                                 const res = await axios.post(
