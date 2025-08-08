@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
-import { usePermissions } from "@/contexts/PermissionContext";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -208,32 +207,7 @@ export default function EstimatesWizardFixed() {
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const { profile, isLoading: isProfileLoading } = useProfile();
-  const { 
-    userPlan,
-    userUsage,
-    incrementUsage, 
-    canUse,
-    hasAccess,
-    isTrialUser,
-    trialDaysRemaining,
-    shouldUseWatermark,
-    isFeatureAvailable
-  } = usePermissions();
   console.log(currentUser);
-
-  // Get current plan information for UI restrictions
-  const currentPlan = userPlan;
-  const isPrimoChambeador = currentPlan?.id === 1;
-  const isMeroPatron = currentPlan?.id === 2;
-  const isMasterContractor = currentPlan?.id === 3;
-  const isTrialMaster = currentPlan?.id === 4;
-  const isFreePlan = currentPlan?.id === 0 || !currentPlan;
-
-  // Check if estimates are available (not just disabled)
-  const areEstimatesAvailable = () => isFeatureAvailable('estimates');
-  
-  // Check if watermark should be used for current user
-  const useWatermarkForEstimates = () => shouldUseWatermark('estimates');
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -2599,7 +2573,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       address: client.address,
       city: client.city,
       state: client.state,
-      zipCode: client.zipCode,
+      zipCode: client.zipCode || client.zipcode,
       email: client.email,
       phone: client.phone,
     });
@@ -4244,62 +4218,28 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     <Building2 className="h-4 w-4" />
                     Project Details
                   </Label>
-                  {/* Enhance with Mervin AI Button - Hide completely for free plan */}
-                  {areEstimatesAvailable() ? (
-                    <Button
-                      onClick={enhanceProjectWithAI}
-                      disabled={isAIProcessing || !estimate.projectDetails.trim()}
-                      className={`w-full sm:w-auto ${
-                        isTrialMaster || isTrialUser
-                          ? "bg-gradient-to-r from-purple-400 to-cyan-400 text-black hover:from-purple-300 hover:to-cyan-300"
-                          : useWatermarkForEstimates()
-                            ? "bg-orange-400 text-black hover:bg-orange-300"
-                            : "bg-cyan-400 text-black hover:bg-cyan-300"
-                      }`}
-                      size="sm"
-                    >
-                      {isAIProcessing ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          <span className="hidden sm:inline">Procesando...</span>
-                          <span className="sm:hidden">Procesando...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Brain className="h-4 w-4 mr-2" />
-                          {(isTrialMaster || isTrialUser) && (
-                            <span className="text-xs bg-yellow-400 text-black px-1 rounded mr-1">
-                              TRIAL
-                            </span>
-                          )}
-                          {useWatermarkForEstimates() && (
-                            <span className="text-xs bg-gray-300 text-black px-1 rounded mr-1">
-                              WATERMARK
-                            </span>
-                          )}
-                          <span className="hidden sm:inline">
-                            Enhance with Mervin AI
-                          </span>
-                          <span className="sm:hidden">Mervin AI</span>
-                        </>
-                      )}
-                    </Button>
-                  ) : (
-                    <div className="bg-gradient-to-r from-yellow-600 to-orange-600 text-black rounded-lg p-2 text-center text-xs w-full sm:w-auto">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <Brain className="h-4 w-4" />
-                        <span className="font-medium">AI Enhancement Unavailable</span>
-                      </div>
-                      <p className="text-xs mb-1">Upgrade to Mero Patrón</p>
-                      <Button
-                        onClick={() => window.open('/pricing', '_blank')}
-                        size="sm"
-                        className="bg-black text-white hover:bg-gray-800 text-xs h-6 px-2"
-                      >
-                        Plans
-                      </Button>
-                    </div>
-                  )}
+                  <Button
+                    onClick={enhanceProjectWithAI}
+                    disabled={isAIProcessing || !estimate.projectDetails.trim()}
+                    className="bg-cyan-400 text-black hover:bg-cyan-300 w-full sm:w-auto"
+                    size="sm"
+                  >
+                    {isAIProcessing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <span className="hidden sm:inline">Procesando...</span>
+                        <span className="sm:hidden">Procesando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="h-4 w-4 mr-2" />
+                        <span className="hidden sm:inline">
+                          Enhance with Mervin AI
+                        </span>
+                        <span className="sm:hidden">Mervin AI</span>
+                      </>
+                    )}
+                  </Button>
                 </div>
                 <div className="relative">
                   <Textarea
@@ -4649,182 +4589,83 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   Add Materials ({estimate.items.length})
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center sm:justify-end">
-                  {/* HUD-STYLE MATERIALS AI SEARCH - Hide completely for free plan */}
-                  {areEstimatesAvailable() ? (
-                    <div className="relative z-10">
-                      <button
-                        disabled={
-                          !estimate.projectDetails.trim() ||
-                          estimate.projectDetails.length < 3 ||
-                          isAIProcessing
-                        }
-                        className={`
-                          relative  px-4 py-2 text-sm font-mono transition-all duration-300
-                          backdrop-blur-sm
-                          disabled:opacity-50 disabled:cursor-not-allowed
-                          group z-40 w-full sm:w-auto
-                          ${
-                            isTrialMaster || isTrialUser
-                              ? "bg-purple-900/40 border border-purple-400/20 hover:border-purple-400/60 hover:shadow-lg hover:shadow-purple-400/20"
-                              : useWatermarkForEstimates()
-                                ? "bg-orange-900/40 border border-orange-400/20 hover:border-orange-400/60 hover:shadow-lg hover:shadow-orange-400/20"
-                                : "bg-black/40 border border-cyan-400/20 hover:border-cyan-400/60 hover:shadow-lg hover:shadow-cyan-400/20"
-                          }
-                        `}
-                        style={{
-                          clipPath:
-                            "polygon(8px 0%, 100% 0%, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0% 100%, 0% 8px)",
-                        }}
-                        onClick={() => {
+                  {/* HUD-STYLE MATERIALS AI SEARCH - Compact Futuristic Design */}
+                  <div className="relative z-10">
+                    <button
+                      disabled={
+                        !estimate.projectDetails.trim() ||
+                        estimate.projectDetails.length < 3 ||
+                        isAIProcessing
+                      }
+                      className={`
+                        relative  px-4 py-2 text-sm font-mono transition-all duration-300
+                        bg-black/40 backdrop-blur-sm
+                        border border-cyan-400/20
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                        group z-40 w-full sm:w-auto
+                        hover:border-cyan-400/60 hover:shadow-lg hover:shadow-cyan-400/20
+                      `}
+                      style={{
+                        clipPath:
+                          "polygon(8px 0%, 100% 0%, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0% 100%, 0% 8px)",
+                      }}
+                      onClick={() => {
+                        console.log(
+                          "🔍 MATERIALS AI SEARCH clicked - current state:",
+                          showNewDeepsearchDialog,
+                        );
+                        setShowNewDeepsearchDialog((prev) => {
                           console.log(
-                            "🔍 MATERIALS AI SEARCH clicked - current state:",
-                            showNewDeepsearchDialog,
+                            "🔍 Setting new state from",
+                            prev,
+                            "to",
+                            !prev,
                           );
-                          setShowNewDeepsearchDialog((prev) => {
-                            console.log(
-                              "🔍 Setting new state from",
-                              prev,
-                              "to",
-                              !prev,
-                            );
-                            return !prev;
-                          });
-                        }}
-                      >
-                        {/* Corner Brackets with dynamic colors */}
-                        <div className={`absolute top-0 left-0 w-2 h-2 border-l border-t ${
-                          isTrialMaster || isTrialUser
-                            ? "border-purple-400/60"
-                            : useWatermarkForEstimates()
-                              ? "border-orange-400/60"
-                              : "border-cyan-400/60"
-                        }`}></div>
-                        <div className={`absolute top-0 right-0 w-2 h-2 border-r border-t ${
-                          isTrialMaster || isTrialUser
-                            ? "border-purple-400/60"
-                            : useWatermarkForEstimates()
-                              ? "border-orange-400/60"
-                              : "border-cyan-400/60"
-                        }`}></div>
-                        <div className={`absolute bottom-0 left-0 w-2 h-2 border-l border-b ${
-                          isTrialMaster || isTrialUser
-                            ? "border-purple-400/60"
-                            : useWatermarkForEstimates()
-                              ? "border-orange-400/60"
-                              : "border-cyan-400/60"
-                        }`}></div>
-                        <div className={`absolute bottom-0 right-0 w-2 h-2 border-r border-b ${
-                          isTrialMaster || isTrialUser
-                            ? "border-purple-400/60"
-                            : useWatermarkForEstimates()
-                              ? "border-orange-400/60"
-                              : "border-cyan-400/60"
-                        }`}></div>
+                          return !prev;
+                        });
+                      }}
+                    >
+                      {/* Corner Brackets */}
+                      <div className="absolute top-0 left-0 w-2 h-2 border-l border-t border-cyan-400/60"></div>
+                      <div className="absolute top-0 right-0 w-2 h-2 border-r border-t border-cyan-400/60"></div>
+                      <div className="absolute bottom-0 left-0 w-2 h-2 border-l border-b border-cyan-400/60"></div>
+                      <div className="absolute bottom-0 right-0 w-2 h-2 border-r border-b border-cyan-400/60"></div>
 
-                        {/* Scanning Lines with dynamic colors */}
-                        <div className="absolute inset-0 ">
-                          <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent to-transparent animate-pulse ${
-                            isTrialMaster || isTrialUser
-                              ? "via-purple-400/60"
-                              : useWatermarkForEstimates()
-                                ? "via-orange-400/60"
-                                : "via-cyan-400/60"
-                          }`}></div>
-                          <div
-                            className={`absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent to-transparent animate-pulse ${
-                              isTrialMaster || isTrialUser
-                                ? "via-purple-400/60"
-                                : useWatermarkForEstimates()
-                                  ? "via-orange-400/60"
-                                  : "via-cyan-400/60"
-                            }`}
-                            style={{ animationDelay: "0.5s" }}
-                          ></div>
-                        </div>
-
-                        {/* Holographic Border Glow with dynamic colors */}
-                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
-                          isTrialMaster || isTrialUser
-                            ? "bg-gradient-to-r from-purple-400/5 via-blue-400/10 to-purple-400/5"
-                            : useWatermarkForEstimates()
-                              ? "bg-gradient-to-r from-orange-400/5 via-yellow-400/10 to-orange-400/5"
-                              : "bg-gradient-to-r from-cyan-400/5 via-blue-400/10 to-cyan-400/5"
-                        }`} />
-
-                        <div className="relative flex items-center gap-1.5 text-cyan-100">
-                          {(isTrialMaster || isTrialUser) && !isAIProcessing && (
-                            <span className="text-xs bg-yellow-400 text-black px-1 rounded">
-                              TRIAL
-                            </span>
-                          )}
-                          {useWatermarkForEstimates() && !isAIProcessing && (
-                            <span className="text-xs bg-gray-300 text-black px-1 rounded">
-                              WATERMARK
-                            </span>
-                          )}
-                          {isAIProcessing ? (
-                            <>
-                              <div className="flex items-center gap-1.5">
-                                <div className={`w-3 h-3 border border-t-transparent rounded-full animate-spin ${
-                                  isTrialMaster || isTrialUser
-                                    ? "border-purple-400"
-                                    : useWatermarkForEstimates()
-                                      ? "border-orange-400"
-                                      : "border-cyan-400"
-                                }`} />
-                                <span className={`font-mono text-xs ${
-                                  isTrialMaster || isTrialUser
-                                    ? "text-purple-400"
-                                    : useWatermarkForEstimates()
-                                      ? "text-orange-400"
-                                      : "text-cyan-400"
-                                }`}>
-                                  {aiProgress}%
-                                </span>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <Search className={`h-4 w-4 ${
-                                isTrialMaster || isTrialUser
-                                  ? "text-purple-400"
-                                  : useWatermarkForEstimates()
-                                    ? "text-orange-400"
-                                    : "text-cyan-400"
-                              }`} />
-                              <span className="text-sm tracking-wide">
-                                DeepSearch Material
-                              </span>
-                              <ChevronDown
-                                className={`h-3 w-3 transition-transform duration-300 ${showNewDeepsearchDialog ? "rotate-180" : ""} ${
-                                  isTrialMaster || isTrialUser
-                                    ? "text-purple-400"
-                                    : useWatermarkForEstimates()
-                                      ? "text-orange-400"
-                                      : "text-cyan-400"
-                                }`}
-                              />
-                            </>
-                          )}
-                        </div>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="bg-gradient-to-r from-yellow-600 to-orange-600 text-black rounded-lg p-3 text-center w-full sm:w-auto">
-                      <div className="flex items-center justify-center gap-2 mb-2">
-                        <Search className="h-4 w-4" />
-                        <span className="font-medium text-sm">AI Search Unavailable</span>
+                      {/* Scanning Lines */}
+                      <div className="absolute inset-0 ">
+                        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent animate-pulse"></div>
+                        <div
+                          className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent animate-pulse"
+                          style={{ animationDelay: "0.5s" }}
+                        ></div>
                       </div>
-                      <p className="text-xs mb-2">Upgrade to Mero Patrón for AI material search</p>
-                      <Button
-                        onClick={() => window.open('/pricing', '_blank')}
-                        size="sm"
-                        className="bg-black text-white hover:bg-gray-800 text-xs"
-                      >
-                        View Plans
-                      </Button>
-                    </div>
-                  )}
+
+                      {/* Holographic Border Glow */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/5 via-blue-400/10 to-cyan-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                      <div className="relative flex items-center gap-1.5 text-cyan-100">
+                        {isAIProcessing ? (
+                          <>
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-3 h-3 border border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                              <span className="text-cyan-400 font-mono text-xs">
+                                {aiProgress}%
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <Search className="h-4 w-4 text-cyan-400" />
+                            <span className="text-sm tracking-wide">
+                              DeepSearch Material
+                            </span>
+                            <ChevronDown
+                              className={`h-3 w-3 text-cyan-400 transition-transform duration-300 ${showNewDeepsearchDialog ? "rotate-180" : ""}`}
+                            />
+                          </>
+                        )}
+                      </div>
+                    </button>
 
                     {/* HUD-Style Dropdown - Compact Futuristic Design */}
                     {showNewDeepsearchDialog && !isAIProcessing && (
@@ -5138,10 +4979,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </span>
                     </div>
                   )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Dialog
+                </div>
+                <Dialog
                   open={showMaterialDialog}
                   onOpenChange={setShowMaterialDialog}
                 >
@@ -5214,6 +5053,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     </div>
                   </DialogContent>
                 </Dialog>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {estimate.items.length === 0 ? (
@@ -5974,7 +5814,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                 id="edit-client-zip"
                                 value={
                                   estimate.client?.zipCode ||
-                                  estimate.client?.zipCode ||
+                                  estimate.client?.zipcode ||
                                   ""
                                 }
                                 onChange={(e) =>
@@ -6078,7 +5918,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                             <p className="text-xs text-gray-400">
                               {estimate.client?.address &&
                               estimate.client.address.trim() !== ""
-                                ? `${estimate.client.address}${estimate.client.city ? ", " + estimate.client.city : ""}${estimate.client.state ? ", " + estimate.client.state : ""}${estimate.client.zipCode ? " " + estimate.client.zipCode : ""}`
+                                ? `${estimate.client.address}${estimate.client.city ? ", " + estimate.client.city : ""}${estimate.client.state ? ", " + estimate.client.state : ""}${estimate.client.zipcode || estimate.client.zipCode ? " " + (estimate.client.zipcode || estimate.client.zipCode) : ""}`
                                 : "Complete address in Client step"}
                             </p>
                             <p className="text-xs text-cyan-400">
@@ -6134,7 +5974,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         <p>
                           Ubicación:{" "}
                           {estimate.client?.address
-                            ? `${estimate.client.address}${estimate.client.city ? ", " + estimate.client.city : ""}${estimate.client.state ? ", " + estimate.client.state : ""}${estimate.client.zipCode ? " " + estimate.client.zipCode : ""}`
+                            ? `${estimate.client.address}${estimate.client.city ? ", " + estimate.client.city : ""}${estimate.client.state ? ", " + estimate.client.state : ""}${estimate.client.zipcode || estimate.client.zipCode ? " " + (estimate.client.zipcode || estimate.client.zipCode) : ""}`
                             : "No especificada"}
                         </p>
                         <p>
@@ -6303,210 +6143,86 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 <Card className="border-cyan-500/30 bg-gradient-to-r from-gray-900/50 via-black/50 to-gray-900/50">
                   <CardContent className="pt-6">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {/* Generate as Invoice Button - Hide completely for free plan */}
-                      {areEstimatesAvailable() ? (
-                        <Button
-                          onClick={handleDirectInvoiceGeneration}
-                          disabled={
-                            !estimate.client || estimate.items.length === 0
-                          }
-                          size="sm"
-                          className={`text-xs ${
-                            isTrialMaster || isTrialUser
-                              ? "bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white"
-                              : useWatermarkForEstimates()
-                                ? "bg-orange-600 hover:bg-orange-500 text-white"
-                                : "border-orange-500/50 text-orange-300 hover:bg-orange-500/10"
-                          }`}
-                        >
-                          <div className="flex items-center gap-1">
-                            <FileText className="h-3 w-3 mr-1" />
-                            {(isTrialMaster || isTrialUser) && (
-                              <span className="text-xs bg-yellow-400 text-black px-1 rounded">
-                                TRIAL
-                              </span>
-                            )}
-                            {useWatermarkForEstimates() && (
-                              <span className="text-xs bg-gray-300 text-black px-1 rounded">
-                                WATERMARK
-                              </span>
-                            )}
+                      <Button
+                        onClick={handleDirectInvoiceGeneration}
+                        disabled={
+                          !estimate.client || estimate.items.length === 0
+                        }
+                        size="sm"
+                        className="border-orange-500/50 text-orange-300 hover:bg-orange-500/10 text-xs"
+                      >
+                        <FileText className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">
+                          Generate as Invoice
+                        </span>
+                        <span className="sm:hidden">Invoice</span>
+                      </Button>
+
+                      <Button
+                        onClick={handleDownload}
+                        disabled={
+                          !estimate.client || estimate.items.length === 0
+                        }
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700 text-white text-xs"
+                      >
+                        {sharingCapabilities.isMobile &&
+                        sharingCapabilities.nativeShareSupported ? (
+                          <>
+                            <Share2 className="h-3 w-3 mr-1" />
                             <span className="hidden sm:inline">
-                              Generate as Invoice
+                              Share PDF Estimate
                             </span>
-                            <span className="sm:hidden">Invoice</span>
-                          </div>
-                        </Button>
-                      ) : (
-                        <div className="bg-gray-600 text-gray-400 rounded-lg p-2 text-center text-xs">
-                          <FileText className="h-3 w-3 mx-auto mb-1" />
-                          <span className="font-medium">Invoice Unavailable</span>
-                        </div>
-                      )}
+                            <span className="sm:hidden">Share</span>
+                          </>
+                        ) : (
+                          <>
+                            <Download className="h-3 w-3 mr-1" />
+                            <span className="hidden sm:inline">
+                              Generate as Estimate
+                            </span>
+                            <span className="sm:hidden">Estimate</span>
+                          </>
+                        )}
+                      </Button>
 
-                      {/* Generate as Estimate Button - Hide completely for free plan */}
-                      {areEstimatesAvailable() ? (
-                        <Button
-                          onClick={handleDownload}
-                          disabled={
-                            !estimate.client || estimate.items.length === 0
+                      <Button
+                        onClick={() => handleSaveEstimate()}
+                        disabled={isSaving}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                      >
+                        <Save className="h-3 w-3 mr-1" />
+                        {isSaving ? (
+                          <span className="hidden sm:inline">Guardando...</span>
+                        ) : (
+                          <>
+                            <span className="hidden sm:inline">Guardar</span>
+                            <span className="sm:hidden">Save</span>
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        onClick={() => {
+                          // If client has no email, show dialog to add one
+                          if (
+                            !estimate.client?.email ||
+                            estimate.client.email.trim() === ""
+                          ) {
+                            setShowEmailDialog(true);
+                          } else {
+                            openEmailCompose();
                           }
-                          size="sm"
-                          className={`text-xs ${
-                            isTrialMaster || isTrialUser
-                              ? "bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white"
-                              : useWatermarkForEstimates()
-                                ? "bg-orange-600 hover:bg-orange-500 text-white"
-                                : "bg-green-600 hover:bg-green-700 text-white"
-                          }`}
-                        >
-                          <div className="flex items-center gap-1">
-                            {(isTrialMaster || isTrialUser) && (
-                              <span className="text-xs bg-yellow-400 text-black px-1 rounded">
-                                TRIAL - {trialDaysRemaining}d
-                              </span>
-                            )}
-                            {useWatermarkForEstimates() && (
-                              <span className="text-xs bg-gray-300 text-black px-1 rounded">
-                                WATERMARK
-                              </span>
-                            )}
-                            {sharingCapabilities.isMobile &&
-                            sharingCapabilities.nativeShareSupported ? (
-                              <>
-                                <Share2 className="h-3 w-3 mr-1" />
-                                <span className="hidden sm:inline">
-                                  Share PDF Estimate
-                                </span>
-                                <span className="sm:hidden">Share</span>
-                              </>
-                            ) : (
-                              <>
-                                <Download className="h-3 w-3 mr-1" />
-                                <span className="hidden sm:inline">
-                                  Generate as Estimate
-                                </span>
-                                <span className="sm:hidden">Estimate</span>
-                              </>
-                            )}
-                          </div>
-                        </Button>
-                      ) : (
-                        <div className="bg-gradient-to-r from-yellow-600 to-orange-600 text-black rounded-lg p-2 text-center text-xs">
-                          <div className="flex items-center justify-center gap-1 mb-1">
-                            <Download className="h-3 w-3" />
-                            <span className="font-medium">Estimate Generation Unavailable</span>
-                          </div>
-                          <p className="text-xs mb-1">Upgrade to Mero Patrón</p>
-                          <Button
-                            onClick={() => window.open('/pricing', '_blank')}
-                            size="sm"
-                            className="bg-black text-white hover:bg-gray-800 text-xs h-6 px-2"
-                          >
-                            Plans
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* Save Button - Hide completely for free plan */}
-                      {areEstimatesAvailable() ? (
-                        <Button
-                          onClick={() => handleSaveEstimate()}
-                          disabled={isSaving}
-                          size="sm"
-                          className={`text-xs ${
-                            isTrialMaster || isTrialUser
-                              ? "bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white"
-                              : useWatermarkForEstimates()
-                                ? "bg-orange-600 hover:bg-orange-500 text-white"
-                                : "bg-blue-600 hover:bg-blue-700 text-white"
-                          }`}
-                        >
-                          <div className="flex items-center gap-1">
-                            <Save className="h-3 w-3 mr-1" />
-                            {(isTrialMaster || isTrialUser) && !isSaving && (
-                              <span className="text-xs bg-yellow-400 text-black px-1 rounded">
-                                TRIAL
-                              </span>
-                            )}
-                            {useWatermarkForEstimates() && !isSaving && (
-                              <span className="text-xs bg-gray-300 text-black px-1 rounded">
-                                WATERMARK
-                              </span>
-                            )}
-                            {isSaving ? (
-                              <span className="hidden sm:inline">Guardando...</span>
-                            ) : (
-                              <>
-                                <span className="hidden sm:inline">Guardar</span>
-                                <span className="sm:hidden">Save</span>
-                              </>
-                            )}
-                          </div>
-                        </Button>
-                      ) : (
-                        <div className="bg-gradient-to-r from-yellow-600 to-orange-600 text-black rounded-lg p-2 text-center text-xs">
-                          <div className="flex items-center justify-center gap-1 mb-1">
-                            <Save className="h-3 w-3" />
-                            <span className="font-medium">Save Unavailable</span>
-                          </div>
-                          <p className="text-xs mb-1">Upgrade to Mero Patrón</p>
-                          <Button
-                            onClick={() => window.open('/pricing', '_blank')}
-                            size="sm"
-                            className="bg-black text-white hover:bg-gray-800 text-xs h-6 px-2"
-                          >
-                            Plans
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* Email Button - Hide completely for free plan */}
-                      {areEstimatesAvailable() ? (
-                        <Button
-                          onClick={() => {
-                            // If client has no email, show dialog to add one
-                            if (
-                              !estimate.client?.email ||
-                              estimate.client.email.trim() === ""
-                            ) {
-                              setShowEmailDialog(true);
-                            } else {
-                              openEmailCompose();
-                            }
-                          }}
-                          disabled={!estimate.client}
-                          size="sm"
-                          className={`text-xs ${
-                            isTrialMaster || isTrialUser
-                              ? "bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white"
-                              : useWatermarkForEstimates()
-                                ? "bg-orange-600 hover:bg-orange-500 text-white"
-                                : "bg-purple-600 hover:bg-purple-700 text-white"
-                          }`}
-                        >
-                          <div className="flex items-center gap-1">
-                            <Mail className="h-3 w-3 mr-1" />
-                            {(isTrialMaster || isTrialUser) && (
-                              <span className="text-xs bg-yellow-400 text-black px-1 rounded">
-                                TRIAL
-                              </span>
-                            )}
-                            {useWatermarkForEstimates() && (
-                              <span className="text-xs bg-gray-300 text-black px-1 rounded">
-                                WATERMARK
-                              </span>
-                            )}
-                            <span className="hidden sm:inline">Enviar Email</span>
-                            <span className="sm:hidden">Email</span>
-                          </div>
-                        </Button>
-                      ) : (
-                        <div className="bg-gray-600 text-gray-400 rounded-lg p-2 text-center text-xs">
-                          <Mail className="h-3 w-3 mx-auto mb-1" />
-                          <span className="font-medium">Email Unavailable</span>
-                        </div>
-                      )}
+                        }}
+                        disabled={!estimate.client}
+                        size="sm"
+                        className="bg-purple-600 hover:bg-purple-700 text-white text-xs"
+                      >
+                        <Mail className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">Enviar Email</span>
+                        <span className="sm:hidden">Email</span>
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -7632,85 +7348,26 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               Close Preview
             </Button>
             <div className="flex gap-2 justify-end">
-              {/* Email Button in Preview - Hide completely for free plan */}
-              {areEstimatesAvailable() ? (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowPreview(false);
-                    setShowEmailDialog(true);
-                  }}
-                  disabled={!estimate.client?.email}
-                  className={`flex items-center gap-2 ${
-                    isTrialMaster || isTrialUser
-                      ? "border-purple-300 text-purple-600 hover:bg-purple-50"
-                      : useWatermarkForEstimates()
-                        ? "border-orange-300 text-orange-600 hover:bg-orange-50"
-                        : "border-blue-300 text-blue-600 hover:bg-blue-50"
-                  }`}
-                >
-                  <Mail className="h-4 w-4" />
-                  {(isTrialMaster || isTrialUser) && (
-                    <span className="text-xs bg-yellow-400 text-black px-1 rounded mr-1">
-                      TRIAL
-                    </span>
-                  )}
-                  {useWatermarkForEstimates() && (
-                    <span className="text-xs bg-gray-300 text-black px-1 rounded mr-1">
-                      WATERMARK
-                    </span>
-                  )}
-                  Send Email
-                </Button>
-              ) : (
-                <div className="bg-gray-600 text-gray-400 rounded-lg p-2 text-center text-xs flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  <span>Email Unavailable</span>
-                </div>
-              )}
-              
-              {/* Download PDF Button in Preview - Hide completely for free plan */}
-              {areEstimatesAvailable() ? (
-                <Button
-                  onClick={handleDownload}
-                  disabled={!estimate.client || estimate.items.length === 0}
-                  className={`flex items-center gap-2 ${
-                    isTrialMaster || isTrialUser
-                      ? "bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white"
-                      : useWatermarkForEstimates()
-                        ? "bg-orange-600 hover:bg-orange-500 text-white"
-                        : "bg-green-600 hover:bg-green-700 text-white"
-                  }`}
-                >
-                  <Download className="h-4 w-4" />
-                  {(isTrialMaster || isTrialUser) && (
-                    <span className="text-xs bg-yellow-400 text-black px-1 rounded mr-1">
-                      TRIAL - {trialDaysRemaining}d
-                    </span>
-                  )}
-                  {useWatermarkForEstimates() && (
-                    <span className="text-xs bg-gray-300 text-black px-1 rounded mr-1">
-                      WATERMARK
-                    </span>
-                  )}
-                  Download PDF
-                </Button>
-              ) : (
-                <div className="bg-gradient-to-r from-yellow-600 to-orange-600 text-black rounded-lg p-3 text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <Download className="h-4 w-4" />
-                    <span className="font-medium">Download Unavailable</span>
-                  </div>
-                  <p className="text-sm mb-2">Upgrade to Mero Patrón to download estimates</p>
-                  <Button
-                    onClick={() => window.open('/pricing', '_blank')}
-                    size="sm"
-                    className="bg-black text-white hover:bg-gray-800"
-                  >
-                    View Plans
-                  </Button>
-                </div>
-              )}
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowPreview(false);
+                  setShowEmailDialog(true);
+                }}
+                disabled={!estimate.client?.email}
+                className="flex items-center gap-2 border-blue-300 text-blue-600 hover:bg-blue-50"
+              >
+                <Mail className="h-4 w-4" />
+                Send Email
+              </Button>
+              <Button
+                onClick={handleDownload}
+                disabled={!estimate.client || estimate.items.length === 0}
+                className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download PDF
+              </Button>
             </div>
           </DialogFooter>
         </DialogContent>

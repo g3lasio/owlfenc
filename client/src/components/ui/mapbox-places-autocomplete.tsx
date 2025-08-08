@@ -39,15 +39,19 @@ export default function MapboxPlacesAutocomplete({
   // Función para limpiar controlador de forma segura
   const safeAbort = useCallback(() => {
     const controller = abortControllerRef.current;
-    if (controller && !controller.signal.aborted) {
+    if (controller) {
       try {
-        controller.abort();
+        // Solo abortar si no está ya abortado
+        if (!controller.signal.aborted) {
+          controller.abort();
+        }
       } catch (error) {
         // Silenciar completamente errores de abort - esto es esperado
-        console.debug('AbortController error silenced:', error);
+      } finally {
+        // Siempre limpiar la referencia
+        abortControllerRef.current = null;
       }
     }
-    abortControllerRef.current = null;
   }, []);
 
   // Cleanup al desmontar el componente

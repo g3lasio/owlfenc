@@ -21,8 +21,6 @@ export interface UserLimits {
   projects: number;          // 0 = solo demo
   invoices: number;          // 0 = solo demo
   paymentTracking: number;   // 0 = disabled, 1 = basic, 2 = pro
-  // New: Estimate tracking for watermark logic
-  estimatesWithoutWatermark: number; // Monthly limit before watermarks apply
 }
 
 export interface UserUsage {
@@ -33,8 +31,6 @@ export interface UserUsage {
   permitAdvisor: number;
   projects: number;
   month: string; // YYYY-MM format
-  // New: Total estimates for watermark tracking
-  totalEstimates: number;
 }
 
 export interface PermissionContextValue {
@@ -52,10 +48,6 @@ export interface PermissionContextValue {
   getRemainingUsage: (feature: string) => number;
   isLimitReached: (feature: string) => boolean;
   
-  // New: Watermark logic
-  shouldUseWatermark: (feature: string) => boolean;
-  isFeatureAvailable: (feature: string) => boolean; // True availability (not just disabled)
-  
   // UI methods
   showUpgradeModal: (feature: string, message?: string) => void;
   incrementUsage: (feature: string, count?: number) => Promise<void>;
@@ -69,20 +61,19 @@ const PLANS: Plan[] = [
     motto: "Ningún trabajo es pequeño cuando tu espíritu es grande",
     price: 0,
     limits: {
-      basicEstimates: 0,  // Button not available
-      aiEstimates: 0,      // Button not available
-      contracts: 0,        // Button not available
+      basicEstimates: 10,
+      aiEstimates: 3,
+      contracts: 3,
       propertyVerifications: 5,
       permitAdvisor: 5,
       projects: 0,
       invoices: 0,
-      paymentTracking: 0,
-      estimatesWithoutWatermark: 0  // Always use watermarked templates
+      paymentTracking: 0
     },
     features: [
-      "Templates con marca de agua únicamente",
-      "Botones de estimados no disponibles",
-      "Botones de contratos no disponibles",
+      "10 estimados básicos/mes (con marca de agua)",
+      "3 estimados con IA/mes (con marca de agua)",
+      "3 contratos/mes (con marca de agua)",
       "5 Property Verification/mes",
       "5 Permit Advisor/mes",
       "Vista demo de funciones premium"
@@ -95,19 +86,18 @@ const PLANS: Plan[] = [
     price: 4999,
     limits: {
       basicEstimates: -1,
-      aiEstimates: -1,
+      aiEstimates: 50,
       contracts: -1,
       propertyVerifications: 50,
       permitAdvisor: 50,
       projects: 5,
       invoices: -1,
-      paymentTracking: 1,
-      estimatesWithoutWatermark: 50  // 50 estimates/month without watermark
+      paymentTracking: 1
     },
     features: [
-      "50 estimados/mes sin marca de agua",
-      "Después de 50: templates con marca de agua",
-      "Contratos ilimitados sin marca de agua",
+      "Estimados básicos ilimitados (sin marca de agua)",
+      "50 estimados con IA/mes (sin marca de agua)",
+      "Contratos ilimitados (sin marca de agua)",
       "50 Property Verification/mes",
       "50 Permit Advisor/mes",
       "5 proyectos AI/mes",
@@ -127,8 +117,7 @@ const PLANS: Plan[] = [
       permitAdvisor: -1,
       projects: -1,
       invoices: -1,
-      paymentTracking: 2,
-      estimatesWithoutWatermark: -1  // Unlimited without watermark
+      paymentTracking: 2
     },
     features: [
       "TODO ILIMITADO",
@@ -152,8 +141,7 @@ const PLANS: Plan[] = [
       permitAdvisor: -1,
       projects: -1,
       invoices: -1,
-      paymentTracking: 2,
-      estimatesWithoutWatermark: -1  // Unlimited without watermark during trial
+      paymentTracking: 2
     },
     features: [
       "ACCESO TOTAL por 21 días",
@@ -260,11 +248,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         const usage = await response.json();
         console.log(`✅ [PERMISSION-CONTEXT] Datos de uso cargados exitosamente:`, usage);
         console.log(`📊 [PERMISSION-CONTEXT] propertyVerifications: ${usage.propertyVerifications}, permitAdvisor: ${usage.permitAdvisor}`);
-        // Add totalEstimates calculation for watermark logic
-        setUserUsage({
-          ...usage,
-          totalEstimates: (usage.basicEstimates || 0) + (usage.aiEstimates || 0)
-        });
+        setUserUsage(usage);
       } else {
         // Inicializar uso vacío para el mes actual
         setUserUsage({
@@ -274,8 +258,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
           propertyVerifications: 0,
           permitAdvisor: 0,
           projects: 0,
-          month: currentMonth,
-          totalEstimates: 0
+          month: currentMonth
         });
       }
     } catch (error) {
@@ -301,8 +284,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         propertyVerifications: 0,
         permitAdvisor: 0,
         projects: 0,
-        month: new Date().toISOString().slice(0, 7),
-        totalEstimates: 0
+        month: new Date().toISOString().slice(0, 7)
       });
       setLoading(false);
     }
@@ -402,48 +384,6 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     }
   };
 
-  // New: Check if watermark should be used based on plan and usage
-  const shouldUseWatermark = useCallback((feature: string): boolean => {
-    if (!userPlan || isTrialUser) return false; // Trial users never get watermarks
-    
-    // Master Contractor never gets watermarks
-    if (userPlan.id === 3) return false;
-    
-    // Primo Chambeador always gets watermarks
-    if (userPlan.id === 1) return true;
-    
-    // Mero Patrón: watermark after 50 estimates
-    if (userPlan.id === 2 && (feature === 'estimates' || feature === 'basicEstimates' || feature === 'aiEstimates')) {
-      const totalEstimates = userUsage?.totalEstimates || 0;
-      return totalEstimates >= (userPlan.limits.estimatesWithoutWatermark || 50);
-    }
-    
-    return false;
-  }, [userPlan, userUsage, isTrialUser]);
-  
-  // New: Check if feature is truly available (not just disabled)
-  const isFeatureAvailable = useCallback((feature: string): boolean => {
-    if (!userPlan) return false;
-    
-    // Trial users have everything available
-    if (isTrialUser) return true;
-    
-    // Master Contractor has everything available
-    if (userPlan.id === 3) return true;
-    
-    // Primo Chambeador: most buttons not available
-    if (userPlan.id === 1) {
-      if (feature === 'estimates' || feature === 'basicEstimates' || feature === 'aiEstimates' || feature === 'contracts') {
-        return false; // Button not available
-      }
-    }
-    
-    // Mero Patrón: all features available
-    if (userPlan.id === 2) return true;
-    
-    return true;
-  }, [userPlan, isTrialUser]);
-
   const contextValue: PermissionContextValue = {
     userPlan,
     userUsage,
@@ -454,8 +394,6 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     canUse,
     getRemainingUsage,
     isLimitReached,
-    shouldUseWatermark,
-    isFeatureAvailable,
     showUpgradeModal,
     incrementUsage
   };
