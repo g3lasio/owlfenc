@@ -1,5 +1,6 @@
 
 import axios from 'axios';
+import { auth } from '@/lib/firebase';
 
 export interface OwnerHistoryEntry {
   owner: string;
@@ -43,6 +44,14 @@ class PropertyVerifierService {
     try {
       console.log('📡 Sending request to secure backend API');
       
+      // 🔐 GET FIREBASE AUTHENTICATION TOKEN
+      if (!auth.currentUser) {
+        throw new Error('Usuario no autenticado. Por favor inicia sesión.');
+      }
+      
+      const token = await auth.currentUser.getIdToken();
+      console.log('🔐 Firebase token obtained for property verification');
+      
       // Preparar parámetros con información completa si está disponible
       const params: any = { address: address.trim() };
       
@@ -64,7 +73,8 @@ class PropertyVerifierService {
         timeout: 25000, // 25 seconds timeout
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}` // 🔐 INCLUDE FIREBASE AUTH TOKEN
         }
       });
       

@@ -43,27 +43,16 @@ if (!admin.apps.length) {
 
 /**
  * Middleware para verificar autenticación con Firebase
+ * ALWAYS requires real Firebase authentication for multi-tenant security
  */
 export const verifyFirebaseAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // En modo desarrollo, usar usuario simulado
-    const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.FIREBASE_ADMIN_CREDENTIALS;
-    
-    if (isDevelopment) {
-      console.log('🔧 Modo desarrollo: usando usuario simulado');
-      req.firebaseUser = {
-        uid: null, // No mock user - require real authentication
-        email: 'dev@example.com',
-        name: 'Usuario Desarrollo'
-      };
-      return next();
-    }
-
     // Obtener el token del header Authorization
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('❌ [AUTH] Missing or invalid Authorization header');
       return res.status(401).json({ 
-        error: 'Token de autenticación requerido',
+        error: 'Token de autenticación requerido - Por favor inicia sesión',
         code: 'AUTH_TOKEN_MISSING'
       });
     }
