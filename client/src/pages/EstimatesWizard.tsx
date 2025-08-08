@@ -164,42 +164,21 @@ const STEPS = [
   { id: "preview", title: "Preview", icon: Eye },
 ];
 
-// Available PDF templates
+// Available PDF templates - Simplified to 2 options
 const TEMPLATE_OPTIONS = [
   {
     id: "basic",
-    name: "Plantilla Básica",
-    description: "Diseño simple y limpio con marca de agua Mervin AI",
-    file: "basictemplateestimate.html",
-    tier: "free"
-  },
-  {
-    id: "professional",
-    name: "Plantilla Profesional",
-    description: "Diseño corporativo elegante con barra superior cyan",
-    file: "professional_estimate_template.html",
-    tier: "premium"
-  },
-  {
-    id: "luxury",
-    name: "Plantilla Premium",
-    description: "Estilo futurista de lujo con efectos visuales avanzados",
-    file: "luxurytemplate.html",
-    tier: "premium"
-  },
-  {
-    id: "standard",
-    name: "Plantilla Estándar",
-    description: "Diseño premium con gradientes y efectos de profundidad",
-    file: "estimate-template.html",
-    tier: "premium"
-  },
-  {
-    id: "free",
-    name: "Plantilla Gratuita",
-    description: "Versión limitada para usuarios sin membresía",
+    name: "Básico",
+    description: "Diseño simple y limpio",
     file: "estimate-template-free.html",
     tier: "free"
+  },
+  {
+    id: "premium",
+    name: "Premium",
+    description: "Diseño profesional con detalles avanzados",
+    file: "estimate-template-premium.html",
+    tier: "premium"
   }
 ];
 
@@ -357,7 +336,7 @@ export default function EstimatesWizardFixed() {
   });
 
   // Template selection state
-  const [selectedTemplate, setSelectedTemplate] = useState("professional");
+  const [selectedTemplate, setSelectedTemplate] = useState("basic");
 
   // Initialize editable company info when profile loads
   useEffect(() => {
@@ -6053,88 +6032,65 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   </CardContent>
                 </Card>
 
-                {/* Card 4: Selector de Plantilla PDF */}
+                {/* Card 4: Selector de Plantilla PDF - Simplificado */}
                 <Card className="border-cyan-500/30 bg-gradient-to-r from-gray-900/50 via-black/50 to-gray-900/50">
-                  <CardHeader className="border-b border-cyan-500/20">
+                  <CardHeader className="pb-3">
                     <CardTitle className="text-sm text-cyan-300 flex items-center gap-2">
                       <Palette className="h-4 w-4" />
                       Plantilla PDF
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="pt-4">
-                    <div className="space-y-3">
-                      <div className="text-xs text-gray-400 mb-2">
-                        Selecciona el diseño para tu estimado PDF:
-                      </div>
-                      <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                        <SelectTrigger className="w-full bg-gray-800/50 border-gray-600 text-gray-200 hover:bg-gray-700/50 focus:ring-cyan-500/50">
-                          <SelectValue placeholder="Selecciona una plantilla" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-900 border-gray-600">
-                          {TEMPLATE_OPTIONS.map((template) => {
-                            const isAvailable = template.tier === "free" || userSubscription?.plan?.id !== 1;
-                            return (
-                              <SelectItem 
-                                key={template.id} 
-                                value={template.id}
-                                disabled={!isAvailable}
-                                className="text-gray-200 hover:bg-gray-800 focus:bg-gray-800 data-[state=checked]:bg-cyan-600"
-                              >
-                                <div className="flex flex-col">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-medium">{template.name}</span>
-                                    {template.tier === "premium" && (
-                                      <Badge variant="secondary" className="text-xs bg-cyan-600/20 text-cyan-300 border-cyan-500/30">
-                                        Premium
-                                      </Badge>
-                                    )}
-                                    {!isAvailable && (
-                                      <Badge variant="outline" className="text-xs text-gray-500 border-gray-500">
-                                        Bloqueado
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <span className="text-xs text-gray-400 mt-1">{template.description}</span>
-                                </div>
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                      
-                      {/* Template Preview/Info */}
-                      {selectedTemplate && (
-                        <div className="mt-3 p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
-                          {(() => {
-                            const template = TEMPLATE_OPTIONS.find(t => t.id === selectedTemplate);
-                            if (!template) return null;
-                            
-                            return (
-                              <div className="flex items-start gap-3">
-                                <div className="flex-1">
-                                  <div className="text-xs font-medium text-cyan-300 mb-1">
-                                    {template.name}
-                                  </div>
-                                  <div className="text-xs text-gray-400">
-                                    {template.description}
-                                  </div>
-                                </div>
-                                <div className="flex-shrink-0">
-                                  {template.tier === "premium" ? (
-                                    <Badge className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-xs">
-                                      Premium
-                                    </Badge>
-                                  ) : (
-                                    <Badge variant="outline" className="text-gray-400 border-gray-600 text-xs">
-                                      Gratis
-                                    </Badge>
-                                  )}
-                                </div>
+                  <CardContent className="pt-0">
+                    <div className="grid grid-cols-2 gap-3">
+                      {TEMPLATE_OPTIONS.map((template) => {
+                        const isAvailable = template.tier === "free" || userSubscription?.plan?.id !== 1;
+                        const isSelected = selectedTemplate === template.id;
+                        return (
+                          <button
+                            key={template.id}
+                            onClick={() => isAvailable && setSelectedTemplate(template.id)}
+                            disabled={!isAvailable}
+                            className={`
+                              relative p-3 rounded-lg border transition-all duration-200 text-left
+                              ${isSelected 
+                                ? 'border-cyan-400 bg-cyan-900/20 shadow-lg shadow-cyan-500/20' 
+                                : 'border-gray-600 bg-gray-800/30 hover:border-gray-500 hover:bg-gray-800/50'
+                              }
+                              ${!isAvailable ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                            `}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className={`font-medium text-sm ${isSelected ? 'text-cyan-300' : 'text-gray-200'}`}>
+                                {template.name}
+                              </h3>
+                              {template.tier === "premium" ? (
+                                <Badge className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-xs px-2 py-1">
+                                  Premium
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-gray-400 border-gray-600 text-xs px-2 py-1">
+                                  Básico
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-400 leading-relaxed">
+                              {template.description}
+                            </p>
+                            {isSelected && (
+                              <div className="absolute top-2 right-2">
+                                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
                               </div>
-                            );
-                          })()}
-                        </div>
-                      )}
+                            )}
+                            {!isAvailable && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
+                                <Badge variant="outline" className="text-xs text-gray-500 border-gray-500">
+                                  Requiere Premium
+                                </Badge>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>

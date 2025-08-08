@@ -111,9 +111,11 @@ export class PuppeteerPdfService {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
 
-    // Template mapping based on selectedTemplate
+    // Template mapping based on selectedTemplate - Simplified to 2 options
     const templateMapping: Record<string, string> = {
-      basic: "basictemplateestimate.html",
+      basic: "estimate-template-free.html",
+      premium: "estimate-template-premium.html",
+      // Legacy support for old template names
       professional: "professional_estimate_template.html", 
       luxury: "luxurytemplate.html",
       standard: "estimate-template.html",
@@ -121,15 +123,15 @@ export class PuppeteerPdfService {
     };
 
     // Determine which template to use
-    let templateFile = templateMapping[data.selectedTemplate || "professional"];
+    let templateFile = templateMapping[data.selectedTemplate || "basic"];
     
     // Fallback logic for membership compatibility
     if (!templateFile) {
-      templateFile = data.isMembership ? "estimate-template.html" : "estimate-template-free.html";
+      templateFile = data.isMembership ? "estimate-template-premium.html" : "estimate-template-free.html";
     }
 
     // For free plan users, restrict premium templates
-    if (!data.isMembership && !["basic", "free"].includes(data.selectedTemplate || "")) {
+    if (!data.isMembership && data.selectedTemplate === "premium") {
       templateFile = "estimate-template-free.html";
     }
 
