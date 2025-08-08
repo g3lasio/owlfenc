@@ -7087,11 +7087,27 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                   payload.estimate.items,
                                 );
 
+                                // AUTO-DETECT PREMIUM: Check user's subscription level
+                                const isPremiumUser = membership?.subscription?.planId >= 3; // Master Contractor (3) or Trial Master (4)
+                                const premiumPayload = {
+                                  ...payload,
+                                  templateMode: isPremiumUser ? "premium" : "basic",
+                                  isMembership: isPremiumUser,
+                                  selectedTemplate: isPremiumUser ? "premium" : "basic"
+                                };
+
+                                console.log("🎨 TEMPLATE DETECTION:", {
+                                  planId: membership?.subscription?.planId,
+                                  planName: membership?.plan?.name,
+                                  isPremiumUser,
+                                  templateMode: premiumPayload.templateMode
+                                });
+
                                 const res = await axios.post(
-                                  "/api/estimate-basic-pdf",
-                                  payload,
+                                  "/api/estimate-puppeteer-pdf",
+                                  premiumPayload,
                                 );
-                                const downloadUrl = res.data.data.download_url;
+                                const downloadUrl = res.data.download_url || res.data.data?.download_url;
 
                                 if (downloadUrl) {
                                   window.open(downloadUrl, "_blank");
