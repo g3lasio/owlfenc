@@ -20,6 +20,39 @@ export interface SubscriptionData {
 
 export class FirebaseSubscriptionService {
   
+  // OWNER PRIVILEGES: Platform owner gets unlimited Master Contractor access
+  private readonly OWNER_USER_ID = 'user_shkwahab60_gmail_com';
+  
+  /**
+   * Check if user is the platform owner
+   */
+  private isOwner(userId: string): boolean {
+    return userId === this.OWNER_USER_ID;
+  }
+  
+  /**
+   * Create Master Contractor subscription for owner
+   */
+  private createOwnerSubscription(): SubscriptionData {
+    const currentDate = new Date();
+    const futureDate = new Date();
+    futureDate.setFullYear(currentDate.getFullYear() + 10); // 10 years validity
+    
+    return {
+      id: 'owner_unlimited',
+      status: 'active',
+      planId: 3, // Master Contractor
+      stripeSubscriptionId: 'owner_unlimited_access',
+      stripeCustomerId: 'owner_customer',
+      currentPeriodStart: currentDate,
+      currentPeriodEnd: futureDate,
+      cancelAtPeriodEnd: false,
+      billingCycle: 'yearly',
+      createdAt: currentDate,
+      updatedAt: currentDate
+    };
+  }
+  
   /**
    * Crear o actualizar suscripción del usuario
    */
@@ -50,6 +83,12 @@ export class FirebaseSubscriptionService {
   async getUserSubscription(userId: string): Promise<SubscriptionData | null> {
     try {
       console.log(`📧 [FIREBASE-SUBSCRIPTION] Obteniendo suscripción para usuario: ${userId}`);
+      
+      // OWNER PRIVILEGES: Always return Master Contractor for platform owner
+      if (this.isOwner(userId)) {
+        console.log(`👑 [FIREBASE-SUBSCRIPTION] Platform owner detected - granting unlimited Master Contractor access`);
+        return this.createOwnerSubscription();
+      }
       
       const data = subscriptionStorage.get(userId);
       
@@ -126,6 +165,12 @@ export class FirebaseSubscriptionService {
    */
   async isSubscriptionActive(userId: string): Promise<boolean> {
     try {
+      // OWNER PRIVILEGES: Always active for platform owner
+      if (this.isOwner(userId)) {
+        console.log(`👑 [FIREBASE-SUBSCRIPTION] Platform owner - subscription always active`);
+        return true;
+      }
+      
       const subscription = await this.getUserSubscription(userId);
       
       if (!subscription) {

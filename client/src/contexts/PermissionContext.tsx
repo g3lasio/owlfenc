@@ -173,30 +173,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
 
   const loadUserPlan = useCallback(async () => {
     try {
-      // Verificar simulación de desarrollo primero
-      const devSimulation = localStorage.getItem('dev_user_plan_simulation');
-      if (devSimulation && process.env.NODE_ENV === 'development') {
-        const simData = JSON.parse(devSimulation);
-        
-        // Mapear IDs de string a IDs numéricos
-        const planIdMapping: { [key: string]: number } = {
-          'free-trial': 4,          // Trial Master
-          'primo-chambeador': 1,    // Primo Chambeador  
-          'mero-patron': 2,         // Mero Patrón
-          'emperador-del-negocio': 3 // Master Contractor
-        };
-        
-        const numericPlanId = planIdMapping[simData.currentPlan] || 1;
-        const simulatedPlan = PLANS.find(p => p.id === numericPlanId) || PLANS[0];
-        
-        // Agregar información de simulación para debugging
-        console.log(`🧪 [DEV-SIMULATION] Usando plan simulado: ${simulatedPlan.name} (ID: ${numericPlanId})`);
-        
-        setUserPlan(simulatedPlan);
-        return;
-      }
-
-      // Comportamiento normal - llamar a la API
+      // PRIORITY: Always call the API first to check for owner privileges
       const response = await fetch('/api/subscription/user-subscription', {
         method: 'GET',
         headers: {
@@ -212,6 +189,14 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         const plan = PLANS.find(p => p.id === planData.id) || PLANS[0];
         setUserPlan(plan);
         
+        // Owner privileges detected - Master Contractor
+        if (planData.id === 3 && data.subscription?.id === 'owner_unlimited') {
+          console.log(`👑 [PERMISSION-CONTEXT] Platform owner detected - Master Contractor privileges granted`);
+          setIsTrialUser(false);
+          setTrialDaysRemaining(0);
+          return; // Skip dev simulation completely
+        }
+        
         // Manejar información de trial
         if (planData.id === 4) {
           setIsTrialUser(true);
@@ -221,12 +206,36 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
           setIsTrialUser(false);
           setTrialDaysRemaining(0);
         }
-      } else {
-        // Por defecto, plan gratuito
-        setUserPlan(PLANS[0]);
-        setIsTrialUser(false);
-        setTrialDaysRemaining(0);
+        return; // API response successful, skip dev simulation
       }
+
+      // FALLBACK: Only use dev simulation if API fails
+      const devSimulation = localStorage.getItem('dev_user_plan_simulation');
+      if (devSimulation && process.env.NODE_ENV === 'development') {
+        const simData = JSON.parse(devSimulation);
+        
+        // Mapear IDs de string a IDs numéricos
+        const planIdMapping: { [key: string]: number } = {
+          'free-trial': 4,          // Trial Master
+          'primo-chambeador': 1,    // Primo Chambeador  
+          'mero-patron': 2,         // Mero Patrón
+          'emperador-del-negocio': 3 // Master Contractor
+        };
+        
+        const numericPlanId = planIdMapping[simData.currentPlan] || 1;
+        const simulatedPlan = PLANS.find(p => p.id === numericPlanId) || PLANS[0];
+        
+        console.log(`🧪 [DEV-SIMULATION] API failed, usando plan simulado: ${simulatedPlan.name} (ID: ${numericPlanId})`);
+        
+        setUserPlan(simulatedPlan);
+        return;
+      }
+
+      // Final fallback: default free plan
+      console.log(`📭 [PERMISSION-CONTEXT] No API data and no simulation - using default free plan`);
+      setUserPlan(PLANS[0]);
+      setIsTrialUser(false);
+      setTrialDaysRemaining(0);
     } catch (error) {
       console.error('Error loading user plan:', error);
       setUserPlan(PLANS[0]); // Fallback al plan gratuito
