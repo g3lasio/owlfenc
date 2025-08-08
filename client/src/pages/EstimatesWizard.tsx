@@ -174,10 +174,10 @@ const TEMPLATE_OPTIONS = [
     tier: "free"
   },
   {
-    id: "premium",
+    id: "premium", 
     name: "Premium",
-    description: "Diseño profesional con detalles avanzados",
-    file: "estimate-template-premium.html",
+    description: "Diseño profesional con efectos holográficos",
+    file: "estimate-template-premium-advanced.html",
     tier: "premium"
   }
 ];
@@ -6055,7 +6055,12 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         return (
                           <button
                             key={template.id}
-                            onClick={() => isAvailable && setSelectedTemplate(template.id)}
+                            onClick={() => {
+                              if (isAvailable) {
+                                console.log("🎯 Template selected:", template.id);
+                                setSelectedTemplate(template.id);
+                              }
+                            }}
                             disabled={!isAvailable}
                             className={`
                               relative p-3 rounded-lg border transition-all duration-200 text-left

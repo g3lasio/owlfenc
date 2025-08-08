@@ -125,19 +125,18 @@ export class PuppeteerPdfService {
     // Debug logging for template selection
     console.log(`🔍 TEMPLATE DEBUG: selectedTemplate="${data.selectedTemplate}", isMembership=${data.isMembership}`);
     
-    // Determine which template to use - with proper fallbacks
-    const templateSelection = data.selectedTemplate || "basic";
-    let templateFile = templateMapping[templateSelection];
+    // SIMPLE SOLUTION: Direct template selection based on user choice
+    let templateFile = "estimate-template-free.html"; // Default to basic
     
-    // Fallback logic for membership compatibility
-    if (!templateFile) {
-      templateFile = data.isMembership ? "estimate-template-premium-advanced.html" : "estimate-template-free.html";
-    }
-
-    // For free plan users, restrict premium templates
-    if (!data.isMembership && templateSelection === "premium") {
+    // If user selected premium AND has premium access, use premium template
+    if (data.selectedTemplate === "premium" && data.isMembership) {
+      templateFile = "estimate-template-premium-advanced.html";
+      console.log("✅ Using PREMIUM template: estimate-template-premium-advanced.html");
+    } else if (data.selectedTemplate === "premium" && !data.isMembership) {
       console.log("🚫 Premium template requested but user has free plan - using basic template");
       templateFile = "estimate-template-free.html";
+    } else {
+      console.log("✅ Using BASIC template: estimate-template-free.html");
     }
 
     const templatePath = path.join(
