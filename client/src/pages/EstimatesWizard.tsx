@@ -5139,7 +5139,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     </div>
                   )}
                 </div>
-                <Dialog
+              </CardTitle>
+              <Dialog
                   open={showMaterialDialog}
                   onOpenChange={setShowMaterialDialog}
                 >
@@ -5212,8 +5213,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     </div>
                   </DialogContent>
                 </Dialog>
-                </div>
-              </CardTitle>
             </CardHeader>
             <CardContent>
               {estimate.items.length === 0 ? (
