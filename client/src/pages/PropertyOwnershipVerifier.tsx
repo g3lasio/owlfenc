@@ -306,39 +306,37 @@ export default function PropertyOwnershipVerifier() {
               }
             </div>
           </div>
-          <div className="relative p-6 sm:p-8 border border-cyan-400/30 rounded-2xl bg-gradient-to-br from-slate-900/50 to-slate-800/50 backdrop-blur-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-              <div className="flex items-center gap-4">
-                {/* Futuristic Scan Icon with Holographic Effects */}
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/30 to-blue-400/30 rounded-xl blur-md group-hover:blur-lg transition-all duration-300"></div>
-                  <div className="relative p-3 bg-gradient-to-br from-slate-900/90 to-slate-800/90 rounded-xl border-2 border-cyan-400/50 backdrop-blur-sm">
-                    <Scan className="h-6 w-6 sm:h-8 sm:w-8 text-cyan-400" />
-                    <div className="absolute inset-0 bg-cyan-400/10 rounded-xl animate-pulse"></div>
-                  </div>
+          <div className="relative p-4 sm:p-6 border border-cyan-400/30 rounded-xl bg-gradient-to-br from-slate-900/50 to-slate-800/50 backdrop-blur-sm">
+            <div className="flex items-center gap-3 mb-3">
+              {/* Compact Scan Icon with Holographic Effects */}
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/30 to-blue-400/30 rounded-lg blur-sm group-hover:blur-md transition-all duration-300"></div>
+                <div className="relative p-2 bg-gradient-to-br from-slate-900/90 to-slate-800/90 rounded-lg border border-cyan-400/50 backdrop-blur-sm">
+                  <Scan className="h-5 w-5 sm:h-6 sm:w-6 text-cyan-400" />
+                  <div className="absolute inset-0 bg-cyan-400/10 rounded-lg animate-pulse"></div>
                 </div>
-                
-                <div>
-                  <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent leading-tight">
-                    Property Ownership Verifier
-                  </h1>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="h-1 w-12 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full"></div>
-                    <div className="h-1 w-6 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full"></div>
-                  </div>
+              </div>
+              
+              <div className="flex-1">
+                <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent leading-tight">
+                  Property Ownership Verifier
+                </h1>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <div className="h-0.5 w-8 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full"></div>
+                  <div className="h-0.5 w-4 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full"></div>
                 </div>
               </div>
             </div>
             
-            <p className="text-slate-300 text-base sm:text-lg max-w-3xl leading-relaxed font-medium">
-              Advanced AI-powered property intelligence with quantum verification technology
+            <p className="text-slate-300 text-sm sm:text-base leading-relaxed font-medium opacity-90">
+              AI-powered property intelligence with quantum verification
             </p>
             
             {/* Holographic Corner Accents */}
-            <div className="absolute top-4 left-4 w-8 h-8 border-l-2 border-t-2 border-cyan-400/50 rounded-tl-lg"></div>
-            <div className="absolute top-4 right-4 w-8 h-8 border-r-2 border-t-2 border-purple-400/50 rounded-tr-lg"></div>
-            <div className="absolute bottom-4 left-4 w-8 h-8 border-l-2 border-b-2 border-cyan-400/50 rounded-bl-lg"></div>
-            <div className="absolute bottom-4 right-4 w-8 h-8 border-r-2 border-b-2 border-purple-400/50 rounded-br-lg"></div>
+            <div className="absolute top-3 left-3 w-6 h-6 border-l-2 border-t-2 border-cyan-400/50 rounded-tl-lg"></div>
+            <div className="absolute top-3 right-3 w-6 h-6 border-r-2 border-t-2 border-purple-400/50 rounded-tr-lg"></div>
+            <div className="absolute bottom-3 left-3 w-6 h-6 border-l-2 border-b-2 border-cyan-400/50 rounded-bl-lg"></div>
+            <div className="absolute bottom-3 right-3 w-6 h-6 border-r-2 border-b-2 border-purple-400/50 rounded-br-lg"></div>
           </div>
         </div>
 
