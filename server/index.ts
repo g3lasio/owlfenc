@@ -785,12 +785,12 @@ app.post('/api/get-contract-from-firebase', async (req, res) => {
         }
       });
       
-      if (bestMatch && bestMatch.contractHTML) {
-        console.log('✅ [FIREBASE-GET] Contract found:', bestMatch.id);
+      if (bestMatch && (bestMatch as any).contractHTML) {
+        console.log('✅ [FIREBASE-GET] Contract found:', (bestMatch as any).id);
         return res.json({
           success: true,
-          contractHTML: bestMatch.contractHTML,
-          contractId: bestMatch.id,
+          contractHTML: (bestMatch as any).contractHTML,
+          contractId: (bestMatch as any).id,
           similarity: highestScore
         });
       }

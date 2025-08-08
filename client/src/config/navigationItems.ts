@@ -13,7 +13,7 @@ export const mainNavigationConfig: NavigationSection[] = [
       },
       {
         label: "Contract Generator",
-        path: "/contracts",
+        path: "/contract-generator",
         icon: "ri-file-contract-line",
       },
       {
