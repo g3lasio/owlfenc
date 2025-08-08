@@ -5138,7 +5138,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </span>
                     </div>
                   )}
-                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
