@@ -18,10 +18,10 @@ export const SidebarProvider = ({ children }: { children: ReactNode }) => {
   // Efecto para manejar el redimensionado de ventana
   useEffect(() => {
     const handleResize = () => {
-      // En tablets y desktop, asegurar que el sidebar permanezca visible
+      // En tablets y desktop, mantener sidebar colapsado por defecto (solo iconos)
       if (window.innerWidth >= 768) {
         setMobileMenuOpen(false); // Cerrar menú móvil si está abierto
-        setSidebarExpanded(true); // En desktop, sidebar siempre expandido
+        // No forzar expansión - mantener estado actual o colapsado por defecto
       } else {
         // En móviles, cerrar sidebar por defecto
         setSidebarExpanded(false);
@@ -36,12 +36,8 @@ export const SidebarProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const toggleSidebar = () => {
-    // MOBILE: Ícono hexagonal controla el sidebar
-    if (window.innerWidth < 768) {
-      setSidebarExpanded(!isSidebarExpanded);
-    }
-    // LARGE SCREENS: Ícono hexagonal NO debe ocultar el sidebar (persistente)
-    // No hacer nada en pantallas grandes
+    // Permitir toggle del sidebar en todas las pantallas
+    setSidebarExpanded(!isSidebarExpanded);
   };
 
   const toggleMobileMenu = () => {
