@@ -7100,7 +7100,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                   planId: membership?.subscription?.planId,
                                   planName: membership?.plan?.name,
                                   isPremiumUser,
-                                  templateMode: premiumPayload.templateMode
+                                  templateMode: premiumPayload.templateMode,
+                                  isMembership: premiumPayload.isMembership,
+                                  selectedTemplate: premiumPayload.selectedTemplate
                                 });
 
                                 const res = await axios.post(
