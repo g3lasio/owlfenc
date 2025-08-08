@@ -6873,87 +6873,72 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         open={showEstimatesHistory}
         onOpenChange={setShowEstimatesHistory}
       >
-        <DialogContent className="p-4 md:m-0 md:max-w-4xl">
-          <DialogHeader>
-            <DialogTitle className="my-4 flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Mis Estimados Guardados
+        <DialogContent className="p-3 md:p-4 md:m-0 md:max-w-4xl w-[95vw] max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader className="pb-2 shrink-0">
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <FileText className="h-4 w-4" />
+              Mis Estimados
             </DialogTitle>
-            <DialogDescription className="my-4">
-              Historial completo de todos los estimados creados y guardados
+            <DialogDescription className="text-sm text-gray-500">
+              Historial de estimados guardados
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 my-4">
+          <div className="flex-1 overflow-hidden">
             {isLoadingEstimates ? (
-              <div className="text-center py-8">
-                <div className="inline-flex items-center gap-2">
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  Cargando estimados...
-                </div>
+              <div className="flex items-center justify-center py-6">
+                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                <span className="text-sm">Cargando...</span>
               </div>
             ) : savedEstimates.length === 0 ? (
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-lg font-medium">
-                  No hay estimados guardados
-                </p>
-                <p className="text-muted-foreground">
-                  Crea y descarga tu primer estimado para verlo aquí
-                </p>
+              <div className="text-center py-6">
+                <FileText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm font-medium text-gray-900">Sin estimados</p>
+                <p className="text-xs text-gray-500">Crea tu primer estimado</p>
               </div>
             ) : (
-              <div className="max-h-80  px-2">
-                <div className="space-y-2">
+              <div className="h-full overflow-y-auto pr-1">
+                <div className="space-y-1.5">
                   {savedEstimates.map((estimate) => (
                     <div
                       key={estimate.id}
-                      className="border rounded-lg p-3 hover:bg-gray-50/50 transition-colors"
+                      className="border rounded-md p-2.5 hover:bg-gray-50/50 transition-colors"
                     >
-                      <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-base truncate">
+                            <h3 className="font-medium text-sm truncate">
                               {estimate.estimateNumber}
                             </h3>
                             <span
-                              className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                              className={`px-1.5 py-0.5 rounded text-xs font-medium shrink-0 ${
                                 estimate.status === "draft"
-                                  ? "bg-yellow-100 text-yellow-800"
+                                  ? "bg-yellow-100 text-yellow-700"
                                   : estimate.status === "sent"
-                                    ? "bg-blue-100 text-blue-800"
+                                    ? "bg-blue-100 text-blue-700"
                                     : estimate.status === "approved"
-                                      ? "bg-green-100 text-green-800"
-                                      : "bg-gray-100 text-gray-800"
+                                      ? "bg-green-100 text-green-700"
+                                      : "bg-gray-100 text-gray-700"
                               }`}
                             >
-                              {estimate.status === "draft"
-                                ? "Borrador"
-                                : estimate.status === "sent"
-                                  ? "Enviado"
-                                  : estimate.status === "approved"
-                                    ? "Aprobado"
-                                    : estimate.status}
+                              {estimate.status === "draft" ? "Draft" : estimate.status === "sent" ? "Sent" : estimate.status === "approved" ? "OK" : "?"}
                             </span>
                           </div>
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 text-sm text-gray-600">
+                          <div className="space-y-0.5 text-xs text-gray-600">
                             <div className="truncate">
-                              <span className="font-medium">Cliente:</span>{" "}
-                              {estimate.clientName}
+                              <span className="font-medium">Cliente:</span> {estimate.clientName}
                             </div>
-                            <div className="truncate">
-                              <span className="font-medium">Total:</span> $
-                              {estimate.total.toFixed(2)}
+                            <div className="flex items-center justify-between">
+                              <div className="truncate">
+                                <span className="font-medium text-green-600">${estimate.total.toFixed(2)}</span>
+                              </div>
+                              <div className="text-gray-400 shrink-0 ml-2">
+                                {new Date(estimate.estimateDate).toLocaleDateString("es-ES", { day: '2-digit', month: '2-digit' })}
+                              </div>
                             </div>
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {estimate.projectType || "Cerca"} •{" "}
-                            {new Date(estimate.estimateDate).toLocaleDateString(
-                              "es-ES",
-                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
+                        <div className="flex gap-1 shrink-0">
                           <Button
                             variant="outline"
                             size="sm"
@@ -7135,25 +7120,24 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                 });
                               }
                             }}
-                            className="h-8 px-2"
+                            className="h-7 px-2 text-xs"
+                            title="Descargar PDF"
                           >
                             <Download className="h-3 w-3" />
-                            <span className="hidden sm:inline ml-1">PDF</span>
+                            <span className="hidden md:inline ml-1">PDF</span>
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              // Close the dialog and navigate to edit estimate exactly like Projects page
                               setShowEstimatesHistory(false);
                               window.location.href = `/estimates?edit=${estimate.id}`;
                             }}
-                            className="h-8 px-2"
+                            className="h-7 px-2 text-xs"
+                            title="Editar estimado"
                           >
                             <Edit className="h-3 w-3" />
-                            <span className="hidden sm:inline ml-1">
-                              Editar
-                            </span>
+                            <span className="hidden md:inline ml-1">Edit</span>
                           </Button>
                         </div>
                       </div>
@@ -7164,44 +7148,44 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             )}
           </div>
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowEstimatesHistory(false)}
-            >
-              Cerrar
-            </Button>
-            <Button
-              onClick={() => {
-                setShowEstimatesHistory(false);
-                // Reset form for new estimate and clear edit mode
-                setIsEditMode(false);
-                setEditingEstimateId(null);
-                setCurrentStep(0);
-                setEstimate({
-                  client: null,
-                  items: [],
-                  projectDetails: "",
-                  subtotal: 0,
-                  tax: 0,
-                  total: 0,
-                  taxRate: 10,
-                  discountType: "percentage",
-                  discountValue: 0,
-                  discountAmount: 0,
-                  discountName: "",
-                });
-                // Clear URL parameters
-                window.history.replaceState(
-                  {},
-                  document.title,
-                  window.location.pathname,
-                );
-              }}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Crear Nuevo Estimado
-            </Button>
+          <DialogFooter className="pt-3 shrink-0 border-t">
+            <div className="flex gap-2 w-full">
+              <Button
+                variant="outline"
+                onClick={() => setShowEstimatesHistory(false)}
+                className="flex-1 sm:flex-none"
+              >
+                Cerrar
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowEstimatesHistory(false);
+                  setIsEditMode(false);
+                  setEditingEstimateId(null);
+                  setCurrentStep(0);
+                  setEstimate({
+                    client: null,
+                    items: [],
+                    projectDetails: "",
+                    subtotal: 0,
+                    tax: 0,
+                    total: 0,
+                    taxRate: 10,
+                    discountType: "percentage",
+                    discountValue: 0,
+                    discountAmount: 0,
+                    discountName: "",
+                    attachments: [],
+                  });
+                  window.history.replaceState({}, document.title, window.location.pathname);
+                }}
+                className="flex-1 sm:flex-none"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">Crear Nuevo</span>
+                <span className="sm:hidden">Nuevo</span>
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
