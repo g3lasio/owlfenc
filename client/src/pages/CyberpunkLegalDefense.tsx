@@ -15,6 +15,7 @@ import {
 import { useProfile } from "@/hooks/use-profile";
 import { contractHistoryService } from "@/services/contractHistoryService";
 import { useAuth } from "@/hooks/use-auth";
+import { usePermissions } from "@/contexts/PermissionContext";
 import {
   legalDefenseEngine,
   type LegalClause,
@@ -166,6 +167,25 @@ interface ContractAnalysis {
 
 export default function CyberpunkLegalDefense() {
   const { toast } = useToast();
+  
+  // Permission system integration
+  const { 
+    userPlan,
+    userUsage,
+    incrementUsage, 
+    canUse,
+    hasAccess,
+    isTrialUser,
+    trialDaysRemaining,
+    getUpgradeReason
+  } = usePermissions();
+  
+  // Plan type checks
+  const currentPlan = userPlan;
+  const isPrimoChambeador = currentPlan?.id === 1;
+  const isMeroPatron = currentPlan?.id === 2;
+  const isMasterContractor = currentPlan?.id === 3;
+  const isTrialMaster = currentPlan?.id === 4;
 
   // Estados principales del workflow - SIMPLE 3 STEP WIZARD
   const [currentStep, setCurrentStep] = useState(1);
@@ -191,6 +211,45 @@ export default function CyberpunkLegalDefense() {
   const [selectedClauses, setSelectedClauses] = useState<Set<string>>(
     new Set(),
   );
+  
+  // Permission access controls
+  const checkLegalDefenseAccess = () => {
+    if (isPrimoChambeador) {
+      return {
+        allowed: false,
+        reason: "Upgrade to Mero Patrón to unlock Legal Defense system",
+        upgradeText: "Legal Defense requires Mero Patrón plan or higher"
+      };
+    }
+    return { allowed: true };
+  };
+  
+  const checkAdvancedFeaturesAccess = () => {
+    if (isPrimoChambeador || isMeroPatron) {
+      return {
+        allowed: false,
+        reason: "Upgrade to Master Contractor for unlimited advanced legal features",
+        upgradeText: "Advanced legal protections require Master Contractor plan"
+      };
+    }
+    return { allowed: true };
+  };
+  
+  const checkContractGenerationAccess = () => {
+    if (isPrimoChambeador) {
+      return {
+        allowed: false,
+        reason: "Contract generation requires Mero Patrón plan or higher"
+      };
+    }
+    if (isMeroPatron && !canUse('contracts')) {
+      return {
+        allowed: false,
+        reason: `You've reached your contract limit (${userUsage?.contracts || 0}/${currentPlan?.limits?.contracts}). Upgrade to Master Contractor for unlimited contracts.`
+      };
+    }
+    return { allowed: true };
+  };
 
   // Estados para términos de pago
   const [paymentTerms, setPaymentTerms] = useState<PaymentTerm[]>([
@@ -308,6 +367,17 @@ export default function CyberpunkLegalDefense() {
   const loadContractorDataFromProfile = useCallback(() => {
     if (!profile) return;
 
+    // Check permission access
+    const accessCheck = checkLegalDefenseAccess();
+    if (!accessCheck.allowed) {
+      toast({
+        title: "⚠️ Access Restricted",
+        description: accessCheck.reason,
+        variant: "destructive"
+      });
+      return;
+    }
+
     console.log("📋 Loading contractor data from Company Profile:", profile);
 
     // Auto-poblar datos del contratista con información del perfil
@@ -327,7 +397,7 @@ export default function CyberpunkLegalDefense() {
     }));
 
     console.log("✅ Contractor data loaded from profile");
-  }, [profile]);
+  }, [profile, toast]);
 
   // Sistema de autoguardado en tiempo real
   const performAutoSave = useCallback(async () => {
@@ -570,6 +640,17 @@ export default function CyberpunkLegalDefense() {
 
   const toggleClause = useCallback(
     (clauseId: string) => {
+      // Check access for advanced legal clause features
+      const accessCheck = checkAdvancedFeaturesAccess();
+      if (!accessCheck.allowed) {
+        toast({
+          title: "🎯 Advanced Feature",
+          description: accessCheck.reason,
+          variant: "destructive"
+        });
+        return;
+      }
+      
       setSelectedClauses((prev) => {
         const newSet = new Set(prev);
         if (newSet.has(clauseId)) {
@@ -581,7 +662,7 @@ export default function CyberpunkLegalDefense() {
       });
       markDirtyAndScheduleAutoSave();
     },
-    [markDirtyAndScheduleAutoSave],
+    [markDirtyAndScheduleAutoSave, toast],
   );
 
   const updateFormField = useCallback(
@@ -617,6 +698,17 @@ export default function CyberpunkLegalDefense() {
   // Edit contract handler
   const handleEditContract = useCallback(
     (contract: any) => {
+      // Check contract generation access
+      const accessCheck = checkContractGenerationAccess();
+      if (!accessCheck.allowed) {
+        toast({
+          title: "📝 Contract Edit Restricted",
+          description: accessCheck.reason,
+          variant: "destructive"
+        });
+        return;
+      }
+      
       console.log("🔧 Editing contract:", contract);
 
       // Enhanced mapping to preserve ALL contract data during editing
@@ -1127,6 +1219,17 @@ export default function CyberpunkLegalDefense() {
   // Función para manejar la selección de proyecto y cargar todos sus datos
   const handleProjectSelection = useCallback(
     async (project: any) => {
+      // Check legal defense access
+      const accessCheck = checkLegalDefenseAccess();
+      if (!accessCheck.allowed) {
+        toast({
+          title: "📁 Project Selection Restricted",
+          description: accessCheck.reason,
+          variant: "destructive"
+        });
+        return;
+      }
+      
       setIsProcessing(true);
 
       try {
@@ -1332,6 +1435,17 @@ export default function CyberpunkLegalDefense() {
       approvedDefenseClauses: DefenseClause[],
       customizations: Record<string, any>,
     ) => {
+      // Check advanced features access for defense completion
+      const accessCheck = checkAdvancedFeaturesAccess();
+      if (!accessCheck.allowed) {
+        toast({
+          title: "🛡️ Advanced Defense Restricted",
+          description: accessCheck.reason,
+          variant: "destructive"
+        });
+        return;
+      }
+      
       setApprovedClauses(approvedDefenseClauses);
       setClauseCustomizations(customizations);
 
@@ -1878,6 +1992,17 @@ export default function CyberpunkLegalDefense() {
   // Manejo de carga de archivos con Claude Sonnet OCR
   const handleFileUpload = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
+      // Check legal defense access
+      const accessCheck = checkLegalDefenseAccess();
+      if (!accessCheck.allowed) {
+        toast({
+          title: "📄 File Upload Restricted",
+          description: accessCheck.reason,
+          variant: "destructive"
+        });
+        return;
+      }
+      
       const file = event.target.files?.[0];
       if (!file) return;
 
@@ -2411,6 +2536,27 @@ export default function CyberpunkLegalDefense() {
       className=" mb-40 bg-black text-white p-6 relative "
       style={{ fontFamily: "ui-monospace, monospace" }}
     >
+      {/* Trial Information Banner */}
+      {isTrialUser && trialDaysRemaining !== undefined && (
+        <div className="bg-gradient-to-r from-cyan-600 to-blue-600 p-3 rounded-lg mb-4 text-center">
+          <p className="text-white font-medium">
+            🎆 Trial Mode: {trialDaysRemaining} days remaining for unlimited access
+          </p>
+        </div>
+      )}
+      
+      {/* Plan Restriction Warning */}
+      {isPrimoChambeador && (
+        <div className="bg-gradient-to-r from-orange-600 to-red-600 p-3 rounded-lg mb-4 text-center">
+          <p className="text-white font-medium">
+            ⚠️ Legal Defense requires Mero Patrón plan or higher - 
+            <span className="underline cursor-pointer ml-1" onClick={() => window.open('/pricing', '_blank')}>
+              Upgrade Now
+            </span>
+          </p>
+        </div>
+      )}
+      
       {/* Fondo limpio */}
       <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black"></div>
 
