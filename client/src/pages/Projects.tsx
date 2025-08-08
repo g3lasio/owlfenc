@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { getProjects, getProjectById, updateProject, updateProjectProgress } from "@/lib/firebase";
 import { useAuth } from "@/hooks/use-auth";
+import { usePermissions } from "@/contexts/PermissionContext";
+import { UpgradePrompt } from "@/components/permissions/UpgradePrompt";
 import {
   Card,
   CardContent,
@@ -84,6 +86,7 @@ function Projects() {
   const [uploadingFile, setUploadingFile] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { hasAccess, canUse, showUpgradeModal } = usePermissions();
 
   useEffect(() => {
     if (user?.uid) {
@@ -102,6 +105,18 @@ function Projects() {
           description: "Por favor inicia sesión para ver tus proyectos",
           variant: "destructive",
         });
+        setProjects([]);
+        return;
+      }
+
+      // SECURITY: Verificar permisos de acceso a proyectos
+      if (!hasAccess('projects')) {
+        toast({
+          title: "Acceso Restringido",
+          description: "Tu plan actual no incluye acceso completo a gestión de proyectos",
+          variant: "destructive",
+        });
+        showUpgradeModal('projects', 'Gestiona proyectos con herramientas profesionales');
         setProjects([]);
         return;
       }

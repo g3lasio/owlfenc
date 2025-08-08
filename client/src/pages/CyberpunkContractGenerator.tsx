@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/contexts/PermissionContext";
+import { UpgradePrompt } from "@/components/permissions/UpgradePrompt";
 import NewContractSurveyFlow from "@/components/contract/NewContractSurveyFlow";
 import ContractPreviewEditable from "@/components/contract/ContractPreviewEditable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -37,6 +39,7 @@ interface Contract {
 const CyberpunkContractGenerator = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { canUse, getRemainingUsage, showUpgradeModal, incrementUsage } = usePermissions();
   
   // Estados principales
   const [view, setView] = useState<'dashboard' | 'survey' | 'preview'>('dashboard');
@@ -74,11 +77,23 @@ const CyberpunkContractGenerator = () => {
     }
   });
 
-  // Mutación para generar contrato
+  // Mutación para generar contrato con validación de permisos
   const generateContractMutation = useMutation({
     mutationFn: async (data: Record<string, any>) => {
+      // SECURITY: Verificar permisos antes de generar
+      if (!canUse('contracts')) {
+        throw new Error('No tienes permisos suficientes para generar contratos');
+      }
+      
       const template = contractTemplateQuery.data || "";
-      return generateContractWithAnthropic(data, template, 'professional');
+      const result = await generateContractWithAnthropic(data, template, 'professional');
+      
+      // USAGE: Incrementar uso solo si fue exitoso
+      if (result.success) {
+        await incrementUsage('contracts');
+      }
+      
+      return result;
     },
     onSuccess: (result) => {
       if (result.success) {
@@ -93,11 +108,16 @@ const CyberpunkContractGenerator = () => {
       }
     },
     onError: (error) => {
-      toast({
-        title: "Error de Generación",
-        description: "No se pudo generar el contrato. Inténtalo nuevamente.",
-        variant: "destructive",
-      });
+      const errorMessage = error.message;
+      if (errorMessage.includes('permisos')) {
+        showUpgradeModal('contracts', 'Necesitas un plan superior para generar más contratos');
+      } else {
+        toast({
+          title: "Error de Generación",
+          description: "No se pudo generar el contrato. Inténtalo nuevamente.",
+          variant: "destructive",
+        });
+      }
     }
   });
 

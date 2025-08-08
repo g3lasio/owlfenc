@@ -177,6 +177,7 @@ export default function CyberpunkLegalDefense() {
     hasAccess,
     isTrialUser,
     trialDaysRemaining,
+    showUpgradeModal,
     getUpgradeReason
   } = usePermissions();
   

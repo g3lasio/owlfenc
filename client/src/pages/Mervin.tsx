@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Client } from "@/lib/clientFirebase";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/contexts/PermissionContext";
+import { UpgradePrompt } from "@/components/permissions/UpgradePrompt";
 import { MaterialInventoryService } from "../../src/services/materialInventoryService";
 import { db } from "@/lib/firebase";
 import { useQuery } from "@tanstack/react-query";

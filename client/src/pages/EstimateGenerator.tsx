@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { ProjectDescriptionEnhancer } from '@/components/ui/project-description-enhancer';
 import { getClients } from '@/lib/clientFirebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/contexts/PermissionContext';
+import { UpgradePrompt } from '@/components/permissions/UpgradePrompt';
 import { 
   User, 
   FileText, 
@@ -67,6 +69,7 @@ export default function EstimateGenerator() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { currentUser, login, loginWithGoogle, loginWithApple } = useAuth();
+  const { canUse, getRemainingUsage, showUpgradeModal, incrementUsage } = usePermissions();
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');

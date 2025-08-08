@@ -51,6 +51,9 @@ export interface PermissionContextValue {
   // UI methods
   showUpgradeModal: (feature: string, message?: string) => void;
   incrementUsage: (feature: string, count?: number) => Promise<void>;
+  
+  // Helper methods
+  getUpgradeReason: (feature: string) => string;
 }
 
 // Planes predefinidos
@@ -393,6 +396,23 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     }
   };
 
+  const getUpgradeReason = (feature: string): string => {
+    if (!userPlan) return 'Se requiere una suscripción';
+    
+    const featureMessages: { [key: string]: string } = {
+      'basicEstimates': 'Crea estimados básicos ilimitados sin marca de agua',
+      'aiEstimates': 'Genera estimados con IA avanzada sin límites',
+      'contracts': 'Crea contratos profesionales ilimitados',
+      'propertyVerifications': 'Verifica propiedades sin restricciones',
+      'permitAdvisor': 'Consulta permisos sin límites mensuales',
+      'projects': 'Gestiona proyectos con IA avanzada',
+      'invoices': 'Sistema completo de facturación',
+      'paymentTracking': 'Seguimiento avanzado de pagos'
+    };
+    
+    return featureMessages[feature] || `Accede a ${feature} sin restricciones`;
+  };
+
   const contextValue: PermissionContextValue = {
     userPlan,
     userUsage,
@@ -404,7 +424,8 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     getRemainingUsage,
     isLimitReached,
     showUpgradeModal,
-    incrementUsage
+    incrementUsage,
+    getUpgradeReason
   };
 
   return (

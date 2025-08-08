@@ -37,7 +37,6 @@ import { useToast } from "@/hooks/use-toast";
 import { auth, db } from "@/lib/firebase";
 import { usePermissions } from "@/hooks/usePermissions";
 import { UpgradePrompt } from "@/components/permissions/UpgradePrompt";
-import { UserPlanSwitcher } from "@/components/dev/UserPlanSwitcher";
 import {
   collection,
   addDoc,
