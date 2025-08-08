@@ -207,7 +207,9 @@ export default function SimpleContractGenerator() {
     canUse,
     hasAccess,
     isTrialUser,
-    trialDaysRemaining
+    trialDaysRemaining,
+    shouldUseWatermark,
+    isFeatureAvailable
   } = usePermissions();
 
   // Get current plan information for UI restrictions
@@ -228,7 +230,7 @@ export default function SimpleContractGenerator() {
   
   // Check contract access function
   const checkContractAccess = () => {
-    if (isPrimoChambeador) {
+    if (!isFeatureAvailable('contracts')) {
       return {
         allowed: false,
         reason: "Upgrade to Mero Patrón to unlock contract generation"
@@ -237,6 +239,12 @@ export default function SimpleContractGenerator() {
     // Trial Master and paid plans have full access
     return { allowed: true };
   };
+  
+  // Check if estimates are available (not just disabled)
+  const areEstimatesAvailable = () => isFeatureAvailable('estimates');
+  
+  // Check if watermark should be used for current user
+  const useWatermarkForEstimates = () => shouldUseWatermark('estimates');
 
   // Fetch AI-suggested legal clauses
   const fetchAISuggestedClauses = useCallback(async () => {
@@ -2115,8 +2123,8 @@ export default function SimpleContractGenerator() {
   const handleDownloadPDF = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid) return;
 
-    // Check contract access permissions (Trial Master and paid plans have full access)
-    if (isPrimoChambeador) {
+    // Check contract access permissions using new permission system
+    if (!isFeatureAvailable('contracts')) {
       toast({
         title: "Upgrade Required",
         description: "Upgrade to Mero Patrón to unlock PDF downloads",
@@ -3846,13 +3854,48 @@ export default function SimpleContractGenerator() {
 
                       {/* Action Button */}
                       <div className="flex justify-end pt-4">
-                        <Button
-                          onClick={handleScratchContractProceed}
-                          className="bg-cyan-500 hover:bg-cyan-600 text-black font-semibold px-6 py-2"
-                        >
-                          Create Contract
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
+                        {isFeatureAvailable('contracts') ? (
+                          <Button
+                            onClick={handleScratchContractProceed}
+                            className={`font-semibold px-6 py-2 ${
+                              isTrialMaster || isTrialUser
+                                ? "bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white"
+                                : useWatermarkForEstimates()
+                                  ? "bg-orange-500 hover:bg-orange-600 text-white"
+                                  : "bg-cyan-500 hover:bg-cyan-600 text-black"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              {(isTrialMaster || isTrialUser) && (
+                                <span className="text-xs bg-yellow-400 text-black px-1 rounded">
+                                  TRIAL - {trialDaysRemaining}d
+                                </span>
+                              )}
+                              {useWatermarkForEstimates() && (
+                                <span className="text-xs bg-gray-300 text-black px-1 rounded">
+                                  WATERMARK
+                                </span>
+                              )}
+                              Create Contract
+                              <ArrowRight className="ml-2 h-4 w-4" />
+                            </div>
+                          </Button>
+                        ) : (
+                          <div className="bg-gradient-to-r from-yellow-600 to-orange-600 text-black rounded-lg p-3 text-center">
+                            <div className="flex items-center justify-center gap-2 mb-1">
+                              <Lock className="h-4 w-4" />
+                              <span className="font-semibold text-sm">Contract Creation Unavailable</span>
+                            </div>
+                            <p className="text-xs mb-2">Upgrade to Mero Patrón</p>
+                            <Button
+                              onClick={() => window.open('/pricing', '_blank')}
+                              size="sm"
+                              className="bg-black text-white hover:bg-gray-800 text-xs"
+                            >
+                              View Plans
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </TabsContent>
                   </Tabs>
@@ -4519,32 +4562,53 @@ export default function SimpleContractGenerator() {
                       >
                         Back to Projects
                       </Button>
-                      <Button
-                        onClick={handleGenerateContract}
-                        disabled={isLoading || (isPrimoChambeador && !isLoading)}
-                        className={`font-bold py-3 px-8 relative ${
-                          isPrimoChambeador 
-                            ? "bg-gray-600 text-gray-400 cursor-not-allowed" 
-                            : isTrialMaster 
+                      
+                      {/* Generate Contract Button - Hide completely for free plan */}
+                      {isFeatureAvailable('contracts') ? (
+                        <Button
+                          onClick={handleGenerateContract}
+                          disabled={isLoading}
+                          className={`font-bold py-3 px-8 relative ${
+                            isTrialMaster || isTrialUser
                               ? "bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white"
-                              : "bg-green-600 hover:bg-green-500 text-white"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {isPrimoChambeador && (
-                            <Lock className="h-4 w-4" />
-                          )}
-                          {isTrialMaster && (
-                            <span className="text-xs bg-yellow-400 text-black px-1 rounded mr-1">TRIAL</span>
-                          )}
-                          {isLoading ? "Generating..." : "Generate Contract"}
-                        </div>
-                        {isPrimoChambeador && (
-                          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-yellow-600 text-black px-2 py-1 rounded text-xs font-medium whitespace-nowrap">
-                            Upgrade to Mero Patrón
+                              : useWatermarkForEstimates()
+                                ? "bg-orange-600 hover:bg-orange-500 text-white"
+                                : "bg-green-600 hover:bg-green-500 text-white"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {(isTrialMaster || isTrialUser) && (
+                              <span className="text-xs bg-yellow-400 text-black px-1 rounded mr-1">
+                                TRIAL - {trialDaysRemaining}d
+                              </span>
+                            )}
+                            {useWatermarkForEstimates() && (
+                              <span className="text-xs bg-gray-400 text-black px-1 rounded mr-1">
+                                WATERMARK
+                              </span>
+                            )}
+                            {isLoading ? "Generating..." : "Generate Contract"}
                           </div>
-                        )}
-                      </Button>
+                        </Button>
+                      ) : (
+                        /* Upgrade prompt card for free plan users */
+                        <div className="bg-gradient-to-r from-yellow-600 to-orange-600 text-black rounded-lg p-4 text-center">
+                          <div className="flex items-center justify-center gap-2 mb-2">
+                            <Lock className="h-5 w-5" />
+                            <span className="font-bold">Contract Generation Unavailable</span>
+                          </div>
+                          <p className="text-sm mb-3">
+                            Upgrade to Mero Patrón to unlock contract generation
+                          </p>
+                          <Button
+                            onClick={() => window.open('/pricing', '_blank')}
+                            size="sm"
+                            className="bg-black text-white hover:bg-gray-800"
+                          >
+                            View Plans
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -4575,33 +4639,40 @@ export default function SimpleContractGenerator() {
                         <p className="text-gray-300 text-sm mb-4">
                           Download PDF for immediate use
                         </p>
-                        <Button
-                          onClick={handleDownloadPDF}
-                          disabled={isLoading || (isPrimoChambeador && !isLoading)}
-                          className={`font-medium py-2 px-4 w-full text-sm relative ${
-                            isPrimoChambeador 
-                              ? "bg-gray-600 text-gray-400 cursor-not-allowed" 
-                              : isTrialMaster 
+                        {isFeatureAvailable('contracts') ? (
+                          <Button
+                            onClick={handleDownloadPDF}
+                            disabled={isLoading}
+                            className={`font-medium py-2 px-4 w-full text-sm relative ${
+                              isTrialMaster || isTrialUser
                                 ? "bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white"
-                                : "bg-blue-600 hover:bg-blue-500 text-white"
-                          }`}
-                        >
-                          <div className="flex items-center justify-center gap-2">
-                            {isPrimoChambeador ? (
-                              <Lock className="h-4 w-4" />
-                            ) : isLoading ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Download className="h-4 w-4" />
-                            )}
-                            {isPrimoChambeador ? "Upgrade Required" : (isTrialMaster || isTrialUser) ? `Download PDF (Trial - ${trialDaysRemaining}d)` : isLoading ? "Generating..." : "Download PDF"}
-                          </div>
-                          {isPrimoChambeador && (
-                            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-yellow-600 text-black px-2 py-1 rounded text-xs font-medium whitespace-nowrap">
-                              Unlock with Mero Patrón
+                                : useWatermarkForEstimates()
+                                  ? "bg-orange-600 hover:bg-orange-500 text-white"
+                                  : "bg-blue-600 hover:bg-blue-500 text-white"
+                            }`}
+                          >
+                            <div className="flex items-center justify-center gap-2">
+                              {isLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Download className="h-4 w-4" />
+                              )}
+                              {(isTrialMaster || isTrialUser) && !isLoading && (
+                                <span className="text-xs">TRIAL - {trialDaysRemaining}d</span>
+                              )}
+                              {useWatermarkForEstimates() && !isLoading && (
+                                <span className="text-xs">WATERMARK</span>
+                              )}
+                              {isLoading ? "Generating..." : "Download PDF"}
                             </div>
-                          )}
-                        </Button>
+                          </Button>
+                        ) : (
+                          <div className="bg-yellow-600 text-black rounded-lg p-3 text-center text-sm">
+                            <Lock className="h-4 w-4 mx-auto mb-1" />
+                            <span className="font-medium">Upgrade Required</span>
+                            <p className="text-xs mt-1">Unlock with Mero Patrón</p>
+                          </div>
+                        )}
                         <div className="flex items-center justify-center text-xs text-gray-400 mt-2 gap-1">
                           <CheckCircle className="h-3 w-3" />
                           <span>Instant • Print Ready</span>
