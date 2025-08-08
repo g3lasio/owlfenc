@@ -6873,45 +6873,45 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         open={showEstimatesHistory}
         onOpenChange={setShowEstimatesHistory}
       >
-        <DialogContent className="p-3 md:p-4 md:m-0 md:max-w-4xl w-[95vw] max-h-[85vh] overflow-hidden flex flex-col">
-          <DialogHeader className="pb-2 shrink-0">
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <FileText className="h-4 w-4" />
-              Mis Estimados
+        <DialogContent className="p-2 md:p-3 md:m-0 md:max-w-3xl w-[96vw] max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader className="pb-1 shrink-0">
+            <DialogTitle className="flex items-center gap-1.5 text-base">
+              <FileText className="h-3.5 w-3.5" />
+              Estimados
             </DialogTitle>
-            <DialogDescription className="text-sm text-gray-500">
-              Historial de estimados guardados
+            <DialogDescription className="text-xs text-gray-500">
+              Historial guardado
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex-1 overflow-hidden">
             {isLoadingEstimates ? (
-              <div className="flex items-center justify-center py-6">
-                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                <span className="text-sm">Cargando...</span>
+              <div className="flex items-center justify-center py-4">
+                <RefreshCw className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                <span className="text-xs">Cargando...</span>
               </div>
             ) : savedEstimates.length === 0 ? (
-              <div className="text-center py-6">
-                <FileText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                <p className="text-sm font-medium text-gray-900">Sin estimados</p>
-                <p className="text-xs text-gray-500">Crea tu primer estimado</p>
+              <div className="text-center py-4">
+                <FileText className="h-6 w-6 mx-auto mb-1.5 text-gray-400" />
+                <p className="text-xs font-medium text-gray-900">Sin estimados</p>
+                <p className="text-xs text-gray-500">Crea tu primero</p>
               </div>
             ) : (
-              <div className="h-full overflow-y-auto pr-1">
-                <div className="space-y-1.5">
+              <div className="h-full overflow-y-auto pr-0.5">
+                <div className="space-y-1">
                   {savedEstimates.map((estimate) => (
                     <div
                       key={estimate.id}
-                      className="border rounded-md p-2.5 hover:bg-gray-50/50 transition-colors"
+                      className="border rounded p-1.5 hover:bg-gray-50/40 transition-colors"
                     >
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center justify-between gap-1.5">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-medium text-sm truncate">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <h3 className="font-medium text-xs truncate leading-4">
                               {estimate.estimateNumber}
                             </h3>
                             <span
-                              className={`px-1.5 py-0.5 rounded text-xs font-medium shrink-0 ${
+                              className={`px-1 py-0.5 rounded text-xs font-medium shrink-0 leading-3 ${
                                 estimate.status === "draft"
                                   ? "bg-yellow-100 text-yellow-700"
                                   : estimate.status === "sent"
@@ -6921,24 +6921,22 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                       : "bg-gray-100 text-gray-700"
                               }`}
                             >
-                              {estimate.status === "draft" ? "Draft" : estimate.status === "sent" ? "Sent" : estimate.status === "approved" ? "OK" : "?"}
+                              {estimate.status === "draft" ? "D" : estimate.status === "sent" ? "S" : estimate.status === "approved" ? "✓" : "?"}
                             </span>
                           </div>
-                          <div className="space-y-0.5 text-xs text-gray-600">
-                            <div className="truncate">
-                              <span className="font-medium">Cliente:</span> {estimate.clientName}
+                          <div className="flex items-center justify-between text-xs text-gray-600 leading-3">
+                            <div className="truncate pr-1">
+                              {estimate.clientName}
                             </div>
-                            <div className="flex items-center justify-between">
-                              <div className="truncate">
-                                <span className="font-medium text-green-600">${estimate.total.toFixed(2)}</span>
-                              </div>
-                              <div className="text-gray-400 shrink-0 ml-2">
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="font-medium text-green-600">${estimate.total.toFixed(0)}</span>
+                              <span className="text-gray-400">
                                 {new Date(estimate.estimateDate).toLocaleDateString("es-ES", { day: '2-digit', month: '2-digit' })}
-                              </div>
+                              </span>
                             </div>
                           </div>
                         </div>
-                        <div className="flex gap-1 shrink-0">
+                        <div className="flex gap-0.5 shrink-0">
                           <Button
                             variant="outline"
                             size="sm"
@@ -7120,11 +7118,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                 });
                               }
                             }}
-                            className="h-7 px-2 text-xs"
+                            className="h-6 w-6 p-1"
                             title="Descargar PDF"
                           >
-                            <Download className="h-3 w-3" />
-                            <span className="hidden md:inline ml-1">PDF</span>
+                            <Download className="h-2.5 w-2.5" />
                           </Button>
                           <Button
                             variant="outline"
@@ -7133,11 +7130,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                               setShowEstimatesHistory(false);
                               window.location.href = `/estimates?edit=${estimate.id}`;
                             }}
-                            className="h-7 px-2 text-xs"
+                            className="h-6 w-6 p-1"
                             title="Editar estimado"
                           >
-                            <Edit className="h-3 w-3" />
-                            <span className="hidden md:inline ml-1">Edit</span>
+                            <Edit className="h-2.5 w-2.5" />
                           </Button>
                         </div>
                       </div>
@@ -7148,12 +7144,12 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             )}
           </div>
 
-          <DialogFooter className="pt-3 shrink-0 border-t">
-            <div className="flex gap-2 w-full">
+          <DialogFooter className="pt-2 shrink-0 border-t">
+            <div className="flex gap-1.5 w-full">
               <Button
                 variant="outline"
                 onClick={() => setShowEstimatesHistory(false)}
-                className="flex-1 sm:flex-none"
+                className="flex-1 sm:flex-none h-8 text-xs"
               >
                 Cerrar
               </Button>
@@ -7179,11 +7175,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   });
                   window.history.replaceState({}, document.title, window.location.pathname);
                 }}
-                className="flex-1 sm:flex-none"
+                className="flex-1 sm:flex-none h-8 text-xs"
               >
-                <Plus className="h-4 w-4 mr-1" />
-                <span className="hidden sm:inline">Crear Nuevo</span>
-                <span className="sm:hidden">Nuevo</span>
+                <Plus className="h-3 w-3 mr-1" />
+                <span className="hidden sm:inline">Nuevo</span>
+                <span className="sm:hidden">+</span>
               </Button>
             </div>
           </DialogFooter>
