@@ -2081,6 +2081,18 @@ Output must be between 200-900 characters in English.`;
         const taxAmount = projectTotalCosts?.tax || 0;
         const total = projectTotalCosts?.total || subtotal;
 
+        // Extract premium template parameters from request
+        const templateMode = requestData.templateMode;
+        const isMembership = requestData.isMembership;
+        const selectedTemplate = requestData.selectedTemplate;
+        
+        console.log("🔍 PREMIUM PARAMS EXTRACTION:", {
+          templateMode: templateMode,
+          isMembership: isMembership,
+          selectedTemplate: selectedTemplate,
+          source: "Request Body"
+        });
+
         // Structure data for Puppeteer service
         const estimateData = {
           company: {
@@ -2120,6 +2132,10 @@ Output must be between 200-900 characters in English.`;
                 .join(", ") ||
               "",
           },
+          // 🎯 ADD PREMIUM TEMPLATE PARAMETERS
+          templateMode: templateMode,
+          isMembership: isMembership,
+          selectedTemplate: selectedTemplate,
         };
 
         console.log("🎨 Generating PDF with professional template...");
