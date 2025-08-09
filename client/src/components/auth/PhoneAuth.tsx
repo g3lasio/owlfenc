@@ -1,441 +1,302 @@
-import { useState, useRef, useEffect } from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useToast } from "@/hooks/use-toast";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle, Smartphone, ShieldCheck } from "lucide-react";
-import { initPhoneLogin, verifyPhoneCode, enrollMfaPhone, completeMfaEnrollment } from "@/lib/firebase";
-import { useAuth } from "@/contexts/AuthContext";
+/**
+ * 📱 PHONE AUTHENTICATION COMPONENT
+ * SMS-based authentication with verification codes
+ */
 
-// Esquema para formulario de número de teléfono
-const phoneSchema = z.object({
-  phoneNumber: z
-    .string()
-    .min(8, "El número de teléfono debe tener al menos 8 dígitos")
-    .regex(/^\+?[0-9\s-()]+$/, "Formato de teléfono inválido"),
-});
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEnhancedAuth } from './EnhancedAuthProvider';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, Phone, MessageSquare } from 'lucide-react';
 
-type PhoneFormValues = z.infer<typeof phoneSchema>;
-
-// Esquema para formulario de código de verificación
-const codeSchema = z.object({
-  code: z
-    .string()
-    .min(6, "El código debe tener al menos 6 dígitos")
-    .max(6, "El código no debe exceder 6 dígitos")
-    .regex(/^[0-9]+$/, "El código solo debe contener números"),
-});
-
-type CodeFormValues = z.infer<typeof codeSchema>;
-
-interface PhoneAuthProps {
-  onSuccess?: () => void;
-  mode?: "login" | "enroll"; // Modo de funcionamiento: login o inscripción MFA
-}
-
-export default function PhoneAuth({ onSuccess, mode = "login" }: PhoneAuthProps) {
-  const { toast } = useToast();
-  const { currentUser } = useAuth();
-  const [step, setStep] = useState<"phone" | "code">("phone");
+const PhoneAuth: React.FC = () => {
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationId, setVerificationId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const confirmationResultRef = useRef<any>(null);
-  const verificationIdRef = useRef<string | boolean | null>(null);
-  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
+  const [step, setStep] = useState<'phone' | 'verify'>('phone');
+  
+  const { sendPhoneVerification, verifyPhoneCode } = useEnhancedAuth();
+  const { toast } = useToast();
 
-  // Form para teléfono
-  const phoneForm = useForm<PhoneFormValues>({
-    resolver: zodResolver(phoneSchema),
-    defaultValues: {
-      phoneNumber: "",
-    },
-  });
-
-  // Form para código
-  const codeForm = useForm<CodeFormValues>({
-    resolver: zodResolver(codeSchema),
-    defaultValues: {
-      code: "",
-    },
-  });
-
-  // Limpiar el container de reCAPTCHA cuando el componente se desmonte
-  useEffect(() => {
-    return () => {
-      // Aquí podríamos hacer limpieza adicional si es necesario
-    };
-  }, []);
-
-  // Formatear el número de teléfono para asegurar que tenga formato internacional
-  const formatPhoneNumber = (phone: string): string => {
-    let formattedPhone = phone.trim();
+  const formatPhoneNumber = (value: string) => {
+    // Remove all non-digit characters
+    const digits = value.replace(/\D/g, '');
     
-    // Eliminar espacios, guiones y paréntesis
-    formattedPhone = formattedPhone.replace(/[\s-()]/g, '');
-    
-    // Asegurarse de que comience con +
-    if (!formattedPhone.startsWith("+")) {
-      formattedPhone = `+${formattedPhone}`;
+    // Format as US phone number
+    if (digits.length >= 10) {
+      return `+1${digits.slice(-10)}`;
     }
-    
-    return formattedPhone;
+    return `+1${digits}`;
   };
 
-  // Enviar código SMS
-  const handleSendCode = async (data: PhoneFormValues) => {
-    setIsLoading(true);
-    setError(null);
+  const handleSendVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    try {
-      // Formatear el número de teléfono
-      const formattedPhone = formatPhoneNumber(data.phoneNumber);
-      setPhoneNumber(formattedPhone);
-      
-      // Validar que el contenedor de reCAPTCHA esté disponible
-      if (!recaptchaContainerRef.current) {
-        throw new Error("El contenedor de reCAPTCHA no está disponible");
-      }
-      
-      // Iniciar el proceso de login o inscripción MFA con teléfono
-      if (mode === "login") {
-        console.log(`Iniciando login con teléfono: ${formattedPhone}`);
-        const confirmationResult = await initPhoneLogin(formattedPhone, "recaptcha-container");
-        confirmationResultRef.current = confirmationResult;
-        
-        toast({
-          title: "Código enviado",
-          description: `Se ha enviado un código de verificación a ${formattedPhone}`,
-        });
-      } else if (mode === "enroll" && currentUser) {
-        // Iniciar la inscripción MFA con teléfono
-        console.log(`Iniciando inscripción MFA con teléfono: ${formattedPhone}`);
-        try {
-          const verificationId = await enrollMfaPhone(currentUser, formattedPhone, "recaptcha-container");
-          // Guardar el ID de verificación para usarlo en el siguiente paso
-          verificationIdRef.current = verificationId;
-          
-          toast({
-            title: "Código enviado",
-            description: `Se ha enviado un código de verificación a ${formattedPhone}`,
-          });
-        } catch (enrollError) {
-          throw enrollError; // Propagar el error para que sea manejado en el bloque catch principal
-        }
-      }
-      
-      // Pasar al siguiente paso
-      setStep("code");
-    } catch (err: any) {
-      console.error("Error al enviar el código:", err);
-      
-      // Mensaje de error personalizado según el código de error
-      let errorMessage = err.message || "Error al enviar el código de verificación";
-      
-      // Personalizar el mensaje según el tipo de error
-      if (err.code === 'auth/invalid-phone-number') {
-        errorMessage = "El número de teléfono no es válido. Por favor, verifica e intenta de nuevo.";
-      } else if (err.code === 'auth/missing-phone-number') {
-        errorMessage = "Debes proporcionar un número de teléfono.";
-      } else if (err.code === 'auth/quota-exceeded') {
-        errorMessage = "Se ha excedido el límite de mensajes SMS. Por favor, intenta más tarde.";
-      } else if (err.code === 'auth/user-disabled') {
-        errorMessage = "Esta cuenta de usuario ha sido deshabilitada.";
-      } else if (err.code === 'auth/operation-not-allowed') {
-        errorMessage = "La autenticación por teléfono no está habilitada para este proyecto.";
-      }
-      
-      setError(errorMessage);
-      
+    if (!phoneNumber.trim()) {
       toast({
+        title: "Phone Number Required",
+        description: "Please enter your phone number.",
         variant: "destructive",
-        title: "Error al enviar código",
-        description: errorMessage,
       });
+      return;
+    }
+
+    const formattedPhone = formatPhoneNumber(phoneNumber);
+    
+    // Basic phone validation (US format)
+    if (!/^\+1\d{10}$/.test(formattedPhone)) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Please enter a valid US phone number.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Create reCAPTCHA container if it doesn't exist
+      let recaptchaContainer = document.getElementById('recaptcha-container');
+      if (!recaptchaContainer) {
+        recaptchaContainer = document.createElement('div');
+        recaptchaContainer.id = 'recaptcha-container';
+        document.body.appendChild(recaptchaContainer);
+      }
+
+      const verificationId = await sendPhoneVerification(formattedPhone, 'recaptcha-container');
+      setVerificationId(verificationId);
+      setStep('verify');
+      
+    } catch (error: any) {
+      console.error('Phone verification error:', error);
+      // Error handling is done in the provider
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Verificar el código SMS
-  const handleVerifyCode = async (data: CodeFormValues) => {
-    setIsLoading(true);
-    setError(null);
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    try {
-      if (mode === "login") {
-        // Verificar para login
-        if (!confirmationResultRef.current) {
-          throw new Error("No hay un proceso de verificación activo");
-        }
-        
-        await verifyPhoneCode(confirmationResultRef.current, data.code);
-        
-        // Mostrar mensaje de éxito
-        setSuccess(true);
-        toast({
-          title: "Verificación exitosa",
-          description: "Tu número de teléfono ha sido verificado correctamente",
-        });
-      } else if (mode === "enroll" && currentUser) {
-        // Verificar para inscripción MFA
-        if (!verificationIdRef.current) {
-          throw new Error("No hay un proceso de verificación MFA activo");
-        }
-
-        // Si estamos en modo de desarrollo y verificationIdRef.current es true
-        if (typeof verificationIdRef.current === 'boolean') {
-          console.log("Simulando completar inscripción MFA en modo desarrollo");
-          // En modo desarrollo, fingimos que todo salió bien
-        } else {
-          // Completar la inscripción MFA con el código ingresado
-          console.log(`Completando inscripción MFA con código: ${data.code}`);
-          await completeMfaEnrollment(
-            currentUser, 
-            verificationIdRef.current, // ahora sabemos que es un string
-            data.code, 
-            "Mi teléfono" // Nombre que se mostrará para este factor
-          );
-        }
-        
-        // Mostrar mensaje de éxito
-        setSuccess(true);
-        toast({
-          title: "Configuración exitosa",
-          description: "La autenticación de dos factores ha sido habilitada correctamente",
-        });
-      }
-      
-      // Llamar al callback de éxito si existe
-      if (onSuccess) {
-        onSuccess();
-      }
-    } catch (err: any) {
-      console.error("Error al verificar el código:", err);
-      
-      // Mensaje de error personalizado según el código de error
-      let errorMessage = err.message || "Error al verificar el código";
-      
-      if (err.code === 'auth/invalid-verification-code') {
-        errorMessage = "El código de verificación ingresado no es válido.";
-      } else if (err.code === 'auth/code-expired') {
-        errorMessage = "El código de verificación ha expirado. Por favor, solicita uno nuevo.";
-      } else if (err.code === 'auth/missing-verification-code') {
-        errorMessage = "Debes proporcionar un código de verificación.";
-      }
-      
-      setError(errorMessage);
-      
+    if (!verificationCode.trim()) {
       toast({
+        title: "Verification Code Required",
+        description: "Please enter the 6-digit code.",
         variant: "destructive",
-        title: "Error de verificación",
-        description: errorMessage,
       });
+      return;
+    }
+
+    if (!/^\d{6}$/.test(verificationCode)) {
+      toast({
+        title: "Invalid Code",
+        description: "Please enter a valid 6-digit code.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await verifyPhoneCode(verificationId, verificationCode);
+      // Success handling is done in the provider
+    } catch (error: any) {
+      console.error('Code verification error:', error);
+      // Error handling is done in the provider
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Solicitar un nuevo código SMS
   const handleResendCode = async () => {
-    setStep("phone");
-    setError(null);
-    
-    if (phoneNumber) {
-      // Rellenar el formulario con el número anterior
-      phoneForm.setValue("phoneNumber", phoneNumber);
+    const formattedPhone = formatPhoneNumber(phoneNumber);
+    try {
+      setIsLoading(true);
+      const newVerificationId = await sendPhoneVerification(formattedPhone, 'recaptcha-container');
+      setVerificationId(newVerificationId);
+      toast({
+        title: "Code Resent",
+        description: "A new verification code has been sent to your phone.",
+        variant: "default",
+      });
+    } catch (error) {
+      // Error handling is done in the provider
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  if (step === 'verify') {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader className="text-center">
+          <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <MessageSquare className="w-6 h-6 text-green-600" />
+          </div>
+          <CardTitle>Enter Verification Code</CardTitle>
+          <CardDescription>
+            We sent a 6-digit code to {formatPhoneNumber(phoneNumber)}
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <form onSubmit={handleVerifyCode} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="code">Verification Code</Label>
+              <Input
+                id="code"
+                type="text"
+                placeholder="123456"
+                value={verificationCode}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                  setVerificationCode(value);
+                }}
+                required
+                disabled={isLoading}
+                className="w-full text-center text-lg tracking-widest"
+                maxLength={6}
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={isLoading || verificationCode.length !== 6}
+              className="w-full"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                'Verify Phone Number'
+              )}
+            </Button>
+          </form>
+
+          <div className="mt-4 flex flex-col gap-2">
+            <Button
+              variant="outline"
+              onClick={handleResendCode}
+              disabled={isLoading}
+              className="w-full"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Resending...
+                </>
+              ) : (
+                'Resend Code'
+              )}
+            </Button>
+
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setStep('phone');
+                setVerificationCode('');
+              }}
+              className="w-full"
+            >
+              Use Different Number
+            </Button>
+          </div>
+
+          <div className="mt-4 text-xs text-center text-gray-500">
+            <p>🔒 Code expires in 5 minutes</p>
+            <p>Check that you entered the correct phone number</p>
+          </div>
+        </CardContent>
+        
+        {/* reCAPTCHA container - hidden */}
+        <div id="recaptcha-container" style={{ display: 'none' }}></div>
+      </Card>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      {success ? (
-        <div className="text-center py-6">
-          <div className="flex justify-center mb-4">
-            <div className="rounded-full bg-green-100 p-3">
-              <ShieldCheck className="h-8 w-8 text-green-600" />
-            </div>
-          </div>
-          <h2 className="text-xl font-semibold mb-2">Verificación exitosa</h2>
-          <p className="text-muted-foreground mb-4">
-            {mode === "enroll" 
-              ? "La autenticación de dos factores ha sido habilitada correctamente." 
-              : "Tu número de teléfono ha sido verificado correctamente."}
-          </p>
-          {mode === "enroll" && (
-            <div className="text-sm p-4 bg-green-50 rounded-lg border border-green-100 mb-4">
-              <p className="font-medium text-green-800 mb-1">Información importante:</p>
-              <p className="text-green-700">
-                A partir de ahora, necesitarás tu teléfono para iniciar sesión. 
-                Cada vez que inicies sesión, recibirás un código por SMS como verificación adicional.
-              </p>
-            </div>
-          )}
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader className="text-center">
+        <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+          <Phone className="w-6 h-6 text-blue-600" />
         </div>
-      ) : step === "phone" ? (
-        <div>
-          <div className="flex items-center justify-center mb-4">
-            <div className="rounded-full bg-primary/10 p-3">
-              <Smartphone className="h-6 w-6 text-primary" />
-            </div>
-          </div>
-          
-          <h2 className="text-xl font-semibold mb-2 text-center">
-            {mode === "login" ? "Iniciar sesión con teléfono" : "Añadir teléfono como segundo factor"}
-          </h2>
-          <p className="text-muted-foreground text-sm mb-6 text-center">
-            Te enviaremos un código de verificación por SMS
-          </p>
-          
-          {/* Contenedor para el reCAPTCHA */}
-          <div 
-            id="recaptcha-container" 
-            ref={recaptchaContainerRef} 
-            className="my-6 flex justify-center"
-          ></div>
-          
-          <Form {...phoneForm}>
-            <form onSubmit={phoneForm.handleSubmit(handleSendCode)} className="space-y-4">
-              <FormField
-                control={phoneForm.control}
-                name="phoneNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Número de teléfono</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="+52 123 456 7890" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                    <p className="text-xs text-muted-foreground">
-                      Ingresa el número con código de país (ej: +52 para México)
-                    </p>
-                  </FormItem>
-                )}
-              />
-              
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              
-              <Button
-                type="submit"
-                className="w-full"
+        <CardTitle>Sign in with Phone</CardTitle>
+        <CardDescription>
+          Enter your phone number to receive a verification code via SMS
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent>
+        <form onSubmit={handleSendVerification} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                +1
+              </span>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="(555) 123-4567"
+                value={phoneNumber}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '');
+                  let formatted = value;
+                  
+                  if (value.length >= 6) {
+                    formatted = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6, 10)}`;
+                  } else if (value.length >= 3) {
+                    formatted = `(${value.slice(0, 3)}) ${value.slice(3)}`;
+                  }
+                  
+                  setPhoneNumber(formatted);
+                }}
+                required
                 disabled={isLoading}
-              >
-                {isLoading ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Enviando...
-                  </span>
-                ) : (
-                  "Enviar código"
-                )}
-              </Button>
-            </form>
-          </Form>
-        </div>
-      ) : (
-        <div>
-          <div className="flex items-center justify-center mb-4">
-            <div className="rounded-full bg-primary/10 p-3">
-              <ShieldCheck className="h-6 w-6 text-primary" />
-            </div>
-          </div>
-          
-          <h2 className="text-xl font-semibold mb-2 text-center">Verificar código</h2>
-          <p className="text-muted-foreground text-sm mb-6 text-center">
-            Ingresa el código de verificación enviado a<br />
-            <span className="font-medium">{phoneNumber}</span>
-          </p>
-          
-          <Form {...codeForm}>
-            <form onSubmit={codeForm.handleSubmit(handleVerifyCode)} className="space-y-4">
-              <FormField
-                control={codeForm.control}
-                name="code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Código de verificación</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="123456" 
-                        {...field} 
-                        maxLength={6}
-                        className="text-center text-lg tracking-widest"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                className="w-full pl-10"
+                maxLength={14} // (555) 123-4567
               />
-              
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              
-              <div className="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={handleResendCode}
-                  disabled={isLoading}
-                >
-                  Cambiar número
-                </Button>
-                <Button
-                  type="submit"
-                  className="flex-1"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Verificando...
-                    </span>
-                  ) : (
-                    "Verificar"
-                  )}
-                </Button>
-              </div>
-              
-              <p className="text-xs text-center text-muted-foreground mt-4">
-                ¿No recibiste el código? 
-                <Button 
-                  variant="link" 
-                  className="p-0 px-1 h-auto" 
-                  onClick={() => handleSendCode(phoneForm.getValues())}
-                  disabled={isLoading}
-                >
-                  Reenviar código
-                </Button>
-              </p>
-            </form>
-          </Form>
+            </div>
+            <p className="text-xs text-gray-500">
+              US numbers only. Standard SMS rates may apply.
+            </p>
+          </div>
+
+          <Button
+            type="submit"
+            disabled={isLoading || phoneNumber.replace(/\D/g, '').length !== 10}
+            className="w-full"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Sending Code...
+              </>
+            ) : (
+              <>
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Send Verification Code
+              </>
+            )}
+          </Button>
+        </form>
+
+        <div className="mt-4 text-xs text-center text-gray-500">
+          <p>🔒 We'll never share your phone number</p>
+          <p>By continuing, you agree to receive SMS verification codes</p>
         </div>
-      )}
-    </div>
+      </CardContent>
+      
+      {/* reCAPTCHA container - will be created dynamically */}
+    </Card>
   );
-}
+};
+
+export default PhoneAuth;

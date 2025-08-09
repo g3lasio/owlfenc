@@ -58,6 +58,9 @@ if (!process.env.FIREBASE_API_KEY || !process.env.FIREBASE_PROJECT_ID) {
 
 const app = express();
 
+// 🛡️ TRUST PROXY CONFIGURATION - Required for rate limiting behind proxy
+app.set('trust proxy', 1);
+
 // 🛡️ APPLY SECURITY MIDDLEWARE FIRST (Order is critical!)
 app.use(securityHeaders);
 app.use(cors(corsConfig));

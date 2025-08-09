@@ -1,148 +1,217 @@
-import { useState } from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useToast } from "@/hooks/use-toast";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle } from "lucide-react";
-import { sendEmailLink } from "@/lib/firebase";
-import { useTranslation } from "react-i18next";
+/**
+ * 🔗 EMAIL LINK AUTHENTICATION COMPONENT
+ * Passwordless authentication with magic links
+ */
 
-// Esquema para formulario de email
-const emailSchema = z.object({
-  email: z.string().email("Ingresa un correo electrónico válido"),
-});
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEnhancedAuth } from './EnhancedAuthProvider';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, Mail, CheckCircle } from 'lucide-react';
+import { isSignInWithEmailLink } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
-type EmailFormValues = z.infer<typeof emailSchema>;
-
-interface EmailLinkAuthProps {
-  onSuccess?: () => void;
-  onToggle?: () => void;
-}
-
-export default function EmailLinkAuth({ onSuccess, onToggle }: EmailLinkAuthProps) {
-  const { t } = useTranslation();
-  const { toast } = useToast();
+const EmailLinkAuth: React.FC = () => {
+  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
-  const [sentEmail, setSentEmail] = useState("");
+  const { sendMagicLink } = useEnhancedAuth();
+  const { toast } = useToast();
 
-  // Form para email
-  const form = useForm<EmailFormValues>({
-    resolver: zodResolver(emailSchema),
-    defaultValues: {
-      email: "",
-    },
-  });
+  // Check if user is completing email link sign-in
+  useEffect(() => {
+    const handleEmailLinkSignIn = async () => {
+      if (isSignInWithEmailLink(auth, window.location.href)) {
+        try {
+          setIsLoading(true);
+          
+          // Get email from localStorage or prompt user
+          let emailForSignIn = window.localStorage.getItem('emailForSignIn');
+          
+          if (!emailForSignIn) {
+            emailForSignIn = window.prompt(
+              'Please provide your email for confirmation'
+            );
+          }
 
-  // Enviar enlace de email
-  const handleSendLink = async (data: EmailFormValues) => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      await sendEmailLink(data.email);
-      
-      setSentEmail(data.email);
-      setEmailSent(true);
-      
-      // Guardar el email en localStorage para recuperarlo luego
-      localStorage.setItem('emailForSignIn', data.email);
-      
-      toast({
-        title: "Enlace enviado",
-        description: `Se ha enviado un enlace de acceso a ${data.email}`,
-      });
-      
-      if (onSuccess) {
-        onSuccess();
+          if (emailForSignIn) {
+            // Complete the sign-in - this is handled by the auth provider
+            // The provider will handle the actual signInWithEmailLink call
+            toast({
+              title: "Completing Sign-in",
+              description: "Processing your magic link...",
+              variant: "default",
+            });
+          }
+        } catch (error) {
+          console.error('Error completing email link sign-in:', error);
+          toast({
+            title: "Sign-in Error",
+            description: "Unable to complete magic link sign-in. Please try again.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoading(false);
+        }
       }
-    } catch (err: any) {
-      console.error("Error al enviar el enlace:", err);
-      setError(err.message || "Error al enviar el enlace de acceso");
-      
+    };
+
+    handleEmailLinkSignIn();
+  }, [toast]);
+
+  const handleSendMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email.trim()) {
       toast({
+        title: "Email Required",
+        description: "Please enter your email address.",
         variant: "destructive",
-        title: "Error al enviar enlace",
-        description: err.message || "No se pudo enviar el enlace. Intenta de nuevo.",
       });
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await sendMagicLink(email);
+      setEmailSent(true);
+    } catch (error: any) {
+      console.error('Magic link error:', error);
+      // Error handling is done in the provider
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <div className="space-y-4 w-full">
-      {emailSent ? (
-        <Alert className="bg-green-50 text-green-800 border-green-200">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertTitle>Enlace enviado</AlertTitle>
-          <AlertDescription>
-            Hemos enviado un enlace a <strong>{sentEmail}</strong>.
-            <br />
-            Por favor, revisa tu bandeja de entrada y haz clic en el enlace para iniciar sesión.
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <div className="w-full">
-          <h2 className="text-lg sm:text-xl font-semibold mb-2">Acceso sin contraseña</h2>
-          <p className="text-muted-foreground text-sm mb-4">
-            Te enviaremos un enlace de acceso por correo electrónico
-          </p>
-          
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSendLink)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Correo electrónico</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="tu@email.com" 
-                        type="email"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
+  const handleResendLink = async () => {
+    if (email) {
+      await handleSendMagicLink({ preventDefault: () => {} } as React.FormEvent);
+    }
+  };
+
+  if (emailSent) {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader className="text-center">
+          <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <CheckCircle className="w-6 h-6 text-green-600" />
+          </div>
+          <CardTitle>Magic Link Sent!</CardTitle>
+          <CardDescription>
+            We've sent a secure sign-in link to <strong>{email}</strong>
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          <div className="text-center text-sm text-gray-600">
+            <p>Check your email and click the link to sign in.</p>
+            <p className="mt-2">The link will expire in 24 hours for security.</p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <Button
+              variant="outline"
+              onClick={handleResendLink}
+              disabled={isLoading}
+              className="w-full"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Resending...
+                </>
+              ) : (
+                <>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Resend Magic Link
+                </>
               )}
-              
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Enviando...
-                  </span>
-                ) : (
-                  "Enviar enlace de acceso"
-                )}
-              </Button>
-            </form>
-          </Form>
+            </Button>
+
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setEmailSent(false);
+                setEmail('');
+              }}
+              className="w-full"
+            >
+              Use Different Email
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader className="text-center">
+        <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+          <Mail className="w-6 h-6 text-blue-600" />
         </div>
-      )}
-    </div>
+        <CardTitle>Sign in with Magic Link</CardTitle>
+        <CardDescription>
+          Enter your email to receive a secure sign-in link. No password required.
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent>
+        <form onSubmit={handleSendMagicLink} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email Address</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={isLoading}
+              className="w-full"
+            />
+          </div>
+
+          <Button
+            type="submit"
+            disabled={isLoading || !email.trim()}
+            className="w-full"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Sending Magic Link...
+              </>
+            ) : (
+              <>
+                <Mail className="mr-2 h-4 w-4" />
+                Send Magic Link
+              </>
+            )}
+          </Button>
+        </form>
+
+        <div className="mt-4 text-xs text-center text-gray-500">
+          <p>🔒 Magic links are secure and expire after 24 hours</p>
+          <p>Check your spam folder if you don't see the email</p>
+        </div>
+      </CardContent>
+    </Card>
   );
-}
+};
+
+export default EmailLinkAuth;
