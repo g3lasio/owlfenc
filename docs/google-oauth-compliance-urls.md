@@ -1,20 +1,20 @@
-# 🔗 URLs PARA GOOGLE OAUTH COMPLIANCE
+# 🔗 URLs PARA GOOGLE OAUTH COMPLIANCE - PRODUCCIÓN
 
-## ✅ URLs REQUERIDOS POR GOOGLE CONSOLE
+## ✅ URLs DEFINITIVOS PARA GOOGLE CONSOLE (app.owlfenc.com)
 
 ### **Application Home Page:**
 ```
-https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev/
+https://app.owlfenc.com/
 ```
 
 ### **Application Privacy Policy Link:**
 ```
-https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev/privacy-policy
+https://app.owlfenc.com/privacy-policy
 ```
 
 ### **Application Terms of Service Link:**
 ```
-https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev/terms-of-service
+https://app.owlfenc.com/terms-of-service
 ```
 
 ---
@@ -32,24 +32,24 @@ https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev/t
 
 - **Application home page:** 
   ```
-  https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev/
+  https://app.owlfenc.com/
   ```
 
 - **Application privacy policy link:**
   ```
-  https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev/privacy-policy
+  https://app.owlfenc.com/privacy-policy
   ```
 
 - **Application terms of service link:**
   ```
-  https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev/terms-of-service
+  https://app.owlfenc.com/terms-of-service
   ```
 
 ### **3. Configurar Authorized Domains**
 
 **En "Authorized domains" agregar:**
 ```
-4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev
+owlfenc.com
 owl-fenc.firebaseapp.com
 owl-fenc.web.app
 ```
@@ -60,14 +60,14 @@ owl-fenc.web.app
 
 **En "Authorized JavaScript origins":**
 ```
-https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev
+https://app.owlfenc.com
 https://owl-fenc.firebaseapp.com
 https://owl-fenc.web.app
 ```
 
 **En "Authorized redirect URIs":**
 ```
-https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev/__/auth/handler
+https://app.owlfenc.com/__/auth/handler
 https://owl-fenc.firebaseapp.com/__/auth/handler
 https://owl-fenc.web.app/__/auth/handler
 ```
