@@ -3776,15 +3776,11 @@ Output must be between 200-900 characters in English.`;
       };
 
       // Generate contract HTML using premium service
-      const pdfResult =
-        await premiumPdfService.generateContractPdf(contractData);
-
-      if (!pdfResult.success) {
-        throw new Error(pdfResult.error || "Failed to generate contract HTML");
-      }
-
-      // For now, return a basic HTML template since we don't have generateContractHTML method
-      const htmlContent = `
+      const htmlContent = await premiumPdfService.generateContractHTML(contractData);
+      
+      if (!htmlContent) {
+        // Fallback HTML template if generation fails
+        const fallbackContent = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -3820,12 +3816,13 @@ Output must be between 200-900 characters in English.`;
   </div>
 </body>
 </html>`;
+      }
 
       console.log("✅ [HTML GENERATION] Contract HTML generated successfully");
 
       res.json({
         success: true,
-        html: htmlContent,
+        html: htmlContent || fallbackContent,
         contractId: `CON-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
       });
     } catch (error) {
