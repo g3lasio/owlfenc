@@ -918,28 +918,34 @@ export const loginWithGoogle = async () => {
       access_type: 'online'
     });
     
-    // En Replit, usar SIEMPRE redirección directa para evitar errores de iframe
-    if (currentHostname.includes('replit') || currentHostname.includes('.dev')) {
-      console.log("🔧 [OAUTH-FIX] Entorno Replit detectado - forzando redirección");
-      await signInWithRedirect(auth, googleProvider);
-      console.log("🔧 [OAUTH-FIX] Redirección iniciada exitosamente");
-      return null;
-    }
+    // NUEVA SOLUCIÓN RESEARCH-BASED: NO usar redirect en Replit (causa internal-error)
+    // Usar SOLO popup basado en Firebase official best practices 2025
+    console.log("🔧 [GOOGLE-RESEARCH] Using POPUP ONLY (no redirect fallback)");
+    console.log("🔧 [GOOGLE-RESEARCH] Reason: Chrome 115+, Safari 16.1+, Firefox 109+ block third-party storage");
     
-    // Para otros entornos, intentar popup primero
+    // RESEARCH-BASED: Usar SOLO popup (sin fallback a redirect)
     try {
-      console.log("🔧 [OAUTH-DEBUG] Intentando popup para entorno local");
+      console.log("🔧 [GOOGLE-POPUP] Attempting signInWithPopup (Firebase best practice)");
       const result = await signInWithPopup(auth, googleProvider);
-      console.log("🔧 [OAUTH-SUCCESS] Google popup exitoso:", result.user.email);
+      console.log("✅ [GOOGLE-SUCCESS] Popup authentication successful:", result.user.email);
       return result.user;
       
     } catch (popupError: any) {
-      console.log("🔧 [OAUTH-DEBUG] Popup falló:", popupError.code, "- Usando redirección");
+      console.log("❌ [GOOGLE-POPUP] Popup failed:", popupError.code);
       
-      // Cualquier error de popup -> redirección directa
-      await signInWithRedirect(auth, googleProvider);
-      console.log("🔧 [OAUTH-FIX] Fallback a redirección completado");
-      return null;
+      // NO FALLBACK A REDIRECT - solo manejar errores de popup específicos
+      if (popupError.code === 'auth/popup-blocked') {
+        throw new Error("Popup bloqueado por el navegador. Por favor, permite popups para esta página y reintenta.");
+      } else if (popupError.code === 'auth/popup-closed-by-user') {
+        throw new Error("Ventana de autenticación cerrada. Por favor, reintenta el proceso.");
+      } else if (popupError.code === 'auth/unauthorized-domain') {
+        console.error("🔧 [GOOGLE-CONFIG] Domain not authorized in Google Cloud Console");
+        console.error("🔧 [GOOGLE-CONFIG] Required: Add", window.location.origin, "to Authorized JavaScript origins");
+        throw new Error(`Dominio no autorizado en Google Cloud Console: ${window.location.hostname}. Configura OAuth correctamente.`);
+      }
+      
+      // Re-throw otros errores
+      throw popupError;
     }
     
   } catch (error: any) {
@@ -1067,30 +1073,90 @@ export const loginWithApple = async () => {
     console.log("🍎 [APPLE-AUTH] Iniciando autenticación con Apple...");
     console.log("🔧 [OAUTH-DEBUG] Apple Provider configurado con scopes: email, name");
     
-    // SOLUCIÓN DIRECTA: Usar redirección inmediata para Apple también
-    if (currentHostname.includes('replit') || currentHostname.includes('.dev')) {
-      console.log("🍎 [APPLE-FIX] Entorno Replit detectado - forzando redirección Apple");
-      await signInWithRedirect(auth, provider);
-      console.log("🍎 [APPLE-FIX] Redirección Apple iniciada exitosamente");
-      return null;
+    // RESEARCH-BASED: NO usar redirect - causan auth/internal-error
+    // Implementar Apple JS SDK nativo + signInWithCredential
+    console.log("🍎 [APPLE-RESEARCH] Implementing native Apple JS SDK approach");
+    
+    // Funciones auxiliares para nonce y state
+    const generateNonce = () => {
+      const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+      let result = '';
+      let remainingLength = 32;
+      while (remainingLength > 0) {
+        const randoms = new Uint8Array(remainingLength);
+        crypto.getRandomValues(randoms);
+        randoms.forEach((randomByte) => {
+          if (remainingLength === 0) return;
+          if (randomByte < charset.length) {
+            result += charset[randomByte];
+            remainingLength--;
+          }
+        });
+      }
+      return result;
+    };
+    
+    // STRATEGY 1: Try native Apple JS SDK first
+    try {
+      if (typeof window !== 'undefined' && window.AppleID) {
+        console.log("🍎 [APPLE-NATIVE] Using Apple JS SDK directly");
+        
+        const rawNonce = generateNonce();
+        
+        // Hash nonce for Apple (they require SHA256)
+        const encoder = new TextEncoder();
+        const data = encoder.encode(rawNonce);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashedNonce = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        
+        // Call Apple's native authentication
+        const appleCredential = await window.AppleID.auth.signIn({
+          requestedScopes: ['name', 'email'],
+          nonce: hashedNonce,
+          state: Math.random().toString(36).substring(2, 15)
+        });
+        
+        console.log("🍎 [APPLE-NATIVE] Apple authentication successful");
+        
+        // Convert to Firebase credential
+        const credential = provider.credential({
+          idToken: appleCredential.authorization.id_token,
+          rawNonce: rawNonce,  // Use raw nonce for Firebase!
+        });
+        
+        // Authenticate with Firebase
+        const result = await signInWithCredential(auth, credential);
+        console.log("✅ [APPLE-SUCCESS] Native Apple + Firebase successful:", result.user.email);
+        return result.user;
+      }
+    } catch (nativeError: any) {
+      console.log("🍎 [APPLE-NATIVE] Native Apple failed, trying Firebase popup:", nativeError);
     }
     
-    // Para otros entornos, intentar popup primero
+    // STRATEGY 2: Fallback to Firebase popup (no redirect!)
     try {
-      console.log("🍎 [APPLE-AUTH] Intentando popup Apple...");
+      console.log("🍎 [APPLE-POPUP] Attempting Firebase popup");
       const result = await signInWithPopup(auth, provider);
       
       if (result && result.user) {
-        console.log("🍎 [APPLE-SUCCESS] Popup exitoso:", result.user.email);
+        console.log("✅ [APPLE-POPUP] Firebase popup successful:", result.user.email);
         return result.user;
       }
     } catch (popupError: any) {
-      console.log("🍎 [APPLE-DEBUG] Popup falló, intentando redirección:", popupError.code);
+      console.log("❌ [APPLE-POPUP] Firebase popup failed:", popupError.code);
       
-      // Cualquier error de popup -> redirección directa
-      await signInWithRedirect(auth, provider);
-      console.log("🍎 [APPLE-FIX] Fallback a redirección Apple completado");
-      return null;
+      // Handle specific popup errors with helpful messages
+      if (popupError.code === 'auth/popup-blocked') {
+        throw new Error("Popup bloqueado. Permite popups para esta página y reintenta.");
+      } else if (popupError.code === 'auth/popup-closed-by-user') {
+        throw new Error("Ventana de Apple cerrada. Reintenta el proceso de autenticación.");
+      } else if (popupError.code === 'auth/unauthorized-domain') {
+        console.error("🍎 [APPLE-CONFIG] Domain not authorized");
+        throw new Error(`Apple: Dominio no autorizado. Configura en Apple Developer Console.`);
+      }
+      
+      throw popupError;
     }
     
   } catch (error: any) {
