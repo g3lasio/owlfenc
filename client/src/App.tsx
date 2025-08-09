@@ -23,6 +23,7 @@ import AboutMervin from "@/pages/AboutMervin";
 import LegalPolicy from "@/pages/LegalPolicy";
 import Mervin from "@/pages/Mervin";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsOfService from "@/pages/TermsOfService";
 import PricingSettings from "@/pages/PricingSettings";
 import Subscription from "@/pages/Subscription";
 import SubscriptionTest from "@/pages/SubscriptionTest";
@@ -108,6 +109,7 @@ function Router() {
       <Route path="/about-mervin" component={AboutMervin} />
       <Route path="/legal-policy" component={LegalPolicy} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/terms-of-service" component={TermsOfService} />
 
 
       {/* Rutas protegidas */}
