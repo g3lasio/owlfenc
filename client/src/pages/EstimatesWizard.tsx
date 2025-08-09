@@ -4282,209 +4282,100 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   </div>
                 </div>
 
-                {/* Smart Search Dynamic Bar - Compact & Mobile-Friendly */}
-                <div className="mt-3 p-3 bg-gradient-to-r from-slate-50 via-white to-slate-50 border border-slate-200 rounded-lg shadow-sm">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                    {/* Quality Indicator & Status */}
-                    <div className="flex items-center gap-2 flex-1">
-                      <div
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
-                          estimate.projectDetails.trim().length < 10
-                            ? "bg-orange-100 text-orange-700 border border-orange-200"
-                            : evaluateProjectDescription(
-                                  estimate.projectDetails,
-                                ).isDetailed
-                              ? "bg-green-100 text-green-700 border border-green-200"
-                              : "bg-yellow-100 text-yellow-700 border border-yellow-200"
-                        }`}
-                      >
-                        {estimate.projectDetails.trim().length < 10 ? (
-                          <>
-                            <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
-                            <span>Necesita más información</span>
-                          </>
-                        ) : evaluateProjectDescription(estimate.projectDetails)
-                            .isDetailed ? (
-                          <>
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span>Listo para DeepSearch</span>
-                          </>
-                        ) : (
-                          <>
-                            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                            <span>Parcialmente completo</span>
-                          </>
-                        )}
-                      </div>
+                {/* DeepSearch Status - Futuristic HUD Style */}
+                <div className="mt-3 relative">
+                  {/* Holographic Border Container */}
+                  <div 
+                    className="relative p-3 bg-black/20 backdrop-blur-sm border transition-all duration-500"
+                    style={{
+                      clipPath: "polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px)",
+                      borderImage: estimate.projectDetails.trim().length < 10 
+                        ? "linear-gradient(90deg, #f59e0b, #d97706, #f59e0b) 1"
+                        : evaluateProjectDescription(estimate.projectDetails).isDetailed
+                          ? "linear-gradient(90deg, #10b981, #059669, #10b981) 1" 
+                          : "linear-gradient(90deg, #eab308, #ca8a04, #eab308) 1"
+                    }}
+                  >
+                    {/* Corner Brackets */}
+                    <div className="absolute top-0 left-0 w-3 h-3 border-l-2 border-t-2 border-cyan-400/80"></div>
+                    <div className="absolute top-0 right-0 w-3 h-3 border-r-2 border-t-2 border-cyan-400/80"></div>
+                    <div className="absolute bottom-0 left-0 w-3 h-3 border-l-2 border-b-2 border-cyan-400/80"></div>
+                    <div className="absolute bottom-0 right-0 w-3 h-3 border-r-2 border-b-2 border-cyan-400/80"></div>
 
-                      {/* Progress Bar */}
-                      <div className="flex-1 min-w-0">
-                        <div className="w-full bg-slate-200 rounded-full h-1.5">
+                    {/* Scanning Lines */}
+                    <div className="absolute inset-0">
+                      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent animate-pulse"></div>
+                      <div 
+                        className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent animate-pulse"
+                        style={{ animationDelay: "1s" }}
+                      ></div>
+                    </div>
+
+                    {/* Main Status Display */}
+                    <div className="relative flex items-center justify-center">
+                      <div className="flex items-center gap-3">
+                        {/* Status Indicator */}
+                        <div className="relative">
                           <div
-                            className={`h-1.5 rounded-full transition-all duration-500 ${
+                            className={`w-3 h-3 rounded-full transition-all duration-300 ${
                               estimate.projectDetails.trim().length < 10
-                                ? "bg-orange-400"
-                                : evaluateProjectDescription(
-                                      estimate.projectDetails,
-                                    ).isDetailed
-                                  ? "bg-green-500"
-                                  : "bg-yellow-500"
+                                ? "bg-orange-400 animate-pulse"
+                                : evaluateProjectDescription(estimate.projectDetails).isDetailed
+                                  ? "bg-green-400 shadow-lg shadow-green-400/50"
+                                  : "bg-yellow-400 animate-pulse"
                             }`}
-                            style={{
-                              width: `${Math.min(
-                                100,
-                                Math.max(
-                                  10,
-                                  (estimate.projectDetails.trim().length /
-                                    100) *
-                                    100,
-                                ),
-                              )}%`,
-                            }}
-                          />
+                          ></div>
+                          {/* Holographic Ring */}
+                          <div
+                            className={`absolute inset-0 w-3 h-3 rounded-full border-2 transition-all duration-300 ${
+                              estimate.projectDetails.trim().length < 10
+                                ? "border-orange-400/30 animate-ping"
+                                : evaluateProjectDescription(estimate.projectDetails).isDetailed
+                                  ? "border-green-400/30 animate-pulse"
+                                  : "border-yellow-400/30 animate-ping"
+                            }`}
+                            style={{ animationDelay: "0.5s" }}
+                          ></div>
+                        </div>
+
+                        {/* Status Text */}
+                        <span 
+                          className={`font-mono text-sm tracking-wider transition-all duration-300 ${
+                            estimate.projectDetails.trim().length < 10
+                              ? "text-orange-300"
+                              : evaluateProjectDescription(estimate.projectDetails).isDetailed
+                                ? "text-green-300"
+                                : "text-yellow-300"
+                          }`}
+                        >
+                          {estimate.projectDetails.trim().length < 10 
+                            ? "STANDBY.MODE"
+                            : evaluateProjectDescription(estimate.projectDetails).isDetailed
+                              ? "DEEPSEARCH.READY"
+                              : "CALIBRATING..."
+                          }
+                        </span>
+
+                        {/* Holographic Effects */}
+                        <div className="flex gap-1">
+                          <div className="w-1 h-1 bg-cyan-400/60 rounded-full animate-pulse"></div>
+                          <div className="w-1 h-1 bg-cyan-400/40 rounded-full animate-pulse" style={{ animationDelay: "0.2s" }}></div>
+                          <div className="w-1 h-1 bg-cyan-400/20 rounded-full animate-pulse" style={{ animationDelay: "0.4s" }}></div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Character Count & Details Detected */}
-                    <div className="flex items-center gap-3 text-xs">
-                      <div className="text-slate-500">
-                        {estimate.projectDetails.length} caracteres
-                      </div>
-                      {estimate.projectDetails.trim().length >= 10 && (
-                        <div className="flex items-center gap-1 text-slate-600">
-                          <span>•</span>
-                          <span>
-                            {(() => {
-                              const evaluation = evaluateProjectDescription(
-                                estimate.projectDetails,
-                              );
-                              const detectedItems = [];
-
-                              // Check for dimensions
-                              if (
-                                /\d+\s*(ft|feet|linear|sq|square|yard|meter|inch)/i.test(
-                                  estimate.projectDetails,
-                                )
-                              ) {
-                                detectedItems.push("medidas");
-                              }
-
-                              // Check for materials
-                              if (
-                                /(wood|cedar|vinyl|chain|fence|concrete|steel|aluminum|material)/i.test(
-                                  estimate.projectDetails,
-                                )
-                              ) {
-                                detectedItems.push("materiales");
-                              }
-
-                              // Check for location
-                              if (
-                                /(yard|backyard|front|side|property|pool|garden|patio)/i.test(
-                                  estimate.projectDetails,
-                                )
-                              ) {
-                                detectedItems.push("ubicación");
-                              }
-
-                              // Check for project type
-                              if (
-                                /(fence|fencing|gate|deck|roof|floor|paint|electrical|plumb)/i.test(
-                                  estimate.projectDetails,
-                                )
-                              ) {
-                                detectedItems.push("tipo");
-                              }
-
-                              return detectedItems.length > 0
-                                ? `${detectedItems.slice(0, 2).join(", ")}${detectedItems.length > 2 ? "..." : ""} detectado${detectedItems.length > 1 ? "s" : ""}`
-                                : "descripción básica";
-                            })()}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                    {/* Holographic Glow Effect */}
+                    <div 
+                      className={`absolute inset-0 bg-gradient-to-r opacity-10 pointer-events-none transition-opacity duration-500 ${
+                        estimate.projectDetails.trim().length < 10
+                          ? "from-orange-400/10 via-orange-500/20 to-orange-400/10"
+                          : evaluateProjectDescription(estimate.projectDetails).isDetailed
+                            ? "from-green-400/10 via-emerald-500/20 to-green-400/10"
+                            : "from-yellow-400/10 via-amber-500/20 to-yellow-400/10"
+                      }`}
+                    ></div>
                   </div>
-
-                  {/* Detailed Quality Breakdown - Expandable on Mobile */}
-                  {estimate.projectDetails.trim().length >= 10 && (
-                    <div className="mt-2 pt-2 border-t border-slate-200">
-                      <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 text-xs">
-                        {(() => {
-                          const evaluation = evaluateProjectDescription(
-                            estimate.projectDetails,
-                          );
-                          const checks = [
-                            {
-                              label: "Dimensiones",
-                              detected:
-                                /\d+\s*(ft|feet|linear|sq|square|yard|meter|inch)/i.test(
-                                  estimate.projectDetails,
-                                ),
-                              color: "text-blue-600",
-                            },
-                            {
-                              label: "Materiales",
-                              detected:
-                                /(wood|cedar|vinyl|chain|fence|concrete|steel|aluminum|material)/i.test(
-                                  estimate.projectDetails,
-                                ),
-                              color: "text-purple-600",
-                            },
-                            {
-                              label: "Detalles",
-                              detected:
-                                estimate.projectDetails.trim().length > 50,
-                              color: "text-orange-600",
-                            },
-                          ];
-
-                          return checks.map((check, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center gap-1"
-                            >
-                              <div
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  check.detected
-                                    ? "bg-green-500"
-                                    : "bg-slate-300"
-                                }`}
-                              />
-                              <span
-                                className={
-                                  check.detected
-                                    ? check.color
-                                    : "text-slate-400"
-                                }
-                              >
-                                {check.label}
-                              </span>
-                            </div>
-                          ));
-                        })()}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Improvement Suggestions */}
-                  {estimate.projectDetails.trim().length >= 10 &&
-                    !evaluateProjectDescription(estimate.projectDetails)
-                      .isDetailed && (
-                      <div className="mt-2 pt-2 border-t border-slate-200">
-                        <div className="text-xs text-slate-600">
-                          <span className="font-medium">Sugerencia:</span> Añade{" "}
-                          {!/\d+\s*(ft|feet|linear|sq|square)/i.test(
-                            estimate.projectDetails,
-                          ) && "medidas específicas, "}
-                          {!/(wood|cedar|vinyl|chain|concrete)/i.test(
-                            estimate.projectDetails,
-                          ) && "tipos de materiales "}
-                          para mejorar la precisión del DeepSearch.
-                        </div>
-                      </div>
-                    )}
                 </div>
                 {/* Mensaje de ayuda dinámico */}
                 {estimate.projectDetails.trim().length >= 10 &&
