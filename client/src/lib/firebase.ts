@@ -43,7 +43,8 @@ import {
   PhoneAuthProvider,
   PhoneMultiFactorGenerator,
   sendEmailVerification,
-  reload
+  reload,
+  signInWithCredential
 } from "firebase/auth";
 
 // Verificamos si estamos en modo de desarrollo en Replit
