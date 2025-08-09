@@ -635,7 +635,7 @@ export default function AuthPage() {
                     </form>
                   </Form>
                 ) : (
-                  <EmailLinkAuth onToggle={() => setLoginMethod("email")} />
+                  <EmailLinkAuth />
                 )
               ) : (
                 <Form {...signupForm}>

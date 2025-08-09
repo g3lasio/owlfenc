@@ -119,13 +119,21 @@ const firebaseConfig = {
   measurementId: "G-Z2PWQXHEN0"
 };
 
-// Lista de dominios autorizados para desarrollo
+// Lista de dominios autorizados para desarrollo (ACTUALIZADA PARA OAUTH)
+const currentHostname = window.location.hostname;
 const authorizedDomains = [
   'owl-fenc.firebaseapp.com',
   'owl-fenc.web.app',
   '4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev',
-  window.location.hostname
+  currentHostname,
+  'localhost',
+  '127.0.0.1'
 ];
+
+// Log para debugging OAuth
+console.log("🔧 [OAUTH-DEBUG] Dominio actual:", currentHostname);
+console.log("🔧 [OAUTH-DEBUG] URL completa:", window.location.href);
+console.log("🔧 [OAUTH-DEBUG] Dominios autorizados:", authorizedDomains);
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -133,8 +141,15 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 
-// Proveedores de autenticación
+// Proveedores de autenticación con configuración optimizada para Replit
 const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope('email');
+googleProvider.addScope('profile');
+
+// Configuración específica para resolver "refuse to connect" en Replit
+googleProvider.setCustomParameters({
+  'prompt': 'select_account', // Permitir selección de cuenta
+});
 
 // Email verification functions
 export const sendVerificationEmail = async () => {
@@ -874,7 +889,7 @@ export const loginUser = async (email: string, password: string) => {
 
 // Espacio reservado para comentarios
 
-// Iniciar sesión con Google - VERSIÓN CON FALLBACK ROBUSTO PARA REPLIT
+// Iniciar sesión con Google - SOLUCIÓN PARA "REFUSE TO CONNECT"
 export const loginWithGoogle = async () => {
   try {
     // Si estamos en modo de desarrollo, usar autenticación simulada
@@ -891,69 +906,62 @@ export const loginWithGoogle = async () => {
     }
     
     console.log("=== GOOGLE SIGN-IN INICIADO ===");
+    console.log("🔧 [OAUTH-DEBUG] Dominio:", window.location.hostname);
+    console.log("🔧 [OAUTH-DEBUG] Firebase Auth Domain:", auth.app.options.authDomain);
     
-    // Configuración del proveedor de Google
+    // SOLUCIÓN DIRECTA: Usar redirección inmediata para evitar "refuse to connect"
+    console.log("🔧 [OAUTH-FIX] Usando redirección directa para resolver 'refuse to connect'");
+    
+    // Configurar el proveedor con parámetros optimizados
     googleProvider.setCustomParameters({
-      prompt: 'select_account'
+      prompt: 'select_account',
+      access_type: 'online'
     });
     
-    // Intentar con popup SIN timeout para dominios autorizados
+    // En Replit, usar SIEMPRE redirección directa para evitar errores de iframe
+    if (currentHostname.includes('replit') || currentHostname.includes('.dev')) {
+      console.log("🔧 [OAUTH-FIX] Entorno Replit detectado - forzando redirección");
+      await signInWithRedirect(auth, googleProvider);
+      console.log("🔧 [OAUTH-FIX] Redirección iniciada exitosamente");
+      return null;
+    }
+    
+    // Para otros entornos, intentar popup primero
     try {
-      console.log("Intentando autenticación con popup de Google (dominio autorizado)...");
+      console.log("🔧 [OAUTH-DEBUG] Intentando popup para entorno local");
       const result = await signInWithPopup(auth, googleProvider);
-      console.log("¡Autenticación con Google popup exitosa!");
+      console.log("🔧 [OAUTH-SUCCESS] Google popup exitoso:", result.user.email);
       return result.user;
       
     } catch (popupError: any) {
-      console.log("Popup de Google falló:", popupError.code || popupError.message, "- Evaluando alternativas...");
+      console.log("🔧 [OAUTH-DEBUG] Popup falló:", popupError.code, "- Usando redirección");
       
-      // Si el popup es cerrado por el usuario, intentar redirección
-      if (popupError.code === 'auth/popup-closed-by-user') {
-        console.log("Usuario cerró popup - intentando redirección a Google...");
-        await signInWithRedirect(auth, googleProvider);
-        return null; // La redirección manejará el resultado
-      }
-      
-      // Si hay bloqueo de popup, usar redirección directamente
-      if (popupError.code === 'auth/popup-blocked') {
-        console.log("Popup bloqueado - usando redirección directa a Google...");
-        await signInWithRedirect(auth, googleProvider);
-        return null;
-      }
-      
-      // Para otros errores, intentar redirección como última opción
-      if (popupError.code === 'auth/network-request-failed' || 
-          popupError.code === 'auth/internal-error') {
-        console.log("Error de red/interno - intentando redirección a Google...");
-        try {
-          await signInWithRedirect(auth, googleProvider);
-          return null;
-        } catch (redirectError) {
-          console.error("Redirección también falló:", redirectError);
-          throw new Error("No se pudo conectar con Google. Verifica tu conexión a internet.");
-        }
-      }
-      
-      throw popupError;
+      // Cualquier error de popup -> redirección directa
+      await signInWithRedirect(auth, googleProvider);
+      console.log("🔧 [OAUTH-FIX] Fallback a redirección completado");
+      return null;
     }
     
   } catch (error: any) {
-    console.error("Error iniciando sesión con Google:", error);
+    console.error("🔧 [OAUTH-ERROR] Error en Google Sign-In:", error);
     
-    // Mapear errores específicos
+    // Mensajes de error específicos para debugging
     if (error.code === 'auth/unauthorized-domain') {
-      throw new Error("Este dominio no está autorizado para Google Sign-In. Contacta al administrador.");
+      console.error("🔧 [OAUTH-FIX] SOLUTION: Add domain to Firebase Console authorized domains");
+      console.error("🔧 [OAUTH-FIX] Domain to add:", window.location.hostname);
+      throw new Error(`Dominio no autorizado: ${window.location.hostname}. Verifica Firebase Console.`);
+    } else if (error.code === 'auth/invalid-oauth-provider') {
+      throw new Error("Google Sign-In no habilitado en Firebase Console. Habilita el proveedor Google.");
     } else if (error.code === 'auth/network-request-failed') {
       throw new Error("Error de conexión. Verifica tu internet e intenta nuevamente.");
-    } else if (error.code === 'auth/invalid-oauth-provider') {
-      throw new Error("Google Sign-In no está configurado correctamente en Firebase.");
-    } else if (error.code === 'auth/popup-closed-by-user') {
-      throw new Error("Ventana de Google cerrada. Por favor, intenta nuevamente.");
-    } else if (error.code === 'auth/popup-blocked') {
-      throw new Error("Popup bloqueado por el navegador. Permite ventanas emergentes para esta página.");
+    } else if (error.code === 'auth/internal-error') {
+      console.error("🔧 [OAUTH-FIX] Internal error - check domain authorization and OAuth config");
+      throw new Error("Error de configuración OAuth. Verifica dominios en Firebase Console.");
     }
     
-    throw error;
+    // Error genérico con información de debugging
+    console.error("🔧 [OAUTH-DEBUG] Full error details:", error);
+    throw new Error(error.message || "Error de configuración OAuth. Contacta al administrador.");
   }
 };
 
@@ -1051,67 +1059,55 @@ export const loginWithApple = async () => {
     console.log("Dominio:", window.location.hostname);
     console.log("AuthDomain:", auth.app.options.authDomain);
     
-    // Usar el sistema optimizado de Apple Auth
-    const { initiateOptimizedAppleAuth } = await import('./appleAuthOptimized');
-    
-    // Verificar que Apple esté configurado como proveedor
+    // Crear proveedor de Apple optimizado
     const provider = new OAuthProvider('apple.com');
     provider.addScope('email');
     provider.addScope('name');
     
-    console.log("🍎 [APPLE-AUTH] Iniciando autenticación optimizada con Apple...");
+    console.log("🍎 [APPLE-AUTH] Iniciando autenticación con Apple...");
+    console.log("🔧 [OAUTH-DEBUG] Apple Provider configurado con scopes: email, name");
     
-    // Intentar autenticación con el sistema optimizado
+    // SOLUCIÓN DIRECTA: Usar redirección inmediata para Apple también
+    if (currentHostname.includes('replit') || currentHostname.includes('.dev')) {
+      console.log("🍎 [APPLE-FIX] Entorno Replit detectado - forzando redirección Apple");
+      await signInWithRedirect(auth, provider);
+      console.log("🍎 [APPLE-FIX] Redirección Apple iniciada exitosamente");
+      return null;
+    }
+    
+    // Para otros entornos, intentar popup primero
     try {
-      // Primero intentar con popup para mejor UX
-      console.log("🍎 [APPLE-AUTH] Intentando popup primero...");
+      console.log("🍎 [APPLE-AUTH] Intentando popup Apple...");
       const result = await signInWithPopup(auth, provider);
       
       if (result && result.user) {
-        console.log("🍎 [APPLE-AUTH] Popup exitoso:", result.user.email);
+        console.log("🍎 [APPLE-SUCCESS] Popup exitoso:", result.user.email);
         return result.user;
       }
     } catch (popupError: any) {
-      console.log("🍎 [APPLE-AUTH] Popup falló, intentando redirección:", popupError.code);
+      console.log("🍎 [APPLE-DEBUG] Popup falló, intentando redirección:", popupError.code);
       
-      // Si popup falla, usar redirección optimizada
-      if (popupError.code === 'auth/popup-blocked' || 
-          popupError.code === 'auth/popup-closed-by-user' ||
-          popupError.code === 'auth/internal-error') {
-        
-        console.log("🍎 [APPLE-AUTH] Usando redirección optimizada...");
-        
-        // Usar el sistema optimizado de redirección
-        await initiateOptimizedAppleAuth();
-        
-        // La redirección no retorna usuario inmediatamente
-        console.log("🍎 [APPLE-AUTH] Redirección iniciada exitosamente");
-        return null;
-      } else {
-        throw popupError;
-      }
+      // Cualquier error de popup -> redirección directa
+      await signInWithRedirect(auth, provider);
+      console.log("🍎 [APPLE-FIX] Fallback a redirección Apple completado");
+      return null;
     }
     
   } catch (error: any) {
     console.error("🍎 [APPLE-AUTH] Error en Apple Sign-In:", error);
     
-    // Mapear errores específicos de Apple
+    // Mapear errores específicos de Apple con soluciones
     if (error.code === 'auth/unauthorized-domain') {
-      throw new Error("Este dominio no está autorizado para Apple Sign-In. Contacta al administrador.");
+      console.error("🍎 [APPLE-FIX] SOLUTION: Add domain to Firebase Console and Apple Developer Console");
+      console.error("🍎 [APPLE-FIX] Domain to add:", window.location.hostname);
+      throw new Error(`Apple: Dominio no autorizado: ${window.location.hostname}. Verifica configuración.`);
     } else if (error.code === 'auth/invalid-oauth-provider') {
-      throw new Error("Apple Sign-In no está configurado correctamente en Firebase.");
+      throw new Error("Apple Sign-In no habilitado en Firebase Console. Configura proveedor Apple.");
     } else if (error.code === 'auth/network-request-failed') {
       throw new Error("Error de conexión. Verifica tu internet e intenta nuevamente.");
     } else if (error.code === 'auth/internal-error') {
-      throw new Error("Error interno de Firebase. Intenta con otro método de autenticación.");
-    } else if (error.code === 'auth/popup-closed-by-user') {
-      throw new Error("Ventana de Apple cerrada. Por favor, intenta nuevamente.");
-    } else if (error.code === 'auth/popup-blocked') {
-      throw new Error("Popup bloqueado por el navegador. Permite ventanas emergentes para esta página.");
-    } else if (error.message === 'CONNECTIVITY_ERROR') {
-      throw new Error("Problema de conectividad. Verifica tu conexión a internet.");
-    } else if (error.message === 'APPLE_SLOW_RESPONSE') {
-      throw new Error("Apple está tardando en responder. Por favor, intenta nuevamente.");
+      console.error("🍎 [APPLE-FIX] Internal error - Apple provider may not be configured");
+      throw new Error("Apple Sign-In no configurado. Habilita en Firebase Console y Apple Developer.");
     }
     
     // Error genérico
