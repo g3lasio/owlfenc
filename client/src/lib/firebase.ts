@@ -1031,7 +1031,7 @@ const initReplAuth = () => {
   });
 };
 
-// Iniciar sesión con Apple - VERSIÓN CON FALLBACK ROBUSTO PARA REPLIT
+// Iniciar sesión con Apple - IMPLEMENTACIÓN COMPLETA CON OPTIMIZACIÓN
 export const loginWithApple = async () => {
   try {
     // Si estamos en modo de desarrollo, usar autenticación simulada
@@ -1051,14 +1051,51 @@ export const loginWithApple = async () => {
     console.log("Dominio:", window.location.hostname);
     console.log("AuthDomain:", auth.app.options.authDomain);
     
-    // Apple ID requiere configuración específica en Firebase Console
-    // Lanzar error informativo hasta que esté configurado correctamente
-    throw new Error("Apple Sign-In está siendo configurado. Por favor usa Google o email/contraseña por ahora.");
+    // Usar el sistema optimizado de Apple Auth
+    const { initiateOptimizedAppleAuth } = await import('./appleAuthOptimized');
+    
+    // Verificar que Apple esté configurado como proveedor
+    const provider = new OAuthProvider('apple.com');
+    provider.addScope('email');
+    provider.addScope('name');
+    
+    console.log("🍎 [APPLE-AUTH] Iniciando autenticación optimizada con Apple...");
+    
+    // Intentar autenticación con el sistema optimizado
+    try {
+      // Primero intentar con popup para mejor UX
+      console.log("🍎 [APPLE-AUTH] Intentando popup primero...");
+      const result = await signInWithPopup(auth, provider);
+      
+      if (result && result.user) {
+        console.log("🍎 [APPLE-AUTH] Popup exitoso:", result.user.email);
+        return result.user;
+      }
+    } catch (popupError: any) {
+      console.log("🍎 [APPLE-AUTH] Popup falló, intentando redirección:", popupError.code);
+      
+      // Si popup falla, usar redirección optimizada
+      if (popupError.code === 'auth/popup-blocked' || 
+          popupError.code === 'auth/popup-closed-by-user' ||
+          popupError.code === 'auth/internal-error') {
+        
+        console.log("🍎 [APPLE-AUTH] Usando redirección optimizada...");
+        
+        // Usar el sistema optimizado de redirección
+        await initiateOptimizedAppleAuth();
+        
+        // La redirección no retorna usuario inmediatamente
+        console.log("🍎 [APPLE-AUTH] Redirección iniciada exitosamente");
+        return null;
+      } else {
+        throw popupError;
+      }
+    }
     
   } catch (error: any) {
-    console.error("Error en Apple Sign-In:", error);
+    console.error("🍎 [APPLE-AUTH] Error en Apple Sign-In:", error);
     
-    // Mapear errores específicos
+    // Mapear errores específicos de Apple
     if (error.code === 'auth/unauthorized-domain') {
       throw new Error("Este dominio no está autorizado para Apple Sign-In. Contacta al administrador.");
     } else if (error.code === 'auth/invalid-oauth-provider') {
@@ -1071,10 +1108,14 @@ export const loginWithApple = async () => {
       throw new Error("Ventana de Apple cerrada. Por favor, intenta nuevamente.");
     } else if (error.code === 'auth/popup-blocked') {
       throw new Error("Popup bloqueado por el navegador. Permite ventanas emergentes para esta página.");
+    } else if (error.message === 'CONNECTIVITY_ERROR') {
+      throw new Error("Problema de conectividad. Verifica tu conexión a internet.");
+    } else if (error.message === 'APPLE_SLOW_RESPONSE') {
+      throw new Error("Apple está tardando en responder. Por favor, intenta nuevamente.");
     }
     
     // Error genérico
-    throw new Error("No se pudo conectar con Apple ID. Intenta con Google o email/contraseña.");
+    throw new Error(error.message || "No se pudo conectar con Apple ID. Intenta con Google o email/contraseña.");
   }
 };
 

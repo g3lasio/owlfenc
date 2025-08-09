@@ -255,10 +255,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // User es un objeto Firebase User válido
       const appUser: User = {
         uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        phoneNumber: user.phoneNumber,
+        email: user.email || '',
+        displayName: user.displayName || '',
+        photoURL: user.photoURL || '',
+        phoneNumber: user.phoneNumber || '',
         emailVerified: user.emailVerified,
         getIdToken: () => user.getIdToken(),
       };
