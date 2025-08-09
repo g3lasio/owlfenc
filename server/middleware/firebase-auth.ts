@@ -78,7 +78,7 @@ export const verifyFirebaseAuth = async (req: Request, res: Response, next: Next
         code: 'AUTH_TOKEN_INVALID'
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error en middleware de autenticación:', error);
     return res.status(500).json({ 
       error: 'Error interno de autenticación',

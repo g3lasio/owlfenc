@@ -1546,16 +1546,8 @@ Output must be between 200-900 characters in English.`;
   app.use("/api/unified-contracts", unifiedContractRoutes);
 
   // Registrar rutas del sistema de pagos para contratistas
-  // Contractor Payment Routes with authentication middleware
-  app.use("/api/contractor-payments", (req, res, next) => {
-    // Add demo user for payment routes
-    req.user = {
-      id: 1,
-      email: 'contractor@owlfence.com',
-      username: 'contractor_demo'
-    };
-    next();
-  }, contractorPaymentRoutes);
+  // Contractor Payment Routes with FIREBASE authentication middleware
+  app.use("/api/contractor-payments", requireAuth, contractorPaymentRoutes);
 
   // Rutas centralizadas ya registradas en server/index.ts para evitar conflictos de middleware
 
@@ -5417,12 +5409,21 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
-  // Rutas para clientes
-  app.get("/api/clients", async (req: Request, res: Response) => {
+  // Rutas para clientes - SECURED with Firebase Authentication
+  app.get("/api/clients", requireAuth, async (req: Request, res: Response) => {
     try {
-      // En una app real, obtendríamos el userId de la sesión
-      const userId = 1;
-      const clients = await storage.getClientsByUserId(userId);
+      if (!req.firebaseUser?.uid) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+      
+      // Get user ID from Firebase UID - need to map to internal user ID
+      const { storage } = await import('./storage');
+      const user = await storage.getUserByFirebaseUid(req.firebaseUser.uid);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      const clients = await storage.getClientsByUserId(user.id);
       res.json(clients);
     } catch (error) {
       console.error("Error fetching clients:", error);
@@ -5430,12 +5431,22 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
-  app.post("/api/clients", async (req: Request, res: Response) => {
+  app.post("/api/clients", requireAuth, async (req: Request, res: Response) => {
     try {
-      const userId = 1; // En producción, obtener del token de autenticación
+      if (!req.firebaseUser?.uid) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+      
+      // Get user ID from Firebase UID
+      const { storage } = await import('./storage');
+      const user = await storage.getUserByFirebaseUid(req.firebaseUser.uid);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
       const clientData = {
         ...req.body,
-        userId,
+        userId: user.id,
         clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -5449,9 +5460,19 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
-  app.post("/api/clients/import/csv", async (req: Request, res: Response) => {
+  app.post("/api/clients/import/csv", requireAuth, async (req: Request, res: Response) => {
     try {
-      const userId = 1; // En producción, obtener del token de autenticación
+      if (!req.firebaseUser?.uid) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+      
+      // Get user ID from Firebase UID
+      const { storage } = await import('./storage');
+      const user = await storage.getUserByFirebaseUid(req.firebaseUser.uid);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      const userId = user.id;
       const { csvData } = req.body;
 
       // Procesar el CSV y crear los clientes
@@ -5487,9 +5508,19 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
-  app.post("/api/clients/import/vcf", async (req: Request, res: Response) => {
+  app.post("/api/clients/import/vcf", requireAuth, async (req: Request, res: Response) => {
     try {
-      const userId = 1; // En producción, obtener del token de autenticación
+      if (!req.firebaseUser?.uid) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+      
+      // Get user ID from Firebase UID
+      const { storage } = await import('./storage');
+      const user = await storage.getUserByFirebaseUid(req.firebaseUser.uid);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      const userId = user.id;
       const { vcfData } = req.body;
 
       // Procesar datos vCard (formato .vcf de contactos de Apple)

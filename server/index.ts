@@ -7,7 +7,31 @@ import pdfParse from "pdf-parse";
 import centralizedEmailRoutes from "./routes/centralized-email-routes-fix";
 import { setupProductionRoutes, setupProductionErrorHandlers } from "./production-setup";
 
+// 🛡️ SECURITY MIDDLEWARE - Applied immediately for maximum protection
+import { 
+  apiLimiter, 
+  speedLimiter, 
+  authLimiter, 
+  emailLimiter,
+  contractLimiter,
+  propertyLimiter,
+  aiLimiter
+} from "./middleware/rate-limiter";
+import { 
+  securityHeaders, 
+  sanitizeRequest, 
+  validateApiKeys, 
+  securityLogger, 
+  validateEnvironment,
+  corsConfig
+} from "./middleware/security";
+import cors from 'cors';
+
 dotenv.config();
+
+// 🔍 CRITICAL SECURITY CHECK - Validate environment before startup
+console.log('🔐 Validating security configuration...');
+validateEnvironment();
 
 // Initialize database connection
 import './db';
@@ -20,6 +44,7 @@ global.lastApiErrorMessage = "";
 console.log('🚀 Starting server...');
 console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
 console.log(`🔌 Port: ${process.env.PORT || 5000}`);
+console.log('🛡️ Security middleware enabled');
 
 // En producción, no salir si faltan variables de Firebase, solo advertir
 if (!process.env.FIREBASE_API_KEY || !process.env.FIREBASE_PROJECT_ID) {
@@ -33,7 +58,16 @@ if (!process.env.FIREBASE_API_KEY || !process.env.FIREBASE_PROJECT_ID) {
 
 const app = express();
 
-// CRITICAL: Configure JSON middleware FIRST - required for all API routes
+// 🛡️ APPLY SECURITY MIDDLEWARE FIRST (Order is critical!)
+app.use(securityHeaders);
+app.use(cors(corsConfig));
+app.use(securityLogger);
+app.use(sanitizeRequest);
+app.use(validateApiKeys);
+app.use(speedLimiter);
+app.use(apiLimiter);
+
+// CRITICAL: Configure JSON middleware AFTER security - required for all API routes
 // Increased limits to handle large contract data and PDFs
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true, parameterLimit: 50000 }));
