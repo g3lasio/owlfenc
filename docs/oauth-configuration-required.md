@@ -189,6 +189,29 @@ Si sigues viendo errores después de configurar todo, espera unos minutos y prue
 
 ---
 
+## 🔧 SOLUCIÓN PARA auth/internal-error
+
+**Si ves errores `auth/internal-error` después de configurar Firebase Console:**
+
+### 🟢 VERIFICACIÓN CRÍTICA - GOOGLE CLOUD CONSOLE
+El error `auth/internal-error` significa que **Google Cloud Console** (diferente de Firebase Console) no está configurado:
+
+1. **Ve ESPECÍFICAMENTE a:** [Google Cloud Console - Credentials](https://console.cloud.google.com/apis/credentials)
+2. **Selecciona proyecto:** `owl-fenc`
+3. **Edita el OAuth 2.0 Client ID existente** (no crear nuevo)
+4. **En "Authorized JavaScript origins" agregar EXACTAMENTE:**
+   ```
+   https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev
+   ```
+5. **Guardar y esperar 2-3 minutos**
+
+### 🍎 APPLE DEVELOPER CONSOLE
+Si Apple también falla con `auth/internal-error`:
+1. **Verificar Return URLs** incluyen el dominio Replit exacto
+2. **Verificar Service ID** está correctamente configurado
+
+---
+
 ## 🚀 RESUMEN DE DOMINIOS CONFIGURADOS
 
 ### Dominios para Google Cloud Console:
