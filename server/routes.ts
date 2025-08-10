@@ -49,6 +49,8 @@ import contactRoutes from "./routes/contact-route";
 import anthropicRoutes from "./routes/anthropic";
 // PDF routes removed - using only premiumPdfService
 import paymentRoutes from "./routes/payment-routes"; // Import payment routes
+import userProfileRoutes from "./routes/user-profile-routes"; // Import user profile routes
+import openaiChatRoutes from "./routes/openai-chat-routes"; // Import OpenAI chat routes
 import contractorPaymentRoutes from "./routes/contractor-payment-routes"; // Import contractor payment routes
 import estimatesRoutes from "./routes/estimates"; // Import new estimates routes
 import { invoicePdfService } from "./invoice-pdf-service";
@@ -1532,6 +1534,12 @@ Output must be between 200-900 characters in English.`;
 
   // Registrar ruta de contacto
   app.use("/api/contact", contactRoutes);
+
+  // Registrar rutas de perfil de usuario y onboarding
+  app.use("/api/user", userProfileRoutes);
+
+  // Registrar rutas de OpenAI chat para onboarding inteligente
+  app.use("/api/openai", openaiChatRoutes);
 
   // Registrar rutas de generación de PDF
   // PDF routes removed - using only premiumPdfService
