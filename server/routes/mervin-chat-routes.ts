@@ -3,6 +3,15 @@ import { z } from 'zod';
 import { mervinChatService } from '../services/mervinChatService';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 
+// Extend Request interface to include user
+interface AuthenticatedRequest extends Request {
+  user?: {
+    uid: string;
+    email?: string;
+    [key: string]: any;
+  };
+}
+
 const router = Router();
 
 // Middleware for all routes - require authentication
@@ -25,7 +34,7 @@ const onboardingSchema = z.object({
 });
 
 // User Profile Routes
-router.get('/profile', async (req: Request, res: Response) => {
+router.get('/profile', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const firebaseUid = req.user?.uid;
     if (!firebaseUid) {
@@ -47,7 +56,7 @@ router.get('/profile', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/profile', async (req: Request, res: Response) => {
+router.post('/profile', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const firebaseUid = req.user?.uid;
     if (!firebaseUid) {
@@ -71,7 +80,7 @@ router.post('/profile', async (req: Request, res: Response) => {
 });
 
 // Onboarding Routes
-router.post('/onboarding', async (req: Request, res: Response) => {
+router.post('/onboarding', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const firebaseUid = req.user?.uid;
     if (!firebaseUid) {
@@ -95,7 +104,7 @@ router.post('/onboarding', async (req: Request, res: Response) => {
 });
 
 // Chat Session Routes
-router.post('/sessions', async (req: Request, res: Response) => {
+router.post('/sessions', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const firebaseUid = req.user?.uid;
     if (!firebaseUid) {
@@ -118,7 +127,7 @@ router.post('/sessions', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/sessions', async (req: Request, res: Response) => {
+router.get('/sessions', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const firebaseUid = req.user?.uid;
     if (!firebaseUid) {
@@ -140,7 +149,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/sessions/:sessionId', async (req: Request, res: Response) => {
+router.get('/sessions/:sessionId', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { sessionId } = req.params;
     const session = await mervinChatService.getChatSession(sessionId);
@@ -165,7 +174,7 @@ router.get('/sessions/:sessionId', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/sessions/:sessionId/messages', async (req: Request, res: Response) => {
+router.get('/sessions/:sessionId/messages', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { sessionId } = req.params;
     const messages = await mervinChatService.getSessionMessages(sessionId);
@@ -184,7 +193,7 @@ router.get('/sessions/:sessionId/messages', async (req: Request, res: Response) 
 });
 
 // Chat Message Processing Routes
-router.post('/chat', async (req: Request, res: Response) => {
+router.post('/chat', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const firebaseUid = req.user?.uid;
     if (!firebaseUid) {
@@ -247,7 +256,7 @@ router.post('/chat', async (req: Request, res: Response) => {
 });
 
 // Agent Action History Routes
-router.get('/actions', async (req: Request, res: Response) => {
+router.get('/actions', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const firebaseUid = req.user?.uid;
     if (!firebaseUid) {
@@ -271,7 +280,7 @@ router.get('/actions', async (req: Request, res: Response) => {
 });
 
 // Mode switching utility route
-router.post('/switch-mode', async (req: Request, res: Response) => {
+router.post('/switch-mode', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const firebaseUid = req.user?.uid;
     if (!firebaseUid) {
@@ -301,7 +310,7 @@ router.post('/switch-mode', async (req: Request, res: Response) => {
 });
 
 // Health check route
-router.get('/health', async (req: Request, res: Response) => {
+router.get('/health', async (req: AuthenticatedRequest, res: Response) => {
   res.json({
     success: true,
     service: 'mervin-chat',

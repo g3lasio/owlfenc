@@ -1,170 +1,67 @@
 # Owl Fence & Mervin AI Platform
 
 ## Overview
-Owl Fence is a comprehensive SaaS platform designed for contractors in the construction industry, with a specialized focus on fencing contractors. The platform aims to revolutionize the construction industry through intelligent estimation, contract generation, and project management by combining conversational AI, automation, and specialized tools.
+Owl Fence is a comprehensive SaaS platform designed for construction contractors, particularly fencing contractors. It aims to revolutionize the industry through intelligent estimation, contract generation, and project management by integrating conversational AI, automation, and specialized tools. The platform offers a full professional onboarding system, dual-mode AI chat, and robust security features to provide a competitive edge in the construction market.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 Critical Business Rule: This is multi-tenant contractor software - NEVER use Owl Fence or any specific company name as fallback data. Each contractor must have their own company information. PDFs must only show authentic contractor data or require profile completion.
 
-## Recent Critical Security Fixes (August 2025)
-
-## COMPREHENSIVE PROFESSIONAL ONBOARDING SYSTEM - FULLY IMPLEMENTED (August 10, 2025):
-- **CONVERSATIONAL AI-POWERED ONBOARDING**: Complete ChatOnboarding component with Mervin AI personality for natural user experience
-- **SMART QUESTION FLOW**: 8-step progressive conversation capturing business type, project volume, challenges, and complete company profile
-- **REAL-TIME AI INTEGRATION**: OpenAI GPT-4o-mini integration for dynamic, contextual responses during onboarding conversations
-- **COMPANY PROFILE CAPTURE**: Automated collection of company name, address, phone, email, logo, and business insights for estimates/contracts  
-- **AUTO-TRIAL ACTIVATION**: Seamless 21-day Trial Master activation upon onboarding completion
-- **SKIP-ANYWHERE FUNCTIONALITY**: Users can skip any step while maintaining progress and resume later
-- **BACKEND INTEGRATION**: Complete user profile routes with validation, storage, and onboarding status tracking
-- **MOBILE-RESPONSIVE DESIGN**: Professional chat interface with gradient styling, typing indicators, and smooth animations
-- **INTELLIGENT ROUTING**: Automatic detection of new users requiring onboarding vs returning users
-- **DATA PERSISTENCE**: LocalStorage + backend integration for reliable onboarding state management
-- **ERROR HANDLING**: Comprehensive fallbacks if AI services fail, ensuring onboarding always completes
-- **PROFESSIONAL UX**: Cyberpunk-themed chat interface matching platform aesthetic with avatar, progress indicators
-- **Property Verifier Security**: Eliminated hardcoded userId=1 from all property endpoints, implemented full Firebase authentication
-- **Database Schema Sync**: Fixed missing columns (default_payment_terms, invoice_message_template) causing server crashes
-- **Data Isolation**: Complete separation of user data with ownership verification on all property operations
-- **Authentication Middleware**: All property endpoints require valid Firebase tokens with proper user validation
-- **COMPREHENSIVE PERMISSION SYSTEM AUDIT COMPLETED**: 
-  - Fixed 8 critical security vulnerabilities across all pages
-  - Added missing permission checks to EstimateGenerator, CyberpunkContractGenerator, Projects, and Mervin pages
-  - Removed development testing components from production (UserPlanSwitcher)
-  - Implemented complete usage tracking and upgrade prompts
-  - Standardized permission import patterns across the application
-  - Added getUpgradeReason method to PermissionContext
-  - 100% security coverage achieved across all 25+ audited pages
-- **COMPREHENSIVE AUTHENTICATION SECURITY ANALYSIS COMPLETED** (August 2025):
-  - Conducted full security audit of authentication architecture and flows
-  - Identified critical vulnerabilities: exposed API keys in .env, inconsistent auth implementation, missing rate limiting
-  - Created comprehensive security documentation (docs/auth-architecture.md, docs/auth-flows.md)
-  - Updated .env.example with proper security templates and documentation
-  - Mapped all authentication entry points and identified demo auth bypass vulnerabilities
-  - Analyzed hybrid Firebase + Express session management conflicts
-  - Documented 7 critical authentication flows with risk assessment matrix
-  - Provided 3-phase implementation roadmap for security improvements
-- **COMPLETE OAUTH + SECURITY IMPLEMENTATION** (August 9, 2025):
-  - **DEMO AUTHENTICATION COMPLETELY ELIMINATED**: Removed all hardcoded users and demo bypasses
-  - **FIREBASE AUTHENTICATION ENFORCED**: All critical endpoints now require valid Firebase tokens
-  - **COMPREHENSIVE RATE LIMITING**: 6-tier rate limiting system protecting against brute force attacks
-  - **SECURITY MIDDLEWARE STACK**: Helmet.js headers, input sanitization, environment validation
-  - **GOOGLE OAUTH INTEGRATION**: Complete OAuth flow with security validation and error handling
-  - **MAGIC LINK AUTHENTICATION**: Passwordless authentication with 24-hour secure tokens
-  - **PHONE SMS AUTHENTICATION**: Multi-factor authentication with reCAPTCHA and verification codes
-  - **ENHANCED FIREBASE SECURITY RULES**: Server-side token validation and suspicious activity detection
-  - **COMPREHENSIVE TESTING FRAMEWORK**: Unit, integration, and E2E tests for all authentication flows
-  - **API KEY ROTATION SYSTEM**: Automated rotation tools and security audit documentation
-  - **PRODUCTION DEPLOYMENT READY**: Complete smoke tests, monitoring, and deployment guides
-  - **CRITICAL API KEY EXPOSURE DOCUMENTED**: Live production keys identified requiring immediate rotation
-  - **ENTERPRISE-GRADE SECURITY**: System now fully secure with comprehensive logging and monitoring
-  - **COMPLETE OAUTH RESEARCH-BASED IMPLEMENTATION** (August 9, 2025):
-    - **ROOT CAUSE IDENTIFIED**: Modern browsers (Chrome 115+, Safari 16.1+, Firefox 109+) block third-party storage access
-    - **GOOGLE OAUTH FIXED**: Switched from signInWithRedirect to signInWithPopup exclusively
-    - **APPLE OAUTH NATIVE**: Implemented Apple JS SDK + signInWithCredential approach
-    - **COMPREHENSIVE ERROR HANDLING**: Specific error messages with configuration solutions
-    - **RESEARCH-BASED DOCUMENTATION**: Complete configuration guides for Google Cloud Console and Apple Developer Console
-    - **DOMAIN-SPECIFIC LOGS**: Detailed debugging information for OAuth troubleshooting
-    - **IMPLEMENTATION STATUS**: Code complete, awaiting external OAuth provider configuration
-- **COMPREHENSIVE EMAIL OTP AUTHENTICATION SYSTEM - FULLY OPERATIONAL** (August 10, 2025):
-    - **PRIMARY RELIABLE AUTHENTICATION**: Implemented as main authentication method due to OAuth complexity
-    - **RESEND EMAIL INTEGRATION**: Professional email delivery with corporate template design
-    - **COMPLETE BACKEND IMPLEMENTATION**: OTP service with 6-digit codes, 15-minute expiry, rate limiting
-    - **ADVANCED FRONTEND COMPONENT**: Elegant OTPAuth component with timer, resend functionality, error handling
-    - **SIMPLIFIED TWO AUTHENTICATION OPTIONS**: Email+Password and OTP Code (removed non-functional magic link and diagnostics)
-    - **SECURITY FEATURES**: 3-attempt limit, automatic invalidation, comprehensive error handling
-    - **DATABASE INTEGRATION**: PostgreSQL table `otp_codes` with proper indexing and schema
-    - **PRODUCTION READY**: Full integration tested and verified working with Resend email delivery
-    - **CLEAN USER INTERFACE**: Streamlined login page without confusing non-functional options
-    - **MOBILE RESPONSIVE DESIGN**: Perfect layout containment with all OTP elements inside card on mobile devices
-    - **SECURITY VALIDATION**: OTP codes only sent to registered Firebase users with proper verification
-    - **REDIRECTION FIX**: Implemented Firebase custom token system for seamless post-OTP authentication
-    - **ANTI-LOOP PROTECTION**: Custom token creation prevents authentication state conflicts and redirect loops
-    - **BRANDING CORRECTION**: Fixed email branding from "Owl Fence" to "Owl Fenc" across all OTP communications
-    - **PLUGIN ERROR RESOLUTION**: Implemented comprehensive unhandledrejection handlers for Firebase, Stripe, and other plugins
-
-## UNIFIED MERVIN CHAT SYSTEM - FULLY IMPLEMENTED (August 10, 2025):
-- **DUAL-MODE CHAT ARCHITECTURE**: Complete conversion of existing Mervin page into unified chat system with two distinct modes
-- **MERVIN MODE (Model 1)**: Conversational construction expert for advice, guidance, and general construction consultation
-- **MERVIN AGENT MODE (Model 2)**: Enhanced capabilities including action execution (invoice generation, contract creation, property owner searches)
-- **SEAMLESS MODE SWITCHING**: Toggle between modes within same chat interface with visual indicators and functionality preservation
-- **INTEGRATED ONBOARDING FLOW**: 3-4 step conversational onboarding within chat interface (greeting → name/role → work type → location)
-- **COMPREHENSIVE DATABASE SCHEMA**: New tables for user_profiles, chat_sessions, chat_messages, and agent_actions with proper relationships
-- **BACKEND SERVICE ARCHITECTURE**: mervinChatService.ts with proper null database connection handling and comprehensive error management
-- **API ENDPOINT INTEGRATION**: mervin-chat-routes.ts with authentication middleware and integration with existing contract/invoice endpoints
-- **FRONTEND UNIFIED COMPONENT**: MervinUnified.tsx implementing dual-mode system with clean UI/UX and proper state management
-- **EXISTING ENDPOINT UTILIZATION**: Agent mode uses current contract-routes.ts and invoice-routes.ts endpoints without creating new backend functionality
-- **AUTHENTICATION INTEGRATION**: Full Firebase authentication integration with protected routes and user session management
-- **REAL-TIME CHAT INTERFACE**: Modern chat UI with message history, session management, and typing indicators
-- **ACTION EXECUTION CAPABILITY**: Agent mode can generate contracts, invoices, and perform property searches through existing APIs
-
 ## System Architecture
 
 ### Frontend Architecture
-- **React 18** with TypeScript
-- **Vite** for fast development and optimized builds
-- **TailwindCSS + Shadcn/ui** for consistent UI components
-- **React Query** for efficient state management and API caching
-- **Wouter** for lightweight client-side routing
-- **Firebase SDK** for client-side authentication and real-time features
+The frontend is built with React 18 and TypeScript, using Vite for fast development, TailwindCSS and Shadcn/ui for consistent UI components, React Query for API caching, Wouter for routing, and Firebase SDK for client-side authentication and real-time features.
 
 ### Backend Architecture
-- **Node.js with Express** and TypeScript
-- **Firebase** ecosystem (Firestore, Authentication, Storage) for data persistence
-- **RESTful API** design
-- **Microservices pattern** for specialized functions (PDF generation, email, AI processing)
-- **PostgreSQL** as primary database with **Drizzle ORM** for type-safe operations
-- **Chat System Architecture** with dedicated tables for user profiles, chat sessions, messages, and agent actions
+The backend utilizes Node.js with Express and TypeScript. It leverages the Firebase ecosystem (Firestore, Authentication, Storage) for data persistence. A RESTful API design is employed, following a microservices pattern for specialized functions. PostgreSQL is used as the primary database with Drizzle ORM for type-safe operations. A dedicated chat system architecture includes tables for user profiles, chat sessions, messages, and agent actions.
 
 ### AI Integration
-- **OpenAI GPT-4** for natural language processing and content generation
-- **Anthropic Claude** for advanced document processing and analysis
-- **Hybrid AI approach** with fallback templates
-- **Context-aware conversation management** for intelligent estimate generation
+The platform integrates OpenAI GPT-4 for natural language processing and content generation, and Anthropic Claude for advanced document processing. It uses a hybrid AI approach with fallback templates and context-aware conversation management for intelligent estimate generation.
 
 ### Key Components
-- **Unified Mervin AI Chat System**: Dual-mode conversational interface with **Mervin Mode** (construction expert consultation) and **Mervin Agent Mode** (action execution capabilities). Features seamless mode switching, integrated onboarding flow, chat session management, and direct integration with contract/invoice generation systems. Maintains chat context while enabling powerful automation through existing API endpoints.
-- **Contract Generation System**: Multi-tenant architecture with professional 6-page contract format, dynamic contractor branding, AI-powered generation with template fallbacks, and support for multiple contract types.
-- **PDF Processing Engine**: Multiple PDF generation services for redundancy and reliability (Puppeteer-based, PDFMonkey integration), with advanced PDF service for AI-powered data extraction and comprehensive error handling. Uses `pdf-lib` for robust, dependency-free PDF generation.
-- **Payment Management**: Stripe integration for secure processing, payment link generation, 50/50 payment split workflow, and status tracking.
-- **Project Management**: Complete project lifecycle management, material tracking with dynamic pricing, client and contractor profile management, and project approval workflow. Includes an advanced drag-and-drop timeline system with Firebase persistence.
-- **Email Communication System**: Professional estimate delivery, mobile-responsive email templates, integration with Resend, and automated approval workflows.
-- **Property Ownership Verifier**: Professional Legal Defense styled interface for property verification using ATTOM Data API with proper endpoint selection (`/property/expandedprofile` and `/property/basicprofile` for ownership data), simplified 3-step workflow, organized history management, and comprehensive mobile responsiveness with futuristic holographic styling for results visualization.
-- **Comprehensive Permission System**: Multi-tier subscription platform with "soft paywall" approach featuring 3 paid plans plus 21-day unlimited trial. Uses motivational upgrade prompts instead of hard blocks, with intelligent usage tracking, dynamic feature restrictions, and seamless upgrade conversion flow.
+- **Unified Mervin AI Chat System**: Features a dual-mode conversational interface with "Mervin Mode" (construction expert consultation) and "Mervin Agent Mode" (action execution like invoice/contract generation). It includes seamless mode switching, integrated onboarding, chat session management, and integration with existing APIs.
+- **Contract Generation System**: Supports multi-tenant architecture with professional 6-page contract formats, dynamic contractor branding, AI-powered generation with template fallbacks, and multiple contract types.
+- **PDF Processing Engine**: Employs multiple PDF generation services (Puppeteer-based, PDFMonkey, pdf-lib) for redundancy and reliability, including AI-powered data extraction and robust error handling.
+- **Payment Management**: Integrates Stripe for secure processing, payment link generation, 50/50 payment split workflows, and status tracking.
+- **Project Management**: Comprehensive project lifecycle management, material tracking with dynamic pricing, client and contractor profile management, and project approval workflows, including a drag-and-drop timeline.
+- **Email Communication System**: Professional estimate delivery with mobile-responsive templates via Resend, and automated approval workflows.
+- **Property Ownership Verifier**: A professional interface for property verification using ATTOM Data API, featuring a simplified workflow, history management, and mobile responsiveness with futuristic holographic styling.
+- **Comprehensive Permission System**: A multi-tier subscription platform with a "soft paywall" approach, offering a 21-day trial, and using motivational upgrade prompts with intelligent usage tracking and dynamic feature restrictions.
 
 ### System Design Choices
-- **UI/UX**: Cyberpunk aesthetic with cyan/blue gradient styling, futuristic elements, and professional card layouts. Emphasizes clean, streamlined interfaces, removing redundant elements and focusing on essential information. **Property Ownership Verifier** features advanced holographic styling with gradient borders, blur effects, and responsive animations.
-- **PDF Contract Format**: Critical requirement for PDFs to match an exact Independent Contractor Agreement format, preserving original styling (Times New Roman, two-column layout, page numbering) with signatures as the *only* alteration.
-- **PDF Template System**: **STREAMLINED 2-OPTION SYSTEM (August 2025)** - Simplified template selection with only "Básico" (free, using estimate-template-free.html) and "Premium" (paid, using estimate-template-premium-advanced.html). **Premium template completely redesigned** with holographic header effects with shimmer animations, professional grid layout, advanced materials table with hover effects, premium totals section with gradient badges, detailed terms & conditions in organized columns, enhanced typography with Inter font, responsive mobile optimization, and futuristic cyberpunk aesthetic while maintaining professional standards.
-- **Mobile Responsiveness**: Comprehensive optimization across all application wizards and displays, ensuring optimal user experience on all device sizes. **Enhanced Property Verifier mobile optimization** includes adaptive padding, responsive text scaling, optimized blur effects for performance, break-word text handling for long addresses, and flexible layout systems.
-- **Data Integrity**: Enforcement of real data only, especially for contact information, eliminating placeholder or dummy data.
-- **Security**: Robust multi-tenant security model with mandatory user authentication and data isolation for all project and contract operations.
-- **Scalability**: Modular architecture allowing for easy integration of new features and services.
-- **Permission Strategy**: "Soft paywall" approach that shows premium features with disabled elements and motivational upgrade prompts rather than completely blocking access. This strategy maximizes user engagement while encouraging subscription conversions through strategic friction and value demonstration.
+- **UI/UX**: Features a cyberpunk aesthetic with cyan/blue gradient styling, futuristic elements, and professional card layouts, emphasizing clean and streamlined interfaces. The Property Ownership Verifier incorporates advanced holographic styling.
+- **PDF Contract Format**: PDFs adhere to a strict Independent Contractor Agreement format, maintaining original styling (Times New Roman, two-column layout, page numbering) with only signatures as alterations.
+- **PDF Template System**: A streamlined two-option system ("Básico" and "Premium"). The Premium template is redesigned with holographic headers, professional grid layouts, advanced materials tables, and enhanced typography, maintaining a futuristic yet professional aesthetic.
+- **Mobile Responsiveness**: Comprehensive optimization across all application components for optimal user experience on all device sizes, including enhanced features for the Property Verifier.
+- **Data Integrity**: Enforces real data for contact information, eliminating placeholders.
+- **Security**: Robust multi-tenant security model with mandatory user authentication and data isolation.
+- **Scalability**: Modular architecture supports easy integration of new features.
+- **Permission Strategy**: A "soft paywall" approach, showing premium features as disabled with upgrade prompts to encourage conversions, rather than hard blocking access.
 
 ## External Dependencies
 
 ### Core Services
-- **Firebase** (Authentication, Firestore, Storage)
-- **OpenAI API** (GPT-4)
-- **Anthropic API** (Claude)
-- **Stripe** (Payment processing)
-- **Resend** (Email delivery)
+- Firebase (Authentication, Firestore, Storage)
+- OpenAI API (GPT-4)
+- Anthropic API (Claude)
+- Stripe (Payment processing)
+- Resend (Email delivery)
 
 ### Mapping and Location
-- **Google Maps API**
-- **Mapbox**
+- Google Maps API
+- Mapbox
 
 ### Property Data
-- **ATTOM Data API**
-- **CoreLogic API**
+- ATTOM Data API
+- CoreLogic API
 
 ### PDF Generation
-- **PDFMonkey**
-- **Puppeteer**
-- **pdf-lib**
+- PDFMonkey
+- Puppeteer
+- pdf-lib
 
 ### Business Integration
-- **QuickBooks API**
+- QuickBooks API
 
 ### Communication
-- **Twilio** (SMS service)
+- Twilio (SMS service)

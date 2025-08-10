@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -12,20 +12,19 @@ import {
   Send,
   MessageSquare,
   Zap,
-  Settings,
-  User,
+  Brain,
   Bot,
-  RefreshCw,
-  Download,
+  User,
+  FileSpreadsheet,
+  ClipboardList,
+  ClipboardCheck,
+  Building,
+  BarChart4,
+  Loader2,
+  DollarSign,
   FileText,
   Search,
-  Building,
-  Wrench,
-  DollarSign,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Loader2
+  Wrench
 } from "lucide-react";
 
 // Types
@@ -72,6 +71,40 @@ interface AgentAction {
 
 type ChatMode = "mervin" | "mervin_agent";
 
+// Botones de acción principales con iconos (restaurados del original)
+const actionButtons = [
+  {
+    id: "estimates",
+    text: "Generate Estimates", 
+    action: "estimates",
+    icon: <FileSpreadsheet className="h-5 w-5" />,
+  },
+  {
+    id: "contracts",
+    text: "Generate Contracts",
+    action: "contracts", 
+    icon: <ClipboardList className="h-5 w-5" />,
+  },
+  {
+    id: "permits",
+    text: "Permit Advisor",
+    action: "permits",
+    icon: <ClipboardCheck className="h-5 w-5" />,
+  },
+  {
+    id: "properties", 
+    text: "Verify Ownership",
+    action: "properties",
+    icon: <Building className="h-5 w-5" />,
+  },
+  {
+    id: "analytics",
+    text: "Payment Tracker", 
+    action: "analytics",
+    icon: <BarChart4 className="h-5 w-5" />,
+  },
+];
+
 const MervinUnified: React.FC = () => {
   const { currentUser } = useAuth();
   const { toast } = useToast();
@@ -83,6 +116,7 @@ const MervinUnified: React.FC = () => {
   const [messageInput, setMessageInput] = useState("");
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -94,17 +128,17 @@ const MervinUnified: React.FC = () => {
     enabled: !!currentUser,
   });
 
-  const { data: sessions, isLoading: sessionsLoading } = useQuery({
+  const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
     queryKey: ["/api/mervin/sessions"],
     enabled: !!currentUser,
   });
 
-  const { data: messages, isLoading: messagesLoading } = useQuery({
+  const { data: messages = [], isLoading: messagesLoading } = useQuery({
     queryKey: ["/api/mervin/sessions", currentSessionId, "messages"],
     enabled: !!currentSessionId,
   });
 
-  const { data: recentActions } = useQuery({
+  const { data: recentActions = [] } = useQuery({
     queryKey: ["/api/mervin/actions"],
     enabled: !!currentUser && currentMode === "mervin_agent",
   });
@@ -157,6 +191,20 @@ const MervinUnified: React.FC = () => {
     }
   }, [userProfile]);
 
+  // Inicializar con mensaje de bienvenida (restaurado del original)
+  useEffect(() => {
+    if (messages.length === 0) {
+      const welcomeMessage: ChatMessage = {
+        id: "welcome",
+        role: "assistant",
+        content: "¡Hola! Soy Mervin, tu asistente virtual especializado en proyectos de construcción y cercas. Puedo ayudarte con las siguientes funciones:",
+        messageType: "text",
+        createdAt: new Date().toISOString(),
+      };
+      // No establecemos mensajes aquí, los manejamos desde el backend
+    }
+  }, []);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -182,7 +230,7 @@ const MervinUnified: React.FC = () => {
   };
 
   const sendMessage = async () => {
-    if (!messageInput.trim() || !currentSessionId) return;
+    if (!messageInput.trim()) return;
 
     if (isOnboarding) {
       onboardingMutation.mutate({
@@ -190,13 +238,38 @@ const MervinUnified: React.FC = () => {
         response: messageInput.trim()
       });
     } else {
+      if (!currentSessionId) {
+        await startNewSession();
+        return;
+      }
       sendMessageMutation.mutate({
         sessionId: currentSessionId,
         message: messageInput.trim(),
         mode: currentMode
       });
     }
-    setMessageInput("");
+  };
+
+  const handleActionClick = async (action: string) => {
+    if (currentMode === "mervin_agent") {
+      // Solo en modo agente se pueden ejecutar acciones
+      if (!currentSessionId) {
+        await startNewSession();
+      }
+      const actionMessage = `Ejecutar acción: ${action}`;
+      sendMessageMutation.mutate({ 
+        sessionId: currentSessionId!, 
+        message: actionMessage, 
+        mode: currentMode 
+      });
+    } else {
+      // En modo normal, solo conversación
+      toast({
+        title: "Modo Conversación",
+        description: "Cambia a Modo Agente para ejecutar acciones automáticas",
+        variant: "default",
+      });
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -315,45 +388,54 @@ const MervinUnified: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto max-w-7xl p-4 h-screen flex flex-col">
-      {/* Header with mode switcher */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Bot className="h-8 w-8 text-blue-600" />
-            <h1 className="text-2xl font-bold">Mervin AI Assistant</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+      <div className="container mx-auto px-4 py-8 h-screen flex flex-col">
+        {/* Header con estilo cyberpunk original y dropdown de modo */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Brain className="h-12 w-12 text-cyan-400 animate-pulse" />
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+              Mervin
+            </h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant={currentMode === "mervin" ? "default" : "secondary"}>
-              <MessageSquare className="h-3 w-3 mr-1" />
-              {currentMode === "mervin" ? "Modo Conversación" : "Modo Agente"}
-            </Badge>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => switchMode(currentMode === "mervin" ? "mervin_agent" : "mervin")}
-            >
-              <Zap className="h-4 w-4 mr-1" />
-              {currentMode === "mervin" ? "Activar Modo Agente" : "Desactivar Modo Agente"}
-            </Button>
+          
+          {/* Dropdown de modo */}
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <Select value={currentMode} onValueChange={(value: ChatMode) => switchMode(value)}>
+              <SelectTrigger className="w-64 border border-cyan-400/30 bg-slate-800/50 text-cyan-400">
+                <SelectValue placeholder="Seleccionar modo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mervin">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    Modo Conversación
+                  </div>
+                </SelectItem>
+                <SelectItem value="mervin_agent">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    Modo Agente
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </div>
-        
-        {/* Mode explanation */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-          <div className="flex items-start gap-2">
-            {currentMode === "mervin" ? (
-              <MessageSquare className="h-5 w-5 text-blue-600 mt-0.5" />
-            ) : (
-              <Zap className="h-5 w-5 text-orange-600 mt-0.5" />
-            )}
-            <div>
-              <p className="font-medium text-sm">
-                {currentMode === "mervin" 
-                  ? "Modo Conversación - Chat Experto" 
-                  : "Modo Agente - Chat + Acciones"}
-              </p>
-              <p className="text-xs text-gray-600">
+
+          {/* Explicación del modo actual */}
+          <div className="max-w-md mx-auto">
+            <div className="bg-slate-800/50 border border-cyan-400/30 rounded-lg p-4">
+              <div className="flex items-center gap-2 justify-center mb-2">
+                {currentMode === "mervin" ? (
+                  <MessageSquare className="h-5 w-5 text-cyan-400" />
+                ) : (
+                  <Zap className="h-5 w-5 text-orange-400" />
+                )}
+                <span className="text-cyan-400 font-medium">
+                  {currentMode === "mervin" ? "Modo Conversación" : "Modo Agente"}
+                </span>
+              </div>
+              <p className="text-slate-300 text-sm">
                 {currentMode === "mervin"
                   ? "Conversa conmigo sobre construcción, materiales, estimaciones y más"
                   : "Además de conversar, puedo generar facturas, contratos y buscar propietarios"}
@@ -361,175 +443,136 @@ const MervinUnified: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex-1 flex gap-4 overflow-hidden">
-        {/* Sidebar */}
-        <div className="w-80 space-y-4">
-          {/* New Session Button */}
-          <Button 
-            onClick={startNewSession}
-            disabled={createSessionMutation.isPending}
-            className="w-full"
-          >
-            {createSessionMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <MessageSquare className="h-4 w-4 mr-2" />
-            )}
-            Nueva Conversación
-          </Button>
-
-          {/* Session History */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Conversaciones Recientes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {(sessions as any)?.sessions?.map((session: ChatSession) => (
-                <Button
-                  key={session.sessionId}
-                  variant={currentSessionId === session.sessionId ? "default" : "ghost"}
-                  size="sm"
-                  className="w-full justify-start text-left"
-                  onClick={() => selectSession(session.sessionId)}
-                >
-                  <div className="flex items-center gap-2 w-full">
-                    {session.mode === "mervin_agent" ? (
-                      <Zap className="h-3 w-3 text-orange-500" />
-                    ) : (
-                      <MessageSquare className="h-3 w-3 text-blue-500" />
-                    )}
-                    <span className="truncate">
-                      {session.title || "Nueva conversación"}
-                    </span>
+        {/* Main content area - Restaurado del diseño original */}
+        <div className="flex-1 flex flex-col">
+          {/* Messages area con estilo cyberpunk */}
+          <div className="flex-1 bg-slate-800/30 border border-cyan-400/20 rounded-lg mb-6 p-6 overflow-y-auto">
+            {/* Show messages if we have a session */}
+            {currentSessionId && messages ? (
+              <div className="space-y-4">
+                {messagesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
+                    <span className="ml-2 text-cyan-400">Cargando mensajes...</span>
                   </div>
-                </Button>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Recent Actions (Agent mode only) */}
-          {currentMode === "mervin_agent" && recentActions && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Acciones Recientes</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {(recentActions as any)?.actions?.slice(0, 5).map((action: AgentAction) => (
-                  <div key={action.id} className="flex items-center gap-2 text-sm">
-                    {getActionIcon(action.actionType)}
-                    <span className="flex-1 truncate">
-                      {formatActionType(action.actionType)}
-                    </span>
-                    <Badge className={`text-xs ${getStatusColor(action.status)}`}>
-                      {action.status === "success" && <CheckCircle className="h-3 w-3" />}
-                      {action.status === "error" && <AlertCircle className="h-3 w-3" />}
-                      {action.status === "pending" && <Clock className="h-3 w-3" />}
-                    </Badge>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Main Chat Area */}
-        <Card className="flex-1 flex flex-col">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bot className="h-5 w-5" />
-              {currentSessionId ? "Conversación Activa" : "Selecciona o inicia una conversación"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col p-0">
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {currentSessionId ? (
-                <>
-                  {messagesLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                      <span className="ml-2">Cargando mensajes...</span>
-                    </div>
-                  ) : (
-                    (messages as any)?.messages?.map((message: ChatMessage) => (
+                ) : (
+                  (messages as any)?.messages?.map((message: ChatMessage) => (
+                    <div
+                      key={message.id}
+                      className={`flex gap-3 ${
+                        message.role === "user" ? "justify-end" : "justify-start"
+                      }`}
+                    >
                       <div
-                        key={message.id}
-                        className={`flex gap-3 ${
-                          message.role === "user" ? "justify-end" : "justify-start"
+                        className={`max-w-[80%] rounded-lg p-4 ${
+                          message.role === "user"
+                            ? "bg-cyan-600/20 border border-cyan-400/30 text-cyan-100"
+                            : "bg-slate-700/50 border border-slate-600/30 text-slate-100"
                         }`}
                       >
-                        <div
-                          className={`max-w-[80%] rounded-lg p-3 ${
-                            message.role === "user"
-                              ? "bg-blue-600 text-white"
-                              : "bg-gray-100 text-gray-900"
-                          }`}
-                        >
-                          <div className="flex items-start gap-2">
-                            {message.role === "assistant" && (
-                              <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <div className="flex items-start gap-2">
+                          {message.role === "assistant" && (
+                            <Bot className="h-4 w-4 mt-0.5 flex-shrink-0 text-cyan-400" />
+                          )}
+                          {message.role === "user" && (
+                            <User className="h-4 w-4 mt-0.5 flex-shrink-0 text-cyan-400" />
+                          )}
+                          <div className="flex-1">
+                            <p className="whitespace-pre-wrap">{message.content}</p>
+                            {message.toolCalls && (
+                              <div className="mt-2 space-y-1">
+                                {message.toolCalls.map((tool: any, index: number) => (
+                                  <div key={index} className="text-xs bg-orange-500/20 border border-orange-400/30 rounded p-2 text-orange-300">
+                                    🔧 Ejecutando: {formatActionType(tool.function.name)}
+                                  </div>
+                                ))}
+                              </div>
                             )}
-                            {message.role === "user" && (
-                              <User className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                            )}
-                            <div className="flex-1">
-                              <p className="whitespace-pre-wrap">{message.content}</p>
-                              {message.toolCalls && (
-                                <div className="mt-2 space-y-1">
-                                  {message.toolCalls.map((tool: any, index: number) => (
-                                    <div key={index} className="text-xs bg-white bg-opacity-20 rounded p-2">
-                                      🔧 Ejecutando: {formatActionType(tool.function.name)}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
                           </div>
                         </div>
                       </div>
-                    ))
-                  )}
-                  <div ref={messagesEndRef} />
-                </>
-              ) : (
-                <div className="flex-1 flex items-center justify-center text-gray-500">
-                  <div className="text-center">
-                    <Bot className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                    <p>Inicia una nueva conversación para comenzar</p>
-                  </div>
+                    </div>
+                  ))
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            ) : (
+              /* Welcome message and action buttons - Restaurado del original */
+              <div className="space-y-6">
+                <div className="text-center">
+                  <p className="text-cyan-100 text-lg mb-8">
+                    ¡Hola! Soy Mervin, tu asistente virtual especializado en proyectos de construcción y cercas. 
+                    {currentMode === "mervin_agent" 
+                      ? " En modo agente puedo ejecutar acciones automáticamente." 
+                      : " Puedo ayudarte con las siguientes funciones:"}
+                  </p>
                 </div>
-              )}
-            </div>
 
-            {/* Input Area */}
-            {currentSessionId && (
-              <div className="border-t p-4">
-                <div className="flex gap-2">
-                  <Input
-                    ref={inputRef}
-                    value={messageInput}
-                    onChange={(e) => setMessageInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder={`Escribe tu mensaje... ${currentMode === "mervin_agent" ? "(Modo Agente activado)" : ""}`}
-                    disabled={sendMessageMutation.isPending}
-                  />
-                  <Button 
-                    onClick={sendMessage}
-                    disabled={!messageInput.trim() || sendMessageMutation.isPending}
-                  >
-                    {sendMessageMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
+                {/* Action buttons - Restaurados del original con estilo cyberpunk */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {actionButtons.map((button) => (
+                    <Button
+                      key={button.id}
+                      onClick={() => handleActionClick(button.action)}
+                      className={`
+                        h-20 bg-slate-800/50 border-2 border-cyan-400/30 
+                        hover:border-cyan-400/60 hover:bg-cyan-400/10 
+                        text-cyan-100 hover:text-cyan-50 transition-all duration-300
+                        ${currentMode === "mervin" ? "opacity-75 hover:opacity-60" : ""}
+                      `}
+                      variant="outline"
+                    >
+                      <div className="flex items-center gap-3">
+                        {button.icon}
+                        <span className="font-medium">{button.text}</span>
+                      </div>
+                    </Button>
+                  ))}
                 </div>
+
+                {currentMode === "mervin" && (
+                  <div className="text-center">
+                    <p className="text-orange-300 text-sm">
+                      💡 Cambia a Modo Agente para ejecutar acciones automáticamente
+                    </p>
+                  </div>
+                )}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+
+          {/* Input area - Estilo cyberpunk */}
+          <div className="bg-slate-800/50 border border-cyan-400/30 rounded-lg p-4">
+            <div className="flex gap-3">
+              <Input
+                ref={inputRef}
+                value={messageInput}
+                onChange={(e) => setMessageInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder={
+                  currentSessionId 
+                    ? "Escribe tu mensaje..." 
+                    : "Inicia una conversación escribiendo aquí..."
+                }
+                disabled={isLoading || sendMessageMutation.isPending}
+                className="flex-1 bg-slate-700/50 border-slate-600/50 text-cyan-100 placeholder-slate-400 focus:border-cyan-400/50"
+              />
+              <Button 
+                onClick={sendMessage}
+                disabled={!messageInput.trim() || isLoading || sendMessageMutation.isPending}
+                className="bg-cyan-600/20 border border-cyan-400/30 hover:bg-cyan-400/20 text-cyan-400"
+                variant="outline"
+              >
+                {(isLoading || sendMessageMutation.isPending) ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
