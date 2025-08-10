@@ -223,22 +223,23 @@ const OTPAuth: React.FC<OTPAuthProps> = ({ onSuccess, onBack }) => {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="text-center">
-        <CardTitle className="flex items-center justify-center gap-2 text-2xl">
-          <Mail className="w-6 h-6 text-cyan-500" />
-          Autenticación por Email
-        </CardTitle>
-        <CardDescription>
-          {!otpSent 
-            ? "Ingresa tu correo para recibir un código de acceso"
-            : "Ingresa el código de 6 dígitos enviado a tu correo"
-          }
-        </CardDescription>
-      </CardHeader>
+    <div className="w-full">
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader className="text-center">
+          <CardTitle className="flex items-center justify-center gap-2 text-2xl">
+            <Mail className="w-6 h-6 text-cyan-500" />
+            Autenticación por Email
+          </CardTitle>
+          <CardDescription>
+            {!otpSent 
+              ? "Ingresa tu correo para recibir un código de acceso"
+              : "Ingresa el código de 6 dígitos enviado a tu correo"
+            }
+          </CardDescription>
+        </CardHeader>
 
-      <CardContent className="space-y-6">
-        <AnimatePresence mode="wait">
+        <CardContent className="space-y-4 pb-6">
+          <AnimatePresence mode="wait">
           {!otpSent ? (
             <motion.form
               key="email-form"
@@ -397,9 +398,10 @@ const OTPAuth: React.FC<OTPAuthProps> = ({ onSuccess, onBack }) => {
               </form>
             </motion.div>
           )}
-        </AnimatePresence>
-      </CardContent>
-    </Card>
+          </AnimatePresence>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
