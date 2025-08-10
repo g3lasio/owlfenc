@@ -5,86 +5,6 @@ import { z } from 'zod';
 // Import usage schemas
 export * from './usage-schema';
 
-// Mervin Chat System - User Preferences for Onboarding
-export const userProfiles = pgTable('user_profiles', {
-  id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id),
-  firebaseUid: varchar('firebase_uid', { length: 255 }).notNull(),
-  name: text('name'),
-  role: text('role'), // "contractor", "homeowner", "project_manager", etc.
-  workType: text('work_type'), // "fencing", "general_construction", "remodeling", etc.
-  location: text('location'), // city/region
-  experienceLevel: text('experience_level'), // "beginner", "intermediate", "expert"
-  projectVolume: text('project_volume'), // "1-5", "6-15", "16+" projects per month
-  businessChallenges: jsonb('business_challenges'), // array of challenges
-  preferences: jsonb('preferences'), // general user preferences
-  onboardingCompleted: boolean('onboarding_completed').default(false),
-  onboardingStep: integer('onboarding_step').default(0),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => ({
-  firebaseUidIdx: index('user_profiles_firebase_uid_idx').on(table.firebaseUid),
-  userIdIdx: index('user_profiles_user_id_idx').on(table.userId),
-}));
-
-// Mervin Chat Sessions
-export const chatSessions = pgTable('chat_sessions', {
-  id: serial('id').primaryKey(),
-  firebaseUid: varchar('firebase_uid', { length: 255 }).notNull(),
-  sessionId: varchar('session_id', { length: 255 }).notNull().unique(),
-  mode: text('mode').notNull(), // "mervin" or "mervin_agent"
-  title: text('title'), // auto-generated based on conversation
-  isActive: boolean('is_active').default(true),
-  metadata: jsonb('metadata'), // session-specific data
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  lastMessageAt: timestamp('last_message_at').defaultNow().notNull(),
-}, (table) => ({
-  firebaseUidIdx: index('chat_sessions_firebase_uid_idx').on(table.firebaseUid),
-  sessionIdIdx: index('chat_sessions_session_id_idx').on(table.sessionId),
-  isActiveIdx: index('chat_sessions_is_active_idx').on(table.isActive),
-}));
-
-// Mervin Chat Messages
-export const chatMessages = pgTable('chat_messages', {
-  id: serial('id').primaryKey(),
-  sessionId: varchar('session_id', { length: 255 }).notNull().references(() => chatSessions.sessionId),
-  messageId: varchar('message_id', { length: 255 }).notNull().unique(),
-  role: text('role').notNull(), // "user", "assistant", "system"
-  content: text('content').notNull(),
-  messageType: text('message_type').default('text'), // "text", "tool_call", "tool_response", "onboarding"
-  toolCalls: jsonb('tool_calls'), // array of tool calls if agent mode
-  toolResponses: jsonb('tool_responses'), // responses from tool executions
-  metadata: jsonb('metadata'), // additional message data
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-}, (table) => ({
-  sessionIdIdx: index('chat_messages_session_id_idx').on(table.sessionId),
-  messageIdIdx: index('chat_messages_message_id_idx').on(table.messageId),
-  createdAtIdx: index('chat_messages_created_at_idx').on(table.createdAt),
-}));
-
-// Action History for Mervin Agent
-export const agentActions = pgTable('agent_actions', {
-  id: serial('id').primaryKey(),
-  firebaseUid: varchar('firebase_uid', { length: 255 }).notNull(),
-  sessionId: varchar('session_id', { length: 255 }).notNull(),
-  messageId: varchar('message_id', { length: 255 }).notNull(),
-  actionType: text('action_type').notNull(), // "generate_invoice", "generate_contract", "lookup_property", etc.
-  actionPayload: jsonb('action_payload').notNull(), // input data for the action
-  actionResponse: jsonb('action_response'), // response from the action
-  status: text('status').notNull().default('pending'), // "pending", "success", "error"
-  errorMessage: text('error_message'),
-  requestId: varchar('request_id', { length: 255 }).notNull().unique(),
-  executionTimeMs: integer('execution_time_ms'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  completedAt: timestamp('completed_at'),
-}, (table) => ({
-  firebaseUidIdx: index('agent_actions_firebase_uid_idx').on(table.firebaseUid),
-  sessionIdIdx: index('agent_actions_session_id_idx').on(table.sessionId),
-  actionTypeIdx: index('agent_actions_action_type_idx').on(table.actionType),
-  statusIdx: index('agent_actions_status_idx').on(table.status),
-  requestIdIdx: index('agent_actions_request_id_idx').on(table.requestId),
-}));
-
 // Users table
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -580,30 +500,6 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
   sentAt: true,
 });
 
-// Mervin Chat System Schemas
-export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertChatSessionSchema = createInsertSchema(chatSessions).omit({
-  id: true,
-  createdAt: true,
-  lastMessageAt: true,
-});
-
-export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertAgentActionSchema = createInsertSchema(agentActions).omit({
-  id: true,
-  createdAt: true,
-  completedAt: true,
-});
-
 // Types for all tables
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -647,16 +543,6 @@ export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type CompanyInformation = typeof companyInformation.$inferSelect;
 export type InsertCompanyInformation = z.infer<typeof insertCompanyInformationSchema>;
-
-// Mervin Chat System Types
-export type UserProfile = typeof userProfiles.$inferSelect;
-export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
-export type ChatSession = typeof chatSessions.$inferSelect;
-export type InsertChatSession = z.infer<typeof insertChatSessionSchema>;
-export type ChatMessage = typeof chatMessages.$inferSelect;
-export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
-export type AgentAction = typeof agentActions.$inferSelect;
-export type InsertAgentAction = z.infer<typeof insertAgentActionSchema>;
 
 export type DigitalContract = typeof digitalContracts.$inferSelect;
 export type InsertDigitalContract = z.infer<typeof insertDigitalContractSchema>;

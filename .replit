@@ -55,4 +55,4 @@ localPort = 24678
 externalPort = 3000
 
 [agent]
-integrations = ["javascript_sendgrid==1.0.0", "javascript_openai==1.0.0"]
+integrations = ["javascript_sendgrid==1.0.0"]
