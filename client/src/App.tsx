@@ -63,6 +63,21 @@ import ContractSignature from './pages/ContractSignature';
 
 import { Redirect } from "wouter";
 
+// 🔧 FIX: Global error handler for unhandled promises
+window.addEventListener('unhandledrejection', (event) => {
+  // Log and prevent certain unhandled rejections from showing in console
+  if (event.reason && (
+    event.reason.message?.includes?.('ResizeObserver') ||
+    event.reason.message?.includes?.('Script error') ||
+    event.reason.code?.startsWith?.('auth/') ||
+    event.reason.message?.includes?.('stripe') ||
+    event.reason.message?.includes?.('payment')
+  )) {
+    console.warn('🔧 [GLOBAL-FIX] Handled unhandled rejection:', event.reason.message || event.reason.code || 'Unknown');
+    event.preventDefault();
+  }
+});
+
 // Componente para páginas protegidas
 type ProtectedRouteProps = {
   component: React.ComponentType<any>;

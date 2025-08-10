@@ -83,7 +83,7 @@ export class OTPService {
       await resend.emails.send({
         from: 'noreply@owlfenc.com', // Replace with your verified sender
         to: email,
-        subject: 'Tu código de acceso - Owl Fence',
+        subject: 'Tu código de acceso - Owl Fenc',
         html: emailContent.html,
         text: emailContent.text,
       });
@@ -200,7 +200,7 @@ export class OTPService {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tu código de acceso - Owl Fence</title>
+    <title>Tu código de acceso - Owl Fenc</title>
     <style>
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -300,7 +300,7 @@ export class OTPService {
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">🦉 Owl Fence</div>
+            <div class="logo">🦉 Owl Fenc</div>
             <p class="subtitle">Plataforma de Contratistas</p>
         </div>
         
@@ -326,7 +326,7 @@ export class OTPService {
         
         <div class="footer">
             <p class="footer-text">
-                © 2025 Owl Fence. Plataforma profesional para contratistas.
+                © 2025 Owl Fenc. Plataforma profesional para contratistas.
             </p>
         </div>
     </div>
@@ -334,7 +334,7 @@ export class OTPService {
 </html>`;
 
     const text = `
-OWL FENCE - Tu Código de Acceso
+OWL FENC - Tu Código de Acceso
 
 Código: ${code}
 
@@ -343,7 +343,7 @@ Este código expira en 15 minutos.
 Por tu seguridad, nunca compartas este código.
 Si no solicitaste este acceso, ignora este correo.
 
-© 2025 Owl Fence
+© 2025 Owl Fenc
 `;
 
     return { html, text };

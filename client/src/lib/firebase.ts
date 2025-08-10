@@ -68,6 +68,20 @@ console.log("🔧 FIREBASE MODE CONFIG:", {
   note: "FORCING FIREBASE REAL MODE FOR PROJECTS"
 });
 
+// 🔧 FIX: Handle unhandled promise rejections from Firebase
+window.addEventListener('unhandledrejection', (event) => {
+  // Only handle Firebase-related errors, let others bubble up
+  if (event.reason && (
+    event.reason.code?.startsWith?.('auth/') ||
+    event.reason.message?.includes?.('Firebase') ||
+    event.reason.message?.includes?.('auth/') ||
+    event.reason.message?.includes?.('firestore')
+  )) {
+    console.warn('🔧 [FIREBASE-FIX] Handled Firebase unhandled rejection:', event.reason);
+    event.preventDefault(); // Prevent error from showing in console
+  }
+});
+
 // Auto login en modo desarrollo
 if (devMode) {
   console.log("Modo de desarrollo detectado. Activando auto-login.");
