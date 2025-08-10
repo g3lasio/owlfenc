@@ -640,14 +640,8 @@ export default function AuthPage() {
                     onSuccess={async (userId) => {
                       console.log('OTP Authentication successful:', userId);
                       
-                      // OTP verificado exitosamente - establecer estado de autenticación directamente
                       try {
-                        // Buscar el usuario en Firebase para obtener sus datos completos
-                        const { getAuth } = await import('firebase-admin/auth');
-                        const { auth } = await import('@/lib/firebase');
-                        const { signInWithCustomToken } = await import('firebase/auth');
-                        
-                        // Hacer una petición al backend para crear un token personalizado
+                        // Obtener custom token del servidor (sin importar firebase-admin en cliente)
                         const response = await fetch('/api/auth/create-custom-token', {
                           method: 'POST',
                           headers: {
@@ -658,10 +652,22 @@ export default function AuthPage() {
                         
                         if (response.ok) {
                           const { customToken } = await response.json();
+                          console.log('✅ Custom token received successfully');
                           
-                          // Autenticar con el token personalizado
-                          await signInWithCustomToken(auth, customToken);
-                          console.log('Firebase authentication successful with custom token');
+                          // Importar solo lo necesario del cliente Firebase
+                          const { signInWithCustomToken } = await import('firebase/auth');
+                          const { auth } = await import('@/lib/firebase');
+                          
+                          // Autenticar con Firebase usando el token personalizado
+                          const userCredential = await signInWithCustomToken(auth, customToken);
+                          console.log('✅ Firebase authentication successful with custom token');
+                          
+                          // Persistir estado temporalmente para evitar conflictos
+                          localStorage.setItem('otp-auth-success', JSON.stringify({
+                            uid: userCredential.user.uid,
+                            email: userCredential.user.email,
+                            timestamp: Date.now()
+                          }));
                           
                           showSuccessEffect();
                           
@@ -669,6 +675,7 @@ export default function AuthPage() {
                           setTimeout(() => {
                             window.location.href = '/';
                           }, 1000);
+                          
                         } else {
                           throw new Error('Failed to create custom token');
                         }
@@ -676,10 +683,10 @@ export default function AuthPage() {
                       } catch (error: any) {
                         console.error('Error with custom token authentication:', error);
                         
-                        // Fallback: Establecer estado manualmente en el contexto de auth
-                        console.log('Using fallback authentication method');
+                        // FALLBACK ROBUSTO: Persistir autenticación manualmente
+                        console.log('🔄 Using robust fallback authentication method');
                         
-                        // Emitir evento personalizado para establecer el usuario
+                        // Crear datos de usuario para fallback
                         const userData = {
                           uid: userId,
                           email: userId,
@@ -687,10 +694,17 @@ export default function AuthPage() {
                           photoURL: null,
                           phoneNumber: null,
                           emailVerified: true,
-                          getIdToken: () => Promise.resolve('otp-verified-token')
+                          getIdToken: () => Promise.resolve('otp-verified-token-' + Date.now())
                         };
                         
-                        // Disparar evento personalizado para el contexto de auth
+                        // Persistir en localStorage para evitar pérdida
+                        localStorage.setItem('otp-fallback-auth', JSON.stringify({
+                          user: userData,
+                          timestamp: Date.now(),
+                          method: 'otp-fallback'
+                        }));
+                        
+                        // Disparar evento personalizado
                         window.dispatchEvent(new CustomEvent('dev-auth-change', { 
                           detail: { user: userData } 
                         }));

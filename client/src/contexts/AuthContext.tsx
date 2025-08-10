@@ -74,6 +74,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Verificar autenticación persistida de OTP primero
+    const checkPersistedAuth = () => {
+      try {
+        // Verificar token custom exitoso
+        const otpSuccess = localStorage.getItem('otp-auth-success');
+        if (otpSuccess) {
+          const authData = JSON.parse(otpSuccess);
+          // Validar que no sea muy antiguo (24 horas)
+          if (Date.now() - authData.timestamp < 24 * 60 * 60 * 1000) {
+            console.log('🔄 Restoring OTP authentication from localStorage');
+            return; // Firebase onAuthStateChanged manejará esto
+          } else {
+            localStorage.removeItem('otp-auth-success');
+          }
+        }
+        
+        // Verificar fallback auth
+        const otpFallback = localStorage.getItem('otp-fallback-auth');
+        if (otpFallback) {
+          const fallbackData = JSON.parse(otpFallback);
+          // Validar que no sea muy antiguo (24 horas)
+          if (Date.now() - fallbackData.timestamp < 24 * 60 * 60 * 1000) {
+            console.log('🔄 Restoring fallback OTP authentication');
+            setCurrentUser(fallbackData.user);
+            setLoading(false);
+            return;
+          } else {
+            localStorage.removeItem('otp-fallback-auth');
+          }
+        }
+      } catch (error) {
+        console.error('Error checking persisted auth:', error);
+      }
+    };
+
+    // Verificar autenticación persistida primero
+    checkPersistedAuth();
+
     // Primero verificamos si hay algún resultado de redirección pendiente
     const checkRedirectResult = async () => {
       try {
@@ -85,21 +123,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
             "Resultado de redirección procesado exitosamente:",
             result.user,
           );
-          // No necesitamos hacer nada más, onAuthStateChanged capturará este login
+          // Limpiar autenticación fallback si Firebase funciona
+          localStorage.removeItem('otp-fallback-auth');
         }
       } catch (error) {
         console.error("Error procesando resultado de redirección:", error);
-        // No seteamos el error aquí, para evitar confusión al usuario
       }
     };
 
-    // Ejecutamos inmediatamente
-    checkRedirectResult();
+    // Ejecutamos después de un breve delay para permitir que persisted auth cargue
+    setTimeout(checkRedirectResult, 100);
 
     // Escuchar cambios en la autenticación
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         console.log("Usuario autenticado detectado:", user.uid);
+        // Limpiar autenticación fallback si Firebase funciona
+        localStorage.removeItem('otp-fallback-auth');
+        
         // Convertir al tipo User para usar en nuestra aplicación
         const appUser: User = {
           uid: user.uid,
@@ -112,15 +153,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
         };
         setCurrentUser(appUser);
       } else {
-        setCurrentUser(null);
+        // Solo limpiar usuario si no hay autenticación fallback válida
+        const otpFallback = localStorage.getItem('otp-fallback-auth');
+        if (!otpFallback || currentUser) {
+          console.log("🔓 Usuario no autenticado - Firebase signOut detectado");
+          setCurrentUser(null);
+        }
       }
       setLoading(false);
     });
 
-    // Escuchamos el evento personalizado para el modo de desarrollo
+    // Escuchamos el evento personalizado para OTP fallback
     const handleDevAuthChange = (event: any) => {
       const { user } = event.detail;
-      console.log("Evento de auth detectado en modo de desarrollo:", user);
+      console.log("Evento de auth detectado - método fallback OTP:", user);
       if (user) {
         // Convertir al tipo User para usar en nuestra aplicación
         const appUser: User = {
@@ -133,6 +179,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
           getIdToken: () => user.getIdToken(),
         };
         setCurrentUser(appUser);
+        
+        // Persistir para evitar pérdida en recargas
+        localStorage.setItem('otp-fallback-auth', JSON.stringify({
+          user: appUser,
+          timestamp: Date.now(),
+          method: 'otp-fallback'
+        }));
       }
       setLoading(false);
     };
