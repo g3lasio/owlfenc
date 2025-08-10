@@ -71,7 +71,10 @@ window.addEventListener('unhandledrejection', (event) => {
     event.reason.message?.includes?.('Script error') ||
     event.reason.code?.startsWith?.('auth/') ||
     event.reason.message?.includes?.('stripe') ||
-    event.reason.message?.includes?.('payment')
+    event.reason.message?.includes?.('Stripe') ||
+    event.reason.message?.includes?.('payment') ||
+    event.reason.message?.includes?.('Failed to load Stripe.js') ||
+    event.reason.message?.includes?.('loadStripe')
   )) {
     console.warn('🔧 [GLOBAL-FIX] Handled unhandled rejection:', event.reason.message || event.reason.code || 'Unknown');
     event.preventDefault();

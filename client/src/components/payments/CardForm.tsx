@@ -10,8 +10,24 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
-// Cargar Stripe fuera del componente para evitar recargas innecesarias
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY as string);
+// 🔧 FIX: Safe Stripe loading with error handling
+const getStripePromise = () => {
+  const stripeKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+  
+  if (!stripeKey) {
+    console.warn('🔧 [STRIPE-FIX] VITE_STRIPE_PUBLIC_KEY not found - Stripe payments disabled');
+    return null;
+  }
+  
+  try {
+    return loadStripe(stripeKey);
+  } catch (error) {
+    console.warn('🔧 [STRIPE-FIX] Failed to load Stripe.js:', error);
+    return null;
+  }
+};
+
+const stripePromise = getStripePromise();
 
 // Estilos para CardElement
 const cardElementStyle = {
@@ -179,6 +195,18 @@ export function CardForm({ onSuccess }: { onSuccess?: () => void }) {
 
     fetchSetupIntent();
   }, [toast]);
+
+  // 🔧 FIX: Handle Stripe loading errors
+  if (!stripePromise) {
+    return (
+      <div className="text-center py-8 px-4 border rounded-lg bg-yellow-50">
+        <div className="text-yellow-600 mb-2">⚠️ Payment System Unavailable</div>
+        <p className="text-sm text-gray-600">
+          Stripe payment processing is currently unavailable. Please contact support or try again later.
+        </p>
+      </div>
+    );
+  }
 
   if (loading || !clientSecret) {
     return (
