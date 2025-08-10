@@ -7,7 +7,12 @@ Los botones Google y Apple muestran "refuse to connect" porque falta configuraci
 
 ### 📍 INFORMACIÓN CLAVE DEL PROYECTO
 
-**Dominio Replit actual:**
+**Dominio de Producción:**
+```
+app.owlfenc.com
+```
+
+**Dominio Replit (Desarrollo):**
 ```
 4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev
 ```
@@ -34,6 +39,7 @@ owl-fenc
 
 **En "Authorized JavaScript origins" agregar:**
 ```
+https://app.owlfenc.com
 https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev
 https://owl-fenc.firebaseapp.com
 https://owl-fenc.web.app
@@ -41,6 +47,7 @@ https://owl-fenc.web.app
 
 **En "Authorized redirect URIs" agregar:**
 ```
+https://app.owlfenc.com/__/auth/handler
 https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev/__/auth/handler
 https://owl-fenc.firebaseapp.com/__/auth/handler
 https://owl-fenc.web.app/__/auth/handler
@@ -71,11 +78,13 @@ https://owl-fenc.web.app/__/auth/handler
 2. **Primary App ID:** Selecciona tu app principal
 3. **Domains and Subdomains:**
    ```
+   app.owlfenc.com
    4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev
    owl-fenc.firebaseapp.com
    ```
 4. **Return URLs:**
    ```
+   https://app.owlfenc.com/__/auth/handler
    https://owl-fenc.firebaseapp.com/__/auth/handler
    ```
 
@@ -101,6 +110,7 @@ https://owl-fenc.web.app/__/auth/handler
 3. **Web SDK configuration** debe mostrar tu Client ID
 4. En **Authorized domains** agregar:
    ```
+   app.owlfenc.com
    4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev
    ```
 
@@ -117,13 +127,26 @@ https://owl-fenc.web.app/__/auth/handler
 ## 🧪 PASO 4: PROBAR LA CONFIGURACIÓN
 
 ### 4.1 Probar Google
+**En Desarrollo:**
 1. Recarga la página: `https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev`
 2. Haz clic **Sign in with Google**
 3. Debe abrir popup de Google (no redirect)
 4. Completar autenticación
 
+**En Producción:**
+1. Ve a: `https://app.owlfenc.com`
+2. Haz clic **Sign in with Google**
+3. Debe abrir popup de Google (no redirect)
+4. Completar autenticación
+
 ### 4.2 Probar Apple
+**En Desarrollo:**
 1. Haz clic **Sign in with Apple**
+2. Debe abrir popup de Apple
+3. Completar autenticación
+
+**En Producción:**
+1. En `https://app.owlfenc.com` haz clic **Sign in with Apple**
 2. Debe abrir popup de Apple
 3. Completar autenticación
 
@@ -163,3 +186,22 @@ https://owl-fenc.web.app/__/auth/handler
 **Los cambios en Google Cloud Console y Apple Developer Console tardan 5-10 minutos en propagarse.**
 
 Si sigues viendo errores después de configurar todo, espera unos minutos y prueba nuevamente.
+
+---
+
+## 🚀 RESUMEN DE DOMINIOS CONFIGURADOS
+
+### Dominios para Google Cloud Console:
+- **Producción:** `https://app.owlfenc.com`
+- **Desarrollo:** `https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev`
+- **Firebase:** `https://owl-fenc.firebaseapp.com` y `https://owl-fenc.web.app`
+
+### Dominios para Apple Developer Console:
+- **Producción:** `app.owlfenc.com`
+- **Desarrollo:** `4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev`
+- **Firebase:** `owl-fenc.firebaseapp.com`
+
+### URLs de Redirección:
+- **Producción:** `https://app.owlfenc.com/__/auth/handler`
+- **Desarrollo:** `https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev/__/auth/handler`
+- **Firebase:** `https://owl-fenc.firebaseapp.com/__/auth/handler` y `https://owl-fenc.web.app/__/auth/handler`

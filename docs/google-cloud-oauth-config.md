@@ -16,14 +16,18 @@ Google OAuth is failing with unauthorized domain errors because the Replit domai
 
 **Add these to "Authorized JavaScript origins":**
 ```
+https://app.owlfenc.com
 https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev
 https://owl-fenc.firebaseapp.com
+https://owl-fenc.web.app
 ```
 
 **Add these to "Authorized redirect URIs":**
 ```
+https://app.owlfenc.com/__/auth/handler
 https://4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev/__/auth/handler
 https://owl-fenc.firebaseapp.com/__/auth/handler
+https://owl-fenc.web.app/__/auth/handler
 ```
 
 ### Step 3: Firebase Console Verification
@@ -35,14 +39,20 @@ https://owl-fenc.firebaseapp.com/__/auth/handler
 4. Verify **Web SDK configuration** matches Google Cloud Console
 5. Add to **Authorized domains**:
    ```
+   app.owlfenc.com
    4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev
    owl-fenc.firebaseapp.com
    owl-fenc.web.app
    ```
 
-## Current Domain Information
+## Domain Information
 
-**Current Replit Domain:**
+**Production Domain:**
+```
+app.owlfenc.com
+```
+
+**Development Domain (Replit):**
 ```
 4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev
 ```
