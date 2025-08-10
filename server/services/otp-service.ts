@@ -7,6 +7,7 @@ import { Resend } from 'resend';
 import { db } from '../db';
 import { otpCodes, type InsertOtpCode } from '@shared/schema';
 import { eq, and, gt, lt } from 'drizzle-orm';
+import { getAuth } from 'firebase-admin/auth';
 
 if (!process.env.RESEND_API_KEY) {
   throw new Error("RESEND_API_KEY environment variable must be set");
@@ -24,11 +25,28 @@ export class OTPService {
   }
 
   /**
-   * Send OTP code via email using SendGrid
+   * Send OTP code via email using Resend - ONLY to registered users
    */
   async sendOTP(email: string): Promise<{ success: boolean; message: string }> {
     try {
-      console.log(`🔐 [OTP-SERVICE] Generating OTP for: ${email}`);
+      console.log(`🔐 [OTP-SERVICE] Checking if user exists: ${email}`);
+
+      // 🚨 SECURITY: Verify user exists in Firebase before sending OTP
+      try {
+        await getAuth().getUserByEmail(email);
+        console.log(`✅ [OTP-SERVICE] User verified in Firebase: ${email}`);
+      } catch (firebaseError: any) {
+        if (firebaseError.code === 'auth/user-not-found') {
+          console.log(`❌ [OTP-SERVICE] User not found in Firebase: ${email}`);
+          return {
+            success: false,
+            message: 'Este correo no está registrado. Por favor, regístrate primero o usa tu contraseña.'
+          };
+        }
+        throw firebaseError; // Re-throw other Firebase errors
+      }
+
+      console.log(`🔐 [OTP-SERVICE] Generating OTP for registered user: ${email}`);
 
       if (!db) {
         throw new Error('Database connection not available');

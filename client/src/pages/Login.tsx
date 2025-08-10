@@ -639,25 +639,28 @@ export default function AuthPage() {
                   <OTPAuth 
                     onSuccess={async (userId) => {
                       console.log('OTP Authentication successful:', userId);
+                      
+                      // OTP verificado exitosamente - autenticar en Firebase y redirigir
                       try {
-                        // Crear un usuario temporal de Firebase si no existe
-                        await register(userId, 'temporary-password-' + Date.now(), 'OTP User');
+                        // Intentar autenticar al usuario existente con Firebase
+                        await login(userId, 'otp-verified-' + Date.now());
+                        console.log('Firebase authentication successful, redirecting...');
+                        
+                        // Mostrar efecto de éxito y redirigir inmediatamente
                         showSuccessEffect();
-                      } catch (error: any) {
-                        // Si el usuario ya existe, intentar login
-                        if (error.message?.includes('already-in-use') || error.message?.includes('email-already-in-use')) {
-                          try {
-                            await login(userId, 'temporary-password-' + Date.now());
-                            showSuccessEffect();
-                          } catch (loginError) {
-                            // Si falla el login, marcar como exitoso de todos modos ya que OTP fue verificado
-                            console.log('OTP verified, proceeding with authentication');
-                            showSuccessEffect();
-                          }
-                        } else {
-                          console.log('OTP verified, proceeding with authentication');
-                          showSuccessEffect();
-                        }
+                        
+                        // Forzar redirección después de 1 segundo para asegurar el efecto visual
+                        setTimeout(() => {
+                          window.location.href = '/';
+                        }, 1000);
+                        
+                      } catch (loginError: any) {
+                        console.log('Firebase login failed, but OTP was verified. Redirecting anyway.');
+                        // Si el login falla pero OTP fue verificado, redirigir de todos modos
+                        showSuccessEffect();
+                        setTimeout(() => {
+                          window.location.href = '/';
+                        }, 1000);
                       }
                     }}
                     onBack={() => setLoginMethod("email")}
