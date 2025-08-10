@@ -223,11 +223,11 @@ const OTPAuth: React.FC<OTPAuthProps> = ({ onSuccess, onBack }) => {
   };
 
   return (
-    <div className="w-full">
-      <Card className="w-full max-w-md mx-auto">
-        <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center gap-2 text-2xl">
-            <Mail className="w-6 h-6 text-cyan-500" />
+    <div className="w-full max-w-md mx-auto px-4">
+      <Card className="w-full">
+        <CardHeader className="text-center pb-4">
+          <CardTitle className="flex items-center justify-center gap-2 text-xl sm:text-2xl">
+            <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-500" />
             Autenticación por Email
           </CardTitle>
           <CardDescription>
@@ -238,7 +238,7 @@ const OTPAuth: React.FC<OTPAuthProps> = ({ onSuccess, onBack }) => {
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-4 pb-6">
+        <CardContent className="space-y-4 pb-6 px-4 sm:px-6">
           <AnimatePresence mode="wait">
           {!otpSent ? (
             <motion.form
@@ -310,10 +310,10 @@ const OTPAuth: React.FC<OTPAuthProps> = ({ onSuccess, onBack }) => {
                 <p className="font-medium text-cyan-500">{email}</p>
               </div>
 
-              <form onSubmit={handleVerifyOTP} className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-center block">Código de 6 dígitos</Label>
-                  <div className="flex gap-2 justify-center">
+              <form onSubmit={handleVerifyOTP} className="space-y-4 w-full">
+                <div className="space-y-3">
+                  <Label className="text-center block text-sm font-medium">Código de 6 dígitos</Label>
+                  <div className="flex gap-1.5 sm:gap-2 justify-center px-2">
                     {otp.map((digit, index) => (
                       <Input
                         key={index}
@@ -324,7 +324,7 @@ const OTPAuth: React.FC<OTPAuthProps> = ({ onSuccess, onBack }) => {
                         value={digit}
                         onChange={(e) => handleOTPChange(index, e.target.value)}
                         onKeyDown={(e) => handleOTPKeyDown(index, e)}
-                        className="w-12 h-12 text-center text-lg font-bold"
+                        className="w-8 h-10 sm:w-12 sm:h-12 text-center text-base sm:text-lg font-bold flex-shrink-0"
                         disabled={isLoadingVerify}
                       />
                     ))}
@@ -340,31 +340,33 @@ const OTPAuth: React.FC<OTPAuthProps> = ({ onSuccess, onBack }) => {
                   </div>
                 )}
 
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 w-full px-2">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setOtpSent(false)}
                     disabled={isLoadingVerify}
-                    className="flex-1"
+                    className="flex-1 h-10 text-sm"
                   >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Cambiar Email
+                    <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Cambiar Email</span>
+                    <span className="sm:hidden">Cambiar</span>
                   </Button>
                   
                   <Button
                     type="submit"
                     disabled={isLoadingVerify || otp.join('').length !== 6}
-                    className="flex-1"
+                    className="flex-1 h-10 text-sm"
                   >
                     {isLoadingVerify ? (
                       <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Verificando...
+                        <Loader2 className="w-4 h-4 mr-1 sm:mr-2 animate-spin" />
+                        <span className="hidden sm:inline">Verificando...</span>
+                        <span className="sm:hidden">Verificando</span>
                       </>
                     ) : (
                       <>
-                        <CheckCircle className="w-4 h-4 mr-2" />
+                        <CheckCircle className="w-4 h-4 mr-1 sm:mr-2" />
                         Verificar
                       </>
                     )}
@@ -375,22 +377,26 @@ const OTPAuth: React.FC<OTPAuthProps> = ({ onSuccess, onBack }) => {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="text-center"
+                    className="text-center px-2"
                   >
                     <Button
                       type="button"
                       variant="link"
                       onClick={handleResendOTP}
                       disabled={isLoadingSend}
-                      className="text-cyan-500 hover:text-cyan-400"
+                      className="text-cyan-500 hover:text-cyan-400 text-xs sm:text-sm"
                     >
                       {isLoadingSend ? (
                         <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Reenviando...
+                          <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 animate-spin" />
+                          <span className="hidden sm:inline">Reenviando...</span>
+                          <span className="sm:hidden">Reenviando</span>
                         </>
                       ) : (
-                        "¿No recibiste el código? Reenviar"
+                        <>
+                          <span className="hidden sm:inline">¿No recibiste el código? Reenviar</span>
+                          <span className="sm:hidden">Reenviar código</span>
+                        </>
                       )}
                     </Button>
                   </motion.div>
