@@ -120,9 +120,10 @@ const firebaseConfig = {
   measurementId: "G-Z2PWQXHEN0"
 };
 
-// Lista de dominios autorizados para desarrollo (ACTUALIZADA PARA OAUTH)
+// Lista de dominios autorizados para desarrollo y producción (ACTUALIZADA PARA OAUTH)
 const currentHostname = window.location.hostname;
 const authorizedDomains = [
+  'app.owlfenc.com', // Dominio de producción agregado
   'owl-fenc.firebaseapp.com',
   'owl-fenc.web.app',
   '4d52eb7d-89c5-4768-b289-5b2d76991682-00-1ovgjat7mg0re.riker.replit.dev',

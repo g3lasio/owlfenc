@@ -24,6 +24,7 @@ import {
   signInWithPhoneNumber,
   PhoneAuthProvider,
   linkWithCredential,
+  signInWithCredential,
   UserCredential,
   IdTokenResult,
 } from 'firebase/auth';
