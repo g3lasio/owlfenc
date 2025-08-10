@@ -953,6 +953,11 @@ console.log('📧 [CENTRALIZED-EMAIL] Rutas registradas en /api/centralized-emai
 app.use("/api/otp", otpRoutes);
 console.log('🔐 [OTP-AUTH] Rutas de autenticación OTP registradas en /api/otp');
 
+// Registrar rutas de tokens personalizados
+import customTokenRoutes from './routes/custom-token-routes';
+app.use('/api/auth', customTokenRoutes);
+console.log('🔐 [CUSTOM-TOKEN] Rutas de tokens personalizados registradas en /api/auth');
+
 // 📱 Registrar rutas de SMS
 import smsRoutes from './routes/sms';
 

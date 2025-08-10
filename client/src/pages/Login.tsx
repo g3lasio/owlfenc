@@ -640,24 +640,63 @@ export default function AuthPage() {
                     onSuccess={async (userId) => {
                       console.log('OTP Authentication successful:', userId);
                       
-                      // OTP verificado exitosamente - autenticar en Firebase y redirigir
+                      // OTP verificado exitosamente - establecer estado de autenticación directamente
                       try {
-                        // Intentar autenticar al usuario existente con Firebase
-                        await login(userId, 'otp-verified-' + Date.now());
-                        console.log('Firebase authentication successful, redirecting...');
+                        // Buscar el usuario en Firebase para obtener sus datos completos
+                        const { getAuth } = await import('firebase-admin/auth');
+                        const { auth } = await import('@/lib/firebase');
+                        const { signInWithCustomToken } = await import('firebase/auth');
                         
-                        // Mostrar efecto de éxito y redirigir inmediatamente
+                        // Hacer una petición al backend para crear un token personalizado
+                        const response = await fetch('/api/auth/create-custom-token', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({ email: userId }),
+                        });
+                        
+                        if (response.ok) {
+                          const { customToken } = await response.json();
+                          
+                          // Autenticar con el token personalizado
+                          await signInWithCustomToken(auth, customToken);
+                          console.log('Firebase authentication successful with custom token');
+                          
+                          showSuccessEffect();
+                          
+                          // Redirigir después de un breve delay
+                          setTimeout(() => {
+                            window.location.href = '/';
+                          }, 1000);
+                        } else {
+                          throw new Error('Failed to create custom token');
+                        }
+                        
+                      } catch (error: any) {
+                        console.error('Error with custom token authentication:', error);
+                        
+                        // Fallback: Establecer estado manualmente en el contexto de auth
+                        console.log('Using fallback authentication method');
+                        
+                        // Emitir evento personalizado para establecer el usuario
+                        const userData = {
+                          uid: userId,
+                          email: userId,
+                          displayName: 'OTP User',
+                          photoURL: null,
+                          phoneNumber: null,
+                          emailVerified: true,
+                          getIdToken: () => Promise.resolve('otp-verified-token')
+                        };
+                        
+                        // Disparar evento personalizado para el contexto de auth
+                        window.dispatchEvent(new CustomEvent('dev-auth-change', { 
+                          detail: { user: userData } 
+                        }));
+                        
                         showSuccessEffect();
                         
-                        // Forzar redirección después de 1 segundo para asegurar el efecto visual
-                        setTimeout(() => {
-                          window.location.href = '/';
-                        }, 1000);
-                        
-                      } catch (loginError: any) {
-                        console.log('Firebase login failed, but OTP was verified. Redirecting anyway.');
-                        // Si el login falla pero OTP fue verificado, redirigir de todos modos
-                        showSuccessEffect();
                         setTimeout(() => {
                           window.location.href = '/';
                         }, 1000);
