@@ -346,6 +346,21 @@ export const companyInformation = pgTable('company_information', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// OTP Codes table for email authentication
+export const otpCodes = pgTable('otp_codes', {
+  id: serial('id').primaryKey(),
+  email: varchar('email', { length: 255 }).notNull(),
+  code: varchar('code', { length: 6 }).notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  verified: boolean('verified').notNull().default(false),
+  attempts: integer('attempts').notNull().default(0),
+  maxAttempts: integer('max_attempts').notNull().default(3),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  emailIdx: index('email_idx').on(table.email),
+  codeIdx: index('code_idx').on(table.code),
+}));
+
 // Simple Digital Contracts table for streamlined signature workflow  
 export const digitalContracts = pgTable('digital_contracts', {
   id: text('id').primaryKey(),
@@ -531,6 +546,15 @@ export type InsertCompanyInformation = z.infer<typeof insertCompanyInformationSc
 
 export type DigitalContract = typeof digitalContracts.$inferSelect;
 export type InsertDigitalContract = z.infer<typeof insertDigitalContractSchema>;
+
+// OTP Code schemas and types
+export const insertOtpCodeSchema = createInsertSchema(otpCodes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type OtpCode = typeof otpCodes.$inferSelect;
+export type InsertOtpCode = z.infer<typeof insertOtpCodeSchema>;
 
 // Legacy aliases for backward compatibility
 export type EstimateItem = Estimate;

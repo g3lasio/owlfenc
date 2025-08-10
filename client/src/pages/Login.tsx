@@ -36,6 +36,7 @@ import {
 } from "react-icons/ri";
 import { useAuth } from "@/contexts/AuthContext";
 import EmailLinkAuth from "@/components/auth/EmailLinkAuth";
+import OTPAuth from "@/components/auth/OTPAuth";
 import { useTranslation } from "react-i18next";
 
 // Declaramos el hook de traducción para usar en los esquemas
@@ -78,7 +79,7 @@ export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const [loginMethod, setLoginMethod] = useState<"email" | "emailLink">(
+  const [loginMethod, setLoginMethod] = useState<"email" | "emailLink" | "otp">(
     "email",
   );
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -634,8 +635,16 @@ export default function AuthPage() {
                       </Button>
                     </form>
                   </Form>
-                ) : (
+                ) : loginMethod === "emailLink" ? (
                   <EmailLinkAuth />
+                ) : (
+                  <OTPAuth 
+                    onSuccess={(userId) => {
+                      console.log('OTP Authentication successful:', userId);
+                      showSuccessEffect();
+                    }}
+                    onBack={() => setLoginMethod("email")}
+                  />
                 )
               ) : (
                 <Form {...signupForm}>
@@ -750,27 +759,39 @@ export default function AuthPage() {
             {authMode === "login" ? (
               <>
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary/80"
-                    onClick={() =>
-                      setLoginMethod(
-                        loginMethod === "email" ? "emailLink" : "email",
-                      )
-                    }
-                  >
-                    {loginMethod === "email" ? (
-                      <>
-                        <RiMailSendLine className="h-4 w-4" />
-                        <span>Link mágico</span>
-                      </>
-                    ) : (
-                      <>
-                        <HiMail className="h-4 w-4" />
-                        <span>Contraseña</span>
-                      </>
-                    )}
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary/80"
+                      onClick={() => {
+                        if (loginMethod === "email") setLoginMethod("emailLink");
+                        else if (loginMethod === "emailLink") setLoginMethod("otp");
+                        else setLoginMethod("email");
+                      }}
+                    >
+                      {loginMethod === "email" ? (
+                        <>
+                          <RiMailSendLine className="h-4 w-4" />
+                          <span>Link mágico</span>
+                        </>
+                      ) : loginMethod === "emailLink" ? (
+                        <>
+                          <RiShieldKeyholeLine className="h-4 w-4" />
+                          <span>Código OTP</span>
+                        </>
+                      ) : (
+                        <>
+                          <HiMail className="h-4 w-4" />
+                          <span>Contraseña</span>
+                        </>
+                      )}
+                    </button>
+                    <span className="text-xs text-muted-foreground/50">
+                      {loginMethod === "email" ? "Email + Contraseña" : 
+                       loginMethod === "emailLink" ? "Link de Email" : 
+                       "Código por Email"}
+                    </span>
+                  </div>
                 </div>
                 <div>
                   <a

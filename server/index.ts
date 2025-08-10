@@ -5,6 +5,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import multer from "multer";
 import pdfParse from "pdf-parse";
 import centralizedEmailRoutes from "./routes/centralized-email-routes-fix";
+import otpRoutes from "./routes/otp-routes";
 import { setupProductionRoutes, setupProductionErrorHandlers } from "./production-setup";
 
 // 🛡️ SECURITY MIDDLEWARE - Applied immediately for maximum protection
@@ -947,6 +948,10 @@ registerRoutes(app);
 // 🔧 Registrar rutas centralizadas DESPUÉS del middleware de body-parser
 app.use("/api/centralized-email", centralizedEmailRoutes);
 console.log('📧 [CENTRALIZED-EMAIL] Rutas registradas en /api/centralized-email');
+
+// 🔐 Registrar rutas de autenticación OTP
+app.use("/api/otp", otpRoutes);
+console.log('🔐 [OTP-AUTH] Rutas de autenticación OTP registradas en /api/otp');
 
 // 📱 Registrar rutas de SMS
 import smsRoutes from './routes/sms';
