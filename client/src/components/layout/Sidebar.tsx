@@ -465,29 +465,17 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                               }`}
                               onClick={handleMenuItemClick}
                             >
-                              {item.icon.startsWith("lucide-") ? (
-                                <>
-                                  {item.icon === "lucide-user" && (
-                                    <User className="h-4 w-4 mr-3" />
-                                  )}
-                                  {item.icon === "lucide-credit-card" && (
-                                    <CreditCard className="h-4 w-4 mr-3" />
-                                  )}
-                                  {item.icon === "lucide-building" && (
-                                    <Building className="h-4 w-4 mr-3" />
-                                  )}
-                                  {item.icon === "lucide-settings" && (
-                                    <Settings className="h-4 w-4 mr-3" />
-                                  )}
-                                  {item.icon === "lucide-brain" && (
-                                    <BrainIcon className="h-4 w-4 mr-3" />
-                                  )}
-                                </>
-                              ) : (
-                                <i
-                                  className={`${item.icon} mr-3 text-base`}
-                                ></i>
-                              )}
+                              {(() => {
+                                // Render Lucide icons with margin for expanded view
+                                if (item.icon === "lucide-user") return <User className="h-4 w-4 mr-3" />;
+                                if (item.icon === "lucide-building") return <Building className="h-4 w-4 mr-3" />;
+                                if (item.icon === "lucide-settings") return <Settings className="h-4 w-4 mr-3" />;
+                                if (item.icon === "lucide-credit-card") return <CreditCard className="h-4 w-4 mr-3" />;
+                                if (item.icon === "lucide-brain") return <BrainIcon className="h-4 w-4 mr-3" />;
+                                
+                                // Render RemixIcon or other icon fonts
+                                return <i className={`${item.icon} text-base mr-3`} />;
+                              })()}
                               {t(item.label)}
                             </Button>
                           </Link>
@@ -550,27 +538,17 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                                 }}
                                 onClick={handleMenuItemClick}
                               >
-                                {item.icon.startsWith("lucide-") ? (
-                                  <>
-                                    {item.icon === "lucide-user" && (
-                                      <User className="h-4 w-4" />
-                                    )}
-                                    {item.icon === "lucide-building" && (
-                                      <Building className="h-4 w-4" />
-                                    )}
-                                    {item.icon === "lucide-settings" && (
-                                      <Settings className="h-4 w-4" />
-                                    )}
-                                    {item.icon === "lucide-credit-card" && (
-                                      <CreditCard className="h-4 w-4" />
-                                    )}
-                                    {item.icon === "lucide-brain" && (
-                                      <BrainIcon className="h-4 w-4" />
-                                    )}
-                                  </>
-                                ) : (
-                                  <i className={`${item.icon} text-base`} />
-                                )}
+                                {(() => {
+                                  // Render Lucide icons
+                                  if (item.icon === "lucide-user") return <User className="h-4 w-4" />;
+                                  if (item.icon === "lucide-building") return <Building className="h-4 w-4" />;
+                                  if (item.icon === "lucide-settings") return <Settings className="h-4 w-4" />;
+                                  if (item.icon === "lucide-credit-card") return <CreditCard className="h-4 w-4" />;
+                                  if (item.icon === "lucide-brain") return <BrainIcon className="h-4 w-4" />;
+                                  
+                                  // Render RemixIcon or other icon fonts
+                                  return <i className={`${item.icon} text-base`} />;
+                                })()}
                               </Link>
                             </TooltipTrigger>
                             <TooltipContent
