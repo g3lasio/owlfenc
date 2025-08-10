@@ -21,7 +21,7 @@ import ARFenceEstimator from "@/pages/ARFenceEstimator";
 import AboutOwlFence from "@/pages/AboutOwlFence";
 import AboutMervin from "@/pages/AboutMervin";
 import LegalPolicy from "@/pages/LegalPolicy";
-import Mervin from "@/pages/Mervin";
+import MervinUnified from "@/pages/MervinUnified";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
 import PricingSettings from "@/pages/PricingSettings";
@@ -143,7 +143,7 @@ function Router() {
         {() => <ProtectedRoute component={Home} />}
       </Route>
       <Route path="/mervin">
-        {() => <ProtectedRoute component={Mervin} />}
+        {() => <ProtectedRoute component={MervinUnified} />}
       </Route>
       <Route path="/projects">
         {() => <ProtectedRoute component={Projects} />}

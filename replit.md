@@ -82,6 +82,21 @@ Critical Business Rule: This is multi-tenant contractor software - NEVER use Owl
     - **BRANDING CORRECTION**: Fixed email branding from "Owl Fence" to "Owl Fenc" across all OTP communications
     - **PLUGIN ERROR RESOLUTION**: Implemented comprehensive unhandledrejection handlers for Firebase, Stripe, and other plugins
 
+## UNIFIED MERVIN CHAT SYSTEM - FULLY IMPLEMENTED (August 10, 2025):
+- **DUAL-MODE CHAT ARCHITECTURE**: Complete conversion of existing Mervin page into unified chat system with two distinct modes
+- **MERVIN MODE (Model 1)**: Conversational construction expert for advice, guidance, and general construction consultation
+- **MERVIN AGENT MODE (Model 2)**: Enhanced capabilities including action execution (invoice generation, contract creation, property owner searches)
+- **SEAMLESS MODE SWITCHING**: Toggle between modes within same chat interface with visual indicators and functionality preservation
+- **INTEGRATED ONBOARDING FLOW**: 3-4 step conversational onboarding within chat interface (greeting → name/role → work type → location)
+- **COMPREHENSIVE DATABASE SCHEMA**: New tables for user_profiles, chat_sessions, chat_messages, and agent_actions with proper relationships
+- **BACKEND SERVICE ARCHITECTURE**: mervinChatService.ts with proper null database connection handling and comprehensive error management
+- **API ENDPOINT INTEGRATION**: mervin-chat-routes.ts with authentication middleware and integration with existing contract/invoice endpoints
+- **FRONTEND UNIFIED COMPONENT**: MervinUnified.tsx implementing dual-mode system with clean UI/UX and proper state management
+- **EXISTING ENDPOINT UTILIZATION**: Agent mode uses current contract-routes.ts and invoice-routes.ts endpoints without creating new backend functionality
+- **AUTHENTICATION INTEGRATION**: Full Firebase authentication integration with protected routes and user session management
+- **REAL-TIME CHAT INTERFACE**: Modern chat UI with message history, session management, and typing indicators
+- **ACTION EXECUTION CAPABILITY**: Agent mode can generate contracts, invoices, and perform property searches through existing APIs
+
 ## System Architecture
 
 ### Frontend Architecture
@@ -98,6 +113,7 @@ Critical Business Rule: This is multi-tenant contractor software - NEVER use Owl
 - **RESTful API** design
 - **Microservices pattern** for specialized functions (PDF generation, email, AI processing)
 - **PostgreSQL** as primary database with **Drizzle ORM** for type-safe operations
+- **Chat System Architecture** with dedicated tables for user profiles, chat sessions, messages, and agent actions
 
 ### AI Integration
 - **OpenAI GPT-4** for natural language processing and content generation
@@ -106,7 +122,7 @@ Critical Business Rule: This is multi-tenant contractor software - NEVER use Owl
 - **Context-aware conversation management** for intelligent estimate generation
 
 ### Key Components
-- **Mervin AI Assistant**: Conversational interface for natural language estimate creation, context-aware chat, intelligent material calculation, and region-specific pricing.
+- **Unified Mervin AI Chat System**: Dual-mode conversational interface with **Mervin Mode** (construction expert consultation) and **Mervin Agent Mode** (action execution capabilities). Features seamless mode switching, integrated onboarding flow, chat session management, and direct integration with contract/invoice generation systems. Maintains chat context while enabling powerful automation through existing API endpoints.
 - **Contract Generation System**: Multi-tenant architecture with professional 6-page contract format, dynamic contractor branding, AI-powered generation with template fallbacks, and support for multiple contract types.
 - **PDF Processing Engine**: Multiple PDF generation services for redundancy and reliability (Puppeteer-based, PDFMonkey integration), with advanced PDF service for AI-powered data extraction and comprehensive error handling. Uses `pdf-lib` for robust, dependency-free PDF generation.
 - **Payment Management**: Stripe integration for secure processing, payment link generation, 50/50 payment split workflow, and status tracking.

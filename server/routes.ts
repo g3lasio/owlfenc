@@ -70,6 +70,7 @@ import dualSignatureRoutes from "./routes/dualSignatureRoutes"; // Import Dual S
 import multiChannelRoutes from "./routes/multiChannelRoutes"; // Import Multi-Channel Delivery routes
 import deepSearchAiRoutes from "./routes/deepsearch-ai"; // Import DeepSearch AI routes
 import invoiceRoutes from "./routes/billing-test"; // Import Invoice Management routes (using working filename)
+import mervinChatRoutes from "./routes/mervin-chat-routes"; // Import Mervin chat routes
 import express from "express"; // Import express to use express.raw
 import { verifyFirebaseAuth as requireAuth } from "./middleware/firebase-auth"; // Import Firebase authentication middleware
 
@@ -1540,6 +1541,9 @@ Output must be between 200-900 characters in English.`;
 
   // Registrar rutas de OpenAI chat para onboarding inteligente
   app.use("/api/openai", openaiChatRoutes);
+
+  // Registrar rutas de Mervin Chat (modo dual)
+  app.use("/api/mervin", mervinChatRoutes);
 
   // Registrar rutas de generación de PDF
   // PDF routes removed - using only premiumPdfService
