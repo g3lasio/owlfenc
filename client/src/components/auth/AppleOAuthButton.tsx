@@ -56,11 +56,20 @@ const AppleOAuthButton: React.FC<AppleOAuthButtonProps> = ({
     } catch (error: any) {
       console.error("🍎 [APPLE-BUTTON] Error en Apple Auth:", error);
       
-      // Mostrar error específico
+      // Mostrar mensaje amigable sin detalles técnicos
+      let friendlyMessage = "Apple Sign-In no está disponible en este momento.";
+      
+      if (error.message?.includes('popup')) {
+        friendlyMessage = "Por favor permite ventanas emergentes y reintenta.";
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        friendlyMessage = "Revisa tu conexión a internet e intenta nuevamente.";
+      }
+      
       toast({
         variant: "destructive",
-        title: `Error de ${mode === 'signin' ? 'inicio de sesión' : 'registro'}`,
-        description: error.message || "Error al conectar con Apple ID. Intenta con otro método.",
+        title: "Apple Sign-In no disponible",
+        description: friendlyMessage + " Intenta con Google o email/contraseña.",
+        duration: 4000,
       });
     } finally {
       setLoading(false);

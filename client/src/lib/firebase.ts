@@ -941,67 +941,91 @@ export const loginUser = async (email: string, password: string) => {
 // Iniciar sesión con Google - IMPLEMENTACIÓN SIMPLIFICADA Y ROBUSTA
 export const loginWithGoogle = async () => {
   try {
-    // Si estamos en modo de desarrollo, usar autenticación simulada
-    if (devMode) {
-      console.log("Usando login de desarrollo (sin Firebase)");
-      const devUser = createDevUser();
-      
-      setTimeout(() => {
-        const event = new CustomEvent('dev-auth-change', { detail: { user: devUser } });
-        window.dispatchEvent(event);
-      }, 500);
-      
-      return devUser;
-    }
-    
     console.log("🔵 [GOOGLE-AUTH] Iniciando autenticación con Google");
-    
-    // Configurar el proveedor de forma simple y directa
-    const provider = new GoogleAuthProvider();
-    provider.addScope('email');
-    provider.addScope('profile');
-    provider.setCustomParameters({
-      prompt: 'select_account'
+    console.log("🔧 [GOOGLE-AUTH] Configuración de Firebase Auth:", {
+      currentUser: auth.currentUser ? 'autenticado' : 'no autenticado',
+      authDomain: firebaseConfig.authDomain,
+      apiKey: firebaseConfig.apiKey ? 'presente' : 'ausente'
     });
     
+    // Verificar que Firebase esté inicializado correctamente
+    if (!auth) {
+      throw new Error("Firebase Auth no está inicializado");
+    }
+    
+    // Configurar el proveedor de Google con configuración robusta
+    const provider = new GoogleAuthProvider();
+    
+    // Configurar scopes básicos necesarios
+    provider.addScope('email');
+    provider.addScope('profile');
+    
+    // Configurar parámetros personalizados
+    provider.setCustomParameters({
+      prompt: 'select_account',
+      access_type: 'online',
+      include_granted_scopes: true
+    });
+    
+    console.log("🔵 [GOOGLE-AUTH] Proveedor configurado, intentando popup...");
+    
     try {
-      // Intentar popup primero
-      console.log("🔵 [GOOGLE-AUTH] Intentando popup...");
-      const result = await signInWithPopup(auth, provider);
+      // Intentar popup con timeout
+      const result = await Promise.race([
+        signInWithPopup(auth, provider),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('timeout')), 30000)
+        )
+      ]);
+      
       console.log("✅ [GOOGLE-AUTH] Autenticación exitosa:", result.user.email);
       return result.user;
       
     } catch (popupError: any) {
-      console.log("⚠️ [GOOGLE-AUTH] Popup falló, intentando redirección:", popupError.code);
+      console.log("⚠️ [GOOGLE-AUTH] Popup falló:", popupError.code, popupError.message);
       
-      // Si el popup falla, intentar redirección
+      // Manejar casos específicos de popup
       if (popupError.code === 'auth/popup-blocked' || 
-          popupError.code === 'auth/popup-closed-by-user') {
+          popupError.code === 'auth/popup-closed-by-user' ||
+          popupError.message === 'timeout') {
         
         console.log("🔵 [GOOGLE-AUTH] Usando redirección como fallback");
         await signInWithRedirect(auth, provider);
-        // No retornamos nada aquí porque la redirección manejará el resultado
-        return null;
+        return null; // La redirección manejará el resultado
       }
       
-      // Para otros errores, relanzar
+      // Para errores internos, usar manejo especial
+      if (popupError.code === 'auth/internal-error') {
+        console.error("🔧 [GOOGLE-AUTH] Error interno detectado - posible configuración OAuth");
+        throw new Error("Error de configuración de Google Sign-In. Verifica que Google OAuth esté habilitado en Firebase Console.");
+      }
+      
+      // Relanzar otros errores
       throw popupError;
     }
     
   } catch (error: any) {
-    console.error("❌ [GOOGLE-AUTH] Error:", error);
+    console.error("❌ [GOOGLE-AUTH] Error completo:", {
+      code: error.code,
+      message: error.message,
+      customData: error.customData
+    });
     
-    // Manejar errores específicos con mensajes claros
+    // Mapear errores a mensajes amigables
     if (error.code === 'auth/unauthorized-domain') {
-      throw new Error("Dominio no autorizado. Contacta al administrador para configurar OAuth.");
+      throw new Error("Este dominio no está autorizado para Google Sign-In. Contacta al administrador.");
     } else if (error.code === 'auth/popup-blocked') {
-      throw new Error("Popup bloqueado. Permite popups y reintenta.");
+      throw new Error("Popup bloqueado por el navegador. Permite popups y reintenta.");
     } else if (error.code === 'auth/popup-closed-by-user') {
-      throw new Error("Autenticación cancelada. Reintenta el proceso.");
+      throw new Error("Ventana de autenticación cerrada. Reintenta el proceso.");
     } else if (error.code === 'auth/network-request-failed') {
-      throw new Error("Error de conexión. Verifica tu internet.");
+      throw new Error("Error de conexión. Verifica tu internet y reintenta.");
+    } else if (error.code === 'auth/internal-error') {
+      throw new Error("Google Sign-In no está disponible. Intenta con email/contraseña.");
+    } else if (error.message?.includes('timeout')) {
+      throw new Error("Tiempo de espera agotado. Verifica tu conexión e intenta nuevamente.");
     } else {
-      throw new Error(error.message || "Error de autenticación con Google. Intenta nuevamente.");
+      throw new Error(error.message || "Error al conectar con Google. Intenta con email/contraseña.");
     }
   }
 };
@@ -1083,66 +1107,90 @@ const initReplAuth = () => {
 // Iniciar sesión con Apple - IMPLEMENTACIÓN SIMPLIFICADA Y ROBUSTA
 export const loginWithApple = async () => {
   try {
-    // Si estamos en modo de desarrollo, usar autenticación simulada
-    if (devMode) {
-      console.log("Usando login de desarrollo (sin Firebase - Apple)");
-      const devUser = createDevUser();
-      
-      setTimeout(() => {
-        const event = new CustomEvent('dev-auth-change', { detail: { user: devUser } });
-        window.dispatchEvent(event);
-      }, 500);
-      
-      return devUser;
+    console.log("🍎 [APPLE-AUTH] Iniciando autenticación con Apple");
+    console.log("🔧 [APPLE-AUTH] Configuración de Firebase Auth:", {
+      currentUser: auth.currentUser ? 'autenticado' : 'no autenticado',
+      authDomain: firebaseConfig.authDomain,
+      apiKey: firebaseConfig.apiKey ? 'presente' : 'ausente'
+    });
+    
+    // Verificar que Firebase esté inicializado correctamente
+    if (!auth) {
+      throw new Error("Firebase Auth no está inicializado");
     }
     
-    console.log("🍎 [APPLE-AUTH] Iniciando autenticación con Apple");
-    
-    // Configurar el proveedor de Apple de forma simple
+    // Configurar el proveedor de Apple con configuración robusta
     const provider = new OAuthProvider('apple.com');
+    
+    // Configurar scopes necesarios
     provider.addScope('email');
     provider.addScope('name');
     
+    // Configurar parámetros personalizados para Apple
+    provider.setCustomParameters({
+      locale: 'es'
+    });
+    
+    console.log("🍎 [APPLE-AUTH] Proveedor configurado, intentando popup...");
+    
     try {
-      // Intentar popup primero
-      console.log("🍎 [APPLE-AUTH] Intentando popup...");
-      const result = await signInWithPopup(auth, provider);
+      // Intentar popup con timeout
+      const result = await Promise.race([
+        signInWithPopup(auth, provider),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('timeout')), 30000)
+        )
+      ]);
+      
       console.log("✅ [APPLE-AUTH] Autenticación exitosa:", result.user.email);
       return result.user;
       
     } catch (popupError: any) {
-      console.log("⚠️ [APPLE-AUTH] Popup falló, intentando redirección:", popupError.code);
+      console.log("⚠️ [APPLE-AUTH] Popup falló:", popupError.code, popupError.message);
       
-      // Si el popup falla, intentar redirección
+      // Manejar casos específicos de popup
       if (popupError.code === 'auth/popup-blocked' || 
-          popupError.code === 'auth/popup-closed-by-user') {
+          popupError.code === 'auth/popup-closed-by-user' ||
+          popupError.message === 'timeout') {
         
         console.log("🍎 [APPLE-AUTH] Usando redirección como fallback");
         await signInWithRedirect(auth, provider);
-        // No retornamos nada aquí porque la redirección manejará el resultado
-        return null;
+        return null; // La redirección manejará el resultado
       }
       
-      // Para otros errores, relanzar
+      // Para errores internos de Apple, usar manejo especial
+      if (popupError.code === 'auth/internal-error') {
+        console.error("🔧 [APPLE-AUTH] Error interno detectado - posible configuración OAuth");
+        throw new Error("Apple Sign-In no está configurado correctamente. Intenta con Google o email/contraseña.");
+      }
+      
+      // Relanzar otros errores
       throw popupError;
     }
     
   } catch (error: any) {
-    console.error("❌ [APPLE-AUTH] Error:", error);
+    console.error("❌ [APPLE-AUTH] Error completo:", {
+      code: error.code,
+      message: error.message,
+      customData: error.customData
+    });
     
-    // Manejar errores específicos con mensajes claros
+    // Mapear errores a mensajes amigables
     if (error.code === 'auth/unauthorized-domain') {
-      throw new Error("Dominio no autorizado. Contacta al administrador para configurar Apple Auth.");
+      throw new Error("Este dominio no está autorizado para Apple Sign-In. Contacta al administrador.");
     } else if (error.code === 'auth/popup-blocked') {
-      throw new Error("Popup bloqueado. Permite popups y reintenta.");
+      throw new Error("Popup bloqueado por el navegador. Permite popups y reintenta.");
     } else if (error.code === 'auth/popup-closed-by-user') {
-      throw new Error("Autenticación cancelada. Reintenta el proceso.");
+      throw new Error("Ventana de autenticación cerrada. Reintenta el proceso.");
     } else if (error.code === 'auth/network-request-failed') {
-      throw new Error("Error de conexión. Verifica tu internet.");
+      throw new Error("Error de conexión. Verifica tu internet y reintenta.");
     } else if (error.code === 'auth/internal-error') {
       throw new Error("Apple Sign-In no está disponible en este momento. Intenta con Google o email/contraseña.");
+    } else if (error.message?.includes('timeout')) {
+      throw new Error("Tiempo de espera agotado. Verifica tu conexión e intenta nuevamente.");
     } else {
-      throw new Error("Apple Sign-In no está disponible en este momento. Intenta con Google o email/contraseña.");
+      // Para Apple, usar mensaje más genérico ya que a menudo no está disponible
+      throw new Error("Apple Sign-In no está disponible. Intenta con Google o email/contraseña.");
     }
   }
 };

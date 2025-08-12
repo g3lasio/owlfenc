@@ -29,18 +29,25 @@ const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
       
       // Success handling is done in the provider
     } catch (error: any) {
-      // Additional error handling if needed
       console.error('Google OAuth Error:', error);
       
-      // User-friendly error message already shown by provider
-      if (error.code === 'auth/popup-blocked') {
-        toast({
-          title: "Popup Blocked",
-          description: "Please allow popups for this site and try again.",
-          variant: "destructive",
-          duration: 5000,
-        });
+      // Mostrar solo mensajes amigables sin detalles técnicos
+      let friendlyMessage = "Revisa tu conexión e intenta nuevamente.";
+      
+      if (error.message?.includes('popup')) {
+        friendlyMessage = "Por favor permite ventanas emergentes y reintenta.";
+      } else if (error.message?.includes('configuration') || error.message?.includes('internal')) {
+        friendlyMessage = "Google Sign-In no está disponible temporalmente.";
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        friendlyMessage = "Revisa tu conexión a internet.";
       }
+      
+      toast({
+        title: "Google Sign-In no disponible",
+        description: friendlyMessage + " Intenta con email/contraseña.",
+        variant: "destructive",
+        duration: 4000,
+      });
     }
   };
 
