@@ -80,8 +80,12 @@ export default function Subscription() {
     staleTime: 1000 * 60 * 5, // Cache por 5 minutos
     retry: 3,
     refetchOnWindowFocus: false,
-    onSuccess: (data) => {
-      if (!data || data.length === 0) {
+  });
+
+  // Handle plans data changes
+  useEffect(() => {
+    if (plans) {
+      if (plans.length === 0) {
         console.warn("No se encontraron planes disponibles");
         toast({
           title: "Planes no disponibles",
@@ -90,17 +94,21 @@ export default function Subscription() {
           variant: "destructive",
         });
       }
-    },
-    onError: (error) => {
-      console.error("Error cargando planes:", error);
+    }
+  }, [plans, toast]);
+
+  // Handle plans error
+  useEffect(() => {
+    if (plansError) {
+      console.error("Error cargando planes:", plansError);
       toast({
         title: "Error al cargar planes",
         description:
           "Por favor, actualice la página o contacte a soporte si el problema persiste.",
         variant: "destructive",
       });
-    },
-  });
+    }
+  }, [plansError, toast]);
 
   // Obtenemos la información de la suscripción actual del usuario
   const { data: userSubscription, isLoading: isLoadingUserSubscription } =
@@ -353,7 +361,7 @@ export default function Subscription() {
 
   const isLoadingData = isLoadingPlans || isLoadingUserSubscription;
   const hasError =
-    plansError || (!isLoadingPlans && (!plans || plans.length === 0));
+    plansError || (!isLoadingPlans && (!plans || (plans as SubscriptionPlan[]).length === 0));
 
   if (isLoadingData) {
     return (
@@ -435,7 +443,7 @@ export default function Subscription() {
           <p className="mb-4">
             Actualmente tienes el plan{" "}
             <span className="font-bold">
-              {plans?.find((p) => p.id === activePlanId)?.name || "Desconocido"}
+              {(plans as SubscriptionPlan[])?.find((p: SubscriptionPlan) => p.id === activePlanId)?.name || "Desconocido"}
             </span>
             {expirationDate && (
               <>
@@ -461,9 +469,9 @@ export default function Subscription() {
 
       {/* Mostrar las tarjetas de planes */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-10">
-        {plans
-          ?.filter((plan) => plan.isActive)
-          .map((plan) => (
+        {(plans as SubscriptionPlan[])
+          ?.filter((plan: SubscriptionPlan) => plan.isActive)
+          .map((plan: SubscriptionPlan) => (
             <PricingCard
               key={plan.id}
               name={plan.name}
@@ -479,7 +487,7 @@ export default function Subscription() {
               isLoading={isLoading}
               code={plan.code}
               isActive={plan.id === activePlanId}
-              expirationDate={plan.id === activePlanId ? expirationDate : undefined}
+              expirationDate={plan.id === activePlanId ? (expirationDate || undefined) : undefined}
             />
           ))}
       </div>

@@ -11,8 +11,8 @@ const STRIPE_CONFIG = {
   testPublicKey: "pk_test_51REWb2LxBTKPALGDEj1HeaT63TJDdfEzBpCMlb3ukQSco6YqBjD76HF3oL9miKanHGxVTBdcavkZQFAqvbLSY7H100HcjPRreb",
   // Production key should come from environment variable
   prodPublicKey: import.meta.env.VITE_STRIPE_PUBLIC_KEY,
-  // Force test mode for development
-  forceTestMode: true,
+  // Force test mode for development - DISABLED for better compatibility
+  forceTestMode: false,
 } as const;
 
 // 🔧 SAFE STRIPE LOADING WITH ERROR HANDLING
@@ -36,10 +36,8 @@ export const getStripe = (): Promise<Stripe | null> => {
   }
 
   try {
-    // Determine which key to use
-    const stripeKey = STRIPE_CONFIG.forceTestMode 
-      ? STRIPE_CONFIG.testPublicKey 
-      : (STRIPE_CONFIG.prodPublicKey || STRIPE_CONFIG.testPublicKey);
+    // Determine which key to use - prioritize environment variable
+    const stripeKey = STRIPE_CONFIG.prodPublicKey || STRIPE_CONFIG.testPublicKey;
 
     if (!stripeKey) {
       loadingError = 'No Stripe public key available';
@@ -49,25 +47,104 @@ export const getStripe = (): Promise<Stripe | null> => {
 
     console.log('🔧 [STRIPE] Loading Stripe.js with key:', stripeKey.substring(0, 20) + '...');
 
-    // Create the promise with timeout and error handling
-    stripePromise = Promise.race([
-      loadStripe(stripeKey),
-      new Promise<null>((resolve) => {
-        setTimeout(() => {
-          console.warn('🔧 [STRIPE] Loading timeout - continuing without Stripe');
-          resolve(null);
-        }, 10000); // 10 second timeout
-      })
-    ]).catch((error) => {
-      loadingError = error.message || 'Unknown error loading Stripe';
-      console.warn('🔧 [STRIPE] Failed to load Stripe.js:', loadingError);
-      
-      // Dispatch custom event for global error handling
-      window.dispatchEvent(new CustomEvent('stripe-load-error', {
-        detail: { error: loadingError }
-      }));
-      
-      return null;
+    // Create the promise with enhanced error handling and timeout
+    stripePromise = new Promise((resolve) => {
+      // Try loading Stripe with multiple fallback strategies
+      const loadWithFallbacks = async () => {
+        try {
+          // First attempt: Direct load
+          console.log('🔧 [STRIPE] Attempt 1: Direct loadStripe call');
+          const stripe = await loadStripe(stripeKey);
+          if (stripe) {
+            console.log('✅ [STRIPE] Successfully loaded Stripe.js');
+            resolve(stripe);
+            return;
+          }
+        } catch (error: any) {
+          console.warn('🔧 [STRIPE] Direct load failed:', error.message);
+        }
+
+        try {
+          // Second attempt: Load with delay (network issues)
+          console.log('🔧 [STRIPE] Attempt 2: Delayed load');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          const stripe = await loadStripe(stripeKey);
+          if (stripe) {
+            console.log('✅ [STRIPE] Successfully loaded Stripe.js (delayed)');
+            resolve(stripe);
+            return;
+          }
+        } catch (error: any) {
+          console.warn('🔧 [STRIPE] Delayed load failed:', error.message);
+        }
+
+        // Third attempt: Check if Stripe object exists globally
+        try {
+          console.log('🔧 [STRIPE] Attempt 3: Check global Stripe object');
+          if (typeof window !== 'undefined' && (window as any).Stripe) {
+            console.log('✅ [STRIPE] Found global Stripe object, creating instance');
+            const stripeInstance = (window as any).Stripe(stripeKey);
+            if (stripeInstance) {
+              console.log('✅ [STRIPE] Successfully created Stripe instance from global object');
+              resolve(stripeInstance);
+              return;
+            }
+          }
+        } catch (error: any) {
+          console.warn('🔧 [STRIPE] Global Stripe check failed:', error.message);
+        }
+
+        // Fourth attempt: Wait for global Stripe to load
+        try {
+          console.log('🔧 [STRIPE] Attempt 4: Waiting for global Stripe to load');
+          let attempts = 0;
+          const maxAttempts = 10;
+          
+          const checkGlobalStripe = () => {
+            attempts++;
+            if (typeof window !== 'undefined' && (window as any).Stripe) {
+              console.log('✅ [STRIPE] Global Stripe loaded after waiting');
+              const stripeInstance = (window as any).Stripe(stripeKey);
+              if (stripeInstance) {
+                resolve(stripeInstance);
+                return;
+              }
+            }
+            
+            if (attempts < maxAttempts) {
+              setTimeout(checkGlobalStripe, 500); // Check every 500ms
+            } else {
+              console.warn('🔧 [STRIPE] Global Stripe never loaded after waiting');
+            }
+          };
+          
+          setTimeout(checkGlobalStripe, 1000); // Start checking after 1 second
+        } catch (error: any) {
+          console.warn('🔧 [STRIPE] Global Stripe wait failed:', error.message);
+        }
+
+        // All attempts failed - graceful degradation
+        loadingError = 'All Stripe loading attempts failed - payments disabled';
+        console.warn('🔧 [STRIPE] All loading attempts failed, payments disabled');
+        
+        // Dispatch custom event for global error handling
+        window.dispatchEvent(new CustomEvent('stripe-load-error', {
+          detail: { error: loadingError }
+        }));
+        
+        resolve(null);
+      };
+
+      // Set overall timeout
+      const timeout = setTimeout(() => {
+        loadingError = 'Stripe loading timeout';
+        console.warn('🔧 [STRIPE] Loading timeout - continuing without Stripe');
+        resolve(null);
+      }, 8000); // 8 second timeout - reduced for faster failure
+
+      loadWithFallbacks().then(() => {
+        clearTimeout(timeout);
+      });
     });
 
     return stripePromise;
@@ -113,12 +190,16 @@ export const getStripeConfig = () => ({
 });
 
 // 🚀 INITIALIZE ON IMPORT (with error suppression)
-try {
-  // Pre-load Stripe to avoid delays, but don't block app if it fails
-  getStripe().catch(() => {
-    // Silently handle errors - they're already logged
-  });
-} catch (error) {
-  // Silently handle any initialization errors
-  console.warn('🔧 [STRIPE] Silent initialization error handled');
+// Pre-load Stripe when the module loads, but only if running in browser
+if (typeof window !== 'undefined') {
+  // Delay initialization to ensure DOM is ready
+  setTimeout(() => {
+    try {
+      getStripe().catch(() => {
+        // Silently handle errors - they're already logged
+      });
+    } catch (error) {
+      console.warn('🔧 [STRIPE] Silent initialization error handled');
+    }
+  }, 1000); // 1 second delay
 }
