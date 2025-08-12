@@ -5,14 +5,12 @@
 
 import { loadStripe, Stripe } from "@stripe/stripe-js";
 
-// 🔐 STRIPE CONFIGURATION
+// 🔐 STRIPE CONFIGURATION - PRODUCTION ONLY
 const STRIPE_CONFIG = {
-  // Test mode public key - safe to expose in frontend
-  testPublicKey: "pk_test_51REWb2LxBTKPALGDEj1HeaT63TJDdfEzBpCMlb3ukQSco6YqBjD76HF3oL9miKanHGxVTBdcavkZQFAqvbLSY7H100HcjPRreb",
-  // Production key should come from environment variable
-  prodPublicKey: import.meta.env.VITE_STRIPE_PUBLIC_KEY,
-  // Force test mode for development - DISABLED for better compatibility
-  forceTestMode: false,
+  // Production key from environment variable - REQUIRED
+  publicKey: import.meta.env.VITE_STRIPE_PUBLIC_KEY,
+  // Production mode enforced
+  productionMode: true,
 } as const;
 
 // 🔧 SAFE STRIPE LOADING WITH ERROR HANDLING
@@ -36,8 +34,8 @@ export const getStripe = (): Promise<Stripe | null> => {
   }
 
   try {
-    // Determine which key to use - prioritize environment variable
-    const stripeKey = STRIPE_CONFIG.prodPublicKey || STRIPE_CONFIG.testPublicKey;
+    // Use production key only
+    const stripeKey = STRIPE_CONFIG.publicKey;
 
     if (!stripeKey) {
       loadingError = 'No Stripe public key available';
@@ -140,7 +138,7 @@ export const getStripe = (): Promise<Stripe | null> => {
         loadingError = 'Stripe loading timeout';
         console.warn('🔧 [STRIPE] Loading timeout - continuing without Stripe');
         resolve(null);
-      }, 8000); // 8 second timeout - reduced for faster failure
+      }, 5000); // 5 second timeout - optimized for faster response
 
       loadWithFallbacks().then(() => {
         clearTimeout(timeout);
@@ -181,10 +179,9 @@ export const resetStripe = (): void => {
 
 // 🔧 CONFIGURATION INFO
 export const getStripeConfig = () => ({
-  testMode: STRIPE_CONFIG.forceTestMode,
-  keyLength: STRIPE_CONFIG.forceTestMode 
-    ? STRIPE_CONFIG.testPublicKey?.length 
-    : (STRIPE_CONFIG.prodPublicKey?.length || STRIPE_CONFIG.testPublicKey?.length),
+  productionMode: STRIPE_CONFIG.productionMode,
+  keyLength: STRIPE_CONFIG.publicKey?.length || 0,
+  keyPrefix: STRIPE_CONFIG.publicKey?.substring(0, 7) || 'Not set',
   available: !!stripePromise && !loadingError,
   error: loadingError,
 });

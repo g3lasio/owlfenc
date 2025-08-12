@@ -6,8 +6,8 @@ import Stripe from 'stripe';
 import express from 'express';
 import { isAuthenticated } from '../middleware/auth';
 
-// Initialize Stripe with the TEST key (forced test mode)
-const stripe = new Stripe(process.env.STRIPE_API_TEST_KEY || 'sk_test_placeholder', {
+// Initialize Stripe with PRODUCTION key
+const stripe = new Stripe(process.env.STRIPE_API_KEY!, {
   apiVersion: '2023-10-16' as any,
 });
 

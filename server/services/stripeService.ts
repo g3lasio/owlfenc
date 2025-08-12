@@ -7,30 +7,30 @@ import {
 import { storage } from "../storage";
 
 // Verificar que la clave secreta de Stripe esté configurada
-// FORZAR MODO DE PRUEBA - usar solo la clave de test
+// MODO PRODUCCIÓN - usar STRIPE_API_KEY
 const stripeKey = process.env.STRIPE_API_KEY;
-console.log(stripeKey);
 
 if (!stripeKey) {
-  console.warn(
-    "¡ADVERTENCIA! La clave secreta de Stripe no está configurada. Las funciones de pago no funcionarán correctamente.",
+  console.error(
+    "❌ STRIPE_API_KEY no está configurada. Las funciones de pago no funcionarán correctamente.",
   );
+  throw new Error("STRIPE_API_KEY is required");
 }
 
-// Inicializar Stripe con la clave secreta (usando clave de prueba para testing)
-const stripe = new Stripe(stripeKey || "sk_test_placeholder", {
-  apiVersion: "2023-10-16" as any, // Usar una versión compatible
+// Inicializar Stripe con la clave de PRODUCCIÓN
+const stripe = new Stripe(stripeKey, {
+  apiVersion: "2023-10-16" as any,
 });
 
-// Log para identificar qué clave estamos usando
+// Log para confirmar configuración de producción
 console.log(
   "🔑 [STRIPE-CONFIG] Using API key:",
   stripeKey ? `${stripeKey.substring(0, 12)}...` : "No key configured",
 );
-console.log("🔑 [STRIPE-CONFIG] Environment: FORCED TEST MODE");
+console.log("🔑 [STRIPE-CONFIG] Environment: PRODUCTION MODE");
 console.log(
-  "🔑 [STRIPE-CONFIG] Test key available:",
-  !!process.env.STRIPE_API_TEST_KEY,
+  "🔑 [STRIPE-CONFIG] Production key available:",
+  !!process.env.STRIPE_API_KEY,
 );
 
 interface SubscriptionCheckoutOptions {
