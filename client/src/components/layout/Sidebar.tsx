@@ -29,6 +29,17 @@ import {
   ChevronsLeft,
   Menu,
   X,
+  MessageSquare,
+  Briefcase,
+  Users,
+  Archive,
+  FileText,
+  Shield,
+  DollarSign,
+  FileCheck,
+  Bot,
+  Crown,
+  ShoppingBag,
 } from "lucide-react";
 import { navigationGroups, NavigationItem } from "@/config/navigation";
 import { useTranslation } from "react-i18next";
@@ -462,15 +473,28 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                               onClick={handleMenuItemClick}
                             >
                               {(() => {
-                                // Render Lucide icons with margin for expanded view
-                                if (item.icon === "lucide-user") return <User className="h-4 w-4 mr-3" />;
-                                if (item.icon === "lucide-building") return <Building className="h-4 w-4 mr-3" />;
-                                if (item.icon === "lucide-settings") return <Settings className="h-4 w-4 mr-3" />;
-                                if (item.icon === "lucide-credit-card") return <CreditCard className="h-4 w-4 mr-3" />;
-                                if (item.icon === "lucide-brain") return <BrainIcon className="h-4 w-4 mr-3" />;
-                                
-                                // Render RemixIcon or other icon fonts
-                                return <i className={`${item.icon} text-base mr-3`} />;
+                                // FORCED ICON MAPPING - ALL LUCIDE ICONS
+                                switch(item.id) {
+                                  case "mervin": return <MessageSquare className="h-4 w-4 mr-3" />;
+                                  case "projects": return <Briefcase className="h-4 w-4 mr-3" />;
+                                  case "clients": return <Users className="h-4 w-4 mr-3" />;
+                                  case "materials": return <Archive className="h-4 w-4 mr-3" />;
+                                  case "estimates": return <FileText className="h-4 w-4 mr-3" />;
+                                  case "legal-defense": return <Shield className="h-4 w-4 mr-3" />;
+                                  case "property-verifier": return <Shield className="h-4 w-4 mr-3" />;
+                                  case "project-payments": return <DollarSign className="h-4 w-4 mr-3" />;
+                                  case "invoices": return <FileCheck className="h-4 w-4 mr-3" />;
+                                  case "permit-advisor": return <Bot className="h-4 w-4 mr-3" />;
+                                  case "ai-project-manager": return <BrainIcon className="h-4 w-4 mr-3" />;
+                                  case "owl-funding": return <DollarSign className="h-4 w-4 mr-3" />;
+                                  case "profile": return <Building className="h-4 w-4 mr-3" />;
+                                  case "settings": return <Settings className="h-4 w-4 mr-3" />;
+                                  case "billing": return <CreditCard className="h-4 w-4 mr-3" />;
+                                  case "subscription": return <Crown className="h-4 w-4 mr-3" />;
+                                  case "about-mervin": return <Bot className="h-4 w-4 mr-3" />;
+                                  case "about-owlfence": return <ShoppingBag className="h-4 w-4 mr-3" />;
+                                  default: return <User className="h-4 w-4 mr-3" />;
+                                }
                               })()}
                               {t(item.label)}
                             </Button>
@@ -531,15 +555,28 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                                 onClick={handleMenuItemClick}
                               >
                                 {(() => {
-                                  // Render Lucide icons
-                                  if (item.icon === "lucide-user") return <User className="h-4 w-4" />;
-                                  if (item.icon === "lucide-building") return <Building className="h-4 w-4" />;
-                                  if (item.icon === "lucide-settings") return <Settings className="h-4 w-4" />;
-                                  if (item.icon === "lucide-credit-card") return <CreditCard className="h-4 w-4" />;
-                                  if (item.icon === "lucide-brain") return <BrainIcon className="h-4 w-4" />;
-                                  
-                                  // Render RemixIcon or other icon fonts
-                                  return <i className={`${item.icon} text-base`} />;
+                                  // FORCED ICON MAPPING - ALL LUCIDE ICONS
+                                  switch(item.id) {
+                                    case "mervin": return <MessageSquare className="h-4 w-4" />;
+                                    case "projects": return <Briefcase className="h-4 w-4" />;
+                                    case "clients": return <Users className="h-4 w-4" />;
+                                    case "materials": return <Archive className="h-4 w-4" />;
+                                    case "estimates": return <FileText className="h-4 w-4" />;
+                                    case "legal-defense": return <Shield className="h-4 w-4" />;
+                                    case "property-verifier": return <Shield className="h-4 w-4" />;
+                                    case "project-payments": return <DollarSign className="h-4 w-4" />;
+                                    case "invoices": return <FileCheck className="h-4 w-4" />;
+                                    case "permit-advisor": return <Bot className="h-4 w-4" />;
+                                    case "ai-project-manager": return <BrainIcon className="h-4 w-4" />;
+                                    case "owl-funding": return <DollarSign className="h-4 w-4" />;
+                                    case "profile": return <Building className="h-4 w-4" />;
+                                    case "settings": return <Settings className="h-4 w-4" />;
+                                    case "billing": return <CreditCard className="h-4 w-4" />;
+                                    case "subscription": return <Crown className="h-4 w-4" />;
+                                    case "about-mervin": return <Bot className="h-4 w-4" />;
+                                    case "about-owlfence": return <ShoppingBag className="h-4 w-4" />;
+                                    default: return <User className="h-4 w-4" />;
+                                  }
                                 })()}
                               </Link>
                             </TooltipTrigger>
