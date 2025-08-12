@@ -72,6 +72,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [networkRetryCount, setNetworkRetryCount] = useState(0);
 
   useEffect(() => {
     // Verificar autenticación persistida de OTP primero
@@ -116,7 +117,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const checkRedirectResult = async () => {
       try {
         console.log("Verificando resultado de redirección...");
-        const result = await getRedirectResult(auth);
+        const result = await Promise.race([
+          getRedirectResult(auth),
+          new Promise<null>((resolve) => {
+            setTimeout(() => resolve(null), 15000); // 15 segundos timeout
+          })
+        ]);
 
         if (result && result.user) {
           console.log(
@@ -125,43 +131,108 @@ export function AuthProvider({ children }: AuthProviderProps) {
           );
           // Limpiar autenticación fallback si Firebase funciona
           localStorage.removeItem('otp-fallback-auth');
+          setNetworkRetryCount(0); // Reset retry count en éxito
+          setError(null);
         }
-      } catch (error) {
-        console.error("Error procesando resultado de redirección:", error);
+      } catch (error: any) {
+        await handleFirebaseError(error, "Redirect result error");
       }
     };
 
     // Ejecutamos después de un breve delay para permitir que persisted auth cargue
     setTimeout(checkRedirectResult, 100);
 
-    // Escuchar cambios en la autenticación
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        console.log("Usuario autenticado detectado:", user.uid);
-        // Limpiar autenticación fallback si Firebase funciona
-        localStorage.removeItem('otp-fallback-auth');
+    // Función para manejar errores de Firebase con retry
+    const handleFirebaseError = async (error: any, context: string) => {
+      console.error(`❌ [AUTH-SECURITY] ${context}:`, {
+        code: error?.code || 'unknown',
+        message: error?.message || 'Unknown error',
+        name: error?.name || 'Error'
+      });
+
+      // Detectar errores de red
+      if (error?.code === 'auth/network-request-failed' || 
+          error?.message?.includes('fetch') ||
+          error?.message?.includes('network')) {
         
-        // Convertir al tipo User para usar en nuestra aplicación
-        const appUser: User = {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-          phoneNumber: user.phoneNumber,
-          emailVerified: user.emailVerified,
-          getIdToken: () => user.getIdToken(),
-        };
-        setCurrentUser(appUser);
-      } else {
-        // Solo limpiar usuario si no hay autenticación fallback válida
-        const otpFallback = localStorage.getItem('otp-fallback-auth');
-        if (!otpFallback || currentUser) {
-          console.log("🔓 Usuario no autenticado - Firebase signOut detectado");
-          setCurrentUser(null);
+        setNetworkRetryCount(prev => prev + 1);
+        
+        // Si hay muchos reintentos, mostrar mensaje al usuario
+        if (networkRetryCount > 3) {
+          setError("Problemas de conectividad detectados. Verificando conexión...");
+          
+          // Intentar reconectar después de un delay
+          setTimeout(() => {
+            setError(null);
+            setNetworkRetryCount(0);
+          }, 5000);
         }
       }
-      setLoading(false);
-    });
+    };
+
+    // Escuchar cambios en la autenticación con manejo de errores mejorado
+    const unsubscribe = onAuthStateChanged(auth, 
+      (user) => {
+        try {
+          if (user) {
+            console.log("Usuario autenticado detectado:", user.uid);
+            // Reset retry count en conexión exitosa
+            setNetworkRetryCount(0);
+            setError(null);
+            
+            // Limpiar autenticación fallback si Firebase funciona
+            localStorage.removeItem('otp-fallback-auth');
+            
+            // Convertir al tipo User para usar en nuestra aplicación con manejo de errores en getIdToken
+            const appUser: User = {
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName,
+              photoURL: user.photoURL,
+              phoneNumber: user.phoneNumber,
+              emailVerified: user.emailVerified,
+              getIdToken: async () => {
+                try {
+                  // Intentar obtener token con timeout
+                  return await Promise.race([
+                    user.getIdToken(),
+                    new Promise<never>((_, reject) => {
+                      setTimeout(() => reject(new Error('Token timeout')), 10000);
+                    })
+                  ]);
+                } catch (tokenError: any) {
+                  console.error("❌ [TOKEN] Error obteniendo token:", tokenError);
+                  
+                  // Intentar refresh forzado una vez
+                  try {
+                    return await user.getIdToken(true);
+                  } catch (refreshError) {
+                    console.error("❌ [TOKEN] Error en refresh forzado:", refreshError);
+                    throw refreshError;
+                  }
+                }
+              },
+            };
+            setCurrentUser(appUser);
+          } else {
+            // Solo limpiar usuario si no hay autenticación fallback válida
+            const otpFallback = localStorage.getItem('otp-fallback-auth');
+            if (!otpFallback || currentUser) {
+              console.log("🔓 Usuario no autenticado - Firebase signOut detectado");
+              setCurrentUser(null);
+            }
+          }
+          setLoading(false);
+        } catch (error) {
+          handleFirebaseError(error, "Auth state change error");
+          setLoading(false);
+        }
+      },
+      (error) => {
+        handleFirebaseError(error, "Auth state listener error");
+        setLoading(false);
+      }
+    );
 
     // Escuchamos el evento personalizado para OTP fallback
     const handleDevAuthChange = (event: any) => {

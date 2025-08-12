@@ -68,17 +68,50 @@ console.log("🔧 FIREBASE MODE CONFIG:", {
   note: "FORCING FIREBASE REAL MODE FOR PROJECTS"
 });
 
-// 🔧 FIX: Handle unhandled promise rejections from Firebase
+// 🔧 FIX: Handle unhandled promise rejections from Firebase with enhanced error handling
 window.addEventListener('unhandledrejection', (event) => {
-  // Only handle Firebase-related errors, let others bubble up
-  if (event.reason && (
-    event.reason.code?.startsWith?.('auth/') ||
-    event.reason.message?.includes?.('Firebase') ||
-    event.reason.message?.includes?.('auth/') ||
-    event.reason.message?.includes?.('firestore')
-  )) {
-    console.warn('🔧 [FIREBASE-FIX] Handled Firebase unhandled rejection:', event.reason);
-    event.preventDefault(); // Prevent error from showing in console
+  const error = event.reason;
+  
+  // Identificar errores específicos de Firebase
+  const isFirebaseError = error && (
+    error.code?.startsWith?.('auth/') ||
+    error.message?.includes?.('Firebase') ||
+    error.message?.includes?.('auth/') ||
+    error.message?.includes?.('firestore') ||
+    error.message?.includes?.('_performFetchWithErrorHandling') ||
+    error.message?.includes?.('requestStsToken') ||
+    error.message?.includes?.('_StsTokenManager') ||
+    error.message?.includes?.('getIdToken')
+  );
+
+  if (isFirebaseError) {
+    // Logging detallado para errores de autenticación
+    if (error.code === 'auth/network-request-failed') {
+      console.warn('🔧 [GLOBAL-FIX] Handled Firebase network error:', error.message || 'Network request failed');
+    } else if (error.message?.includes?.('Failed to fetch')) {
+      console.warn('🔧 [GLOBAL-FIX] Handled fetch error:', error.message);
+    } else if (error.message?.includes?.('"STS token"') || error.message?.includes?.('requestStsToken')) {
+      console.warn('🔧 [GLOBAL-FIX] Handled STS token error:', error.message);
+    } else {
+      console.warn('🔧 [GLOBAL-FIX] Handled Firebase unhandled rejection:', error.code || error.message);
+    }
+    
+    event.preventDefault(); // Prevent error from showing in console as unhandled
+    
+    // Dispatch custom event for app-level error handling if needed
+    window.dispatchEvent(new CustomEvent('firebase-error-handled', {
+      detail: { 
+        error: error,
+        timestamp: new Date().toISOString(),
+        handled: true 
+      }
+    }));
+  }
+  
+  // Handle Stripe errors separately
+  if (error?.message?.includes?.('Stripe')) {
+    console.warn('🔧 [GLOBAL-FIX] Handled unhandled rejection:', error.message || 'Stripe error');
+    event.preventDefault();
   }
 });
 

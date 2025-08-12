@@ -14,11 +14,39 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   // Obtener token de Firebase si el usuario está autenticado
   if (auth.currentUser) {
     try {
-      const token = await auth.currentUser.getIdToken();
+      // Retry logic para obtener token con timeout
+      const token = await retryWithTimeout(
+        () => auth.currentUser!.getIdToken(false), // Force refresh = false por defecto
+        3, // 3 intentos
+        5000 // 5 segundos timeout
+      );
       headers["Authorization"] = `Bearer ${token}`;
       console.log("🔐 [API-REQUEST] Token de autenticación incluido en request");
-    } catch (error) {
-      console.warn("⚠️ [API-REQUEST] Error obteniendo token de Firebase:", error);
+    } catch (error: any) {
+      console.warn("⚠️ [API-REQUEST] Error obteniendo token de Firebase:", {
+        code: error?.code || 'unknown',
+        message: error?.message || 'Network error',
+        type: error?.name || 'Error'
+      });
+      
+      // Intentar con refresh forzado si el primer intento falla
+      try {
+        console.log("🔄 [API-REQUEST] Intentando refresh forzado del token...");
+        const refreshedToken = await retryWithTimeout(
+          () => auth.currentUser!.getIdToken(true), // Force refresh = true
+          2, // 2 intentos para refresh
+          10000 // 10 segundos timeout para refresh
+        );
+        headers["Authorization"] = `Bearer ${refreshedToken}`;
+        console.log("✅ [API-REQUEST] Token refrescado exitosamente");
+      } catch (refreshError: any) {
+        console.error("❌ [API-REQUEST] Error crítico obteniendo token:", {
+          originalError: error?.code || 'unknown',
+          refreshError: refreshError?.code || 'unknown',
+          action: 'continuing_without_auth'
+        });
+        // Continuar sin token en lugar de fallar completamente
+      }
     }
   } else {
     console.warn("⚠️ [API-REQUEST] Usuario no autenticado - enviando request sin token");
@@ -27,12 +55,38 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
+// Función helper para retry con timeout
+async function retryWithTimeout<T>(
+  fn: () => Promise<T>,
+  retries: number,
+  timeoutMs: number
+): Promise<T> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await Promise.race([
+        fn(),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Timeout')), timeoutMs);
+        })
+      ]);
+    } catch (error: any) {
+      if (i === retries - 1) throw error;
+      
+      // Backoff exponencial
+      const delay = Math.min(1000 * Math.pow(2, i), 5000);
+      console.log(`🔄 [RETRY] Intento ${i + 1}/${retries} falló, reintentando en ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  throw new Error('Maximum retries exceeded');
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  // Obtener headers de autenticación
+  // Obtener headers de autenticación con retry
   const authHeaders = await getAuthHeaders();
   
   // Combinar headers
@@ -43,15 +97,29 @@ export async function apiRequest(
 
   console.log(`🌐 [API-REQUEST] ${method} ${url} - Con autenticación: ${!!authHeaders.Authorization}`);
 
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  try {
+    // Implementar fetch con timeout
+    const res = await Promise.race([
+      fetch(url, {
+        method,
+        headers,
+        body: data ? JSON.stringify(data) : undefined,
+        credentials: "include",
+      }),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 30000); // 30 segundos timeout
+      })
+    ]);
 
-  await throwIfResNotOk(res);
-  return res;
+    await throwIfResNotOk(res);
+    return res;
+  } catch (error: any) {
+    console.error(`❌ [API-REQUEST] Error en ${method} ${url}:`, {
+      message: error?.message || 'Unknown error',
+      type: error?.name || 'Error'
+    });
+    throw error;
+  }
 }
 
 // Métodos para facilitar el uso de las llamadas API
@@ -71,17 +139,40 @@ export const getQueryFn: <T>(options: {
     
     console.log(`🔍 [QUERY] GET ${queryKey[0]} - Con autenticación: ${!!authHeaders.Authorization}`);
 
-    const res = await fetch(queryKey[0] as string, {
-      headers: authHeaders,
-      credentials: "include",
-    });
+    try {
+      // Implementar fetch con timeout para queries
+      const res = await Promise.race([
+        fetch(queryKey[0] as string, {
+          headers: authHeaders,
+          credentials: "include",
+        }),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Query timeout')), 20000); // 20 segundos timeout para queries
+        })
+      ]);
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        console.warn(`🔐 [QUERY] 401 Unauthorized en ${queryKey[0]} - retornando null`);
+        return null;
+      }
+
+      await throwIfResNotOk(res);
+      return await res.json();
+    } catch (error: any) {
+      console.error(`❌ [QUERY] Error en GET ${queryKey[0]}:`, {
+        message: error?.message || 'Unknown error',
+        type: error?.name || 'Error'
+      });
+      
+      // Si es un error de timeout o red y el comportamiento es returnNull, devolver null
+      if (unauthorizedBehavior === "returnNull" && 
+          (error?.message?.includes('timeout') || error?.message?.includes('fetch'))) {
+        console.warn(`🔄 [QUERY] Error de red en ${queryKey[0]} - retornando null como fallback`);
+        return null;
+      }
+      
+      throw error;
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({
@@ -91,10 +182,28 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
-      retry: false,
+      retry: (failureCount, error: any) => {
+        // Solo reintentar en errores de red, no en errores 4xx o 5xx
+        if (error?.message?.includes('timeout') || 
+            error?.message?.includes('fetch') ||
+            error?.message?.includes('network')) {
+          return failureCount < 2; // Máximo 2 reintentos para errores de red
+        }
+        return false; // No reintentar otros errores
+      },
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Backoff exponencial
     },
     mutations: {
-      retry: false,
+      retry: (failureCount, error: any) => {
+        // Reintentar mutaciones solo en errores de red
+        if (error?.message?.includes('timeout') || 
+            error?.message?.includes('fetch') ||
+            error?.message?.includes('network')) {
+          return failureCount < 1; // Solo 1 reintento para mutaciones
+        }
+        return false;
+      },
+      retryDelay: 2000, // 2 segundos de delay para reintentos de mutaciones
     },
   },
 });
