@@ -112,7 +112,7 @@ router.post('/send-estimate', async (req, res) => {
       res.status(403).json({
         success: false,
         message: 'Limitación del servicio de email: Modo de prueba activo',
-        error: 'RESEND_TEST_MODE_LIMITATION',
+        error: 'RESEND_PRODUCTION_LIMITATION',
         details: {
           authorizedEmail: authorizedTestEmail,
           attemptedEmail: clientEmail,

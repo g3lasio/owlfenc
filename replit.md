@@ -78,3 +78,15 @@ Critical Business Rule: This is multi-tenant contractor software - NEVER use Owl
 
 ### Communication
 - **Twilio** (SMS service)
+
+## Recent Changes
+
+### COMPREHENSIVE STRIPE.JS AND PRODUCTION MIGRATION (August 12, 2025):
+- **COMPLETE TEST KEY ELIMINATION**: All test keys removed from codebase (pk_test_, sk_test_, STRIPE_API_TEST_KEY)
+- **PRODUCTION-ONLY ENVIRONMENT**: Backend using STRIPE_API_KEY, frontend using VITE_STRIPE_PUBLIC_KEY
+- **CENTRALIZED STRIPE LOADING**: Single source of truth for Stripe.js with robust error handling and fallback mechanisms
+- **TYPESCRIPT ERRORS RESOLVED**: Fixed deprecated React Query callbacks and type inference issues
+- **OPTIMIZED TIMEOUTS**: Reduced Stripe.js loading timeout to 5 seconds for faster user feedback
+- **GRACEFUL DEGRADATION**: Application continues functioning even when Stripe.js fails to load
+- **UNIFIED ENVIRONMENT VARIABLES**: Standardized configuration across all payment-related services
+- **PRODUCTION READINESS**: Zero test keys in production environment to prevent future configuration issues

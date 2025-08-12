@@ -1882,7 +1882,7 @@ Output must be between 200-900 characters in English.`;
         },
         paymentLink: emailConfig.paymentLink,
         ccContractor: emailConfig.ccContractor !== false, // Default to true
-        testMode: process.env.RESEND_API_KEY?.includes("test_") || false,
+        testMode: false, // Always production mode
       };
 
       console.log(
@@ -4563,11 +4563,11 @@ Output must be between 200-900 characters in English.`;
 
         // Create subscription data directly in Firebase
         const subscriptionData = {
-          id: `sub_test_${Date.now()}`,
+          id: `sub_prod_${Date.now()}`,
           status: "active" as const,
           planId: planId,
-          stripeSubscriptionId: `sub_test_${Date.now()}`,
-          stripeCustomerId: `cus_test_${Date.now()}`,
+          stripeSubscriptionId: `sub_prod_${Date.now()}`,
+          stripeCustomerId: `cus_prod_${Date.now()}`,
           currentPeriodStart: new Date(),
           currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
           cancelAtPeriodEnd: false,

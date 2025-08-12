@@ -23,7 +23,7 @@ router.get('/health/detailed', (req, res) => {
     checks: {
       database: !!process.env.DATABASE_URL,
       firebase: !!process.env.FIREBASE_API_KEY,
-      stripe: !!process.env.STRIPE_API_TEST_KEY,
+      stripe: !!process.env.STRIPE_API_KEY,
       openai: !!process.env.OPENAI_API_KEY,
       anthropic: !!process.env.ANTHROPIC_API_KEY,
     }

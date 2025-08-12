@@ -598,7 +598,7 @@ router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Respon
     }
 
     // Get Stripe instance
-    const stripe = require('stripe')(process.env.STRIPE_API_TEST_KEY || process.env.STRIPE_SECRET_KEY);
+    const stripe = require('stripe')(process.env.STRIPE_API_KEY);
     
     // Create Stripe Connect account
     const account = await stripe.accounts.create({

@@ -70,7 +70,7 @@ router.get('/square/status', async (req: Request, res: Response) => {
 // Check Stripe connection status
 router.get('/stripe/status', async (req: Request, res: Response) => {
   try {
-    const hasStripeCredentials = process.env.STRIPE_API_TEST_KEY && process.env.VITE_STRIPE_PUBLIC_KEY;
+    const hasStripeCredentials = process.env.STRIPE_API_KEY && process.env.VITE_STRIPE_PUBLIC_KEY;
     
     if (!hasStripeCredentials) {
       return res.json({ connected: false, reason: 'No credentials configured' });
