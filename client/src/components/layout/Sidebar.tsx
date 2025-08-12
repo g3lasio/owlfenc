@@ -450,10 +450,6 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                       }}
                     >
                       {group.items
-                        .filter(
-                          (item) =>
-                            item.path !== "/mervin" && item.id !== "mervin",
-                        )
                         .map((item) => (
                           <Link key={item.id} href={item.path}>
                             <Button
@@ -514,10 +510,6 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                       }}
                     >
                       {group.items
-                        .filter(
-                          (item) =>
-                            item.path !== "/mervin" && item.id !== "mervin",
-                        )
                         .map((item: NavigationItem) => (
                           <Tooltip key={item.id}>
                             <TooltipTrigger asChild>
