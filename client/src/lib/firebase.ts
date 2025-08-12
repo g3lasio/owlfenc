@@ -938,7 +938,7 @@ export const loginUser = async (email: string, password: string) => {
 
 // Espacio reservado para comentarios
 
-// Iniciar sesión con Google - SOLUCIÓN PARA "REFUSE TO CONNECT"
+// Iniciar sesión con Google - IMPLEMENTACIÓN SIMPLIFICADA Y ROBUSTA
 export const loginWithGoogle = async () => {
   try {
     // Si estamos en modo de desarrollo, usar autenticación simulada
@@ -954,69 +954,55 @@ export const loginWithGoogle = async () => {
       return devUser;
     }
     
-    console.log("=== GOOGLE SIGN-IN INICIADO ===");
-    console.log("🔧 [OAUTH-DEBUG] Dominio:", window.location.hostname);
-    console.log("🔧 [OAUTH-DEBUG] Firebase Auth Domain:", auth.app.options.authDomain);
+    console.log("🔵 [GOOGLE-AUTH] Iniciando autenticación con Google");
     
-    // SOLUCIÓN DIRECTA: Usar redirección inmediata para evitar "refuse to connect"
-    console.log("🔧 [OAUTH-FIX] Usando redirección directa para resolver 'refuse to connect'");
-    
-    // Configurar el proveedor con parámetros optimizados
-    googleProvider.setCustomParameters({
-      prompt: 'select_account',
-      access_type: 'online'
+    // Configurar el proveedor de forma simple y directa
+    const provider = new GoogleAuthProvider();
+    provider.addScope('email');
+    provider.addScope('profile');
+    provider.setCustomParameters({
+      prompt: 'select_account'
     });
     
-    // NUEVA SOLUCIÓN RESEARCH-BASED: NO usar redirect en Replit (causa internal-error)
-    // Usar SOLO popup basado en Firebase official best practices 2025
-    console.log("🔧 [GOOGLE-RESEARCH] Using POPUP ONLY (no redirect fallback)");
-    console.log("🔧 [GOOGLE-RESEARCH] Reason: Chrome 115+, Safari 16.1+, Firefox 109+ block third-party storage");
-    
-    // RESEARCH-BASED: Usar SOLO popup (sin fallback a redirect)
     try {
-      console.log("🔧 [GOOGLE-POPUP] Attempting signInWithPopup (Firebase best practice)");
-      const result = await signInWithPopup(auth, googleProvider);
-      console.log("✅ [GOOGLE-SUCCESS] Popup authentication successful:", result.user.email);
+      // Intentar popup primero
+      console.log("🔵 [GOOGLE-AUTH] Intentando popup...");
+      const result = await signInWithPopup(auth, provider);
+      console.log("✅ [GOOGLE-AUTH] Autenticación exitosa:", result.user.email);
       return result.user;
       
     } catch (popupError: any) {
-      console.log("❌ [GOOGLE-POPUP] Popup failed:", popupError.code);
+      console.log("⚠️ [GOOGLE-AUTH] Popup falló, intentando redirección:", popupError.code);
       
-      // NO FALLBACK A REDIRECT - solo manejar errores de popup específicos
-      if (popupError.code === 'auth/popup-blocked') {
-        throw new Error("Popup bloqueado por el navegador. Por favor, permite popups para esta página y reintenta.");
-      } else if (popupError.code === 'auth/popup-closed-by-user') {
-        throw new Error("Ventana de autenticación cerrada. Por favor, reintenta el proceso.");
-      } else if (popupError.code === 'auth/unauthorized-domain') {
-        console.error("🔧 [GOOGLE-CONFIG] Domain not authorized in Google Cloud Console");
-        console.error("🔧 [GOOGLE-CONFIG] Required: Add", window.location.origin, "to Authorized JavaScript origins");
-        throw new Error(`Dominio no autorizado en Google Cloud Console: ${window.location.hostname}. Configura OAuth correctamente.`);
+      // Si el popup falla, intentar redirección
+      if (popupError.code === 'auth/popup-blocked' || 
+          popupError.code === 'auth/popup-closed-by-user') {
+        
+        console.log("🔵 [GOOGLE-AUTH] Usando redirección como fallback");
+        await signInWithRedirect(auth, provider);
+        // No retornamos nada aquí porque la redirección manejará el resultado
+        return null;
       }
       
-      // Re-throw otros errores
+      // Para otros errores, relanzar
       throw popupError;
     }
     
   } catch (error: any) {
-    console.error("🔧 [OAUTH-ERROR] Error en Google Sign-In:", error);
+    console.error("❌ [GOOGLE-AUTH] Error:", error);
     
-    // Mensajes de error específicos para debugging
+    // Manejar errores específicos con mensajes claros
     if (error.code === 'auth/unauthorized-domain') {
-      console.error("🔧 [OAUTH-FIX] SOLUTION: Add domain to Firebase Console authorized domains");
-      console.error("🔧 [OAUTH-FIX] Domain to add:", window.location.hostname);
-      throw new Error(`Dominio no autorizado: ${window.location.hostname}. Verifica Firebase Console.`);
-    } else if (error.code === 'auth/invalid-oauth-provider') {
-      throw new Error("Google Sign-In no habilitado en Firebase Console. Habilita el proveedor Google.");
+      throw new Error("Dominio no autorizado. Contacta al administrador para configurar OAuth.");
+    } else if (error.code === 'auth/popup-blocked') {
+      throw new Error("Popup bloqueado. Permite popups y reintenta.");
+    } else if (error.code === 'auth/popup-closed-by-user') {
+      throw new Error("Autenticación cancelada. Reintenta el proceso.");
     } else if (error.code === 'auth/network-request-failed') {
-      throw new Error("Error de conexión. Verifica tu internet e intenta nuevamente.");
-    } else if (error.code === 'auth/internal-error') {
-      console.error("🔧 [OAUTH-FIX] Internal error - check domain authorization and OAuth config");
-      throw new Error("Error de configuración OAuth. Verifica dominios en Firebase Console.");
+      throw new Error("Error de conexión. Verifica tu internet.");
+    } else {
+      throw new Error(error.message || "Error de autenticación con Google. Intenta nuevamente.");
     }
-    
-    // Error genérico con información de debugging
-    console.error("🔧 [OAUTH-DEBUG] Full error details:", error);
-    throw new Error(error.message || "Error de configuración OAuth. Contacta al administrador.");
   }
 };
 
@@ -1094,7 +1080,7 @@ const initReplAuth = () => {
   });
 };
 
-// Iniciar sesión con Apple - IMPLEMENTACIÓN COMPLETA CON OPTIMIZACIÓN
+// Iniciar sesión con Apple - IMPLEMENTACIÓN SIMPLIFICADA Y ROBUSTA
 export const loginWithApple = async () => {
   try {
     // Si estamos en modo de desarrollo, usar autenticación simulada
@@ -1110,123 +1096,54 @@ export const loginWithApple = async () => {
       return devUser;
     }
     
-    console.log("=== APPLE SIGN-IN - VERIFICANDO DISPONIBILIDAD ===");
-    console.log("Dominio:", window.location.hostname);
-    console.log("AuthDomain:", auth.app.options.authDomain);
+    console.log("🍎 [APPLE-AUTH] Iniciando autenticación con Apple");
     
-    // Crear proveedor de Apple optimizado
+    // Configurar el proveedor de Apple de forma simple
     const provider = new OAuthProvider('apple.com');
     provider.addScope('email');
     provider.addScope('name');
     
-    console.log("🍎 [APPLE-AUTH] Iniciando autenticación con Apple...");
-    console.log("🔧 [OAUTH-DEBUG] Apple Provider configurado con scopes: email, name");
-    
-    // RESEARCH-BASED: NO usar redirect - causan auth/internal-error
-    // Implementar Apple JS SDK nativo + signInWithCredential
-    console.log("🍎 [APPLE-RESEARCH] Implementing native Apple JS SDK approach");
-    
-    // Funciones auxiliares para nonce y state
-    const generateNonce = () => {
-      const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
-      let result = '';
-      let remainingLength = 32;
-      while (remainingLength > 0) {
-        const randoms = new Uint8Array(remainingLength);
-        crypto.getRandomValues(randoms);
-        randoms.forEach((randomByte) => {
-          if (remainingLength === 0) return;
-          if (randomByte < charset.length) {
-            result += charset[randomByte];
-            remainingLength--;
-          }
-        });
-      }
-      return result;
-    };
-    
-    // STRATEGY 1: Try native Apple JS SDK first
     try {
-      if (typeof window !== 'undefined' && window.AppleID) {
-        console.log("🍎 [APPLE-NATIVE] Using Apple JS SDK directly");
-        
-        const rawNonce = generateNonce();
-        
-        // Hash nonce for Apple (they require SHA256)
-        const encoder = new TextEncoder();
-        const data = encoder.encode(rawNonce);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const hashedNonce = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        
-        // Call Apple's native authentication
-        const appleCredential = await window.AppleID.auth.signIn({
-          requestedScopes: ['name', 'email'],
-          nonce: hashedNonce,
-          state: Math.random().toString(36).substring(2, 15)
-        });
-        
-        console.log("🍎 [APPLE-NATIVE] Apple authentication successful");
-        
-        // Convert to Firebase credential
-        const credential = provider.credential({
-          idToken: appleCredential.authorization.id_token,
-          rawNonce: rawNonce,  // Use raw nonce for Firebase!
-        });
-        
-        // Authenticate with Firebase
-        const result = await signInWithCredential(auth, credential);
-        console.log("✅ [APPLE-SUCCESS] Native Apple + Firebase successful:", result.user.email);
-        return result.user;
-      }
-    } catch (nativeError: any) {
-      console.log("🍎 [APPLE-NATIVE] Native Apple failed, trying Firebase popup:", nativeError);
-    }
-    
-    // STRATEGY 2: Fallback to Firebase popup (no redirect!)
-    try {
-      console.log("🍎 [APPLE-POPUP] Attempting Firebase popup");
+      // Intentar popup primero
+      console.log("🍎 [APPLE-AUTH] Intentando popup...");
       const result = await signInWithPopup(auth, provider);
+      console.log("✅ [APPLE-AUTH] Autenticación exitosa:", result.user.email);
+      return result.user;
       
-      if (result && result.user) {
-        console.log("✅ [APPLE-POPUP] Firebase popup successful:", result.user.email);
-        return result.user;
-      }
     } catch (popupError: any) {
-      console.log("❌ [APPLE-POPUP] Firebase popup failed:", popupError.code);
+      console.log("⚠️ [APPLE-AUTH] Popup falló, intentando redirección:", popupError.code);
       
-      // Handle specific popup errors with helpful messages
-      if (popupError.code === 'auth/popup-blocked') {
-        throw new Error("Popup bloqueado. Permite popups para esta página y reintenta.");
-      } else if (popupError.code === 'auth/popup-closed-by-user') {
-        throw new Error("Ventana de Apple cerrada. Reintenta el proceso de autenticación.");
-      } else if (popupError.code === 'auth/unauthorized-domain') {
-        console.error("🍎 [APPLE-CONFIG] Domain not authorized");
-        throw new Error(`Apple: Dominio no autorizado. Configura en Apple Developer Console.`);
+      // Si el popup falla, intentar redirección
+      if (popupError.code === 'auth/popup-blocked' || 
+          popupError.code === 'auth/popup-closed-by-user') {
+        
+        console.log("🍎 [APPLE-AUTH] Usando redirección como fallback");
+        await signInWithRedirect(auth, provider);
+        // No retornamos nada aquí porque la redirección manejará el resultado
+        return null;
       }
       
+      // Para otros errores, relanzar
       throw popupError;
     }
     
   } catch (error: any) {
-    console.error("🍎 [APPLE-AUTH] Error en Apple Sign-In:", error);
+    console.error("❌ [APPLE-AUTH] Error:", error);
     
-    // Mapear errores específicos de Apple con soluciones
+    // Manejar errores específicos con mensajes claros
     if (error.code === 'auth/unauthorized-domain') {
-      console.error("🍎 [APPLE-FIX] SOLUTION: Add domain to Firebase Console and Apple Developer Console");
-      console.error("🍎 [APPLE-FIX] Domain to add:", window.location.hostname);
-      throw new Error(`Apple: Dominio no autorizado: ${window.location.hostname}. Verifica configuración.`);
-    } else if (error.code === 'auth/invalid-oauth-provider') {
-      throw new Error("Apple Sign-In no habilitado en Firebase Console. Configura proveedor Apple.");
+      throw new Error("Dominio no autorizado. Contacta al administrador para configurar Apple Auth.");
+    } else if (error.code === 'auth/popup-blocked') {
+      throw new Error("Popup bloqueado. Permite popups y reintenta.");
+    } else if (error.code === 'auth/popup-closed-by-user') {
+      throw new Error("Autenticación cancelada. Reintenta el proceso.");
     } else if (error.code === 'auth/network-request-failed') {
-      throw new Error("Error de conexión. Verifica tu internet e intenta nuevamente.");
+      throw new Error("Error de conexión. Verifica tu internet.");
     } else if (error.code === 'auth/internal-error') {
-      console.error("🍎 [APPLE-FIX] Internal error - Apple provider may not be configured");
-      throw new Error("Apple Sign-In no configurado. Habilita en Firebase Console y Apple Developer.");
+      throw new Error("Apple Sign-In no está disponible en este momento. Intenta con Google o email/contraseña.");
+    } else {
+      throw new Error("Apple Sign-In no está disponible en este momento. Intenta con Google o email/contraseña.");
     }
-    
-    // Error genérico
-    throw new Error(error.message || "No se pudo conectar con Apple ID. Intenta con Google o email/contraseña.");
   }
 };
 
