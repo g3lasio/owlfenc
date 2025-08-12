@@ -83,6 +83,11 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
+// 🔧 STRIPE ERROR HANDLER
+window.addEventListener('stripe-load-error', (event: any) => {
+  console.warn('🔧 [STRIPE-ERROR] Stripe loading failed, payments disabled:', event.detail?.error);
+});
+
 // Componente para páginas protegidas
 type ProtectedRouteProps = {
   component: React.ComponentType<any>;

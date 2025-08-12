@@ -12,31 +12,15 @@ import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
+import { getStripe } from '@/lib/stripe';
 import { 
   Calculator, FileText, CreditCard, CheckCircle, Clock, 
   ArrowRight, DollarSign, Users, Calendar, Send, 
   Apple, Smartphone, Mail, Receipt, Star
 } from 'lucide-react';
 
-// 🔧 FIX: Safe Stripe loading with error handling
-const getStripePromise = () => {
-  const stripeKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
-  
-  if (!stripeKey) {
-    console.warn('🔧 [STRIPE-FIX] VITE_STRIPE_PUBLIC_KEY not found - Stripe payments disabled');
-    return null;
-  }
-  
-  try {
-    return loadStripe(stripeKey);
-  } catch (error) {
-    console.warn('🔧 [STRIPE-FIX] Failed to load Stripe.js:', error);
-    return null;
-  }
-};
-
-const stripePromise = getStripePromise();
+// 🔧 CENTRALIZED STRIPE LOADING
+const stripePromise = getStripe();
 
 interface QuickFlowData {
   // Client Info

@@ -6,28 +6,12 @@ import {
   useElements 
 } from "@stripe/react-stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { getStripe } from "@/lib/stripe";
 
-// 🔧 FIX: Safe Stripe loading with error handling
-const getStripePromise = () => {
-  const stripeKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
-  
-  if (!stripeKey) {
-    console.warn('🔧 [STRIPE-FIX] VITE_STRIPE_PUBLIC_KEY not found - Stripe payments disabled');
-    return null;
-  }
-  
-  try {
-    return loadStripe(stripeKey);
-  } catch (error) {
-    console.warn('🔧 [STRIPE-FIX] Failed to load Stripe.js:', error);
-    return null;
-  }
-};
-
-const stripePromise = getStripePromise();
+// 🔧 CENTRALIZED STRIPE LOADING
+const stripePromise = getStripe();
 
 // Estilos para CardElement
 const cardElementStyle = {
