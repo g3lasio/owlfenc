@@ -958,6 +958,11 @@ console.log('🔐 [OTP-AUTH] Rutas de autenticación OTP registradas en /api/otp
 app.use("/api/oauth", oauthConfigRoutes);
 console.log('🔧 [OAUTH-CONFIG] Rutas de configuración OAuth registradas en /api/oauth');
 
+// 🔀 Registrar rutas OAuth directas (bypass Firebase Console)
+import oauthDirectRoutes from './routes/oauth-direct';
+app.use("/api/oauth-direct", oauthDirectRoutes);
+console.log('🔀 [OAUTH-DIRECT] Rutas OAuth directas registradas en /api/oauth-direct');
+
 // Registrar rutas de tokens personalizados
 import customTokenRoutes from './routes/custom-token-routes';
 app.use('/api/auth', customTokenRoutes);

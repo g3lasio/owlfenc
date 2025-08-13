@@ -35,9 +35,11 @@ import {
   RiCheckboxCircleLine,
 } from "react-icons/ri";
 import { useAuth } from "@/contexts/AuthContext";
+import { processOAuthToken, checkForOAuthToken } from "@/lib/oauth-token-handler";
 
 import OTPAuth from "@/components/auth/OTPAuth";
 import { useTranslation } from "react-i18next";
+import { useEffect } from "react";
 
 // Declaramos el hook de traducción para usar en los esquemas
 const { t } = { t: (key: string) => key }; // Inicialización temporal, se sobrescribirá con el hook real
@@ -87,6 +89,36 @@ export default function AuthPage() {
   const cardRef = useRef<HTMLDivElement>(null);
   const successRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation(); // Obtenemos la función de traducción
+  
+  // Procesar tokens OAuth al cargar la página
+  useEffect(() => {
+    const handleOAuthReturn = async () => {
+      try {
+        const hasToken = await checkForOAuthToken();
+        if (hasToken) {
+          console.log('🔄 [OAUTH-RETURN] Procesando token OAuth...');
+          const user = await processOAuthToken();
+          if (user) {
+            console.log('✅ [OAUTH-RETURN] Usuario autenticado via OAuth:', user.email);
+            toast({
+              title: "Autenticación exitosa",
+              description: "Te has autenticado correctamente",
+            });
+            showSuccessEffect();
+          }
+        }
+      } catch (error: any) {
+        console.error('❌ [OAUTH-RETURN] Error:', error);
+        toast({
+          title: "Error de autenticación",
+          description: error.message || "Error procesando autenticación",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    handleOAuthReturn();
+  }, []);
 
   // Configurar el formulario de login
   const loginForm = useForm<LoginFormValues>({

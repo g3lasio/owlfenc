@@ -255,27 +255,25 @@ const initializeOAuthProviders = async () => {
     
     const config = await getOAuthConfig();
     
-    // Google Provider
+    // Google Provider - solo configurar si está habilitado
     let googleProvider = null;
     if (config.google.enabled && config.google.clientId) {
       googleProvider = new GoogleAuthProvider();
       googleProvider.addScope('email');
       googleProvider.addScope('profile');
       googleProvider.setCustomParameters({
-        'prompt': 'select_account',
-        'client_id': config.google.clientId
+        'prompt': 'select_account'
+        // NO incluir client_id aquí - debe estar en Firebase Console
       });
     }
     
-    // Apple Provider  
+    // Apple Provider - solo configurar si está habilitado  
     let appleProvider = null;
     if (config.apple.enabled && config.apple.clientId) {
       appleProvider = new OAuthProvider('apple.com');
       appleProvider.addScope('email');
       appleProvider.addScope('name');
-      appleProvider.setCustomParameters({
-        'client_id': config.apple.clientId
-      });
+      // NO incluir client_id aquí - debe estar en Firebase Console
     }
     
     oauthConfigCache = { googleProvider, appleProvider, config };
@@ -981,17 +979,27 @@ export const loginUser = async (email: string, password: string) => {
 
 // Espacio reservado para comentarios
 
-// Iniciar sesión con Google - IMPLEMENTACIÓN SIMPLIFICADA Y ROBUSTA
+// Iniciar sesión con Google - IMPLEMENTACIÓN BYPASS FIREBASE CONSOLE
 export const loginWithGoogle = async () => {
   try {
-    // Inicializar proveedores OAuth dinámicamente
-    const { googleProvider, config } = await initializeOAuthProviders();
+    console.log("🔵 [GOOGLE-AUTH] Iniciando autenticación bypass...");
     
-    if (!googleProvider || !config?.google?.enabled) {
+    // Verificar si OAuth está configurado
+    const { config } = await initializeOAuthProviders();
+    
+    if (!config?.google?.enabled) {
       throw new Error('Google Sign-In no está configurado. Contacta al administrador.');
     }
     
-    // Usar proveedor configurado desde el servidor
+    // Usar OAuth directo para evitar auth/internal-error
+    const currentUrl = window.location.origin;
+    const oauthUrl = `${currentUrl}/api/oauth-direct/google?state=login`;
+    
+    console.log("🔵 [GOOGLE-AUTH] Redirigiendo a OAuth directo:", oauthUrl);
+    window.location.href = oauthUrl;
+    
+    // Esta función no retorna porque redirige
+    return null;
     console.log("🔵 [GOOGLE-AUTH] Iniciando autenticación con Google");
     console.log("🔧 [GOOGLE-AUTH] Configuración de Firebase Auth:", {
       currentUser: auth.currentUser ? 'autenticado' : 'no autenticado',
@@ -1146,67 +1154,28 @@ const initReplAuth = () => {
   });
 };
 
-// Iniciar sesión con Apple - con configuración dinámica OAuth
+// Iniciar sesión con Apple - IMPLEMENTACIÓN BYPASS FIREBASE CONSOLE
 export const loginWithApple = async () => {
   try {
-    // Inicializar proveedores OAuth dinámicamente
-    const { appleProvider, config } = await initializeOAuthProviders();
+    console.log("🍎 [APPLE-AUTH] Iniciando autenticación bypass...");
     
-    if (!appleProvider || !config?.apple?.enabled) {
+    // Verificar si OAuth está configurado
+    const { config } = await initializeOAuthProviders();
+    
+    if (!config?.apple?.enabled) {
       throw new Error('Apple Sign-In no está configurado. Contacta al administrador.');
     }
     
-    console.log("🍎 [APPLE-AUTH] Iniciando autenticación con Apple");
-    console.log("🔧 [APPLE-AUTH] Configuración de Firebase Auth:", {
-      currentUser: auth.currentUser ? 'autenticado' : 'no autenticado',
-      authDomain: firebaseConfig.authDomain,
-      apiKey: firebaseConfig.apiKey ? 'presente' : 'ausente'
-    });
+    // Usar OAuth directo para evitar auth/internal-error
+    const currentUrl = window.location.origin;
+    const oauthUrl = `${currentUrl}/api/oauth-direct/apple?state=login`;
     
-    // Verificar que Firebase esté inicializado correctamente
-    if (!auth) {
-      throw new Error("Firebase Auth no está inicializado");
-    }
+    console.log("🍎 [APPLE-AUTH] Redirigiendo a OAuth directo:", oauthUrl);
+    window.location.href = oauthUrl;
     
-    // Usar el proveedor configurado dinámicamente
-    const provider = appleProvider;
-    
-    console.log("🍎 [APPLE-AUTH] Proveedor configurado, intentando popup...");
-    
-    try {
-      // Intentar popup con timeout
-      const result = await Promise.race([
-        signInWithPopup(auth, provider),
-        new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('timeout')), 30000)
-        )
-      ]);
-      
-      console.log("✅ [APPLE-AUTH] Autenticación exitosa:", result.user.email);
-      return result.user;
-      
-    } catch (popupError: any) {
-      console.log("⚠️ [APPLE-AUTH] Popup falló:", popupError.code, popupError.message);
-      
-      // Manejar casos específicos de popup
-      if (popupError.code === 'auth/popup-blocked' || 
-          popupError.code === 'auth/popup-closed-by-user' ||
-          popupError.message === 'timeout') {
-        
-        console.log("🍎 [APPLE-AUTH] Usando redirección como fallback");
-        await signInWithRedirect(auth, provider);
-        return null; // La redirección manejará el resultado
-      }
-      
-      // Para errores internos de Apple, usar manejo especial
-      if (popupError.code === 'auth/internal-error') {
-        console.error("🔧 [APPLE-AUTH] Error interno detectado - posible configuración OAuth");
-        throw new Error("Apple Sign-In no está configurado correctamente. Intenta con Google o email/contraseña.");
-      }
-      
-      // Relanzar otros errores
-      throw popupError;
-    }
+    // Esta función no retorna porque redirige
+    return null;
+
     
   } catch (error: any) {
     console.error("❌ [APPLE-AUTH] Error completo:", {
