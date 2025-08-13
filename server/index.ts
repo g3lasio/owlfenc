@@ -6,6 +6,7 @@ import multer from "multer";
 import pdfParse from "pdf-parse";
 import centralizedEmailRoutes from "./routes/centralized-email-routes-fix";
 import otpRoutes from "./routes/otp-routes";
+import oauthConfigRoutes from "./routes/oauth-config";
 import { setupProductionRoutes, setupProductionErrorHandlers } from "./production-setup";
 
 // 🛡️ SECURITY MIDDLEWARE - Applied immediately for maximum protection
@@ -952,6 +953,10 @@ console.log('📧 [CENTRALIZED-EMAIL] Rutas registradas en /api/centralized-emai
 // 🔐 Registrar rutas de autenticación OTP
 app.use("/api/otp", otpRoutes);
 console.log('🔐 [OTP-AUTH] Rutas de autenticación OTP registradas en /api/otp');
+
+// 🔧 Registrar rutas de configuración OAuth
+app.use("/api/oauth", oauthConfigRoutes);
+console.log('🔧 [OAUTH-CONFIG] Rutas de configuración OAuth registradas en /api/oauth');
 
 // Registrar rutas de tokens personalizados
 import customTokenRoutes from './routes/custom-token-routes';

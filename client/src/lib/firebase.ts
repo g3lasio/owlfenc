@@ -243,7 +243,50 @@ export const checkEmailVerification = async () => {
   }
 };
 
-// Configuración correcta del proveedor de Apple - versión simplificada
+// Configuración dinámica de proveedores OAuth basada en secretos del servidor
+import { getOAuthConfig } from './oauth-config';
+
+let oauthConfigCache: any = null;
+
+// Función para inicializar proveedores OAuth dinámicamente
+const initializeOAuthProviders = async () => {
+  try {
+    if (oauthConfigCache) return oauthConfigCache;
+    
+    const config = await getOAuthConfig();
+    
+    // Google Provider
+    let googleProvider = null;
+    if (config.google.enabled && config.google.clientId) {
+      googleProvider = new GoogleAuthProvider();
+      googleProvider.addScope('email');
+      googleProvider.addScope('profile');
+      googleProvider.setCustomParameters({
+        'prompt': 'select_account',
+        'client_id': config.google.clientId
+      });
+    }
+    
+    // Apple Provider  
+    let appleProvider = null;
+    if (config.apple.enabled && config.apple.clientId) {
+      appleProvider = new OAuthProvider('apple.com');
+      appleProvider.addScope('email');
+      appleProvider.addScope('name');
+      appleProvider.setCustomParameters({
+        'client_id': config.apple.clientId
+      });
+    }
+    
+    oauthConfigCache = { googleProvider, appleProvider, config };
+    return oauthConfigCache;
+  } catch (error) {
+    console.error('❌ [OAUTH-INIT] Error inicializando proveedores:', error);
+    return { googleProvider: null, appleProvider: null, config: null };
+  }
+};
+
+// Función legacy para compatibilidad
 const createAppleProvider = () => {
   const provider = new OAuthProvider('apple.com');
   provider.addScope('email');
@@ -941,6 +984,14 @@ export const loginUser = async (email: string, password: string) => {
 // Iniciar sesión con Google - IMPLEMENTACIÓN SIMPLIFICADA Y ROBUSTA
 export const loginWithGoogle = async () => {
   try {
+    // Inicializar proveedores OAuth dinámicamente
+    const { googleProvider, config } = await initializeOAuthProviders();
+    
+    if (!googleProvider || !config?.google?.enabled) {
+      throw new Error('Google Sign-In no está configurado. Contacta al administrador.');
+    }
+    
+    // Usar proveedor configurado desde el servidor
     console.log("🔵 [GOOGLE-AUTH] Iniciando autenticación con Google");
     console.log("🔧 [GOOGLE-AUTH] Configuración de Firebase Auth:", {
       currentUser: auth.currentUser ? 'autenticado' : 'no autenticado',
@@ -953,19 +1004,10 @@ export const loginWithGoogle = async () => {
       throw new Error("Firebase Auth no está inicializado");
     }
     
-    // Configurar el proveedor de Google con configuración robusta
-    const provider = new GoogleAuthProvider();
+    // Usar el proveedor configurado dinámicamente
+    const provider = googleProvider;
     
-    // Configurar scopes básicos necesarios
-    provider.addScope('email');
-    provider.addScope('profile');
-    
-    // Configurar parámetros personalizados
-    provider.setCustomParameters({
-      prompt: 'select_account',
-      access_type: 'online',
-      include_granted_scopes: true
-    });
+    // El proveedor ya está configurado con los scopes y parámetros necesarios
     
     console.log("🔵 [GOOGLE-AUTH] Proveedor configurado, intentando popup...");
     
@@ -1104,9 +1146,16 @@ const initReplAuth = () => {
   });
 };
 
-// Iniciar sesión con Apple - IMPLEMENTACIÓN SIMPLIFICADA Y ROBUSTA
+// Iniciar sesión con Apple - con configuración dinámica OAuth
 export const loginWithApple = async () => {
   try {
+    // Inicializar proveedores OAuth dinámicamente
+    const { appleProvider, config } = await initializeOAuthProviders();
+    
+    if (!appleProvider || !config?.apple?.enabled) {
+      throw new Error('Apple Sign-In no está configurado. Contacta al administrador.');
+    }
+    
     console.log("🍎 [APPLE-AUTH] Iniciando autenticación con Apple");
     console.log("🔧 [APPLE-AUTH] Configuración de Firebase Auth:", {
       currentUser: auth.currentUser ? 'autenticado' : 'no autenticado',
@@ -1119,17 +1168,8 @@ export const loginWithApple = async () => {
       throw new Error("Firebase Auth no está inicializado");
     }
     
-    // Configurar el proveedor de Apple con configuración robusta
-    const provider = new OAuthProvider('apple.com');
-    
-    // Configurar scopes necesarios
-    provider.addScope('email');
-    provider.addScope('name');
-    
-    // Configurar parámetros personalizados para Apple
-    provider.setCustomParameters({
-      locale: 'es'
-    });
+    // Usar el proveedor configurado dinámicamente
+    const provider = appleProvider;
     
     console.log("🍎 [APPLE-AUTH] Proveedor configurado, intentando popup...");
     
