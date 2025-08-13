@@ -860,32 +860,25 @@ export default function AuthPage() {
             </div>
           </CardContent>
 
-          <CardFooter className="px-6 py-4 flex items-center justify-between border-t border-primary/20 bg-muted/10">
+          <CardFooter className="px-6 py-4 flex items-center justify-center border-t border-primary/20 bg-muted/10">
             {authMode === "login" ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary/80"
-                    onClick={() => setLoginMethod(loginMethod === "email" ? "otp" : "email")}
-                  >
-                    {loginMethod === "email" ? (
-                      <>
-                        <RiShieldKeyholeLine className="h-4 w-4" />
-                        <span>Código OTP</span>
-                      </>
-                    ) : (
-                      <>
-                        <HiMail className="h-4 w-4" />
-                        <span>Contraseña</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-                <div className="text-xs text-muted-foreground/50">
-                  {loginMethod === "email" ? "Email + Contraseña" : "Solo usuarios registrados"}
-                </div>
-              </>
+              <button
+                type="button"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-medium transition-all duration-300 border border-primary/30"
+                onClick={() => setLoginMethod(loginMethod === "email" ? "otp" : "email")}
+              >
+                {loginMethod === "email" ? (
+                  <>
+                    <RiShieldKeyholeLine className="h-5 w-5" />
+                    <span>Cambiar a Código OTP</span>
+                  </>
+                ) : (
+                  <>
+                    <HiMail className="h-5 w-5" />
+                    <span>Cambiar a Contraseña</span>
+                  </>
+                )}
+              </button>
             ) : (
               <div></div>
             )}
