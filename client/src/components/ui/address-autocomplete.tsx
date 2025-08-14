@@ -46,13 +46,69 @@ export function AddressAutocomplete({
     setInternalValue(value);
   }, [value]);
 
-  // SOLUCIÓN TEMPORAL: Deshabilitar completamente Mapbox hasta que se configure correctamente
+  // Función para buscar direcciones con Mapbox - CON MANEJO ROBUSTO DE ERRORES
   const searchAddresses = async (query: string) => {
-    // TEMPORALMENTE DESHABILITADO - Solo permitir entrada manual sin autocompletado
-    setSuggestions([]);
-    setShowSuggestions(false);
-    setIsLoading(false);
-    return;
+    // Validaciones iniciales
+    if (!query.trim() || query.length < 3) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    if (!token || !hasMapboxToken) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      // Crear controller para timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      // Fetch con manejo completo de errores
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?` +
+        `access_token=${token}&` +
+        `country=US&` +
+        `types=address,poi&` +
+        `limit=5&` +
+        `language=es`,
+        { 
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json'
+          }
+        }
+      );
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data && data.features && Array.isArray(data.features)) {
+          setSuggestions(data.features);
+          setShowSuggestions(data.features.length > 0);
+        } else {
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
+      } else {
+        // Error HTTP - fallar silenciosamente
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    } catch (error) {
+      // MANEJO SILENCIOSO DE ERRORES - No generar ruido en consola
+      setSuggestions([]);
+      setShowSuggestions(false);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Manejar cambios en el input con debounce - MEJORADO
