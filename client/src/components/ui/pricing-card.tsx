@@ -40,11 +40,11 @@ export function PricingCard({
   const currentPrice = isYearly ? yearlyPrice / 100 : price / 100;
   const period = isYearly ? "/año" : "/mes";
 
-  // Función para formatear precio igual que en Billing
+  // Función para formatear precio en dólares estadounidenses
   const formatPrice = (amount: number): string => {
-    return new Intl.NumberFormat("es-MX", {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "MXN",
+      currency: "USD",
     }).format(amount);
   };
 

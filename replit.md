@@ -71,11 +71,11 @@ An advanced AI-powered legal document and permit management platform with intell
   - Added proper TypeScript typing for AddressAutocomplete component ✅
   - **Impact**: Company Profile now displays real subscription plan name and authenticated user data ✅
 - **BILLING-SUBSCRIPTION SYNCHRONIZATION (Aug 14, 2025)**: Comprehensive currency format and pricing consistency fix:
-  - `pricing-card.tsx`: Added Mexican peso (MXN) formatting to match Billing page display ✅
-  - **Before**: Subscription showed "$49.99" while Billing showed "MX$49.99" - causing user confusion ✅
-  - **After**: Both pages now consistently display "MX$49.99" format for all pricing ✅
+  - `pricing-card.tsx`: Updated to USD formatting to match subscription pricing requirements ✅
+  - `Billing.tsx`: Changed from MXN to USD formatting per user specifications ✅
+  - **Currency Standard**: All pricing now displays in US Dollars ($49.99) as per subscription page setup ✅
   - **Features Consistency**: Both pages use same API data source and display identical plan benefits ✅
-  - **Impact**: Perfect synchronization between Billing and Subscription pages - zero discrepancies ✅
+  - **Impact**: Perfect synchronization between Billing and Subscription pages in USD currency ✅
 
 ### Core Features & Design Patterns
 - **User Authentication & Authorization**: Enhanced OAuth, email/password authentication, and a robust subscription-based permission system with defined user roles (`primo_chambeador`, `mero_patron`, `master_contractor`, `trial_master`). Features include secure registration (defaulting to free plan), automatic subscription degradation, and real-time usage limit enforcement via middleware (`requireSubscriptionLevel`, `trackAndValidateUsage`, `requirePremiumFeature`).

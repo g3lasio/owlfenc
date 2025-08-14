@@ -149,11 +149,11 @@ export default function Billing() {
     }).format(date);
   };
 
-  // Función para formatear precio
+  // Función para formatear precio en dólares estadounidenses
   const formatAmount = (amount: number): string => {
-    return new Intl.NumberFormat("es-MX", {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "MXN",
+      currency: "USD",
     }).format(amount / 100);
   };
 
