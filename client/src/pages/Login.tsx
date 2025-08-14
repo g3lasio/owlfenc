@@ -858,16 +858,17 @@ export default function AuthPage() {
             </div>
           </CardContent>
 
-          <CardFooter className="px-6 py-4 flex items-center justify-between border-t border-primary/20 bg-muted/10">
+          <CardFooter className="px-6 py-3 flex items-center justify-center gap-3 border-t border-primary/20 bg-muted/10">
             {authMode === "login" && loginMethod === "email" ? (
               <>
                 <button
                   type="button"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-medium transition-all duration-300 border border-primary/30"
+                  className="flex items-center gap-1 px-3 py-2 rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-sm font-medium transition-all duration-300 border border-primary/30"
                   onClick={() => setLoginMethod("otp")}
+                  title="Switch to OTP Code"
                 >
-                  <RiShieldKeyholeLine className="h-5 w-5" />
-                  <span>Switch to OTP Code</span>
+                  <RiShieldKeyholeLine className="h-4 w-4" />
+                  <span>OTP</span>
                 </button>
                 
                 <BiometricLoginButton
@@ -880,17 +881,18 @@ export default function AuthPage() {
                   }}
                   email={loginForm.watch('email')}
                   disabled={isLoading}
-                  className="max-w-xs"
+                  className="flex items-center gap-1 px-3 py-2 text-sm min-w-0"
                 />
               </>
             ) : authMode === "login" && loginMethod === "otp" ? (
               <button
                 type="button"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-medium transition-all duration-300 border border-primary/30 mx-auto"
+                className="flex items-center gap-1 px-3 py-2 rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-sm font-medium transition-all duration-300 border border-primary/30"
                 onClick={() => setLoginMethod("email")}
+                title="Switch to Password"
               >
-                <HiMail className="h-5 w-5" />
-                <span>Switch to Password</span>
+                <HiMail className="h-4 w-4" />
+                <span>Password</span>
               </button>
             ) : (
               <div></div>

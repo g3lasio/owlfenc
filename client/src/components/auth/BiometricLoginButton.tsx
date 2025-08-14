@@ -147,25 +147,39 @@ export function BiometricLoginButton({
     }
   };
 
+  const isCompactMode = className?.includes('min-w-0');
+  
   return (
     <Button
       type="button"
       variant="outline"
-      className={`w-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 ${className}`}
+      className={isCompactMode 
+        ? `rounded-md bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 transition-all duration-300 ${className}`
+        : `w-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 ${className}`
+      }
       onClick={handleBiometricLogin}
       disabled={isLoading || disabled}
+      title={isCompactMode ? `Sign in with ${methodDescription}` : undefined}
     >
       {isLoading ? (
         <>
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Authenticating...
+          <Loader2 className="w-4 h-4 animate-spin" />
+          {!isCompactMode && <span className="ml-2">Authenticating...</span>}
         </>
       ) : (
         <>
           {getIcon()}
-          <span className="ml-2">
-            Sign in with {methodDescription}
-          </span>
+          {isCompactMode ? (
+            <span className="ml-1 text-sm">
+              {methodDescription === 'Windows Hello' ? 'Hello' : 
+               methodDescription === 'Touch ID' ? 'Touch' :
+               methodDescription === 'Face ID' ? 'Face' : 'Bio'}
+            </span>
+          ) : (
+            <span className="ml-2">
+              Sign in with {methodDescription}
+            </span>
+          )}
         </>
       )}
     </Button>
