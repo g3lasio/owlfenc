@@ -69,31 +69,37 @@ export function AddressAutocomplete({
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 segundo timeout reducido
 
-      // NUEVA ESTRATEGIA: Envolver todo en una promesa que NUNCA falle
-      const fetchWithErrorSupression = async () => {
-        try {
-          const response = await fetch(
-            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?` +
-            `access_token=${token}&` +
-            `country=US&` +
-            `types=address,poi&` +
-            `limit=5&` +
-            `language=es`,
-            { 
-              signal: controller.signal,
-              headers: {
-                'Accept': 'application/json'
-              }
+      // ESTRATEGIA FINAL: Función que NUNCA puede fallar
+      let response = null;
+      
+      try {
+        // Usar setTimeout para evitar cualquier stack trace
+        response = await new Promise((resolve) => {
+          setTimeout(async () => {
+            try {
+              const fetchResult = await window.fetch(
+                `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?` +
+                `access_token=${token}&` +
+                `country=US&` +
+                `types=address,poi&` +
+                `limit=5&` +
+                `language=es`,
+                { 
+                  signal: controller.signal,
+                  headers: {
+                    'Accept': 'application/json'
+                  }
+                }
+              );
+              resolve(fetchResult);
+            } catch {
+              resolve(null);
             }
-          );
-          return response;
-        } catch (fetchError) {
-          // SILENCIAR COMPLETAMENTE - sin ningún log
-          return null;
-        }
-      };
-
-      const response = await fetchWithErrorSupression();
+          }, 0);
+        });
+      } catch {
+        response = null;
+      }
 
       clearTimeout(timeoutId);
 
@@ -150,10 +156,15 @@ export function AddressAutocomplete({
 
     // Buscar después de 1000ms de inactividad (aumentado aún más)
     debounceTimer.current = setTimeout(() => {
-      // ENVOLVER EN PROMESA QUE NUNCA PUEDE FALLAR
-      Promise.resolve().then(() => searchAddresses(newValue)).catch(() => {
-        // Completamente silencioso - sin logs ni nada
-      });
+      // ENVOLVER EN MÚLTIPLES CAPAS DE PROTECCIÓN
+      try {
+        Promise.resolve()
+          .then(() => Promise.resolve(searchAddresses(newValue)))
+          .catch(() => {})
+          .finally(() => {});
+      } catch {
+        // Silencioso
+      }
     }, 1000);
   };
 
