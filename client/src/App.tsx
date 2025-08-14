@@ -45,9 +45,7 @@ import SecuritySettings from "@/pages/SecuritySettings";
 import CyberpunkContractGenerator from "@/pages/CyberpunkContractGenerator";
 import { setupGlobalErrorHandlers } from "@/lib/error-handlers";
 
-// CAPTURAR TODOS LOS ERRORES ANTES DE QUE LLEGUEN AL RUNTIME ERROR PLUGIN
-window.addEventListener('error', (e) => e.preventDefault());
-window.addEventListener('unhandledrejection', (e) => e.preventDefault());
+
 import LegalContractEngineFixed from "@/pages/LegalContractEngineFixed";
 import UnifiedContractManager from "@/pages/UnifiedContractManager";
 import SmartContractWizard from "@/pages/SmartContractWizard";

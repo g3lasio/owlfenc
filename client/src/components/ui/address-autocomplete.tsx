@@ -46,94 +46,13 @@ export function AddressAutocomplete({
     setInternalValue(value);
   }, [value]);
 
-  // Función para buscar direcciones con Mapbox - MEJORADA
+  // SOLUCIÓN TEMPORAL: Deshabilitar completamente Mapbox hasta que se configure correctamente
   const searchAddresses = async (query: string) => {
-    // Validaciones iniciales
-    if (!query.trim() || query.length < 3) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-
-    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
-    if (!token || !hasMapboxToken) {
-      // Sin logs - solo limpiar estado  
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-
-    setIsLoading(true);
-    
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 segundo timeout reducido
-
-      // ESTRATEGIA FINAL: Función que NUNCA puede fallar
-      let response = null;
-      
-      try {
-        // Usar setTimeout para evitar cualquier stack trace
-        response = await new Promise((resolve) => {
-          setTimeout(async () => {
-            try {
-              const fetchResult = await window.fetch(
-                `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?` +
-                `access_token=${token}&` +
-                `country=US&` +
-                `types=address,poi&` +
-                `limit=5&` +
-                `language=es`,
-                { 
-                  signal: controller.signal,
-                  headers: {
-                    'Accept': 'application/json'
-                  }
-                }
-              );
-              resolve(fetchResult);
-            } catch {
-              resolve(null);
-            }
-          }, 0);
-        });
-      } catch {
-        response = null;
-      }
-
-      clearTimeout(timeoutId);
-
-      // Si no hay respuesta (error silenciado), salir silenciosamente
-      if (!response) {
-        setSuggestions([]);
-        setShowSuggestions(false);
-        return;
-      }
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        if (data && data.features && Array.isArray(data.features)) {
-          setSuggestions(data.features);
-          setShowSuggestions(data.features.length > 0);
-        } else {
-          // Sin logs - solo limpiar estado
-          setSuggestions([]);
-          setShowSuggestions(false);
-        }
-      } else {
-        // Sin logs - solo limpiar estado
-        setSuggestions([]);
-        setShowSuggestions(false);
-      }
-    } catch (error: any) {
-      // SILENCIAR COMPLETAMENTE todos los errores - no mostrar NADA en logs
-      // Solo limpiar el estado sin generar ruido
-      setSuggestions([]);
-      setShowSuggestions(false);
-    } finally {
-      setIsLoading(false);
-    }
+    // TEMPORALMENTE DESHABILITADO - Solo permitir entrada manual sin autocompletado
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setIsLoading(false);
+    return;
   };
 
   // Manejar cambios en el input con debounce - MEJORADO
@@ -156,15 +75,7 @@ export function AddressAutocomplete({
 
     // Buscar después de 1000ms de inactividad (aumentado aún más)
     debounceTimer.current = setTimeout(() => {
-      // ENVOLVER EN MÚLTIPLES CAPAS DE PROTECCIÓN
-      try {
-        Promise.resolve()
-          .then(() => Promise.resolve(searchAddresses(newValue)))
-          .catch(() => {})
-          .finally(() => {});
-      } catch {
-        // Silencioso
-      }
+      searchAddresses(newValue);
     }, 1000);
   };
 
