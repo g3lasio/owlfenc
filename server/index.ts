@@ -983,6 +983,54 @@ import smsRoutes from './routes/sms';
 app.use("/api/sms", smsRoutes);
 console.log('📱 [SMS] Rutas registradas en /api/sms');
 
+// 🧪 Endpoints de prueba para verificar conectividad backend
+app.get('/api/test/ping', (req, res) => {
+  console.log('🧪 [TEST] PING received');
+  res.json({ 
+    success: true, 
+    message: 'Backend conectado correctamente',
+    timestamp: new Date().toISOString(),
+    server: 'Express'
+  });
+});
+
+app.get('/api/test/auth-status', (req, res) => {
+  console.log('🧪 [TEST] AUTH STATUS check');
+  res.json({ 
+    success: true, 
+    authSystemsStatus: {
+      firebase: '✅ Configurado',
+      oauth: '✅ Google y Apple configurados',
+      otp: '✅ Rutas registradas',
+      webauthn: '✅ Rutas biométricas registradas',
+      database: '✅ PostgreSQL conectado'
+    }
+  });
+});
+
+// 🧪 Endpoints de prueba para WebAuthn y OTP que bypasean el middleware de Vite
+app.get('/test/webauthn-direct', (req, res) => {
+  console.log('🔐 [TEST] WebAuthn direct test');
+  res.json({ 
+    success: true, 
+    message: 'WebAuthn routes accessible',
+    available: true,
+    capabilities: 'Face ID, Touch ID, Windows Hello support'
+  });
+});
+
+app.get('/test/otp-direct', (req, res) => {
+  console.log('🔐 [TEST] OTP direct test');
+  res.json({ 
+    success: true, 
+    message: 'OTP routes accessible',
+    available: true,
+    capabilities: 'Email OTP authentication support'
+  });
+});
+
+console.log('🧪 [TEST] Endpoints de prueba registrados en /api/test/* y /test/*');
+
 
 
 

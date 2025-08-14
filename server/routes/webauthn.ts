@@ -6,7 +6,7 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import cbor from 'cbor';
-import { webauthnCredentials, users } from '../../shared/schema';
+import { webauthnCredentials, users } from '@shared/schema';
 import { db } from '../db';
 import { eq, and } from 'drizzle-orm';
 
@@ -39,7 +39,7 @@ router.post('/register/begin', async (req, res) => {
     }
 
     // Buscar usuario por email
-    const [user] = await db
+    const [user] = await db!
       .select()
       .from(users)
       .where(eq(users.email, email))
@@ -50,7 +50,7 @@ router.post('/register/begin', async (req, res) => {
     }
 
     // Verificar credenciales existentes
-    const existingCredentials = await db
+    const existingCredentials = await db!
       .select()
       .from(webauthnCredentials)
       .where(eq(webauthnCredentials.userId, user.id));
