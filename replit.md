@@ -64,6 +64,11 @@ An advanced AI-powered legal document and permit management platform with intell
   - `main.tsx`: Global interceptors for unhandled rejections, console.error, and console.warn silencing ✅
   - **Patterns Handled**: Failed to fetch, NetworkError, Request timeout, Firebase/Auth issues, WebSocket errors ✅
   - **Impact**: Complete elimination of annoying fetch errors in console - clean, spam-free logs ✅
+- **DYNAMIC PROFILE DATA FIX (Aug 14, 2025)**: Eliminated static/hardcoded values in Company Profile page:
+  - `Profile.tsx`: Replaced hardcoded "El Mero Patrón" with dynamic `userPlan?.name` from usePermissions ✅
+  - `Profile.tsx`: Replaced hardcoded "Gelasio Sanchez" fallback with real user data from authentication ✅
+  - Added proper TypeScript typing for AddressAutocomplete component ✅
+  - **Impact**: Company Profile now displays real subscription plan name and authenticated user data ✅
 
 ### Core Features & Design Patterns
 - **User Authentication & Authorization**: Enhanced OAuth, email/password authentication, and a robust subscription-based permission system with defined user roles (`primo_chambeador`, `mero_patron`, `master_contractor`, `trial_master`). Features include secure registration (defaulting to free plan), automatic subscription degradation, and real-time usage limit enforcement via middleware (`requireSubscriptionLevel`, `trackAndValidateUsage`, `requirePremiumFeature`).

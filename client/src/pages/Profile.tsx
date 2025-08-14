@@ -7,6 +7,8 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { useProfile } from "@/hooks/use-profile";
+import { usePermissions } from "@/contexts/PermissionContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -57,6 +59,8 @@ type CompanyInfoType = UserProfile;
 
 export default function Profile() {
   const { toast } = useToast();
+  const { currentUser } = useAuth();
+  const { userPlan, loading: permissionsLoading } = usePermissions();
   const {
     profile,
     isLoading: isLoadingProfile,
@@ -568,7 +572,11 @@ export default function Profile() {
                 ) : (
                   <div className="w-full h-full bg-gray-800 text-cyan-400 flex items-center justify-center rounded-full">
                     <span className="text-3xl font-medium font-['Quantico']">
-                      {companyInfo.ownerName ? companyInfo.ownerName.charAt(0) : "JC"}
+                      {companyInfo.ownerName 
+                        ? companyInfo.ownerName.charAt(0) 
+                        : currentUser?.displayName?.charAt(0) 
+                        || currentUser?.email?.charAt(0).toUpperCase() 
+                        || "U"}
                     </span>
                   </div>
                 )}
@@ -581,7 +589,7 @@ export default function Profile() {
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
                 <div>
                   <h1 className="text-2xl font-bold text-white font-['Quantico']">
-                    {companyInfo.ownerName || "Gelasio Sanchez"}
+                    {companyInfo.ownerName || currentUser?.displayName || currentUser?.email?.split('@')[0] || "Usuario"}
                   </h1>
                   <p className="text-gray-400 mt-1">
                     {companyInfo.company || "Contractor"}
@@ -590,7 +598,7 @@ export default function Profile() {
                 <div className="mt-2 sm:mt-0">
                   <div className="bg-gradient-to-r from-emerald-500 to-lime-600 text-black px-4 py-2 rounded-full font-medium text-sm inline-flex items-center">
                     <CheckCircle className="h-4 w-4 mr-1" />
-                    El Mero Patrón
+                    {permissionsLoading ? "Cargando..." : userPlan?.name || "Plan Básico"}
                   </div>
                 </div>
               </div>
@@ -928,7 +936,7 @@ export default function Profile() {
                       <AddressAutocomplete
                         label="Address"
                         value={companyInfo.address}
-                        onChange={(address, details) => {
+                        onChange={(address: string, details?: any) => {
                           setCompanyInfo((prev) => ({
                             ...prev,
                             address: address,
