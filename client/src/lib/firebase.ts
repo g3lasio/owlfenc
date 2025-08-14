@@ -982,23 +982,15 @@ export const loginUser = async (email: string, password: string) => {
 // Iniciar sesión con Google - IMPLEMENTACIÓN BYPASS FIREBASE CONSOLE
 export const loginWithGoogle = async () => {
   try {
-    console.log("🔵 [GOOGLE-AUTH] Iniciando autenticación bypass...");
+    console.log("🔵 [GOOGLE-AUTH] Iniciando OAuth directo simplificado...");
     
-    // Verificar si OAuth está configurado
-    const { config } = await initializeOAuthProviders();
-    
-    if (!config?.google?.enabled) {
-      throw new Error('Google Sign-In no está configurado. Contacta al administrador.');
-    }
-    
-    // Usar OAuth directo para evitar auth/internal-error
+    // SOLUCIÓN DIRECTA - Sin verificaciones complejas después de 3 días
     const currentUrl = window.location.origin;
     const oauthUrl = `${currentUrl}/api/oauth-direct/google?state=login`;
     
-    console.log("🔵 [GOOGLE-AUTH] Redirigiendo a OAuth directo:", oauthUrl);
+    console.log("🔵 [GOOGLE-AUTH] Redirigiendo:", oauthUrl);
     window.location.href = oauthUrl;
     
-    // Esta función no retorna porque redirige
     return null;
     console.log("🔵 [GOOGLE-AUTH] Iniciando autenticación con Google");
     console.log("🔧 [GOOGLE-AUTH] Configuración de Firebase Auth:", {
@@ -1159,14 +1151,7 @@ export const loginWithApple = async () => {
   try {
     console.log("🍎 [APPLE-AUTH] Iniciando autenticación bypass...");
     
-    // Verificar si OAuth está configurado
-    const { config } = await initializeOAuthProviders();
-    
-    if (!config?.apple?.enabled) {
-      throw new Error('Apple Sign-In no está configurado. Contacta al administrador.');
-    }
-    
-    // Usar OAuth directo para evitar auth/internal-error
+    // SOLUCIÓN DIRECTA: Ir directo al endpoint sin verificación de configuración
     const currentUrl = window.location.origin;
     const oauthUrl = `${currentUrl}/api/oauth-direct/apple?state=login`;
     

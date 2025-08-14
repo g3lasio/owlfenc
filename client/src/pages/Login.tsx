@@ -36,6 +36,7 @@ import {
 } from "react-icons/ri";
 import { useAuth } from "@/contexts/AuthContext";
 import { processOAuthToken, checkForOAuthToken } from "@/lib/oauth-token-handler";
+import { robustOAuthHandler } from "@/lib/simple-oauth";
 
 import OTPAuth from "@/components/auth/OTPAuth";
 import { useTranslation } from "react-i18next";
@@ -284,27 +285,15 @@ export default function AuthPage() {
       clearError();
       console.log("=== INICIANDO GOOGLE AUTH DESDE LOGIN PAGE ===");
       
-      const result = await loginWithGoogle();
+      await robustOAuthHandler('google');
       
-      if (result) {
-        // Autenticación exitosa inmediata
-        console.log("GOOGLE LOGIN EXITOSO");
-        
-        toast({
-          title: "Inicio de sesión exitoso",
-          description: "Has iniciado sesión correctamente con Google.",
-        });
-        
-        showSuccessEffect();
-      } else {
-        // Redirección iniciada
-        console.log("GOOGLE REDIRECCIÓN INICIADA");
-        
-        toast({
-          title: "Redirigiendo a Google",
-          description: "Se abrirá la página de autenticación de Google.",
-        });
-      }
+      // La función robustOAuthHandler maneja la redirección
+      console.log("GOOGLE REDIRECCIÓN INICIADA");
+      
+      toast({
+        title: "Redirigiendo a Google",
+        description: "Se abrirá la página de autenticación de Google.",
+      });
     } catch (err: any) {
       console.error("ERROR EN GOOGLE AUTH:", err);
       
@@ -345,27 +334,15 @@ export default function AuthPage() {
       console.log("Modo:", authMode);
       console.log("URL:", window.location.href);
 
-      const result = await loginWithApple();
+      await robustOAuthHandler('apple');
 
-      if (result) {
-        // Autenticación exitosa inmediata (modo desarrollo o popup exitoso)
-        console.log("LOGIN EXITOSO - Resultado inmediato");
-        
-        toast({
-          title: "Inicio de sesión exitoso",
-          description: "Has iniciado sesión correctamente con Apple ID.",
-        });
-
-        showSuccessEffect();
-      } else {
-        // Redirección iniciada
-        console.log("REDIRECCIÓN INICIADA - Procesando en nueva página");
-        
-        toast({
-          title: "Redirigiendo a Apple",
-          description: "Se abrirá la página de autenticación de Apple ID.",
-        });
-      }
+      // La función robustOAuthHandler maneja la redirección
+      console.log("REDIRECCIÓN INICIADA - Procesando en nueva página");
+      
+      toast({
+        title: "Redirigiendo a Apple",
+        description: "Se abrirá la página de autenticación de Apple ID.",
+      });
     } catch (err: any) {
       console.error("ERROR EN APPLE AUTH:", err);
 
