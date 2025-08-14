@@ -807,11 +807,18 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     logo: "",
   });
 
-  // Load data on mount
+  // Load data on mount - MEJORADO con manejo de errores
   useEffect(() => {
-    loadClients();
-    loadMaterials();
-    loadContractorProfile();
+    // Envolver todas las funciones async para evitar unhandled rejections
+    loadClients().catch(error => {
+      console.warn('🛡️ [LOAD-CLIENTS] Error silenciado:', error.message);
+    });
+    loadMaterials().catch(error => {
+      console.warn('🛡️ [LOAD-MATERIALS] Error silenciado:', error.message);
+    });
+    loadContractorProfile().catch(error => {
+      console.warn('🛡️ [LOAD-PROFILE] Error silenciado:', error.message);
+    });
   }, [currentUser]);
 
   // Save company information - SIMPLE VERSION THAT WORKS
@@ -1272,11 +1279,14 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     estimate.discountValue,
   ]);
 
-  // AUTOGUARDADO INTELIGENTE: Actualizar proyecto existente cuando cambien datos críticos
+  // AUTOGUARDADO INTELIGENTE: Actualizar proyecto existente cuando cambien datos críticos - MEJORADO
   useEffect(() => {
     // Debounce timer to avoid excessive saves
     const timeoutId = setTimeout(() => {
-      autoSaveEstimateChanges();
+      // Envolver en .catch() para evitar unhandled rejections
+      autoSaveEstimateChanges().catch(error => {
+        console.warn('🛡️ [AUTO-SAVE] Error en autoguardado silenciado:', error.message);
+      });
     }, 2000); // Wait 2 seconds after changes
 
     return () => clearTimeout(timeoutId);
@@ -2688,7 +2698,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       // Forzar recarga de clientes para sincronizar
       setTimeout(() => {
-        loadClients();
+        loadClients().catch(error => {
+          console.warn('🛡️ [LOAD-CLIENTS-AFTER-SAVE] Error silenciado:', error.message);
+        });
       }, 1000);
     } catch (error) {
       console.error("❌ Error creating client:", error);

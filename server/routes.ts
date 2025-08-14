@@ -6024,21 +6024,57 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
-  // Endpoint para sugerencias de direcciones
+  // Endpoint para sugerencias de direcciones - MEJORADO
   app.get("/api/address/suggestions", async (req: Request, res: Response) => {
     const query = req.query.query as string;
+    
+    // Validaciones mejoradas
+    if (!query || query.trim().length < 3) {
+      return res.json([]); // Retornar array vacío en lugar de error
+    }
+
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      console.warn("🗺️ [ADDRESS-SUGGESTIONS] Google Maps API key no configurada");
+      return res.json([]); // Retornar array vacío silenciosamente
+    }
+
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 segundo timeout
+
       const response = await axios.get(
-        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=address&key=${process.env.GOOGLE_MAPS_API_KEY}`,
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query.trim())}&types=address&key=${apiKey}`,
+        { 
+          signal: controller.signal,
+          timeout: 3000 
+        }
       );
 
-      const suggestions = response.data.predictions.map(
-        (prediction: any) => prediction.description,
-      );
-      res.json(suggestions);
-    } catch (error) {
-      console.error("Error fetching address suggestions:", error);
-      res.status(500).json({ error: "Error fetching suggestions" });
+      clearTimeout(timeoutId);
+
+      if (response.data && response.data.predictions && Array.isArray(response.data.predictions)) {
+        const suggestions = response.data.predictions.map(
+          (prediction: any) => prediction.description || ''
+        ).filter(Boolean); // Filtrar strings vacíos
+        
+        return res.json(suggestions);
+      } else {
+        console.warn("🗺️ [ADDRESS-SUGGESTIONS] Respuesta inesperada de Google Maps API");
+        return res.json([]);
+      }
+    } catch (error: any) {
+      // Manejo silencioso de errores - no fastidiar al usuario
+      if (error.name === 'AbortError') {
+        console.warn("🗺️ [ADDRESS-SUGGESTIONS] Timeout en Google Maps API");
+      } else if (error.code === 'ECONNABORTED' || error.code === 'ENOTFOUND') {
+        console.warn("🗺️ [ADDRESS-SUGGESTIONS] Error de conectividad");
+      } else {
+        console.warn("🗺️ [ADDRESS-SUGGESTIONS] Error en API:", error.message || 'Error desconocido');
+      }
+      
+      // SIEMPRE retornar array vacío, nunca un error 500
+      return res.json([]);
     }
   });
 

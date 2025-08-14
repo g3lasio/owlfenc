@@ -43,6 +43,7 @@ import EmailLinkCallback from "@/pages/EmailLinkCallback";
 import AppleCallback from "@/pages/AppleCallback";
 import SecuritySettings from "@/pages/SecuritySettings";
 import CyberpunkContractGenerator from "@/pages/CyberpunkContractGenerator";
+import { setupGlobalErrorHandlers } from "@/lib/error-handlers";
 import LegalContractEngineFixed from "@/pages/LegalContractEngineFixed";
 import UnifiedContractManager from "@/pages/UnifiedContractManager";
 import SmartContractWizard from "@/pages/SmartContractWizard";
@@ -65,23 +66,8 @@ import ContractSignature from './pages/ContractSignature';
 
 import { Redirect } from "wouter";
 
-// 🔧 FIX: Global error handler for unhandled promises
-window.addEventListener('unhandledrejection', (event) => {
-  // Log and prevent certain unhandled rejections from showing in console
-  if (event.reason && (
-    event.reason.message?.includes?.('ResizeObserver') ||
-    event.reason.message?.includes?.('Script error') ||
-    event.reason.code?.startsWith?.('auth/') ||
-    event.reason.message?.includes?.('stripe') ||
-    event.reason.message?.includes?.('Stripe') ||
-    event.reason.message?.includes?.('payment') ||
-    event.reason.message?.includes?.('Failed to load Stripe.js') ||
-    event.reason.message?.includes?.('loadStripe')
-  )) {
-    console.warn('🔧 [GLOBAL-FIX] Handled unhandled rejection:', event.reason.message || event.reason.code || 'Unknown');
-    event.preventDefault();
-  }
-});
+// 🔧 FIX: Global error handler for unhandled promises - ENHANCED
+setupGlobalErrorHandlers();
 
 // 🔧 STRIPE ERROR HANDLER
 window.addEventListener('stripe-load-error', (event: any) => {
