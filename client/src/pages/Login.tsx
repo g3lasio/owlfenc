@@ -661,10 +661,10 @@ export default function AuthPage() {
                             </FormControl>
                             <div className="space-y-1 leading-none">
                               <FormLabel className="text-sm font-normal cursor-pointer">
-                                Remember me for 30 days
+                                Stay signed in
                               </FormLabel>
                               <p className="text-xs text-muted-foreground">
-                                You'll only need to sign in again if you change devices
+                                30-day persistent login
                               </p>
                             </div>
                           </FormItem>
@@ -858,17 +858,17 @@ export default function AuthPage() {
             </div>
           </CardContent>
 
-          <CardFooter className="px-6 py-3 flex items-center justify-center gap-3 border-t border-primary/20 bg-muted/10">
+          <CardFooter className="px-6 py-4 flex items-center justify-center gap-4 border-t border-primary/20 bg-muted/10">
             {authMode === "login" && loginMethod === "email" ? (
               <>
                 <button
                   type="button"
-                  className="flex items-center gap-1 px-3 py-2 rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-sm font-medium transition-all duration-300 border border-primary/30"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 hover:from-blue-500/20 hover:to-purple-500/20 text-primary text-sm font-medium transition-all duration-300 border border-primary/30 min-w-[80px] justify-center"
                   onClick={() => setLoginMethod("otp")}
-                  title="Switch to OTP Code"
+                  title="Login with SMS Code"
                 >
-                  <RiShieldKeyholeLine className="h-4 w-4" />
-                  <span>OTP</span>
+                  <RiShieldKeyholeLine className="h-5 w-5" />
+                  <span>SMS Code</span>
                 </button>
                 
                 <BiometricLoginButton
@@ -881,21 +881,25 @@ export default function AuthPage() {
                   }}
                   email={loginForm.watch('email')}
                   disabled={isLoading}
-                  className="flex items-center gap-1 px-3 py-2 text-sm min-w-0"
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium min-w-[90px] justify-center bg-gradient-to-r from-green-500/10 to-emerald-500/10 hover:from-green-500/20 hover:to-emerald-500/20 border border-primary/30 rounded-lg transition-all duration-300"
                 />
               </>
             ) : authMode === "login" && loginMethod === "otp" ? (
               <button
                 type="button"
-                className="flex items-center gap-1 px-3 py-2 rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-sm font-medium transition-all duration-300 border border-primary/30"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-sm font-medium transition-all duration-300 border border-primary/30 min-w-[90px] justify-center"
                 onClick={() => setLoginMethod("email")}
-                title="Switch to Password"
+                title="Back to Password"
               >
-                <HiMail className="h-4 w-4" />
+                <HiMail className="h-5 w-5" />
                 <span>Password</span>
               </button>
             ) : (
-              <div></div>
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">
+                  Alternative login methods available after entering email
+                </p>
+              </div>
             )}
           </CardFooter>
         </Card>

@@ -170,13 +170,11 @@ export function BiometricLoginButton({
         <>
           {getIcon()}
           {isCompactMode ? (
-            <span className="ml-1 text-sm">
-              {methodDescription === 'Windows Hello' ? 'Hello' : 
-               methodDescription === 'Touch ID' ? 'Touch' :
-               methodDescription === 'Face ID' ? 'Face' : 'Bio'}
+            <span className="ml-1 text-sm font-medium">
+              Biometric
             </span>
           ) : (
-            <span className="ml-2">
+            <span className="ml-2 font-medium">
               Sign in with {methodDescription}
             </span>
           )}
