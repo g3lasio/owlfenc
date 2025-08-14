@@ -731,15 +731,18 @@ export default function AuthPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{t("auth.name")}</FormLabel>
-                          <FormControl>
+                          <div>
                             <input
-                              {...field}
+                              value={field.value || ""}
+                              onChange={field.onChange}
+                              onBlur={field.onBlur}
+                              name={field.name}
                               type="text"
                               placeholder="Tu nombre"
                               className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
                               disabled={isLoading}
                             />
-                          </FormControl>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -751,15 +754,18 @@ export default function AuthPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{t("auth.email")}</FormLabel>
-                          <FormControl>
+                          <div>
                             <input
-                              {...field}
+                              value={field.value || ""}
+                              onChange={field.onChange}
+                              onBlur={field.onBlur}
+                              name={field.name}
                               type="email"
                               placeholder="tu@email.com"
                               className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
                               disabled={isLoading}
                             />
-                          </FormControl>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -770,10 +776,13 @@ export default function AuthPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{t("auth.password")}</FormLabel>
-                          <FormControl>
+                          <div>
                             <div className="relative">
                               <input
-                                {...field}
+                                value={field.value || ""}
+                                onChange={field.onChange}
+                                onBlur={field.onBlur}
+                                name={field.name}
                                 type={showPassword ? "text" : "password"}
                                 placeholder="••••••••"
                                 className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
@@ -791,7 +800,7 @@ export default function AuthPage() {
                                 )}
                               </button>
                             </div>
-                          </FormControl>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -802,17 +811,20 @@ export default function AuthPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{t("auth.confirmPassword")}</FormLabel>
-                          <FormControl>
+                          <div>
                             <div className="relative">
                               <input
-                                {...field}
+                                value={field.value || ""}
+                                onChange={field.onChange}
+                                onBlur={field.onBlur}
+                                name={field.name}
                                 type={showPassword ? "text" : "password"}
                                 placeholder="••••••••"
                                 className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
                                 disabled={isLoading}
                               />
                             </div>
-                          </FormControl>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}

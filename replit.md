@@ -92,6 +92,15 @@ Critical Business Rule: This is multi-tenant contractor software - NEVER use Owl
 - **SERVER INFRASTRUCTURE**: Added `/api/oauth/success` and `/api/oauth/error` routes with postMessage communication
 - **ARCHITECTURE EVOLUTION**: Moved from complex verification systems to simple, reliable redirection patterns
 
+### SIGNUP FORM CRITICAL BUG FIX (August 14, 2025):
+- **FORM FIELDS ISSUE RESOLVED**: Fixed critical bug where name and email fields in signup form were not writable
+- **FORMCONTROL PROBLEM IDENTIFIED**: Removed problematic FormControl components that were blocking user input
+- **EXPLICIT FIELD BINDING**: Replaced `{...field}` spread with explicit `value`, `onChange`, `onBlur`, `name` properties
+- **REACT HOOK FORM OPTIMIZATION**: Enhanced form configuration with `mode: "onChange"` for better user experience
+- **VALIDATION SCHEMAS CORRECTED**: Moved Zod validation schemas inside component for proper translation access
+- **ALL FIELDS FUNCTIONAL**: Applied fixes to name, email, password, and confirmPassword fields
+- **AUTHENTICATION RELIABILITY**: Email/password signup now fully functional as primary authentication method
+
 ### COMPREHENSIVE STRIPE.JS AND PRODUCTION MIGRATION (August 12, 2025):
 - **COMPLETE TEST KEY ELIMINATION**: All test keys removed from codebase (pk_test_, sk_test_, STRIPE_API_TEST_KEY)
 - **PRODUCTION-ONLY ENVIRONMENT**: Backend using STRIPE_API_KEY, frontend using VITE_STRIPE_PUBLIC_KEY
