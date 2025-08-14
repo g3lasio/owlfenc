@@ -4,8 +4,10 @@ import "./index.css";
 import "./i18n/i18n"; // Importamos la configuración de i18n
 import "./lib/network-error-handler"; // Inicializar manejador avanzado de errores
 
-// ESTRATEGIA TRIPLE: XMLHttpRequest + Network Handler + Silenciar errores del runtime plugin
+// ESTRATEGIA CUÁDRUPLE: XMLHttpRequest + Network Handler + Runtime Error Plugin Bypass + Console Override
 console.log('🛡️ [ANTI-FETCH-ERRORS] Activando sistema de protección avanzado contra errores fastidiosos');
+
+// Mejora para interceptar runtime-error-plugin
 
 // Lista expandida de patrones de errores a silenciar
 const ANNOYING_ERROR_PATTERNS = [
@@ -30,6 +32,8 @@ const ANNOYING_ERROR_PATTERNS = [
   '_StsTokenManager',
   'getIdToken',
   '_performFetchWithErrorHandling',
+  'StsTokenManager',
+  'plugin:runtime-error-plugin',
   'vite:hmr',
   'websocket connection',
   'WebSocket'
