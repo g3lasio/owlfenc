@@ -661,32 +661,55 @@ export default function AuthPage() {
                             </FormControl>
                             <div className="space-y-1 leading-none">
                               <FormLabel className="text-sm font-normal cursor-pointer">
-                                Recordarme por 30 días
+                                Remember me for 30 days
                               </FormLabel>
                               <p className="text-xs text-muted-foreground">
-                                Solo necesitarás volver a iniciar sesión si cambias de dispositivo
+                                You'll only need to sign in again if you change devices
                               </p>
                             </div>
                           </FormItem>
                         )}
                       />
                       
-                      {/* Botón de Login Biométrico */}
-                      <BiometricLoginButton
-                        onSuccess={(userData) => {
-                          console.log('🎉 [LOGIN-BIOMETRIC] Login biométrico exitoso:', userData);
-                          showSuccessEffect();
-                        }}
-                        onError={(error) => {
-                          console.error('❌ [LOGIN-BIOMETRIC] Error en login biométrico:', error);
-                        }}
-                        email={loginForm.watch('email')}
-                        disabled={isLoading}
-                      />
+                      {/* Alternative Authentication Methods */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <Separator className="flex-1 bg-muted-foreground/30" />
+                          <span className="text-xs text-muted-foreground">Additional Options</span>
+                          <Separator className="flex-1 bg-muted-foreground/30" />
+                        </div>
+                        
+                        {/* Biometric and OTP buttons side by side */}
+                        <div className="flex items-center gap-3">
+                          <BiometricLoginButton
+                            onSuccess={(userData) => {
+                              console.log('🎉 [LOGIN-BIOMETRIC] Login biométrico exitoso:', userData);
+                              showSuccessEffect();
+                            }}
+                            onError={(error) => {
+                              console.error('❌ [LOGIN-BIOMETRIC] Error en login biométrico:', error);
+                            }}
+                            email={loginForm.watch('email')}
+                            disabled={isLoading}
+                            className="flex-1"
+                          />
+                          
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="flex-1 border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5"
+                            onClick={() => setLoginMethod("otp")}
+                            disabled={isLoading}
+                          >
+                            <HiMail className="w-4 h-4 mr-2" />
+                            <span>Email OTP</span>
+                          </Button>
+                        </div>
+                      </div>
 
                       <div className="flex items-center gap-3">
                         <Separator className="flex-1 bg-muted-foreground/30" />
-                        <span className="text-xs text-muted-foreground">o</span>
+                        <span className="text-xs text-muted-foreground">or</span>
                         <Separator className="flex-1 bg-muted-foreground/30" />
                       </div>
 
@@ -881,12 +904,12 @@ export default function AuthPage() {
                 {loginMethod === "email" ? (
                   <>
                     <RiShieldKeyholeLine className="h-5 w-5" />
-                    <span>Cambiar a Código OTP</span>
+                    <span>Switch to OTP Code</span>
                   </>
                 ) : (
                   <>
                     <HiMail className="h-5 w-5" />
-                    <span>Cambiar a Contraseña</span>
+                    <span>Switch to Password</span>
                   </>
                 )}
               </button>

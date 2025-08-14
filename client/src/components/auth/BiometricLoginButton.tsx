@@ -158,13 +158,13 @@ export function BiometricLoginButton({
       {isLoading ? (
         <>
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Autenticando...
+          Authenticating...
         </>
       ) : (
         <>
           {getIcon()}
           <span className="ml-2">
-            Iniciar sesión con {methodDescription}
+            Sign in with {methodDescription}
           </span>
         </>
       )}
