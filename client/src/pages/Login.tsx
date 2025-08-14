@@ -40,7 +40,7 @@ import { robustOAuthHandler } from "@/lib/simple-oauth";
 import { instantGoogleLogin, instantAppleLogin, popupGoogleLogin, popupAppleLogin } from "@/lib/ultra-simple-oauth";
 
 import OTPAuth from "@/components/auth/OTPAuth";
-import OAuthTestPanel from "@/components/auth/OAuthTestPanel";
+
 import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
 
@@ -143,26 +143,7 @@ export default function AuthPage() {
     },
   });
 
-  const [signUpFields, setSignUpFields] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
 
-  // Change handler
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSignUpFields({ ...signUpFields, name: e.target.value });
-  };
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSignUpFields({ ...signUpFields, email: e.target.value });
-  };
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSignUpFields({ ...signUpFields, password: e.target.value });
-  };
-  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSignUpFields({ ...signUpFields, confirmPassword: e.target.value });
-  };
 
   // Mostrar efecto de congratulación después de login exitoso
   const showSuccessEffect = () => {
@@ -249,24 +230,26 @@ export default function AuthPage() {
   };
 
   // Manejar registro con email y contraseña
-  const onSignupSubmit = async (e: React.FormEvent) => {
+  const onSignupSubmit = async (data: SignupFormValues) => {
     setIsLoading(true);
     try {
-      e.preventDefault();
       clearError();
-      console.log("Intentando registrar usuario con:", signUpFields);
-      if (signUpFields.password === signUpFields.confirmPassword) {
-        await registerUser(
-          signUpFields.email,
-          signUpFields.password,
-          signUpFields.name,
-        );
-
-        showSuccessEffect();
+      console.log("Intentando registrar usuario con:", data);
+      
+      // Verificar que las contraseñas coinciden
+      if (data.password !== data.confirmPassword) {
+        throw new Error("Las contraseñas no coinciden");
       }
-    } catch (err: any) {
-      console.log("Intentando registrar usuario con:", signUpFields);
 
+      // Verificar que todos los campos estén completos
+      if (!data.name.trim() || !data.email.trim() || !data.password.trim()) {
+        throw new Error("Por favor completa todos los campos");
+      }
+
+      await registerUser(data.email, data.password, data.name);
+      console.log("Registro exitoso para:", data.email);
+      showSuccessEffect();
+    } catch (err: any) {
       console.error("Error de registro:", err);
       toast({
         variant: "destructive",
@@ -734,7 +717,7 @@ export default function AuthPage() {
                 )
               ) : (
                 <Form {...signupForm}>
-                  <form onSubmit={onSignupSubmit} className="space-y-4">
+                  <form onSubmit={signupForm.handleSubmit(onSignupSubmit)} className="space-y-4">
                     <FormField
                       control={signupForm.control}
                       name="name"
@@ -743,10 +726,11 @@ export default function AuthPage() {
                           <FormLabel>{t("auth.name")}</FormLabel>
                           <FormControl>
                             <input
-                              onChange={handleNameChange}
+                              {...field}
                               type="text"
                               placeholder="Tu nombre"
                               className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
+                              disabled={isLoading}
                             />
                           </FormControl>
                           <FormMessage />
@@ -762,10 +746,10 @@ export default function AuthPage() {
                           <FormLabel>{t("auth.email")}</FormLabel>
                           <FormControl>
                             <input
+                              {...field}
                               type="email"
                               placeholder="tu@email.com"
                               className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
-                              onChange={handleEmailChange}
                               disabled={isLoading}
                             />
                           </FormControl>
@@ -782,10 +766,10 @@ export default function AuthPage() {
                           <FormControl>
                             <div className="relative">
                               <input
+                                {...field}
                                 type={showPassword ? "text" : "password"}
                                 placeholder="••••••••"
-                                className="border p-2 hover:border-primary rounded-md block w-full  bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
-                                onChange={handlePasswordChange}
+                                className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
                                 disabled={isLoading}
                               />
                               <button
@@ -814,10 +798,10 @@ export default function AuthPage() {
                           <FormControl>
                             <div className="relative">
                               <input
+                                {...field}
                                 type={showPassword ? "text" : "password"}
                                 placeholder="••••••••"
-                                className="border p-2 hover:border-primary rounded-md block w-full  bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
-                                onChange={handleConfirmPasswordChange}
+                                className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
                                 disabled={isLoading}
                               />
                             </div>
@@ -866,16 +850,7 @@ export default function AuthPage() {
           </CardFooter>
         </Card>
 
-        {/* Panel de Pruebas OAuth - Solo para debugging */}
-        {(
-          <div className="mt-8">
-            <div className="text-center mb-4">
-              <h3 className="text-lg font-semibold text-foreground">🧪 Panel de Pruebas OAuth</h3>
-              <p className="text-sm text-muted-foreground">3 alternativas después de 3 días de debugging</p>
-            </div>
-            <OAuthTestPanel />
-          </div>
-        )}
+
       </div>
     </div>
   );
