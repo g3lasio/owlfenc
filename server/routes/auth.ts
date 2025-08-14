@@ -39,7 +39,9 @@ router.post("/password-reset", async (req: Request, res: Response) => {
     // Firebase maneja directamente el envío del correo de restablecimiento,
     // pero aquí podríamos personalizarlo usando nuestro servicio de correo
     // y luego usar la API de Firebase para generar el link
-    const resetLink = `${process.env.FRONTEND_URL || "http://localhost:5000"}/reset-password?email=${encodeURIComponent(email)}&action=resetPassword`;
+    // Usar URL builder dinámico en lugar de URL hardcodeada
+    const { buildPasswordResetUrl } = await import('../utils/url-builder');
+    const resetLink = buildPasswordResetUrl(req, `token=placeholder&email=${encodeURIComponent(email)}&action=resetPassword`);
 
     const emailSent = await sendPasswordResetEmail(email, resetLink);
 

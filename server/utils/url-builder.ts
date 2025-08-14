@@ -1,0 +1,142 @@
+/**
+ * URL Builder Utility - Generación Dinámica de URLs para Desarrollo y Producción
+ * Soluciona el problema de URLs hardcodeadas que fallan en deployment
+ */
+
+import { Request } from 'express';
+
+export interface UrlBuildOptions {
+  // Usar HTTPS en producción, HTTP en desarrollo local
+  forceHttps?: boolean;
+  // Dominio personalizado para override
+  customDomain?: string;
+  // Path base para la aplicación
+  basePath?: string;
+}
+
+/**
+ * Construye URL dinámica basada en la request HTTP actual
+ * Funciona automáticamente en cualquier entorno: desarrollo, Replit, producción, etc.
+ */
+export function buildDynamicUrl(req: Request, path: string, options: UrlBuildOptions = {}): string {
+  const {
+    forceHttps = false,
+    customDomain,
+    basePath = ''
+  } = options;
+
+  // 1. Detectar protocolo dinámicamente
+  let protocol = req.protocol;
+  
+  // En producción o cuando se fuerza HTTPS
+  if (forceHttps || isProductionEnvironment(req)) {
+    protocol = 'https';
+  }
+
+  // 2. Detectar host dinámicamente
+  let host = customDomain || req.get('host') || 'localhost:5000';
+  
+  // 3. Construir URL completa
+  const fullPath = basePath + (path.startsWith('/') ? path : '/' + path);
+  const fullUrl = `${protocol}://${host}${fullPath}`;
+  
+  console.log(`🔗 [URL-BUILDER] Generada URL dinámica: ${fullUrl}`);
+  console.log(`🔗 [URL-BUILDER] Entorno detectado:`, {
+    protocol,
+    host,
+    originalHost: req.get('host'),
+    userAgent: req.get('user-agent')?.substring(0, 50) + '...',
+    isProduction: isProductionEnvironment(req)
+  });
+  
+  return fullUrl;
+}
+
+/**
+ * Detecta si estamos en entorno de producción
+ */
+function isProductionEnvironment(req: Request): boolean {
+  const host = req.get('host') || '';
+  
+  // Detectores de producción
+  const productionIndicators = [
+    // Dominios de producción comunes
+    'owlfenc.com',
+    'app.owlfenc.com',
+    'api.owlfenc.com',
+    // Hosting providers comunes
+    '.vercel.app',
+    '.netlify.app',
+    '.herokuapp.com',
+    '.fly.dev',
+    '.railway.app',
+    // Custom domains (no contienen localhost ni replit)
+    !host.includes('localhost') && 
+    !host.includes('replit.dev') && 
+    !host.includes('127.0.0.1') &&
+    host.includes('.')
+  ];
+  
+  return productionIndicators.some(indicator => {
+    if (typeof indicator === 'boolean') return indicator;
+    return host.includes(indicator);
+  });
+}
+
+/**
+ * Genera URL para restablecimiento de contraseña
+ */
+export function buildPasswordResetUrl(req: Request, token: string): string {
+  return buildDynamicUrl(req, `/reset-password?token=${token}`, {
+    forceHttps: true // Passwords siempre por HTTPS
+  });
+}
+
+/**
+ * Genera URLs para sistema de firma dual
+ */
+export function buildSignatureUrls(req: Request, contractId: string): {
+  contractorSignUrl: string;
+  clientSignUrl: string;
+} {
+  return {
+    contractorSignUrl: buildDynamicUrl(req, `/sign/${contractId}/contractor`, {
+      forceHttps: true
+    }),
+    clientSignUrl: buildDynamicUrl(req, `/sign/${contractId}/client`, {
+      forceHttps: true
+    })
+  };
+}
+
+/**
+ * Genera URL para verificación de email de contratista
+ */
+export function buildEmailVerificationUrl(req: Request, token: string, success: boolean = true): string {
+  const params = new URLSearchParams({
+    verified: success.toString(),
+    ...(success ? {} : { error: 'Verification failed' })
+  });
+  
+  return buildDynamicUrl(req, `/profile?${params.toString()}`, {
+    forceHttps: true
+  });
+}
+
+/**
+ * Genera URL base de la aplicación
+ */
+export function buildAppBaseUrl(req: Request): string {
+  return buildDynamicUrl(req, '', {
+    forceHttps: true
+  });
+}
+
+/**
+ * Logging para debugging de URLs
+ */
+export function logUrlGeneration(context: string, originalUrl: string, newUrl: string): void {
+  console.log(`🔄 [URL-MIGRATION] ${context}:`);
+  console.log(`   Antes: ${originalUrl}`);
+  console.log(`   Después: ${newUrl}`);
+}

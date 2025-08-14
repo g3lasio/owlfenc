@@ -376,8 +376,9 @@ router.get("/in-progress/:userId", verifyFirebaseAuth, async (req, res) => {
       updatedAt: contract.updatedAt,
       isCompleted: false,
       needsAction: !contract.contractorSigned || !contract.clientSigned,
-      contractorSignUrl: `${process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000"}/sign/${contract.contractId}/contractor`,
-      clientSignUrl: `${process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000"}/sign/${contract.contractId}/client`,
+      // URLs dinámicas que funcionan en cualquier entorno
+      contractorSignUrl: `${req.protocol}://${req.get('host')}/sign/${contract.contractId}/contractor`,
+      clientSignUrl: `${req.protocol}://${req.get('host')}/sign/${contract.contractId}/client`,
     }));
 
     res.json({
@@ -1095,10 +1096,9 @@ router.post("/resend-links", async (req, res) => {
       });
     }
 
-    // Generate signature URLs - REPLIT_DEV_DOMAIN already includes protocol
-    const baseUrl = process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000";
-    const contractorSignUrl = `${baseUrl}/sign/${contract.contractId}/contractor`;
-    const clientSignUrl = `${baseUrl}/sign/${contract.contractId}/client`;
+    // Generate signature URLs dinámicamente - funciona en cualquier entorno
+    const { buildSignatureUrls } = await import('../utils/url-builder');
+    const { contractorSignUrl, clientSignUrl } = buildSignatureUrls(req, contract.contractId);
 
     const results = [];
 

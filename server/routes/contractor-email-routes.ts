@@ -73,15 +73,21 @@ router.get('/complete-verification', async (req, res) => {
 
     const result = await ContractorEmailService.completeEmailVerification(token as string, email as string);
     
+    // Usar URL builder para redirecciones dinámicas
+    const { buildEmailVerificationUrl } = await import('../utils/url-builder');
+    
     if (result.success) {
-      // Redirect to success page
-      res.redirect(`${process.env.APP_URL || 'https://owlfence.replit.app'}/profile?verified=true`);
+      const verificationUrl = buildEmailVerificationUrl(req, '', true);
+      res.redirect(verificationUrl);
     } else {
-      res.redirect(`${process.env.APP_URL || 'https://owlfence.replit.app'}/profile?verified=false&error=${encodeURIComponent(result.message || 'Verification failed')}`);
+      const verificationUrl = buildEmailVerificationUrl(req, '', false);
+      res.redirect(verificationUrl);
     }
   } catch (error) {
     console.error('Error completing verification:', error);
-    res.redirect(`${process.env.APP_URL || 'https://owlfence.replit.app'}/profile?verified=false&error=server_error`);
+    const { buildEmailVerificationUrl } = await import('../utils/url-builder');
+    const errorUrl = buildEmailVerificationUrl(req, '', false);
+    res.redirect(errorUrl);
   }
 });
 

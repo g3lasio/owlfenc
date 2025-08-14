@@ -57,8 +57,9 @@ router.post('/request', async (req, res) => {
       used: 'false'
     });
 
-    // Crear enlace de restablecimiento
-    const resetLink = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`;
+    // Crear enlace de restablecimiento usando URL builder dinámico
+    const { buildPasswordResetUrl } = await import('../utils/url-builder');
+    const resetLink = buildPasswordResetUrl(req, resetToken);
 
     // Crear HTML del email
     const emailHtml = `

@@ -28,6 +28,12 @@ An advanced AI-powered legal document and permit management platform with intell
 - OpenAI integration for document generation
 - Stripe for payment processing
 
+### **URL Generation & Deployment Security**
+- **Dynamic URL Builder** (`server/utils/url-builder.ts`): Centralized utility for environment-agnostic URL generation
+- **Universal Hosting Compatibility**: Automatic detection of protocol/host works with any hosting provider (Replit, Vercel, Railway, custom domains)
+- **Production-Ready Links**: All critical systems (password reset, legal defense signing, contractor verification) use dynamic URLs that adapt to deployment environment
+- **Security Features**: Automatic HTTPS in production, environment detection, no hardcoded dependencies
+
 ### Core Features & Design Patterns
 - **User Authentication & Authorization**: Enhanced OAuth, email/password authentication, and a robust subscription-based permission system with defined user roles (`primo_chambeador`, `mero_patron`, `master_contractor`, `trial_master`). Features include secure registration (defaulting to free plan), automatic subscription degradation, and real-time usage limit enforcement via middleware (`requireSubscriptionLevel`, `trackAndValidateUsage`, `requirePremiumFeature`).
 - **Login Persistence**: A 30-day persistent login system utilizing device fingerprinting for enhanced security and user experience. It includes automatic session validation and cleanup.
