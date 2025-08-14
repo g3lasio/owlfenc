@@ -47,6 +47,7 @@ import {
   Wrench,
   DollarSign,
   ShoppingCart,
+  ChevronDown,
 } from "lucide-react";
 import axios from "axios";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
@@ -423,6 +424,10 @@ export default function Mervin() {
     useState<DeepSearchRecommendation | null>(null);
   const [isDeepSearchProcessing, setIsDeepSearchProcessing] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  
+  // AI Model Selector states (ChatGPT-style)
+  const [selectedModel, setSelectedModel] = useState<"legacy" | "agent">("agent");
+  const [showModelSelector, setShowModelSelector] = useState(false);
   const [editingMaterials, setEditingMaterials] = useState<
     DeepSearchRecommendation["materials"]
   >([]);
@@ -529,6 +534,20 @@ export default function Mervin() {
       }
     }
   }, [profile, isProfileLoading]);
+
+  // Close model selector when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showModelSelector) {
+        setShowModelSelector(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showModelSelector]);
 
   // Handle logo file upload
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -3842,22 +3861,69 @@ ${
             >
               {/* Avatar y nombre para mensajes de Mervin */}
               {message.sender === "assistant" && (
-                <div className="flex items-center mb-2">
-                  <div className="w-8 h-8 rounded-full bg-cyan-900/30 flex items-center justify-center mr-2">
-                    <img
-                      src="https://i.postimg.cc/W4nKDvTL/logo-mervin.png"
-                      alt="Mervin AI"
-                      className="w-6 h-6"
-                    />
-                  </div>
-                  <span className="text-cyan-400 font-semibold">Mervin AI</span>
-
-                  {/* Estado de análisis */}
-                  {message.state === "analyzing" && (
-                    <div className="ml-2 text-xs text-blue-400 flex items-center">
-                      <span>Analizando datos...</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-cyan-900/30 flex items-center justify-center mr-2">
+                      <img
+                        src="https://i.postimg.cc/W4nKDvTL/logo-mervin.png"
+                        alt="Mervin AI"
+                        className="w-6 h-6"
+                      />
                     </div>
-                  )}
+                    <span className="text-cyan-400 font-semibold">Mervin AI</span>
+
+                    {/* Estado de análisis */}
+                    {message.state === "analyzing" && (
+                      <div className="ml-2 text-xs text-blue-400 flex items-center">
+                        <span>Analizando datos...</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* AI Model Selector (ChatGPT-style) */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowModelSelector(!showModelSelector)}
+                      className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md border border-gray-600 transition-colors"
+                    >
+                      <span className="capitalize">
+                        {selectedModel === "legacy" ? "Legacy" : "Agent mode"}
+                      </span>
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {showModelSelector && (
+                      <div className="absolute right-0 top-full mt-1 w-32 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50">
+                        <button
+                          onClick={() => {
+                            setSelectedModel("agent");
+                            setShowModelSelector(false);
+                          }}
+                          className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-700 ${
+                            selectedModel === "agent" 
+                              ? "text-cyan-400 bg-gray-700" 
+                              : "text-gray-300"
+                          }`}
+                        >
+                          Agent mode
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedModel("legacy");
+                            setShowModelSelector(false);
+                          }}
+                          className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-700 ${
+                            selectedModel === "legacy" 
+                              ? "text-cyan-400 bg-gray-700" 
+                              : "text-gray-300"
+                          }`}
+                        >
+                          Legacy
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 

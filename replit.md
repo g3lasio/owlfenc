@@ -18,6 +18,7 @@ An advanced AI-powered legal document and permit management platform with intell
 - **LABEL ACCURACY**: Usar "OTP Code" en lugar de "SMS Code" ya que el sistema usa email-based OTP ✅ **COMPLETED (Aug 14, 2025)**
 - **BIOMETRIC FUNCTIONALITY**: Corregir problemas de lógica y funcionalidad en autenticación biométrica ✅ **COMPLETED (Aug 14, 2025)**
 - **BILLING-SUBSCRIPTION CONSISTENCY**: Sincronización completa de precios, moneda y beneficios entre páginas Billing y Subscription ✅ **COMPLETED (Aug 14, 2025)**
+- **MERVIN AI MODEL SELECTOR**: Implementación de selector de modelo estilo ChatGPT con opciones "Legacy" y "Agent mode" ✅ **COMPLETED (Aug 14, 2025)**
 
 ## System Architecture
 
@@ -76,6 +77,12 @@ An advanced AI-powered legal document and permit management platform with intell
   - **Currency Standard**: All pricing now displays in US Dollars ($49.99) as per subscription page setup ✅
   - **Features Consistency**: Both pages use same API data source and display identical plan benefits ✅
   - **Impact**: Perfect synchronization between Billing and Subscription pages in USD currency ✅
+- **MERVIN AI MODEL SELECTOR SYSTEM (Aug 14, 2025)**: ChatGPT-style model selection interface for enhanced user experience:
+  - `Mervin.tsx`: Added state management for model selection (`selectedModel`, `showModelSelector`) ✅
+  - **Model Options**: "Legacy" and "Agent mode" options similar to ChatGPT interface ✅
+  - **UI Implementation**: Dropdown selector positioned next to "Mervin AI" label in message headers ✅
+  - **User Experience**: Hover effects, visual indicators for active selection, outside-click closing ✅
+  - **Impact**: Users can now switch between AI models seamlessly within the chat interface ✅
 
 ### Core Features & Design Patterns
 - **User Authentication & Authorization**: Enhanced OAuth, email/password authentication, and a robust subscription-based permission system with defined user roles (`primo_chambeador`, `mero_patron`, `master_contractor`, `trial_master`). Features include secure registration (defaulting to free plan), automatic subscription degradation, and real-time usage limit enforcement via middleware (`requireSubscriptionLevel`, `trackAndValidateUsage`, `requirePremiumFeature`).
