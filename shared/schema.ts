@@ -420,10 +420,25 @@ export const insertCompanyInformationSchema = createInsertSchema(companyInformat
   updatedAt: true,
 });
 
+// Password reset tokens table
+export const passwordResetTokens = pgTable('password_reset_tokens', {
+  id: varchar('id', { length: 100 }).primaryKey(),
+  userId: text('user_id').notNull().references(() => users.firebaseUid),
+  token: varchar('token', { length: 255 }).notNull().unique(),
+  expiresAt: timestamp('expires_at').notNull(),
+  used: varchar('used', { length: 10 }).default('false'),
+  createdAt: timestamp('created_at').defaultNow()
+});
+
 export const insertDigitalContractSchema = createInsertSchema(digitalContracts).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertProjectSchema = createInsertSchema(projects).omit({
@@ -523,6 +538,8 @@ export type ProjectPayment = typeof projectPayments.$inferSelect;
 export type InsertProjectPayment = z.infer<typeof insertProjectPaymentSchema>;
 export type Material = typeof materials.$inferSelect;
 export type InsertMaterial = z.infer<typeof insertMaterialSchema>;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
 
 export type SmartMaterialList = typeof smartMaterialLists.$inferSelect;
 export type InsertSmartMaterialList = typeof smartMaterialLists.$inferInsert;

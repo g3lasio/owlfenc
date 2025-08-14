@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { requestPasswordReset } from "@/lib/password-reset-api";
 
 // Esquema de validación para el formulario
 const resetPasswordSchema = z.object({
@@ -39,13 +40,16 @@ export default function RecuperarPassword() {
     setIsLoading(true);
     try {
       clearError();
-      await sendPasswordResetEmail(data.email);
+      
+      // Use new backend API instead of Firebase
+      console.log('🔐 [FRONTEND] Usando nueva API de restablecimiento');
+      await requestPasswordReset(data.email);
       
       setEmailSent(true);
       
       toast({
-        title: "Email sent",
-        description: "We have sent a password recovery link to your email address.",
+        title: "Email sent successfully",
+        description: "We have sent a password recovery link to your email address via Resend. Please check your inbox (including spam folder).",
       });
     } catch (err: any) {
       console.error("Error al enviar correo de recuperación:", err);

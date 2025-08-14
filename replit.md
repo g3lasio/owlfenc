@@ -32,8 +32,9 @@ An advanced AI-powered legal document and permit management platform with intell
 - **User Authentication & Authorization**: Enhanced OAuth, email/password authentication, and a robust subscription-based permission system with defined user roles (`primo_chambeador`, `mero_patron`, `master_contractor`, `trial_master`). Features include secure registration (defaulting to free plan), automatic subscription degradation, and real-time usage limit enforcement via middleware (`requireSubscriptionLevel`, `trackAndValidateUsage`, `requirePremiumFeature`).
 - **Login Persistence**: A 30-day persistent login system utilizing device fingerprinting for enhanced security and user experience. It includes automatic session validation and cleanup.
 - **Biometric Authentication**: Integration of WebAuthn API for biometric logins (Face ID, Touch ID, Windows Hello, fingerprint) with intelligent device detection, secure credential management, and backend validation. This system enhances security by combining device and biometric factors without storing passwords.
+- **Password Reset System**: Secure email-based password reset functionality using Resend service with database-stored tokens, 15-minute expiration, single-use validation, and professional HTML email templates. Replaces unreliable Firebase built-in password reset emails.
 - **Dynamic Form Validation**: Client-side validation using Zod schema for forms, integrated with UI components.
-- **API Design**: Secure API endpoints for subscription management, usage tracking, and authentication processes, with middleware enforcing access controls and usage limits. Critical endpoints are protected, and a workaround for Vite middleware routing issues has been implemented to ensure API accessibility.
+- **API Design**: Secure API endpoints for subscription management, usage tracking, authentication processes, and password reset functionality, with middleware enforcing access controls and usage limits. Critical endpoints are protected, and a workaround for Vite middleware routing issues has been implemented to ensure API accessibility.
 
 ## External Dependencies
 - Firebase (Authentication, Real-time Database)

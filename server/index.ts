@@ -110,6 +110,9 @@ import contractManagementRoutes from './routes/contract-management';
 // 🖊️ DUAL SIGNATURE SYSTEM - Contract Signing Workflow
 import dualSignatureRoutes from './routes/dualSignatureRoutes';
 
+// 🔐 PASSWORD RESET SYSTEM - Secure Email-based Password Recovery
+import { passwordResetRoutes } from './routes/password-reset-routes';
+
 // Company Information API endpoints (Firebase)
 app.get('/api/company-information/:userId', async (req, res) => {
   console.log('📋 Getting company information for user:', req.params.userId);
@@ -172,6 +175,10 @@ console.log('🤖 [ANTHROPIC] Sistema inteligente de contratos registrado en /ap
 // 🖊️ Registrar sistema de firma dual
 app.use('/api/dual-signature', dualSignatureRoutes);
 console.log('🖊️ [DUAL-SIGNATURE] Sistema de firma dual registrado en /api/dual-signature');
+
+// 🔐 Registrar sistema de restablecimiento de contraseña
+app.use('/api/password-reset', passwordResetRoutes);
+console.log('🔐 [PASSWORD-RESET] Sistema de restablecimiento registrado en /api/password-reset');
 
 // 🖊️ Ruta para páginas de firma - DEBE IR ANTES de setupVite
 app.get('/sign/:contractId/:party', async (req, res) => {

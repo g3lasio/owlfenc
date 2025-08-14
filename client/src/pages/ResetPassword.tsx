@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle } from "lucide-react";
-import { confirmReset } from "@/lib/firebase";
+import { verifyPasswordResetToken, confirmPasswordReset } from "@/lib/password-reset-api";
 
 // Esquema de validación para el formulario
 const resetPasswordSchema = z.object({
@@ -33,16 +33,29 @@ export default function ResetPassword() {
 
   // Obtener el código de acción de la URL
   useEffect(() => {
-    // Extraer el código de la URL que Firebase añade automáticamente
+    // Extraer el token de la URL de nuestro backend
     const urlParams = new URLSearchParams(window.location.search);
-    const oobCode = urlParams.get('oobCode');
+    const token = urlParams.get('token');
     
-    if (oobCode) {
-      setCode(oobCode);
+    if (token) {
+      setCode(token);
+      // Verificar el token inmediatamente
+      verifyToken(token);
     } else {
-      setError("No valid code found in URL");
+      setError("No valid reset token found in URL");
     }
   }, []);
+
+  const verifyToken = async (token: string) => {
+    try {
+      console.log('🔐 [FRONTEND] Verificando token de restablecimiento...');
+      await verifyPasswordResetToken(token);
+      console.log('✅ [FRONTEND] Token válido');
+    } catch (error: any) {
+      console.error('❌ [FRONTEND] Token inválido:', error);
+      setError(error.message || "Invalid or expired reset link");
+    }
+  };
 
   // Configurar el formulario
   const form = useForm<ResetPasswordFormValues>({
@@ -63,13 +76,16 @@ export default function ResetPassword() {
     setIsLoading(true);
     try {
       setError(null);
-      await confirmReset(code, data.password);
+      
+      // Use new backend API instead of Firebase
+      console.log('🔐 [FRONTEND] Confirmando nuevo password via backend...');
+      await confirmPasswordReset(code, data.password);
       
       setResetComplete(true);
       
       toast({
-        title: "Password reset",
-        description: "Your password has been successfully reset.",
+        title: "Password reset successfully",
+        description: "Your password has been successfully reset. You can now sign in with your new password.",
       });
     } catch (err: any) {
       console.error("Error al restablecer contraseña:", err);
