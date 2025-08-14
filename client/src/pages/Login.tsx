@@ -865,10 +865,10 @@ export default function AuthPage() {
                   type="button"
                   className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 hover:from-blue-500/20 hover:to-purple-500/20 text-primary text-sm font-medium transition-all duration-300 border border-primary/30 min-w-[80px] justify-center"
                   onClick={() => setLoginMethod("otp")}
-                  title="Login with SMS Code"
+                  title="Login with OTP Code"
                 >
                   <RiShieldKeyholeLine className="h-5 w-5" />
-                  <span>SMS Code</span>
+                  <span>OTP Code</span>
                 </button>
                 
                 <BiometricLoginButton
