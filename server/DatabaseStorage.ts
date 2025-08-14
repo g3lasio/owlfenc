@@ -52,6 +52,10 @@ export class DatabaseStorage implements IStorage {
   
   async healthCheck(): Promise<boolean> {
     try {
+      if (!db) {
+        console.error('Database connection not available');
+        return false;
+      }
       // Realizamos una consulta simple para verificar la conexión
       await db.execute(sql`SELECT 1`);
       return true;
@@ -63,26 +67,31 @@ export class DatabaseStorage implements IStorage {
   
   // User methods
   async getUser(id: number): Promise<User | undefined> {
+    if (!db) throw new Error('Database connection not available');
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
+    if (!db) throw new Error('Database connection not available');
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
   }
 
   async getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined> {
+    if (!db) throw new Error('Database connection not available');
     const [user] = await db.select().from(users).where(eq(users.firebaseUid, firebaseUid));
     return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
+    if (!db) throw new Error('Database connection not available');
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async updateUser(id: number, userData: Partial<User>): Promise<User> {
+    if (!db) throw new Error('Database connection not available');
     const [user] = await db
       .update(users)
       .set(userData)
@@ -97,6 +106,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateStripeConnectAccountId(userId: number, accountId: string): Promise<User> {
+    if (!db) throw new Error('Database connection not available');
     const [user] = await db
       .update(users)
       .set({ stripeConnectAccountId: accountId })
@@ -112,16 +122,19 @@ export class DatabaseStorage implements IStorage {
 
   // Project methods
   async getProject(id: number): Promise<Project | undefined> {
+    if (!db) throw new Error('Database connection not available');
     const [project] = await db.select().from(projects).where(eq(projects.id, id));
     return project;
   }
 
   async getProjectByProjectId(projectId: string): Promise<Project | undefined> {
+    if (!db) throw new Error('Database connection not available');
     const [project] = await db.select().from(projects).where(eq(projects.projectId, projectId));
     return project;
   }
 
   async getProjectsByUserId(userId: number): Promise<Project[]> {
+    if (!db) throw new Error('Database connection not available');
     return db.select()
       .from(projects)
       .where(eq(projects.userId, userId))
@@ -129,11 +142,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProject(insertProject: InsertProject): Promise<Project> {
+    if (!db) throw new Error('Database connection not available');
     const [project] = await db.insert(projects).values(insertProject).returning();
     return project;
   }
 
   async updateProject(id: number, projectData: Partial<Project>): Promise<Project> {
+    if (!db) throw new Error('Database connection not available');
     const [project] = await db
       .update(projects)
       .set({
@@ -157,19 +172,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTemplatesByType(type: string): Promise<Template[]> {
+    if (!db) throw new Error('Database connection not available');
+    // Note: templates table doesn't have 'type' column, returning all templates for now
     return db.select()
       .from(templates)
-      .where(eq(templates.type, type))
       .orderBy(asc(templates.name));
   }
   
   async getTemplatesByTypeAndUser(type: string, userId: number): Promise<Template[]> {
+    if (!db) throw new Error('Database connection not available');
+    // Note: templates table doesn't have 'type' column, returning user templates for now
     return db.select()
       .from(templates)
-      .where(and(
-        eq(templates.userId, userId),
-        eq(templates.type, type)
-      ))
+      .where(eq(templates.userId, userId))
       .orderBy(asc(templates.name));
   }
   
@@ -187,51 +202,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDefaultTemplate(userId: number, type: string): Promise<Template | undefined> {
+    if (!db) throw new Error('Database connection not available');
+    // Note: templates table doesn't have 'type' or 'isDefault' columns, returning first user template
     const [template] = await db.select()
       .from(templates)
-      .where(and(
-        eq(templates.userId, userId),
-        eq(templates.type, type),
-        eq(templates.isDefault, true)
-      ));
+      .where(eq(templates.userId, userId))
+      .limit(1);
     return template;
   }
 
   async createTemplate(insertTemplate: InsertTemplate): Promise<Template> {
-    // Si esta plantilla está marcada como predeterminada, desmarcar cualquier otra del mismo tipo
-    if (insertTemplate.isDefault) {
-      await db
-        .update(templates)
-        .set({ isDefault: false })
-        .where(and(
-          eq(templates.userId, insertTemplate.userId),
-          eq(templates.type, insertTemplate.type),
-          eq(templates.isDefault, true)
-        ));
-    }
-    
+    if (!db) throw new Error('Database connection not available');
+    // Note: templates table doesn't have 'isDefault' or 'type' columns, simplified implementation
     const [template] = await db.insert(templates).values(insertTemplate).returning();
     return template;
   }
 
   async updateTemplate(id: number, templateData: Partial<Template>): Promise<Template> {
-    // Si esta plantilla se está marcando como predeterminada, desmarcar cualquier otra del mismo tipo
-    if (templateData.isDefault) {
-      const [currentTemplate] = await db.select().from(templates).where(eq(templates.id, id));
-      
-      if (currentTemplate) {
-        await db
-          .update(templates)
-          .set({ isDefault: false })
-          .where(and(
-            eq(templates.userId, currentTemplate.userId),
-            eq(templates.type, currentTemplate.type),
-            eq(templates.isDefault, true),
-            sql`${templates.id} != ${id}`
-          ));
-      }
-    }
-    
+    if (!db) throw new Error('Database connection not available');
+    // Note: templates table doesn't have 'isDefault' or 'type' columns, simplified implementation
     const [template] = await db
       .update(templates)
       .set(templateData)
@@ -246,6 +235,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   async deleteTemplate(id: number): Promise<boolean> {
+    if (!db) throw new Error('Database connection not available');
     await db
       .delete(templates)
       .where(eq(templates.id, id));
@@ -413,8 +403,9 @@ export class DatabaseStorage implements IStorage {
     return plan;
   }
 
-  // User Subscription methods
+  // User Subscription methods  
   async getUserSubscription(id: number): Promise<UserSubscription | undefined> {
+    if (!db) throw new Error('Database connection not available');
     const [subscription] = await db
       .select()
       .from(userSubscriptions)
@@ -423,6 +414,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserSubscriptionByUserId(userId: number): Promise<UserSubscription | undefined> {
+    if (!db) throw new Error('Database connection not available');
     const [subscription] = await db
       .select()
       .from(userSubscriptions)
@@ -431,6 +423,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUserSubscription(insertSubscription: InsertUserSubscription): Promise<UserSubscription> {
+    if (!db) throw new Error('Database connection not available');
     const [subscription] = await db
       .insert(userSubscriptions)
       .values(insertSubscription)
@@ -439,6 +432,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserSubscription(id: number, subscriptionData: Partial<UserSubscription>): Promise<UserSubscription> {
+    if (!db) throw new Error('Database connection not available');
     const [subscription] = await db
       .update(userSubscriptions)
       .set({
@@ -457,6 +451,7 @@ export class DatabaseStorage implements IStorage {
 
   // Payment History methods
   async getPaymentHistory(id: number): Promise<PaymentHistory | undefined> {
+    if (!db) throw new Error('Database connection not available');
     const [payment] = await db
       .select()
       .from(paymentHistory)
@@ -465,6 +460,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPaymentHistoryByUserId(userId: number): Promise<PaymentHistory[]> {
+    if (!db) throw new Error('Database connection not available');
     return db.select()
       .from(paymentHistory)
       .where(eq(paymentHistory.userId, userId))
