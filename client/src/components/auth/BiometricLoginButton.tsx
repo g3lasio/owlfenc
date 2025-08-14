@@ -60,15 +60,33 @@ export function BiometricLoginButton({
   };
 
   const handleBiometricLogin = async () => {
-    if (!isSupported || isLoading || disabled) return;
+    if (!isSupported || isLoading || disabled) {
+      console.log('🚫 [BIOMETRIC-BUTTON] Login bloqueado:', { isSupported, isLoading, disabled });
+      return;
+    }
 
-    console.log('🔐 [BIOMETRIC-BUTTON] Iniciando login biométrico');
+    // Validar que hay email
+    if (!email) {
+      toast({
+        title: "Email requerido",
+        description: "Por favor ingresa tu email primero",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('🔐 [BIOMETRIC-BUTTON] Iniciando login biométrico para:', email);
     setIsLoading(true);
 
     try {
       // Intentar autenticación biométrica
       const credential = await webauthnService.authenticateUser(email);
-      console.log('✅ [BIOMETRIC-BUTTON] Autenticación exitosa');
+      
+      if (!credential) {
+        throw new Error('No se recibió credencial de autenticación');
+      }
+
+      console.log('✅ [BIOMETRIC-BUTTON] Credencial biométrica obtenida');
 
       // Procesar respuesta del servidor
       const response = await fetch('/api/webauthn/authenticate/complete', {
@@ -77,12 +95,14 @@ export function BiometricLoginButton({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          credential
+          credential,
+          email
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`Error del servidor: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Error del servidor (${response.status}): ${errorText}`);
       }
 
       const result = await response.json();
@@ -92,13 +112,13 @@ export function BiometricLoginButton({
         
         toast({
           title: "Autenticación exitosa",
-          description: `Bienvenido de vuelta!`,
+          description: `Bienvenido de vuelta, ${result.user.displayName || result.user.email}!`,
           variant: "default",
         });
 
         onSuccess(result.user);
       } else {
-        throw new Error(result.message || 'Error en la autenticación');
+        throw new Error(result.message || result.error || 'Error en la autenticación');
       }
 
     } catch (error: any) {
@@ -106,14 +126,21 @@ export function BiometricLoginButton({
       
       let errorMessage = 'Error en la autenticación biométrica';
       
-      if (error.message.includes('cancelado') || error.message.includes('canceled')) {
+      // Manejo más robusto de errores
+      const errorString = error?.message || error?.toString() || 'Error desconocido';
+      
+      if (errorString.includes('cancelado') || errorString.includes('canceled') || errorString.includes('abort')) {
         errorMessage = 'Autenticación cancelada por el usuario';
-      } else if (error.message.includes('no autorizado') || error.message.includes('not allowed')) {
-        errorMessage = 'Acceso biométrico no autorizado';
-      } else if (error.message.includes('no soportada') || error.message.includes('not supported')) {
-        errorMessage = 'Autenticación biométrica no soportada';
-      } else if (error.message.includes('no encontraron credenciales') || error.message.includes('no credentials')) {
-        errorMessage = 'No hay credenciales biométricas configuradas en este dispositivo';
+      } else if (errorString.includes('no autorizado') || errorString.includes('not allowed') || errorString.includes('NotAllowedError')) {
+        errorMessage = 'Acceso biométrico no autorizado. Verifica que tu dispositivo tenga configurada autenticación biométrica';
+      } else if (errorString.includes('no soportada') || errorString.includes('not supported') || errorString.includes('NotSupportedError')) {
+        errorMessage = 'Autenticación biométrica no soportada en este dispositivo';
+      } else if (errorString.includes('no encontraron credenciales') || errorString.includes('no credentials') || errorString.includes('InvalidStateError')) {
+        errorMessage = 'No hay credenciales biométricas configuradas. Registra tu biometría primero';
+      } else if (errorString.includes('Network') || errorString.includes('fetch')) {
+        errorMessage = 'Error de conexión. Verifica tu internet e intenta de nuevo';
+      } else if (errorString.includes('timeout') || errorString.includes('TimeoutError')) {
+        errorMessage = 'La autenticación expiró. Intenta de nuevo';
       }
 
       toast({
@@ -136,11 +163,13 @@ export function BiometricLoginButton({
   }
 
   const getIcon = () => {
-    const deviceInfo = getBiometricMethodDescription();
-    
-    if (deviceInfo.includes('Face ID') || deviceInfo.includes('Touch ID')) {
+    if (isLoading) {
+      return <Loader2 className="w-4 h-4 animate-spin" />;
+    }
+
+    if (methodDescription.includes('Face ID') || methodDescription.includes('Touch ID')) {
       return <Smartphone className="w-4 h-4" />;
-    } else if (deviceInfo.includes('Huella')) {
+    } else if (methodDescription.includes('Huella') || methodDescription.includes('Fingerprint')) {
       return <Fingerprint className="w-4 h-4" />;
     } else {
       return <Shield className="w-4 h-4" />;

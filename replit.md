@@ -13,6 +13,9 @@ An advanced AI-powered legal document and permit management platform with intell
 - Priorizar seguridad sobre conveniencia
 - **CRÍTICO**: Eliminar completamente errores "fastidiosos" de autocompletado y unhandled rejections ✅ **COMPLETED (Aug 14, 2025)**
 - Console logs limpios sin spam de errores de conectividad ✅ **COMPLETED (Aug 14, 2025)**
+- **LOGIN UX IMPROVEMENTS**: Hacer opciones biométricas y OTP más visibles pero menos detalladas ✅ **COMPLETED (Aug 14, 2025)**
+- **LABEL ACCURACY**: Usar "OTP Code" en lugar de "SMS Code" ya que el sistema usa email-based OTP ✅ **COMPLETED (Aug 14, 2025)**
+- **BIOMETRIC FUNCTIONALITY**: Corregir problemas de lógica y funcionalidad en autenticación biométrica ✅ **COMPLETED (Aug 14, 2025)**
 
 ## System Architecture
 
@@ -48,6 +51,12 @@ An advanced AI-powered legal document and permit management platform with intell
   - `dualSignatureService.ts`: Fixed database schema mismatches and type definitions ✅
   - `resendEmailAdvanced.ts`: Added missing methods and corrected return types ✅
   - **Outcome**: Clean codebase with zero LSP diagnostics and improved code reliability ✅
+- **BIOMETRIC LOGIN FIXES (Aug 14, 2025)**: Comprehensive biometric authentication improvements:
+  - `BiometricLoginButton.tsx`: Added email validation, robust error handling, credential verification ✅
+  - Enhanced error messages: Specific handling for different error types (canceled, unauthorized, network, timeout) ✅
+  - Improved logging and debugging information for biometric authentication flow ✅
+  - Fixed getIcon() logic and loading states for better UX ✅
+  - **Impact**: Biometric login now has proper validation and clear error messages ✅
 
 ### Core Features & Design Patterns
 - **User Authentication & Authorization**: Enhanced OAuth, email/password authentication, and a robust subscription-based permission system with defined user roles (`primo_chambeador`, `mero_patron`, `master_contractor`, `trial_master`). Features include secure registration (defaulting to free plan), automatic subscription degradation, and real-time usage limit enforcement via middleware (`requireSubscriptionLevel`, `trackAndValidateUsage`, `requirePremiumFeature`).
