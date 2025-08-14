@@ -556,6 +556,32 @@ export const insertOtpCodeSchema = createInsertSchema(otpCodes).omit({
 export type OtpCode = typeof otpCodes.$inferSelect;
 export type InsertOtpCode = z.infer<typeof insertOtpCodeSchema>;
 
+// WebAuthn credentials table for biometric authentication
+export const webauthnCredentials = pgTable('webauthn_credentials', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull(),
+  credentialId: text('credential_id').notNull().unique(),
+  publicKey: text('public_key').notNull(),
+  counter: integer('counter').notNull().default(0),
+  deviceType: varchar('device_type', { length: 100 }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  lastUsed: timestamp('last_used'),
+  name: varchar('name', { length: 255 }), // e.g., "iPhone 14", "MacBook Pro"
+  transports: jsonb('transports'), // e.g., ["internal", "hybrid"]
+}, (table) => ({
+  userIdIdx: index('webauthn_user_id_idx').on(table.userId),
+  credentialIdIdx: index('webauthn_credential_id_idx').on(table.credentialId),
+}));
+
+// WebAuthn credentials schemas and types
+export const insertWebauthnCredentialSchema = createInsertSchema(webauthnCredentials).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type WebauthnCredential = typeof webauthnCredentials.$inferSelect;
+export type InsertWebauthnCredential = z.infer<typeof insertWebauthnCredentialSchema>;
+
 // Legacy aliases for backward compatibility
 export type EstimateItem = Estimate;
 export type InsertEstimateItem = InsertEstimate;

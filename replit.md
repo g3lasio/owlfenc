@@ -232,5 +232,81 @@ app.post("/api/ai-estimate-advanced",
 - Expiración automática después de 30 días
 - Limpieza completa al logout manual
 
+## 🔐 WEBAUTHN BIOMETRIC AUTHENTICATION SYSTEM - COMPLETED (2025-08-14)
+
+### Sistema de Autenticación Biométrica Completo ✅ IMPLEMENTADO
+
+**FUNCIONALIDAD AÑADIDA**: Autenticación con Face ID, Touch ID y huella digital usando WebAuthn API.
+
+#### Características Implementadas:
+
+1. **Detección Inteligente de Dispositivos** (`client/src/lib/biometric-detection.ts`)
+   - Detecta automáticamente capacidades biométricas del dispositivo
+   - Soporte para Face ID, Touch ID, Windows Hello y huella digital Android
+   - Identificación de navegador y tipo de dispositivo
+   - Progressive enhancement - solo se muestra si hay soporte
+
+2. **Servicio WebAuthn Completo** (`client/src/lib/webauthn-service.ts`)
+   - Implementación completa de WebAuthn API
+   - Registro de credenciales biométricas
+   - Autenticación con verificación de usuario
+   - Manejo seguro de challenges y attestations
+   - Integración con CBOR para codificación de credenciales
+
+3. **Componente Biométrico** (`client/src/components/auth/BiometricLoginButton.tsx`)
+   - Botón inteligente que se adapta al tipo de dispositivo
+   - Iconos específicos: Face ID/Touch ID para iOS, huella para Android, Windows Hello para PC
+   - Estados de loading y error comprehensivos
+   - Mensajes de error localizados y específicos
+
+4. **Backend WebAuthn** (`server/routes/webauthn.ts`)
+   - Endpoints para registro y autenticación
+   - Validación de attestations y assertions
+   - Integración con base de datos PostgreSQL
+   - Manejo seguro de credenciales y contadores
+
+5. **Base de Datos** (`shared/schema.ts`)
+   - Tabla `webauthn_credentials` con campos optimizados
+   - Índices para user_id y credential_id
+   - Soporte para transports y metadatos de dispositivo
+   - Tracking de último uso y contadores
+
+#### Flujo de Funcionamiento:
+
+1. **Detección Automática**:
+   - Al cargar la página de login, detecta si el dispositivo soporta biometría
+   - Muestra el botón apropiado solo si hay soporte disponible
+   - Adapta el ícono y texto según el tipo de autenticador
+
+2. **Autenticación**:
+   - Usuario hace clic en el botón biométrico
+   - Sistema solicita autenticación biométrica (Face ID, Touch ID, etc.)
+   - Valida la credencial en el backend
+   - Integra con el sistema de persistencia de 30 días existente
+
+3. **Seguridad**:
+   - Resistente a phishing (inherente a WebAuthn)
+   - Combina "algo que tienes" (dispositivo) + "algo que eres" (biometría)
+   - Sin contraseñas almacenadas o transmitidas
+   - Integración con Firebase Authentication existente
+
+#### Cobertura de Dispositivos:
+- **iOS**: Face ID, Touch ID (Safari, Chrome, Edge)
+- **Android**: Huella digital, Face Unlock (Chrome, Edge, Firefox)
+- **Windows**: Windows Hello (Chrome, Edge, Firefox)
+- **macOS**: Touch ID (Safari, Chrome, Edge)
+
+#### Logs de Monitoreo:
+- `🔐 [BIOMETRIC-DETECTION] Iniciando detección de capacidades`
+- `✅ [BIOMETRIC-BUTTON] Autenticación biométrica disponible`
+- `🎉 [LOGIN-BIOMETRIC] Login biométrico exitoso`
+- `❌ [LOGIN-BIOMETRIC] Error en login biométrico`
+
+#### Testing Status:
+- ✅ Detección de Windows Hello en Chrome confirmada
+- ✅ Integración con formulario de login funcional
+- ✅ Backend WebAuthn rutas registradas exitosamente
+- ✅ Base de datos configurada y operativa
+
 ### Next Priority
-Continuar aplicando los middlewares de autorización a todos los endpoints críticos del sistema para asegurar que ninguna función premium sea accesible sin la suscripción apropiada.
+Realizar pruebas completas del flujo biométrico y continuar aplicando los middlewares de autorización a todos los endpoints críticos del sistema.

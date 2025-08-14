@@ -7,6 +7,7 @@ import pdfParse from "pdf-parse";
 import centralizedEmailRoutes from "./routes/centralized-email-routes-fix";
 import otpRoutes from "./routes/otp-routes";
 import oauthConfigRoutes from "./routes/oauth-config";
+import webauthnRoutes from "./routes/webauthn";
 import { setupProductionRoutes, setupProductionErrorHandlers } from "./production-setup";
 
 // 🛡️ SECURITY MIDDLEWARE - Applied immediately for maximum protection
@@ -953,6 +954,10 @@ console.log('📧 [CENTRALIZED-EMAIL] Rutas registradas en /api/centralized-emai
 // 🔐 Registrar rutas de autenticación OTP
 app.use("/api/otp", otpRoutes);
 console.log('🔐 [OTP-AUTH] Rutas de autenticación OTP registradas en /api/otp');
+
+// 🔐 Registrar rutas de autenticación WebAuthn (biométrica)
+app.use("/api/webauthn", webauthnRoutes);
+console.log('🔐 [WEBAUTHN] Rutas de autenticación biométrica registradas en /api/webauthn');
 
 // 🔧 Registrar rutas de configuración OAuth
 app.use("/api/oauth", oauthConfigRoutes);

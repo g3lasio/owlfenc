@@ -41,6 +41,7 @@ import { robustOAuthHandler } from "@/lib/simple-oauth";
 import { instantGoogleLogin, instantAppleLogin, popupGoogleLogin, popupAppleLogin } from "@/lib/ultra-simple-oauth";
 
 import OTPAuth from "@/components/auth/OTPAuth";
+import BiometricLoginButton from "@/components/auth/BiometricLoginButton";
 
 import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
@@ -670,6 +671,25 @@ export default function AuthPage() {
                         )}
                       />
                       
+                      {/* Botón de Login Biométrico */}
+                      <BiometricLoginButton
+                        onSuccess={(userData) => {
+                          console.log('🎉 [LOGIN-BIOMETRIC] Login biométrico exitoso:', userData);
+                          showSuccessEffect();
+                        }}
+                        onError={(error) => {
+                          console.error('❌ [LOGIN-BIOMETRIC] Error en login biométrico:', error);
+                        }}
+                        email={loginForm.watch('email')}
+                        disabled={isLoading}
+                      />
+
+                      <div className="flex items-center gap-3">
+                        <Separator className="flex-1 bg-muted-foreground/30" />
+                        <span className="text-xs text-muted-foreground">o</span>
+                        <Separator className="flex-1 bg-muted-foreground/30" />
+                      </div>
+
                       <Button
                         type="submit"
                         className="w-full h-10 bg-primary hover:bg-primary/80 text-black font-semibold"
