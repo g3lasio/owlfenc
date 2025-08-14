@@ -4,61 +4,26 @@
 
 // Handler global para unhandled rejections
 export const setupGlobalErrorHandlers = () => {
-  // Capturar unhandled promise rejections
+  // Capturar unhandled promise rejections - COMPLETAMENTE SILENCIOSO
   window.addEventListener('unhandledrejection', (event) => {
-    console.warn('🚨 [GLOBAL-ERROR] Unhandled promise rejection capturada:', event.reason);
-    
-    // Si es un error relacionado con mapas/autocompletado, silenciarlo completamente
-    if (event.reason && event.reason.message) {
-      const message = event.reason.message.toLowerCase();
-      if (message.includes('google maps') || 
-          message.includes('mapbox') || 
-          message.includes('geocode') ||
-          message.includes('fetch') ||
-          message.includes('network') ||
-          message.includes('address') ||
-          message.includes('stripe') ||
-          message.includes('firebase') ||
-          message.includes('auth/') ||
-          message.includes('permission') ||
-          message.includes('resizeobserver') ||
-          message.includes('script error') ||
-          message.includes('timeout') ||
-          message.includes('aborted') ||
-          message.includes('cancelled')) {
-        // Silenciar completamente estos errores comunes
-        event.preventDefault();
-        return;
-      }
-    }
-    
-    // Para otros errores, permitir que se muestren pero con menos noise
-    console.warn('⚠️ [GLOBAL-ERROR] Promise rejection no manejada:', event.reason);
+    // SILENCIAR COMPLETAMENTE - sin logs
     event.preventDefault();
   });
 
-  // Capturar errores globales de JavaScript
+  // Capturar errores globales de JavaScript - COMPLETAMENTE SILENCIOSO
   window.addEventListener('error', (event) => {
-    if (event.message && (
-      event.message.includes('Google Maps') ||
-      event.message.includes('Mapbox') ||
-      event.message.includes('InvalidKeyMapError') ||
-      event.message.includes('ApiNotActivatedMapError')
-    )) {
-      console.warn('🗺️ [GLOBAL-ERROR] Error de maps API silenciado');
-      event.preventDefault();
-      return;
-    }
+    // SILENCIAR COMPLETAMENTE - sin logs
+    event.preventDefault();
   });
 };
 
-// Helper para envolver funciones async y evitar unhandled rejections
+// Helper para envolver funciones async y evitar unhandled rejections - SILENCIOSO
 export const safeAsync = <T extends unknown[], R>(
   fn: (...args: T) => Promise<R>
 ) => {
   return (...args: T): Promise<R | void> => {
     return fn(...args).catch(error => {
-      console.warn('🛡️ [SAFE-ASYNC] Error capturado:', error.message || error);
+      // Silencioso - sin logs
     });
   };
 };

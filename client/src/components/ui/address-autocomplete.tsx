@@ -57,7 +57,7 @@ export function AddressAutocomplete({
 
     const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
     if (!token || !hasMapboxToken) {
-      console.warn('🗺️ [ADDRESS-AUTOCOMPLETE] Mapbox token no disponible - usando input manual');
+      // Sin logs - solo limpiar estado  
       setSuggestions([]);
       setShowSuggestions(false);
       return;
@@ -88,8 +88,7 @@ export function AddressAutocomplete({
           );
           return response;
         } catch (fetchError) {
-          // Silenciar COMPLETAMENTE cualquier error de fetch
-          console.warn('🗺️ [ADDRESS-AUTOCOMPLETE] Fetch silenciado:', (fetchError as Error).message?.substring(0, 30));
+          // SILENCIAR COMPLETAMENTE - sin ningún log
           return null;
         }
       };
@@ -112,12 +111,12 @@ export function AddressAutocomplete({
           setSuggestions(data.features);
           setShowSuggestions(data.features.length > 0);
         } else {
-          console.warn('🗺️ [ADDRESS-AUTOCOMPLETE] Respuesta de Mapbox sin resultados válidos');
+          // Sin logs - solo limpiar estado
           setSuggestions([]);
           setShowSuggestions(false);
         }
       } else {
-        console.warn(`🗺️ [ADDRESS-AUTOCOMPLETE] Error HTTP ${response.status} desde Mapbox API`);
+        // Sin logs - solo limpiar estado
         setSuggestions([]);
         setShowSuggestions(false);
       }
@@ -149,13 +148,13 @@ export function AddressAutocomplete({
       return;
     }
 
-    // Buscar después de 800ms de inactividad (aumentado más para evitar spam)
+    // Buscar después de 1000ms de inactividad (aumentado aún más)
     debounceTimer.current = setTimeout(() => {
-      // SILENCIAR COMPLETAMENTE - ni siquiera mostrar warnings
-      searchAddresses(newValue).catch(() => {
-        // Completamente silencioso - sin logs
+      // ENVOLVER EN PROMESA QUE NUNCA PUEDE FALLAR
+      Promise.resolve().then(() => searchAddresses(newValue)).catch(() => {
+        // Completamente silencioso - sin logs ni nada
       });
-    }, 800);
+    }, 1000);
   };
 
   // Seleccionar una sugerencia
