@@ -44,30 +44,17 @@ import OTPAuth from "@/components/auth/OTPAuth";
 import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
 
-// Declaramos el hook de traducción para usar en los esquemas
-const { t } = { t: (key: string) => key }; // Inicialización temporal, se sobrescribirá con el hook real
+type LoginFormValues = {
+  email: string;
+  password: string;
+};
 
-// Esquema de validación para el formulario de login
-const loginSchema = z.object({
-  email: z.string().email(t("auth.validEmail")),
-  password: z.string().min(6, t("auth.passwordRequirements")),
-});
-
-// Esquema de validación para el formulario de registro
-const signupSchema = z
-  .object({
-    name: z.string(),
-    email: z.string(),
-    password: z.string(),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: t("auth.passwordsMatch"),
-    path: ["confirmPassword"],
-  });
-
-type LoginFormValues = z.infer<typeof loginSchema>;
-type SignupFormValues = z.infer<typeof signupSchema>;
+type SignupFormValues = {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+};
 
 export default function AuthPage() {
   const [, navigate] = useLocation();
@@ -92,6 +79,24 @@ export default function AuthPage() {
   const cardRef = useRef<HTMLDivElement>(null);
   const successRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation(); // Obtenemos la función de traducción
+  
+  // Esquemas de validación dentro del componente para tener acceso a t()
+  const loginSchema = z.object({
+    email: z.string().min(1, "Email es requerido").email("Email inválido"),
+    password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  });
+
+  const signupSchema = z
+    .object({
+      name: z.string().min(1, "El nombre es requerido"),
+      email: z.string().min(1, "Email es requerido").email("Email inválido"),
+      password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+      confirmPassword: z.string().min(1, "Confirmar contraseña es requerido"),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: "Las contraseñas no coinciden",
+      path: ["confirmPassword"],
+    });
   
   // Procesar tokens OAuth al cargar la página
   useEffect(() => {
@@ -130,6 +135,7 @@ export default function AuthPage() {
       email: "",
       password: "",
     },
+    mode: "onChange"
   });
 
   // Configurar el formulario de registro
@@ -141,6 +147,7 @@ export default function AuthPage() {
       password: "",
       confirmPassword: "",
     },
+    mode: "onChange"
   });
 
 
