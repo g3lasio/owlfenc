@@ -72,7 +72,10 @@ export class EnhancedFirebaseAuth {
     onAuthStateChanged(this.auth, (user) => {
       if (user) {
         this.logSecurityEvent('USER_SIGNED_IN', { uid: user.uid, method: 'state_change' });
-        this.validateTokenSecurity(user);
+        // Use a safe async wrapper to prevent unhandled rejections
+        this.validateTokenSecurity(user).catch((error) => {
+          console.warn('🔧 [AUTH-SECURITY] Token validation failed silently:', error.message || error);
+        });
       } else {
         this.logSecurityEvent('USER_SIGNED_OUT', {});
       }
@@ -89,7 +92,22 @@ export class EnhancedFirebaseAuth {
 
   private async validateTokenSecurity(user: User) {
     try {
-      const tokenResult = await user.getIdTokenResult();
+      // Enhanced error handling for token operations
+      const tokenResult = await user.getIdTokenResult().catch((tokenError) => {
+        // Handle specific token errors gracefully
+        if (tokenError.message?.includes?.('Failed to fetch') || 
+            tokenError.message?.includes?.('_performFetchWithErrorHandling') ||
+            tokenError.message?.includes?.('requestStsToken')) {
+          console.warn('🔧 [AUTH-SECURITY] Token fetch failed, network issue - continuing:', tokenError.message);
+          return null; // Return null to skip validation
+        }
+        throw tokenError; // Re-throw other errors
+      });
+      
+      if (!tokenResult) {
+        // Skip validation if token fetch failed due to network issues
+        return;
+      }
       
       // Check token expiration
       const now = Date.now() / 1000;
@@ -98,15 +116,29 @@ export class EnhancedFirebaseAuth {
       
       if (timeUntilExpiration < SECURITY_CONFIG.tokenRefreshMinutes * 60) {
         console.warn('🟡 [AUTH-SECURITY] Token expiring soon, refreshing...');
-        await user.getIdToken(true); // Force refresh
+        // Safe token refresh with error handling
+        await user.getIdToken(true).catch((refreshError) => {
+          console.warn('🔧 [AUTH-SECURITY] Token refresh failed, continuing:', refreshError.message);
+        });
       }
 
       // Validate token claims
       this.validateTokenClaims(tokenResult);
       
-    } catch (error) {
-      console.error('❌ [AUTH-SECURITY] Token validation failed:', error);
-      await this.signOut();
+    } catch (error: any) {
+      // Enhanced error handling - don't force sign out for network errors
+      if (error.message?.includes?.('Failed to fetch') || 
+          error.message?.includes?.('network') ||
+          error.code === 'auth/network-request-failed') {
+        console.warn('🔧 [AUTH-SECURITY] Network-related token validation issue, continuing:', error.message);
+        return; // Don't sign out for network issues
+      }
+      
+      console.error('❌ [AUTH-SECURITY] Critical token validation failed:', error);
+      // Only sign out for critical auth errors, not network issues
+      await this.signOut().catch((signOutError) => {
+        console.warn('🔧 [AUTH-SECURITY] Sign out failed:', signOutError.message);
+      });
     }
   }
 

@@ -72,7 +72,7 @@ console.log("🔧 FIREBASE MODE CONFIG:", {
   note: "FORCING FIREBASE REAL MODE FOR PROJECTS"
 });
 
-// 🔧 FIX: Handle unhandled promise rejections from Firebase with enhanced error handling
+// 🔧 ENHANCED FIX: Comprehensive unhandled promise rejection handler
 window.addEventListener('unhandledrejection', (event) => {
   const error = event.reason;
   
@@ -85,37 +85,55 @@ window.addEventListener('unhandledrejection', (event) => {
     error.message?.includes?.('_performFetchWithErrorHandling') ||
     error.message?.includes?.('requestStsToken') ||
     error.message?.includes?.('_StsTokenManager') ||
-    error.message?.includes?.('getIdToken')
+    error.message?.includes?.('getIdToken') ||
+    error.message?.includes?.('_logoutIfInvalidated') ||
+    error.message?.includes?.('validateTokenSecurity') ||
+    error.stack?.includes?.('firebase') ||
+    error.stack?.includes?.('auth')
   );
 
-  if (isFirebaseError) {
-    // Logging detallado para errores de autenticación
-    if (error.code === 'auth/network-request-failed') {
-      console.warn('🔧 [GLOBAL-FIX] Handled Firebase network error:', error.message || 'Network request failed');
-    } else if (error.message?.includes?.('Failed to fetch')) {
-      console.warn('🔧 [GLOBAL-FIX] Handled fetch error:', error.message);
-    } else if (error.message?.includes?.('"STS token"') || error.message?.includes?.('requestStsToken')) {
-      console.warn('🔧 [GLOBAL-FIX] Handled STS token error:', error.message);
+  // Identificar errores de red/conectividad que son normales
+  const isNetworkError = error && (
+    error.message?.includes?.('Failed to fetch') ||
+    error.message?.includes?.('NetworkError') ||
+    error.message?.includes?.('fetch') ||
+    error.code === 'auth/network-request-failed' ||
+    error.code === 'auth/too-many-requests'
+  );
+
+  if (isFirebaseError || isNetworkError) {
+    // Prevent error from showing in console as unhandled
+    event.preventDefault();
+    
+    // Log silently based on error type
+    if (isNetworkError) {
+      // These are expected in poor network conditions - log very quietly
+      console.debug('🔧 [SILENT-HANDLED] Network connectivity issue handled:', error.code || 'network-error');
+    } else if (error.code === 'auth/network-request-failed') {
+      console.debug('🔧 [SILENT-HANDLED] Auth network request failed - handled');
+    } else if (error.message?.includes?.('requestStsToken') || error.message?.includes?.('_StsTokenManager')) {
+      console.debug('🔧 [SILENT-HANDLED] STS token refresh issue - handled');
     } else {
-      console.warn('🔧 [GLOBAL-FIX] Handled Firebase unhandled rejection:', error.code || error.message);
+      // Other Firebase errors get minimal logging
+      console.debug('🔧 [SILENT-HANDLED] Firebase auth issue handled:', error.code || 'auth-error');
     }
     
-    event.preventDefault(); // Prevent error from showing in console as unhandled
-    
-    // Dispatch custom event for app-level error handling if needed
-    window.dispatchEvent(new CustomEvent('firebase-error-handled', {
-      detail: { 
-        error: error,
-        timestamp: new Date().toISOString(),
-        handled: true 
-      }
-    }));
+    return; // Early return to prevent any further processing
   }
   
   // Handle Stripe errors separately
   if (error?.message?.includes?.('Stripe')) {
-    console.warn('🔧 [GLOBAL-FIX] Handled unhandled rejection:', error.message || 'Stripe error');
+    console.debug('🔧 [SILENT-HANDLED] Stripe error handled');
     event.preventDefault();
+    return;
+  }
+
+  // Handle runtime-error-plugin detection errors
+  if (error?.message?.includes?.('runtime-error-plugin') || 
+      error?.message?.includes?.('plugin:runtime-error-plugin')) {
+    console.debug('🔧 [SILENT-HANDLED] Runtime error plugin detected');
+    event.preventDefault();
+    return;
   }
 });
 

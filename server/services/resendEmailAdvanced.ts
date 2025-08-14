@@ -34,6 +34,7 @@ export class ResendEmailAdvanced {
   private platformDomain = 'owlfenc.com'; // Verified institutional domain
   private legalEmail = 'legal@owlfenc.com'; // Legal document handling
   private signatureEmail = 'sign.legal@owlfenc.com'; // Digital signature workflow
+  private operationalEmail = 'gelasio@chyrris.com'; // Development/operational email
 
   constructor() {
     if (!process.env.RESEND_API_KEY) {
@@ -749,6 +750,7 @@ export class ResendEmailAdvanced {
       console.error('❌ [COMPLETE-CONTRACT-EMAIL] Error:', error);
       return {
         success: false,
+        message: 'Complete contract email delivery failed',
         error: error.message || 'Complete contract email delivery failed'
       };
     }
@@ -824,10 +826,10 @@ export class ResendEmailAdvanced {
         return {
           success: true,
           emailId: result.data.id,
-          message: this.isDomainVerified() 
+          message: this.isProductionMode() 
             ? `Email sent directly to ${finalRecipient}`
             : `Email sent via ${this.platformDomain} (originally ${params.to} → ${finalRecipient})`,
-          strategy: this.isDomainVerified() ? 'direct-delivery' : 'development-routing'
+          strategy: this.isProductionMode() ? 'direct-delivery' : 'development-routing'
         };
       } else {
         console.error('❌ [ADVANCED-EMAIL] No email ID returned:', result);
@@ -885,6 +887,56 @@ export class ResendEmailAdvanced {
         error: errorMessage
       };
     }
+  }
+
+  /**
+   * Generate contractor email template
+   */
+  generateContractorEmailTemplate(params: any): string {
+    return `
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Contract Review Required</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #2563eb;">Contract Review Required</h2>
+            <p>Dear ${params.contractorName || 'Contractor'},</p>
+            <p>A new contract requires your review and signature.</p>
+            <p><strong>Contract ID:</strong> ${params.contractId}</p>
+            <p><strong>Client:</strong> ${params.clientName}</p>
+            <p>Please review and sign the contract using the link provided.</p>
+            <p>Best regards,<br>Owl Fence Legal Team</p>
+          </div>
+        </body>
+      </html>
+    `;
+  }
+
+  /**
+   * Generate client email template
+   */
+  generateClientEmailTemplate(params: any): string {
+    return `
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Contract Signature Required</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #2563eb;">Contract Signature Required</h2>
+            <p>Dear ${params.clientName || 'Client'},</p>
+            <p>Your contract is ready for signature.</p>
+            <p><strong>Contract ID:</strong> ${params.contractId}</p>
+            <p><strong>Contractor:</strong> ${params.contractorName}</p>
+            <p>Please review and sign the contract using the secure link provided.</p>
+            <p>Best regards,<br>Owl Fence Legal Team</p>
+          </div>
+        </body>
+      </html>
+    `;
   }
 
   /**
