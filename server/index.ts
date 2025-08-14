@@ -960,8 +960,12 @@ console.log('🔧 [OAUTH-CONFIG] Rutas de configuración OAuth registradas en /a
 
 // 🔀 Registrar rutas OAuth directas (bypass Firebase Console)
 import oauthDirectRoutes from './routes/oauth-direct';
+import oauthSuccessRoutes from './routes/oauth-success';
 app.use("/api/oauth-direct", oauthDirectRoutes);
 console.log('🔀 [OAUTH-DIRECT] Rutas OAuth directas registradas en /api/oauth-direct');
+
+app.use('/api/oauth', oauthSuccessRoutes);
+console.log('✅ [OAUTH-SUCCESS] Rutas de éxito OAuth registradas en /api/oauth');
 
 // Registrar rutas de tokens personalizados
 import customTokenRoutes from './routes/custom-token-routes';

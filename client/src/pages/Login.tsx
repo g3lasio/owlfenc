@@ -37,8 +37,10 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { processOAuthToken, checkForOAuthToken } from "@/lib/oauth-token-handler";
 import { robustOAuthHandler } from "@/lib/simple-oauth";
+import { instantGoogleLogin, instantAppleLogin, popupGoogleLogin, popupAppleLogin } from "@/lib/ultra-simple-oauth";
 
 import OTPAuth from "@/components/auth/OTPAuth";
+import OAuthTestPanel from "@/components/auth/OAuthTestPanel";
 import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
 
@@ -285,7 +287,8 @@ export default function AuthPage() {
       clearError();
       console.log("=== INICIANDO GOOGLE AUTH DESDE LOGIN PAGE ===");
       
-      await robustOAuthHandler('google');
+      // ALTERNATIVA ULTRA SIMPLE - Redirección inmediata
+      instantGoogleLogin();
       
       // La función robustOAuthHandler maneja la redirección
       console.log("GOOGLE REDIRECCIÓN INICIADA");
@@ -334,7 +337,8 @@ export default function AuthPage() {
       console.log("Modo:", authMode);
       console.log("URL:", window.location.href);
 
-      await robustOAuthHandler('apple');
+      // ALTERNATIVA ULTRA SIMPLE - Redirección inmediata  
+      instantAppleLogin();
 
       // La función robustOAuthHandler maneja la redirección
       console.log("REDIRECCIÓN INICIADA - Procesando en nueva página");
@@ -861,6 +865,17 @@ export default function AuthPage() {
             )}
           </CardFooter>
         </Card>
+
+        {/* Panel de Pruebas OAuth - Solo para debugging */}
+        {(
+          <div className="mt-8">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold text-foreground">🧪 Panel de Pruebas OAuth</h3>
+              <p className="text-sm text-muted-foreground">3 alternativas después de 3 días de debugging</p>
+            </div>
+            <OAuthTestPanel />
+          </div>
+        )}
       </div>
     </div>
   );
