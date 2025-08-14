@@ -128,6 +128,7 @@ function Router() {
       <Route path="/login" component={() => <AuthPage />} />
       <Route path="/signup" component={() => <AuthPage />} /> {/* Mantiene la misma ruta pero usa AuthPage */}
       <Route path="/recuperar-password" component={RecuperarPassword} />
+      <Route path="/forgot-password" component={RecuperarPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/login/email-link-callback" component={EmailLinkCallback} />
       <Route path="/apple-callback" component={AppleCallback} />

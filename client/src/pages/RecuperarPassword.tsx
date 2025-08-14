@@ -14,7 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 // Esquema de validación para el formulario
 const resetPasswordSchema = z.object({
-  email: z.string().email("Ingresa un correo electrónico válido"),
+  email: z.string().email("Please enter a valid email address"),
 });
 
 type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
@@ -44,15 +44,15 @@ export default function RecuperarPassword() {
       setEmailSent(true);
       
       toast({
-        title: "Correo enviado",
-        description: "Hemos enviado un enlace de recuperación a tu correo electrónico.",
+        title: "Email sent",
+        description: "We have sent a password recovery link to your email address.",
       });
     } catch (err: any) {
       console.error("Error al enviar correo de recuperación:", err);
       toast({
         variant: "destructive",
-        title: "Error al enviar correo",
-        description: err.message || "Ocurrió un error al enviar el correo de recuperación. Intenta de nuevo.",
+        title: "Failed to send email",
+        description: err.message || "An error occurred while sending the recovery email. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -63,26 +63,26 @@ export default function RecuperarPassword() {
     <div className="container mx-auto max-w-md py-12">
       <Card className="w-full">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Recuperar Contraseña</CardTitle>
+          <CardTitle className="text-2xl text-center">Reset Password</CardTitle>
           <CardDescription className="text-center">
-            Ingresa tu correo electrónico para recuperar tu contraseña
+            Enter your email address to recover your password
           </CardDescription>
         </CardHeader>
         <CardContent>
           {emailSent ? (
             <Alert className="mb-6 bg-green-50 text-green-800 border-green-200">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertTitle>Correo enviado</AlertTitle>
+              <AlertTitle>Email sent</AlertTitle>
               <AlertDescription>
-                Hemos enviado un enlace de recuperación de contraseña a tu correo electrónico.
-                Por favor revisa tu bandeja de entrada y sigue las instrucciones.
+                We have sent a password recovery link to your email address.
+                Please check your inbox and follow the instructions.
               </AlertDescription>
             </Alert>
           ) : (
             <div className="space-y-4">
               {/* Mensaje de instrucciones */}
               <p className="text-sm text-muted-foreground">
-                Te enviaremos un correo electrónico con un enlace para restablecer tu contraseña.
+                We will send you an email with a link to reset your password.
               </p>
 
               {/* Formulario de recuperación */}
@@ -93,7 +93,7 @@ export default function RecuperarPassword() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Correo Electrónico</FormLabel>
+                        <FormLabel>Email Address</FormLabel>
                         <FormControl>
                           <Input placeholder="tu@email.com" {...field} />
                         </FormControl>
@@ -121,10 +121,10 @@ export default function RecuperarPassword() {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Enviando...
+                        Sending...
                       </span>
                     ) : (
-                      "Enviar Correo de Recuperación"
+                      "Send Recovery Email"
                     )}
                   </Button>
                 </form>
@@ -135,7 +135,7 @@ export default function RecuperarPassword() {
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
             <Button variant="link" className="p-0" onClick={() => navigate("/login")}>
-              Volver a Iniciar Sesión
+              Back to Sign In
             </Button>
           </p>
         </CardFooter>

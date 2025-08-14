@@ -14,10 +14,10 @@ import { confirmReset } from "@/lib/firebase";
 
 // Esquema de validación para el formulario
 const resetPasswordSchema = z.object({
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-  confirmPassword: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Las contraseñas no coinciden",
+  message: "Passwords do not match",
   path: ["confirmPassword"],
 });
 
@@ -40,7 +40,7 @@ export default function ResetPassword() {
     if (oobCode) {
       setCode(oobCode);
     } else {
-      setError("No se encontró un código válido en la URL");
+      setError("No valid code found in URL");
     }
   }, []);
 
@@ -56,7 +56,7 @@ export default function ResetPassword() {
   // Manejar restablecimiento de contraseña
   const onSubmit = async (data: ResetPasswordFormValues) => {
     if (!code) {
-      setError("No hay un código de restablecimiento válido");
+      setError("No valid reset code available");
       return;
     }
 
@@ -68,17 +68,17 @@ export default function ResetPassword() {
       setResetComplete(true);
       
       toast({
-        title: "Contraseña restablecida",
-        description: "Tu contraseña ha sido restablecida correctamente.",
+        title: "Password reset",
+        description: "Your password has been successfully reset.",
       });
     } catch (err: any) {
       console.error("Error al restablecer contraseña:", err);
-      setError(err.message || "Error al restablecer la contraseña. Intenta de nuevo.");
+      setError(err.message || "Error resetting password. Please try again.");
       
       toast({
         variant: "destructive",
-        title: "Error al restablecer contraseña",
-        description: err.message || "Ocurrió un error al restablecer tu contraseña. Intenta de nuevo.",
+        title: "Password reset failed",
+        description: err.message || "An error occurred while resetting your password. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -89,9 +89,9 @@ export default function ResetPassword() {
     <div className="container mx-auto max-w-md py-12">
       <Card className="w-full">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Restablecer Contraseña</CardTitle>
+          <CardTitle className="text-2xl text-center">Reset Password</CardTitle>
           <CardDescription className="text-center">
-            Crea una nueva contraseña para tu cuenta
+            Create a new password for your account
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -99,15 +99,15 @@ export default function ResetPassword() {
             <div className="space-y-4">
               <Alert className="bg-green-50 text-green-800 border-green-200">
                 <CheckCircle className="h-4 w-4 text-green-600" />
-                <AlertTitle>Contraseña restablecida</AlertTitle>
+                <AlertTitle>Password reset successfully</AlertTitle>
                 <AlertDescription>
-                  Tu contraseña ha sido cambiada correctamente. Ahora puedes iniciar sesión con tu nueva contraseña.
+                  Your password has been changed successfully. You can now sign in with your new password.
                 </AlertDescription>
               </Alert>
               
               <div className="text-center mt-6">
                 <Button onClick={() => navigate("/login")}>
-                  Ir a Iniciar Sesión
+                  Go to Sign In
                 </Button>
               </div>
             </div>
@@ -124,14 +124,14 @@ export default function ResetPassword() {
               {!code ? (
                 <div className="text-center py-4">
                   <p className="text-muted-foreground">
-                    El enlace de restablecimiento no es válido o ha expirado.
+                    The reset link is invalid or has expired.
                   </p>
                   <Button 
                     variant="outline"
                     className="mt-4"
                     onClick={() => navigate("/recuperar-password")}
                   >
-                    Solicitar nuevo enlace
+                    Request new link
                   </Button>
                 </div>
               ) : (
@@ -142,7 +142,7 @@ export default function ResetPassword() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Nueva Contraseña</FormLabel>
+                          <FormLabel>New Password</FormLabel>
                           <FormControl>
                             <Input type="password" placeholder="******" {...field} />
                           </FormControl>

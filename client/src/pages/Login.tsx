@@ -614,9 +614,9 @@ export default function AuthPage() {
                               <button
                                 type="button"
                                 className="text-xs text-primary/80 hover:text-primary"
-                                onClick={() => navigate("/forgot-password")}
+                                onClick={() => navigate("/recuperar-password")}
                               >
-                                {t("auth.forgotPassword")}
+                                Forgot Password?
                               </button>
                             </div>
                             <FormControl>
