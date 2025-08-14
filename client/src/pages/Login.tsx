@@ -671,42 +671,6 @@ export default function AuthPage() {
                         )}
                       />
                       
-                      {/* Alternative Authentication Methods */}
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <Separator className="flex-1 bg-muted-foreground/30" />
-                          <span className="text-xs text-muted-foreground">Additional Options</span>
-                          <Separator className="flex-1 bg-muted-foreground/30" />
-                        </div>
-                        
-                        {/* Biometric and OTP buttons side by side */}
-                        <div className="flex items-center gap-3">
-                          <BiometricLoginButton
-                            onSuccess={(userData) => {
-                              console.log('🎉 [LOGIN-BIOMETRIC] Login biométrico exitoso:', userData);
-                              showSuccessEffect();
-                            }}
-                            onError={(error) => {
-                              console.error('❌ [LOGIN-BIOMETRIC] Error en login biométrico:', error);
-                            }}
-                            email={loginForm.watch('email')}
-                            disabled={isLoading}
-                            className="flex-1"
-                          />
-                          
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="flex-1 border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5"
-                            onClick={() => setLoginMethod("otp")}
-                            disabled={isLoading}
-                          >
-                            <HiMail className="w-4 h-4 mr-2" />
-                            <span>Email OTP</span>
-                          </Button>
-                        </div>
-                      </div>
-
                       <div className="flex items-center gap-3">
                         <Separator className="flex-1 bg-muted-foreground/30" />
                         <span className="text-xs text-muted-foreground">or</span>
@@ -894,24 +858,39 @@ export default function AuthPage() {
             </div>
           </CardContent>
 
-          <CardFooter className="px-6 py-4 flex items-center justify-center border-t border-primary/20 bg-muted/10">
-            {authMode === "login" ? (
+          <CardFooter className="px-6 py-4 flex items-center justify-between border-t border-primary/20 bg-muted/10">
+            {authMode === "login" && loginMethod === "email" ? (
+              <>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-medium transition-all duration-300 border border-primary/30"
+                  onClick={() => setLoginMethod("otp")}
+                >
+                  <RiShieldKeyholeLine className="h-5 w-5" />
+                  <span>Switch to OTP Code</span>
+                </button>
+                
+                <BiometricLoginButton
+                  onSuccess={(userData) => {
+                    console.log('🎉 [LOGIN-BIOMETRIC] Login biométrico exitoso:', userData);
+                    showSuccessEffect();
+                  }}
+                  onError={(error) => {
+                    console.error('❌ [LOGIN-BIOMETRIC] Error en login biométrico:', error);
+                  }}
+                  email={loginForm.watch('email')}
+                  disabled={isLoading}
+                  className="max-w-xs"
+                />
+              </>
+            ) : authMode === "login" && loginMethod === "otp" ? (
               <button
                 type="button"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-medium transition-all duration-300 border border-primary/30"
-                onClick={() => setLoginMethod(loginMethod === "email" ? "otp" : "email")}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-medium transition-all duration-300 border border-primary/30 mx-auto"
+                onClick={() => setLoginMethod("email")}
               >
-                {loginMethod === "email" ? (
-                  <>
-                    <RiShieldKeyholeLine className="h-5 w-5" />
-                    <span>Switch to OTP Code</span>
-                  </>
-                ) : (
-                  <>
-                    <HiMail className="h-5 w-5" />
-                    <span>Switch to Password</span>
-                  </>
-                )}
+                <HiMail className="h-5 w-5" />
+                <span>Switch to Password</span>
               </button>
             ) : (
               <div></div>
