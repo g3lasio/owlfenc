@@ -46,39 +46,79 @@ export function AddressAutocomplete({
     setInternalValue(value);
   }, [value]);
 
-  // Función para buscar direcciones con Mapbox
+  // Función para buscar direcciones con Mapbox - MEJORADA
   const searchAddresses = async (query: string) => {
-    if (!query.trim() || query.length < 3 || !hasMapboxToken) return;
+    // Validaciones iniciales
+    if (!query.trim() || query.length < 3) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
 
     const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
-    if (!token) return;
+    if (!token || !hasMapboxToken) {
+      console.warn('🗺️ [ADDRESS-AUTOCOMPLETE] Mapbox token no disponible - usando input manual');
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
 
     setIsLoading(true);
     
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundo timeout
+
       const response = await fetch(
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?` +
         `access_token=${token}&` +
         `country=US&` +
         `types=address,poi&` +
         `limit=5&` +
-        `language=es`
+        `language=es`,
+        { 
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json'
+          }
+        }
       );
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
-        setSuggestions(data.features || []);
-        setShowSuggestions(true);
+        
+        if (data && data.features && Array.isArray(data.features)) {
+          setSuggestions(data.features);
+          setShowSuggestions(data.features.length > 0);
+        } else {
+          console.warn('🗺️ [ADDRESS-AUTOCOMPLETE] Respuesta de Mapbox sin resultados válidos');
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
+      } else {
+        console.warn(`🗺️ [ADDRESS-AUTOCOMPLETE] Error HTTP ${response.status} desde Mapbox API`);
+        setSuggestions([]);
+        setShowSuggestions(false);
       }
-    } catch (error) {
-      console.error('Error searching addresses:', error);
+    } catch (error: any) {
+      // Manejo de errores mejorado - NO usar console.error para evitar noise en logs
+      if (error.name === 'AbortError') {
+        console.warn('🗺️ [ADDRESS-AUTOCOMPLETE] Búsqueda cancelada por timeout');
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.warn('🗺️ [ADDRESS-AUTOCOMPLETE] Error de red - verificar conectividad');
+      } else {
+        console.warn('🗺️ [ADDRESS-AUTOCOMPLETE] Error en búsqueda:', error.message || 'Error desconocido');
+      }
       setSuggestions([]);
+      setShowSuggestions(false);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Manejar cambios en el input con debounce
+  // Manejar cambios en el input con debounce - MEJORADO
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setInternalValue(newValue);
@@ -89,10 +129,20 @@ export function AddressAutocomplete({
       clearTimeout(debounceTimer.current);
     }
 
-    // Buscar después de 300ms de inactividad
+    // Si está vacío, limpiar inmediatamente
+    if (!newValue.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    // Buscar después de 500ms de inactividad (aumentado para evitar spam)
     debounceTimer.current = setTimeout(() => {
-      searchAddresses(newValue);
-    }, 300);
+      // Wrapper con try-catch para evitar unhandled rejections
+      searchAddresses(newValue).catch(error => {
+        console.warn('🗺️ [ADDRESS-AUTOCOMPLETE] Error en debounced search:', error.message);
+      });
+    }, 500);
   };
 
   // Seleccionar una sugerencia

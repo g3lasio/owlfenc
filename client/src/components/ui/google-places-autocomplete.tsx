@@ -53,8 +53,8 @@ export default function GooglePlacesAutocompleteComponent({
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
     
     if (!apiKey) {
-      console.error("❌ [GooglePlaces] API key no encontrada");
-      setApiError("API key de Google Maps no configurada");
+      console.warn("🗺️ [GooglePlaces] API key no configurada - usando entrada manual");
+      setApiError("Entrada manual disponible");
       setApiStatus('error');
       setUseManualInput(true);
       return;
@@ -95,7 +95,7 @@ export default function GooglePlacesAutocompleteComponent({
     }
   }, []);
 
-  // Detectar errores de Google Maps
+  // Detectar errores de Google Maps - MEJORADO
   useEffect(() => {
     const handleGoogleMapsError = (event: ErrorEvent) => {
       if (event.message && (
@@ -103,44 +103,55 @@ export default function GooglePlacesAutocompleteComponent({
         event.message.includes("InvalidKeyMapError") ||
         event.message.includes("ApiNotActivatedMapError")
       )) {
-        console.error("❌ [GooglePlaces] Error de Google Maps detectado:", event.message);
+        // Logging más silencioso - evitar spam en consola
+        console.warn("🗺️ [GooglePlaces] API no configurada, usando entrada manual");
         
-        let errorMessage = "Error de configuración de Google Maps";
+        let errorMessage = "Autocompletado no disponible";
         if (event.message.includes("InvalidKeyMapError")) {
-          const currentDomain = window.location.hostname;
-          console.error("🚨 [GooglePlaces] InvalidKeyMapError detectado");
-          console.error("🔧 [GooglePlaces] SOLUCIÓN REQUERIDA:");
-          console.error("1. Ve a Google Cloud Console → APIs & Services → Credentials");
-          console.error("2. Edita tu API key");
-          console.error("3. En 'Application restrictions' → 'HTTP referrers'");
-          console.error("4. Agrega estos dominios:");
-          console.error(`   - ${currentDomain}/*`);
-          console.error(`   - *.${currentDomain.split('.').slice(-2).join('.')}/*`);
-          console.error("   - *.replit.dev/*");
-          console.error("   - *.replit.com/*");
-          console.error("   - localhost/*");
-          console.error("5. Guarda los cambios y espera 1-2 minutos");
-          
-          errorMessage = `Restricciones de dominio requeridas. Dominio actual: ${currentDomain}`;
+          errorMessage = "Configuración de API key requerida";
         } else if (event.message.includes("ApiNotActivatedMapError")) {
-          errorMessage = "Los servicios necesarios de Google Maps no están activados en tu proyecto.";
+          errorMessage = "Servicios de Google Maps no activados";
         }
         
         setApiError(errorMessage);
         setApiStatus('error');
         setUseManualInput(true);
+        
+        // Prevenir que el error se propague y cause unhandled rejection
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    // También manejar errores de promises no capturadas
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      if (event.reason && event.reason.message && 
+          (event.reason.message.includes("Google Maps") || 
+           event.reason.message.includes("geocode") ||
+           event.reason.message.includes("places"))) {
+        console.warn("🗺️ [GooglePlaces] Promise rejection silenciada:", event.reason.message);
+        event.preventDefault(); // Evitar que aparezca en consola como error
       }
     };
 
     window.addEventListener('error', handleGoogleMapsError);
-    checkGoogleMapsAPI();
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    
+    // Check API de forma segura
+    try {
+      checkGoogleMapsAPI();
+    } catch (error) {
+      console.warn("🗺️ [GooglePlaces] Error en check inicial, usando entrada manual");
+      setUseManualInput(true);
+    }
 
     return () => {
       window.removeEventListener('error', handleGoogleMapsError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
   }, [checkGoogleMapsAPI]);
 
-  // Manejar selección de lugar
+  // Manejar selección de lugar - MEJORADO
   const handlePlaceSelect = async (place: any) => {
     if (!place || !place.value) {
       console.warn("⚠️ [GooglePlaces] Lugar seleccionado inválido");
@@ -148,16 +159,25 @@ export default function GooglePlacesAutocompleteComponent({
     }
 
     try {
-      console.log("📍 [GooglePlaces] Lugar seleccionado:", place.value.description);
-      
       const address = place.value.description;
       onChange(address);
       setManualAddress(address);
 
-      // Obtener detalles adicionales del lugar
-      const results = await geocodeByAddress(address);
+      // Obtener detalles adicionales del lugar con timeout
+      const geocodePromise = geocodeByAddress(address);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 5000)
+      );
+
+      const results = await Promise.race([geocodePromise, timeoutPromise]) as any[];
+      
       if (results && results.length > 0) {
-        const latLng = await getLatLng(results[0]);
+        const latLngPromise = getLatLng(results[0]);
+        const latLngTimeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('LatLng Timeout')), 3000)
+        );
+
+        const latLng = await Promise.race([latLngPromise, latLngTimeoutPromise]) as any;
         
         const placeData = {
           address,
@@ -167,15 +187,18 @@ export default function GooglePlacesAutocompleteComponent({
           formattedAddress: results[0].formatted_address
         };
 
-        console.log("✅ [GooglePlaces] Datos del lugar procesados:", placeData);
-        
         if (onPlaceSelect) {
           onPlaceSelect(placeData);
         }
       }
-    } catch (error) {
-      console.error("❌ [GooglePlaces] Error procesando lugar seleccionado:", error);
-      setApiError("Error al procesar la dirección seleccionada");
+    } catch (error: any) {
+      // Manejo silencioso de errores - no saturar logs
+      if (error.message === 'Timeout' || error.message === 'LatLng Timeout') {
+        console.warn("⏱️ [GooglePlaces] Timeout en geocoding - usando dirección básica");
+      } else {
+        console.warn("⚠️ [GooglePlaces] Error en geocoding:", error.message || 'Error desconocido');
+      }
+      // No mostrar error al usuario si la dirección básica funciona
     }
   };
 
