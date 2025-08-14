@@ -40,6 +40,14 @@ export function PricingCard({
   const currentPrice = isYearly ? yearlyPrice / 100 : price / 100;
   const period = isYearly ? "/año" : "/mes";
 
+  // Función para formatear precio igual que en Billing
+  const formatPrice = (amount: number): string => {
+    return new Intl.NumberFormat("es-MX", {
+      style: "currency",
+      currency: "MXN",
+    }).format(amount);
+  };
+
   // Determinar el ícono según el código del plan
   const renderPlanIcon = () => {
     switch (code) {
@@ -85,7 +93,7 @@ export function PricingCard({
               <span className="text-3xl font-bold text-green-500">GRATIS</span>
             ) : (
               <>
-                <span className="text-3xl font-bold">${currentPrice}</span>
+                <span className="text-3xl font-bold">{formatPrice(currentPrice)}</span>
                 <span className="text-muted-foreground ml-1">{period}</span>
               </>
             )}

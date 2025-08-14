@@ -17,6 +17,7 @@ An advanced AI-powered legal document and permit management platform with intell
 - **LOGIN UX IMPROVEMENTS**: Hacer opciones biométricas y OTP más visibles pero menos detalladas ✅ **COMPLETED (Aug 14, 2025)**
 - **LABEL ACCURACY**: Usar "OTP Code" en lugar de "SMS Code" ya que el sistema usa email-based OTP ✅ **COMPLETED (Aug 14, 2025)**
 - **BIOMETRIC FUNCTIONALITY**: Corregir problemas de lógica y funcionalidad en autenticación biométrica ✅ **COMPLETED (Aug 14, 2025)**
+- **BILLING-SUBSCRIPTION CONSISTENCY**: Sincronización completa de precios, moneda y beneficios entre páginas Billing y Subscription ✅ **COMPLETED (Aug 14, 2025)**
 
 ## System Architecture
 
@@ -69,6 +70,12 @@ An advanced AI-powered legal document and permit management platform with intell
   - `Profile.tsx`: Replaced hardcoded "Gelasio Sanchez" fallback with real user data from authentication ✅
   - Added proper TypeScript typing for AddressAutocomplete component ✅
   - **Impact**: Company Profile now displays real subscription plan name and authenticated user data ✅
+- **BILLING-SUBSCRIPTION SYNCHRONIZATION (Aug 14, 2025)**: Comprehensive currency format and pricing consistency fix:
+  - `pricing-card.tsx`: Added Mexican peso (MXN) formatting to match Billing page display ✅
+  - **Before**: Subscription showed "$49.99" while Billing showed "MX$49.99" - causing user confusion ✅
+  - **After**: Both pages now consistently display "MX$49.99" format for all pricing ✅
+  - **Features Consistency**: Both pages use same API data source and display identical plan benefits ✅
+  - **Impact**: Perfect synchronization between Billing and Subscription pages - zero discrepancies ✅
 
 ### Core Features & Design Patterns
 - **User Authentication & Authorization**: Enhanced OAuth, email/password authentication, and a robust subscription-based permission system with defined user roles (`primo_chambeador`, `mero_patron`, `master_contractor`, `trial_master`). Features include secure registration (defaulting to free plan), automatic subscription degradation, and real-time usage limit enforcement via middleware (`requireSubscriptionLevel`, `trackAndValidateUsage`, `requirePremiumFeature`).
