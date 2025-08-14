@@ -4,6 +4,7 @@ import { db } from '../db';
 import { users, passwordResetTokens } from '@shared/schema';
 import { eq, and, gt } from 'drizzle-orm';
 import { ResendEmailService } from '../services/resendService';
+import { adminAuth } from '../firebase-admin';
 
 const router = Router();
 const resendService = new ResendEmailService();
@@ -30,12 +31,16 @@ router.post('/request', async (req, res) => {
     console.log('🔐 [PASSWORD-RESET] Solicitud de restablecimiento para:', email);
 
     // Verificar si el usuario existe
-    const [user] = await db.select().from(users).where(eq(users.email, email));
+    const [user] = await db!.select().from(users).where(eq(users.email, email));
     
     if (!user) {
-      // Por seguridad, devolver éxito aunque el usuario no exista
-      console.log('⚠️ [PASSWORD-RESET] Usuario no encontrado, pero devolviendo éxito por seguridad');
-      return res.json({ success: true, message: 'Password reset email sent if user exists' });
+      // SEGURIDAD: Rechazar solicitudes para emails no registrados
+      console.log('🚫 [PASSWORD-RESET] Email no registrado:', email);
+      return res.status(400).json({ 
+        error: 'Este correo electrónico no está registrado en nuestro sistema. Si cree que esto es un error, por favor contacte a nuestro equipo de soporte en mervin@owlfenc.com',
+        supportContact: 'mervin@owlfenc.com',
+        code: 'EMAIL_NOT_REGISTERED'
+      });
     }
 
     // Generar token seguro
@@ -44,7 +49,7 @@ router.post('/request', async (req, res) => {
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
 
     // Guardar token en la base de datos
-    await db.insert(passwordResetTokens).values({
+    await db!.insert(passwordResetTokens).values({
       id: `prt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       userId: user.firebaseUid || user.email, // Use firebaseUid or email as fallback
       token: hashedToken,
@@ -197,7 +202,7 @@ router.post('/verify', async (req, res) => {
     const hashedToken = hashToken(token);
 
     // Buscar token válido para verificar
-    const [resetToken] = await db
+    const [resetToken] = await db!
       .select({
         id: passwordResetTokens.id,
         userId: passwordResetTokens.userId,
@@ -253,7 +258,7 @@ router.post('/confirm', async (req, res) => {
     const hashedToken = hashToken(token);
 
     // Buscar token válido para confirmar
-    const [resetToken] = await db
+    const [resetToken] = await db!
       .select({
         id: passwordResetTokens.id,
         userId: passwordResetTokens.userId,
@@ -275,25 +280,92 @@ router.post('/confirm', async (req, res) => {
       });
     }
 
-    // Marcar token como usado
-    await db
-      .update(passwordResetTokens)
-      .set({ used: 'true' })
-      .where(eq(passwordResetTokens.id, resetToken.id));
+    try {
+      // Buscar el usuario en nuestra base de datos para obtener su UID de Firebase
+      const [user] = await db!.select().from(users).where(eq(users.firebaseUid, resetToken.userId));
+      
+      if (!user) {
+        return res.status(400).json({ 
+          error: 'Usuario no encontrado en el sistema' 
+        });
+      }
 
-    // Aquí normalmente actualizarías la contraseña en Firebase Auth
-    // Como estamos usando Firebase Auth, necesitamos usar Firebase Admin SDK
-    console.log('✅ [PASSWORD-RESET] Token validado, contraseña lista para actualizar');
+      // Verificar que el usuario tenga un UID de Firebase válido
+      if (!user.firebaseUid) {
+        return res.status(400).json({ 
+          error: 'Usuario no tiene UID de Firebase válido' 
+        });
+      }
 
-    res.json({ 
-      success: true, 
-      message: 'Password reset completed successfully' 
-    });
+      // Actualizar la contraseña en Firebase Auth usando Firebase Admin SDK
+      await adminAuth.updateUser(user.firebaseUid, {
+        password: newPassword
+      });
+
+      // Marcar token como usado DESPUÉS de actualizar la contraseña exitosamente
+      await db!
+        .update(passwordResetTokens)
+        .set({ used: 'true' })
+        .where(eq(passwordResetTokens.id, resetToken.id));
+
+      console.log('✅ [PASSWORD-RESET] Contraseña actualizada exitosamente en Firebase Auth para UID:', user.firebaseUid);
+
+      res.json({ 
+        success: true, 
+        message: 'Password reset completed successfully. You can now login with your new password.' 
+      });
+
+    } catch (firebaseError) {
+      console.error('❌ [PASSWORD-RESET] Error actualizando contraseña en Firebase:', firebaseError);
+      
+      // No marcar el token como usado si falló la actualización
+      return res.status(500).json({ 
+        error: 'Failed to update password. Please try again or contact support.' 
+      });
+    }
 
   } catch (error) {
     console.error('❌ [PASSWORD-RESET] Error confirmando reset:', error);
     res.status(500).json({ 
       error: 'Internal server error' 
+    });
+  }
+});
+
+// Endpoint de prueba para verificar Firebase Admin Auth
+router.post('/test-firebase-admin', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    console.log('🧪 [FIREBASE-TEST] Probando Firebase Admin Auth para UID:', userId);
+    
+    // Intentar obtener información del usuario
+    const userRecord = await adminAuth.getUser(userId);
+    console.log('✅ [FIREBASE-TEST] Usuario encontrado:', userRecord.email);
+    
+    // Intentar actualizar el usuario (sin cambiar contraseña aún)
+    await adminAuth.updateUser(userId, {
+      displayName: 'Test Update - ' + new Date().toISOString()
+    });
+    
+    console.log('✅ [FIREBASE-TEST] Usuario actualizado exitosamente');
+    
+    res.json({ 
+      success: true, 
+      message: 'Firebase Admin Auth funcionando correctamente',
+      userEmail: userRecord.email,
+      lastUpdate: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ [FIREBASE-TEST] Error:', error);
+    res.status(500).json({ 
+      error: 'Firebase Admin Auth error',
+      details: error.message 
     });
   }
 });

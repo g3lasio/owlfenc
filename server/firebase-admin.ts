@@ -4,6 +4,7 @@
 
 import { initializeApp, cert, getApps, App } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 
 let adminApp: App;
 
@@ -21,6 +22,18 @@ function initializeFirebaseAdmin() {
   
   return getFirestore(adminApp);
 }
+
+// Inicializar la aplicación primero
+if (getApps().length === 0) {
+  adminApp = initializeApp({
+    projectId: process.env.FIREBASE_PROJECT_ID || "owlfence-f4570",
+  });
+} else {
+  adminApp = getApps()[0];
+}
+
+// Exportar instancia de Auth para uso en otros módulos
+export const adminAuth = getAuth(adminApp);
 
 // Obtener proyectos desde Firestore usando Admin SDK
 export async function getProjectsFromFirestore() {
