@@ -1,112 +1,175 @@
-# Owl Fence & Mervin AI Platform
+# Legal Document & Permit Management Platform
 
 ## Overview
-Owl Fence is a comprehensive SaaS platform for construction contractors, particularly fencing contractors. It aims to transform the construction industry through intelligent estimation, contract generation, and project management by integrating conversational AI, automation, and specialized tools. The platform provides a full professional onboarding system, AI-powered assistance, secure payment processing, and robust project management capabilities, all designed to enhance efficiency and decision-making for contractors.
+An advanced AI-powered legal document and permit management platform with intelligent authentication strategies, focusing on robust user registration and secure access controls.
+
+## Architecture
+
+### Frontend
+- React.js with TypeScript
+- Tailwind CSS for responsive design
+- Firebase authentication
+- Wouter for routing
+- TanStack Query for data fetching
+
+### Backend
+- Express.js server
+- Firebase Admin SDK
+- PostgreSQL database with Drizzle ORM
+- OpenAI integration for document generation
+- Stripe for payment processing
+
+### Key Technologies
+- Firebase real-time database
+- OpenAI-powered document generation
+- Enhanced OAuth and email/password authentication
+- Dynamic form validation and error handling
+
+## 🚨 CRITICAL SECURITY UPDATE - USER PERMISSIONS SYSTEM
+
+### Recent Security Fix (2025-08-14)
+**PROBLEMA CRÍTICO RESUELTO**: Usuarios nuevos ya no reciben acceso premium automático sin pagar.
+
+### New Permission System
+
+#### User Roles & Plans
+1. **primo_chambeador** (Plan 1) - FREE PLAN (DEFAULT for new users)
+   - 10 estimados básicos/mes (con marca de agua)
+   - 3 estimados con IA/mes (con marca de agua)  
+   - 3 contratos/mes (con marca de agua)
+   - 5 Property Verification/mes
+   - 5 Permit Advisor/mes
+   - Sin acceso a Invoices, Payment Tracker, Owl Funding
+   - Soporte: Solo FAQ y comunidad
+
+2. **mero_patron** (Plan 2) - $49.99/mes
+   - Estimados básicos ilimitados (sin marca de agua)
+   - 50 estimados con IA/mes
+   - Contratos ilimitados (sin marca de agua)
+   - 50 Property Verification/mes
+   - 50 Permit Advisor/mes
+   - Acceso a Invoices y Payment Tracker
+   - Soporte prioritario
+
+3. **master_contractor** (Plan 3) - $99.99/mes
+   - TODO ILIMITADO
+   - Sin marcas de agua
+   - Acceso completo a todas las funciones
+   - Soporte VIP 24/7
+
+4. **trial_master** (Plan 4) - Trial de 21 días
+   - Acceso completo temporal
+   - Solo activado manualmente por el usuario
+   - Se degrada automáticamente a plan gratuito al expirar
+
+### Authentication & Authorization Middleware
+
+#### Files Added/Modified:
+- `server/middleware/subscription-auth.ts` - Sistema de autorización por suscripción
+- `server/middleware/usage-tracking.ts` - Seguimiento de límites de uso
+- `server/routes/usage-limits.ts` - Endpoints para gestión de límites
+- `server/services/firebaseSubscriptionService.ts` - Métodos para degradación automática
+
+#### Key Middleware Functions:
+- `requireSubscriptionLevel(PermissionLevel)` - Valida nivel de suscripción requerido
+- `trackAndValidateUsage(feature, limitKey)` - Rastrea y valida límites de uso
+- `requirePremiumFeature(feature)` - Valida acceso a funciones premium
+
+#### Permission Levels:
+```typescript
+enum PermissionLevel {
+  FREE = 'free',      // primo_chambeador
+  BASIC = 'basic',    // mero_patron  
+  PREMIUM = 'premium', // master_contractor
+  TRIAL = 'trial'     // trial_master
+}
+```
+
+### Security Improvements
+
+#### 1. Secure Registration Flow
+- **ANTES**: Nuevos usuarios → Trial Master automático (acceso premium gratis)
+- **AHORA**: Nuevos usuarios → Plan gratuito por defecto
+- Trial solo se activa manualmente via `/api/subscription/activate-trial`
+
+#### 2. Automatic Degradation
+- Suscripciones expiradas se degradan automáticamente a plan gratuito
+- Validación en tiempo real del estado de suscripción
+- Bloqueo inmediato de funciones premium al expirar el pago
+
+#### 3. Usage Limits Enforcement
+- Contadores de uso por función y por mes
+- Validación antes de permitir acceso a funciones limitadas
+- Mensajes claros cuando se alcanzan los límites
+
+### API Endpoints Updated
+
+#### Secure Endpoints:
+```
+POST /api/subscription/activate-trial - Activar trial manualmente (requiere auth)
+GET /api/usage-limits/current - Ver límites y uso actual
+POST /api/usage-limits/reset - Resetear contadores (solo admin)
+```
+
+#### Example Protected Route:
+```typescript
+app.post("/api/ai-estimate-advanced", 
+  requireAuth,                                    // Verificar autenticación
+  requireSubscriptionLevel(PermissionLevel.BASIC), // Requiere plan básico o superior
+  trackAndValidateUsage('ai-estimates', 'estimatesAI'), // Validar límites de uso
+  async (req, res) => { /* endpoint logic */ }
+);
+```
+
+### Implementation Status
+
+#### ✅ Completed:
+- Sistema de middleware de autorización
+- Seguimiento de límites de uso
+- Degradación automática de suscripciones
+- Nuevo flujo seguro de registro (plan gratuito por defecto)
+- Validación en tiempo real de permisos
+
+#### 🔄 Next Steps:
+- Aplicar middlewares a todos los endpoints críticos
+- Implementar UI para mostrar límites de uso al usuario
+- Crear alertas automáticas cuando se acerquen a los límites
+- Integrar contador de uso con base de datos para persistencia
+
+### Testing & Validation
+
+#### Para Probar:
+1. Crear usuario nuevo → Debe recibir plan gratuito automáticamente
+2. Intentar acceder a funciones premium → Debe ser bloqueado con mensaje de upgrade
+3. Activar trial manualmente → Debe funcionar solo una vez por usuario
+4. Expirar trial → Debe degradar automáticamente a plan gratuito
+
+#### Logs a Monitorear:
+- `🆓 [SUBSCRIPTION-USER] No subscription found, creating FREE PLAN`
+- `⬇️ [FIREBASE-SUBSCRIPTION] Degradando usuario X a plan gratuito`
+- `📊 [USAGE-TRACKER] Usuario X - feature: Y usos`
 
 ## User Preferences
-Preferred communication style: Simple, everyday language.
-Critical Business Rule: This is multi-tenant contractor software - NEVER use Owl Fence or any specific company name as fallback data. Each contractor must have their own company information. PDFs must only show authentic contractor data or require profile completion.
 
-## System Architecture
+### Communication Style
+- Respuestas técnicas y detalladas cuando se requiera análisis
+- Documentación clara de cambios de arquitectura
+- Logging detallado para debugging
 
-### Frontend Architecture
-- **React 18** with TypeScript
-- **Vite** for fast development and optimized builds
-- **TailwindCSS + Shadcn/ui** for consistent UI components
-- **React Query** for efficient state management and API caching
-- **Wouter** for lightweight client-side routing
-- **Firebase SDK** for client-side authentication and real-time features
-
-### Backend Architecture
-- **Node.js with Express** and TypeScript
-- **Firebase** ecosystem (Firestore, Authentication, Storage) for data persistence
-- **RESTful API** design
-- **Microservices pattern** for specialized functions (PDF generation, email, AI processing)
-- **PostgreSQL** as primary database with **Drizzle ORM** for type-safe operations
-
-### AI Integration
-- **OpenAI GPT-4** for natural language processing and content generation
-- **Anthropic Claude** for advanced document processing and analysis
-- **Hybrid AI approach** with fallback templates
-- **Context-aware conversation management** for intelligent estimate generation
-
-### Key Components
-- **Mervin AI Assistant**: Conversational interface for natural language estimate creation, context-aware chat, intelligent material calculation, and region-specific pricing.
-- **Contract Generation System**: Multi-tenant architecture with professional 6-page contract format, dynamic contractor branding, AI-powered generation with template fallbacks, and support for multiple contract types.
-- **PDF Processing Engine**: Multiple PDF generation services for redundancy and reliability, using `pdf-lib` for robust, dependency-free PDF generation.
-- **Payment Management**: Stripe integration for secure processing, payment link generation, 50/50 payment split workflow, and status tracking.
-- **Project Management**: Complete project lifecycle management, material tracking with dynamic pricing, client and contractor profile management, and project approval workflow, including an advanced drag-and-drop timeline system.
-- **Email Communication System**: Professional estimate delivery, mobile-responsive email templates, integration with Resend, and automated approval workflows.
-- **Property Ownership Verifier**: Legal Defense styled interface for property verification using ATTOM Data API, with a simplified 3-step workflow, organized history management, and comprehensive mobile responsiveness.
-- **Comprehensive Permission System**: Multi-tier subscription platform with "soft paywall" approach, featuring 3 paid plans plus a 21-day unlimited trial. It uses motivational upgrade prompts and intelligent usage tracking.
-- **Authentication System**: Utilizes Firebase Authentication, incorporating Google OAuth, Magic Link authentication, Phone SMS authentication, and a comprehensive Email OTP authentication system as the primary reliable method. Includes robust rate limiting and security middleware.
-
-### System Design Choices
-- **UI/UX**: Cyberpunk aesthetic with cyan/blue gradient styling, futuristic elements, and professional card layouts. Emphasizes clean, streamlined interfaces. The Property Ownership Verifier features advanced holographic styling.
-- **PDF Contract Format**: Critical requirement for PDFs to match an exact Independent Contractor Agreement format, preserving original styling (Times New Roman, two-column layout, page numbering) with signatures as the *only* alteration.
-- **PDF Template System**: Streamlined 2-option system with "Básico" (free) and "Premium" (paid). The Premium template is redesigned with holographic header effects, a professional grid layout, advanced materials table, premium totals section, detailed terms & conditions, enhanced typography, and mobile optimization, all while maintaining professional standards.
-- **Mobile Responsiveness**: Comprehensive optimization across all application wizards and displays, ensuring optimal user experience on all device sizes.
-- **Data Integrity**: Enforcement of real data only, especially for contact information, eliminating placeholder or dummy data.
-- **Security**: Robust multi-tenant security model with mandatory user authentication and data isolation for all project and contract operations. Full Firebase authentication is enforced on critical endpoints with comprehensive rate limiting.
-- **Scalability**: Modular architecture allowing for easy integration of new features and services.
-- **Permission Strategy**: "Soft paywall" approach that shows premium features with disabled elements and motivational upgrade prompts rather than completely blocking access.
-
-## External Dependencies
-
-### Core Services
-- **Firebase** (Authentication, Firestore, Storage)
-- **OpenAI API** (GPT-4)
-- **Anthropic API** (Claude)
-- **Stripe** (Payment processing)
-- **Resend** (Email delivery)
-
-### Mapping and Location
-- **Google Maps API**
-- **Mapbox**
-
-### Property Data
-- **ATTOM Data API**
-- **CoreLogic API**
-
-### PDF Generation
-- **PDFMonkey**
-- **Puppeteer**
-- **pdf-lib**
-
-### Business Integration
-- **QuickBooks API**
-
-### Communication
-- **Twilio** (SMS service)
+### Technical Preferences
+- Seguir patrones de Express.js y middleware
+- Usar TypeScript estricto
+- Implementar validación robusta en todos los endpoints
+- Priorizar seguridad sobre conveniencia
 
 ## Recent Changes
 
-### REVOLUTIONARY OAUTH SOLUTION AFTER 3-DAY INVESTIGATION (August 14, 2025):
-- **PROBLEM SOLVED**: 3 completely different OAuth approaches implemented after all previous attempts failed
-- **ROOT CAUSE IDENTIFIED**: Client-side verification with `AbortSignal.timeout` and HEAD requests were incompatible
-- **ULTRA-SIMPLE OAUTH**: Created `ultra-simple-oauth.ts` with 3 alternatives: instant redirection, popup postMessage, iframe OAuth
-- **INSTANT REDIRECTION**: Direct navigation to OAuth endpoints without any verification complexity
-- **POPUP OAUTH**: Opens OAuth in popup window with postMessage communication for better UX
-- **IFRAME OAUTH**: Discrete OAuth in invisible iframe with postMessage results
-- **OAUTH TEST PANEL**: Created `OAuthTestPanel.tsx` component for testing all 6 OAuth combinations
-- **SERVER INFRASTRUCTURE**: Added `/api/oauth/success` and `/api/oauth/error` routes with postMessage communication
-- **ARCHITECTURE EVOLUTION**: Moved from complex verification systems to simple, reliable redirection patterns
+### 2025-08-14: Sistema de Permisos Completamente Renovado
+- **CRÍTICO**: Corregido el fallo de seguridad donde usuarios nuevos recibían acceso premium automático
+- Implementado sistema completo de autorización basado en suscripciones
+- Creado seguimiento de límites de uso en tiempo real
+- Agregado degradación automática cuando expiran las suscripciones
+- Aplicado principio de "secure by default" - nuevos usuarios inician con plan gratuito
 
-### SIGNUP FORM CRITICAL BUG FIX (August 14, 2025):
-- **FORM FIELDS ISSUE RESOLVED**: Fixed critical bug where name and email fields in signup form were not writable
-- **FORMCONTROL PROBLEM IDENTIFIED**: Removed problematic FormControl components that were blocking user input
-- **EXPLICIT FIELD BINDING**: Replaced `{...field}` spread with explicit `value`, `onChange`, `onBlur`, `name` properties
-- **REACT HOOK FORM OPTIMIZATION**: Enhanced form configuration with `mode: "onChange"` for better user experience
-- **VALIDATION SCHEMAS CORRECTED**: Moved Zod validation schemas inside component for proper translation access
-- **ALL FIELDS FUNCTIONAL**: Applied fixes to name, email, password, and confirmPassword fields
-- **AUTHENTICATION RELIABILITY**: Email/password signup now fully functional as primary authentication method
-
-### COMPREHENSIVE STRIPE.JS AND PRODUCTION MIGRATION (August 12, 2025):
-- **COMPLETE TEST KEY ELIMINATION**: All test keys removed from codebase (pk_test_, sk_test_, STRIPE_API_TEST_KEY)
-- **PRODUCTION-ONLY ENVIRONMENT**: Backend using STRIPE_API_KEY, frontend using VITE_STRIPE_PUBLIC_KEY
-- **CENTRALIZED STRIPE LOADING**: Single source of truth for Stripe.js with robust error handling and fallback mechanisms
-- **TYPESCRIPT ERRORS RESOLVED**: Fixed deprecated React Query callbacks and type inference issues
-- **OPTIMIZED TIMEOUTS**: Reduced Stripe.js loading timeout to 5 seconds for faster user feedback
-- **GRACEFUL DEGRADATION**: Application continues functioning even when Stripe.js fails to load
-- **UNIFIED ENVIRONMENT VARIABLES**: Standardized configuration across all payment-related services
-- **PRODUCTION READINESS**: Zero test keys in production environment to prevent future configuration issues
+### Next Priority
+Continuar aplicando los middlewares de autorización a todos los endpoints críticos del sistema para asegurar que ninguna función premium sea accesible sin la suscripción apropiada.

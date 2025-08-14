@@ -365,6 +365,64 @@ export class FirebaseSubscriptionService {
       return 0;
     }
   }
+
+  /**
+   * Degradar usuario a plan gratuito cuando expira su suscripción
+   */
+  async degradeToFreePlan(userId: string): Promise<void> {
+    try {
+      console.log(`⬇️ [FIREBASE-SUBSCRIPTION] Degradando usuario ${userId} a plan gratuito`);
+      
+      const freePlanData = {
+        id: `free_${Date.now()}`,
+        status: 'active' as const,
+        planId: 1, // primo_chambeador (plan gratuito)
+        stripeSubscriptionId: `free_prod_${Date.now()}`,
+        stripeCustomerId: `cus_free_${Date.now()}`,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 año de validez
+        cancelAtPeriodEnd: false,
+        billingCycle: 'none' as const,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      subscriptionStorage.set(userId, freePlanData);
+      console.log(`✅ [FIREBASE-SUBSCRIPTION] Usuario degradado a plan gratuito exitosamente`);
+    } catch (error) {
+      console.error('❌ [FIREBASE-SUBSCRIPTION] Error degradando a plan gratuito:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Crear plan gratuito por defecto para nuevos usuarios
+   */
+  async createFreePlanSubscription(userId: string): Promise<void> {
+    try {
+      console.log(`🆓 [FIREBASE-SUBSCRIPTION] Creando plan gratuito por defecto para usuario: ${userId}`);
+      
+      const freePlanData = {
+        id: `free_${Date.now()}`,
+        status: 'active' as const,
+        planId: 1, // primo_chambeador (plan gratuito)
+        stripeSubscriptionId: `free_prod_${Date.now()}`,
+        stripeCustomerId: `cus_free_${Date.now()}`,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 año de validez
+        cancelAtPeriodEnd: false,
+        billingCycle: 'none' as const,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      subscriptionStorage.set(userId, freePlanData);
+      console.log(`✅ [FIREBASE-SUBSCRIPTION] Plan gratuito creado exitosamente`);
+    } catch (error) {
+      console.error('❌ [FIREBASE-SUBSCRIPTION] Error creando plan gratuito:', error);
+      throw error;
+    }
+  }
 }
 
 export const firebaseSubscriptionService = new FirebaseSubscriptionService();

@@ -49,6 +49,7 @@ import contactRoutes from "./routes/contact-route";
 import anthropicRoutes from "./routes/anthropic";
 // PDF routes removed - using only premiumPdfService
 import paymentRoutes from "./routes/payment-routes"; // Import payment routes
+import usageLimitsRoutes from "./routes/usage-limits"; // Import usage limits routes
 import userProfileRoutes from "./routes/user-profile-routes"; // Import user profile routes
 import openaiChatRoutes from "./routes/openai-chat-routes"; // Import OpenAI chat routes
 import contractorPaymentRoutes from "./routes/contractor-payment-routes"; // Import contractor payment routes
@@ -72,6 +73,13 @@ import deepSearchAiRoutes from "./routes/deepsearch-ai"; // Import DeepSearch AI
 import invoiceRoutes from "./routes/billing-test"; // Import Invoice Management routes (using working filename)
 import express from "express"; // Import express to use express.raw
 import { verifyFirebaseAuth as requireAuth } from "./middleware/firebase-auth"; // Import Firebase authentication middleware
+import { 
+  requireSubscriptionLevel, 
+  validateUsageLimit, 
+  requirePremiumFeature, 
+  PermissionLevel 
+} from "./middleware/subscription-auth"; // Import subscription authorization middleware
+import { trackAndValidateUsage } from "./middleware/usage-tracking"; // Import usage tracking middleware
 
 // Initialize OpenAI API
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
@@ -4129,50 +4137,52 @@ Output must be between 200-900 characters in English.`;
             return;
           }
         } else {
-          // No existing subscription - create Trial Master for new users
-          console.log(`🎆 [SUBSCRIPTION-USER] No subscription found, creating 21-day Trial Master for: ${userId}`);
+          // No existing subscription - create FREE PLAN for new users (SECURITY FIX)
+          console.log(`🆓 [SUBSCRIPTION-USER] No subscription found, creating FREE PLAN for: ${userId}`);
           
           try {
-            // Create Trial Master subscription
-            await firebaseSubscriptionService.createTrialMasterSubscription(userId);
+            // Create FREE PLAN subscription (SECURE DEFAULT)
+            await firebaseSubscriptionService.createFreePlanSubscription(userId);
             
-            // Get the created trial subscription
-            const trialSubscription = await firebaseSubscriptionService.getUserSubscription(userId);
+            // Get the created free subscription
+            const freeSubscription = await firebaseSubscriptionService.getUserSubscription(userId);
             
-            if (trialSubscription) {
-              const trialPlan = {
-                id: 4,
-                name: "Trial Master",
+            if (freeSubscription) {
+              const freePlan = {
+                id: 1,
+                name: "Primo Chambeador",
                 price: 0,
-                interval: "trial",
+                interval: "none",
                 features: [
-                  "ACCESO TOTAL por 21 días",
-                  "Todas las funciones premium",
-                  "Sin marcas de agua",
-                  "Soporte premium"
+                  "10 estimados básicos al mes (con marca de agua)",
+                  "3 estimados con IA al mes (con marca de agua)",
+                  "3 contratos al mes (con marca de agua)",
+                  "5 Property Verification al mes",
+                  "5 Permit Advisor al mes",
+                  "Acceso básico a comunidad",
+                  "Soporte: Solo FAQ y comunidad"
                 ],
               };
 
               res.json({
                 active: true,
                 subscription: {
-                  id: trialSubscription.id,
-                  status: trialSubscription.status,
-                  planId: 4,
-                  currentPeriodStart: trialSubscription.currentPeriodStart,
-                  currentPeriodEnd: trialSubscription.currentPeriodEnd,
-                  billingCycle: "trial",
+                  id: freeSubscription.id,
+                  status: freeSubscription.status,
+                  planId: 1,
+                  currentPeriodStart: freeSubscription.currentPeriodStart,
+                  currentPeriodEnd: freeSubscription.currentPeriodEnd,
+                  billingCycle: "none",
                 },
-                plan: trialPlan,
-                trialDaysRemaining: await firebaseSubscriptionService.getTrialDaysRemaining(userId)
+                plan: freePlan
               });
               return;
             }
           } catch (error) {
-            console.error(`❌ [SUBSCRIPTION-USER] Failed to create trial for ${userId}:`, error);
+            console.error(`❌ [SUBSCRIPTION-USER] Failed to create free plan for ${userId}:`, error);
           }
           
-          // Fallback to free plan if trial creation fails
+          // Final fallback to basic free plan response
           const defaultPlan = {
             id: 1,
             name: "Primo Chambeador",
@@ -4205,20 +4215,29 @@ Output must be between 200-900 characters in English.`;
     },
   );
 
-  // API endpoint to create 21-day trial subscription
+  // API endpoint to activate 21-day trial subscription (SECURE VERSION)
   app.post(
-    "/api/subscription/create-trial",
+    "/api/subscription/activate-trial",
+    requireAuth,
     async (req: Request, res: Response) => {
       try {
-        const { userId } = req.body;
-
-        if (!userId) {
-          return res
-            .status(400)
-            .json({ error: "userId is required" });
+        if (!req.firebaseUser?.uid) {
+          return res.status(401).json({ error: "Autenticación requerida" });
         }
 
-        // Create 21-day Trial Master subscription
+        const userId = `user_${req.firebaseUser.email?.replace(/[@.]/g, '_')}`;
+        
+        // Verificar que el usuario no tenga ya una suscripción premium
+        const existingSubscription = await firebaseSubscriptionService.getUserSubscription(userId);
+        
+        if (existingSubscription && existingSubscription.planId > 1) {
+          return res.status(400).json({ 
+            error: "El usuario ya tiene una suscripción activa",
+            currentPlan: existingSubscription.planId
+          });
+        }
+
+        // Crear Trial Master subscription para usuarios elegibles
         await firebaseSubscriptionService.createTrialMasterSubscription(userId);
         
         const trialSubscription = await firebaseSubscriptionService.getUserSubscription(userId);
@@ -4226,13 +4245,19 @@ Output must be between 200-900 characters in English.`;
 
         res.json({
           success: true,
-          message: "21-day Trial Master created successfully",
+          message: "Trial Master de 21 días activado exitosamente",
           subscription: trialSubscription,
-          trialDaysRemaining
+          trialDaysRemaining,
+          features: [
+            "Acceso completo a todas las funciones premium",
+            "Sin marcas de agua",
+            "Estimados y contratos ilimitados",
+            "Soporte premium"
+          ]
         });
       } catch (error) {
-        console.error("Error creating trial subscription:", error);
-        res.status(500).json({ error: "Failed to create trial subscription" });
+        console.error("Error activating trial subscription:", error);
+        res.status(500).json({ error: "Error activando trial subscription" });
       }
     },
   );
