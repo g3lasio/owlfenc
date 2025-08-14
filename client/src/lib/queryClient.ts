@@ -1,5 +1,6 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { auth } from "@/lib/firebase";
+import { networkErrorHandler } from "./network-error-handler";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -107,18 +108,30 @@ export async function apiRequest(
         credentials: "include",
       }),
       new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), 30000); // 30 segundos timeout
+        setTimeout(() => reject(new Error('Request timeout')), 10000); // Reducido a 10 segundos
       })
     ]);
 
     await throwIfResNotOk(res);
     return res;
   } catch (error: any) {
-    console.error(`❌ [API-REQUEST] Error en ${method} ${url}:`, {
+    // Usar el manejador de errores antes de hacer log o lanzar
+    const handledError = networkErrorHandler.handleQueryError(error, { queryKey: [url] });
+    if (!handledError) {
+      // Error fue silenciado, retornar respuesta mock
+      return new Response('{"error": "Network error handled silently", "offline": true}', { 
+        status: 503,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Solo log si el error no fue silenciado
+    console.debug(`🔧 [API-REQUEST] Network error in ${method} ${url}:`, {
       message: error?.message || 'Unknown error',
       type: error?.name || 'Error'
     });
-    throw error;
+    
+    throw handledError;
   }
 }
 
@@ -147,7 +160,7 @@ export const getQueryFn: <T>(options: {
           credentials: "include",
         }),
         new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('Query timeout')), 20000); // 20 segundos timeout para queries
+          setTimeout(() => reject(new Error('Query timeout')), 8000); // Reducido a 8 segundos para queries
         })
       ]);
 
@@ -159,7 +172,19 @@ export const getQueryFn: <T>(options: {
       await throwIfResNotOk(res);
       return await res.json();
     } catch (error: any) {
-      console.error(`❌ [QUERY] Error en GET ${queryKey[0]}:`, {
+      // Usar el manejador de errores para queries
+      const handledError = networkErrorHandler.handleQueryError(error, { queryKey });
+      if (!handledError) {
+        // Error fue silenciado
+        if (unauthorizedBehavior === "returnNull") {
+          return null;
+        }
+        // Retornar datos mock si no puede ser null
+        return { error: "Network error handled silently", offline: true };
+      }
+      
+      // Solo log si el error no fue silenciado
+      console.debug(`🔧 [QUERY] Network error in GET ${queryKey[0]}:`, {
         message: error?.message || 'Unknown error',
         type: error?.name || 'Error'
       });
@@ -167,11 +192,10 @@ export const getQueryFn: <T>(options: {
       // Si es un error de timeout o red y el comportamiento es returnNull, devolver null
       if (unauthorizedBehavior === "returnNull" && 
           (error?.message?.includes('timeout') || error?.message?.includes('fetch'))) {
-        console.warn(`🔄 [QUERY] Error de red en ${queryKey[0]} - retornando null como fallback`);
         return null;
       }
       
-      throw error;
+      throw handledError;
     }
   };
 
