@@ -60,7 +60,7 @@ export default function AuthPage() {
   const [, navigate] = useLocation();
   const {
     login,
-    register: registerUser,
+    register,
     loginWithGoogle,
     loginWithApple,
     sendEmailLoginLink,
@@ -79,6 +79,14 @@ export default function AuthPage() {
   const cardRef = useRef<HTMLDivElement>(null);
   const successRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation(); // Obtenemos la función de traducción
+  
+  // Estado para signup
+  const [signupData, setSignupData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: ""
+  });
   
   // Esquemas de validación dentro del componente para tener acceso a t()
   const loginSchema = z.object({
@@ -134,18 +142,6 @@ export default function AuthPage() {
     defaultValues: {
       email: "",
       password: "",
-    },
-    mode: "onChange"
-  });
-
-  // Configurar el formulario de registro
-  const signupForm = useForm<SignupFormValues>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
     },
     mode: "onChange"
   });
@@ -236,34 +232,49 @@ export default function AuthPage() {
     }
   };
 
-  // Manejar registro con email y contraseña
-  const onSignupSubmit = async (data: SignupFormValues) => {
+  // Función de registro completamente nueva y simple
+  const handleSignupSubmit = async () => {
     setIsLoading(true);
     try {
       clearError();
-      console.log("Intentando registrar usuario con:", data);
       
-      // Verificar que las contraseñas coinciden
-      if (data.password !== data.confirmPassword) {
+      // Validaciones básicas
+      if (!signupData.name.trim()) {
+        throw new Error("El nombre es requerido");
+      }
+      if (!signupData.email.trim()) {
+        throw new Error("El email es requerido");
+      }
+      if (!signupData.password.trim()) {
+        throw new Error("La contraseña es requerida");
+      }
+      if (signupData.password.length < 6) {
+        throw new Error("La contraseña debe tener al menos 6 caracteres");
+      }
+      if (signupData.password !== signupData.confirmPassword) {
         throw new Error("Las contraseñas no coinciden");
       }
 
-      // Verificar que todos los campos estén completos
-      if (!data.name.trim() || !data.email.trim() || !data.password.trim()) {
-        throw new Error("Por favor completa todos los campos");
-      }
+      console.log("Creando cuenta para:", signupData.email);
 
-      await registerUser(data.email, data.password, data.name);
-      console.log("Registro exitoso para:", data.email);
+      // Usar la función register del contexto de auth
+      const user = await register(signupData.email, signupData.password, signupData.name);
+      
+      console.log("Cuenta creada exitosamente:", user.email);
+      
+      toast({
+        title: "Cuenta creada",
+        description: "Tu cuenta ha sido creada exitosamente.",
+      });
+      
       showSuccessEffect();
+      
     } catch (err: any) {
-      console.error("Error de registro:", err);
+      console.error("Error creando cuenta:", err);
       toast({
         variant: "destructive",
-        title: "Error de registro",
-        description:
-          err.message ||
-          "Ocurrió un error al registrar tu cuenta. Intenta de nuevo.",
+        title: "Error al crear cuenta",
+        description: err.message || "No se pudo crear la cuenta. Intenta de nuevo.",
       });
     } finally {
       setIsLoading(false);
@@ -397,7 +408,7 @@ export default function AuthPage() {
 
       // Limpiar los formularios
       loginForm.reset();
-      signupForm.reset();
+      setSignupData({ name: "", email: "", password: "", confirmPassword: "" });
       setShowPassword(false);
       clearError();
 
@@ -723,123 +734,89 @@ export default function AuthPage() {
                   />
                 )
               ) : (
-                <Form {...signupForm}>
-                  <form onSubmit={signupForm.handleSubmit(onSignupSubmit)} className="space-y-4">
-                    <FormField
-                      control={signupForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("auth.name")}</FormLabel>
-                          <div>
-                            <input
-                              value={field.value || ""}
-                              onChange={field.onChange}
-                              onBlur={field.onBlur}
-                              name={field.name}
-                              type="text"
-                              placeholder="Tu nombre"
-                              className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
-                              disabled={isLoading}
-                            />
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={signupForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("auth.email")}</FormLabel>
-                          <div>
-                            <input
-                              value={field.value || ""}
-                              onChange={field.onChange}
-                              onBlur={field.onBlur}
-                              name={field.name}
-                              type="email"
-                              placeholder="tu@email.com"
-                              className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
-                              disabled={isLoading}
-                            />
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={signupForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("auth.password")}</FormLabel>
-                          <div>
-                            <div className="relative">
-                              <input
-                                value={field.value || ""}
-                                onChange={field.onChange}
-                                onBlur={field.onBlur}
-                                name={field.name}
-                                type={showPassword ? "text" : "password"}
-                                placeholder="••••••••"
-                                className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
-                                disabled={isLoading}
-                              />
-                              <button
-                                type="button"
-                                className="absolute right-3 top-1/2 -translate-y-1/2"
-                                onClick={() => setShowPassword(!showPassword)}
-                              >
-                                {showPassword ? (
-                                  <RiEyeOffLine className="h-5 w-5 text-muted-foreground" />
-                                ) : (
-                                  <RiEyeLine className="h-5 w-5 text-muted-foreground" />
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={signupForm.control}
-                      name="confirmPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("auth.confirmPassword")}</FormLabel>
-                          <div>
-                            <div className="relative">
-                              <input
-                                value={field.value || ""}
-                                onChange={field.onChange}
-                                onBlur={field.onBlur}
-                                name={field.name}
-                                type={showPassword ? "text" : "password"}
-                                placeholder="••••••••"
-                                className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
-                                disabled={isLoading}
-                              />
-                            </div>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button
-                      type="submit"
-                      className="w-full h-10 bg-primary hover:bg-primary/80 text-black font-semibold"
+                <div className="space-y-4">
+                  {/* Nombre */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      {t("auth.name")}
+                    </label>
+                    <input
+                      type="text"
+                      value={signupData.name}
+                      onChange={(e) => setSignupData({...signupData, name: e.target.value})}
+                      placeholder="Tu nombre"
+                      className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
                       disabled={isLoading}
-                    >
-                      {isLoading
-                        ? t("auth.signup") + "..."
-                        : t("auth.createAccount")}
-                    </Button>
-                  </form>
-                </Form>
+                    />
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      {t("auth.email")}
+                    </label>
+                    <input
+                      type="email"
+                      value={signupData.email}
+                      onChange={(e) => setSignupData({...signupData, email: e.target.value})}
+                      placeholder="tu@email.com"
+                      className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
+                      disabled={isLoading}
+                    />
+                  </div>
+
+                  {/* Password */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      {t("auth.password")}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={signupData.password}
+                        onChange={(e) => setSignupData({...signupData, password: e.target.value})}
+                        placeholder="••••••••"
+                        className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
+                        disabled={isLoading}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <RiEyeOffLine className="h-5 w-5 text-muted-foreground" />
+                        ) : (
+                          <RiEyeLine className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      {t("auth.confirmPassword")}
+                    </label>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={signupData.confirmPassword}
+                      onChange={(e) => setSignupData({...signupData, confirmPassword: e.target.value})}
+                      placeholder="••••••••"
+                      className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
+                      disabled={isLoading}
+                    />
+                  </div>
+
+                  {/* Submit Button */}
+                  <Button
+                    onClick={handleSignupSubmit}
+                    className="w-full h-10 bg-primary hover:bg-primary/80 text-black font-semibold"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Creando cuenta..." : t("auth.createAccount")}
+                  </Button>
+                </div>
               )}
             </div>
           </CardContent>
