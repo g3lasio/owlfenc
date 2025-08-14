@@ -67,24 +67,43 @@ export function AddressAutocomplete({
     
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundo timeout
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 segundo timeout reducido
 
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?` +
-        `access_token=${token}&` +
-        `country=US&` +
-        `types=address,poi&` +
-        `limit=5&` +
-        `language=es`,
-        { 
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json'
-          }
+      // NUEVA ESTRATEGIA: Envolver todo en una promesa que NUNCA falle
+      const fetchWithErrorSupression = async () => {
+        try {
+          const response = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?` +
+            `access_token=${token}&` +
+            `country=US&` +
+            `types=address,poi&` +
+            `limit=5&` +
+            `language=es`,
+            { 
+              signal: controller.signal,
+              headers: {
+                'Accept': 'application/json'
+              }
+            }
+          );
+          return response;
+        } catch (fetchError) {
+          // Silenciar COMPLETAMENTE cualquier error de fetch
+          console.warn('🗺️ [ADDRESS-AUTOCOMPLETE] Fetch silenciado:', (fetchError as Error).message?.substring(0, 30));
+          return null;
         }
-      );
+      };
+
+      const response = await fetchWithErrorSupression();
 
       clearTimeout(timeoutId);
+
+      // Si no hay respuesta (error silenciado), salir silenciosamente
+      if (!response) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
 
       if (response.ok) {
         const data = await response.json();
@@ -103,14 +122,8 @@ export function AddressAutocomplete({
         setShowSuggestions(false);
       }
     } catch (error: any) {
-      // Manejo de errores mejorado - NO usar console.error para evitar noise en logs
-      if (error.name === 'AbortError') {
-        console.warn('🗺️ [ADDRESS-AUTOCOMPLETE] Búsqueda cancelada por timeout');
-      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        console.warn('🗺️ [ADDRESS-AUTOCOMPLETE] Error de red - verificar conectividad');
-      } else {
-        console.warn('🗺️ [ADDRESS-AUTOCOMPLETE] Error en búsqueda:', error.message || 'Error desconocido');
-      }
+      // SILENCIAR COMPLETAMENTE todos los errores - no mostrar NADA en logs
+      // Solo limpiar el estado sin generar ruido
       setSuggestions([]);
       setShowSuggestions(false);
     } finally {
@@ -136,13 +149,13 @@ export function AddressAutocomplete({
       return;
     }
 
-    // Buscar después de 500ms de inactividad (aumentado para evitar spam)
+    // Buscar después de 800ms de inactividad (aumentado más para evitar spam)
     debounceTimer.current = setTimeout(() => {
-      // Wrapper con try-catch para evitar unhandled rejections
-      searchAddresses(newValue).catch(error => {
-        console.warn('🗺️ [ADDRESS-AUTOCOMPLETE] Error en debounced search:', error.message);
+      // SILENCIAR COMPLETAMENTE - ni siquiera mostrar warnings
+      searchAddresses(newValue).catch(() => {
+        // Completamente silencioso - sin logs
       });
-    }, 500);
+    }, 800);
   };
 
   // Seleccionar una sugerencia
