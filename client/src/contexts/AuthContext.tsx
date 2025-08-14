@@ -36,7 +36,7 @@ interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<User>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<User>;
   register: (
     email: string,
     password: string,
@@ -76,9 +76,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     // Verificar autenticación persistida de OTP primero
-    const checkPersistedAuth = () => {
+    const checkPersistedAuth = async () => {
       try {
-        // Verificar token custom exitoso
+        // Verificar sesión persistente mejorada (30 días)
+        const { enhancedPersistenceService } = await import('../lib/enhanced-persistence');
+        const sessionValidation = enhancedPersistenceService.validatePersistentSession();
+        
+        if (sessionValidation.valid && sessionValidation.session) {
+          console.log('🔄 [PERSISTENCE] Sesión persistente válida encontrada:', sessionValidation.session.email);
+          // Firebase onAuthStateChanged manejará la autenticación automática
+          enhancedPersistenceService.initActivityMonitoring();
+          return;
+        } else if (sessionValidation.reason) {
+          console.log('⚠️ [PERSISTENCE] Sesión inválida:', sessionValidation.reason);
+        }
+        
+        // Verificar token custom exitoso (OTP legacy)
         const otpSuccess = localStorage.getItem('otp-auth-success');
         if (otpSuccess) {
           const authData = JSON.parse(otpSuccess);
@@ -110,7 +123,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     };
 
-    // Verificar autenticación persistida primero
+    // Verificar autenticación persistida primero (async)
     checkPersistedAuth();
 
     // Primero verificamos si hay algún resultado de redirección pendiente
@@ -271,12 +284,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
-  // Iniciar sesión con email y contraseña
-  const login = async (email: string, password: string) => {
+  // Iniciar sesión con email y contraseña con opción de "recordarme"
+  const login = async (email: string, password: string, rememberMe: boolean = false) => {
     try {
       setLoading(true);
       setError(null);
-      const user = await loginUser(email, password);
+      
+      console.log(`🔐 [AUTH-CONTEXT] Login iniciado para: ${email}, recordarme: ${rememberMe}`);
+      
+      const user = await loginUser(email, password, rememberMe);
 
       if (!user) {
         throw new Error("No se pudo iniciar sesión");
@@ -292,8 +308,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         getIdToken: () => user.getIdToken(),
       };
 
+      // Inicializar monitoreo de actividad si "recordarme" está activado
+      if (rememberMe) {
+        // Importar dinámicamente para evitar circular dependencies
+        const { enhancedPersistenceService } = await import('../lib/enhanced-persistence');
+        enhancedPersistenceService.initActivityMonitoring();
+      }
+
+      console.log(`✅ [AUTH-CONTEXT] Login exitoso para: ${email}`);
       return appUser;
     } catch (err: any) {
+      console.error(`❌ [AUTH-CONTEXT] Error en login para: ${email}`, err);
       setError(err.message || "Error al iniciar sesión");
       throw err;
     } finally {
@@ -342,17 +367,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  // Cerrar sesión
+  // Cerrar sesión con limpieza de persistencia
   const logout = async () => {
     try {
       setLoading(true);
       setError(null);
-      console.log("AuthContext: Iniciando proceso de signOut");
+      console.log("🔓 [AUTH-CONTEXT] Iniciando proceso de signOut");
+      
+      // Limpiar sesión persistente antes del logout
+      try {
+        const { enhancedPersistenceService } = await import('../lib/enhanced-persistence');
+        enhancedPersistenceService.clearPersistentSession();
+        console.log("🗑️ [AUTH-CONTEXT] Sesión persistente limpiada");
+      } catch (persistenceError) {
+        console.warn("⚠️ [AUTH-CONTEXT] Error limpiando persistencia:", persistenceError);
+      }
+      
       await logoutUser();
-      console.log("AuthContext: signOut completado exitosamente");
+      console.log("✅ [AUTH-CONTEXT] SignOut completado exitosamente");
       return true;
     } catch (error: any) {
-      console.error("AuthContext: Error detallado en logout:", error);
+      console.error("❌ [AUTH-CONTEXT] Error detallado en logout:", error);
       console.log("AuthContext: Tipo de error:", error.name);
       console.log("AuthContext: Mensaje de error:", error.message);
       console.log("AuthContext: Stack trace:", error.stack);

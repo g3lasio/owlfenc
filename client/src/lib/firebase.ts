@@ -44,7 +44,10 @@ import {
   PhoneMultiFactorGenerator,
   sendEmailVerification,
   reload,
-  signInWithCredential
+  signInWithCredential,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence
 } from "firebase/auth";
 
 // Verificamos si estamos en modo de desarrollo en Replit
@@ -952,13 +955,32 @@ export const registerUser = async (email: string, password: string) => {
   }
 };
 
-// Iniciar sesión con email y contraseña
-export const loginUser = async (email: string, password: string) => {
+// Iniciar sesión con email y contraseña con persistencia mejorada
+export const loginUser = async (email: string, password: string, rememberMe: boolean = false) => {
   try {
+    console.log(`🔐 [LOGIN] Iniciando sesión para: ${email}, recordarme: ${rememberMe}`);
+    
+    // Importar dinámicamente para evitar circular dependencies
+    const { enhancedPersistenceService } = await import('./enhanced-persistence');
+    
+    // Configurar persistencia según opción "recordarme"
+    await enhancedPersistenceService.configurePersistence(rememberMe);
+    
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    console.log("✅ [LOGIN] Usuario logueado exitosamente:", userCredential.user.uid);
+    
+    // Crear sesión persistente si el usuario eligió "recordarme"
+    if (rememberMe) {
+      enhancedPersistenceService.createPersistentSession(
+        userCredential.user.uid,
+        email,
+        rememberMe
+      );
+    }
+    
     return userCredential.user;
   } catch (error: any) {
-    console.error("Error iniciando sesión:", error);
+    console.error("❌ [LOGIN] Error iniciando sesión:", error);
     
     // Traducir errores de Firebase a mensajes más amigables
     if (error.code === 'auth/user-not-found') {

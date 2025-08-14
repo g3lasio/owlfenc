@@ -171,5 +171,66 @@ app.post("/api/ai-estimate-advanced",
 - Agregado degradación automática cuando expiran las suscripciones
 - Aplicado principio de "secure by default" - nuevos usuarios inician con plan gratuito
 
+## 🔐 ENHANCED LOGIN PERSISTENCE SYSTEM - COMPLETED (2025-08-14)
+
+### Sistema de Login Persistente de 30 Días ✅ COMPLETO
+
+**PROBLEMA RESUELTO**: Usuarios tenían que iniciar sesión frecuentemente, causando fricción en la experiencia.
+
+#### Funcionalidades Implementadas:
+
+1. **Enhanced Persistence Service** (`client/src/lib/enhanced-persistence.ts`)
+   - Persistencia automática de sesiones por 30 días
+   - Device fingerprinting para detectar cambios de dispositivo
+   - Validación automática de sesiones al cargar la app
+   - Limpieza automática de sesiones al logout
+
+2. **Device Fingerprinting** (`client/src/lib/device-fingerprint.ts`)
+   - Identificación única del dispositivo basada en características del navegador
+   - Detección de cambios que requieren nueva autenticación
+   - Algoritmo robusto que resiste cambios menores
+
+3. **Checkbox "Recordarme por 30 días"** en Login Form
+   - Integrado con react-hook-form y shadcn/ui
+   - Validación con Zod schema
+   - Interfaz intuitiva con explicación clara
+
+4. **AuthContext Mejorado** (`client/src/contexts/AuthContext.tsx`)
+   - Función `login()` actualizada para aceptar parámetro `rememberMe`
+   - Integración con enhanced persistence service
+   - Limpieza automática en logout
+   - Verificación de sesiones persistentes al inicializar
+
+#### Flujo de Funcionamiento:
+
+1. **Login con Recordarme**:
+   - Usuario marca checkbox "Recordarme por 30 días"
+   - Sistema genera device fingerprint único
+   - Sesión se guarda con timestamp de expiración
+   - Usuario permanece autenticado por 30 días
+
+2. **Validación Automática**:
+   - Al cargar la app, verifica sesión guardada
+   - Compara device fingerprint actual vs guardado
+   - Si coincide, restaura sesión automáticamente
+   - Si no coincide, requiere nueva autenticación
+
+3. **Logout Seguro**:
+   - Limpia todas las sesiones persistentes
+   - Revoca tokens de Firebase
+   - Elimina datos de device fingerprinting
+
+#### Logs de Monitoreo:
+- `🔄 [PERSISTENCE] Sesión persistente válida encontrada`
+- `⚠️ [PERSISTENCE] Sesión inválida: [razón]`
+- `🗑️ [AUTH-CONTEXT] Sesión persistente limpiada`
+- `🔐 [DEVICE-FINGERPRINT] Generando fingerprint único`
+
+#### Seguridad:
+- Solo funciona en el mismo dispositivo/navegador
+- Cambios significativos en el dispositivo requieren nueva auth
+- Expiración automática después de 30 días
+- Limpieza completa al logout manual
+
 ### Next Priority
 Continuar aplicando los middlewares de autorización a todos los endpoints críticos del sistema para asegurar que ninguna función premium sea accesible sin la suscripción apropiada.

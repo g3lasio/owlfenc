@@ -23,6 +23,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
 import { HiMail } from "react-icons/hi";
@@ -47,6 +48,7 @@ import { useEffect } from "react";
 type LoginFormValues = {
   email: string;
   password: string;
+  rememberMe: boolean;
 };
 
 type SignupFormValues = {
@@ -92,6 +94,7 @@ export default function AuthPage() {
   const loginSchema = z.object({
     email: z.string().min(1, "Email es requerido").email("Email inválido"),
     password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+    rememberMe: z.boolean().default(false),
   });
 
   const signupSchema = z
@@ -142,6 +145,7 @@ export default function AuthPage() {
     defaultValues: {
       email: "",
       password: "",
+      rememberMe: false,
     },
     mode: "onChange"
   });
@@ -181,8 +185,8 @@ export default function AuthPage() {
           throw new Error("Por favor completa todos los campos");
         }
 
-        await login(data.email, data.password);
-        console.log("Login exitoso para:", data.email);
+        await login(data.email, data.password, data.rememberMe);
+        console.log("Login exitoso para:", data.email, "recordarme:", data.rememberMe);
         showSuccessEffect();
       } else if (loginMethod === "otp") {
         console.log("Enviando enlace de inicio de sesión a:", data.email);
@@ -640,6 +644,32 @@ export default function AuthPage() {
                           </FormItem>
                         )}
                       />
+                      
+                      {/* Checkbox "Recordarme por 30 días" */}
+                      <FormField
+                        control={loginForm.control}
+                        name="rememberMe"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel className="text-sm font-normal cursor-pointer">
+                                Recordarme por 30 días
+                              </FormLabel>
+                              <p className="text-xs text-muted-foreground">
+                                Solo necesitarás volver a iniciar sesión si cambias de dispositivo
+                              </p>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                      
                       <Button
                         type="submit"
                         className="w-full h-10 bg-primary hover:bg-primary/80 text-black font-semibold"
