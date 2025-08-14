@@ -10,7 +10,9 @@ const oauthClient = new OAuthClient({
   clientId: process.env.QUICKBOOKS_CLIENT_ID || '',
   clientSecret: process.env.QUICKBOOKS_CLIENT_SECRET || '',
   environment: 'sandbox', // Usamos 'sandbox' para desarrollo
-  redirectUri: 'https://material-calculator.replit.app/api/quickbooks/callback' // URL específica de Replit
+  redirectUri: process.env.NODE_ENV === 'production' 
+    ? 'https://owlfenc.com/api/quickbooks/callback' 
+    : 'https://material-calculator.replit.app/api/quickbooks/callback'
 });
 
 // Almacenamiento temporal de tokens (en una aplicación de producción usaríamos una base de datos)
@@ -59,7 +61,10 @@ export const handleCallback = async (req: Request, res: Response) => {
     }
     
     // Construir la URL completa para manejar el callback
-    const fullUrl = `https://material-calculator.replit.app${req.url}`;
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://owlfenc.com' 
+      : 'https://material-calculator.replit.app';
+    const fullUrl = `${baseUrl}${req.url}`;
     console.log('[QuickBooks] Procesando URL de callback:', fullUrl);
     
     const authResponse = await oauthClient.createToken(fullUrl);

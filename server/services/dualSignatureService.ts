@@ -140,7 +140,7 @@ export class DualSignatureService {
         savedContract.contractId
       );
 
-      // Generate signature URLs using Replit domain
+      // Generate signature URLs using production domain
       const getBaseUrl = () => {
         // Debug logging
         console.log(
@@ -149,7 +149,13 @@ export class DualSignatureService {
         );
         console.log("🔍 [URL-DEBUG] NODE_ENV:", process.env.NODE_ENV);
 
-        // CRITICAL FIX: REPLIT_DEV_DOMAIN already contains the full URL with protocol
+        // Production environment - use owlfenc.com domain
+        if (process.env.NODE_ENV === "production") {
+          console.log("✅ [URL-DEBUG] Using production URL");
+          return "https://owlfenc.com";
+        }
+
+        // Development - use REPLIT_DEV_DOMAIN if available
         const replitDomain = process.env.REPLIT_DEV_DOMAIN;
         if (replitDomain) {
           console.log(
@@ -157,12 +163,6 @@ export class DualSignatureService {
             replitDomain
           );
           return replitDomain; // Use as-is, no protocol addition needed
-        }
-
-        // Fallback for production
-        if (process.env.NODE_ENV === "production") {
-          console.log("✅ [URL-DEBUG] Using production URL");
-          return "https://owlfenc.replit.app";
         }
 
         // Local development fallback

@@ -35,10 +35,11 @@ export function useProfile() {
   const queryClient = useQueryClient();
   const { currentUser } = useAuth();
   // Verificar si estamos en modo desarrollo
-  const isDevMode = window.location.hostname.includes('.replit.dev') || 
-                   window.location.hostname.includes('.id.repl.co') ||
-                   window.location.hostname === 'localhost' ||
-                   window.location.hostname.includes('replit.app');
+  const isDevMode = (window.location.hostname.includes('.replit.dev') || 
+                    window.location.hostname.includes('.id.repl.co') ||
+                    window.location.hostname === 'localhost' ||
+                    window.location.hostname.includes('replit.app')) &&
+                    !window.location.hostname.includes('owlfenc.com');
   
   // Consulta para obtener el perfil de usuario (primero localStorage en dev, Firebase en prod, API como respaldo)
   const { data: profile, isLoading, error } = useQuery<UserProfile>({

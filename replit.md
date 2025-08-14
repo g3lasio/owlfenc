@@ -30,11 +30,16 @@ An advanced AI-powered legal document and permit management platform with intell
 - OpenAI integration for document generation
 - Stripe for payment processing
 
-### **URL Generation & Deployment Security**
+### **URL Generation & Deployment Security** ✅ **UPDATED: Aug 14, 2025**
 - **Dynamic URL Builder** (`server/utils/url-builder.ts`): Centralized utility for environment-agnostic URL generation
 - **Universal Hosting Compatibility**: Automatic detection of protocol/host works with any hosting provider (Replit, Vercel, Railway, custom domains)
 - **Production-Ready Links**: All critical systems (password reset, legal defense signing, contractor verification) use dynamic URLs that adapt to deployment environment
 - **Security Features**: Automatic HTTPS in production, environment detection, no hardcoded dependencies
+- **CRITICAL FIX (Aug 14, 2025)**: Corrected dual signature system URLs to use owlfenc.com in production instead of replit.app domains. Fixed URL generation in:
+  - `dualSignatureService.ts`: Production URL changed from "owlfenc.replit.app" to "owlfenc.com"
+  - `quickbooksService.ts`: Dynamic URL selection for production vs development environments
+  - `firebase.ts` & `use-profile.ts`: Corrected development mode detection to exclude owlfenc.com
+  - **Impact**: Send-for-signature links now function correctly in deployed production environment
 
 ### Core Features & Design Patterns
 - **User Authentication & Authorization**: Enhanced OAuth, email/password authentication, and a robust subscription-based permission system with defined user roles (`primo_chambeador`, `mero_patron`, `master_contractor`, `trial_master`). Features include secure registration (defaulting to free plan), automatic subscription degradation, and real-time usage limit enforcement via middleware (`requireSubscriptionLevel`, `trackAndValidateUsage`, `requirePremiumFeature`).

@@ -51,10 +51,11 @@ import {
 } from "firebase/auth";
 
 // Verificamos si estamos en modo de desarrollo en Replit
-const isReplitDev = window.location.hostname.includes('.replit.dev') || 
-                   window.location.hostname.includes('.id.repl.co') ||
-                   window.location.hostname === 'localhost' ||
-                   window.location.hostname.includes('replit.app');
+const isReplitDev = (window.location.hostname.includes('.replit.dev') || 
+                    window.location.hostname.includes('.id.repl.co') ||
+                    window.location.hostname === 'localhost' ||
+                    window.location.hostname.includes('replit.app')) &&
+                    !window.location.hostname.includes('owlfenc.com');
 
 // Opción para forzar el uso de Firebase real incluso en entorno de desarrollo
 const useRealFirebase = localStorage.getItem('useRealFirebase') === 'true';
