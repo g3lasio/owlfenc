@@ -381,7 +381,7 @@ export class ContractTaskAgent {
   }
 
   /**
-   * Generar contrato legal
+   * Generar contrato legal usando el endpoint real
    */
   private async generateLegalContract(contractData: any): Promise<{
     success: boolean;
@@ -392,10 +392,25 @@ export class ContractTaskAgent {
     try {
       console.log('⚖️ [CONTRACT-AGENT] Generando contrato legal profesional');
 
+      // Usar el endpoint real como lo hace LegalDefenseProfile.tsx
       const contractPayload = {
-        contractData,
-        type: 'professional',
-        includeStandardClauses: true
+        prompt: `Generar contrato profesional para ${contractData.projectDetails.description}`,
+        projectData: {
+          id: contractData.contractId,
+          clientName: contractData.clientData.name,
+          address: contractData.clientData.address,
+          projectType: contractData.projectDetails.description,
+          totalPrice: contractData.paymentTerms.totalAmount,
+          clientEmail: contractData.clientData.email,
+          clientPhone: contractData.clientData.phone
+        },
+        riskAnalysis: {
+          riskLevel: 'medio'
+        },
+        protectionConfig: {
+          includeStandardClauses: true
+        },
+        baseTemplate: 'professional'
       };
 
       const result = await this.endpointCoordinator.executeEndpoint('/api/legal-defense/generate-contract', contractPayload);
@@ -403,18 +418,12 @@ export class ContractTaskAgent {
       return {
         success: true,
         contractId: contractData.contractId,
-        contractHTML: result.contractHTML || result.html
+        contractHTML: result.html || result.contractHTML
       };
 
     } catch (error) {
       console.error('❌ [CONTRACT-AGENT] Error generando contrato legal:', error);
-      
-      // Fallback: generar contrato básico
-      return {
-        success: true,
-        contractId: contractData.contractId,
-        contractHTML: this.generateBasicContractHTML(contractData)
-      };
+      throw error;
     }
   }
 

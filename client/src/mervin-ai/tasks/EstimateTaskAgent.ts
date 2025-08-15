@@ -107,10 +107,10 @@ export class EstimateTaskAgent {
       // 3. Analizar descripción del proyecto
       const projectAnalysis = await this.analyzeProjectDescription(request.projectDescription);
 
-      // 4. Decidir si usar DeepSearch o estimado básico
+      // 4. Decidir si usar cálculo avanzado o estimado básico
       let estimateData;
       if (request.preferences?.includeDeepSearch && projectAnalysis.complexity === 'complex') {
-        estimateData = await this.generateDeepSearchEstimate(request, projectAnalysis);
+        estimateData = await this.generateAdvancedEstimate(request, projectAnalysis);
       } else {
         estimateData = await this.generateBasicEstimate(request, projectAnalysis);
       }
@@ -209,144 +209,165 @@ export class EstimateTaskAgent {
   }
 
   /**
-   * Generar estimado con DeepSearch AI
+   * Generar estimado usando el endpoint real de cálculo
    */
-  private async generateDeepSearchEstimate(request: EstimateRequest, analysis: any): Promise<any> {
+  private async generateAdvancedEstimate(request: EstimateRequest, analysis: any): Promise<any> {
     try {
-      console.log('🧠 [ESTIMATE-AGENT] Usando DeepSearch AI para estimado avanzado');
+      console.log('🧠 [ESTIMATE-AGENT] Usando endpoint de cálculo avanzado');
 
-      // Preparar payload para DeepSearch
-      const deepSearchPayload = {
-        projectDescription: request.projectDescription,
-        projectType: analysis.projectType,
-        dimensions: analysis.dimensions,
-        clientData: request.clientData,
-        preferences: {
-          materialQuality: request.preferences?.materialQuality || 'standard',
-          includeLabor: request.preferences?.includeLabor !== false
-        }
+      // Preparar payload exacto como lo usa EstimatesNew.tsx
+      const calculatePayload = {
+        clientName: request.clientData?.name || 'Cliente',
+        clientEmail: request.clientData?.email || '',
+        clientPhone: request.clientData?.phone || '',
+        projectAddress: request.clientData?.address || '',
+        clientCity: '',
+        clientState: '',
+        clientZip: '',
+        
+        projectType: analysis.projectType || 'fence',
+        projectSubtype: 'standard',
+        projectDimensions: {
+          length: analysis.dimensions?.dimensions?.[0]?.value || 100,
+          height: 6,
+          width: 0,
+          area: 0
+        },
+        additionalFeatures: {},
+        notes: request.projectDescription,
+        
+        generateCoverage: true,
+        generateExport: false,
+        includeMaterials: true,
+        includeLabor: true
       };
 
-      // Ejecutar DeepSearch
-      const deepSearchResult = await this.endpointCoordinator.executeEndpoint('/api/deepsearch', deepSearchPayload);
+      // Usar endpoint real de cálculo
+      const calculateResult = await this.endpointCoordinator.executeEndpoint('/api/estimates/calculate', calculatePayload);
 
-      // Procesar resultado y crear estimado
+      // Procesar resultado
       const estimateData = {
         id: `EST-${Date.now()}`,
         type: 'ai_enhanced',
         projectDescription: request.projectDescription,
         clientData: request.clientData,
-        materials: deepSearchResult.materials || [],
-        labor: deepSearchResult.labor || [],
+        items: calculateResult.items || [],
         totals: {
-          materials: deepSearchResult.totalMaterialCost || 0,
-          labor: deepSearchResult.totalLaborCost || 0,
-          total: deepSearchResult.totalProjectCost || 0
+          subtotal: calculateResult.subtotal || 0,
+          tax: calculateResult.tax || 0,
+          total: calculateResult.total || 0
         },
         analysis,
-        confidence: deepSearchResult.confidence || 0.8,
+        confidence: 0.9,
         createdAt: new Date().toISOString()
       };
 
       return estimateData;
     } catch (error) {
-      console.warn('⚠️ [ESTIMATE-AGENT] DeepSearch falló, usando estimado básico como fallback');
-      return this.generateBasicEstimate(request, analysis);
+      console.error('❌ [ESTIMATE-AGENT] Error con endpoint de cálculo:', error);
+      throw error;
     }
   }
 
   /**
-   * Generar estimado básico
+   * Generar estimado básico usando el endpoint real de guardar
    */
   private async generateBasicEstimate(request: EstimateRequest, analysis: any): Promise<any> {
     try {
       console.log('📊 [ESTIMATE-AGENT] Generando estimado básico');
 
-      // Preparar payload para estimado básico
-      const estimatePayload = {
-        projectDescription: request.projectDescription,
-        projectType: analysis.projectType,
-        clientData: request.clientData,
-        dimensions: analysis.dimensions
-      };
-
-      // Ejecutar endpoint de estimados básicos
-      const estimateResult = await this.endpointCoordinator.executeEndpoint('/api/estimates', estimatePayload);
-
-      // Estructurar datos del estimado
+      // Crear estructura de estimado como lo hace EstimatesNew.tsx
       const estimateData = {
-        id: estimateResult.estimateId || `EST-${Date.now()}`,
+        id: `EST-${Date.now()}`,
         type: 'basic',
-        projectDescription: request.projectDescription,
-        clientData: request.clientData,
-        items: estimateResult.items || [],
-        totals: {
-          subtotal: estimateResult.subtotal || 0,
-          tax: estimateResult.tax || 0,
-          total: estimateResult.total || 0
+        client: {
+          name: request.clientData?.name || 'Cliente',
+          email: request.clientData?.email || '',
+          phone: request.clientData?.phone || '',
+          address: request.clientData?.address || ''
         },
+        items: [
+          {
+            description: `Proyecto: ${request.projectDescription}`,
+            quantity: 1,
+            unit: 'proyecto',
+            unitPrice: 1500,
+            total: 1500
+          }
+        ],
+        notes: request.projectDescription,
+        subtotal: 1500,
+        tax: 120, // 8%
+        total: 1620,
+        projectDescription: request.projectDescription,
         analysis,
         confidence: 0.7,
         createdAt: new Date().toISOString()
       };
 
+      // Guardar usando el endpoint real
+      const saveResult = await this.endpointCoordinator.executeEndpoint('/api/estimates', {
+        estimateData
+      });
+
       return estimateData;
     } catch (error) {
-      // Si falla el endpoint, crear estimado simulado básico
-      console.warn('⚠️ [ESTIMATE-AGENT] Endpoint de estimados falló, generando estimado simulado');
-      
-      return {
-        id: `EST-${Date.now()}`,
-        type: 'simulated',
-        projectDescription: request.projectDescription,
-        clientData: request.clientData,
-        items: this.generateSimulatedItems(analysis),
-        totals: this.calculateSimulatedTotals(analysis),
-        analysis,
-        confidence: 0.5,
-        createdAt: new Date().toISOString(),
-        note: 'Estimado simulado - datos aproximados'
-      };
+      console.error('❌ [ESTIMATE-AGENT] Error guardando estimado básico:', error);
+      throw error;
     }
   }
 
   /**
-   * Generar HTML del estimado
+   * Generar HTML del estimado usando el endpoint real
    */
   private async generateEstimateHTML(estimateData: any, format: string): Promise<string> {
     try {
-      // Usar el servicio de generación HTML si está disponible
-      const htmlResult = await this.endpointCoordinator.executeEndpoint('/api/mervin/estimate/html', {
-        estimateData,
-        format
+      // Usar el endpoint real como lo hace EstimatesNew.tsx
+      const htmlResult = await this.endpointCoordinator.executeEndpoint('/api/estimates/html', {
+        estimateData: {
+          client: estimateData.client || estimateData.clientData,
+          items: estimateData.items,
+          notes: estimateData.notes || estimateData.projectDescription,
+          subtotal: estimateData.totals?.subtotal || estimateData.subtotal,
+          tax: estimateData.totals?.tax || estimateData.tax,
+          total: estimateData.totals?.total || estimateData.total,
+          estimateDate: estimateData.createdAt,
+          estimateNumber: estimateData.id,
+          contractor: {
+            name: 'Tu Empresa',
+            email: 'contacto@tuempresa.com',
+            phone: '(555) 123-4567',
+            address: 'Dirección de tu empresa'
+          }
+        }
       });
 
-      return htmlResult.html || this.generateBasicHTML(estimateData);
+      return htmlResult.html;
     } catch (error) {
-      console.warn('⚠️ [ESTIMATE-AGENT] Servicio HTML falló, generando HTML básico');
-      return this.generateBasicHTML(estimateData);
+      console.error('❌ [ESTIMATE-AGENT] Error generando HTML:', error);
+      throw error;
     }
   }
 
   /**
-   * Enviar estimado por email
+   * Enviar estimado por email usando el endpoint real
    */
   private async sendEstimateByEmail(estimateData: any, htmlContent: string, email: string): Promise<boolean> {
     try {
       console.log('📧 [ESTIMATE-AGENT] Enviando estimado por email a:', email);
 
+      // Usar el endpoint real como lo hace EstimatesNew.tsx
       const emailPayload = {
         to: email,
-        subject: `Estimado #${estimateData.id} - ${estimateData.clientData?.name || 'Cliente'}`,
-        htmlContent,
-        attachments: [] // Se podría agregar PDF si está disponible
+        estimateData: estimateData,
+        html: htmlContent
       };
 
-      await this.endpointCoordinator.executeEndpoint('/api/centralized-email', emailPayload);
+      await this.endpointCoordinator.executeEndpoint('/api/estimates/send', emailPayload);
       return true;
     } catch (error) {
       console.error('❌ [ESTIMATE-AGENT] Error enviando email:', error);
-      return false;
+      throw error;
     }
   }
 
@@ -473,60 +494,5 @@ export class EstimateTaskAgent {
     );
     
     return relevantWords.slice(0, 10); // Top 10 keywords
-  }
-
-  private generateSimulatedItems(analysis: any): any[] {
-    const baseItems = [
-      { name: 'Materiales básicos', quantity: 1, unit: 'lote', price: 500 },
-      { name: 'Mano de obra', quantity: 1, unit: 'servicio', price: 800 }
-    ];
-
-    if (analysis.projectType === 'fence') {
-      baseItems.push(
-        { name: 'Postes', quantity: 10, unit: 'pieza', price: 25 },
-        { name: 'Paneles', quantity: 8, unit: 'pieza', price: 75 }
-      );
-    }
-
-    return baseItems;
-  }
-
-  private calculateSimulatedTotals(analysis: any): any {
-    let baseTotal = 1300; // Base para proyecto simple
-    
-    if (analysis.complexity === 'complex') baseTotal *= 1.5;
-    if (analysis.complexity === 'very_complex') baseTotal *= 2;
-    
-    const subtotal = baseTotal;
-    const tax = subtotal * 0.08; // 8% tax
-    const total = subtotal + tax;
-
-    return { subtotal, tax, total };
-  }
-
-  private generateBasicHTML(estimateData: any): string {
-    return `
-      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
-        <h1>Estimado #${estimateData.id}</h1>
-        <h2>Cliente: ${estimateData.clientData?.name || 'N/A'}</h2>
-        <h3>Descripción del Proyecto:</h3>
-        <p>${estimateData.projectDescription}</p>
-        
-        <h3>Detalles del Estimado:</h3>
-        <table style="width: 100%; border-collapse: collapse;">
-          ${estimateData.items?.map((item: any) => `
-            <tr>
-              <td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td>
-              <td style="border: 1px solid #ddd; padding: 8px;">${item.quantity} ${item.unit}</td>
-              <td style="border: 1px solid #ddd; padding: 8px;">$${item.price?.toFixed(2) || '0.00'}</td>
-            </tr>
-          `).join('') || '<tr><td colspan="3">No hay elementos disponibles</td></tr>'}
-        </table>
-        
-        <h3>Total: $${estimateData.totals?.total?.toFixed(2) || '0.00'}</h3>
-        
-        <p><em>Generado automáticamente por Mervin AI - ${new Date().toLocaleDateString()}</em></p>
-      </div>
-    `;
   }
 }

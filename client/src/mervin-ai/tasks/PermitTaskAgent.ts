@@ -141,13 +141,14 @@ export class PermitTaskAgent {
   }
 
   /**
-   * Verificar ownership de la propiedad
+   * Verificar ownership de la propiedad usando el endpoint real
    */
   private async verifyPropertyOwnership(address: string): Promise<any> {
     try {
       console.log('🏠 [PERMIT-AGENT] Verificando ownership de propiedad');
 
-      const verificationResult = await this.endpointCoordinator.executeEndpoint('/api/property-verification', {
+      // Usar el endpoint real como lo hace PropertyOwnershipVerifier.tsx
+      const verificationResult = await this.endpointCoordinator.executeEndpoint('/api/property/details', {
         address,
         includeOwnership: true,
         includeZoning: true
@@ -155,27 +156,21 @@ export class PermitTaskAgent {
 
       return {
         address,
-        owner: verificationResult.owner || 'No disponible',
-        verified: verificationResult.verified || false,
-        parcelNumber: verificationResult.parcelNumber,
-        zoning: verificationResult.zoning,
-        confidence: verificationResult.confidence || 0.5
+        owner: verificationResult.property?.owner || 'No disponible',
+        verified: verificationResult.property?.verified || false,
+        parcelNumber: verificationResult.property?.parcelNumber,
+        zoning: verificationResult.property?.zoning,
+        confidence: verificationResult.confidence || 0.7
       };
 
     } catch (error) {
-      console.warn('⚠️ [PERMIT-AGENT] Error verificando propiedad:', error);
-      
-      return {
-        address,
-        owner: 'No disponible',
-        verified: false,
-        confidence: 0
-      };
+      console.error('❌ [PERMIT-AGENT] Error verificando propiedad:', error);
+      throw error;
     }
   }
 
   /**
-   * Analizar permisos requeridos
+   * Analizar permisos requeridos usando el endpoint real
    */
   private async analyzeRequiredPermits(request: PermitRequest): Promise<{
     permits: any[];
@@ -184,27 +179,24 @@ export class PermitTaskAgent {
     try {
       console.log('📋 [PERMIT-AGENT] Analizando permisos requeridos');
 
+      // Usar el endpoint real como lo hace PermitAdvisor.tsx
       const permitPayload = {
         address: request.propertyAddress,
         projectType: request.projectType,
-        projectDescription: request.projectDescription,
-        clientData: request.clientData
+        description: request.projectDescription,
+        clientName: request.clientData?.name
       };
 
-      const permitResult = await this.endpointCoordinator.executeEndpoint('/api/permit-advisor', permitPayload);
+      const permitResult = await this.endpointCoordinator.executeEndpoint('/api/permit/check', permitPayload);
 
-      const permits = permitResult.permits || this.generateFallbackPermits(request);
-      const confidence = permitResult.confidence || 0.7;
-
-      return { permits, confidence };
+      return {
+        permits: permitResult.permits || [],
+        confidence: permitResult.confidence || 0.8
+      };
 
     } catch (error) {
-      console.warn('⚠️ [PERMIT-AGENT] Error analizando permisos, usando fallback');
-      
-      return {
-        permits: this.generateFallbackPermits(request),
-        confidence: 0.5
-      };
+      console.error('❌ [PERMIT-AGENT] Error analizando permisos:', error);
+      throw error;
     }
   }
 

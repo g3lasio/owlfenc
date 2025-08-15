@@ -170,62 +170,57 @@ export class PropertyTaskAgent {
   }
 
   /**
-   * Obtener información básica de la propiedad
+   * Obtener información básica de la propiedad usando el endpoint real
    */
   private async getBasicPropertyInfo(address: string): Promise<any> {
     try {
       console.log('📍 [PROPERTY-AGENT] Obteniendo información básica');
 
-      const basicResult = await this.endpointCoordinator.executeEndpoint('/api/property-verification', {
-        address,
-        type: 'basic'
+      // Usar el endpoint real como lo hace PropertyOwnershipVerifier.tsx
+      const basicResult = await this.endpointCoordinator.executeEndpoint('/api/property/details', {
+        address: address
       });
 
-      if (basicResult && basicResult.found) {
+      if (basicResult && basicResult.success) {
         return {
-          address: basicResult.standardizedAddress || address,
-          city: basicResult.city,
-          state: basicResult.state,
-          zipCode: basicResult.zipCode,
-          coordinates: basicResult.coordinates
+          address: basicResult.property?.address || address,
+          city: basicResult.property?.city,
+          state: basicResult.property?.state,
+          zipCode: basicResult.property?.zipCode,
+          coordinates: basicResult.property?.coordinates
         };
       }
 
-      return null;
+      throw new Error('No se encontró información de la propiedad');
     } catch (error) {
-      console.warn('⚠️ [PROPERTY-AGENT] Error obteniendo info básica:', error);
-      return this.generateBasicFallback(address);
+      console.error('❌ [PROPERTY-AGENT] Error obteniendo info básica:', error);
+      throw error;
     }
   }
 
   /**
-   * Obtener información de ownership
+   * Obtener información de ownership usando el endpoint real
    */
   private async getOwnershipInfo(address: string, verificationLevel: string): Promise<any> {
     try {
       console.log('👤 [PROPERTY-AGENT] Verificando ownership');
 
-      const ownershipResult = await this.endpointCoordinator.executeEndpoint('/api/property-verification', {
-        address,
-        type: 'ownership',
-        verificationLevel
+      // Usar el mismo endpoint que el anterior ya que /api/property/details maneja ownership
+      const ownershipResult = await this.endpointCoordinator.executeEndpoint('/api/property/details', {
+        address: address,
+        includeOwnership: true
       });
 
       return {
-        owner: ownershipResult.owner || 'No disponible',
-        ownerType: ownershipResult.ownerType || 'individual',
-        verified: ownershipResult.verified || false,
-        confidence: ownershipResult.confidence || 0.5
+        owner: ownershipResult.property?.owner || 'No disponible',
+        ownerType: 'individual',
+        verified: ownershipResult.property?.verified || false,
+        confidence: ownershipResult.confidence || 0.7
       };
 
     } catch (error) {
-      console.warn('⚠️ [PROPERTY-AGENT] Error verificando ownership:', error);
-      return {
-        owner: 'No disponible',
-        ownerType: 'individual',
-        verified: false,
-        confidence: 0.3
-      };
+      console.error('❌ [PROPERTY-AGENT] Error verificando ownership:', error);
+      throw error;
     }
   }
 

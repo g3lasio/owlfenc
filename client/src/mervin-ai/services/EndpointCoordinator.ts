@@ -231,7 +231,23 @@ export class EndpointCoordinator {
    */
   private initializeEndpoints(): void {
     const endpoints: Record<string, EndpointConfig> = {
-      // Estimates
+      // Estimates - Endpoints reales de EstimatesNew.tsx
+      '/api/clients': {
+        url: '/api/clients',
+        method: 'GET',
+        timeout: 10000,
+        retries: 3,
+        requiresAuth: true,
+        responseType: 'json'
+      },
+      '/api/materials': {
+        url: '/api/materials',
+        method: 'GET',
+        timeout: 10000,
+        retries: 3,
+        requiresAuth: true,
+        responseType: 'json'
+      },
       '/api/estimates': {
         url: '/api/estimates',
         method: 'POST',
@@ -240,17 +256,49 @@ export class EndpointCoordinator {
         requiresAuth: true,
         responseType: 'json'
       },
-      '/api/mervin/estimate': {
-        url: '/api/mervin/estimate',
+      '/api/estimates/html': {
+        url: '/api/estimates/html',
         method: 'POST',
-        timeout: 10000,
-        retries: 3,
+        timeout: 15000,
+        retries: 2,
+        requiresAuth: true,
+        responseType: 'json'
+      },
+      '/api/estimates/send': {
+        url: '/api/estimates/send',
+        method: 'POST',
+        timeout: 15000,
+        retries: 2,
+        requiresAuth: true,
+        responseType: 'json'
+      },
+      '/api/estimates/calculate': {
+        url: '/api/estimates/calculate',
+        method: 'POST',
+        timeout: 15000,
+        retries: 2,
         requiresAuth: true,
         responseType: 'json'
       },
       
-      // Contracts
-      '/api/legal-defense': {
+      // Contracts - Endpoints reales de LegalDefenseProfile.tsx
+      '/api/legal-defense/extract-pdf': {
+        url: '/api/legal-defense/extract-pdf',
+        method: 'POST',
+        timeout: 20000,
+        retries: 2,
+        requiresAuth: true,
+        responseType: 'json'
+      },
+      '/api/legal-defense/advanced-analysis': {
+        url: '/api/legal-defense/advanced-analysis',
+        method: 'POST',
+        timeout: 20000,
+        retries: 2,
+        requiresAuth: true,
+        responseType: 'json'
+      },
+      '/api/legal-defense/generate-contract': {
         url: '/api/legal-defense/generate-contract',
         method: 'POST',
         timeout: 20000,
@@ -267,53 +315,36 @@ export class EndpointCoordinator {
         responseType: 'json'
       },
       
-      // Permits
-      '/api/permit-advisor': {
-        url: '/api/permit-advisor',
+      // Permits - Endpoints reales de PermitAdvisor.tsx
+      '/api/permit/check': {
+        url: '/api/permit/check',
         method: 'POST',
         timeout: 25000,
         retries: 2,
         requiresAuth: true,
         responseType: 'json'
       },
-      '/api/property-verification': {
-        url: '/api/property-verification',
+      
+      // Property - Endpoints reales de PropertyOwnershipVerifier.tsx
+      '/api/property/details': {
+        url: '/api/property/details',
         method: 'POST',
         timeout: 20000,
         retries: 2,
         requiresAuth: true,
         responseType: 'json'
       },
-      
-      // Clients
-      '/api/clients': {
-        url: '/api/clients',
+      '/api/property/history': {
+        url: '/api/property/history',
         method: 'GET',
-        timeout: 10000,
-        retries: 3,
-        requiresAuth: true,
-        responseType: 'json'
-      },
-      
-      // Materials
-      '/api/materials': {
-        url: '/api/materials',
-        method: 'GET',
-        timeout: 10000,
-        retries: 3,
-        requiresAuth: true,
-        responseType: 'json'
-      },
-      
-      // Email
-      '/api/centralized-email': {
-        url: '/api/centralized-email/send',
-        method: 'POST',
         timeout: 15000,
         retries: 2,
         requiresAuth: true,
         responseType: 'json'
       },
+      
+
+
       
       // PDF Generation
       '/api/generate-pdf': {
