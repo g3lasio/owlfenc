@@ -84,6 +84,8 @@ export class MervinAgent {
 
     if (config.debug) {
       console.log('🤖 [MERVIN-AGENT] Agente inicializado para usuario:', config.userId);
+      console.log('🗣️ [CONVERSATION-SYSTEM] Sistema conversacional inteligente activado');
+      console.log('🌍 [LANGUAGE-DETECTION] Detección automática de idioma habilitada');
     }
   }
 

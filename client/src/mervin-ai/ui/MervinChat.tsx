@@ -110,11 +110,16 @@ export function MervinChat({ className = '' }: MervinChatProps) {
       agentRef.current = null;
     }
     
+    // Toast personalizado según idioma (fallback para evitar error)
+    const isSpanish = model === 'agent' ? false : true; // Default español para legacy
+    
     toast({
-      title: `Modo ${model === 'agent' ? 'Agente Autónomo' : 'Legacy'} activado`,
+      title: isSpanish 
+        ? `Modo ${model === 'agent' ? 'Agente Autónomo' : 'Legacy'} activado, primo`
+        : `${model === 'agent' ? 'Agent' : 'Legacy'} mode activated, dude`,
       description: model === 'agent' 
-        ? 'Ahora puedo ejecutar tareas complejas automáticamente'
-        : 'Modo de conversación tradicional activado'
+        ? (isSpanish ? 'Ahora puedo ejecutar tareas complejas automáticamente - ¡Órale!' : 'Now I can execute complex tasks automatically - Awesome!')
+        : (isSpanish ? 'Modo de conversación tradicional activado, compadre' : 'Traditional conversation mode activated, bro')
     });
   };
 
@@ -169,10 +174,21 @@ export function MervinChat({ className = '' }: MervinChatProps) {
     // Configurar callbacks de progreso
     const agent = agentRef.current;
     
-    // Agregar mensaje de "pensando"
+    // Mensaje de "pensando" personalizado según idioma
+    let thinkingContent = '🤔 **Analizando tu solicitud...**\n\nEstoy determinando la mejor forma de ayudarte.';
+    
+    if (agent) {
+      const currentProfile = agent.getCurrentLanguageProfile();
+      if (currentProfile.language === 'spanish') {
+        thinkingContent = '🤔 **Órale, analizando tu solicitud, primo...**\n\nEstoy viendo la mejor manera de echarte la mano.';
+      } else if (currentProfile.language === 'english') {
+        thinkingContent = '🤔 **Processing your request, dude...**\n\nFiguring out the best way to help you out.';
+      }
+    }
+
     const thinkingMessage: Message = {
       id: `thinking_${Date.now()}`,
-      content: '🤔 **Analizando tu solicitud...**\n\nEstoy determinando la mejor forma de ayudarte.',
+      content: thinkingContent,
       sender: 'assistant',
       timestamp: new Date(),
       isTyping: true
@@ -203,11 +219,17 @@ export function MervinChat({ className = '' }: MervinChatProps) {
       
       setMessages(prev => [...prev, agentResponse]);
       
-      // Mostrar toast de éxito/error
+      // Mostrar toast de éxito/error con personalidad
       if (result.success) {
+        const currentProfile = agent.getCurrentLanguageProfile();
+        const title = currentProfile.language === 'spanish' ? 'Tarea completada, primo' : 'Task completed, dude';
+        const description = currentProfile.language === 'spanish' 
+          ? `Ejecuté ${result.stepsCompleted} pasos en ${(result.executionTime / 1000).toFixed(1)}s - ¡Está padrísimo!`
+          : `Executed ${result.stepsCompleted} steps in ${(result.executionTime / 1000).toFixed(1)}s - Totally awesome!`;
+          
         toast({
-          title: 'Tarea completada',
-          description: `Ejecuté ${result.stepsCompleted} pasos en ${(result.executionTime / 1000).toFixed(1)}s`
+          title,
+          description
         });
       }
 
@@ -218,19 +240,56 @@ export function MervinChat({ className = '' }: MervinChatProps) {
     }
   };
 
-  // Manejar modo legacy
+  // Manejar modo legacy con personalidad conversacional
   const handleLegacyMode = async (userMessage: Message) => {
-    // Simulación del modo legacy (puedes conectar con el sistema anterior si es necesario)
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simular processing
-
-    const legacyResponse: Message = {
-      id: `legacy_${Date.now()}`,
-      content: `💬 **Modo Legacy Activado**\n\nRecibí tu mensaje: "${userMessage.content}"\n\nEn modo legacy, puedo ayudarte con información general y guiarte paso a paso. Para ejecutar tareas automáticamente, cambia al **modo Agente**.\n\n¿Te gustaría que te explique cómo hacer algo específico?`,
+    // Agregar mensaje de "pensando" conversacional
+    const thinkingMessage: Message = {
+      id: `thinking_legacy_${Date.now()}`,
+      content: '🤔 **Procesando tu mensaje...**\n\nAnalizando cómo ayudarte mejor.',
       sender: 'assistant',
-      timestamp: new Date()
+      timestamp: new Date(),
+      isTyping: true
     };
+    
+    setMessages(prev => [...prev, thinkingMessage]);
 
-    setMessages(prev => [...prev, legacyResponse]);
+    try {
+      // Simular processing con sistema conversacional
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Usar el sistema conversacional para generar respuesta personalizada
+      let responseContent = '';
+      
+      if (agentRef.current) {
+        const currentProfile = agentRef.current.getCurrentLanguageProfile();
+        const { language } = currentProfile;
+        
+        if (language === 'spanish') {
+          responseContent = `💬 **¡Órale, primo! Modo Legacy activado**\n\nRecibí tu mensaje: "${userMessage.content}"\n\nEn modo legacy, aquí andamos para platicar contigo y guiarte paso a paso, compadre. Para que ejecute tareas automáticamente, cambia al **modo Agente**.\n\n¿Qué se te ofrece que te explique, primo?`;
+        } else {
+          responseContent = `💬 **Hey dude! Legacy mode activated**\n\nGot your message: "${userMessage.content}"\n\nIn legacy mode, I'm here to chat with you and guide you step by step, bro. For automatic task execution, switch to **Agent mode**.\n\nWhat would you like me to explain?`;
+        }
+      } else {
+        responseContent = `💬 **Modo Legacy Activado**\n\nRecibí tu mensaje: "${userMessage.content}"\n\nEn modo legacy, puedo ayudarte con información general y guiarte paso a paso. Para ejecutar tareas automáticamente, cambia al **modo Agente**.\n\n¿Te gustaría que te explique cómo hacer algo específico?`;
+      }
+
+      // Remover mensaje de "pensando"
+      setMessages(prev => prev.filter(m => m.id !== thinkingMessage.id));
+
+      const legacyResponse: Message = {
+        id: `legacy_${Date.now()}`,
+        content: responseContent,
+        sender: 'assistant',
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, legacyResponse]);
+      
+    } catch (error) {
+      // Remover mensaje de "pensando"
+      setMessages(prev => prev.filter(m => m.id !== thinkingMessage.id));
+      throw error;
+    }
   };
 
   // Formatear respuesta del agente

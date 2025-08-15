@@ -12,6 +12,8 @@ export { TaskOrchestrator } from './core/TaskOrchestrator';
 export { SmartTaskCoordinator } from './core/SmartTaskCoordinator';
 export { ParallelExecutionEngine } from './core/ParallelExecutionEngine';
 export { ContextManager } from './core/ContextManager';
+export { ConversationEngine } from './core/ConversationEngine';
+export { LanguageDetector, languageDetector } from './core/LanguageDetector';
 
 // Services
 export { EndpointCoordinator } from './services/EndpointCoordinator';
@@ -66,3 +68,17 @@ export type {
 
 // Demo
 export { SmartCoordinatorDemo, runSmartCoordinatorDemo } from './demo/SmartCoordinatorDemo';
+
+// Utilities and Testing
+export { ConversationTester, runConversationTests } from './utils/ConversationTester';
+
+// Conversation Types
+export type {
+  ConversationState,
+  ConversationResponse
+} from './core/ConversationEngine';
+
+export type {
+  LanguageProfile,
+  PersonalityStyle
+} from './core/LanguageDetector';
