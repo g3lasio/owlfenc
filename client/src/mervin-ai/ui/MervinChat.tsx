@@ -127,6 +127,8 @@ export function MervinChat({ className = '' }: MervinChatProps) {
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading || !currentUser) return;
 
+    console.log('🚀 [MERVIN-CHAT] Iniciando procesamiento de mensaje:', inputValue.trim());
+
     const userMessage: Message = {
       id: `user_${Date.now()}`,
       content: inputValue.trim(),
@@ -139,13 +141,20 @@ export function MervinChat({ className = '' }: MervinChatProps) {
     setIsLoading(true);
 
     try {
+      console.log('🔄 [MERVIN-CHAT] Modo seleccionado:', selectedModel);
+      console.log('🔄 [MERVIN-CHAT] Agente disponible:', !!agentRef.current);
+      
       if (selectedModel === 'agent' && agentRef.current) {
+        console.log('🤖 [MERVIN-CHAT] Procesando en modo agente...');
         await handleAgentMode(userMessage);
       } else {
+        console.log('💬 [MERVIN-CHAT] Procesando en modo legacy...');
         await handleLegacyMode(userMessage);
       }
+      
+      console.log('✅ [MERVIN-CHAT] Mensaje procesado exitosamente');
     } catch (error) {
-      console.error('Error processing message:', error);
+      console.error('❌ [MERVIN-CHAT] Error processing message:', error);
       
       const errorMessage: Message = {
         id: `error_${Date.now()}`,
@@ -164,26 +173,33 @@ export function MervinChat({ className = '' }: MervinChatProps) {
     } finally {
       setIsLoading(false);
       setTaskProgress(null);
+      console.log('🏁 [MERVIN-CHAT] Finalizando procesamiento');
     }
   };
 
   // Manejar modo agente autónomo
   const handleAgentMode = async (userMessage: Message) => {
-    if (!agentRef.current) return;
+    console.log('🤖 [AGENT-MODE] Iniciando modo agente para:', userMessage.content);
+    
+    if (!agentRef.current) {
+      console.error('❌ [AGENT-MODE] No hay referencia del agente disponible');
+      throw new Error('Agente no inicializado');
+    }
 
-    // Configurar callbacks de progreso
     const agent = agentRef.current;
     
-    // Mensaje de "pensando" personalizado según idioma
+    // Mensaje de "pensando" simplificado para evitar errores
     let thinkingContent = '🤔 **Analizando tu solicitud...**\n\nEstoy determinando la mejor forma de ayudarte.';
     
-    if (agent) {
+    try {
       const currentProfile = agent.getCurrentLanguageProfile();
-      if (currentProfile.language === 'spanish') {
+      if (currentProfile?.language === 'spanish') {
         thinkingContent = '🤔 **Órale, analizando tu solicitud, primo...**\n\nEstoy viendo la mejor manera de echarte la mano.';
-      } else if (currentProfile.language === 'english') {
+      } else if (currentProfile?.language === 'english') {
         thinkingContent = '🤔 **Processing your request, dude...**\n\nFiguring out the best way to help you out.';
       }
+    } catch (error) {
+      console.log('ℹ️ [AGENT-MODE] Language profile not ready, using default thinking message');
     }
 
     const thinkingMessage: Message = {
@@ -195,18 +211,38 @@ export function MervinChat({ className = '' }: MervinChatProps) {
     };
     
     setMessages(prev => [...prev, thinkingMessage]);
+    console.log('💭 [AGENT-MODE] Mensaje de pensando agregado');
 
     try {
-      // Procesar con el agente
-      const result = await agent.processUserInput(userMessage.content, messages);
+      console.log('🔄 [AGENT-MODE] Procesando con agente...');
+      
+      // Timeout para evitar cuelgues infinitos
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout: La operación tomó demasiado tiempo')), 30000);
+      });
+      
+      // Procesar con el agente con timeout
+      const result = await Promise.race([
+        agent.processUserInput(userMessage.content, messages),
+        timeoutPromise
+      ]) as any;
+      
+      console.log('✅ [AGENT-MODE] Resultado obtenido:', result);
       
       // Remover mensaje de "pensando"
       setMessages(prev => prev.filter(m => m.id !== thinkingMessage.id));
       
-      // Usar respuesta conversacional si está disponible
-      const responseContent = result.data?.conversationalResponse 
-        ? result.data.conversationalResponse 
-        : formatAgentResponse(result);
+      // Generar respuesta simplificada
+      let responseContent = '';
+      
+      if (result?.success) {
+        responseContent = result.data?.conversationalResponse || 
+          `✅ **¡Órale, primo! Tarea completada exitosamente**\n\n${result.data?.response || 'Todo salió perfecto, compadre.'}`;
+      } else {
+        responseContent = `❌ **No pude completar la tarea, primo**\n\n${result?.error || 'Algo salió mal, pero aquí andamos para resolverlo.'}`;
+      }
+
+      console.log('📝 [AGENT-MODE] Contenido de respuesta:', responseContent);
 
       // Agregar respuesta del agente
       const agentResponse: Message = {
@@ -219,30 +255,38 @@ export function MervinChat({ className = '' }: MervinChatProps) {
       
       setMessages(prev => [...prev, agentResponse]);
       
-      // Mostrar toast de éxito/error con personalidad
-      if (result.success) {
-        const currentProfile = agent.getCurrentLanguageProfile();
-        const title = currentProfile.language === 'spanish' ? 'Tarea completada, primo' : 'Task completed, dude';
-        const description = currentProfile.language === 'spanish' 
-          ? `Ejecuté ${result.stepsCompleted} pasos en ${(result.executionTime / 1000).toFixed(1)}s - ¡Está padrísimo!`
-          : `Executed ${result.stepsCompleted} steps in ${(result.executionTime / 1000).toFixed(1)}s - Totally awesome!`;
-          
+      // Toast simplificado
+      if (result?.success) {
         toast({
-          title,
-          description
+          title: 'Tarea completada, primo',
+          description: 'Todo salió perfecto'
         });
       }
 
     } catch (error) {
+      console.error('❌ [AGENT-MODE] Error en procesamiento:', error);
+      
       // Remover mensaje de "pensando"
       setMessages(prev => prev.filter(m => m.id !== thinkingMessage.id));
-      throw error;
+      
+      // Respuesta de error simplificada
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      const errorResponse: Message = {
+        id: `error_${Date.now()}`,
+        content: `❌ **¡Órale, primo! Hubo un problemita**\n\n${errorMessage}\n\nPero aquí andamos para resolverlo. Inténtalo de nuevo.`,
+        sender: 'assistant',
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorResponse]);
     }
   };
 
-  // Manejar modo legacy con personalidad conversacional
+  // Manejar modo legacy simplificado
   const handleLegacyMode = async (userMessage: Message) => {
-    // Agregar mensaje de "pensando" conversacional
+    console.log('💬 [LEGACY-MODE] Procesando mensaje:', userMessage.content);
+    
+    // Mensaje de "pensando" simplificado
     const thinkingMessage: Message = {
       id: `thinking_legacy_${Date.now()}`,
       content: '🤔 **Procesando tu mensaje...**\n\nAnalizando cómo ayudarte mejor.',
@@ -254,24 +298,11 @@ export function MervinChat({ className = '' }: MervinChatProps) {
     setMessages(prev => [...prev, thinkingMessage]);
 
     try {
-      // Simular processing con sistema conversacional
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Procesar de forma rápida
+      await new Promise(resolve => setTimeout(resolve, 800));
 
-      // Usar el sistema conversacional para generar respuesta personalizada
-      let responseContent = '';
-      
-      if (agentRef.current) {
-        const currentProfile = agentRef.current.getCurrentLanguageProfile();
-        const { language } = currentProfile;
-        
-        if (language === 'spanish') {
-          responseContent = `💬 **¡Órale, primo! Modo Legacy activado**\n\nRecibí tu mensaje: "${userMessage.content}"\n\nEn modo legacy, aquí andamos para platicar contigo y guiarte paso a paso, compadre. Para que ejecute tareas automáticamente, cambia al **modo Agente**.\n\n¿Qué se te ofrece que te explique, primo?`;
-        } else {
-          responseContent = `💬 **Hey dude! Legacy mode activated**\n\nGot your message: "${userMessage.content}"\n\nIn legacy mode, I'm here to chat with you and guide you step by step, bro. For automatic task execution, switch to **Agent mode**.\n\nWhat would you like me to explain?`;
-        }
-      } else {
-        responseContent = `💬 **Modo Legacy Activado**\n\nRecibí tu mensaje: "${userMessage.content}"\n\nEn modo legacy, puedo ayudarte con información general y guiarte paso a paso. Para ejecutar tareas automáticamente, cambia al **modo Agente**.\n\n¿Te gustaría que te explique cómo hacer algo específico?`;
-      }
+      // Respuesta legacy simplificada pero con personalidad
+      const responseContent = `💬 **¡Órale, primo! Modo Legacy activado**\n\nRecibí tu mensaje: "${userMessage.content}"\n\nEn modo legacy, aquí andamos para platicar contigo y guiarte paso a paso, compadre. Para tareas automáticas, cambia al **modo Agente**.\n\n¿En qué más te puedo echar la mano?`;
 
       // Remover mensaje de "pensando"
       setMessages(prev => prev.filter(m => m.id !== thinkingMessage.id));
@@ -284,8 +315,10 @@ export function MervinChat({ className = '' }: MervinChatProps) {
       };
 
       setMessages(prev => [...prev, legacyResponse]);
+      console.log('✅ [LEGACY-MODE] Respuesta enviada');
       
     } catch (error) {
+      console.error('❌ [LEGACY-MODE] Error:', error);
       // Remover mensaje de "pensando"
       setMessages(prev => prev.filter(m => m.id !== thinkingMessage.id));
       throw error;
