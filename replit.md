@@ -19,6 +19,14 @@ This project is an advanced AI-powered legal document and permit management plat
 - BIOMETRIC FUNCTIONALITY: Corregir problemas de lógica y funcionalidad en autenticación biométrica
 - BILLING-SUBSCRIPTION CONSISTENCY: Sincronización completa de precios, moneda y beneficios entre páginas Billing y Subscription
 - MERVIN AI MODEL SELECTOR: Implementación de selector de modelo estilo ChatGPT con opciones "Legacy" y "Agent mode"
+- MERVIN AI CONVERSATIONAL INTELLIGENCE: Sistema avanzado de conversación inteligente con las siguientes características:
+  * Detección automática de idioma del usuario (español, inglés, otros)
+  * Personalidad mexicana norteña para español: usar "primo", "compadre", estilo amable y familiar pero respetuoso
+  * Personalidad californiana para inglés: estilo "dude", "bro", casual y relajado
+  * Fluidez conversacional tipo ChatGPT: respuestas naturales, contextuales y adaptativas
+  * Manejo inteligente de emociones del usuario (frustración, entusiasmo, confusión)
+  * Adaptación automática del tono y estilo según el contexto de la conversación
+  * Memoria conversacional para mantener coherencia y personalización a lo largo de las interacciones
 
 ## System Architecture
 
@@ -34,12 +42,17 @@ This project is an advanced AI-powered legal document and permit management plat
 - **Authentication**: Firebase Admin SDK for backend authentication management.
 - **Key Integrations**: OpenAI for document generation and Stripe for payment processing.
 
-### AI Architecture (Phase 2 Completed)
+### AI Architecture (Phase 2 & 5 Completed)
 - **SmartTaskCoordinator**: Intelligent multi-agent coordination system
 - **ParallelExecutionEngine**: Concurrent task execution with load balancing
 - **Decision Engine**: Autonomous decision making with 90%+ confidence scoring
-- **Memory System**: Persistent learning and pattern optimization
+- **Memory System**: Persistent learning and pattern optimization (Phase 5)
 - **Risk Assessment**: Automatic evaluation with adaptive strategies
+- **Conversational Intelligence**: Advanced multilingual personality system (New)
+  - **LanguageDetector**: Automatic language detection with regional adaptation
+  - **ConversationEngine**: Intelligent conversation flow with contextual memory
+  - **Personality Adaptation**: Dynamic Mexican norteño / Californian style switching
+  - **Emotion Recognition**: User emotion detection and appropriate response generation
 
 ### Core Features & Design Patterns
 - **Mervin AI Autonomous Agent**: Transformed from a monolithic chatbot into a modular system with 14 specialized components. Features include:

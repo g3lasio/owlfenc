@@ -50,7 +50,7 @@ export function MervinChat({ className = '' }: MervinChatProps) {
   
   // Referencias
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const agentRef = useRef<MervinAgent | null>(null);
   
   // Hooks
@@ -70,12 +70,15 @@ export function MervinChat({ className = '' }: MervinChatProps) {
 
       agentRef.current = new MervinAgent(agentConfig);
       
-      // Agregar mensaje de bienvenida
+      // Agregar mensaje de bienvenida personalizado
+      const welcomeContent = agentRef.current?.getWelcomeMessage(selectedModel === 'agent') || 
+        (selectedModel === 'agent' 
+          ? '🤖 **¡Hola! Soy Mervin AI en modo Agente Autónomo.** \n\nPuedo ejecutar tareas complejas de forma autónoma como:\n• Generar estimados completos\n• Crear contratos con firma dual\n• Analizar permisos municipales\n• Verificar propiedades\n• Y mucho más...\n\n¿En qué puedo ayudarte hoy?'
+          : '💬 **¡Hola! Soy Mervin AI en modo Legacy.**\n\nEstoy aquí para ayudarte con información y guiarte paso a paso. ¿En qué puedo asistirte?');
+
       const welcomeMessage: Message = {
         id: 'welcome',
-        content: selectedModel === 'agent' 
-          ? '🤖 **¡Hola! Soy Mervin AI en modo Agente Autónomo.** \n\nPuedo ejecutar tareas complejas de forma autónoma como:\n• Generar estimados completos\n• Crear contratos con firma dual\n• Analizar permisos municipales\n• Verificar propiedades\n• Y mucho más...\n\n¿En qué puedo ayudarte hoy?'
-          : '💬 **¡Hola! Soy Mervin AI en modo Legacy.**\n\nEstoy aquí para ayudarte con información y guiarte paso a paso. ¿En qué puedo asistirte?',
+        content: welcomeContent,
         sender: 'assistant',
         timestamp: new Date()
       };
@@ -184,10 +187,15 @@ export function MervinChat({ className = '' }: MervinChatProps) {
       // Remover mensaje de "pensando"
       setMessages(prev => prev.filter(m => m.id !== thinkingMessage.id));
       
+      // Usar respuesta conversacional si está disponible
+      const responseContent = result.data?.conversationalResponse 
+        ? result.data.conversationalResponse 
+        : formatAgentResponse(result);
+
       // Agregar respuesta del agente
       const agentResponse: Message = {
         id: `agent_${Date.now()}`,
-        content: formatAgentResponse(result),
+        content: responseContent,
         sender: 'assistant',
         timestamp: new Date(),
         taskResult: result

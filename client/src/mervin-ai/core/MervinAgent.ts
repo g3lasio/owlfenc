@@ -15,6 +15,7 @@ import { IntentionEngine } from './IntentionEngine';
 import { TaskOrchestrator } from './TaskOrchestrator';
 import { SmartTaskCoordinator } from './SmartTaskCoordinator';
 import { ContextManager } from './ContextManager';
+import { ConversationEngine } from './ConversationEngine';
 import { EndpointCoordinator } from '../services/EndpointCoordinator';
 import { AgentMemory } from '../services/AgentMemory';
 
@@ -49,6 +50,7 @@ export class MervinAgent {
   private intentionEngine: IntentionEngine;
   private taskOrchestrator: TaskOrchestrator;
   private contextManager: ContextManager;
+  private conversationEngine: ConversationEngine;
   private endpointCoordinator: EndpointCoordinator;
   private agentMemory: AgentMemory;
   private config: AgentConfig;
@@ -70,6 +72,7 @@ export class MervinAgent {
     // Inicializar componentes del agente
     this.intentionEngine = new IntentionEngine(config);
     this.contextManager = new ContextManager(config.userId);
+    this.conversationEngine = new ConversationEngine(config.userId);
     this.endpointCoordinator = new EndpointCoordinator(config);
     this.agentMemory = new AgentMemory(config.userId);
     this.taskOrchestrator = new TaskOrchestrator({
@@ -86,29 +89,42 @@ export class MervinAgent {
 
   /**
    * Método principal para procesar input del usuario
-   * Analiza intenciones y ejecuta tareas autónomamente
+   * Analiza intenciones y ejecuta tareas autónomamente con conversación inteligente
    */
   async processUserInput(input: string, conversationHistory: any[]): Promise<TaskResult> {
     try {
       this.updateState({ isActive: true, lastActivity: new Date() });
       
-      // 1. Analizar la intención del usuario
+      // 1. Procesar mensaje con motor conversacional
+      const conversationResponse = await this.conversationEngine.processUserMessage(input);
+      
+      // 2. Analizar la intención del usuario
       const intention = await this.intentionEngine.analyzeUserInput(input, conversationHistory);
       
       if (this.config.debug) {
         console.log('🎯 [INTENTION-ANALYSIS]', intention);
+        console.log('🗣️ [CONVERSATION-RESPONSE]', conversationResponse);
       }
 
-      // 2. Actualizar contexto con nueva información
+      // 3. Actualizar contexto con nueva información
       await this.contextManager.updateContext(input, intention);
 
-      // 3. Generar y ejecutar plan de tareas
+      // 4. Generar y ejecutar plan de tareas
       const taskResult = await this.taskOrchestrator.executeTask(intention);
 
-      // 4. Aprender de la ejecución para futuras mejoras
+      // 5. Adaptar respuesta con personalidad conversacional
+      if (taskResult.data) {
+        taskResult.data.conversationalResponse = this.conversationEngine.adaptTaskResponse(
+          taskResult.data.response || 'Tarea completada',
+          taskResult.success
+        );
+        taskResult.data.languageProfile = conversationResponse.languageProfile;
+      }
+
+      // 6. Aprender de la ejecución para futuras mejoras
       await this.agentMemory.learnFromTask(intention, taskResult);
 
-      // 5. Actualizar estado final
+      // 7. Actualizar estado final
       this.updateState({ 
         isActive: false, 
         currentTask: null, 
@@ -122,6 +138,11 @@ export class MervinAgent {
     } catch (error) {
       console.error('❌ [MERVIN-AGENT] Error procesando input:', error);
       
+      // Generar respuesta de error con personalidad
+      const errorResponse = this.conversationEngine.getCurrentLanguageProfile().language === 'spanish'
+        ? 'Lo siento, primo. Hubo un problemita, pero aquí andamos para resolverlo.'
+        : 'Sorry about that, dude. Hit a little snag, but we\'ll get it sorted out.';
+
       this.updateState({ 
         isActive: false, 
         currentTask: null, 
@@ -132,12 +153,44 @@ export class MervinAgent {
 
       return {
         success: false,
-        error: `Error en el agente: ${(error as Error).message}`,
+        error: errorResponse,
+        data: {
+          conversationalResponse: errorResponse,
+          languageProfile: this.conversationEngine.getCurrentLanguageProfile()
+        },
         executionTime: 0,
         stepsCompleted: 0,
         endpointsUsed: []
       };
     }
+  }
+
+  /**
+   * Generar mensaje de bienvenida personalizado
+   */
+  getWelcomeMessage(isAgentMode: boolean = true): string {
+    return this.conversationEngine.generateWelcomeMessage(isAgentMode);
+  }
+
+  /**
+   * Obtener perfil de idioma actual
+   */
+  getCurrentLanguageProfile() {
+    return this.conversationEngine.getCurrentLanguageProfile();
+  }
+
+  /**
+   * Obtener historial conversacional
+   */
+  getConversationHistory() {
+    return this.conversationEngine.getConversationHistory();
+  }
+
+  /**
+   * Obtener resumen de conversación
+   */
+  getConversationSummary(): string {
+    return this.conversationEngine.getConversationSummary();
   }
 
   /**
