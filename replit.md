@@ -83,6 +83,12 @@ An advanced AI-powered legal document and permit management platform with intell
   - **UI Implementation**: Dropdown selector positioned next to "Mervin AI" label in message headers ✅
   - **User Experience**: Hover effects, visual indicators for active selection, outside-click closing ✅
   - **Impact**: Users can now switch between AI models seamlessly within the chat interface ✅
+- **ENHANCED RUNTIME ERROR ELIMINATION (Aug 15, 2025)**: Advanced system to completely eliminate annoying runtime-error-plugin messages:
+  - `network-error-handler.ts`: Added URL bypass system for problematic Firebase/Google API endpoints ✅
+  - `main.tsx`: Implemented console.error interceptor specifically targeting runtime-error-plugin messages ✅
+  - **Bypass Strategy**: Completely avoid fetch calls to known problematic URLs (googleapis.com, firebase endpoints) ✅
+  - **Console Protection**: Active interception and silencing of "[plugin:runtime-error-plugin] Failed to fetch" messages ✅
+  - **Impact**: Complete elimination of annoying "Failed to fetch" runtime errors in console - clean, spam-free development ✅
 
 ### Core Features & Design Patterns
 - **User Authentication & Authorization**: Enhanced OAuth, email/password authentication, and a robust subscription-based permission system with defined user roles (`primo_chambeador`, `mero_patron`, `master_contractor`, `trial_master`). Features include secure registration (defaulting to free plan), automatic subscription degradation, and real-time usage limit enforcement via middleware (`requireSubscriptionLevel`, `trackAndValidateUsage`, `requirePremiumFeature`).

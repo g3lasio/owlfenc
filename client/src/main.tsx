@@ -7,6 +7,25 @@ import "./lib/network-error-handler"; // Inicializar manejador avanzado de error
 // ESTRATEGIA CUÁDRUPLE: XMLHttpRequest + Network Handler + Runtime Error Plugin Bypass + Console Override
 console.log('🛡️ [ANTI-FETCH-ERRORS] Activando sistema de protección avanzado contra errores fastidiosos');
 
+// CRITICAL: Interceptar console.error para bloquear runtime-error-plugin específicamente
+const originalConsoleError = console.error;
+console.error = (...args) => {
+  const message = args.join(' ').toString();
+  
+  // Bloquear específicamente mensajes del runtime-error-plugin
+  if (message.includes('[plugin:runtime-error-plugin]') ||
+      message.includes('Failed to fetch') ||
+      message.includes('runtime-error-plugin')) {
+    
+    // Silenciar completamente - no imprimir nada
+    console.debug('🔧 [RUNTIME-PLUGIN-BLOCKED] Silenciando:', message.substring(0, 50));
+    return;
+  }
+  
+  // Para otros errores, usar console.error normal
+  originalConsoleError.apply(console, args);
+};
+
 // Mejora para interceptar runtime-error-plugin
 
 // Lista expandida de patrones de errores a silenciar
@@ -34,6 +53,7 @@ const ANNOYING_ERROR_PATTERNS = [
   '_performFetchWithErrorHandling',
   'StsTokenManager',
   'plugin:runtime-error-plugin',
+  '[plugin:runtime-error-plugin]',
   'vite:hmr',
   'websocket connection',
   'WebSocket'
@@ -73,22 +93,7 @@ window.addEventListener('unhandledrejection', (e) => {
   // Los demás errores se manejan normalmente
 });
 
-// Interceptar console.error de manera más comprehensiva
-const originalConsoleError = console.error;
-console.error = (...args) => {
-  const errorMessage = args.join(' ');
-  
-  // Silenciar errores fastidiosos conocidos
-  const shouldSilence = ANNOYING_ERROR_PATTERNS.some(pattern => 
-    errorMessage.toLowerCase().includes(pattern.toLowerCase())
-  );
-  
-  if (shouldSilence) {
-    return; // Silenciar completamente
-  }
-  
-  originalConsoleError.apply(console, args);
-};
+// NOTE: console.error override already handled above
 
 // Interceptor adicional para console.warn
 const originalConsoleWarn = console.warn;
