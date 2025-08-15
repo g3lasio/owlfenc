@@ -519,6 +519,9 @@ export class AgentMemory {
       });
 
     if (recentClients.length > 0) {
+      const clientEntity = recentClients[0][1] as any;
+      const clientName = clientEntity?.name || 'Cliente desconocido';
+      
       predictions.push({
         intention: {
           primary: 'estimate',
@@ -526,12 +529,12 @@ export class AgentMemory {
           confidence: 0.7,
           requiredEndpoints: ['/api/estimates'],
           estimatedSteps: 3,
-          parameters: { clientName: recentClients[0][1].name },
+          parameters: { clientName },
           context: { conversationHistory: [], recentActions: [], availableData: {} }
         },
         confidence: 0.7,
-        reason: `Cliente ${recentClients[0][1].name} mencionado recientemente`,
-        suggestedAction: `Crear estimado para ${recentClients[0][1].name}`,
+        reason: `Cliente ${clientName} mencionado recientemente`,
+        suggestedAction: `Crear estimado para ${clientName}`,
         estimatedValue: 8
       });
     }

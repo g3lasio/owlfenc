@@ -22,7 +22,7 @@ import { PropertyTaskAgent } from '../tasks/PropertyTaskAgent';
 import { PermitTaskAgent } from '../tasks/PermitTaskAgent';
 import { EndpointCoordinator } from '../services/EndpointCoordinator';
 import { ContextManager } from './ContextManager';
-import { AgentMemory } from '../services/AgentMemory';
+import { DatabaseAgentMemory as AgentMemory } from '../services/DatabaseAgentMemory';
 import { TaskResult } from './MervinAgent';
 
 export interface CoordinatorConfig {

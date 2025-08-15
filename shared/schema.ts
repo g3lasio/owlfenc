@@ -599,6 +599,220 @@ export const insertWebauthnCredentialSchema = createInsertSchema(webauthnCredent
 export type WebauthnCredential = typeof webauthnCredentials.$inferSelect;
 export type InsertWebauthnCredential = z.infer<typeof insertWebauthnCredentialSchema>;
 
+// ====================================================================
+// PHASE 5: LEARNING AND OPTIMIZATION SYSTEM - MEMORY DATABASE TABLES
+// ====================================================================
+
+// Agent Memory Patterns - Stores task execution patterns and user interactions
+export const agentMemoryPatterns = pgTable('agent_memory_patterns', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(), // Firebase UID
+  patternId: varchar('pattern_id', { length: 100 }).notNull().unique(),
+  
+  // Task information
+  intentionType: varchar('intention_type', { length: 100 }).notNull(),
+  intentionComplexity: varchar('intention_complexity', { length: 50 }).notNull(),
+  executionPlan: jsonb('execution_plan').notNull(),
+  
+  // Execution results
+  success: boolean('success').notNull(),
+  executionTime: integer('execution_time').notNull(), // milliseconds
+  endpointsUsed: jsonb('endpoints_used').notNull(),
+  parametersUsed: jsonb('parameters_used'),
+  
+  // Learning metrics
+  userSatisfaction: integer('user_satisfaction'), // 1-5 rating
+  optimizations: jsonb('optimizations'),
+  confidence: decimal('confidence', { precision: 3, scale: 2 }),
+  
+  // Context information
+  contextData: jsonb('context_data'),
+  conversationHistory: jsonb('conversation_history'),
+  activeEntities: jsonb('active_entities'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('memory_patterns_user_id_idx').on(table.userId),
+  intentionTypeIdx: index('memory_patterns_intention_type_idx').on(table.intentionType),
+  successIdx: index('memory_patterns_success_idx').on(table.success),
+  createdAtIdx: index('memory_patterns_created_at_idx').on(table.createdAt),
+}));
+
+// User Behavior Analytics - Tracks user behavior patterns and preferences
+export const userBehaviorAnalytics = pgTable('user_behavior_analytics', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull().unique(), // Firebase UID
+  
+  // Common patterns
+  commonIntentions: jsonb('common_intentions').notNull(),
+  preferredWorkflows: jsonb('preferred_workflows').notNull(),
+  timePatterns: jsonb('time_patterns').notNull(), // Usage by hour/day
+  
+  // Success metrics
+  totalTasks: integer('total_tasks').notNull().default(0),
+  successfulTasks: integer('successful_tasks').notNull().default(0),
+  averageExecutionTime: integer('average_execution_time').notNull().default(0),
+  
+  // Behavioral insights
+  workingHours: jsonb('working_hours'), // Peak usage times
+  preferredComplexity: varchar('preferred_complexity', { length: 50 }),
+  mostUsedEndpoints: jsonb('most_used_endpoints'),
+  
+  // Learning state
+  lastAnalysisDate: timestamp('last_analysis_date').defaultNow().notNull(),
+  adaptationLevel: varchar('adaptation_level', { length: 50 }).default('basic'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('behavior_analytics_user_id_idx').on(table.userId),
+  lastAnalysisIdx: index('behavior_analytics_last_analysis_idx').on(table.lastAnalysisDate),
+}));
+
+// Contextual Memory - Stores conversation context and entity awareness  
+export const contextualMemory = pgTable('contextual_memory', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(), // Firebase UID
+  contextId: varchar('context_id', { length: 100 }).notNull().unique(),
+  
+  // Context type and scope
+  contextType: varchar('context_type', { length: 50 }).notNull(), // 'conversation', 'project', 'session'
+  scope: varchar('scope', { length: 50 }).notNull(), // 'short_term', 'medium_term', 'long_term'
+  
+  // Context data
+  entities: jsonb('entities').notNull(), // Tracked entities (clients, projects, etc.)
+  relationships: jsonb('relationships'), // Entity relationships
+  preferences: jsonb('preferences'), // User preferences in this context
+  
+  // Memory metadata
+  importance: integer('importance').notNull().default(1), // 1-10 importance scale
+  accessCount: integer('access_count').notNull().default(0),
+  lastAccessed: timestamp('last_accessed').defaultNow().notNull(),
+  
+  // Expiration and cleanup
+  expiresAt: timestamp('expires_at'),
+  autoCleanup: boolean('auto_cleanup').notNull().default(true),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('contextual_memory_user_id_idx').on(table.userId),
+  contextTypeIdx: index('contextual_memory_context_type_idx').on(table.contextType),
+  importanceIdx: index('contextual_memory_importance_idx').on(table.importance),
+  expiresAtIdx: index('contextual_memory_expires_at_idx').on(table.expiresAt),
+}));
+
+// Optimization Suggestions - AI-generated optimization recommendations
+export const optimizationSuggestions = pgTable('optimization_suggestions', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(), // Firebase UID
+  suggestionId: varchar('suggestion_id', { length: 100 }).notNull().unique(),
+  
+  // Suggestion details
+  type: varchar('type', { length: 50 }).notNull(), // 'sequence', 'parameters', 'timing', 'alternative'
+  description: text('description').notNull(),
+  reason: text('reason').notNull(),
+  
+  // Impact metrics
+  estimatedImprovement: decimal('estimated_improvement', { precision: 5, scale: 2 }).notNull(),
+  confidence: decimal('confidence', { precision: 3, scale: 2 }).notNull(),
+  applicableIntentions: jsonb('applicable_intentions').notNull(),
+  
+  // Implementation status
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending', 'applied', 'rejected', 'expired'
+  appliedAt: timestamp('applied_at'),
+  feedbackScore: integer('feedback_score'), // 1-5 user feedback
+  
+  // Supporting data
+  supportingData: jsonb('supporting_data'),
+  relatedPatterns: jsonb('related_patterns'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('optimization_suggestions_user_id_idx').on(table.userId),
+  statusIdx: index('optimization_suggestions_status_idx').on(table.status),
+  confidenceIdx: index('optimization_suggestions_confidence_idx').on(table.confidence),
+  createdAtIdx: index('optimization_suggestions_created_at_idx').on(table.createdAt),
+}));
+
+// Learning Progress - Tracks long-term learning and system adaptation
+export const learningProgress = pgTable('learning_progress', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull().unique(), // Firebase UID
+  
+  // Learning metrics
+  totalInteractions: integer('total_interactions').notNull().default(0),
+  successfulPredictions: integer('successful_predictions').notNull().default(0),
+  totalPredictions: integer('total_predictions').notNull().default(0),
+  adaptationScore: decimal('adaptation_score', { precision: 5, scale: 2 }).notNull().default(0),
+  
+  // Learning categories
+  intentionRecognitionAccuracy: decimal('intention_recognition_accuracy', { precision: 5, scale: 2 }).default(0),
+  workflowOptimizationScore: decimal('workflow_optimization_score', { precision: 5, scale: 2 }).default(0),
+  predictionAccuracy: decimal('prediction_accuracy', { precision: 5, scale: 2 }).default(0),
+  
+  // Learning state
+  learningPhase: varchar('learning_phase', { length: 50 }).notNull().default('initial'), // 'initial', 'adapting', 'optimized', 'expert'
+  lastLearningSession: timestamp('last_learning_session').defaultNow().notNull(),
+  nextOptimizationDue: timestamp('next_optimization_due').defaultNow().notNull(),
+  
+  // Knowledge evolution
+  knowledgeVersion: integer('knowledge_version').notNull().default(1),
+  learningVelocity: decimal('learning_velocity', { precision: 5, scale: 2 }).default(0), // Learning rate
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('learning_progress_user_id_idx').on(table.userId),
+  learningPhaseIdx: index('learning_progress_learning_phase_idx').on(table.learningPhase),
+  lastSessionIdx: index('learning_progress_last_session_idx').on(table.lastLearningSession),
+}));
+
+// Insert schemas for memory system tables
+export const insertAgentMemoryPatternSchema = createInsertSchema(agentMemoryPatterns).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUserBehaviorAnalyticsSchema = createInsertSchema(userBehaviorAnalytics).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertContextualMemorySchema = createInsertSchema(contextualMemory).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertOptimizationSuggestionSchema = createInsertSchema(optimizationSuggestions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertLearningProgressSchema = createInsertSchema(learningProgress).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Memory system types
+export type AgentMemoryPattern = typeof agentMemoryPatterns.$inferSelect;
+export type InsertAgentMemoryPattern = z.infer<typeof insertAgentMemoryPatternSchema>;
+export type UserBehaviorAnalytics = typeof userBehaviorAnalytics.$inferSelect;
+export type InsertUserBehaviorAnalytics = z.infer<typeof insertUserBehaviorAnalyticsSchema>;
+export type ContextualMemory = typeof contextualMemory.$inferSelect;
+export type InsertContextualMemory = z.infer<typeof insertContextualMemorySchema>;
+export type OptimizationSuggestion = typeof optimizationSuggestions.$inferSelect;
+export type InsertOptimizationSuggestion = z.infer<typeof insertOptimizationSuggestionSchema>;
+export type LearningProgress = typeof learningProgress.$inferSelect;
+export type InsertLearningProgress = z.infer<typeof insertLearningProgressSchema>;
+
 // Legacy aliases for backward compatibility
 export type EstimateItem = Estimate;
 export type InsertEstimateItem = InsertEstimate;
