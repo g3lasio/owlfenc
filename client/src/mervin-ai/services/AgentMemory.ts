@@ -233,7 +233,7 @@ export class AgentMemory {
     try {
       const stored = localStorage.getItem(`agentMemory_${this.userId}`);
       if (stored) {
-        const parsed = JSON.parse(stored);
+        const parsed: any = JSON.parse(stored);
         
         // Restaurar taskHistory con conversión de fechas
         this.taskHistory = (parsed.taskHistory || []).map((task: any) => ({
@@ -271,6 +271,42 @@ export class AgentMemory {
       localStorage.setItem(`agentMemory_${this.userId}`, JSON.stringify(toSave));
     } catch (error) {
       console.error('❌ [AGENT-MEMORY] Error saving memory:', error);
+    }
+  }
+
+  /**
+   * Almacenar interacción exitosa (utilizado por SmartTaskCoordinator)
+   */
+  async storeSuccessfulInteraction(data: {
+    intention: any;
+    strategy: any;
+    result: any;
+    timestamp: string;
+  }): Promise<void> {
+    try {
+      // Convertir a TaskPattern
+      const pattern: TaskPattern = {
+        id: `pattern_${Date.now()}`,
+        intention: data.intention,
+        executionPlan: {
+          steps: [],
+          estimatedDuration: 0,
+          requiredPermissions: [],
+          riskLevel: 'low',
+          canRollback: true
+        },
+        result: data.result,
+        timestamp: new Date(data.timestamp),
+        userId: this.userId,
+        success: data.result.success,
+        executionTime: data.result.executionTime || 0,
+        optimizations: data.strategy.optimizations || []
+      };
+
+      this.taskHistory.push(pattern);
+      this.saveMemory();
+    } catch (error) {
+      console.error('❌ [AGENT-MEMORY] Error storing successful interaction:', error);
     }
   }
 

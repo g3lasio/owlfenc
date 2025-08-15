@@ -13,6 +13,7 @@
 
 import { IntentionEngine } from './IntentionEngine';
 import { TaskOrchestrator } from './TaskOrchestrator';
+import { SmartTaskCoordinator } from './SmartTaskCoordinator';
 import { ContextManager } from './ContextManager';
 import { EndpointCoordinator } from '../services/EndpointCoordinator';
 import { AgentMemory } from '../services/AgentMemory';
@@ -188,7 +189,7 @@ export class MervinAgent {
     try {
       const context = await this.contextManager.getCurrentContext();
       const suggestions = await this.agentMemory.predictUserNeeds(context);
-      return suggestions;
+      return suggestions.map(s => s.suggestedAction);
     } catch (error) {
       console.error('❌ [MERVIN-AGENT] Error obteniendo sugerencias:', error);
       return [];

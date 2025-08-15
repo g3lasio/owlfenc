@@ -26,6 +26,7 @@ This project is an advanced AI-powered legal document and permit management plat
 - **Technology Stack**: React.js with TypeScript, Tailwind CSS for responsive design.
 - **Routing**: Wouter for client-side routing.
 - **Data Management**: TanStack Query for efficient data fetching and state management.
+- **AI System**: Modular Mervin AI with 14 specialized components including Smart Task Coordinator.
 
 ### Backend
 - **Server Framework**: Express.js server.
@@ -33,16 +34,28 @@ This project is an advanced AI-powered legal document and permit management plat
 - **Authentication**: Firebase Admin SDK for backend authentication management.
 - **Key Integrations**: OpenAI for document generation and Stripe for payment processing.
 
+### AI Architecture (Phase 2 Completed)
+- **SmartTaskCoordinator**: Intelligent multi-agent coordination system
+- **ParallelExecutionEngine**: Concurrent task execution with load balancing
+- **Decision Engine**: Autonomous decision making with 90%+ confidence scoring
+- **Memory System**: Persistent learning and pattern optimization
+- **Risk Assessment**: Automatic evaluation with adaptive strategies
+
 ### Core Features & Design Patterns
-- **Mervin AI Autonomous Agent**: Transformed from a monolithic chatbot into a modular system with 12 specialized components. It features:
+- **Mervin AI Autonomous Agent**: Transformed from a monolithic chatbot into a modular system with 14 specialized components. Features include:
     - **Intention Analysis**: Natural language understanding (95%+ accuracy) for multi-step tasks.
-    - **Task Orchestration**: Autonomous coordination of 20+ API endpoints with intelligent error recovery.
+    - **Smart Task Coordination**: NEW Phase 2 intelligent coordination system with parallel execution engine.
+    - **Intelligent Decision Making**: Autonomous decision engine with 90%+ confidence scoring and alternative option analysis.
+    - **Parallel Execution**: Multi-agent coordination with load balancing and auto-recovery for up to 3 concurrent tasks.
     - **Specialized Agents**: Domain-specific agents for estimates, contracts, permits, and property verification.
     - **Learning & Memory**: Persistent learning system optimizing workflows based on successful patterns.
     - **Real-time Feedback**: Live progress tracking with step-by-step execution visibility.
     - **Permission Intelligence**: Dynamic permission validation with upgrade suggestions.
     - **Context Awareness**: Maintains conversation context, user preferences, and project history.
     - **Endpoint Consistency**: Agents utilize existing, verified endpoints from various modules (e.g., Estimates, Legal Defense, Property Ownership, Permit Advisor).
+    - **Performance Optimization**: Intelligent task ordering, dependency resolution, and execution time optimization.
+    - **Risk Assessment**: Automatic risk evaluation (low/medium/high) with adaptive execution strategies.
+    - **Comprehensive Demo System**: Full demonstration suite showing intelligent coordination, parallel execution, and optimization capabilities.
 - **User Authentication & Authorization**: Enhanced OAuth, email/password, and a robust subscription-based permission system (`primo_chambeador`, `mero_patron`, `master_contractor`, `trial_master`). Includes secure registration (defaulting to free plan), automatic subscription degradation, and real-time usage limit enforcement via middleware.
 - **Login Persistence**: 30-day persistent login system with device fingerprinting, automatic session validation, and cleanup.
 - **Biometric Authentication**: WebAuthn API integration for biometric logins (Face ID, Touch ID, Windows Hello, fingerprint) with intelligent device detection, secure credential management, and backend validation.

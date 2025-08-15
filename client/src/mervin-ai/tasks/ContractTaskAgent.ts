@@ -133,14 +133,14 @@ export class ContractTaskAgent {
       }
 
       // 5. Generar PDF si se solicita
-      let pdfUrl;
-      if (request.preferences?.generatePDF) {
+      let pdfUrl: string | undefined;
+      if (request.preferences?.generatePDF && contractResult.contractHTML) {
         pdfUrl = await this.generateContractPDF(contractResult.contractHTML, enrichedContractData);
       }
 
       // 6. Inicializar firma dual si se solicita
-      let signatureLinks;
-      if (request.preferences?.sendForSignature) {
+      let signatureLinks: { contractorUrl: string; clientUrl: string; } | undefined;
+      if (request.preferences?.sendForSignature && contractResult.contractHTML) {
         signatureLinks = await this.initializeDualSignature(contractResult.contractHTML, enrichedContractData);
       }
 
@@ -195,7 +195,7 @@ export class ContractTaskAgent {
     const results = await this.permissionValidator.validateMultiplePermissions(requiredPermissions);
     
     const missingPermissions = Object.entries(results)
-      .filter(([_, result]) => !result.allowed)
+      .filter(([_, result]: [string, any]) => !result.allowed)
       .map(([permission, _]) => permission);
 
     return {

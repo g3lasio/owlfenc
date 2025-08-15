@@ -9,6 +9,8 @@
 export { MervinAgent } from './core/MervinAgent';
 export { IntentionEngine } from './core/IntentionEngine';
 export { TaskOrchestrator } from './core/TaskOrchestrator';
+export { SmartTaskCoordinator } from './core/SmartTaskCoordinator';
+export { ParallelExecutionEngine } from './core/ParallelExecutionEngine';
 export { ContextManager } from './core/ContextManager';
 
 // Services
@@ -61,3 +63,6 @@ export type {
   PropertyRequest, 
   PropertyResult 
 } from './tasks/PropertyTaskAgent';
+
+// Demo
+export { SmartCoordinatorDemo, runSmartCoordinatorDemo } from './demo/SmartCoordinatorDemo';
