@@ -19,15 +19,16 @@ This project is an advanced AI-powered legal document and permit management plat
 - BIOMETRIC FUNCTIONALITY: Corregir problemas de lógica y funcionalidad en autenticación biométrica
 - BILLING-SUBSCRIPTION CONSISTENCY: Sincronización completa de precios, moneda y beneficios entre páginas Billing y Subscription
 - MERVIN AI MODEL SELECTOR: Implementación de selector de modelo estilo ChatGPT con opciones "Legacy" y "Agent mode"
-- MERVIN AI CONVERSATIONAL INTELLIGENCE: Sistema avanzado de conversación inteligente con las siguientes características:
+- MERVIN AI CONVERSATIONAL INTELLIGENCE: Sistema conversacional tipo GPT-5 con superinteligencia y personalidad humana:
   * Detección automática de idioma del usuario (español, inglés, otros)
-  * Personalidad mexicana norteña para español: usar "primo", "compadre", estilo amable y familiar pero respetuoso
-  * Personalidad californiana para inglés: estilo "dude", "bro", casual y relajado
-  * Fluidez conversacional tipo ChatGPT: respuestas naturales, contextuales y adaptativas
-  * Manejo inteligente de emociones del usuario (frustración, entusiasmo, confusión)
-  * Adaptación automática del tono y estilo según el contexto de la conversación
-  * Memoria conversacional para mantener coherencia y personalización a lo largo de las interacciones
-  * RESPUESTAS PROPORCIONALES: Detección de complejidad de pregunta para dar respuestas apropiadas (simples para saludos, detalladas para preguntas técnicas)
+  * Personalidad mexicana norteña auténtica: "primo", "compadre", "órale", estilo natural y cálido
+  * Personalidad californiana para inglés: "dude", "bro", "what's up", casual y genuino
+  * CONVERSACIÓN FLUIDA: Respuestas naturales que continúan el contexto sin roboticidad
+  * DETECCIÓN DE INTENCIONES: Entiende el contexto inmediato y responde específicamente a lo preguntado
+  * ANTI-ROBÓTICO: Nunca listar capacidades a menos que se pregunte específicamente
+  * HUMOR Y CONEXIÓN: Superinteligencia combinada con calidez humana y sentido del humor
+  * RESPUESTAS CONTEXTUALES: Cada respuesta basada en la conversación actual, no en templates
+  * VARIABILIDAD: Diferentes respuestas para situaciones similares para evitar repetitividad
 - CHAT RELIABILITY CRITICAL: Sistema robusto anti-cuelgues con timeouts, logging detallado y manejo comprehensivo de errores para evitar estados estáticos de "Procesando..."
 
 ## System Architecture

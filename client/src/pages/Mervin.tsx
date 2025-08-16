@@ -1088,39 +1088,65 @@ export default function Mervin() {
     const userMessageLower = userMessage.toLowerCase();
     const isSpanish = /[ñáéíóúü]/i.test(userMessage) || userMessage.includes('que') || userMessage.includes('como');
 
-    // 🎯 DETECCIÓN DE COMPLEJIDAD DE PREGUNTA
+    // 🎯 ANÁLISIS INTELIGENTE DE CONTEXTO E INTENCIÓN
     const isSimpleGreeting = /^(hola|hello|hi|hey|good morning|buenos dias|que tal|como estas|how are you)[\s\.\?]*$/i.test(userMessage.trim());
-    const isSimpleQuestion = userMessage.trim().length < 30 && !userMessage.includes('?') && !userMessageLower.includes('explain') && !userMessageLower.includes('tell me about');
     
-    // RESPUESTAS SIMPLES PARA PREGUNTAS SIMPLES
+    // 🧠 DETECCIÓN CONVERSACIONAL AVANZADA
+    const detectsLicenseStrategy = userMessageLower.includes('estrategia') || (userMessageLower.includes('licencia') && (userMessageLower.includes('como') || userMessageLower.includes('rapido') || userMessageLower.includes('tiempo')));
+    const detectsAdvice = userMessageLower.includes('recomiend') || userMessageLower.includes('suger') || userMessageLower.includes('aconsej');
+    const detectsPersonalSituation = userMessageLower.includes('debo') || userMessageLower.includes('necesito') || userMessageLower.includes('quiero') || userMessageLower.includes('me gustaria');
     
-    // LICENCIAS DE CONTRATISTA (PREGUNTA ESPECÍFICA DEL USUARIO)
-    if (userMessageLower.includes('c-13') || userMessageLower.includes('c13') || userMessageLower.includes('licencia') && userMessageLower.includes('concreto')) {
-      return `¡Órale, primo! Excelente pregunta sobre la licencia C-13. Te voy a explicar exactamente qué puedes hacer:
+    // RESPUESTAS CONVERSACIONALES INTELIGENTES
+    
+    // 🎯 ESTRATEGIAS PARA OBTENER LICENCIAS RÁPIDO (PREGUNTA REAL DEL USUARIO)
+    if (detectsLicenseStrategy && detectsAdvice) {
+      return `¡Órale, primo! Te entiendo perfectamente. Las licencias sí toman su tiempo, pero hay maneras de acelerar el proceso. Te voy a dar las estrategias que realmente funcionan:
 
-📋 **LICENCIA C-13 (FENCING CONTRACTOR):**
-La licencia C-13 es específicamente para **cercas y trabajos de cercado**, NO para trabajos de concreto general.
+**🚀 ESTRATEGIAS PARA ACELERAR TU LICENCIA:**
 
-🚫 **LO QUE NO PUEDES HACER CON C-13:**
-• Losas de concreto para patios o garajes
-• Cimientos o zapatas estructurales
-• Aceras o banquetas (sidewalks)
-• Trabajos de concreto decorativo extenso
-• Estructuras de concreto
+**1. RUTA RÁPIDA (60-90 días):**
+• **Experiencia waiver:** Si tienes 4+ años trabajando con un contratista licenciado, puedes waiver el examen de experiencia
+• **Pre-estudia antes de aplicar:** Toma clases mientras juntas documentos
 
-✅ **LO QUE SÍ PUEDES HACER CON C-13:**
-• **Postes de cerca de concreto** (fence posts)
-• **Zapatas para cercas** (fence footings)
-• **Trabajos de concreto incidentales** a la instalación de cercas
-• Reparación menor de concreto relacionada con cercas
+**2. DOCUMENTACIÓN EXPRESS:**
+• **Cartas de experiencia:** Consigue 3-4 cartas de contratistas que confirmen tu experiencia ANTES de aplicar
+• **Fotos de proyectos:** Documenta todo tu trabajo con fechas y ubicaciones
+• **Pay stubs/taxes:** Ten todo listo desde el día 1
 
-🎯 **PARA TRABAJOS DE CONCRETO NECESITAS:**
-• **Licencia C-8 (Concrete Contractor)** - Para trabajos generales de concreto
-• **Licencia B (General Building)** - Para proyectos más grandes
+**3. EXAMEN INTELIGENTE:**
+• **Contractors State License School:** Curso intensivo de 2 semanas (vale cada peso)
+• **Practice exams:** Toma mínimo 5 exámenes de práctica
+• **Book combo:** Tienes que saber el trade book + business law book
 
-**RECOMENDACIÓN:** Si quieres hacer trabajos de concreto profesionalmente, necesitas obtener la licencia C-8. Mientras tanto, con tu C-13 puedes hacer todo el concreto relacionado con cercas.
+**4. INSIDER TIPS:**
+• **Aplica en Sacramento office:** Más rápido que LA o SF
+• **Evita Diciembre-Febrero:** Súper lentos por holidays
+• **Follow up cada 2 semanas:** Squeaky wheel gets the grease
 
-¿Tienes algún proyecto específico en mente, compadre?`;
+¿Qué tipo de licencia necesitas específicamente, compadre? Te puedo dar más detalles según tu situación.`;
+    }
+
+    // LICENCIAS DE CONTRATISTA C-13 ESPECÍFICA
+    if (userMessageLower.includes('c-13') || userMessageLower.includes('c13') || (userMessageLower.includes('licencia') && userMessageLower.includes('concreto'))) {
+      return `¡Ah, primo! Aquí tienes la bronca con la C-13. Te voy a explicar la neta:
+
+La **C-13 es para cercas**, no para concreto general. Es como tener licencia de plomero y querer hacer electricidad, ¿me entiendes?
+
+**CON C-13 SÍ PUEDES:**
+• Postes de cerca en concreto
+• Zapatas para cercas únicamente  
+• Reparaciones menores relacionadas con cercas
+
+**CON C-13 NO PUEDES:**
+• Losas de concreto (patios, garages)
+• Aceras o banquetas
+• Cimientos estructurales
+• Concreto decorativo
+
+**MI RECOMENDACIÓN REAL:**
+Si quieres hacer concreto, necesitas la **C-8 (Concrete Contractor)**. No te compliques la vida trabajando en zona gris.
+
+¿Ya tienes la C-13 o la estás sacando? Te puedo guiar mejor sabiendo tu situación específica, compadre.`;
     }
 
     // ADUs Y PROYECTOS RESIDENCIALES
@@ -1240,63 +1266,60 @@ La licencia C-13 es específicamente para **cercas y trabajos de cercado**, NO p
 ¿Qué tipo de proyecto necesitas permisos, compadre?`;
     }
 
-    // SALUDOS SIMPLES Y DIRECTOS
+    // 💬 SALUDOS NATURALES Y CONVERSACIONALES
     if (isSimpleGreeting) {
+      const responses = [
+        "¡Órale, primo! Todo al cien. ¿Qué tranza?",
+        "¡Ey, compadre! Aquí andamos echándole ganas. ¿Qué ocupas?",
+        "¡Qué tal, primo! Todo bien por este lado. ¿En qué te ayudo?",
+        "¡Hola, compadre! Listo para echarle ganas a tu proyecto."
+      ];
+      
       if (isSpanish) {
-        return `¡Órale, primo! Todo muy bien por aquí, echándole ganas. ¿En qué te puedo ayudar?`;
+        return responses[Math.floor(Math.random() * responses.length)];
       } else {
-        return `Hey there, dude! All good here, working hard. What can I help you with?`;
+        const englishResponses = [
+          "Hey dude! All good here. What's up?",
+          "What's good, bro! Ready to tackle some construction?",
+          "Hey there! Everything's solid. What can I help you with?",
+          "What's up, man! Ready to get some work done?"
+        ];
+        return englishResponses[Math.floor(Math.random() * englishResponses.length)];
       }
     }
 
-    // CONVERSACIÓN GENERAL (preguntas más elaboradas)
-    if (userMessageLower.includes('como estas') || userMessageLower.includes('que tal') || userMessageLower.includes('how are you')) {
+    // 🎯 RESPUESTA CONVERSACIONAL INTELIGENTE (NO LISTAR CAPACIDADES UNLESS ASKED)
+    
+    // Si es pregunta general o no específica, responder de manera conversacional
+    if (detectsPersonalSituation) {
       if (isSpanish) {
-        return `¡Todo excelente, primo! Aquí andamos echándole ganas. Soy Mervin AI, tu super contratista de construcción. ¿En qué proyecto te puedo ayudar?`;
+        return `¡Órale, primo! Me da mucho gusto que me platiques lo que necesitas. Así podemos encontrar la mejor solución juntos.
+
+Cuéntame un poco más de tu situación: ¿qué tipo de proyecto tienes en mente o qué challenge estás enfrentando? Entre más detalles me des, mejor te puedo echar la mano.`;
       } else {
-        return `All good, dude! Working hard as always. I'm Mervin AI, your super contractor. What project can I help you with?`;
+        return `Hey dude! I'm really glad you're sharing what's on your mind. That's how we find the best solutions together.
+
+Tell me a bit more about your situation: what kind of project are you thinking about or what challenge are you facing? The more details you give me, the better I can help you out.`;
       }
     }
 
-    // RESPUESTA POR DEFECTO CONVERSACIONAL (solo para preguntas complejas o específicas)
+    // Para cualquier otra pregunta, ser conversacional y preguntarle específicamente qué necesita
     if (isSpanish) {
-      // Para preguntas complejas, dar información completa
-      if (!isSimpleQuestion) {
-        return `¡Órale, primo! Soy Mervin AI, tu super contratista especializado.
-
-Como experto en construcción puedo ayudarte con:
-🏗️ **Códigos de construcción** (IBC, IRC, NEC)
-📋 **Licencias de contratista** (todas las clasificaciones)
-🏠 **ADUs y proyectos residenciales**
-📋 **Permisos municipales**
-🔧 **Materiales y técnicas**
-💰 **Estimados precisos**
-📄 **Contratos profesionales**
-
-¿De qué quieres que platiquemos hoy, compadre?`;
-      } else {
-        // Para preguntas simples, respuesta simple
-        return `¡Órale, primo! Soy Mervin AI, tu super contratista. ¿En qué te puedo ayudar?`;
-      }
+      const responses = [
+        "¡Ey, primo! No estoy seguro de haber entendido bien tu pregunta. ¿Me puedes decir específicamente en qué te puedo ayudar?",
+        "¡Órale, compadre! Cuéntame un poco más de lo que necesitas para poder echarte la mano como debe ser.",
+        "¡Hey, primo! Platícame más detalles de tu situación para poder darte la mejor respuesta.",
+        "¡Compadre! Me gustaría ayudarte bien. ¿Puedes ser un poco más específico sobre lo que ocupas?"
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
     } else {
-      // Para preguntas complejas, dar información completa
-      if (!isSimpleQuestion) {
-        return `Hey there, dude! I'm Mervin AI, your specialized super contractor.
-
-As a construction expert, I can help you with:
-🏗️ **Building codes** (IBC, IRC, NEC)
-📋 **Contractor licenses** (all classifications)
-🏠 **ADUs and residential projects**
-📋 **Municipal permits**
-🔧 **Materials and techniques**
-💰 **Accurate estimates**
-📄 **Professional contracts**
-
-What do you want to chat about today, bro?`;
-      } else {
-        // Para preguntas simples, respuesta simple
-        return `Hey there, dude! I'm Mervin AI, your super contractor. What can I help you with?`;
-      }
+      const responses = [
+        "Hey dude! I want to make sure I understand what you need. Can you tell me more specifically how I can help?",
+        "What's up, bro! Give me a bit more detail about your situation so I can help you properly.",
+        "Hey man! Tell me more about what you're working on so I can give you the best advice.",
+        "Dude! I'd love to help you out. Can you be a bit more specific about what you need?"
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
     }
   };
 
