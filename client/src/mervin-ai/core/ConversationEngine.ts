@@ -54,6 +54,15 @@ class ConversationEngine {
   private readonly MAX_HISTORY = 20; // Mantener últimas 20 interacciones
 
   constructor(userId: string) {
+    // 🛡️ VALIDACIÓN DE SEGURIDAD CRÍTICA
+    if (!userId || typeof userId !== 'string' || userId.trim() === '') {
+      throw new Error('🚨 SECURITY: userId is required and cannot be empty');
+    }
+    
+    if (userId === 'null' || userId === 'undefined' || userId.includes('<script') || userId.includes('../')) {
+      throw new Error('🚨 SECURITY: Invalid userId format detected');
+    }
+
     this.languageDetector = languageDetector;
     this.state = {
       currentLanguageProfile: {
@@ -76,27 +85,32 @@ class ConversationEngine {
    * Procesar mensaje del usuario y generar respuesta inteligente
    */
   async processUserMessage(userMessage: string, context?: any): Promise<ConversationResponse> {
+    // 🛡️ SANITIZACIÓN DE SEGURIDAD - Prevenir XSS
+    const sanitizedMessage = this.sanitizeInput(userMessage);
     // 1. Detectar idioma y personalidad
-    const languageProfile = this.languageDetector.detectLanguage(userMessage);
+    const languageProfile = this.languageDetector.detectLanguage(sanitizedMessage);
     this.updateLanguageProfile(languageProfile);
 
     // 2. Detectar emoción del usuario
-    const userEmotion = this.languageDetector.detectUserEmotion(userMessage);
+    const userEmotion = this.languageDetector.detectUserEmotion(sanitizedMessage);
     this.state.userEmotion = userEmotion;
 
     // 3. Analizar contexto conversacional
-    const conversationContext = this.analyzeConversationContext(userMessage);
+    const conversationContext = this.analyzeConversationContext(sanitizedMessage);
 
     // 4. Generar respuesta contextual
     const response = await this.generateContextualResponse(
-      userMessage,
+      sanitizedMessage,
       languageProfile,
       userEmotion,
       conversationContext
     );
 
+    // 🛡️ SANITIZACIÓN DE SALIDA - Prevenir XSS en respuestas
+    response.message = this.sanitizeOutput(response.message);
+
     // 5. Actualizar historial
-    this.updateConversationHistory(userMessage, response.message, languageProfile, userEmotion);
+    this.updateConversationHistory(sanitizedMessage, response.message, languageProfile, userEmotion);
 
     return response;
   }
@@ -393,6 +407,95 @@ So, what can I do for you today, bro?`;
 
   getUserEmotion(): string {
     return this.state.userEmotion;
+  }
+
+  /**
+   * 🛡️ MÉTODOS DE SEGURIDAD CRÍTICOS
+   */
+  private sanitizeInput(input: string): string {
+    if (!input || typeof input !== 'string') {
+      return '';
+    }
+
+    // 🚨 DETECTAR Y FILTRAR INFORMACIÓN SENSIBLE
+    let sanitized = input;
+    const originalInput = input;
+    
+    // Filtrar números de tarjeta de crédito
+    sanitized = sanitized.replace(/\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g, '[TARJETA-FILTRADA]');
+    
+    // Filtrar SSN
+    sanitized = sanitized.replace(/\b\d{3}[-]?\d{2}[-]?\d{4}\b/g, '[SSN-FILTRADO]');
+    
+    // Filtrar passwords comunes
+    sanitized = sanitized.replace(/\b(password|contraseña|clave|pass)\s*[:=]?\s*\w+/gi, '[CONTRASEÑA-FILTRADA]');
+    
+    // Filtrar API keys y tokens
+    sanitized = sanitized.replace(/\b(sk_live_|pk_live_|AIzaSy|ya29\.|1\/\/)\w+/g, '[API-KEY-FILTRADA]');
+    
+    // Filtrar emails con passwords
+    sanitized = sanitized.replace(/(\w+@\w+\.\w+)\s+(password|contraseña)\s*[:=]?\s*\w+/gi, '$1 [CONTRASEÑA-FILTRADA]');
+    
+    // Log evento de seguridad si se detectó información sensible
+    if (sanitized !== originalInput) {
+      console.warn('🛡️ [SECURITY-EVENT] Información sensible detectada y filtrada', {
+        timestamp: new Date().toISOString(),
+        userId: 'current-user',
+        event: 'sensitive_data_filtered',
+        inputLength: originalInput.length
+      });
+    }
+
+    // Prevenir XSS - remover tags peligrosos
+    sanitized = sanitized
+      .replace(/<script[^>]*>.*?<\/script>/gi, '')
+      .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '')
+      .replace(/javascript:/gi, '')
+      .replace(/on\w+\s*=/gi, '')
+      .replace(/<img[^>]*onerror[^>]*>/gi, '')
+      .replace(/<svg[^>]*onload[^>]*>/gi, '')
+      .replace(/alert\s*\(/gi, 'BLOCKED(')
+      .replace(/confirm\s*\(/gi, 'BLOCKED(')
+      .replace(/prompt\s*\(/gi, 'BLOCKED(');
+
+    // Prevenir injection - escapar caracteres peligrosos
+    sanitized = sanitized
+      .replace(/['";\\]/g, '')
+      .replace(/--/g, '')
+      .replace(/\/\*/g, '')
+      .replace(/\*\//g, '')
+      .replace(/\$ne/gi, '')
+      .replace(/\$where/gi, '')
+      .replace(/DROP/gi, '')
+      .replace(/DELETE/gi, '')
+      .replace(/UPDATE/gi, '')
+      .replace(/INSERT/gi, '');
+
+    // Limitar tamaño para prevenir DoS
+    if (sanitized.length > 10000) {
+      sanitized = sanitized.substring(0, 10000) + '... [mensaje truncado por seguridad]';
+    }
+
+    return sanitized;
+  }
+
+  private sanitizeOutput(output: string): string {
+    if (!output || typeof output !== 'string') {
+      return '';
+    }
+
+    // Asegurar que la respuesta no contenga scripts maliciosos
+    return output
+      .replace(/<script[^>]*>.*?<\/script>/gi, '')
+      .replace(/javascript:/gi, '')
+      .replace(/on\w+\s*=/gi, '');
+  }
+
+  /**
+   * Obtener estado seguro (para testing)
+   */
+  getState(): ConversationState {
+    return { ...this.state };
   }
 }
 
