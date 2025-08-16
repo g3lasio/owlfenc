@@ -29,6 +29,8 @@ This project is an advanced AI-powered legal document and permit management plat
   * HUMOR Y CONEXIÓN: Superinteligencia combinada con calidez humana y sentido del humor
   * RESPUESTAS CONTEXTUALES: Cada respuesta basada en la conversación actual, no en templates
   * VARIABILIDAD: Diferentes respuestas para situaciones similares para evitar repetitividad
+  * ENTENDIMIENTO UNIVERSAL: Capaz de entender hasta las conversaciones más básicas y seguimientos simples
+  * CONFIRMACIONES INTELIGENTES: Detecta y responde apropiadamente a confirmaciones, seguimientos, y emociones
 - CHAT RELIABILITY CRITICAL: Sistema robusto anti-cuelgues con timeouts, logging detallado y manejo comprehensivo de errores para evitar estados estáticos de "Procesando..."
 
 ## System Architecture

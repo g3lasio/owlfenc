@@ -1056,8 +1056,13 @@ export default function Mervin() {
 
       const { ConversationEngine, DatabaseAgentMemory } = modules;
       
-      // 🔧 CORREGIR ERROR: Asegurar que user está definido
-      const currentUser = (user as any) || { uid: userId, email: 'anonymous' };
+      // 🔧 SOLUCIÓN DEFINITIVA: Sistema de usuario robusto
+      if (!user || !(user as any)?.uid) {
+        console.warn('⚠️ [USER-ISSUE] Usuario no definido, usando sistema directo');
+        return quickIntelligentResponse;
+      }
+      
+      const currentUser = user as any;
       
       const conversationEngine = new ConversationEngine(userId);
       const databaseMemory = new DatabaseAgentMemory(userId);
@@ -1091,13 +1096,75 @@ export default function Mervin() {
     // 🎯 ANÁLISIS INTELIGENTE DE CONTEXTO E INTENCIÓN
     const isSimpleGreeting = /^(hola|hello|hi|hey|good morning|buenos dias|que tal|como estas|how are you)[\s\.\?]*$/i.test(userMessage.trim());
     
-    // 🧠 DETECCIÓN CONVERSACIONAL AVANZADA
+    // 🧠 DETECCIÓN CONVERSACIONAL SÚPER AVANZADA
     const detectsLicenseStrategy = userMessageLower.includes('estrategia') || (userMessageLower.includes('licencia') && (userMessageLower.includes('como') || userMessageLower.includes('rapido') || userMessageLower.includes('tiempo')));
     const detectsAdvice = userMessageLower.includes('recomiend') || userMessageLower.includes('suger') || userMessageLower.includes('aconsej');
     const detectsPersonalSituation = userMessageLower.includes('debo') || userMessageLower.includes('necesito') || userMessageLower.includes('quiero') || userMessageLower.includes('me gustaria');
     
+    // 🎯 DETECCIÓN DE CONFIRMACIONES Y SEGUIMIENTO CONVERSACIONAL
+    const isConfirmation = userMessageLower.includes('si me entend') || userMessageLower.includes('entendiste') || userMessageLower.includes('me sigues') || userMessageLower.includes('yes you understand') || userMessageLower.includes('got it');
+    const isFollowUp = userMessageLower.includes('y ahora') || userMessageLower.includes('what now') || userMessageLower.includes('que sigue') || userMessageLower.includes('next step');
+    const isAgreement = /^(si|yes|ok|okay|claro|perfecto|exactly|correcto)[\s\.\!]*$/i.test(userMessage.trim());
+    const isBasicResponse = userMessage.trim().length < 15 && (userMessageLower.includes('si') || userMessageLower.includes('no') || userMessageLower.includes('yes') || userMessageLower.includes('maybe'));
+    
+    // 🔍 DETECCIÓN DE EMOCIONES Y CONTEXTO
+    const isFrustrated = userMessageLower.includes('no entiendes') || userMessageLower.includes('no me entiendes') || userMessageLower.includes('you dont understand');
+    const isThankful = userMessageLower.includes('gracias') || userMessageLower.includes('thank') || userMessageLower.includes('thanks');
+    
     // RESPUESTAS CONVERSACIONALES INTELIGENTES
     
+    // 💬 CONFIRMACIONES Y SEGUIMIENTO CONVERSACIONAL (MUY IMPORTANTE)
+    if (isConfirmation) {
+      const responses = [
+        "¡Claro que sí, primo! Te entiendo perfectamente. Platícame qué más necesitas saber.",
+        "¡Por supuesto, compadre! Todo claro. ¿En qué más te puedo echar la mano?",
+        "¡Órale, sí! Te sigo al cien. ¿Qué quieres que platiquemos ahora?",
+        "¡Exacto, primo! Nos entendemos bien. ¿Cuál es tu siguiente pregunta?"
+      ];
+      return isSpanish ? 
+        responses[Math.floor(Math.random() * responses.length)] :
+        "Absolutely, dude! I got you completely. What else can I help you with?";
+    }
+
+    if (isFollowUp) {
+      const responses = [
+        "¡Órale, primo! Ya que te quedó claro, cuéntame específicamente qué quieres hacer. ¿Tienes algún proyecto en mente?",
+        "¡Perfecto, compadre! Ahora dime exactamente qué necesitas. ¿Es para un trabajo específico o nada más información?",
+        "¡Excelente! Ahora platícame más detalles de tu situación para poder ayudarte mejor, ¿va?"
+      ];
+      return isSpanish ?
+        responses[Math.floor(Math.random() * responses.length)] :
+        "Great, dude! Now tell me specifically what you want to do. Got a specific project in mind?";
+    }
+
+    if (isAgreement || isBasicResponse) {
+      const responses = [
+        "¡Órale! Me da mucho gusto que estemos en la misma página, primo. ¿Qué más ocupas?",
+        "¡Perfecto, compadre! ¿En qué más te puedo ayudar?",
+        "¡Excelente! Así me gusta, que nos entendamos bien. ¿Cuál es tu siguiente move?"
+      ];
+      return isSpanish ?
+        responses[Math.floor(Math.random() * responses.length)] :
+        "Perfect, dude! Glad we're on the same page. What else do you need?";
+    }
+
+    if (isFrustrated) {
+      return isSpanish ?
+        "¡Órale, primo! Perdón si no me expliqué bien. Vamos por partes: dime exactamente qué necesitas y te voy a ayudar paso a paso, ¿va?" :
+        "Hey dude! Sorry if I wasn't clear. Let's break it down: tell me exactly what you need and I'll help you step by step, okay?";
+    }
+
+    if (isThankful) {
+      const responses = [
+        "¡De nada, primo! Para eso estamos, para echarnos la mano. ¿Algo más en lo que te pueda ayudar?",
+        "¡Claro que sí, compadre! Me da mucho gusto poder ayudarte. ¿Qué más ocupas?",
+        "¡No hay problema! Siempre es un placer echarle la mano a un compadre como tú."
+      ];
+      return isSpanish ?
+        responses[Math.floor(Math.random() * responses.length)] :
+        "You got it, dude! That's what I'm here for. Anything else I can help with?";
+    }
+
     // 🎯 ESTRATEGIAS PARA OBTENER LICENCIAS RÁPIDO (PREGUNTA REAL DEL USUARIO)
     if (detectsLicenseStrategy && detectsAdvice) {
       return `¡Órale, primo! Te entiendo perfectamente. Las licencias sí toman su tiempo, pero hay maneras de acelerar el proceso. Te voy a dar las estrategias que realmente funcionan:
