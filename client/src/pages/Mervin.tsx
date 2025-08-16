@@ -12,7 +12,6 @@ import { MaterialInventoryService } from "../../src/services/materialInventorySe
 import { db } from "@/lib/firebase";
 import { useQuery } from "@tanstack/react-query";
 import { useProfile } from "@/hooks/use-profile";
-
 import {
   Dialog,
   DialogContent,
@@ -24,7 +23,6 @@ import {
   shareOrDownloadPdf,
   getSharingCapabilities,
 } from "@/utils/mobileSharing";
-
 import {
   getClients as getFirebaseClients,
   saveClient,
@@ -60,11 +58,9 @@ import {
   generatePDFReport,
   downloadPDFReport,
 } from "@/utils/permitReportGenerator";
-
 // Tipos para los mensajes
 type MessageSender = "user" | "assistant";
 type MessageState = "analyzing" | "thinking" | "none";
-
 type Message = {
   id: string;
   content: string;
@@ -76,7 +72,6 @@ type Message = {
   selectedMaterials?: { material: Material; quantity: number }[]; // ✅ NEW - confirmed selections
   estimates?: EstimateData[]; // NEW - for contract generation
 };
-
 type EstimateStep1ChatFlowStep =
   | "select-client"
   | "awaiting-client-choice"
@@ -91,7 +86,6 @@ type EstimateStep1ChatFlowStep =
   | "awaiting-discount"
   | "awaiting-tax"
   | null;
-
 // Contract-specific types (NEW - for contract generation only)
 type ContractFlowStep =
   | "select-estimate"
@@ -108,7 +102,6 @@ type ContractFlowStep =
   | "awaiting-signature-choice"
   | "generate-contract"
   | null;
-
 // Permit Advisor Flow Types
 type PermitFlowStep =
   | "address-selection"
@@ -122,7 +115,6 @@ type PermitFlowStep =
   | "deepsearch-analysis"
   | "results-display"
   | null;
-
 interface PermitProject {
   id: string;
   clientName: string;
@@ -135,7 +127,6 @@ interface PermitProject {
   clientEmail?: string;
   clientPhone?: string;
 }
-
 interface PermitData {
   name: string;
   issuingAuthority: string;
@@ -145,7 +136,6 @@ interface PermitData {
   requirements?: string;
   url?: string;
 }
-
 interface PermitResponse {
   requiredPermits: PermitData[];
   specialConsiderations: string[];
@@ -159,7 +149,6 @@ interface PermitResponse {
     timestamp?: string;
   };
 }
-
 interface EstimateData {
   id: string;
   estimateNumber: string;
@@ -176,14 +165,12 @@ interface EstimateData {
   createdAt: string;
   status: string;
 }
-
 interface ProjectTimelineField {
   id: string;
   label: string;
   value: string;
   required: boolean;
 }
-
 interface ProjectMilestone {
   id: string;
   title: string;
@@ -191,7 +178,6 @@ interface ProjectMilestone {
   percentage: number;
   estimatedDays: number;
 }
-
 interface LegalClause {
   id: string;
   title: string;
@@ -199,9 +185,7 @@ interface LegalClause {
   category: string;
   isRequired: boolean;
 }
-
 type DeepSearchOption = "materials-labor" | "materials-only" | "labor-only";
-
 type DeepSearchRecommendation = {
   materials: {
     name: string;
@@ -225,7 +209,6 @@ type DeepSearchRecommendation = {
   totalProjectCost: number;
   recommendations: string[];
 };
-
 interface Material {
   id: string;
   name: string;
@@ -267,10 +250,8 @@ const actionButtons = [
     icon: <BarChart4 className="h-5 w-5" />,
   },
 ];
-
 export default function Mervin() {
   const [messages, setMessages] = useState<Message[]>([]);
-  
   // 🔐 CONTEXTOS DE AUTENTICACIÓN Y PERMISOS
   const { userPlan, showUpgradeModal } = usePermissions();
   const [inputValue, setInputValue] = useState("");
@@ -278,7 +259,6 @@ export default function Mervin() {
   const [inventoryItems, setInventoryItems] = useState<
     { material: Material; quantity: number }[]
   >([]);
-
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -301,12 +281,10 @@ export default function Mervin() {
     type: "manual",
     amount: 0,
   });
-
   const [chatFlowStep, setChatFlowStep] =
     useState<EstimateStep1ChatFlowStep>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const { currentUser } = useAuth();
-
   // Contract-specific states (NEW - only for contract generation)
   const [contractFlowStep, setContractFlowStep] =
     useState<ContractFlowStep>(null);
@@ -314,7 +292,6 @@ export default function Mervin() {
   const [selectedEstimate, setSelectedEstimate] = useState<EstimateData | null>(
     null,
   );
-
   // Permit Advisor states
   const [permitFlowStep, setPermitFlowStep] = useState<PermitFlowStep>(null);
   const [permitProjects, setPermitProjects] = useState<PermitProject[]>([]);
@@ -357,17 +334,14 @@ export default function Mervin() {
       required: false,
     },
   ]);
-
   // Separate state for date values
   const [projectDates, setProjectDates] = useState<{
     start?: Date;
     completion?: Date;
   }>({});
-
   // State for logo file upload
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
-
   // State for signature protocol
   const [contractorSignUrl, setContractorSignUrl] = useState<string>("");
   const [clientSignUrl, setClientSignUrl] = useState<string>("");
@@ -421,7 +395,6 @@ export default function Mervin() {
     address: "",
   });
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
-
   // DeepSearch AI states
   const [deepSearchOption, setDeepSearchOption] =
     useState<DeepSearchOption | null>(null);
@@ -429,7 +402,6 @@ export default function Mervin() {
     useState<DeepSearchRecommendation | null>(null);
   const [isDeepSearchProcessing, setIsDeepSearchProcessing] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  
   // AI Model Selector states (ChatGPT-style)
   const [selectedModel, setSelectedModel] = useState<"legacy" | "agent">("agent");
   const [showModelSelector, setShowModelSelector] = useState(false);
@@ -441,7 +413,6 @@ export default function Mervin() {
   >([]);
   const [canEditClient, setCanEditClient] = useState(false);
   const [canEditMaterials, setCanEditMaterials] = useState(false);
-
   const { data: userSubscription, isLoading: isLoadingUserSubscription } =
     useQuery({
       queryKey: ["/api/subscription/user-subscription", currentUser?.email],
@@ -459,7 +430,6 @@ export default function Mervin() {
   console.log(userSubscription);
   const loadMaterials = async (): Promise<Material[]> => {
     if (!currentUser) return [];
-
     const { collection, query, where, getDocs } = await import(
       "firebase/firestore"
     );
@@ -468,11 +438,9 @@ export default function Mervin() {
       const materialsRef = collection(db, "materials");
       const q = query(materialsRef, where("userId", "==", currentUser.uid));
       const querySnapshot = await getDocs(q);
-
       const materialsData: Material[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data() as Omit<Material, "id">;
-
         let normalizedPrice = typeof data.price === "number" ? data.price : 0;
         if (normalizedPrice > 1000) {
           normalizedPrice = Number((normalizedPrice / 100).toFixed(2));
@@ -480,7 +448,6 @@ export default function Mervin() {
             `💰 NORMALIZED PRICE: ${data.name} - ${data.price} → ${normalizedPrice}`,
           );
         }
-
         const material: Material = {
           id: doc.id,
           ...data,
@@ -488,7 +455,6 @@ export default function Mervin() {
         };
         materialsData.push(material);
       });
-
       setMaterials(materialsData);
       return materialsData;
     } catch (error) {
@@ -504,7 +470,6 @@ export default function Mervin() {
     }
   };
   const { profile, isLoading: isProfileLoading, updateProfile } = useProfile();
-
   // Inicializar con mensaje de bienvenida
   useEffect(() => {
     const welcomeMessage: Message = {
@@ -514,10 +479,8 @@ export default function Mervin() {
       sender: "assistant",
       action: "menu",
     };
-
     setMessages([welcomeMessage]);
   }, []);
-
   // Initialize contractor info with profile data when profile loads
   useEffect(() => {
     if (profile && !isProfileLoading) {
@@ -532,14 +495,12 @@ export default function Mervin() {
         email: profile.email || prev.email,
         logo: profile.logo || prev.logo,
       }));
-
       // Set logo preview if exists in profile
       if (profile.logo) {
         setLogoPreview(profile.logo);
       }
     }
   }, [profile, isProfileLoading]);
-
   // Close model selector when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -547,13 +508,11 @@ export default function Mervin() {
         setShowModelSelector(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showModelSelector]);
-
   // Handle logo file upload
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -567,7 +526,6 @@ export default function Mervin() {
         });
         return;
       }
-
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast({
@@ -577,15 +535,12 @@ export default function Mervin() {
         });
         return;
       }
-
       setLogoFile(file);
-
       // Create preview URL
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
         setLogoPreview(result);
-
         // Update contractor info with the data URL for immediate use
         setContractorInfo((prev) => ({
           ...prev,
@@ -595,7 +550,6 @@ export default function Mervin() {
       reader.readAsDataURL(file);
     }
   };
-
   // Convert file to base64 for storage
   const convertFileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -605,7 +559,6 @@ export default function Mervin() {
       reader.readAsDataURL(file);
     });
   };
-
   // Signature protocol function adapted for Mervin
   const handleStartSignatureProtocol = async () => {
     if (!selectedEstimate || !currentUser?.uid || !selectedClient) {
@@ -617,14 +570,11 @@ export default function Mervin() {
       });
       return;
     }
-
     setIsLoading(true);
-
     try {
       // Generate contract HTML
       const contractHtml = generateContractHTML();
       setContractHTML(contractHtml);
-
       // Prepare contract data for signature protocol
       const secureDeliveryPayload = {
         userId: currentUser.uid,
@@ -662,12 +612,10 @@ export default function Mervin() {
           timeStamps: true,
         },
       };
-
       console.log(
         "🔐 [SIGNATURE-PROTOCOL] Generating signature links:",
         secureDeliveryPayload,
       );
-
       const response = await fetch("/api/multi-channel/initiate", {
         method: "POST",
         headers: {
@@ -676,15 +624,12 @@ export default function Mervin() {
         },
         body: JSON.stringify(secureDeliveryPayload),
       });
-
       if (!response.ok) {
         throw new Error(`Signature protocol failed: ${response.status}`);
       }
-
       const result = await response.json();
       setContractorSignUrl(result.contractorSignUrl || "");
       setClientSignUrl(result.clientSignUrl || "");
-
       setMessages((prev) => [
         ...prev,
         {
@@ -693,7 +638,6 @@ export default function Mervin() {
           sender: "assistant",
         },
       ]);
-
       toast({
         title: "Protocolo de Firma Iniciado",
         description: `Enlaces seguros generados. ID del Contrato: ${result.contractId}`,
@@ -709,7 +653,6 @@ export default function Mervin() {
       setIsLoading(false);
     }
   };
-
   // PDF download function adapted for Mervin
   const handleDownloadPDF = async () => {
     if (!selectedEstimate || !currentUser?.uid || !selectedClient) {
@@ -720,9 +663,7 @@ export default function Mervin() {
       });
       return;
     }
-
     setIsLoading(true);
-
     try {
       // Prepare contract payload
       const contractPayload = {
@@ -769,12 +710,10 @@ export default function Mervin() {
           amount: (selectedEstimate.total || 0) * (milestone.percentage / 100),
         })),
       };
-
       console.log(
         "📄 [PDF DOWNLOAD] Generating PDF with payload:",
         contractPayload,
       );
-
       const response = await fetch("/api/generate-pdf", {
         method: "POST",
         headers: {
@@ -783,7 +722,6 @@ export default function Mervin() {
         },
         body: JSON.stringify(contractPayload),
       });
-
       if (response.ok) {
         // Convert response to blob and download
         const blob = await response.blob();
@@ -795,7 +733,6 @@ export default function Mervin() {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-
         setMessages((prev) => [
           ...prev,
           {
@@ -804,7 +741,6 @@ export default function Mervin() {
             sender: "assistant",
           },
         ]);
-
         toast({
           title: "PDF Descargado",
           description: `Contrato PDF descargado exitosamente para ${selectedClient.name}`,
@@ -827,7 +763,6 @@ export default function Mervin() {
       setIsLoading(false);
     }
   };
-
   // Generate contract HTML for signature protocol
   const generateContractHTML = () => {
     return `
@@ -846,7 +781,6 @@ export default function Mervin() {
             <h1>CONTRATO DE CONSTRUCCIÓN</h1>
             <p>Número: CON-${Date.now()}</p>
           </div>
-
           <div class="section">
             <h3>INFORMACIÓN DEL CONTRATISTA</h3>
             <p><strong>Empresa:</strong> ${contractorInfo.company}</p>
@@ -855,7 +789,6 @@ export default function Mervin() {
             <p><strong>Email:</strong> ${contractorInfo.email}</p>
             <p><strong>Licencia:</strong> ${contractorInfo.license}</p>
           </div>
-
           <div class="section">
             <h3>INFORMACIÓN DEL CLIENTE</h3>
             <p><strong>Nombre:</strong> ${selectedClient?.name}</p>
@@ -863,24 +796,20 @@ export default function Mervin() {
             <p><strong>Teléfono:</strong> ${selectedClient?.phone}</p>
             <p><strong>Email:</strong> ${selectedClient?.email}</p>
           </div>
-
           <div class="section">
             <h3>ALCANCE DEL PROYECTO</h3>
             <p>${projectScope}</p>
           </div>
-
           <div class="section">
             <h3>VALOR DEL CONTRATO</h3>
             <p><strong>Total:</strong> $${selectedEstimate?.total?.toFixed(2)}</p>
           </div>
-
           <div class="section">
             <h3>CRONOGRAMA</h3>
             <p><strong>Fecha de inicio:</strong> ${projectTimeline[0]?.value}</p>
             <p><strong>Fecha de finalización:</strong> ${projectTimeline[1]?.value}</p>
             <p><strong>Duración:</strong> ${projectTimeline[2]?.value} días</p>
           </div>
-
           <div class="section">
             <h3>CLÁUSULAS LEGALES</h3>
             ${legalClauses
@@ -891,7 +820,6 @@ export default function Mervin() {
               )
               .join("")}
           </div>
-
           <div class="signature">
             <table width="100%">
               <tr>
@@ -919,11 +847,9 @@ export default function Mervin() {
     { material: Material; quantity: number }[]
   >([]);
   const [showCart, setShowCart] = useState(false);
-
   const filteredMaterials = materials.filter((material) =>
     material.name.toLowerCase().includes(materialSearchTerm.toLowerCase()),
   );
-
   // Shopping cart helper functions
   const addToCart = (material: Material, quantity: number = 1) => {
     setShoppingCart((prev) => {
@@ -940,13 +866,11 @@ export default function Mervin() {
       return [...prev, { material, quantity }];
     });
   };
-
   const removeFromCart = (materialId: string) => {
     setShoppingCart((prev) =>
       prev.filter((item) => item.material.id !== materialId),
     );
   };
-
   const updateCartQuantity = (materialId: string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(materialId);
@@ -958,18 +882,15 @@ export default function Mervin() {
       ),
     );
   };
-
   const getCartTotal = () => {
     return shoppingCart.reduce(
       (total, item) => total + item.material.price * item.quantity,
       0,
     );
   };
-
   const getCartItemCount = () => {
     return shoppingCart.reduce((total, item) => total + item.quantity, 0);
   };
-
   const addCartToInventory = () => {
     setInventoryItems((prev) => {
       const newItems = [...prev];
@@ -992,22 +913,18 @@ export default function Mervin() {
       description: `Se añadieron ${getCartItemCount()} materiales al inventario.`,
     });
   };
-
   // Manejar envío de mensajes
   // const handleSendMessage = () => {
   //   if (inputValue.trim() === "" || isLoading) return;
-
   //   // Agregar mensaje del usuario
   //   const userMessage: Message = {
   //     id: `user-${Date.now()}`,
   //     content: inputValue,
   //     sender: "user",
   //   };
-
   //   setMessages((prev) => [...prev, userMessage]);
   //   setInputValue("");
   //   setIsLoading(true);
-
   //   // Simular respuesta
   //   setTimeout(() => {
   //     const assistantMessage: Message = {
@@ -1016,503 +933,336 @@ export default function Mervin() {
   //         "Estoy aquí para ayudarte. ¿Te gustaría generar un contrato, verificar una propiedad, consultar permisos, gestionar clientes o revisar facturación?",
   //       sender: "assistant",
   //     };
-
   //     setMessages((prev) => [...prev, assistantMessage]);
   //     setIsLoading(false);
-
   //     // Desplazar al final
   //     setTimeout(() => {
   //       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   //     }, 100);
   //   }, 1500);
   // };
-
   // 🧠 SISTEMA HÍBRIDO: FALLBACK INTELIGENTE + SISTEMA AVANZADO
   const generateIntelligentResponse = async (userMessage: string): Promise<string> => {
     console.log('🧠 [MERVIN-AI] Procesando con sistema híbrido:', userMessage);
     console.log('🎯 [MODEL-SELECTOR] Modelo seleccionado:', selectedModel);
-    
     // FASE 1: RESPUESTA INMEDIATA INTELIGENTE (FALLBACK ROBUSTO)
     const quickIntelligentResponse = await generateQuickIntelligentResponse(userMessage);
-    
     // 🎯 CONTROL POR MODELO SELECCIONADO Y PERMISOS
     if (selectedModel === "legacy") {
       console.log('📋 [LEGACY-MODE] Usando modo Legacy (respuesta directa)');
       return quickIntelligentResponse;
     }
-
     // 🔐 VERIFICACIÓN DE PERMISOS PARA AGENT MODE
     if (selectedModel === "agent" && userPlan && userPlan.name === "Free Trial") {
       console.log('🚫 [PERMISSION-DENIED] Free trial no tiene acceso a Agent mode');
-      return `¡Órale, primo! Para usar Agent mode necesitas upgrade a Primo Chambeador o superior. 
-
+      return `¡Órale, primo! Para usar Agent mode necesitas upgrade a Primo Chambeador o superior.
 El modo Legacy que tienes disponible ya es súper inteligente y conversacional. ¿Te ayudo con algo usando el modo Legacy?
-
 Para desbloquear Agent mode con todas las funciones avanzadas, puedes hacer upgrade desde tu panel de control.`;
     }
-    
     try {
       // FASE 2: SISTEMA AVANZADO SOLO EN AGENT MODE
       console.log('🚀 [AGENT-MODE] Intentando sistema avanzado...');
-      
-      const userId = (user as any)?.uid || 'anonymous';
+      const userId = (currentUser as any)?.uid || 'anonymous';
       const agentConfig = {
         userId,
         debug: true,
         learningEnabled: true,
         memoryPersistence: true
       };
-
       // Importar componentes con manejo de errores
       const modules = await import('@/mervin-ai').catch(error => {
         console.warn('⚠️ [IMPORT] Sistema avanzado no disponible:', error.message);
         return null;
       });
-
       if (!modules) {
         console.log('📋 [FALLBACK] Usando respuesta inteligente directa');
         return quickIntelligentResponse;
       }
-
       const { ConversationEngine, DatabaseAgentMemory } = modules;
-      
       // 🔧 SOLUCIÓN DEFINITIVA: Sistema de usuario robusto
-      if (!user || !(user as any)?.uid) {
+      if (!currentUser || !(currentUser as any)?.uid) {
         console.warn('⚠️ [USER-ISSUE] Usuario no definido, usando sistema directo');
         return quickIntelligentResponse;
       }
-      
-      const currentUser = user as any;
-      
       const conversationEngine = new ConversationEngine(userId);
       const databaseMemory = new DatabaseAgentMemory(userId);
-
       console.log('🤖 [ADVANCED-SYSTEM] Componentes básicos inicializados');
-
       // Procesamiento con sistema avanzado simplificado
       const advancedResponse = await conversationEngine.processUserMessage(userMessage);
-      
       if (advancedResponse && (advancedResponse as any).response) {
         console.log('✅ [ADVANCED-SYSTEM] Respuesta avanzada generada exitosamente');
         return (advancedResponse as any).response;
       }
-
       console.log('📋 [FALLBACK] Sistema avanzado no generó respuesta, usando fallback');
       return quickIntelligentResponse;
-
-    
     } catch (error) {
       console.error('❌ [ADVANCED-SYSTEM] Error en sistema avanzado:', (error as any)?.message || 'Unknown error');
       console.log('📋 [FALLBACK] Usando respuesta inteligente de respaldo');
       return quickIntelligentResponse;
     }
   };
-
   // 🧠 SISTEMA DE RESPUESTA INTELIGENTE DIRECTO (FALLBACK ROBUSTO)
   const generateQuickIntelligentResponse = async (userMessage: string): Promise<string> => {
-    const userMessageLower = userMessage.toLowerCase();
-    const isSpanish = /[ñáéíóúü]/i.test(userMessage) || userMessage.includes('que') || userMessage.includes('como');
-
-    // 🎯 ANÁLISIS INTELIGENTE DE CONTEXTO E INTENCIÓN
-    const isSimpleGreeting = /^(hola|hello|hi|hey|good morning|buenos dias|que tal|como estas|how are you)[\s\.\?]*$/i.test(userMessage.trim());
-    
-    // 🧠 DETECCIÓN CONVERSACIONAL SÚPER AVANZADA
-    const detectsLicenseStrategy = userMessageLower.includes('estrategia') || (userMessageLower.includes('licencia') && (userMessageLower.includes('como') || userMessageLower.includes('rapido') || userMessageLower.includes('tiempo')));
-    const detectsAdvice = userMessageLower.includes('recomiend') || userMessageLower.includes('suger') || userMessageLower.includes('aconsej');
-    const detectsPersonalSituation = userMessageLower.includes('debo') || userMessageLower.includes('necesito') || userMessageLower.includes('quiero') || userMessageLower.includes('me gustaria');
-    
-    // 🎯 DETECCIÓN DE CONFIRMACIONES Y SEGUIMIENTO CONVERSACIONAL
-    const isConfirmation = userMessageLower.includes('si me entend') || userMessageLower.includes('entendiste') || userMessageLower.includes('me sigues') || userMessageLower.includes('yes you understand') || userMessageLower.includes('got it');
-    const isFollowUp = userMessageLower.includes('y ahora') || userMessageLower.includes('what now') || userMessageLower.includes('que sigue') || userMessageLower.includes('next step');
-    const isAgreement = /^(si|yes|ok|okay|claro|perfecto|exactly|correcto)[\s\.\!]*$/i.test(userMessage.trim());
-    const isBasicResponse = userMessage.trim().length < 15 && (userMessageLower.includes('si') || userMessageLower.includes('no') || userMessageLower.includes('yes') || userMessageLower.includes('maybe'));
-    
-    // 🔍 DETECCIÓN DE EMOCIONES Y CONTEXTO
-    const isFrustrated = userMessageLower.includes('no entiendes') || userMessageLower.includes('no me entiendes') || userMessageLower.includes('you dont understand');
-    const isThankful = userMessageLower.includes('gracias') || userMessageLower.includes('thank') || userMessageLower.includes('thanks');
-    
-    // RESPUESTAS CONVERSACIONALES INTELIGENTES
-    
-    // 💬 CONFIRMACIONES Y SEGUIMIENTO CONVERSACIONAL (MUY IMPORTANTE)
-    if (isConfirmation) {
-      const responses = [
-        "¡Claro que sí, primo! Te entiendo perfectamente. Platícame qué más necesitas saber.",
-        "¡Por supuesto, compadre! Todo claro. ¿En qué más te puedo echar la mano?",
+    const userMessageLower = userMessage.toLowerCase().trim();
+    const isSpanish = /[ñáéíóúü]/i.test(userMessage) ||
+                      /\b(que|como|con|por|para|muy|mas|todo|este|esta|cuando|donde|porque|desde|hasta)\b/.test(userMessageLower);
+    // 🧠 ANÁLISIS CONVERSACIONAL SÚPER INTELIGENTE - DETECCIÓN DE PATRONES COMPLEJOS
+    const conversationHistory = messages.slice(-3); // Últimas 3 interacciones para contexto
+    const lastUserMessage = conversationHistory.filter(m => m.sender === 'user').slice(-1)[0];
+    const lastAssistantMessage = conversationHistory.filter(m => m.sender === 'assistant').slice(-1)[0];
+    // 🎯 DETECCIÓN AVANZADA DE INTENCIONES Y EMOCIONES
+    const emotions = {
+      frustrated: /no entiendes|no me entiendes|you dont understand|esto no funciona|this doesn't work|ya intenté|already tried/.test(userMessageLower),
+      excited: /genial|awesome|increible|amazing|perfecto|perfect|love it|me encanta/.test(userMessageLower),
+      confused: /no entiendo|confused|perdido|lost|que significa|what means|como funciona|how does/.test(userMessageLower),
+      grateful: /gracias|thank|appreciate|agradezco|mil gracias|muchas gracias/.test(userMessageLower),
+      urgent: /urgente|urgent|rapido|quickly|asap|necesito ya|need now|emergency/.test(userMessageLower),
+      casual: /que tal|what's up|que onda|how's it going|como va|sup/.test(userMessageLower)
+    };
+    const intentions = {
+      greeting: /^(hola|hello|hi|hey|good morning|buenos dias|que tal|como estas|how are you|what's up|que onda)[\s\.\?\!]*$/i.test(userMessage.trim()),
+      confirmation: /si me entend|entendiste|me sigues|yes you understand|got it|exactly|correcto|eso es|that's right/.test(userMessageLower),
+      followUp: /y ahora|what now|que sigue|next step|and then|después|luego|siguiente/.test(userMessageLower),
+      agreement: /^(si|yes|ok|okay|claro|perfecto|exactly|correcto|dale|sure|of course)[\s\.\!]*$/i.test(userMessage.trim()),
+      disagreement: /^(no|nope|nah|nel|never|jamás|para nada|not really)[\s\.\!]*$/i.test(userMessage.trim()),
+      question: userMessage.includes('?') || /^(que|como|cuando|donde|porque|por que|cual|who|what|when|where|why|how|which)/.test(userMessageLower),
+      help: /ayuda|help|auxilio|necesito|need|can you|puedes|me ayudas/.test(userMessageLower),
+      compliment: /bueno|good|great|excelente|excellent|incredible|amazing|fantastic|maravilloso/.test(userMessageLower),
+      smallTalk: /clima|weather|dia|day|como estas|how are you|que haces|what are you doing/.test(userMessageLower)
+    };
+    // 🎯 ANÁLISIS CONTEXTUAL INTELIGENTE
+    const isVeryShort = userMessage.trim().length <= 10;
+    const isRepeatingQuestion = lastUserMessage && userMessage.toLowerCase() === lastUserMessage.content.toLowerCase();
+    const isFollowingUp = lastAssistantMessage &&
+      (intentions.followUp || intentions.confirmation ||
+       (isVeryShort && (intentions.agreement || intentions.disagreement)));
+    console.log('🧠 [MERVIN-INTELLIGENCE] Análisis:', {
+      userMessage,
+      emotions: Object.entries(emotions).filter(([_, detected]) => detected).map(([emotion]) => emotion),
+      intentions: Object.entries(intentions).filter(([_, detected]) => detected).map(([intent]) => intent),
+      isFollowingUp,
+      isRepeatingQuestion,
+      isSpanish
+    });
+    // 🎭 SISTEMA DE RESPUESTAS CONTEXTUALES Y EMOCIONALES AVANZADO
+    // 🚨 MANEJO DE FRUSTRACIÓN CON EMPATÍA REAL
+    if (emotions.frustrated) {
+      const responses = isSpanish ? [
+        "¡Órale primo, entiendo tu frustración! A veces las cosas se complican más de lo necesario. Platícame específicamente qué está pasando y juntos lo resolvemos.",
+        "¡Ey compadre, te escucho! Sé que puede ser frustrante cuando algo no jala como debe. Vamos paso a paso, ¿qué exactamente te está dando lata?",
+        "¡No te preocupes, primo! Todos hemos estado ahí. Mejor cuéntame qué es lo que necesitas lograr y vemos cómo hacerlo más fácil.",
+        "¡Ándale, hermano! Entiendo que esté cabrón. Dime qué estás intentando hacer y yo te ayudo a que funcione como debe ser."
+      ] : [
+        "Hey, I totally get that frustration, dude! Sometimes things just don't work the way they should. Tell me exactly what's going on and we'll figure this out together.",
+        "Bro, I hear you! It's super annoying when stuff doesn't work right. Walk me through what you're trying to do and I'll help you make it happen.",
+        "I feel you, man! Been there myself. Let's break this down - what specifically are you trying to accomplish?",
+        "Totally understand the frustration! Let me help you sort this out. What exactly is giving you trouble right now?"
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    }
+    // 🎉 RESPUESTAS A EMOCIÓN POSITIVA/GRATITUD
+    if (emotions.grateful || emotions.excited) {
+      const responses = isSpanish ? [
+        "¡De nada, primo! Me da mucho gusto poder ayudarte. ¿Qué más puedo hacer por ti?",
+        "¡Órale, qué padre que te haya servido! Para eso estamos, compadre. ¿En qué más andas?",
+        "¡Ey, me alegra mucho escuchar eso! Esa actitud me gusta. ¿Qué sigue en tu proyecto?",
+        "¡Simón! Me da muchísimo gusto que esté funcionando bien. ¿Cómo te puedo seguir apoyando?"
+      ] : [
+        "You're so welcome, dude! Stoked I could help you out. What else are you working on?",
+        "Awesome, bro! Love hearing that. That's what I'm here for. What's next on your list?",
+        "So cool to hear! That energy is contagious, man. What else can we tackle together?",
+        "Right on! Super happy it worked out for you. How else can I help make your project even better?"
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    }
+    // ⚡ RESPUESTAS URGENTES CON ACCIÓN INMEDIATA
+    if (emotions.urgent) {
+      const responses = isSpanish ? [
+        "¡Órale, primo! Entiendo que es urgente. Vamos directo al grano - ¿qué necesitas que resuelva ahorita mismo?",
+        "¡Ándale, compadre! Situación urgente detectada. Dame los detalles y te ayudo inmediatamente.",
+        "¡Ok primo, código rojo! Dime específicamente qué necesitas y lo resolvemos ya.",
+        "¡Entendido, hermano! Emergencia en construcción. ¿Qué está pasando y cómo lo arreglamos rápido?"
+      ] : [
+        "Got it, dude! Emergency mode activated. Tell me exactly what you need and I'll help you solve it right now.",
+        "Understood, bro! Urgent situation - I'm on it. What specifically needs fixing immediately?",
+        "Alright, man! Code red situation. Give me the details and we'll sort this out fast.",
+        "Copy that! Emergency construction situation. What's happening and how do we fix it quickly?"
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    }
+    // 🤝 CONFIRMACIONES Y SEGUIMIENTO CONVERSACIONAL NATURAL
+    if (intentions.confirmation || (isFollowingUp && intentions.agreement)) {
+      const responses = isSpanish ? [
+        "¡Exacto, primo! Me da gusto que nos entendamos perfecto. ¿Qué hacemos ahora?",
+        "¡Simón, compadre! Estamos en la misma página. ¿Cuál es el siguiente paso?",
+        "¡Ándale! Así me gusta, que todo quede claro. ¿En qué más te ayudo?",
+        "¡Perfecto, hermano! Vamos bien encaminados. ¿Qué sigue en tu plan?",
         "¡Órale, sí! Te sigo al cien. ¿Qué quieres que platiquemos ahora?",
         "¡Exacto, primo! Nos entendemos bien. ¿Cuál es tu siguiente pregunta?"
+      ] : [
+        "Exactly, dude! Love that we're totally on the same page. What's our next move?",
+        "Perfect, bro! We're vibing perfectly. What should we tackle next?",
+        "Right on, man! Glad we're dialed in together. How can I help you move forward?",
+        "Awesome! We're clicking perfectly. What's the next step in your master plan?"
       ];
-      return isSpanish ? 
-        responses[Math.floor(Math.random() * responses.length)] :
-        "Absolutely, dude! I got you completely. What else can I help you with?";
+      return responses[Math.floor(Math.random() * responses.length)];
     }
-
-    if (isFollowUp) {
-      const responses = [
-        "¡Órale, primo! Ya que te quedó claro, cuéntame específicamente qué quieres hacer. ¿Tienes algún proyecto en mente?",
-        "¡Perfecto, compadre! Ahora dime exactamente qué necesitas. ¿Es para un trabajo específico o nada más información?",
-        "¡Excelente! Ahora platícame más detalles de tu situación para poder ayudarte mejor, ¿va?"
+    // 🔄 SEGUIMIENTOS CONVERSACIONALES ("Y AHORA QUÉ")
+    if (intentions.followUp && !intentions.agreement) {
+      const responses = isSpanish ? [
+        "¡Buena pregunta, primo! Ahora que ya tienes eso claro, te sugiero que sigamos con...",
+        "¡Órale, compadre! El siguiente paso lógico sería...",
+        "¡Ándale! Ya que estamos aquí, lo que sigue normalmente es...",
+        "¡Perfecto timing, hermano! Lo que yo haría ahora es..."
+      ] : [
+        "Great question, dude! Now that we've got that sorted, I'd suggest we move on to...",
+        "Awesome follow-up, bro! The logical next step would be...",
+        "Perfect timing, man! What typically comes next is...",
+        "Right on! Now that we're here, what I'd do next is..."
       ];
-      return isSpanish ?
-        responses[Math.floor(Math.random() * responses.length)] :
-        "Great, dude! Now tell me specifically what you want to do. Got a specific project in mind?";
+      return responses[Math.floor(Math.random() * responses.length)] + (isSpanish ? " ¿Qué te parece si empezamos por ahí?" : " What do you think?");
     }
-
-    if (isAgreement || isBasicResponse) {
-      const responses = [
+    // 💬 SALUDOS NATURALES Y CASUALES
+    if (intentions.greeting || emotions.casual) {
+      const timeOfDay = new Date().getHours();
+      const morning = timeOfDay < 12;
+      const afternoon = timeOfDay < 18;
+      const responses = isSpanish ? [
+        `¡${morning ? 'Buenos días' : afternoon ? 'Buenas tardes' : 'Buenas noches'}, primo! ¿Cómo andas? ¿En qué proyecto estás trabajando?`,
+        "¡Órale, qué tal compadre! ¿Todo tranquilo por allá? Platícame qué traes entre manos.",
+        "¡Ey, hermano! ¿Cómo está la cosa? ¿Hay algo en construcción en lo que te pueda echar la mano?",
+        "¡Qué onda, primo! ¿Cómo va tu día? ¿Algún proyecto que necesite mi expertise?"
+      ] : [
+        `${morning ? 'Morning' : afternoon ? 'Afternoon' : 'Evening'}, dude! How's it going? What project are you working on?`,
+        "Hey bro! What's up? Everything chill on your end? Tell me what you're building.",
+        "What's good, man! How are things? Any construction stuff I can help you with?",
+        "Yo! How's your day treating you? Got any projects that need my expertise?"
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    }
+    // ✅ ACUERDOS Y RESPUESTAS BÁSICAS
+    if (intentions.agreement || isVeryShort) {
+      const responses = isSpanish ? [
         "¡Órale! Me da mucho gusto que estemos en la misma página, primo. ¿Qué más ocupas?",
         "¡Perfecto, compadre! ¿En qué más te puedo ayudar?",
         "¡Excelente! Así me gusta, que nos entendamos bien. ¿Cuál es tu siguiente move?"
-      ];
-      return isSpanish ?
-        responses[Math.floor(Math.random() * responses.length)] :
-        "Perfect, dude! Glad we're on the same page. What else do you need?";
-    }
-
-    if (isFrustrated) {
-      return isSpanish ?
-        "¡Órale, primo! Perdón si no me expliqué bien. Vamos por partes: dime exactamente qué necesitas y te voy a ayudar paso a paso, ¿va?" :
-        "Hey dude! Sorry if I wasn't clear. Let's break it down: tell me exactly what you need and I'll help you step by step, okay?";
-    }
-
-    if (isThankful) {
-      const responses = [
-        "¡De nada, primo! Para eso estamos, para echarnos la mano. ¿Algo más en lo que te pueda ayudar?",
-        "¡Claro que sí, compadre! Me da mucho gusto poder ayudarte. ¿Qué más ocupas?",
-        "¡No hay problema! Siempre es un placer echarle la mano a un compadre como tú."
-      ];
-      return isSpanish ?
-        responses[Math.floor(Math.random() * responses.length)] :
-        "You got it, dude! That's what I'm here for. Anything else I can help with?";
-    }
-
-    // 🎯 ESTRATEGIAS PARA OBTENER LICENCIAS RÁPIDO (PREGUNTA REAL DEL USUARIO)
-    if (detectsLicenseStrategy && detectsAdvice) {
-      return `¡Órale, primo! Te entiendo perfectamente. Las licencias sí toman su tiempo, pero hay maneras de acelerar el proceso. Te voy a dar las estrategias que realmente funcionan:
-
-**🚀 ESTRATEGIAS PARA ACELERAR TU LICENCIA:**
-
-**1. RUTA RÁPIDA (60-90 días):**
-• **Experiencia waiver:** Si tienes 4+ años trabajando con un contratista licenciado, puedes waiver el examen de experiencia
-• **Pre-estudia antes de aplicar:** Toma clases mientras juntas documentos
-
-**2. DOCUMENTACIÓN EXPRESS:**
-• **Cartas de experiencia:** Consigue 3-4 cartas de contratistas que confirmen tu experiencia ANTES de aplicar
-• **Fotos de proyectos:** Documenta todo tu trabajo con fechas y ubicaciones
-• **Pay stubs/taxes:** Ten todo listo desde el día 1
-
-**3. EXAMEN INTELIGENTE:**
-• **Contractors State License School:** Curso intensivo de 2 semanas (vale cada peso)
-• **Practice exams:** Toma mínimo 5 exámenes de práctica
-• **Book combo:** Tienes que saber el trade book + business law book
-
-**4. INSIDER TIPS:**
-• **Aplica en Sacramento office:** Más rápido que LA o SF
-• **Evita Diciembre-Febrero:** Súper lentos por holidays
-• **Follow up cada 2 semanas:** Squeaky wheel gets the grease
-
-¿Qué tipo de licencia necesitas específicamente, compadre? Te puedo dar más detalles según tu situación.`;
-    }
-
-    // LICENCIAS DE CONTRATISTA C-13 ESPECÍFICA
-    if (userMessageLower.includes('c-13') || userMessageLower.includes('c13') || (userMessageLower.includes('licencia') && userMessageLower.includes('concreto'))) {
-      return `¡Ah, primo! Aquí tienes la bronca con la C-13. Te voy a explicar la neta:
-
-La **C-13 es para cercas**, no para concreto general. Es como tener licencia de plomero y querer hacer electricidad, ¿me entiendes?
-
-**CON C-13 SÍ PUEDES:**
-• Postes de cerca en concreto
-• Zapatas para cercas únicamente  
-• Reparaciones menores relacionadas con cercas
-
-**CON C-13 NO PUEDES:**
-• Losas de concreto (patios, garages)
-• Aceras o banquetas
-• Cimientos estructurales
-• Concreto decorativo
-
-**MI RECOMENDACIÓN REAL:**
-Si quieres hacer concreto, necesitas la **C-8 (Concrete Contractor)**. No te compliques la vida trabajando en zona gris.
-
-¿Ya tienes la C-13 o la estás sacando? Te puedo guiar mejor sabiendo tu situación específica, compadre.`;
-    }
-
-    // ADUs Y PROYECTOS RESIDENCIALES
-    if (userMessageLower.includes('adu') || userMessageLower.includes('accessory dwelling unit') || userMessageLower.includes('unidad accesoria')) {
-      return `¡Perfecto, primo! Los ADUs son una gran oportunidad de negocio. Te explico todo:
-
-🏠 **QUÉ ES UN ADU:**
-• Unidad de vivienda secundaria independiente
-• Máximo 1,200 sq ft o 50% de la casa principal
-• Debe tener cocina, baño, área de dormir
-
-📋 **PROCESO COMPLETO:**
-**1. VERIFICACIÓN DE ZONIFICACIÓN**
-• Confirmar que la zona permite ADUs (la mayoría en CA sí)
-• Revisar restricciones locales del condado/ciudad
-
-**2. DISEÑO Y PERMISOS**
-• Setbacks mínimos (típicamente 4 pies)
-• Altura máxima (16-25 pies según zona)
-• Plan arquitectónico certificado
-
-**3. UTILIDADES**
-• Conexiones separadas: agua, drenaje, electricidad
-• Medidor independiente (recomendado)
-• Internet/cable separado
-
-**4. CONSIDERACIONES ESPECIALES**
-• 1 espacio de estacionamiento requerido
-• Acceso independiente obligatorio
-• Cumplir códigos de construcción locales
-
-💰 **POTENCIAL DE INGRESOS:**
-• Renta promedio: $1,500-3,000/mes en CA
-• ROI típico: 15-25% anual
-
-¿Tienes alguna propiedad específica en mente para el ADU?`;
-    }
-
-    // CÓDIGOS DE CONSTRUCCIÓN
-    if (userMessageLower.includes('codigo') || userMessageLower.includes('building code') || userMessageLower.includes('ibc') || userMessageLower.includes('irc')) {
-      return `¡Órale, compadre! Los códigos de construcción son fundamentales. Te explico los principales:
-
-📜 **CÓDIGOS PRINCIPALES EN CALIFORNIA:**
-
-**IBC (International Building Code)**
-• Construcciones comerciales y residenciales grandes
-• Edificios de más de 3 pisos
-• Ocupaciones especiales (hospitales, escuelas)
-
-**IRC (International Residential Code)**
-• Casas unifamiliares y dúplex
-• Hasta 3 pisos máximo
-• Construcción residencial estándar
-
-**NEC (National Electrical Code)**
-• Todo trabajo eléctrico
-• Actualizado cada 3 años
-• California adopta con modificaciones estatales
-
-**UPC/IPC (Plumbing Code)**
-• Instalaciones de plomería
-• Sistemas de drenaje
-• Suministro de agua
-
-**IMC (Mechanical Code)**
-• Sistemas HVAC
-• Ventilación
-• Sistemas de calefacción
-
-🏛️ **JURISDICCIONES:**
-• California adopta códigos internacionales con modificaciones
-• Cada ciudad puede tener requisitos más estrictos
-• Título 24: Eficiencia energética específica de CA
-
-¿Necesitas información sobre algún código específico o tipo de proyecto?`;
-    }
-
-    // PERMISOS
-    if (userMessageLower.includes('permiso') || userMessageLower.includes('permit') || userMessageLower.includes('building department')) {
-      return `¡Perfecto, primo! Los permisos son súper importantes. Te guío paso a paso:
-
-📋 **TIPOS DE PERMISOS PRINCIPALES:**
-
-**BUILDING PERMIT**
-• Estructural, eléctrico, plomería, mecánico
-• Requerido para: adiciones, renovaciones, ADUs
-• Tiempo: 2-8 semanas según jurisdicción
-
-**ELECTRICAL PERMIT**
-• Trabajo eléctrico nuevo o modificaciones
-• Paneles, outlets, iluminación
-• Inspecciones: rough-in y final
-
-**PLUMBING PERMIT**
-• Nueva plomería o modificaciones
-• Baños, cocinas, sistemas de agua
-• Inspecciones múltiples requeridas
-
-**MECHANICAL PERMIT**
-• Sistemas HVAC
-• Ductos, calefacción, aire acondicionado
-
-🎯 **PROCESO TÍPICO:**
-1. **Planos aprobados** por arquitecto/ingeniero
-2. **Aplicación** en building department
-3. **Revisión de planos** (1-4 semanas)
-4. **Pago de fees** ($500-5,000+ según proyecto)
-5. **Inicio de construcción**
-6. **Inspecciones** por fases
-7. **Certificate of Occupancy**
-
-💡 **TIPS PRO:**
-• Siempre consultar jurisdicción local primero
-• Tener relación con good plan checker
-• Submit planos completos para evitar delays
-
-¿Qué tipo de proyecto necesitas permisos, compadre?`;
-    }
-
-    // 💬 SALUDOS NATURALES Y CONVERSACIONALES
-    if (isSimpleGreeting) {
-      const responses = [
-        "¡Órale, primo! Todo al cien. ¿Qué tranza?",
-        "¡Ey, compadre! Aquí andamos echándole ganas. ¿Qué ocupas?",
-        "¡Qué tal, primo! Todo bien por este lado. ¿En qué te ayudo?",
-        "¡Hola, compadre! Listo para echarle ganas a tu proyecto."
-      ];
-      
-      if (isSpanish) {
-        return responses[Math.floor(Math.random() * responses.length)];
-      } else {
-        const englishResponses = [
-          "Hey dude! All good here. What's up?",
-          "What's good, bro! Ready to tackle some construction?",
-          "Hey there! Everything's solid. What can I help you with?",
-          "What's up, man! Ready to get some work done?"
-        ];
-        return englishResponses[Math.floor(Math.random() * englishResponses.length)];
-      }
-    }
-
-    // 🎯 RESPUESTA CONVERSACIONAL INTELIGENTE (NO LISTAR CAPACIDADES UNLESS ASKED)
-    
-    // Si es pregunta general o no específica, responder de manera conversacional
-    if (detectsPersonalSituation) {
-      if (isSpanish) {
-        return `¡Órale, primo! Me da mucho gusto que me platiques lo que necesitas. Así podemos encontrar la mejor solución juntos.
-
-Cuéntame un poco más de tu situación: ¿qué tipo de proyecto tienes en mente o qué challenge estás enfrentando? Entre más detalles me des, mejor te puedo echar la mano.`;
-      } else {
-        return `Hey dude! I'm really glad you're sharing what's on your mind. That's how we find the best solutions together.
-
-Tell me a bit more about your situation: what kind of project are you thinking about or what challenge are you facing? The more details you give me, the better I can help you out.`;
-      }
-    }
-
-    // Para cualquier otra pregunta, ser conversacional y preguntarle específicamente qué necesita
-    if (isSpanish) {
-      const responses = [
-        "¡Ey, primo! No estoy seguro de haber entendido bien tu pregunta. ¿Me puedes decir específicamente en qué te puedo ayudar?",
-        "¡Órale, compadre! Cuéntame un poco más de lo que necesitas para poder echarte la mano como debe ser.",
-        "¡Hey, primo! Platícame más detalles de tu situación para poder darte la mejor respuesta.",
-        "¡Compadre! Me gustaría ayudarte bien. ¿Puedes ser un poco más específico sobre lo que ocupas?"
-      ];
-      return responses[Math.floor(Math.random() * responses.length)];
-    } else {
-      const responses = [
-        "Hey dude! I want to make sure I understand what you need. Can you tell me more specifically how I can help?",
-        "What's up, bro! Give me a bit more detail about your situation so I can help you properly.",
-        "Hey man! Tell me more about what you're working on so I can give you the best advice.",
-        "Dude! I'd love to help you out. Can you be a bit more specific about what you need?"
+      ] : [
+        "Perfect, dude! Glad we're on the same page. What else do you need?",
+        "Awesome, bro! What else can I help you with?",
+        "Right on, man! Love that we understand each other. What's next?"
       ];
       return responses[Math.floor(Math.random() * responses.length)];
     }
+    // 🔧 RESPUESTAS DE CONSTRUCCIÓN/LICENCIAS ESPECÍFICAS
+    if (/(licencia|license|permit|construccion|construction|contractor)/i.test(userMessageLower)) {
+      const responses = isSpanish ? [
+        "¡Órale primo! Claro que te ayudo con eso. Las licencias de construcción pueden ser un rollo, pero conozco todos los trucos. ¿Qué específicamente necesitas saber?",
+        "¡Ey compadre! Ese es mi territorio. Construcción y licencias son mi especialidad. Platícame qué proyecto tienes en mente.",
+        "¡Perfecto, hermano! Ahí es donde puedo brillar. ¿Estás empezando como contratista o ya tienes experiencia pero necesitas la licencia oficial?"
+      ] : [
+        "Oh dude! That's totally my wheelhouse. Construction licensing can be a pain, but I know all the shortcuts. What specifically do you need to know?",
+        "Hey bro! That's exactly what I'm here for. Construction and licensing are my specialty. Tell me about your project.",
+        "Perfect, man! That's where I really shine. Are you just starting as a contractor or do you have experience but need the official license?"
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    }
+    // 🎯 RESPUESTA GENERAL INTELIGENTE CONTEXTUAL
+    const generalResponses = isSpanish ? [
+      "¡Órale primo! Me gusta tu pregunta. Platícame más detalles para poder ayudarte mejor.",
+      "¡Ey compadre! Estoy aquí para echarte la mano. ¿Qué específicamente necesitas saber?",
+      "¡Qué tal, hermano! Esa es una buena pregunta. Cuéntame más del contexto.",
+      "¡Perfecto! Me gusta cuando llegan con preguntas así. ¿Qué más detalles puedes darme?"
+    ] : [
+      "Hey dude! I love that question. Give me more details so I can help you better.",
+      "What's up, bro! I'm here to help you out. What specifically do you need to know?",
+      "Yo, man! That's a solid question. Tell me more about the context.",
+      "Perfect! I love when you come with questions like that. What other details can you give me?"
+    ];
+    return generalResponses[Math.floor(Math.random() * generalResponses.length)];
   };
-
+  // 🧠 FUNCIÓN ADICIONAL DE RESPUESTAS AVANZADAS (MANTENIDA PARA COMPATIBILIDAD)
+  const generateAdvancedResponse = async (userMessage: string): Promise<string> => {
+    console.log('🧠 [ADVANCED-RESPONSE] Procesando respuesta avanzada:', userMessage);
+    const userMessageLower = userMessage.toLowerCase();
+    const isSpanish = /[ñáéíóúü]/i.test(userMessage) ||
+                      /\b(que|como|con|por|para|muy|mas|todo|este|esta|cuando|donde|porque|desde|hasta)\b/.test(userMessageLower);
+    // 🎯 RESPUESTA DE FALLBACK CONVERSACIONAL
+    return isSpanish ?
+      "¡Órale primo! Platícame más específicamente qué necesitas y te ayudo al tiro." :
+      "Hey dude! Tell me more specifically what you need and I'll help you out right away.";
+  };
+  // 🚀 SISTEMA ANTI-CUELGUES Y MANEJO ROBUSTO DE ERRORES
   const handleSendMessage = async () => {
-    if (inputValue.trim() === "" || isLoading) return;
-
-    console.log('🚀 [MERVIN-CHAT] Iniciando procesamiento de mensaje:', inputValue.trim());
-
+    console.log('📤 [SEND-MESSAGE] Iniciando envío de mensaje:', { inputValue, isLoading });
+    // ⚠️ PREVENCIÓN DE ENVÍOS DUPLICADOS
+    if (isLoading) {
+      console.warn('⚠️ [SEND-MESSAGE] Mensaje ya en proceso, ignorando duplicado');
+      return;
+    }
+    if (!inputValue.trim()) {
+      console.warn('⚠️ [SEND-MESSAGE] Mensaje vacío, cancelando');
+      return;
+    }
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       content: inputValue,
       sender: "user",
     };
-
+    const originalInput = inputValue;
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
-    setIsLoading(true); // 🔥 CORRECCIÓN CRÍTICA: Ahora sí ponemos loading en TRUE
-
-    try {
-      console.log('🔄 [MERVIN-CHAT] Caso tipo:', caseType);
-
-      // Timeout de seguridad para evitar cuelgues infinitos
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('Timeout: La operación tomó demasiado tiempo (30s)'));
-        }, 30000);
-      });
-
-      // Continue based on estimate flow
-      if (caseType === "Estimates") {
-        console.log('📊 [ESTIMATES] Procesando flujo de estimados...');
-        await Promise.race([
-          (async () => {
-            handleEstimateFlow(inputValue.trim().toLowerCase());
-            await loadMaterials();
-          })(),
-          timeoutPromise
-        ]);
-        return;
-      }
-
-      // Continue based on contract flow (NEW)
-      if (caseType === "Contract") {
-        console.log('📄 [CONTRACT] Procesando flujo de contratos...');
-        await Promise.race([
-          handleContractFlow(inputValue.trim()),
-          timeoutPromise
-        ]);
-        return;
-      }
-
-      // Continue based on permit flow (NEW)
-      if (caseType === "Permits") {
-        console.log('🏛️ [PERMITS] Procesando flujo de permisos...');
-        await Promise.race([
-          handlePermitFlow(inputValue.trim()),
-          timeoutPromise
-        ]);
-        return;
-      }
-
-      // Default flow - CONVERSACIÓN INTELIGENTE
-      console.log('💬 [INTELLIGENT-CONVERSATION] Procesando conversación inteligente...');
-      
-      await Promise.race([
-        (async () => {
-          // Usar el sistema de conversación inteligente
-          const response = await generateIntelligentResponse(inputValue.trim());
-          
-          const assistantMessage: Message = {
-            id: `assistant-${Date.now()}`,
-            content: response,
-            sender: "assistant",
-          };
-
-          setMessages((prev) => [...prev, assistantMessage]);
-
-          // Desplazar al final
-          setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-          }, 100);
-        })(),
-        timeoutPromise
+    setIsLoading(true);
+    // 🛡️ SISTEMA ANTI-CUELGUES CON TIMEOUT ROBUSTO
+    const timeoutId = setTimeout(() => {
+      console.error('⏰ [TIMEOUT] Respuesta tardó más de 15 segundos, aplicando fallback');
+      setIsLoading(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `timeout-${Date.now()}`,
+          content: "¡Órale primo! Me tardé un chingo, pero aquí ando. A veces la conexión se pone cabrona. ¿Me repites tu pregunta?",
+          sender: "assistant",
+        },
       ]);
-
-    } catch (error) {
-      console.error('❌ [MERVIN-CHAT] Error procesando mensaje:', error);
-      
-      // Mensaje de error amigable con personalidad
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        content: `❌ **¡Órale, primo! Hubo un problemita**\n\n${error instanceof Error ? error.message : 'Error desconocido'}\n\nPero aquí andamos para resolverlo. Inténtalo de nuevo.`,
+    }, 15000);
+    try {
+      console.log('🧠 [SEND-MESSAGE] Procesando mensaje con sistema híbrido:', originalInput);
+      // 🧠 PROCESAMIENTO INTELIGENTE CON SISTEMA HÍBRIDO
+      const response = await generateIntelligentResponse(originalInput);
+      clearTimeout(timeoutId);
+      if (!response || response.trim() === '') {
+        throw new Error('Respuesta vacía del sistema inteligente');
+      }
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        content: response,
         sender: "assistant",
       };
-
-      setMessages((prev) => [...prev, errorMessage]);
-
-      toast({
-        title: "Error",
-        description: "No pude procesar tu mensaje. Inténtalo de nuevo.",
-        variant: "destructive",
-      });
+      setMessages((prev) => [...prev, assistantMessage]);
+      console.log('✅ [SEND-MESSAGE] Respuesta generada exitosamente');
+    } catch (error) {
+      clearTimeout(timeoutId);
+      console.error('❌ [SEND-MESSAGE] Error generando respuesta:', error);
+      // 🛡️ RESPUESTA DE EMERGENCIA INTELIGENTE
+      const emergencyResponse = `¡Órale primo! Se me trabó un poco el sistema, pero aquí estoy. ${
+        originalInput.toLowerCase().includes('licencia') ? 'Sobre licencias de construcción te puedo ayudar un chingo.' :
+        originalInput.toLowerCase().includes('construccion') ? 'De construcción sé bastante, platícame más.' :
+        '¿Me repites tu pregunta para ayudarte mejor?'
+      }`;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `error-${Date.now()}`,
+          content: emergencyResponse,
+          sender: "assistant",
+        },
+      ]);
     } finally {
-      setIsLoading(false); // 🔥 CRÍTICO: Siempre resetear loading
-      console.log('🏁 [MERVIN-CHAT] Finalizando procesamiento');
-    }
+      setIsLoading(false);
+      // Auto-scroll to bottom
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
   };
   const handleClientSelect = (client: Client | null) => {
     if (client) {
@@ -1527,13 +1277,11 @@ Tell me a bit more about your situation: what kind of project are you thinking a
       setSelectedClient(client);
       setChatFlowStep("client-added");
       setChatFlowStep("awaiting-project-description");
-
       const askDescriptionMessage: Message = {
         id: `assistant-${Date.now()}`,
         content: "Por favor, proporciona una descripción del proyecto.",
         sender: "assistant",
       };
-
       setMessages((prev) => [...prev, askDescriptionMessage]);
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -1552,12 +1300,10 @@ Tell me a bit more about your situation: what kind of project are you thinking a
       ]);
       setChatFlowStep("enter-new-client");
     }
-
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
   };
-
   // Manejar selección de acción
   const handleAction = (action: string) => {
     setIsLoading(true);
@@ -1572,7 +1318,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
     setTimeout(() => {
       // Eliminar mensaje de pensando
       setMessages((prev) => prev.filter((m) => m.id !== thinkingMessage.id));
-
       // Determinar respuesta según acción
       let response = "";
       switch (action) {
@@ -1584,12 +1329,10 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           response =
             "Puedo ayudarte a generar un contrato profesional y legal. ¿Te gustaría crear un nuevo contrato desde cero, usar una plantilla existente o modificar un contrato anterior?";
           break;
-
         case "permits":
           response =
             "Para ayudarte con información sobre permisos y regulaciones, necesito saber la ubicación exacta, el tipo de cerca que planeas instalar y si la propiedad está en una zona con restricciones.";
           break;
-
         case "properties":
           response =
             "Para verificar los detalles de una propiedad, necesito la dirección completa del inmueble. Esto me permitirá confirmar al propietario actual y verificar los límites de la propiedad.";
@@ -1601,16 +1344,13 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         default:
           response = "¿En qué puedo ayudarte hoy?";
       }
-
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         content: response,
         sender: "assistant",
       };
-
       setMessages((prev) => [...prev, assistantMessage]);
       setIsLoading(false);
-
       // Desplazar al final
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -1619,11 +1359,9 @@ Tell me a bit more about your situation: what kind of project are you thinking a
     if (action === "estimates") {
       setCaseType("Estimates");
       setChatFlowStep("select-client");
-
       // Load clients
       getFirebaseClients().then((clientList) => {
         setClients(clientList);
-
         // Delay sending the assistant message by 3 seconds (3000 ms)
         setTimeout(() => {
           const assistantMessage: Message = {
@@ -1632,32 +1370,26 @@ Tell me a bit more about your situation: what kind of project are you thinking a
             sender: "assistant",
             clients: clientList,
           };
-
           setMessages((prev) => [...prev, assistantMessage]);
           setChatFlowStep("awaiting-client-choice");
           setIsLoading(false);
-
           setTimeout(() => {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
           }, 100);
         }, 3000);
       });
-
       return; // Prevent default simulated reply
     }
-
     // Handle contract generation (NEW)
     if (action === "contracts") {
       setCaseType("Contract");
       setContractFlowStep("select-estimate");
-
       // Load estimates for contract generation
       loadEstimates().then((estimatesData) => {
         setTimeout(() => {
           setMessages((prev) =>
             prev.filter((m) => m.id !== thinkingMessage.id),
           );
-
           if (!estimatesData || estimatesData.length === 0) {
             setMessages((prev) => [
               ...prev,
@@ -1671,35 +1403,28 @@ Tell me a bit more about your situation: what kind of project are you thinking a
             setIsLoading(false);
             return;
           }
-
           const assistantMessage: Message = {
             id: `assistant-${Date.now()}`,
             content: "Selecciona el estimado que deseas convertir en contrato:",
             sender: "assistant",
             estimates: estimatesData.slice(0, 10),
           };
-
           setMessages((prev) => [...prev, assistantMessage]);
           setContractFlowStep("awaiting-estimate-choice");
           setIsLoading(false);
-
           setTimeout(() => {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
           }, 100);
         }, 1000);
       });
-
       return; // Prevent default simulated reply
     }
-
     // Handle permit advisor (NEW)
     if (action === "permits") {
       setCaseType("Permits");
       setPermitFlowStep("address-selection");
-
       setTimeout(() => {
         setMessages((prev) => prev.filter((m) => m.id !== thinkingMessage.id));
-
         // Second message: Show the choice options after a brief delay
         setTimeout(() => {
           const choiceMessage: Message = {
@@ -1709,42 +1434,33 @@ Tell me a bit more about your situation: what kind of project are you thinking a
             sender: "assistant",
             action: "permit-address-selection",
           };
-
           setMessages((prev) => [...prev, choiceMessage]);
           setPermitFlowStep("awaiting-address-choice");
-
           setTimeout(() => {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
           }, 100);
         }, 1500);
-
         setIsLoading(false);
       }, 1000);
-
       return; // Prevent default simulated reply
     }
-
     // Desplazar al final
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
   };
-
   // OpenAI DeepSearch AI function
   const performDeepSearchAI = async (
     option: DeepSearchOption,
     description: string,
   ): Promise<DeepSearchRecommendation> => {
     setIsDeepSearchProcessing(true);
-
     // Create AbortController for request cancellation
     const controller = new AbortController();
-
     // Set timeout for the request (3 minutes)
     const timeoutId = setTimeout(() => {
       controller.abort();
     }, 180000); // 3 minutes
-
     try {
       const response = await fetch("/api/deepsearch-ai", {
         method: "POST",
@@ -1758,20 +1474,16 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         }),
         signal: controller.signal,
       });
-
       // Clear timeout if request completes
       clearTimeout(timeoutId);
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const result = await response.json();
       return result;
     } catch (error) {
       // Clear timeout in case of error
       clearTimeout(timeoutId);
-
       // Handle different error types
       if (error.name === "AbortError") {
         console.error("DeepSearch AI request was aborted (timeout)");
@@ -1791,12 +1503,10 @@ Tell me a bit more about your situation: what kind of project are you thinking a
       setIsDeepSearchProcessing(false);
     }
   };
-
   // Handle DeepSearch option selection
   const handleDeepSearchOptionSelect = async (option: DeepSearchOption) => {
     setDeepSearchOption(option);
     setChatFlowStep("deepsearch-processing");
-
     // Show processing message
     const processingMessage: Message = {
       id: `assistant-${Date.now()}`,
@@ -1805,14 +1515,11 @@ Tell me a bit more about your situation: what kind of project are you thinking a
       sender: "assistant",
       state: "analyzing",
     };
-
     setMessages((prev) => [...prev, processingMessage]);
-
     // Scroll to bottom after processing message
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
-
     try {
       const recommendation = await performDeepSearchAI(
         option,
@@ -1821,10 +1528,8 @@ Tell me a bit more about your situation: what kind of project are you thinking a
       setDeepSearchRecommendation(recommendation);
       setEditingMaterials(recommendation.materials);
       setEditingLaborCosts(recommendation.laborCosts);
-
       // Remove processing message
       setMessages((prev) => prev.filter((m) => m.id !== processingMessage.id));
-
       // Show results
       const resultsMessage: Message = {
         id: `assistant-${Date.now()}`,
@@ -1832,20 +1537,16 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         sender: "assistant",
         action: "deepsearch-results",
       };
-
       setMessages((prev) => [...prev, resultsMessage]);
       setChatFlowStep("deepsearch-results");
-
       // Scroll to bottom after results message
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 100);
     } catch (error) {
       console.error("DeepSearch AI Error:", error);
-
       // Remove processing message
       setMessages((prev) => prev.filter((m) => m.id !== processingMessage.id));
-
       // Show error message
       const errorMessage: Message = {
         id: `assistant-${Date.now()}`,
@@ -1853,24 +1554,20 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           "❌ Error al procesar la recomendación de DeepSearch AI. Por favor intenta nuevamente.",
         sender: "assistant",
       };
-
       setMessages((prev) => [...prev, errorMessage]);
       setChatFlowStep("awaiting-deepsearch-choice");
-
       // Scroll to bottom after error message
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 100);
     }
   };
-
   // Generate DeepSearch results message
   const generateDeepSearchResultsMessage = (
     recommendation: DeepSearchRecommendation,
     option: DeepSearchOption,
   ): string => {
     let message = "✨ **Recomendación de DeepSearch AI completada**\n\n";
-
     if (option === "materials-only" || option === "materials-labor") {
       message += "📦 **Materiales Recomendados:**\n";
       recommendation.materials.forEach((material, index) => {
@@ -1880,7 +1577,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
       });
       message += `💰 **Costo total de materiales: $${recommendation.totalMaterialCost.toFixed(2)}**\n\n`;
     }
-
     if (option === "labor-only" || option === "materials-labor") {
       message += "⚡ **Costos de Mano de Obra:**\n";
       recommendation.laborCosts.forEach((labor, index) => {
@@ -1890,16 +1586,13 @@ Tell me a bit more about your situation: what kind of project are you thinking a
       });
       message += `💼 **Costo total de mano de obra: $${recommendation.totalLaborCost.toFixed(2)}**\n\n`;
     }
-
     message += `🎯 **Costo total del proyecto: $${recommendation.totalProjectCost.toFixed(2)}**\n\n`;
-
     if (recommendation.recommendations.length > 0) {
       message += "💡 **Recomendaciones adicionales:**\n";
       recommendation.recommendations.forEach((rec, index) => {
         message += `• ${rec}\n`;
       });
     }
-
     return message;
   };
   const taxWithPercentage = (tax: {
@@ -1917,7 +1610,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
     }
     return discount.amount;
   };
-
   const handleCreateEstimate = async () => {
     try {
       const body = {
@@ -1929,11 +1621,9 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         clientPhone: selectedClient?.phone || "",
         clientAddress: selectedClient?.address || "",
         clientInformation: selectedClient,
-
         // Detalles del proyecto
         projectDescription: projectDescription,
         projectType: "construction",
-
         // Items completos - VALORES DIRECTOS SIN CONVERSIONES
         items: shoppingCart.map((item, index) => ({
           id: item.material.id,
@@ -1949,7 +1639,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           sortOrder: index,
           isOptional: false,
         })),
-
         // DATOS FINANCIEROS DIRECTOS - SIN CONVERSIONES A CENTAVOS
         subtotal: getCartTotal().toFixed(2),
         taxRate: tax.type === "percentage" ? tax.amount : 0, // ✅ FIXED: Return number 0, not string "0.0"
@@ -1957,18 +1646,15 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           tax.type === "percentage"
             ? taxWithPercentage(tax).toFixed(2)
             : tax.amount.toFixed(2), // ✅ FIXED: Handle both types
-
         // DESCUENTOS DIRECTOS - SIN CONVERSIONES
         discount: discountCalculation(),
         discountType: discount.type,
         discountValue: discountCalculation(),
         discountAmount: discountCalculation(),
         discountName: "",
-
         total:
           Number(getCartTotal() + taxWithPercentage(tax)) -
           discountCalculation(),
-
         // Display-friendly totals (mismos valores)
         displaySubtotal: Number(getCartTotal()),
         displayTax: taxWithPercentage(tax),
@@ -1976,7 +1662,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           Number(getCartTotal() + taxWithPercentage(tax)) -
           discountCalculation(),
         displayDiscountAmount: discountCalculation(),
-
         // Metadata
         status: "draft",
         type: "estimate",
@@ -1984,21 +1669,17 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-
       // Buscar proyecto existente para el mismo cliente
       const { collection, query, where, getDocs, addDoc, updateDoc, doc } =
         await import("firebase/firestore");
       const { db } = await import("@/lib/firebase");
-
       const existingQuery = query(
         collection(db, "estimates"),
         //  @ts-ignore
         where("firebaseUserId", "==", currentUser.uid as string),
         where("clientName", "==", selectedClient?.name),
       );
-
       const estimatesRef = collection(db, "estimates");
-
       // Always create a new estimate, regardless of existing ones
       await addDoc(estimatesRef, body);
       // Show success message
@@ -2026,7 +1707,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
             ]
           : [],
         client: selectedClient || {},
-
         items:
           shoppingCart.map((item) => {
             return {
@@ -2070,9 +1750,7 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         },
         isMembership: userSubscription?.plan?.id === 1 ? false : true,
       };
-
       console.log("📤 Sending payload to PDF service:", payload);
-
       // Use new Puppeteer PDF service (local, no external dependency)
       const response = await axios.post(
         "/api/estimate-puppeteer-pdf",
@@ -2081,32 +1759,27 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           responseType: "blob", // Important for PDF download
         },
       );
-
       console.log("📨 Response received:", {
         status: response.status,
         headers: response.headers,
         dataType: typeof response.data,
         dataSize: response.data?.size || "unknown",
       });
-
       // Validate the blob
       if (!response.data || response.data.size === 0) {
         throw new Error("Received empty PDF data from server");
       }
-
       // Create blob for sharing/downloading
       const pdfBlob = new Blob([response.data], { type: "application/pdf" });
       console.log("📄 Created PDF blob:", {
         size: pdfBlob.size,
         type: pdfBlob.type,
       });
-
       // Generate filename with client name and timestamp
       const clientName =
         selectedClient?.name.replace(/[^a-zA-Z0-9]/g, "_") || "client";
       const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format
       const filename = `estimate-${clientName}-${timestamp}.pdf`;
-
       // Use mobile sharing utility for smart download/share behavior
       await shareOrDownloadPdf(pdfBlob, filename, {
         title: `Estimate for ${selectedClient?.name || "Client"}`,
@@ -2114,21 +1787,17 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         clientName: selectedClient?.name,
         estimateNumber: `EST-${timestamp}`,
       });
-
       console.log("📥 PDF download/share completed successfully");
-
       // Get sharing capabilities for toast message
       const capabilities = getSharingCapabilities();
       const actionText =
         capabilities.isMobile && capabilities.nativeShareSupported
           ? "PDF generated and ready to share"
           : "PDF downloaded successfully";
-
       toast({
         title: "✅ PDF Generated",
         description: actionText,
       });
-
       // Mostrar mensaje de éxito en español
       setMessages((prev) => [
         ...prev,
@@ -2139,12 +1808,10 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           sender: "assistant",
         },
       ]);
-
       // Desplazar al final
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 100);
-
       setTimeout(() => {
         setMessages([
           {
@@ -2199,7 +1866,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         const client = clients.find((c) =>
           c.name.toLowerCase().includes(userInput),
         );
-
         if (client) {
           setMessages((prev) => [
             ...prev,
@@ -2239,11 +1905,9 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         ]);
         return;
       }
-
       const [name, email, phone, address, city, state, zipCode] = parts.map(
         (p) => p.trim(),
       );
-
       try {
         const clientData = {
           clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
@@ -2262,21 +1926,16 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           classification: "cliente",
           tags: [],
         };
-
         const savedClient = await saveClient(clientData);
-
         const clientWithId: Client = {
           id: savedClient.id,
           ...clientData,
           createdAt: savedClient.createdAt || new Date(),
           updatedAt: savedClient.updatedAt || new Date(),
         };
-
         setClients((prev) => [clientWithId, ...prev]);
-
         // Attach to estimate state
         // setEstimate((prev) => ({ ...prev, client: clientWithId }));
-
         setMessages((prev) => [
           ...prev,
           {
@@ -2286,7 +1945,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           },
         ]);
         setChatFlowStep("client-added");
-
         toast({
           title: "✅ Cliente Creado Exitosamente",
           description: `${name} ha sido guardado y seleccionado para este estimado.`,
@@ -2303,7 +1961,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           variant: "destructive",
           duration: 6000,
         });
-
         setMessages((prev) => [
           ...prev,
           {
@@ -2317,7 +1974,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
     } else if (chatFlowStep === "awaiting-project-description") {
       setProjectDescription(userInput);
       setChatFlowStep("awaiting-deepsearch-choice");
-
       // Ask DeepSearch AI question
       setMessages((prev) => [
         ...prev,
@@ -2329,7 +1985,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           action: "deepsearch-options",
         },
       ]);
-
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 100);
@@ -2347,12 +2002,10 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         ]);
         return;
       }
-
       const [name, description, priceStr, unit, category] = parts.map((p) =>
         p.trim(),
       );
       const price = parseFloat(priceStr);
-
       if (isNaN(price)) {
         setMessages((prev) => [
           ...prev,
@@ -2364,11 +2017,9 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         ]);
         return;
       }
-
       try {
         const { collection, addDoc } = await import("firebase/firestore");
         const materialsRef = collection(db, "materials");
-
         const docRef = await addDoc(materialsRef, {
           name,
           description,
@@ -2378,7 +2029,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           //@ts-ignore
           userId: currentUser.uid as string,
         });
-
         const newMaterial: Material = {
           id: docRef.id,
           name,
@@ -2387,7 +2037,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           unit,
           category,
         };
-
         setMessages((prev) => [
           ...prev,
           {
@@ -2396,10 +2045,8 @@ Tell me a bit more about your situation: what kind of project are you thinking a
             sender: "assistant",
           },
         ]);
-
         // 🔁 Re-load updated materials and render again as new message
         const updatedMaterials = await loadMaterials();
-
         setMessages((prev) => [
           ...prev,
           {
@@ -2413,7 +2060,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         setTimeout(() => {
           messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
         }, 100);
-
         setChatFlowStep("select-inventory");
       } catch (error) {
         console.error("❌ Error al guardar material:", error);
@@ -2427,16 +2073,13 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           },
         ]);
       }
-
       return;
     } else if (chatFlowStep === "awaiting-discount") {
       const value = userInput.trim();
       let discount: string | null = null;
-
       if (value.toLowerCase() !== "skip") {
         const isPercentage = value.endsWith("%");
         const numeric = isPercentage ? value.slice(0, -1) : value;
-
         if (isNaN(Number(numeric))) {
           setMessages((prev) => [
             ...prev,
@@ -2472,7 +2115,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           ? `${parseFloat(numeric)}%`
           : `${parseFloat(numeric)}`;
       }
-
       // Ask for tax
       setChatFlowStep("awaiting-tax");
       setMessages((prev) => [
@@ -2501,7 +2143,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
       if (value.toLowerCase() !== "skip") {
         const isPercentage = value.endsWith("%");
         const numeric = isPercentage ? value.slice(0, -1) : value;
-
         if (isNaN(Number(numeric))) {
           setMessages((prev) => [
             ...prev,
@@ -2514,7 +2155,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           ]);
           return;
         }
-
         if (isPercentage) {
           currentTax = {
             type: "percentage",
@@ -2530,19 +2170,16 @@ Tell me a bit more about your situation: what kind of project are you thinking a
             title: "Impuesto Aplicado",
             description: `Impuesto de $${parseFloat(numeric)} aplicado.`,
           });
-
           currentTax = {
             type: "manual",
             amount: parseFloat(numeric),
           };
-
           setTax(currentTax);
         }
         tax = isPercentage
           ? `${parseFloat(numeric)}%`
           : `${parseFloat(numeric)}`;
       }
-
       setMessages((prev) => [
         ...prev,
         {
@@ -2560,16 +2197,13 @@ Tell me a bit more about your situation: what kind of project are you thinking a
       );
       await handleCreateEstimate();
       await handleDownload(currentTax);
-
       setChatFlowStep(null); // reset
     } else {
     }
   };
-
   // Contract flow handler (NEW - only for contract generation)
   const handleContractFlow = async (userInput: string) => {
     const input = userInput.trim().toLowerCase();
-
     if (contractFlowStep === "awaiting-estimate-choice") {
       const selectedIndex = parseInt(input) - 1;
       if (selectedIndex >= 0 && selectedIndex < estimates.length) {
@@ -2586,13 +2220,11 @@ Tell me a bit more about your situation: what kind of project are you thinking a
               address: estimate.clientAddress,
             } as Client),
         );
-
         // Set project scope from estimate
         setProjectScope(
           estimate.projectDescription ||
             "Descripción del proyecto no disponible",
         );
-
         // Set editing client data
         setEditingClient({
           name: estimate.clientName || "",
@@ -2600,14 +2232,12 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           phone: estimate.clientPhone || "",
           address: estimate.clientAddress || "",
         });
-
         const clientInfo = estimate.clientInformation || {
           name: estimate.clientName,
           email: estimate.clientEmail,
           phone: estimate.clientPhone,
           address: estimate.clientAddress,
         };
-
         setMessages((prev) => [
           ...prev,
           {
@@ -2674,7 +2304,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
       // Check if contractor profile exists automatically
       const hasContractorInfo =
         profile?.company && profile?.company.trim() !== "";
-
       if (hasContractorInfo) {
         // Use profile data and skip contractor info step
         setContractorInfo({
@@ -2687,7 +2316,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           email: profile?.email || "",
           logo: profile?.logo || "",
         });
-
         setContractFlowStep("project-milestones");
         setMessages((prev) => [
           ...prev,
@@ -2751,7 +2379,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           email: "Email pendiente",
           logo: "",
         });
-
         setContractFlowStep("project-milestones");
         setMessages((prev) => [
           ...prev,
@@ -2819,7 +2446,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           permits: "Permisos según regulaciones locales",
           insurance: "Seguro de responsabilidad vigente",
         });
-
         setContractFlowStep("legal-clauses");
         setMessages((prev) => [
           ...prev,
@@ -2973,16 +2599,13 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         await handleDownloadPDF();
       }
     }
-
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
   };
-
   // Permit Advisor flow handler
   const handlePermitFlow = async (userInput: string) => {
     const input = userInput.trim().toLowerCase();
-
     if (permitFlowStep === "awaiting-address-choice") {
       if (
         input === "manual address" ||
@@ -2990,7 +2613,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         input === "1"
       ) {
         setPermitFlowStep("manual-address-entry");
-
         setMessages((prev) => [
           ...prev,
           {
@@ -3006,7 +2628,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         input === "2"
       ) {
         setPermitFlowStep("existing-projects-list");
-
         // Show loading message
         const loadingMessageId = `loading-${Date.now()}`;
         setMessages((prev) => [
@@ -3018,16 +2639,13 @@ Tell me a bit more about your situation: what kind of project are you thinking a
             state: "analyzing",
           },
         ]);
-
         try {
           await loadPermitProjects();
-
           // Remove loading message and add project selection if projects were found
           setMessages((prev) => {
             const filteredMessages = prev.filter(
               (msg) => msg.id !== loadingMessageId,
             );
-
             // Only add project selection message if we have projects
             if (permitProjects.length > 0) {
               return [
@@ -3040,7 +2658,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
                 },
               ];
             }
-
             return filteredMessages;
           });
         } catch (error) {
@@ -3056,7 +2673,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
     ) {
       // Move to project description step
       setPermitFlowStep("awaiting-description");
-
       setMessages((prev) => [
         ...prev,
         {
@@ -3077,7 +2693,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         input.includes("proceder")
       ) {
         setPermitFlowStep("document-upload");
-
         setMessages((prev) => [
           ...prev,
           {
@@ -3092,7 +2707,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         // User provided a new description
         setPermitProjectDescription(input);
         setPermitFlowStep("document-upload");
-
         setMessages((prev) => [
           ...prev,
           {
@@ -3125,12 +2739,10 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         ]);
       }
     }
-
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
   };
-
   // Load permit projects from Firebase
   const loadPermitProjects = async () => {
     if (!currentUser?.uid) {
@@ -3141,22 +2753,18 @@ Tell me a bit more about your situation: what kind of project are you thinking a
       });
       return;
     }
-
     setIsLoading(true);
     try {
       const { collection, query, where, getDocs } = await import(
         "firebase/firestore"
       );
-
       let allProjects: any[] = [];
-
       // Load from projects collection
       try {
         const projectsQuery = query(
           collection(db, "projects"),
           where("firebaseUserId", "==", currentUser.uid),
         );
-
         const projectsSnapshot = await getDocs(projectsQuery);
         const projectEstimates = projectsSnapshot.docs
           .filter((doc) => {
@@ -3165,13 +2773,11 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           })
           .map((doc) => {
             const data = doc.data();
-
             const clientName =
               data.clientInformation?.name ||
               data.clientName ||
               data.client?.name ||
               "Cliente sin nombre";
-
             const address =
               data.clientInformation?.address ||
               data.clientAddress ||
@@ -3182,16 +2788,13 @@ Tell me a bit more about your situation: what kind of project are you thinking a
               data.workAddress ||
               data.propertyAddress ||
               "";
-
             const projectType =
               data.projectType || data.projectDetails?.type || "fence";
-
             const projectDescription =
               data.projectDetails?.description ||
               data.projectDescription ||
               data.description ||
               `${projectType} project for ${clientName}`;
-
             return {
               id: doc.id,
               clientName: clientName,
@@ -3212,23 +2815,19 @@ Tell me a bit more about your situation: what kind of project are you thinking a
                 data.clientInformation?.phone || data.clientPhone || "",
             };
           });
-
         allProjects = [...allProjects, ...projectEstimates];
       } catch (projectError) {
         console.warn("Could not load from projects collection:", projectError);
       }
-
       // Load from estimates collection
       try {
         const estimatesQuery = query(
           collection(db, "estimates"),
           where("firebaseUserId", "==", currentUser.uid),
         );
-
         const estimatesSnapshot = await getDocs(estimatesQuery);
         const firebaseEstimates = estimatesSnapshot.docs.map((doc) => {
           const data = doc.data();
-
           const clientName =
             data.clientName || data.client?.name || "Cliente sin nombre";
           const address =
@@ -3243,7 +2842,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           const projectDescription =
             data.projectDescription ||
             `${projectType} project for ${clientName}`;
-
           return {
             id: doc.id,
             clientName: clientName,
@@ -3257,7 +2855,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
             clientPhone: data.clientPhone || "",
           };
         });
-
         allProjects = [...allProjects, ...firebaseEstimates];
       } catch (estimatesError) {
         console.warn(
@@ -3265,27 +2862,21 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           estimatesError,
         );
       }
-
       // Filter for valid projects
       const validProjects = allProjects.filter((project: any) => {
         const hasClientName =
           project.clientName &&
           project.clientName !== "Cliente sin nombre" &&
           project.clientName.trim().length > 0;
-
         const hasAddress = project.address && project.address.trim().length > 0;
-
         return hasClientName && hasAddress;
       });
-
       // Remove duplicates by ID
       const uniqueProjects = validProjects.filter(
         (project, index, self) =>
           index === self.findIndex((p) => p.id === project.id),
       );
-
       setPermitProjects(uniqueProjects);
-
       if (uniqueProjects.length === 0) {
         setMessages((prev) => [
           ...prev,
@@ -3304,7 +2895,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         description: "Failed to load your existing projects",
         variant: "destructive",
       });
-
       // Show error message in chat
       setMessages((prev) => [
         ...prev,
@@ -3319,7 +2909,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
       setIsLoading(false);
     }
   };
-
   // Handle permit project selection
   const handlePermitProjectSelect = (project: PermitProject) => {
     setSelectedPermitProject(project);
@@ -3330,7 +2919,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         `${project.projectType} project for ${project.clientName}`,
     );
     setPermitFlowStep("project-selected");
-
     setMessages((prev) => [
       ...prev,
       {
@@ -3339,11 +2927,9 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         sender: "assistant",
       },
     ]);
-
     // Automatically move to description step
     setTimeout(() => {
       setPermitFlowStep("awaiting-description");
-
       setMessages((prev) => [
         ...prev,
         {
@@ -3355,7 +2941,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
       ]);
     }, 1000);
   };
-
   // Run DeepSearch analysis for permits
   const runPermitDeepSearch = async () => {
     if (!permitAddress || !permitProjectType) {
@@ -3366,10 +2951,8 @@ Tell me a bit more about your situation: what kind of project are you thinking a
       });
       return;
     }
-
     setIsPermitAnalyzing(true);
     setPermitFlowStep("deepsearch-analysis");
-
     setMessages((prev) => [
       ...prev,
       {
@@ -3380,7 +2963,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         state: "analyzing",
       },
     ]);
-
     try {
       const response = await fetch("/api/permit/check", {
         method: "POST",
@@ -3395,15 +2977,12 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           coordinates: permitCoordinates,
         }),
       });
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const data = await response.json();
       setPermitResults(data);
       setPermitFlowStep("results-display");
-
       setMessages((prev) => [
         ...prev,
         {
@@ -3414,7 +2993,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           action: "permit-results",
         },
       ]);
-
       toast({
         title: "✅ Análisis Completado",
         description: "Los resultados del análisis de permisos están listos",
@@ -3430,7 +3008,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           sender: "assistant",
         },
       ]);
-
       toast({
         title: "Error en Análisis",
         description: "No se pudo completar el análisis de permisos",
@@ -3440,7 +3017,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
       setIsPermitAnalyzing(false);
     }
   };
-
   // Export permit report
   const exportPermitReport = async () => {
     if (!permitResults || !profile) {
@@ -3451,14 +3027,12 @@ Tell me a bit more about your situation: what kind of project are you thinking a
       });
       return;
     }
-
     setIsLoading(true);
     try {
       // Import the PDF generation utilities
       const { generatePDFReport, downloadPDFReport } = await import(
         "@/utils/permitReportGenerator"
       );
-
       // Prepare company information from profile
       const companyInfo = {
         company: profile.company || "",
@@ -3474,7 +3048,6 @@ Tell me a bit more about your situation: what kind of project are you thinking a
         website: profile.website || "",
         logo: profile.logo || "",
       };
-
       // Ensure permitResults has timestamp in meta
       const permitDataWithTimestamp = {
         ...permitResults,
@@ -3486,16 +3059,13 @@ Tell me a bit more about your situation: what kind of project are you thinking a
           fullAddress: permitAddress,
         },
       };
-
       // Generate PDF using the utility functions
       const pdfBlob = await generatePDFReport(
         permitDataWithTimestamp,
         companyInfo,
       );
-
       // Download the PDF
       downloadPDFReport(pdfBlob, permitDataWithTimestamp);
-
       toast({
         title: "PDF Export Successful",
         description: "Permit analysis report has been downloaded",
@@ -3503,16 +3073,13 @@ Tell me a bit more about your situation: what kind of project are you thinking a
       });
     } catch (error) {
       console.error("Error exporting PDF:", error);
-
       // Fallback to simple text export if PDF generation fails
       try {
         const reportContent = `
 REPORTE DE ANÁLISIS DE PERMISOS
-
 Dirección: ${permitAddress}
 Tipo de Proyecto: ${permitProjectType}
 Descripción: ${permitProjectDescription}
-
 PERMISOS REQUERIDOS:
 ${
   permitResults.requiredPermits && Array.isArray(permitResults.requiredPermits)
@@ -3524,7 +3091,6 @@ ${
         .join("\n")
     : "No hay información de permisos disponible"
 }
-
 CONSIDERACIONES ESPECIALES:
 ${
   permitResults.specialConsiderations
@@ -3537,7 +3103,6 @@ ${
         : permitResults.specialConsiderations
     : "No hay consideraciones especiales"
 }
-
 PROCESO:
 ${
   permitResults.process && Array.isArray(permitResults.process)
@@ -3550,7 +3115,6 @@ ${
     : "No hay información del proceso disponible"
 }
         `;
-
         // Create and download text file as fallback
         const blob = new Blob([reportContent], { type: "text/plain" });
         const url = window.URL.createObjectURL(blob);
@@ -3561,7 +3125,6 @@ ${
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-
         toast({
           title: "Text Report Downloaded",
           description:
@@ -3580,7 +3143,6 @@ ${
       setIsGeneratingPDF(false);
     }
   };
-
   // Helper functions for contract generation
   const generateAILegalClauses = async () => {
     setIsLoading(true);
@@ -3625,9 +3187,7 @@ ${
           isRequired: true,
         },
       ];
-
       setLegalClauses(standardClauses);
-
       // Show editable form instead of going directly to project scope
       setMessages((prev) => [
         ...prev,
@@ -3638,7 +3198,6 @@ ${
           action: "legal-clauses-form",
         },
       ]);
-
       toast({
         title: "✅ Cláusulas Generadas",
         description: `Se generaron ${standardClauses.length} cláusulas legales estándar`,
@@ -3650,7 +3209,6 @@ ${
         description: "No se pudieron generar las cláusulas legales",
         variant: "destructive",
       });
-
       setContractFlowStep("project-scope");
       setMessages((prev) => [
         ...prev,
@@ -3664,37 +3222,28 @@ ${
       setIsLoading(false);
     }
   };
-
   const generateContractSummary = () => {
     return `📋 **RESUMEN DEL CONTRATO**
-
 👤 **Cliente:** ${selectedClient?.name}
 📧 **Email:** ${selectedClient?.email}
 📞 **Teléfono:** ${selectedClient?.phone}
 📍 **Dirección:** ${selectedClient?.address}
-
 🏢 **Contratista:** ${contractorInfo.company}
 📄 **Licencia:** ${contractorInfo.license}
 🛡️ **Seguro:** ${contractorInfo.insurance}
-
 📅 **Cronograma:**
 • Inicio: ${projectTimeline[0]?.value}
 • Finalización: ${projectTimeline[1]?.value}
 • Duración: ${projectTimeline[2]?.value} días
-
 💰 **Valor del contrato:** $${selectedEstimate?.total?.toFixed(2)}
-
 🎯 **Hitos del proyecto:** ${projectMilestones.length} hitos configurados
 ⚖️ **Cláusulas legales:** ${legalClauses.length} cláusulas incluidas
 🛡️ **Garantía:** ${warrantyPermits.warranty}
 📝 **Firma del Contrato:** Requerida
-
 ¿Todo se ve correcto? Escribe **GENERAR** para crear el contrato PDF.`;
   };
-
   const generateAndDownloadContract = async () => {
     setIsLoading(true);
-
     try {
       const contractData = {
         clientInfo: {
@@ -3724,7 +3273,6 @@ ${
           source: "mervin-contract-generator",
         },
       };
-
       // For now, create a simple contract document
       const contractHtml = `
         <html>
@@ -3742,7 +3290,6 @@ ${
               <h1>CONTRATO DE CONSTRUCCIÓN</h1>
               <p>Número: ${contractData.metadata.contractNumber}</p>
             </div>
-
             <div class="section">
               <h3>INFORMACIÓN DEL CONTRATISTA</h3>
               <p><strong>Empresa:</strong> ${contractorInfo.company}</p>
@@ -3751,7 +3298,6 @@ ${
               <p><strong>Email:</strong> ${contractorInfo.email}</p>
               <p><strong>Licencia:</strong> ${contractorInfo.license}</p>
             </div>
-
             <div class="section">
               <h3>INFORMACIÓN DEL CLIENTE</h3>
               <p><strong>Nombre:</strong> ${selectedClient?.name}</p>
@@ -3759,31 +3305,26 @@ ${
               <p><strong>Teléfono:</strong> ${selectedClient?.phone}</p>
               <p><strong>Email:</strong> ${selectedClient?.email}</p>
             </div>
-
             <div class="section">
               <h3>ALCANCE DEL PROYECTO</h3>
               <p>${projectScope}</p>
             </div>
-
             <div class="section">
               <h3>VALOR DEL CONTRATO</h3>
               <p><strong>Total:</strong> $${selectedEstimate?.total?.toFixed(2)}</p>
             </div>
-
             <div class="section">
               <h3>CRONOGRAMA</h3>
               <p><strong>Fecha de inicio:</strong> ${projectTimeline[0]?.value}</p>
               <p><strong>Fecha de finalización:</strong> ${projectTimeline[1]?.value}</p>
               <p><strong>Duración:</strong> ${projectTimeline[2]?.value} días</p>
             </div>
-
             <div class="section">
               <h3>GARANTÍAS Y PERMISOS</h3>
               <p><strong>Garantía:</strong> ${warrantyPermits.warranty}</p>
               <p><strong>Permisos:</strong> ${warrantyPermits.permits}</p>
               <p><strong>Seguro:</strong> ${warrantyPermits.insurance}</p>
             </div>
-
             <div class="signature">
               <table width="100%">
                 <tr>
@@ -3804,7 +3345,6 @@ ${
           </body>
         </html>
       `;
-
       // Create a simple PDF download (for now just show success)
       setMessages((prev) => [
         ...prev,
@@ -3823,12 +3363,10 @@ ${
           sender: "assistant",
         },
       ]);
-
       toast({
         title: "✅ Contrato Generado",
         description: "El contrato se ha generado correctamente",
       });
-
       // Reset flow after 5 seconds
       setTimeout(() => {
         resetContractFlow();
@@ -3840,7 +3378,6 @@ ${
         description: "No se pudo generar el contrato. Intenta nuevamente.",
         variant: "destructive",
       });
-
       setMessages((prev) => [
         ...prev,
         {
@@ -3854,7 +3391,6 @@ ${
       setIsLoading(false);
     }
   };
-
   const resetContractFlow = () => {
     setContractFlowStep(null);
     setCaseType("");
@@ -3862,7 +3398,6 @@ ${
     setSelectedClient(null);
     setProjectScope("");
     setLegalClauses([]);
-
     setMessages([
       {
         id: "welcome",
@@ -3873,11 +3408,9 @@ ${
       },
     ]);
   };
-
   // Load estimates for contract generation
   const loadEstimates = async () => {
     if (!currentUser) return [];
-
     try {
       const { collection, query, where, getDocs } = await import(
         "firebase/firestore"
@@ -3888,7 +3421,6 @@ ${
         where("firebaseUserId", "==", currentUser.uid),
       );
       const querySnapshot = await getDocs(q);
-
       const estimatesData: EstimateData[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -3897,7 +3429,6 @@ ${
           ...data,
         } as EstimateData);
       });
-
       estimatesData.sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -3909,7 +3440,6 @@ ${
       return [];
     }
   };
-
   // Manejar tecla Enter
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -3932,7 +3462,6 @@ ${
               Editar Recomendaciones de DeepSearch AI
             </DialogTitle>
           </DialogHeader>
-
           <div className="flex-1 overflow-y-auto space-y-6 pr-2">
             {/* Materials Section */}
             {(deepSearchOption === "materials-only" ||
@@ -3942,7 +3471,6 @@ ${
                   <Wrench className="w-5 h-5 text-blue-400" />
                   <span>Materiales</span>
                 </h3>
-
                 <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                   {editingMaterials.map((material, index) => (
                     <div
@@ -3982,7 +3510,6 @@ ${
                           />
                         </div>
                       </div>
-
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -4017,7 +3544,6 @@ ${
                           />
                         </div>
                       </div>
-
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">
                           Descripción
@@ -4033,7 +3559,6 @@ ${
                           rows={2}
                         />
                       </div>
-
                       <div className="flex justify-end">
                         <button
                           onClick={() => {
@@ -4050,7 +3575,6 @@ ${
                       </div>
                     </div>
                   ))}
-
                   <button
                     onClick={() => {
                       setEditingMaterials([
@@ -4074,7 +3598,6 @@ ${
                 </div>
               </div>
             )}
-
             {/* Labor Costs Section */}
             {(deepSearchOption === "labor-only" ||
               deepSearchOption === "materials-labor") && (
@@ -4083,7 +3606,6 @@ ${
                   <DollarSign className="w-5 h-5 text-green-400" />
                   <span>Mano de Obra</span>
                 </h3>
-
                 <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                   {editingLaborCosts.map((labor, index) => (
                     <div
@@ -4126,7 +3648,6 @@ ${
                           />
                         </div>
                       </div>
-
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -4161,7 +3682,6 @@ ${
                           />
                         </div>
                       </div>
-
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">
                           Descripción
@@ -4177,7 +3697,6 @@ ${
                           rows={2}
                         />
                       </div>
-
                       <div className="flex justify-end">
                         <button
                           onClick={() => {
@@ -4194,7 +3713,6 @@ ${
                       </div>
                     </div>
                   ))}
-
                   <button
                     onClick={() => {
                       setEditingLaborCosts([
@@ -4218,7 +3736,6 @@ ${
               </div>
             )}
           </div>
-
           <DialogFooter className="flex-shrink-0 border-t border-gray-700 pt-4 mt-4">
             <Button
               onClick={() => setShowEditModal(false)}
@@ -4253,9 +3770,7 @@ ${
                         0,
                       ),
                   };
-
                   setDeepSearchRecommendation(updatedRecommendation);
-
                   // Update the last message with new results
                   setMessages((prev) => {
                     const updated = [...prev];
@@ -4272,7 +3787,6 @@ ${
                     return updated;
                   });
                 }
-
                 setShowEditModal(false);
                 toast({
                   title: "Cambios guardados",
@@ -4311,7 +3825,6 @@ ${
                       />
                     </div>
                     <span className="text-cyan-400 font-semibold">Mervin AI</span>
-
                     {/* Estado de análisis */}
                     {message.state === "analyzing" && (
                       <div className="ml-2 text-xs text-blue-400 flex items-center">
@@ -4319,7 +3832,6 @@ ${
                       </div>
                     )}
                   </div>
-
                   {/* AI Model Selector (ChatGPT-style) with Permission Control */}
                   <div className="relative">
                     <button
@@ -4334,7 +3846,6 @@ ${
                       )}
                       <ChevronDown className="w-3 h-3" />
                     </button>
-
                     {/* Dropdown Menu with Permission-based Options */}
                     {showModelSelector && (
                       <div className="absolute right-0 top-full mt-1 w-40 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50">
@@ -4351,8 +3862,8 @@ ${
                             setShowModelSelector(false);
                           }}
                           className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-700 ${
-                            selectedModel === "agent" 
-                              ? "text-cyan-400 bg-gray-700" 
+                            selectedModel === "agent"
+                              ? "text-cyan-400 bg-gray-700"
                               : "text-gray-300"
                           } ${userPlan && userPlan.name === "Free Trial" ? "opacity-60" : ""}`}
                         >
@@ -4372,8 +3883,8 @@ ${
                             setShowModelSelector(false);
                           }}
                           className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-700 ${
-                            selectedModel === "legacy" 
-                              ? "text-cyan-400 bg-gray-700" 
+                            selectedModel === "legacy"
+                              ? "text-cyan-400 bg-gray-700"
                               : "text-gray-300"
                           }`}
                         >
@@ -4388,14 +3899,12 @@ ${
                   </div>
                 </div>
               )}
-
               {/* Nombre para mensajes del usuario */}
               {message.sender === "user" && (
                 <div className="text-right mb-1">
                   <span className="text-blue-400 font-semibold">You</span>
                 </div>
               )}
-
               {message.clients && message.clients.length > 0 && (
                 <div className="mt-2 space-y-3">
                   {/* 🔍 Search bar */}
@@ -4409,7 +3918,6 @@ ${
                     }}
                     className="w-full bg-gray-800 text-white px-3 py-2 rounded border border-cyan-900/50"
                   />
-
                   <div
                     className="max-h-42 p-6 overflow-y-auto grid grid-cols-2 gap-2 pr-2"
                     onScroll={(e) => {
@@ -4450,7 +3958,6 @@ ${
                   </div>
                 </div>
               )}
-
               {/* Estimates selection for contracts (NEW) */}
               {message.estimates && message.estimates.length > 0 && (
                 <div className="mt-2 space-y-3">
@@ -4507,7 +4014,6 @@ ${
                   </div>
                 </div>
               )}
-
               {message.materialList && message.materialList.length > 0 && (
                 <div className="mt-2 space-y-3">
                   {/* Shopping Cart Header */}
@@ -4526,7 +4032,6 @@ ${
                       Carrito ({getCartItemCount()})
                     </button>
                   </div>
-
                   {/* Search bar for materials */}
                   <input
                     type="text"
@@ -4538,7 +4043,6 @@ ${
                     }}
                     className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg border border-cyan-900/50 focus:border-cyan-600 focus:outline-none"
                   />
-
                   <div className="flex gap-4">
                     {/* Product Catalog */}
                     <div
@@ -4619,7 +4123,6 @@ ${
                           ))}
                       </div>
                     </div>
-
                     {/* Shopping Cart Sidebar */}
                     {showCart && (
                       <div className="w-1/3 bg-gray-800 rounded-lg p-4 border border-cyan-900/50">
@@ -4635,7 +4138,6 @@ ${
                             <X className="w-4 h-4" />
                           </button>
                         </div>
-
                         <div className="max-h-64 overflow-y-auto space-y-2 mb-4">
                           {shoppingCart.length === 0 ? (
                             <div className="text-center text-gray-400 py-8">
@@ -4706,7 +4208,6 @@ ${
                             ))
                           )}
                         </div>
-
                         {shoppingCart.length > 0 && (
                           <div className="border-t border-gray-700 pt-4">
                             <div className="flex justify-between items-center mb-3">
@@ -4728,7 +4229,6 @@ ${
                       </div>
                     )}
                   </div>
-
                   {/* Add new material */}
                   <div className="text-center mt-4">
                     <button
@@ -4752,10 +4252,8 @@ ${
                   </div>
                 </div>
               )}
-
               {/* Contenido del mensaje */}
               <div className="whitespace-pre-wrap">{message.content}</div>
-
               {/* Botones de acción - solo en el mensaje inicial o cuando se solicita menú */}
               {message.action === "menu" && (
                 <div className="grid grid-cols-3 gap-2 mt-4">
@@ -4773,7 +4271,6 @@ ${
                   ))}
                 </div>
               )}
-
               {/* DeepSearch AI Options */}
               {message.action === "deepsearch-options" && (
                 <div className="grid grid-cols-1 gap-3 mt-4">
@@ -4788,7 +4285,6 @@ ${
                     <DollarSign className="w-5 h-5 text-green-400" />
                     <span>Materiales + Costo de Mano de Obra</span>
                   </button>
-
                   <button
                     onClick={() =>
                       handleDeepSearchOptionSelect("materials-only")
@@ -4799,7 +4295,6 @@ ${
                     <Wrench className="w-5 h-5 text-teal-400" />
                     <span>Solo Materiales</span>
                   </button>
-
                   <button
                     onClick={() => handleDeepSearchOptionSelect("labor-only")}
                     className="bg-gradient-to-r from-orange-900/30 to-red-900/30 hover:from-orange-800/50 hover:to-red-800/50 text-white rounded-lg p-4 text-sm font-medium transition-all duration-200 flex items-center justify-center space-x-3"
@@ -4808,11 +4303,9 @@ ${
                     <DollarSign className="w-5 h-5 text-red-400" />
                     <span>Solo Mano de Obra</span>
                   </button>
-
                   <button
                     onClick={async () => {
                       setChatFlowStep("select-inventory");
-
                       setMessages((prev) => [
                         ...prev,
                         {
@@ -4822,7 +4315,6 @@ ${
                           sender: "assistant",
                         },
                       ]);
-
                       setTimeout(() => {
                         messagesEndRef.current?.scrollIntoView({
                           behavior: "smooth",
@@ -4851,7 +4343,6 @@ ${
                   </button>
                 </div>
               )}
-
               {/* DeepSearch Results with Edit Options */}
               {message.action === "deepsearch-results" &&
                 deepSearchRecommendation && (
@@ -4864,7 +4355,6 @@ ${
                         <Edit3 className="w-4 h-4" />
                         <span>Editar Selección</span>
                       </button>
-
                       <button
                         onClick={() => {
                           // Continue with current selection
@@ -4904,10 +4394,8 @@ ${
                                   quantity: material.quantity,
                                 }),
                               );
-
                             setInventoryItems(convertedItems);
                             setChatFlowStep("select-inventory");
-
                             setMessages((prev) => [
                               ...prev,
                               {
@@ -4917,7 +4405,6 @@ ${
                                 sender: "assistant",
                               },
                             ]);
-
                             setTimeout(() => {
                               messagesEndRef.current?.scrollIntoView({
                                 behavior: "smooth",
@@ -4933,7 +4420,6 @@ ${
                     </div>
                   </div>
                 )}
-
               {/* Contract Forms (NEW) */}
               {message.action === "client-edit-form" && (
                 <div className="mt-4 bg-gray-800 p-4 rounded-lg">
@@ -5011,7 +4497,6 @@ ${
                           phone: editingClient.phone,
                           address: editingClient.address,
                         }));
-
                         setContractFlowStep("project-timeline");
                         setMessages((prev) => [
                           ...prev,
@@ -5030,7 +4515,6 @@ ${
                   </div>
                 </div>
               )}
-
               {message.action === "project-timeline" && (
                 <div className="mt-4 bg-gray-800 p-4 rounded-lg">
                   <div className="grid grid-cols-1 gap-3">
@@ -5054,7 +4538,6 @@ ${
                                 ...prev,
                                 [field.id]: date,
                               }));
-
                               // Also update the string value for compatibility
                               const updatedTimeline = projectTimeline.map(
                                 (t) =>
@@ -5111,7 +4594,6 @@ ${
                   </div>
                 </div>
               )}
-
               {message.action === "contractor-form" && (
                 <div className="mt-4 bg-gray-800 p-4 rounded-lg">
                   <div className="grid grid-cols-1 gap-3">
@@ -5285,7 +4767,6 @@ ${
                             />
                           </label>
                         </div>
-
                         {logoPreview && (
                           <div className="flex items-center justify-between bg-gray-600 p-2 rounded">
                             <span className="text-sm text-gray-300">
@@ -5320,7 +4801,6 @@ ${
                           });
                           return;
                         }
-
                         if (!logoPreview) {
                           toast({
                             title: "Error",
@@ -5329,7 +4809,6 @@ ${
                           });
                           return;
                         }
-
                         try {
                           // Save contractor information to profile
                           await updateProfile({
@@ -5346,13 +4825,11 @@ ${
                               licenseUrl: contractorInfo.licenseUrl,
                             },
                           });
-
                           toast({
                             title: "Éxito",
                             description:
                               "Información del contratista guardada en el perfil",
                           });
-
                           setContractFlowStep("project-milestones");
                           setMessages((prev) => [
                             ...prev,
@@ -5381,7 +4858,6 @@ ${
                   </div>
                 </div>
               )}
-
               {message.action === "project-milestones" && (
                 <div className="mt-4 bg-gray-800 p-4 rounded-lg">
                   <div className="space-y-3">
@@ -5507,7 +4983,6 @@ ${
                       <button
                         onClick={() => {
                           handleContractFlow("milestones-saved");
-
                           // Scroll to bottom
                           setTimeout(() => {
                             messagesEndRef.current?.scrollIntoView({
@@ -5523,7 +4998,6 @@ ${
                   </div>
                 </div>
               )}
-
               {message.action === "warranty-permits-form" && (
                 <div className="mt-4 bg-gray-800 p-4 rounded-lg">
                   <div className="grid grid-cols-1 gap-4">
@@ -5544,7 +5018,6 @@ ${
                         placeholder="ej: Garantía de 1 año en materiales y mano de obra"
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         📋 Permisos Requeridos
@@ -5562,7 +5035,6 @@ ${
                         placeholder="ej: Permiso de construcción municipal, permiso de cercado"
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         🏥 Seguro de Responsabilidad
@@ -5580,7 +5052,6 @@ ${
                         placeholder="ej: Seguro de responsabilidad general por $1,000,000"
                       />
                     </div>
-
                     <div className="bg-gray-700 p-3 rounded-lg">
                       <h4 className="text-sm font-medium text-cyan-400 mb-2">
                         💡 Sugerencias Comunes:
@@ -5600,7 +5071,6 @@ ${
                         </div>
                       </div>
                     </div>
-
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
@@ -5613,7 +5083,6 @@ ${
                             insurance:
                               "Seguro de responsabilidad general vigente",
                           });
-
                           setContractFlowStep("legal-clauses");
                           setMessages((prev) => [
                             ...prev,
@@ -5650,7 +5119,6 @@ ${
                   </div>
                 </div>
               )}
-
               {/* Legal Clauses Form - Editable AI Generated Clauses */}
               {message.action === "legal-clauses-form" && (
                 <div className="mt-4 bg-gray-800 p-4 rounded-lg">
@@ -5659,7 +5127,6 @@ ${
                       ✅ {legalClauses.length} cláusulas legales generadas.
                       Puedes editarlas a continuación:
                     </div>
-
                     {legalClauses.map((clause, index) => (
                       <div
                         key={clause.id}
@@ -5704,7 +5171,6 @@ ${
                         )}
                       </div>
                     ))}
-
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
@@ -5721,7 +5187,6 @@ ${
                       >
                         + Agregar Cláusula
                       </button>
-
                       <button
                         onClick={() => {
                           // Show preview with better formatting
@@ -5731,7 +5196,6 @@ ${
                                 `**${index + 1}. ${clause.title}** *(${clause.category})*\n${clause.content}`,
                             )
                             .join("\n\n---\n\n");
-
                           setMessages((prev) => [
                             ...prev,
                             {
@@ -5746,7 +5210,6 @@ ${
                       >
                         👁️ Vista Previa
                       </button>
-
                       <button
                         onClick={() => {
                           // Initialize project scope with estimate description if empty
@@ -5758,7 +5221,6 @@ ${
                               selectedEstimate.projectDescription,
                             );
                           }
-
                           setContractFlowStep("project-scope");
                           setMessages((prev) => [
                             ...prev,
@@ -5777,7 +5239,6 @@ ${
                   </div>
                 </div>
               )}
-
               {/* Legal Clauses Preview */}
               {message.action === "legal-clauses-preview" && (
                 <div className="mt-4 bg-gray-800 p-4 rounded-lg">
@@ -5785,7 +5246,6 @@ ${
                     <div className="text-sm text-gray-300 mb-4">
                       📋 **Vista previa de las cláusulas legales:**
                     </div>
-
                     <div className="bg-gray-700 p-4 rounded-lg max-h-96 overflow-y-auto">
                       {legalClauses.map((clause, index) => (
                         <div
@@ -5805,7 +5265,6 @@ ${
                         </div>
                       ))}
                     </div>
-
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
@@ -5824,7 +5283,6 @@ ${
                       >
                         ✏️ Editar
                       </button>
-
                       <button
                         onClick={() => {
                           // Initialize project scope with estimate description if empty
@@ -5836,7 +5294,6 @@ ${
                               selectedEstimate.projectDescription,
                             );
                           }
-
                           setContractFlowStep("project-scope");
                           setMessages((prev) => [
                             ...prev,
@@ -5855,7 +5312,6 @@ ${
                   </div>
                 </div>
               )}
-
               {/* Project Scope Form - Editable Project Description */}
               {message.action === "project-scope-form" && (
                 <div className="mt-4 bg-gray-800 p-4 rounded-lg">
@@ -5875,7 +5331,6 @@ ${
                         placeholder="Describe detalladamente el alcance del proyecto, materiales, trabajo a realizar, etc..."
                       />
                     </div>
-
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
@@ -5892,7 +5347,6 @@ ${
                             });
                             return;
                           }
-
                           // Show preview with better formatting
                           setMessages((prev) => [
                             ...prev,
@@ -5908,7 +5362,6 @@ ${
                       >
                         👁️ Vista Previa
                       </button>
-
                       <button
                         onClick={() => {
                           if (!projectScope.trim()) {
@@ -5920,7 +5373,6 @@ ${
                             });
                             return;
                           }
-
                           setContractFlowStep("final-review");
                           setMessages((prev) => [
                             ...prev,
@@ -5940,7 +5392,6 @@ ${
                   </div>
                 </div>
               )}
-
               {/* Project Scope Preview */}
               {message.action === "project-scope-preview" && (
                 <div className="mt-4 bg-gray-800 p-4 rounded-lg">
@@ -5948,7 +5399,6 @@ ${
                     <div className="text-sm text-gray-300 mb-4">
                       📋 **Vista previa del alcance del proyecto:**
                     </div>
-
                     <div className="bg-gray-700 p-4 rounded-lg">
                       <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
                         {projectScope ||
@@ -5956,7 +5406,6 @@ ${
                           ""}
                       </p>
                     </div>
-
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
@@ -5975,7 +5424,6 @@ ${
                       >
                         ✏️ Editar
                       </button>
-
                       <button
                         onClick={() => {
                           setContractFlowStep("final-review");
@@ -5997,7 +5445,6 @@ ${
                   </div>
                 </div>
               )}
-
               {/* Permit Address Selection */}
               {message.action === "permit-address-selection" && (
                 <div className="mt-4 space-y-3">
@@ -6017,7 +5464,6 @@ ${
                   >
                     <span>📍 Manual Steering</span>
                   </button>
-
                   <button
                     onClick={() => {
                       setMessages((prev) => [
@@ -6044,7 +5490,6 @@ ${
                   </button>
                 </div>
               )}
-
               {/* Permit Manual Entry Form */}
               {message.action === "permit-manual-entry" && (
                 <div className="mt-4 bg-gray-800 p-4 rounded-lg">
@@ -6064,7 +5509,6 @@ ${
                         className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600"
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Tipo de Proyecto *
@@ -6101,7 +5545,6 @@ ${
                         <option value="other">Other</option>
                       </select>
                     </div>
-
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
@@ -6124,7 +5567,6 @@ ${
                   </div>
                 </div>
               )}
-
               {/* Permit Existing Projects List */}
               {message.action === "permit-existing-projects" && (
                 <div className="mt-4 bg-gray-800 p-4 rounded-lg">
@@ -6181,7 +5623,6 @@ ${
                   </div>
                 </div>
               )}
-
               {/* Permit Description and Upload */}
               {message.action === "permit-description-upload" && (
                 <div className="mt-4 bg-gray-800 p-4 rounded-lg">
@@ -6209,7 +5650,6 @@ ${
                             });
                             return;
                           }
-
                           try {
                             setIsLoading(true);
                             const response = await fetch("/api/ai-enhance", {
@@ -6224,7 +5664,6 @@ ${
                                 enhancementType: "description_improvement",
                               }),
                             });
-
                             if (response.ok) {
                               const data = await response.json();
                               if (data.enhancedDescription) {
@@ -6268,7 +5707,6 @@ ${
                         <span>Mejorar con IA</span>
                       </button>
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Documentos (Opcional)
@@ -6289,7 +5727,6 @@ ${
                         </div>
                       )}
                     </div>
-
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
@@ -6313,7 +5750,6 @@ ${
                   </div>
                 </div>
               )}
-
               {/* Permit Ready for Analysis */}
               {message.action === "permit-ready-analysis" && (
                 <div className="mt-4 space-y-3">
@@ -6335,7 +5771,6 @@ ${
                   </button>
                 </div>
               )}
-
               {/* Permit Results Display */}
               {message.action === "permit-results" && permitResults && (
                 <div className="mt-4 space-y-6">
@@ -6368,7 +5803,6 @@ ${
                       )}
                     </Button>
                   </div>
-
                   {/* Tabs */}
                   <Tabs
                     value={activePermitTab}
@@ -6417,7 +5851,6 @@ ${
                         </TabsTrigger>
                       </TabsList>
                     </div>
-
                     <TabsContent value="permits" className="space-y-4 mt-6">
                       {permitResults.requiredPermits &&
                       permitResults.requiredPermits.length > 0 ? (
@@ -6445,7 +5878,6 @@ ${
                                               "Permit details"}
                                           </p>
                                         </div>
-
                                         {(permit.fees ||
                                           permit.averageCost) && (
                                           <div className="bg-green-500/10 border border-green-400/30 rounded-lg p-4">
@@ -6458,7 +5890,6 @@ ${
                                             </p>
                                           </div>
                                         )}
-
                                         {(permit.timeline ||
                                           permit.estimatedTimeline) && (
                                           <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-4">
@@ -6471,7 +5902,6 @@ ${
                                             </p>
                                           </div>
                                         )}
-
                                         {(permit.contact ||
                                           permit.issuingAuthority) && (
                                           <div className="bg-purple-500/10 border border-purple-400/30 rounded-lg p-4">
@@ -6504,14 +5934,12 @@ ${
                         </div>
                       )}
                     </TabsContent>
-
                     <TabsContent value="codes" className="space-y-4 mt-6">
                       <div className="space-y-4">
                         <h4 className="text-emerald-300 font-semibold border-b border-emerald-500/30 pb-2 mb-4 flex items-center gap-2">
                           <span className="text-xl">📋</span>
                           Project-Specific Building Codes
                         </h4>
-
                         {permitResults.buildingCodes &&
                         Array.isArray(permitResults.buildingCodes) &&
                         permitResults.buildingCodes.length > 0 ? (
@@ -6561,14 +5989,12 @@ ${
                         )}
                       </div>
                     </TabsContent>
-
                     <TabsContent value="process" className="space-y-4 mt-6">
                       <div className="space-y-4">
                         <h4 className="text-blue-300 font-semibold border-b border-blue-500/30 pb-2 mb-4 flex items-center gap-2">
                           <span className="text-xl">🔄</span>
                           Permit Application Process
                         </h4>
-
                         {permitResults.process &&
                         Array.isArray(permitResults.process) &&
                         permitResults.process.length > 0 ? (
@@ -6624,14 +6050,12 @@ ${
                         )}
                       </div>
                     </TabsContent>
-
                     <TabsContent value="contact" className="space-y-4 mt-6">
                       <div className="space-y-4">
                         <h4 className="text-purple-300 font-semibold border-b border-purple-500/30 pb-2 mb-4 flex items-center gap-2">
                           <span className="text-xl">📞</span>
                           Contact Information
                         </h4>
-
                         {permitResults.contactInformation ? (
                           <div className="relative">
                             <div className="absolute inset-0 bg-gradient-to-r from-purple-400/10 via-pink-400/10 to-red-400/10 rounded-lg"></div>
@@ -6830,7 +6254,6 @@ ${
                         )}
                       </div>
                     </TabsContent>
-
                     <TabsContent
                       value="considerations"
                       className="space-y-4 mt-6"
@@ -6917,7 +6340,6 @@ ${
               )}
             </div>
           ))}
-
           {/* Mensaje de carga */}
           {isLoading && (
             <div className="max-w-[85%] rounded-lg p-3 bg-gray-900 mr-auto">
@@ -6942,7 +6364,6 @@ ${
               </div>
             </div>
           )}
-
           {/* Elemento para scroll automático */}
           <div ref={messagesEndRef} />
         </div>
@@ -6975,7 +6396,6 @@ ${
           </div>
         )}
       </div>
-
       {/* Área de input FIJA en la parte inferior, fuera del scroll */}
       <div className="fixed bottom-8 left-0 right-0 p-3 bg-black border-t border-cyan-900/30">
         <div className="flex gap-2 max-w-screen-lg mx-auto">
@@ -6986,7 +6406,6 @@ ${
           >
             <Paperclip className="h-4 w-4" />
           </Button>
-
           <input
             type="text"
             value={inputValue}
@@ -6996,7 +6415,6 @@ ${
             className="flex-1 bg-gray-800 border border-cyan-900/50 rounded-full px-4 py-2 text-white focus:outline-none focus:border-cyan-500"
             disabled={isLoading}
           />
-
           <Button
             variant="default"
             className="rounded-full bg-cyan-600 hover:bg-cyan-700"
