@@ -94,15 +94,12 @@ export default function Mervin() {
     if (!conversationEngineRef.current && currentUser?.uid) {
       conversationEngineRef.current = new ConversationEngine(currentUser.uid);
       
-      // Initialize MervinAgent with full config
+      // Initialize MervinAgent with correct config
       const agentConfig = {
         userId: currentUser.uid,
-        permissions: userPlan,
-        enableParallelExecution: true,
-        enableSmartCoordination: true,
-        enableLearning: true,
-        maxConcurrentTasks: 3,
-        timeoutMs: 30000
+        userPermissions: userPlan,
+        subscriptionLevel: String(userPlan?.id || 'trial'),
+        debug: true
       };
       
       mervinAgentRef.current = new MervinAgent(agentConfig);
@@ -164,19 +161,24 @@ export default function Mervin() {
         setMessages(prev => [...prev, processingMessage]);
         
         // Execute with full agent capabilities
-        const result = await agent.processUserRequest(currentInput, {
-          userId: currentUser?.uid,
-          permissions: userPlan
-        });
+        const conversationHistory = messages
+          .filter(m => m.sender === 'user')
+          .map(m => ({ content: m.content, timestamp: new Date() }));
+        
+        const result = await agent.processUserInput(currentInput, conversationHistory);
         
         // Remove processing message
         setMessages(prev => prev.slice(0, -1));
         
+        const responseContent = result.data?.conversationalResponse || 
+          result.data?.response || 
+          "¡Órale primo! Completé la tarea. ¿En qué más te puedo ayudar?";
+        
         const agentResponse: Message = {
           id: "assistant-" + Date.now(),
-          content: result.response,
+          content: responseContent,
           sender: "assistant",
-          taskResult: result.taskResult
+          taskResult: result
         };
         setMessages(prev => [...prev, agentResponse]);
         
@@ -250,17 +252,21 @@ export default function Mervin() {
       if (agent && selectedModel === "agent") {
         // Let the autonomous agent handle the task
         const taskPrompt = getTaskPrompt(action);
-        const result = await agent.processUserRequest(taskPrompt, {
-          userId: currentUser?.uid,
-          permissions: userPlan,
-          taskType: action
-        });
+        const conversationHistory = messages
+          .filter(m => m.sender === 'user')
+          .map(m => ({ content: m.content, timestamp: new Date() }));
+        
+        const result = await agent.processUserInput(taskPrompt, conversationHistory);
+        
+        const responseContent = result.data?.conversationalResponse || 
+          result.data?.response || 
+          `¡Listo primo! Activé ${action} para ti. ¿Qué más necesitas?`;
         
         const resultMessage: Message = {
           id: "result-" + Date.now(),
-          content: result.response,
+          content: responseContent,
           sender: "assistant",
-          taskResult: result.taskResult
+          taskResult: result
         };
         setMessages(prev => [...prev, resultMessage]);
       } else {
