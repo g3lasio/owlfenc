@@ -1025,6 +1025,8 @@ export default function Mervin() {
   const handleSendMessage = async () => {
     if (inputValue.trim() === "" || isLoading) return;
 
+    console.log('🚀 [MERVIN-CHAT] Iniciando procesamiento de mensaje:', inputValue.trim());
+
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       content: inputValue,
@@ -1032,47 +1034,98 @@ export default function Mervin() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setIsLoading(false);
-
-    // Continue based on estimate flow
-    if (caseType === "Estimates") {
-      handleEstimateFlow(inputValue.trim().toLowerCase());
-      setInputValue("");
-      await loadMaterials();
-      return;
-    }
-
-    // Continue based on contract flow (NEW)
-    if (caseType === "Contract") {
-      await handleContractFlow(inputValue.trim());
-      setInputValue("");
-      return;
-    }
-
-    // Continue based on permit flow (NEW)
-    if (caseType === "Permits") {
-      await handlePermitFlow(inputValue.trim());
-      setInputValue("");
-      return;
-    }
-
-    // Default flow
     setInputValue("");
-    setIsLoading(true);
-    // Simular respuesta
-    setTimeout(() => {
-      const assistantMessage: Message = {
-        id: `assistant-${Date.now()}`,
-        content:
-          "Estoy aquí para ayudarte. ¿Te gustaría generar un contrato, verificar una propiedad, consultar permisos, gestionar clientes o revisar facturación?",
+    setIsLoading(true); // 🔥 CORRECCIÓN CRÍTICA: Ahora sí ponemos loading en TRUE
+
+    try {
+      console.log('🔄 [MERVIN-CHAT] Caso tipo:', caseType);
+
+      // Timeout de seguridad para evitar cuelgues infinitos
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Timeout: La operación tomó demasiado tiempo (30s)'));
+        }, 30000);
+      });
+
+      // Continue based on estimate flow
+      if (caseType === "Estimates") {
+        console.log('📊 [ESTIMATES] Procesando flujo de estimados...');
+        await Promise.race([
+          (async () => {
+            handleEstimateFlow(inputValue.trim().toLowerCase());
+            await loadMaterials();
+          })(),
+          timeoutPromise
+        ]);
+        return;
+      }
+
+      // Continue based on contract flow (NEW)
+      if (caseType === "Contract") {
+        console.log('📄 [CONTRACT] Procesando flujo de contratos...');
+        await Promise.race([
+          handleContractFlow(inputValue.trim()),
+          timeoutPromise
+        ]);
+        return;
+      }
+
+      // Continue based on permit flow (NEW)
+      if (caseType === "Permits") {
+        console.log('🏛️ [PERMITS] Procesando flujo de permisos...');
+        await Promise.race([
+          handlePermitFlow(inputValue.trim()),
+          timeoutPromise
+        ]);
+        return;
+      }
+
+      // Default flow - TAMBIÉN CON TIMEOUT Y MEJOR MANEJO
+      console.log('💬 [DEFAULT] Procesando flujo por defecto...');
+      
+      // Simular respuesta con timeout de seguridad
+      await Promise.race([
+        new Promise((resolve) => {
+          setTimeout(() => {
+            const assistantMessage: Message = {
+              id: `assistant-${Date.now()}`,
+              content: "¡Órale, primo! Estoy aquí para ayudarte. ¿Te gustaría generar un contrato, verificar una propiedad, consultar permisos, gestionar clientes o revisar facturación?",
+              sender: "assistant",
+            };
+
+            setMessages((prev) => [...prev, assistantMessage]);
+            resolve(true);
+
+            // Desplazar al final
+            setTimeout(() => {
+              messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            }, 100);
+          }, 1500);
+        }),
+        timeoutPromise
+      ]);
+
+    } catch (error) {
+      console.error('❌ [MERVIN-CHAT] Error procesando mensaje:', error);
+      
+      // Mensaje de error amigable con personalidad
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        content: `❌ **¡Órale, primo! Hubo un problemita**\n\n${error instanceof Error ? error.message : 'Error desconocido'}\n\nPero aquí andamos para resolverlo. Inténtalo de nuevo.`,
         sender: "assistant",
       };
 
-      // Desplazar al final
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
-    }, 1500);
+      setMessages((prev) => [...prev, errorMessage]);
+
+      toast({
+        title: "Error",
+        description: "No pude procesar tu mensaje. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false); // 🔥 CRÍTICO: Siempre resetear loading
+      console.log('🏁 [MERVIN-CHAT] Finalizando procesamiento');
+    }
   };
   const handleClientSelect = (client: Client | null) => {
     if (client) {
