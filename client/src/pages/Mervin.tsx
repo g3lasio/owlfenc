@@ -1027,13 +1027,30 @@ export default function Mervin() {
   // 🧠 SISTEMA HÍBRIDO: FALLBACK INTELIGENTE + SISTEMA AVANZADO
   const generateIntelligentResponse = async (userMessage: string): Promise<string> => {
     console.log('🧠 [MERVIN-AI] Procesando con sistema híbrido:', userMessage);
+    console.log('🎯 [MODEL-SELECTOR] Modelo seleccionado:', selectedModel);
     
     // FASE 1: RESPUESTA INMEDIATA INTELIGENTE (FALLBACK ROBUSTO)
     const quickIntelligentResponse = await generateQuickIntelligentResponse(userMessage);
     
+    // 🎯 CONTROL POR MODELO SELECCIONADO Y PERMISOS
+    if (selectedModel === "legacy") {
+      console.log('📋 [LEGACY-MODE] Usando modo Legacy (respuesta directa)');
+      return quickIntelligentResponse;
+    }
+
+    // 🔐 VERIFICACIÓN DE PERMISOS PARA AGENT MODE
+    if (selectedModel === "agent" && userPlan && userPlan.id === 1) {
+      console.log('🚫 [PERMISSION-DENIED] Free trial no tiene acceso a Agent mode');
+      return `¡Órale, primo! Para usar Agent mode necesitas upgrade a Primo Chambeador o superior. 
+
+El modo Legacy que tienes disponible ya es súper inteligente y conversacional. ¿Te ayudo con algo usando el modo Legacy?
+
+Para desbloquear Agent mode con todas las funciones avanzadas, puedes hacer upgrade desde tu panel de control.`;
+    }
+    
     try {
-      // FASE 2: INTENTAR SISTEMA AVANZADO (SI ESTÁ DISPONIBLE)
-      console.log('🚀 [ADVANCED-SYSTEM] Intentando sistema avanzado...');
+      // FASE 2: SISTEMA AVANZADO SOLO EN AGENT MODE
+      console.log('🚀 [AGENT-MODE] Intentando sistema avanzado...');
       
       const userId = (user as any)?.uid || 'anonymous';
       const agentConfig = {
@@ -4300,7 +4317,7 @@ ${
                     )}
                   </div>
 
-                  {/* AI Model Selector (ChatGPT-style) */}
+                  {/* AI Model Selector (ChatGPT-style) with Permission Control */}
                   <div className="relative">
                     <button
                       onClick={() => setShowModelSelector(!showModelSelector)}
@@ -4309,14 +4326,24 @@ ${
                       <span className="capitalize">
                         {selectedModel === "legacy" ? "Legacy" : "Agent mode"}
                       </span>
+                      {userPlan && userPlan.id === 1 && selectedModel === "agent" && (
+                        <span className="text-xs text-yellow-400 ml-1">⚡</span>
+                      )}
                       <ChevronDown className="w-3 h-3" />
                     </button>
 
-                    {/* Dropdown Menu */}
+                    {/* Dropdown Menu with Permission-based Options */}
                     {showModelSelector && (
-                      <div className="absolute right-0 top-full mt-1 w-32 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50">
+                      <div className="absolute right-0 top-full mt-1 w-40 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50">
                         <button
                           onClick={() => {
+                            // Check if user has access to Agent mode
+                            if (userPlan && userPlan.id === 1) {
+                              // Free trial - show upgrade prompt
+                              showUpgradeModal("agent-mode", "Agent mode requiere plan Primo Chambeador o superior");
+                              setShowModelSelector(false);
+                              return;
+                            }
                             setSelectedModel("agent");
                             setShowModelSelector(false);
                           }}
@@ -4324,9 +4351,17 @@ ${
                             selectedModel === "agent" 
                               ? "text-cyan-400 bg-gray-700" 
                               : "text-gray-300"
-                          }`}
+                          } ${userPlan && userPlan.id === 1 ? "opacity-60" : ""}`}
                         >
-                          Agent mode
+                          <div className="flex items-center justify-between">
+                            <span>Agent mode</span>
+                            {userPlan && userPlan.id === 1 && (
+                              <span className="text-yellow-400 text-xs">🔒</span>
+                            )}
+                          </div>
+                          {userPlan && userPlan.id === 1 && (
+                            <div className="text-xs text-gray-500 mt-1">Requiere upgrade</div>
+                          )}
                         </button>
                         <button
                           onClick={() => {
@@ -4339,7 +4374,11 @@ ${
                               : "text-gray-300"
                           }`}
                         >
-                          Legacy
+                          <div className="flex items-center justify-between">
+                            <span>Legacy</span>
+                            <span className="text-green-400 text-xs">✓</span>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">Disponible para todos</div>
                         </button>
                       </div>
                     )}

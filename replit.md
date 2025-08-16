@@ -18,7 +18,10 @@ This project is an advanced AI-powered legal document and permit management plat
 - LABEL ACCURACY: Usar "OTP Code" en lugar de "SMS Code" ya que el sistema usa email-based OTP
 - BIOMETRIC FUNCTIONALITY: Corregir problemas de lógica y funcionalidad en autenticación biométrica
 - BILLING-SUBSCRIPTION CONSISTENCY: Sincronización completa de precios, moneda y beneficios entre páginas Billing y Subscription
-- MERVIN AI MODEL SELECTOR: Implementación de selector de modelo estilo ChatGPT con opciones "Legacy" y "Agent mode"
+- MERVIN AI MODEL SELECTOR: Implementación de selector de modelo estilo ChatGPT con opciones "Legacy" y "Agent mode" 
+  * FUNCIONALIDAD REAL: Legacy = respuestas directas, Agent mode = sistema avanzado
+  * CONTROL POR PERMISOS: Free trial solo Legacy, otros planes ambos modos
+  * PROPUESTA COMPLETA: Sistema de permisos diferenciado por plan de usuario
 - MERVIN AI CONVERSATIONAL INTELLIGENCE: Sistema conversacional tipo GPT-5 con superinteligencia y personalidad humana:
   * Detección automática de idioma del usuario (español, inglés, otros)
   * Personalidad mexicana norteña auténtica: "primo", "compadre", "órale", estilo natural y cálido
