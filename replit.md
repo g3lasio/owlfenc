@@ -43,6 +43,16 @@ This project is an advanced AI-powered legal document and permit management plat
   * ENHANCED MESSAGING: Burbujas de mensaje mejoradas con mejor legibilidad y espaciado en pantallas móviles
   * CSS UTILITIES: Sistema completo de clases utilitarias para safe areas, touch targets y optimizaciones móviles
   * SMOOTH INTERACTIONS: Animaciones y transiciones optimizadas para dispositivos táctiles
+- CONVERSATIONAL ONBOARDING SYSTEM: Sistema de onboarding completamente integrado en Mervin AI (16/08/2025):
+  * MERVIN-GUIDED ONBOARDING: Reemplaza wizard tradicional con conversación natural guiada por Mervin
+  * AUTOMATIC DETECTION: Detección automática de usuarios nuevos usando sistema existente de useOnboarding
+  * 6-STEP FLOW: Flujo conversacional completo: bienvenida, descubrimiento de trabajo, volumen, retos, configuración empresa, primer éxito
+  * PERSONALITY INTEGRATION: Personalidad mexicana norteña auténtica integrada en proceso de onboarding
+  * PROGRESS TRACKING: Barra de progreso visual con indicadores de completado y etapas
+  * COMPANY PROFILE SETUP: Configuración automática del perfil de empresa durante el onboarding
+  * SKIP FUNCTIONALITY: Opción de saltar onboarding manteniendo funcionalidad completa
+  * SEAMLESS TRANSITION: Transición automática a modo normal al completar onboarding
+  * MOBILE OPTIMIZED: Interfaz de onboarding optimizada para dispositivos móviles
 
 ## System Architecture
 
@@ -72,6 +82,7 @@ This project is an advanced AI-powered legal document and permit management plat
   - **Emotion Recognition**: User emotion detection and appropriate response generation
 
 ### Core Features & Design Patterns
+- **Conversational Onboarding System**: Integrated onboarding experience directly within Mervin AI chat interface, replacing traditional wizard with natural conversation flow guided by Mervin's personality (August 16, 2025).
 - **Mervin AI Autonomous Agent**: Transformed from a monolithic chatbot into a modular system with 14 specialized components. Features include:
     - **Intention Analysis**: Natural language understanding (95%+ accuracy) for multi-step tasks.
     - **Smart Task Coordination**: NEW Phase 2 intelligent coordination system with parallel execution engine.
