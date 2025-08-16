@@ -18,13 +18,27 @@ import {
 import { ConversationEngine } from "../mervin-ai/core/ConversationEngine";
 import { MervinAgent } from "../mervin-ai/core/MervinAgent";
 
-// Basic types
+// Complete types for agent functionality
 type MessageSender = "user" | "assistant";
+type MessageState = "analyzing" | "thinking" | "none";
 type Message = {
   id: string;
   content: string;
   sender: MessageSender;
+  state?: MessageState;
+  action?: string;
+  taskResult?: any;
 };
+
+type AgentTask = "estimates" | "contracts" | "permits" | "properties" | "analytics" | "chat";
+
+interface AgentResponse {
+  message: string;
+  requiresAction?: boolean;
+  actionType?: string;
+  taskData?: any;
+  followUpActions?: string[];
+}
 
 // Action buttons
 const actionButtons = [
@@ -66,16 +80,33 @@ export default function Mervin() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState<"legacy" | "agent">("agent");
   const [showModelSelector, setShowModelSelector] = useState(false);
+  const [currentTask, setCurrentTask] = useState<AgentTask | null>(null);
+  const [isProcessingTask, setIsProcessingTask] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const conversationEngineRef = useRef<ConversationEngine | null>(null);
+  const mervinAgentRef = useRef<MervinAgent | null>(null);
   const { toast } = useToast();
   const { currentUser } = useAuth();
   const { userPlan } = usePermissions();
 
-  // Initialize conversation engine and welcome message
+  // Initialize full agent system
   useEffect(() => {
     if (!conversationEngineRef.current && currentUser?.uid) {
       conversationEngineRef.current = new ConversationEngine(currentUser.uid);
+      
+      // Initialize MervinAgent with full config
+      const agentConfig = {
+        userId: currentUser.uid,
+        permissions: userPlan,
+        enableParallelExecution: true,
+        enableSmartCoordination: true,
+        enableLearning: true,
+        maxConcurrentTasks: 3,
+        timeoutMs: 30000
+      };
+      
+      mervinAgentRef.current = new MervinAgent(agentConfig);
+      console.log('🤖 [MERVIN-AGENT] Full autonomous agent initialized');
     }
     
     const engine = conversationEngineRef.current;
@@ -88,7 +119,7 @@ export default function Mervin() {
       };
       setMessages([welcomeMessage]);
     }
-  }, [currentUser, selectedModel]);
+  }, [currentUser, selectedModel, userPlan]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
@@ -104,10 +135,56 @@ export default function Mervin() {
     setInputValue("");
     setIsLoading(true);
 
+    // Add thinking indicator
+    const thinkingMessage: Message = {
+      id: "thinking-" + Date.now(),
+      content: "Analizando tu solicitud...",
+      sender: "assistant",
+      state: "thinking"
+    };
+    setMessages(prev => [...prev, thinkingMessage]);
+
     try {
       const engine = conversationEngineRef.current;
-      if (engine) {
-        // Use intelligent conversation engine
+      const agent = mervinAgentRef.current;
+
+      if (selectedModel === "agent" && agent) {
+        // AUTONOMOUS AGENT MODE - Full power
+        console.log('🤖 [AGENT-MODE] Processing with full autonomous capabilities');
+        
+        // Remove thinking message and add processing
+        setMessages(prev => prev.slice(0, -1));
+        
+        const processingMessage: Message = {
+          id: "processing-" + Date.now(),
+          content: "🤖 **Modo Agente Autónomo Activado**\n\nAnalizando tu solicitud y coordinando acciones...\n\n*Procesando con inteligencia artificial avanzada...*",
+          sender: "assistant",
+          state: "analyzing"
+        };
+        setMessages(prev => [...prev, processingMessage]);
+        
+        // Execute with full agent capabilities
+        const result = await agent.processUserRequest(currentInput, {
+          userId: currentUser?.uid,
+          permissions: userPlan
+        });
+        
+        // Remove processing message
+        setMessages(prev => prev.slice(0, -1));
+        
+        const agentResponse: Message = {
+          id: "assistant-" + Date.now(),
+          content: result.response,
+          sender: "assistant",
+          taskResult: result.taskResult
+        };
+        setMessages(prev => [...prev, agentResponse]);
+        
+      } else if (engine) {
+        // LEGACY MODE - Conversational only
+        console.log('💬 [LEGACY-MODE] Using conversational engine');
+        setMessages(prev => prev.slice(0, -1)); // Remove thinking
+        
         const response = await engine.processUserMessage(currentInput);
         
         const assistantMessage: Message = {
@@ -117,7 +194,8 @@ export default function Mervin() {
         };
         setMessages(prev => [...prev, assistantMessage]);
       } else {
-        // Fallback response
+        // Fallback
+        setMessages(prev => prev.slice(0, -1));
         const assistantMessage: Message = {
           id: "assistant-" + Date.now(),
           content: "¡Órale primo! Se me trabó un poco el sistema, pero aquí ando. ¿En qué te puedo ayudar?",
@@ -125,16 +203,26 @@ export default function Mervin() {
         };
         setMessages(prev => [...prev, assistantMessage]);
       }
+      
     } catch (error) {
-      console.error("Error generating response:", error);
+      console.error("Error processing request:", error);
+      setMessages(prev => prev.slice(0, -1)); // Remove thinking/processing message
+      
       const errorMessage: Message = {
         id: "assistant-" + Date.now(),
-        content: "¡Órale! Se me trabó tantito, pero aquí sigo. ¿Puedes repetirme qué necesitas, compadre?",
+        content: "¡Órale compadre! Se me trabó el sistema, pero no te preocupes. Dame un momento y vuelve a intentarlo. Aquí ando para lo que necesites.",
         sender: "assistant",
       };
       setMessages(prev => [...prev, errorMessage]);
+      
+      toast({
+        title: "Error en el agente",
+        description: "Hubo un problema procesando tu solicitud. Intenta de nuevo.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
+      setIsProcessingTask(false);
     }
   };
 
@@ -145,13 +233,67 @@ export default function Mervin() {
     }
   };
 
-  const handleAction = (action: string) => {
+  const handleAction = async (action: string) => {
+    setCurrentTask(action as AgentTask);
+    setIsProcessingTask(true);
+    
     const actionMessage: Message = {
       id: "action-" + Date.now(),
-      content: `Iniciando ${action}...`,
+      content: `🚀 **Activando ${action.toUpperCase()}**\n\nInicializando agente autónomo para ${action}...`,
       sender: "assistant",
+      state: "analyzing"
     };
     setMessages(prev => [...prev, actionMessage]);
+    
+    try {
+      const agent = mervinAgentRef.current;
+      if (agent && selectedModel === "agent") {
+        // Let the autonomous agent handle the task
+        const taskPrompt = getTaskPrompt(action);
+        const result = await agent.processUserRequest(taskPrompt, {
+          userId: currentUser?.uid,
+          permissions: userPlan,
+          taskType: action
+        });
+        
+        const resultMessage: Message = {
+          id: "result-" + Date.now(),
+          content: result.response,
+          sender: "assistant",
+          taskResult: result.taskResult
+        };
+        setMessages(prev => [...prev, resultMessage]);
+      } else {
+        // Legacy mode guidance
+        const guidanceMessage: Message = {
+          id: "guidance-" + Date.now(),
+          content: `Para usar ${action}, háblame sobre lo que necesitas y te guío paso a paso, primo.`,
+          sender: "assistant",
+        };
+        setMessages(prev => [...prev, guidanceMessage]);
+      }
+    } catch (error) {
+      console.error(`Error in ${action}:`, error);
+      const errorMessage: Message = {
+        id: "error-" + Date.now(),
+        content: `¡Órale! Hubo un problemita con ${action}. Dime qué necesitas hacer y te ayudo de otra forma, compadre.`,
+        sender: "assistant",
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsProcessingTask(false);
+    }
+  };
+  
+  const getTaskPrompt = (action: string): string => {
+    const prompts = {
+      estimates: "Quiero generar un estimado profesional. Inicia el proceso completo de estimación.",
+      contracts: "Necesito generar un contrato. Inicia el flujo completo de creación de contratos.",
+      permits: "Quiero analizar permisos municipales. Activa el asesor de permisos.",
+      properties: "Necesito verificar la propiedad de un inmueble. Inicia la verificación.",
+      analytics: "Quiero revisar el seguimiento de pagos y análisis. Activa las analíticas."
+    };
+    return prompts[action as keyof typeof prompts] || `Activa la funcionalidad de ${action}.`;
   };
 
   return (
@@ -232,26 +374,59 @@ export default function Mervin() {
             }`}
           >
             <div
-              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+              className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
                 message.sender === "user"
                   ? "bg-cyan-600 text-white"
-                  : "bg-gray-800 text-gray-200"
+                  : message.state === "thinking" || message.state === "analyzing" 
+                    ? "bg-purple-900/50 text-purple-200 border border-purple-700/50"
+                    : "bg-gray-800 text-gray-200"
               }`}
             >
-              {message.content}
+              {message.state === "thinking" && (
+                <div className="flex items-center space-x-2 mb-2">
+                  <Brain className="w-4 h-4 text-purple-400 animate-pulse" />
+                  <span className="text-purple-400 text-sm font-medium">Analizando...</span>
+                </div>
+              )}
+              {message.state === "analyzing" && (
+                <div className="flex items-center space-x-2 mb-2">
+                  <Zap className="w-4 h-4 text-cyan-400 animate-pulse" />
+                  <span className="text-cyan-400 text-sm font-medium">Agente Activo</span>
+                </div>
+              )}
+              <div className="whitespace-pre-wrap">{message.content}</div>
+              {message.taskResult && (
+                <div className="mt-3 p-2 bg-green-900/30 border border-green-700/50 rounded text-green-200 text-sm">
+                  <strong>✅ Tarea Completada</strong>
+                  <div className="mt-1 text-xs text-green-300">
+                    Resultado procesado por el agente autónomo
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ))}
         
-        {isLoading && (
+        {(isLoading || isProcessingTask) && (
           <div className="flex justify-start">
-            <div className="bg-gray-800 text-gray-200 px-4 py-2 rounded-lg">
+            <div className="bg-gray-800 text-gray-200 px-4 py-2 rounded-lg max-w-xs lg:max-w-md">
               <div className="flex items-center space-x-2">
-                <span>Procesando</span>
-                <div className="ml-1 flex">
-                  <span className="animate-pulse text-cyan-400">.</span>
-                  <span className="animate-pulse text-cyan-400 delay-200">.</span>
-                  <span className="animate-pulse text-cyan-400 delay-500">.</span>
+                <div className="w-6 h-6">
+                  <img
+                    src="https://i.postimg.cc/W4nKDvTL/logo-mervin.png"
+                    alt="Mervin AI"
+                    className="w-6 h-6 animate-spin"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-cyan-400 font-medium">
+                    {isProcessingTask ? "Agente Trabajando" : "Procesando"}
+                  </span>
+                  <div className="flex">
+                    <span className="animate-pulse text-cyan-400">.</span>
+                    <span className="animate-pulse text-cyan-400 delay-200">.</span>
+                    <span className="animate-pulse text-cyan-400 delay-500">.</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -284,7 +459,7 @@ export default function Mervin() {
             variant="default"
             className="rounded-full bg-cyan-600 hover:bg-cyan-700"
             onClick={handleSendMessage}
-            disabled={inputValue.trim() === "" || isLoading}
+            disabled={inputValue.trim() === "" || isLoading || isProcessingTask}
           >
             <Send className="h-4 w-4" />
           </Button>
