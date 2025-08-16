@@ -60,6 +60,12 @@
   --transition-default: 300ms ease-in-out;
   --transition-fast: 150ms ease-out;
 
+  /* Mobile Safe Area Support */
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+
   /* Colores para el ícono hexagonal futurista */
   --hex-primary: #00ffff;
   --hex-secondary: #0080ff;
@@ -170,6 +176,93 @@ body {
 @media (max-width: 768px) {
   .scrollable-content {
     padding: var(--content-padding-mobile);
+  }
+}
+
+/* =================================================================
+   MOBILE OPTIMIZATIONS - MERVIN AI CHAT
+   Fecha: 16/08/2025
+   Propósito: Optimizaciones específicas para iPhone y dispositivos móviles
+   ================================================================= */
+
+/* Safe Area Utility Classes */
+.h-safe-area-inset-top {
+  height: var(--safe-area-inset-top);
+}
+
+.pb-safe-area-inset-bottom {
+  padding-bottom: var(--safe-area-inset-bottom);
+}
+
+.pl-safe-area-inset-left {
+  padding-left: var(--safe-area-inset-left);
+}
+
+.pr-safe-area-inset-right {
+  padding-right: var(--safe-area-inset-right);
+}
+
+/* Enhanced Touch Targets for Mobile */
+@media (max-width: 768px) {
+  /* Minimum 44px touch targets per Apple HIG */
+  .mobile-touch-target {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+  
+  /* Enhanced button spacing for mobile */
+  .mobile-button-spacing {
+    gap: 12px;
+  }
+  
+  /* Larger input fields for mobile */
+  .mobile-input-enhanced {
+    min-height: 48px !important;
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    padding: 12px 16px !important;
+  }
+  
+  /* Mobile-optimized text sizes */
+  .mobile-text-enhanced {
+    font-size: 16px !important;
+    line-height: 1.5 !important;
+  }
+  
+  /* Enhanced mobile shadows for better depth perception */
+  .mobile-shadow-enhanced {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15),
+                0 2px 6px rgba(0, 255, 255, 0.1) !important;
+  }
+}
+
+/* Improved Mobile Scrolling */
+.mobile-scroll-enhanced {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Mobile-specific animations */
+@media (max-width: 768px) {
+  /* Subtle scale on touch for better feedback */
+  .mobile-touch-feedback:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease-out;
+  }
+  
+  /* Enhanced loading animations for mobile */
+  .mobile-pulse-enhanced {
+    animation: mobilePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+@keyframes mobilePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
   }
 }
 

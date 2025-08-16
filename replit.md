@@ -35,6 +35,14 @@ This project is an advanced AI-powered legal document and permit management plat
   * ENTENDIMIENTO UNIVERSAL: Capaz de entender hasta las conversaciones más básicas y seguimientos simples
   * CONFIRMACIONES INTELIGENTES: Detecta y responde apropiadamente a confirmaciones, seguimientos, y emociones
 - CHAT RELIABILITY CRITICAL: Sistema robusto anti-cuelgues con timeouts, logging detallado y manejo comprehensivo de errores para evitar estados estáticos de "Procesando..."
+- MOBILE UX OPTIMIZATION COMPLETED: Optimización completa de Mervin AI chat para iPhone y dispositivos móviles (16/08/2025):
+  * SAFE AREA SUPPORT: Soporte completo para iPhone notch y Dynamic Island usando CSS env() variables
+  * ENHANCED TOUCH TARGETS: Botones y elementos interactivos con mínimo 44px según Apple Human Interface Guidelines
+  * MOBILE-FIRST LAYOUT: Reorganización de botones de acción en stack vertical para móvil vs grid horizontal para desktop
+  * IMPROVED INPUT AREAS: Campos de entrada optimizados con mayor tamaño y mejor accesibilidad en móviles
+  * ENHANCED MESSAGING: Burbujas de mensaje mejoradas con mejor legibilidad y espaciado en pantallas móviles
+  * CSS UTILITIES: Sistema completo de clases utilitarias para safe areas, touch targets y optimizaciones móviles
+  * SMOOTH INTERACTIONS: Animaciones y transiciones optimizadas para dispositivos táctiles
 
 ## System Architecture
 

@@ -304,48 +304,50 @@ export default function Mervin() {
 
   return (
     <div className="flex flex-col h-full bg-black text-white">
+      {/* Mobile Safe Area Spacer */}
+      <div className="h-safe-area-inset-top bg-black md:hidden" />
       {/* Header with Model Selector */}
-      <div className="p-4 border-b border-cyan-900/30">
+      <div className="px-4 py-3 md:p-4 border-b border-cyan-900/30 bg-black/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-cyan-400">Mervin AI Assistant</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-cyan-400 truncate">Mervin AI</h1>
           
           {/* Model Selector */}
           <div className="relative">
             <Button
               variant="outline"
-              size="sm"
-              className="bg-gray-800 text-cyan-500 border-cyan-900/50 hover:bg-gray-700"
+              size="default"
+              className="bg-gray-800 text-cyan-500 border-cyan-900/50 hover:bg-gray-700 min-h-[44px] min-w-[100px] text-sm md:text-base"
               onClick={() => setShowModelSelector(!showModelSelector)}
             >
               {selectedModel === "agent" ? (
-                <><Brain className="w-4 h-4 mr-2" />Agent Mode</>
+                <><Brain className="w-5 h-5 md:w-4 md:h-4 mr-1 md:mr-2" /><span className="hidden sm:inline">Agent</span></>
               ) : (
-                <><Zap className="w-4 h-4 mr-2" />Legacy</>
+                <><Zap className="w-5 h-5 md:w-4 md:h-4 mr-1 md:mr-2" /><span className="hidden sm:inline">Legacy</span></>
               )}
-              <ChevronDown className="w-3 h-3 ml-1" />
+              <ChevronDown className="w-4 h-4 md:w-3 md:h-3 ml-1" />
             </Button>
             
             {showModelSelector && (
-              <div className="absolute top-full right-0 mt-2 bg-gray-800 border border-cyan-900/50 rounded-lg shadow-lg z-50 min-w-[150px]">
+              <div className="absolute top-full right-0 mt-2 bg-gray-800 border border-cyan-900/50 rounded-lg shadow-xl z-50 min-w-[160px] md:min-w-[150px]">
                 <button
-                  className="w-full text-left px-3 py-2 text-cyan-400 hover:bg-gray-700 rounded-t-lg flex items-center"
+                  className="w-full text-left px-4 py-4 md:px-3 md:py-2 text-cyan-400 hover:bg-gray-700 rounded-t-lg flex items-center min-h-[52px] md:min-h-[auto]"
                   onClick={() => {
                     setSelectedModel("agent");
                     setShowModelSelector(false);
                   }}
                 >
-                  <Brain className="w-4 h-4 mr-2" />
-                  Agent Mode
+                  <Brain className="w-5 h-5 md:w-4 md:h-4 mr-3 md:mr-2" />
+                  <span className="text-base md:text-sm">Agent Mode</span>
                 </button>
                 <button
-                  className="w-full text-left px-3 py-2 text-cyan-400 hover:bg-gray-700 rounded-b-lg flex items-center"
+                  className="w-full text-left px-4 py-4 md:px-3 md:py-2 text-cyan-400 hover:bg-gray-700 rounded-b-lg flex items-center min-h-[52px] md:min-h-[auto]"
                   onClick={() => {
                     setSelectedModel("legacy");
                     setShowModelSelector(false);
                   }}
                 >
-                  <Zap className="w-4 h-4 mr-2" />
-                  Legacy
+                  <Zap className="w-5 h-5 md:w-4 md:h-4 mr-3 md:mr-2" />
+                  <span className="text-base md:text-sm">Legacy</span>
                 </button>
               </div>
             )}
@@ -353,9 +355,29 @@ export default function Mervin() {
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="p-4 border-b border-cyan-900/30">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+      {/* Action Buttons - Mobile Optimized */}
+      <div className="px-3 py-2 md:p-4 border-b border-cyan-900/30">
+        {/* Mobile: Vertical Stack, Desktop: Horizontal Grid */}
+        <div className="flex flex-col gap-2 md:hidden">
+          {actionButtons.map((button) => (
+            <Button
+              key={button.id}
+              variant="outline"
+              className="bg-gray-800 text-cyan-500 border-cyan-900/50 hover:bg-gray-700 min-h-[52px] justify-start text-left p-4"
+              onClick={() => handleAction(button.action)}
+            >
+              <div className="flex items-center w-full">
+                <div className="mr-4 flex-shrink-0">
+                  {React.cloneElement(button.icon, { className: "h-6 w-6" })}
+                </div>
+                <span className="text-base font-medium">{button.text}</span>
+              </div>
+            </Button>
+          ))}
+        </div>
+        
+        {/* Desktop: Original Grid */}
+        <div className="hidden md:grid grid-cols-5 gap-2">
           {actionButtons.map((button) => (
             <Button
               key={button.id}
@@ -364,14 +386,14 @@ export default function Mervin() {
               onClick={() => handleAction(button.action)}
             >
               {button.icon}
-              <span className="ml-2 hidden md:inline">{button.text}</span>
+              <span className="ml-2">{button.text}</span>
             </Button>
           ))}
         </div>
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto px-3 py-4 md:p-4 space-y-4 pb-28 md:pb-24">
         {messages.map((message) => (
           <div
             key={message.id}
@@ -380,24 +402,24 @@ export default function Mervin() {
             }`}
           >
             <div
-              className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
+              className={`max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg px-4 py-3 rounded-2xl md:rounded-lg text-base md:text-sm leading-relaxed ${
                 message.sender === "user"
-                  ? "bg-cyan-600 text-white"
+                  ? "bg-cyan-600 text-white shadow-lg"
                   : message.state === "thinking" || message.state === "analyzing" 
-                    ? "bg-purple-900/50 text-purple-200 border border-purple-700/50"
-                    : "bg-gray-800 text-gray-200"
+                    ? "bg-purple-900/50 text-purple-200 border border-purple-700/50 shadow-lg"
+                    : "bg-gray-800 text-gray-200 shadow-lg"
               }`}
             >
               {message.state === "thinking" && (
-                <div className="flex items-center space-x-2 mb-2">
-                  <Brain className="w-4 h-4 text-purple-400 animate-pulse" />
-                  <span className="text-purple-400 text-sm font-medium">Analizando...</span>
+                <div className="flex items-center space-x-3 mb-3">
+                  <Brain className="w-5 h-5 md:w-4 md:h-4 text-purple-400 animate-pulse" />
+                  <span className="text-purple-400 text-base md:text-sm font-medium">Analizando...</span>
                 </div>
               )}
               {message.state === "analyzing" && (
-                <div className="flex items-center space-x-2 mb-2">
-                  <Zap className="w-4 h-4 text-cyan-400 animate-pulse" />
-                  <span className="text-cyan-400 text-sm font-medium">Agente Activo</span>
+                <div className="flex items-center space-x-3 mb-3">
+                  <Zap className="w-5 h-5 md:w-4 md:h-4 text-cyan-400 animate-pulse" />
+                  <span className="text-cyan-400 text-base md:text-sm font-medium">Agente Activo</span>
                 </div>
               )}
               <div className="whitespace-pre-wrap">{message.content}</div>
@@ -415,17 +437,17 @@ export default function Mervin() {
         
         {(isLoading || isProcessingTask) && (
           <div className="flex justify-start">
-            <div className="bg-gray-800 text-gray-200 px-4 py-2 rounded-lg max-w-xs lg:max-w-md">
-              <div className="flex items-center space-x-2">
-                <div className="w-6 h-6">
+            <div className="bg-gray-800 text-gray-200 px-5 py-4 md:px-4 md:py-2 rounded-2xl md:rounded-lg max-w-[280px] sm:max-w-sm md:max-w-md shadow-lg">
+              <div className="flex items-center space-x-3 md:space-x-2">
+                <div className="w-8 h-8 md:w-6 md:h-6">
                   <img
                     src="https://i.postimg.cc/W4nKDvTL/logo-mervin.png"
                     alt="Mervin AI"
-                    className="w-6 h-6 animate-spin"
+                    className="w-8 h-8 md:w-6 md:h-6 animate-spin"
                   />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-cyan-400 font-medium">
+                  <span className="text-cyan-400 font-medium text-base md:text-sm">
                     {isProcessingTask ? "Agente Trabajando" : "Procesando"}
                   </span>
                   <div className="flex">
@@ -442,33 +464,35 @@ export default function Mervin() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="fixed bottom-8 left-0 right-0 p-3 bg-black border-t border-cyan-900/30">
-        <div className="flex gap-2 max-w-screen-lg mx-auto">
-          <Button
-            variant="outline"
-            size="icon"
-            className="bg-gray-800 text-cyan-500 border-cyan-900/50"
-          >
-            <Paperclip className="h-4 w-4" />
-          </Button>
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Escribe tu mensaje..."
-            className="flex-1 bg-gray-800 border border-cyan-900/50 rounded-full px-4 py-2 text-white focus:outline-none focus:border-cyan-500"
-            disabled={isLoading}
-          />
-          <Button
-            variant="default"
-            className="rounded-full bg-cyan-600 hover:bg-cyan-700"
-            onClick={handleSendMessage}
-            disabled={inputValue.trim() === "" || isLoading || isProcessingTask}
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+      {/* Input Area - Mobile Optimized */}
+      <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-sm border-t border-cyan-900/30 pb-safe-area-inset-bottom">
+        <div className="p-4 md:p-3">
+          <div className="flex gap-3 md:gap-2 max-w-screen-lg mx-auto">
+            <Button
+              variant="outline"
+              size="icon"
+              className="bg-gray-800 text-cyan-500 border-cyan-900/50 min-h-[48px] min-w-[48px] md:min-h-[40px] md:min-w-[40px] flex-shrink-0"
+            >
+              <Paperclip className="h-5 w-5 md:h-4 md:w-4" />
+            </Button>
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Escribe tu mensaje..."
+              className="flex-1 bg-gray-800 border border-cyan-900/50 rounded-full px-5 py-3 md:px-4 md:py-2 text-white text-base md:text-sm focus:outline-none focus:border-cyan-500 min-h-[48px] md:min-h-[40px]"
+              disabled={isLoading}
+            />
+            <Button
+              variant="default"
+              className="rounded-full bg-cyan-600 hover:bg-cyan-700 min-h-[48px] min-w-[48px] md:min-h-[40px] md:min-w-[40px] flex-shrink-0"
+              onClick={handleSendMessage}
+              disabled={inputValue.trim() === "" || isLoading || isProcessingTask}
+            >
+              <Send className="h-5 w-5 md:h-4 md:w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
