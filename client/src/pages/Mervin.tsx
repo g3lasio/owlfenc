@@ -7,11 +7,6 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 import {
   Send,
   Paperclip,
-  FileSpreadsheet,
-  ClipboardList,
-  ClipboardCheck,
-  Building,
-  BarChart4,
   Zap,
   Brain,
   ChevronDown,
@@ -21,6 +16,7 @@ import {
 import { ConversationEngine } from "../mervin-ai/core/ConversationEngine";
 import { MervinAgent } from "../mervin-ai/core/MervinAgent";
 import { OnboardingEngine } from "../mervin-ai/onboarding/OnboardingEngine";
+import { SmartActionSystem } from "../components/mervin/SmartActionSystem";
 
 // Complete types for agent functionality
 type MessageSender = "user" | "assistant";
@@ -44,39 +40,7 @@ interface AgentResponse {
   followUpActions?: string[];
 }
 
-// Action buttons
-const actionButtons = [
-  {
-    id: "estimates",
-    text: "Generate Estimates",
-    action: "estimates",
-    icon: <FileSpreadsheet className="h-5 w-5" />,
-  },
-  {
-    id: "contracts",
-    text: "Generate Contracts", 
-    action: "contracts",
-    icon: <ClipboardList className="h-5 w-5" />,
-  },
-  {
-    id: "permits",
-    text: "Permit Advisor",
-    action: "permits", 
-    icon: <ClipboardCheck className="h-5 w-5" />,
-  },
-  {
-    id: "properties",
-    text: "Verify Ownership",
-    action: "properties",
-    icon: <Building className="h-5 w-5" />,
-  },
-  {
-    id: "analytics", 
-    text: "Payment Tracker",
-    action: "analytics",
-    icon: <BarChart4 className="h-5 w-5" />,
-  },
-];
+// Action buttons removed - now handled by SmartActionSystem
 
 export default function Mervin() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -155,8 +119,28 @@ export default function Mervin() {
     }
   }, [currentUser, selectedModel, needsOnboarding, onboardingLoading, messages.length]);
 
+  // Handle slash commands
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
+    
+    // Check for slash commands
+    if (inputValue.startsWith('/')) {
+      const command = inputValue.toLowerCase();
+      const slashActions: { [key: string]: string } = {
+        '/estimate': 'estimates',
+        '/contract': 'contracts', 
+        '/permit': 'permits',
+        '/property': 'properties',
+        '/analytics': 'analytics'
+      };
+      
+      const action = slashActions[command];
+      if (action) {
+        setInputValue(''); // Clear input
+        await handleAction(action, 'slash');
+        return;
+      }
+    }
 
     const userMessage: Message = {
       id: "user-" + Date.now(),
@@ -371,13 +355,30 @@ export default function Mervin() {
     }
   };
 
-  const handleAction = async (action: string) => {
+  const handleAction = async (action: string, source: 'slash' | 'smart' | 'fab' | 'button' = 'button') => {
+    console.log(`🎯 [SMART-ACTION] ${action} triggered from ${source}`);
+    
+    // Add contextual message based on source
+    let contextMsg = '';
+    switch(source) {
+      case 'slash':
+        contextMsg = '⚡ Comando ejecutado rápidamente';
+        break;
+      case 'smart':
+        contextMsg = '🧠 Intención detectada automáticamente';
+        break;
+      case 'fab':
+        contextMsg = '🎯 Acción seleccionada del menú';
+        break;
+      default:
+        contextMsg = '🚀 Función activada';
+    }
     setCurrentTask(action as AgentTask);
     setIsProcessingTask(true);
     
     const actionMessage: Message = {
       id: "action-" + Date.now(),
-      content: `🚀 **Activando ${action.toUpperCase()}**\n\nInicializando agente autónomo para ${action}...`,
+      content: `${contextMsg}\n\n🚀 **Activando ${action.toUpperCase()}**\n\nInicializando agente autónomo para ${action}...`,
       sender: "assistant",
       state: "analyzing"
     };
@@ -512,10 +513,9 @@ export default function Mervin() {
         </div>
       )}
 
-      {/* Action Buttons - Mobile Optimized with Onboarding Support */}
-      <div className="px-3 py-2 md:p-4 border-b border-cyan-900/30">
-        {isOnboardingMode ? (
-          /* Onboarding Action Buttons */
+      {/* Onboarding Instructions (only during onboarding) */}
+      {isOnboardingMode && (
+        <div className="px-3 py-2 md:p-4 border-b border-cyan-900/30">
           <div className="space-y-3">
             <div className="flex items-center justify-center space-x-2 text-cyan-300 text-sm">
               <GraduationCap className="h-4 w-4" />
@@ -548,45 +548,8 @@ export default function Mervin() {
               </Button>
             </div>
           </div>
-        ) : (
-          /* Regular Action Buttons */
-          <>
-            {/* Mobile: Vertical Stack, Desktop: Horizontal Grid */}
-            <div className="flex flex-col gap-2 md:hidden">
-              {actionButtons.map((button) => (
-                <Button
-                  key={button.id}
-                  variant="outline"
-                  className="bg-gray-800 text-cyan-500 border-cyan-900/50 hover:bg-gray-700 min-h-[52px] justify-start text-left p-4"
-                  onClick={() => handleAction(button.action)}
-                >
-                  <div className="flex items-center w-full">
-                    <div className="mr-4 flex-shrink-0">
-                      {React.cloneElement(button.icon, { className: "h-6 w-6" })}
-                    </div>
-                    <span className="text-base font-medium">{button.text}</span>
-                  </div>
-                </Button>
-              ))}
-            </div>
-            
-            {/* Desktop: Original Grid */}
-            <div className="hidden md:grid grid-cols-5 gap-2">
-              {actionButtons.map((button) => (
-                <Button
-                  key={button.id}
-                  variant="outline"
-                  className="bg-gray-800 text-cyan-500 border-cyan-900/50 hover:bg-gray-700"
-                  onClick={() => handleAction(button.action)}
-                >
-                  {button.icon}
-                  <span className="ml-2">{button.text}</span>
-                </Button>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto px-3 py-4 md:p-4 space-y-4 pb-28 md:pb-24">
@@ -660,34 +623,63 @@ export default function Mervin() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area - Mobile Optimized */}
+      {/* Smart Input Area with Context-Aware Actions */}
       <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-sm border-t border-cyan-900/30 pb-safe-area-inset-bottom">
         <div className="p-4 md:p-3">
-          <div className="flex gap-3 md:gap-2 max-w-screen-lg mx-auto">
-            <Button
-              variant="outline"
-              size="icon"
-              className="bg-gray-800 text-cyan-500 border-cyan-900/50 min-h-[48px] min-w-[48px] md:min-h-[40px] md:min-w-[40px] flex-shrink-0"
-            >
-              <Paperclip className="h-5 w-5 md:h-4 md:w-4" />
-            </Button>
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Escribe tu mensaje..."
-              className="flex-1 bg-gray-800 border border-cyan-900/50 rounded-full px-5 py-3 md:px-4 md:py-2 text-white text-base md:text-sm focus:outline-none focus:border-cyan-500 min-h-[48px] md:min-h-[40px]"
-              disabled={isLoading}
+          <div className="relative max-w-screen-lg mx-auto">
+            {/* Smart Action System */}
+            <SmartActionSystem 
+              onAction={handleAction}
+              currentMessage={inputValue}
+              isVisible={!isOnboardingMode}
             />
-            <Button
-              variant="default"
-              className="rounded-full bg-cyan-600 hover:bg-cyan-700 min-h-[48px] min-w-[48px] md:min-h-[40px] md:min-w-[40px] flex-shrink-0"
-              onClick={handleSendMessage}
-              disabled={inputValue.trim() === "" || isLoading || isProcessingTask}
-            >
-              <Send className="h-5 w-5 md:h-4 md:w-4" />
-            </Button>
+            
+            <div className="flex gap-3 md:gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="bg-gray-800 text-cyan-500 border-cyan-900/50 min-h-[48px] min-w-[48px] md:min-h-[40px] md:min-w-[40px] flex-shrink-0"
+              >
+                <Paperclip className="h-5 w-5 md:h-4 md:w-4" />
+              </Button>
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={
+                    isOnboardingMode 
+                      ? "Responde a Mervin..."
+                      : "Escribe tu mensaje o usa / para comandos rápidos..."
+                  }
+                  className="w-full bg-gray-800 border border-cyan-900/50 rounded-full px-5 py-3 md:px-4 md:py-2 text-white text-base md:text-sm focus:outline-none focus:border-cyan-500 min-h-[48px] md:min-h-[40px]"
+                  disabled={isLoading}
+                />
+                
+                {/* Slash Command Indicator */}
+                {inputValue.startsWith('/') && (
+                  <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-cyan-400 text-xs hidden md:block">
+                    ⚡ Comando
+                  </div>
+                )}
+              </div>
+              <Button
+                variant="default"
+                className="rounded-full bg-cyan-600 hover:bg-cyan-700 min-h-[48px] min-w-[48px] md:min-h-[40px] md:min-w-[40px] flex-shrink-0"
+                onClick={handleSendMessage}
+                disabled={inputValue.trim() === "" || isLoading || isProcessingTask}
+              >
+                <Send className="h-5 w-5 md:h-4 md:w-4" />
+              </Button>
+            </div>
+            
+            {/* Quick Tips */}
+            {!isOnboardingMode && inputValue.length === 0 && (
+              <div className="mt-2 text-xs text-gray-500 text-center">
+                💡 Tip: Escribe "/" para comandos rápidos o háblale a Mervin naturalmente
+              </div>
+            )}
           </div>
         </div>
       </div>

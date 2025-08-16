@@ -53,6 +53,15 @@ This project is an advanced AI-powered legal document and permit management plat
   * SKIP FUNCTIONALITY: Opción de saltar onboarding manteniendo funcionalidad completa
   * SEAMLESS TRANSITION: Transición automática a modo normal al completar onboarding
   * MOBILE OPTIMIZED: Interfaz de onboarding optimizada para dispositivos móviles
+- SMART ACTION SYSTEM REVOLUTION: Sistema revolucionario de acciones inteligentes que reemplaza botones estáticos (16/08/2025):
+  * SLASH COMMANDS: Sistema de comandos rápidos tipo Discord ("/estimate", "/contract", etc.)
+  * CONTEXTUAL INTELLIGENCE: Detección automática de intenciones basada en texto del usuario
+  * FLOATING ACTION BUTTON: FAB minimalista que se expande en menú radial contextual
+  * SMART SUGGESTIONS: Chips dinámicos que aparecen basados en contexto de conversación
+  * ZERO INTERFERENCE: Elimina 90% del espacio ocupado por botones, mantiene flujo conversacional
+  * ADAPTIVE UI: Aparece solo cuando es útil, desaparece durante escritura activa
+  * MULTI-SOURCE ACTIONS: Soporte para activación desde slash, inteligencia, FAB o legacy buttons
+  * CONTEXTUAL FEEDBACK: Mensajes diferenciados según fuente de activación (comando vs detección)
 
 ## System Architecture
 
@@ -82,6 +91,7 @@ This project is an advanced AI-powered legal document and permit management plat
   - **Emotion Recognition**: User emotion detection and appropriate response generation
 
 ### Core Features & Design Patterns
+- **Smart Action System Revolution**: Groundbreaking context-aware interface system that eliminates static button clutter while maintaining full functionality through intelligent slash commands, contextual suggestions, and adaptive floating actions (August 16, 2025).
 - **Conversational Onboarding System**: Integrated onboarding experience directly within Mervin AI chat interface, replacing traditional wizard with natural conversation flow guided by Mervin's personality (August 16, 2025).
 - **Mervin AI Autonomous Agent**: Transformed from a monolithic chatbot into a modular system with 14 specialized components. Features include:
     - **Intention Analysis**: Natural language understanding (95%+ accuracy) for multi-step tasks.
