@@ -270,6 +270,9 @@ const actionButtons = [
 
 export default function Mervin() {
   const [messages, setMessages] = useState<Message[]>([]);
+  
+  // 🔐 CONTEXTOS DE AUTENTICACIÓN Y PERMISOS
+  const { userPlan, showUpgradeModal } = usePermissions();
   const [inputValue, setInputValue] = useState("");
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [inventoryItems, setInventoryItems] = useState<
@@ -1039,7 +1042,7 @@ export default function Mervin() {
     }
 
     // 🔐 VERIFICACIÓN DE PERMISOS PARA AGENT MODE
-    if (selectedModel === "agent" && userPlan && userPlan.id === 1) {
+    if (selectedModel === "agent" && userPlan && userPlan.name === "Free Trial") {
       console.log('🚫 [PERMISSION-DENIED] Free trial no tiene acceso a Agent mode');
       return `¡Órale, primo! Para usar Agent mode necesitas upgrade a Primo Chambeador o superior. 
 
@@ -4326,7 +4329,7 @@ ${
                       <span className="capitalize">
                         {selectedModel === "legacy" ? "Legacy" : "Agent mode"}
                       </span>
-                      {userPlan && userPlan.id === 1 && selectedModel === "agent" && (
+                      {userPlan && userPlan.name === "Free Trial" && selectedModel === "agent" && (
                         <span className="text-xs text-yellow-400 ml-1">⚡</span>
                       )}
                       <ChevronDown className="w-3 h-3" />
@@ -4338,7 +4341,7 @@ ${
                         <button
                           onClick={() => {
                             // Check if user has access to Agent mode
-                            if (userPlan && userPlan.id === 1) {
+                            if (userPlan && userPlan.name === "Free Trial") {
                               // Free trial - show upgrade prompt
                               showUpgradeModal("agent-mode", "Agent mode requiere plan Primo Chambeador o superior");
                               setShowModelSelector(false);
@@ -4351,15 +4354,15 @@ ${
                             selectedModel === "agent" 
                               ? "text-cyan-400 bg-gray-700" 
                               : "text-gray-300"
-                          } ${userPlan && userPlan.id === 1 ? "opacity-60" : ""}`}
+                          } ${userPlan && userPlan.name === "Free Trial" ? "opacity-60" : ""}`}
                         >
                           <div className="flex items-center justify-between">
                             <span>Agent mode</span>
-                            {userPlan && userPlan.id === 1 && (
+                            {userPlan && userPlan.name === "Free Trial" && (
                               <span className="text-yellow-400 text-xs">🔒</span>
                             )}
                           </div>
-                          {userPlan && userPlan.id === 1 && (
+                          {userPlan && userPlan.name === "Free Trial" && (
                             <div className="text-xs text-gray-500 mt-1">Requiere upgrade</div>
                           )}
                         </button>
