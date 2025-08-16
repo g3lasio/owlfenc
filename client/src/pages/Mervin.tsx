@@ -11,7 +11,12 @@ import {
   ClipboardCheck,
   Building,
   BarChart4,
+  Zap,
+  Brain,
+  ChevronDown,
 } from "lucide-react";
+import { ConversationEngine } from "../mervin-ai/core/ConversationEngine";
+import { MervinAgent } from "../mervin-ai/core/MervinAgent";
 
 // Basic types
 type MessageSender = "user" | "assistant";
@@ -59,20 +64,31 @@ export default function Mervin() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<"legacy" | "agent">("agent");
+  const [showModelSelector, setShowModelSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const conversationEngineRef = useRef<ConversationEngine | null>(null);
   const { toast } = useToast();
   const { currentUser } = useAuth();
   const { userPlan } = usePermissions();
 
-  // Welcome message
+  // Initialize conversation engine and welcome message
   useEffect(() => {
-    const welcomeMessage: Message = {
-      id: "welcome",
-      content: "¡Hola! Soy Mervin, tu asistente virtual para proyectos de cercas. ¿En qué puedo ayudarte hoy?",
-      sender: "assistant",
-    };
-    setMessages([welcomeMessage]);
-  }, []);
+    if (!conversationEngineRef.current && currentUser?.uid) {
+      conversationEngineRef.current = new ConversationEngine(currentUser.uid);
+    }
+    
+    const engine = conversationEngineRef.current;
+    if (engine) {
+      const welcomeContent = engine.generateWelcomeMessage(selectedModel === "agent");
+      const welcomeMessage: Message = {
+        id: "welcome",
+        content: welcomeContent,
+        sender: "assistant",
+      };
+      setMessages([welcomeMessage]);
+    }
+  }, [currentUser, selectedModel]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
@@ -84,19 +100,42 @@ export default function Mervin() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputValue;
     setInputValue("");
     setIsLoading(true);
 
-    // Simple echo response for now
-    setTimeout(() => {
-      const assistantMessage: Message = {
+    try {
+      const engine = conversationEngineRef.current;
+      if (engine) {
+        // Use intelligent conversation engine
+        const response = await engine.processUserMessage(currentInput);
+        
+        const assistantMessage: Message = {
+          id: "assistant-" + Date.now(),
+          content: response.message,
+          sender: "assistant",
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      } else {
+        // Fallback response
+        const assistantMessage: Message = {
+          id: "assistant-" + Date.now(),
+          content: "¡Órale primo! Se me trabó un poco el sistema, pero aquí ando. ¿En qué te puedo ayudar?",
+          sender: "assistant",
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      }
+    } catch (error) {
+      console.error("Error generating response:", error);
+      const errorMessage: Message = {
         id: "assistant-" + Date.now(),
-        content: `Recibí tu mensaje: "${userMessage.content}". Esta es una versión simplificada temporalmente.`,
+        content: "¡Órale! Se me trabó tantito, pero aquí sigo. ¿Puedes repetirme qué necesitas, compadre?",
         sender: "assistant",
       };
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -117,9 +156,53 @@ export default function Mervin() {
 
   return (
     <div className="flex flex-col h-full bg-black text-white">
-      {/* Header */}
+      {/* Header with Model Selector */}
       <div className="p-4 border-b border-cyan-900/30">
-        <h1 className="text-2xl font-bold text-cyan-400">Mervin AI Assistant</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-cyan-400">Mervin AI Assistant</h1>
+          
+          {/* Model Selector */}
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-gray-800 text-cyan-500 border-cyan-900/50 hover:bg-gray-700"
+              onClick={() => setShowModelSelector(!showModelSelector)}
+            >
+              {selectedModel === "agent" ? (
+                <><Brain className="w-4 h-4 mr-2" />Agent Mode</>
+              ) : (
+                <><Zap className="w-4 h-4 mr-2" />Legacy</>
+              )}
+              <ChevronDown className="w-3 h-3 ml-1" />
+            </Button>
+            
+            {showModelSelector && (
+              <div className="absolute top-full right-0 mt-2 bg-gray-800 border border-cyan-900/50 rounded-lg shadow-lg z-50 min-w-[150px]">
+                <button
+                  className="w-full text-left px-3 py-2 text-cyan-400 hover:bg-gray-700 rounded-t-lg flex items-center"
+                  onClick={() => {
+                    setSelectedModel("agent");
+                    setShowModelSelector(false);
+                  }}
+                >
+                  <Brain className="w-4 h-4 mr-2" />
+                  Agent Mode
+                </button>
+                <button
+                  className="w-full text-left px-3 py-2 text-cyan-400 hover:bg-gray-700 rounded-b-lg flex items-center"
+                  onClick={() => {
+                    setSelectedModel("legacy");
+                    setShowModelSelector(false);
+                  }}
+                >
+                  <Zap className="w-4 h-4 mr-2" />
+                  Legacy
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Action Buttons */}
