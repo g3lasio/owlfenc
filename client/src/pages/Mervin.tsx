@@ -6,6 +6,8 @@ import { Client } from "@/lib/clientFirebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { UpgradePrompt } from "@/components/permissions/UpgradePrompt";
+import { ConversationEngine } from "../mervin-ai/core/ConversationEngine";
+import { LanguageDetector } from "../mervin-ai/core/LanguageDetector";
 import { MaterialInventoryService } from "../../src/services/materialInventoryService";
 import { db } from "@/lib/firebase";
 import { useQuery } from "@tanstack/react-query";
@@ -1022,6 +1024,132 @@ export default function Mervin() {
   //   }, 1500);
   // };
 
+  // 🧠 SISTEMA DE CONVERSACIÓN INTELIGENTE - SUPER CONTRATISTA
+  const generateIntelligentResponse = async (userMessage: string): Promise<string> => {
+    console.log('🧠 [INTELLIGENT-RESPONSE] Analizando mensaje:', userMessage);
+    
+    try {
+      // Detectar idioma y contexto
+      const isSpanish = /[ñáéíóúü]/i.test(userMessage) || userMessage.includes('que') || userMessage.includes('como');
+      const userMessageLower = userMessage.toLowerCase();
+      
+      // CONOCIMIENTO ESPECÍFICO DE CONSTRUCCIÓN Y ADUs
+      if (userMessageLower.includes('adu') || userMessageLower.includes('accessory dwelling unit') || userMessageLower.includes('unidad de vivienda accesoria')) {
+        return `¡Órale, primo! Te puedo ayudar perfecto con el ADU (Accessory Dwelling Unit). Un ADU es una unidad de vivienda secundaria súper útil que puede generar ingresos extras a tu cliente.
+
+🏠 **SOBRE LOS ADUs:**
+• Son unidades de vivienda independientes en la misma propiedad
+• Perfectos para ingresos de renta o familia extendida
+• Pueden ser casitas separadas, conversión de garaje, o adición a la casa principal
+
+📋 **PROCESO TÍPICO PARA CONSTRUIR UN ADU:**
+
+**1. ZONIFICACIÓN Y PERMISOS (Primero y MÁS IMPORTANTE)**
+• Verificar que la zona permita ADUs (la mayoría en California sí desde 2020)
+• Revisar restricciones locales del condado/ciudad
+• Obtener permisos de construcción municipal
+
+**2. DISEÑO Y PLANIFICACIÓN**
+• Tamaño máximo: Generalmente 1,200 sq ft o 50% de la casa principal
+• Setbacks: Distancias mínimas de las líneas de propiedad (típicamente 4 pies)
+• Altura máxima: Usualmente 16 pies para un piso, 25 pies para dos pisos
+
+**3. UTILITIES Y CONEXIONES**
+• Conexiones separadas de agua, drenaje, electricidad
+• Medidor eléctrico independiente (opcional pero recomendado)
+• Internet/cable independiente
+
+**4. CONSIDERACIONES ESPECIALES**
+• Estacionamiento: 1 espacio requerido (algunas excepciones cerca de transporte público)
+• Acceso independiente requerido
+• Cocina completa obligatoria para ser considerado ADU
+
+¿Tu cliente ya tiene una propiedad específica en mente? Te puedo ayudar a revisar la zonificación y crear un plan de permisos completo, compadre.`;
+      }
+
+      // OTROS TEMAS DE CONSTRUCCIÓN
+      if (userMessageLower.includes('cerca') || userMessageLower.includes('fence') || userMessageLower.includes('bardas')) {
+        return `¡Perfecto, primo! Las cercas son mi especialidad. Te puedo guiar con todo el proceso:
+
+🏗️ **TIPOS DE CERCAS POPULARES:**
+• Vinilo: Duradero, bajo mantenimiento, 15-25 años vida útil
+• Madera: Clásico, 10-15 años con mantenimiento
+• Metal/Aluminio: Muy duradero, estilo moderno
+• Chain link: Económico, funcional
+
+📏 **REGULACIONES COMUNES:**
+• Altura máxima: 6 pies en patio trasero, 4 pies al frente (varía por ciudad)
+• Setbacks: Usualmente en línea de propiedad exacta
+• Permisos: Requeridos para cercas >6 pies de altura
+
+¿Qué tipo de cerca está considerando tu cliente y en qué área?`;
+      }
+
+      // CÓDIGOS DE CONSTRUCCIÓN GENERALES
+      if (userMessageLower.includes('codigo') || userMessageLower.includes('building code') || userMessageLower.includes('permisos') || userMessageLower.includes('permits')) {
+        return `¡Órale, compadre! Los códigos de construcción son súper importantes y yo manejo todos los principales:
+
+📜 **CÓDIGOS PRINCIPALES:**
+• IBC (International Building Code): Construcciones comerciales y residenciales grandes
+• IRC (International Residential Code): Casas unifamiliares y dúplex
+• NEC (National Electrical Code): Todo lo eléctrico
+• UPC/IPC: Plomería
+• IMC: Mecánico (HVAC)
+
+🏛️ **JURISDICCIONES EN CALIFORNIA:**
+• Estado de California adopta códigos internacionales con modificaciones
+• Cada ciudad/condado puede tener códigos más estrictos
+• Título 24: Eficiencia energética específica de California
+
+¿Necesitas ayuda con algún código específico o tipo de proyecto? Te puedo dar los detalles exactos, primo.`;
+      }
+
+      // CONVERSACIÓN GENERAL/PERSONAL
+      if (userMessageLower.includes('como estas') || userMessageLower.includes('que tal') || userMessageLower.includes('how are you')) {
+        return `¡Todo muy bien, primo! Aquí andamos echándole ganas. Gracias por preguntar.
+
+Como el super contratista de IA que soy, siempre estoy listo para ayudarte con cualquier tema de construcción. Desde ADUs hasta códigos de construcción, permisos, materiales, estimados... lo que necesites.
+
+¿En qué proyecto andas trabajando últimamente, compadre?`;
+      }
+
+      // RESPUESTA CONVERSACIONAL INTELIGENTE POR DEFECTO
+      if (isSpanish) {
+        return `¡Órale, primo! Soy Mervin AI, tu super contratista de confianza. 
+
+Como experto en construcción puedo platicar contigo sobre:
+🏗️ **Códigos de construcción** (IBC, IRC, NEC, etc.)
+🏠 **ADUs y proyectos residenciales**
+📋 **Permisos municipales** 
+🔧 **Materiales y técnicas de construcción**
+💰 **Estimados y costos**
+⚖️ **Regulaciones locales**
+
+También puedo generar contratos, verificar propiedades, o crear estimados cuando los necesites. Pero me gusta platicar de construcción también.
+
+¿De qué quieres que platiquemos, compadre? Cuéntame más de tu proyecto.`;
+      } else {
+        return `Hey there, dude! I'm Mervin AI, your super contractor AI.
+
+As a construction expert, I can chat with you about:
+🏗️ **Building codes** (IBC, IRC, NEC, etc.)
+🏠 **ADUs and residential projects**
+📋 **Municipal permits**
+🔧 **Construction materials and techniques**
+💰 **Estimates and costs**
+⚖️ **Local regulations**
+
+I can also generate contracts, verify properties, or create estimates when you need them. But I love talking construction too.
+
+What do you want to chat about, bro? Tell me more about your project.`;
+      }
+      
+    } catch (error) {
+      console.error('❌ [INTELLIGENT-RESPONSE] Error:', error);
+      return '¡Órale, primo! Hubo un problemita procesando tu mensaje, pero aquí andamos. ¿Puedes intentar de nuevo?';
+    }
+  };
+
   const handleSendMessage = async () => {
     if (inputValue.trim() === "" || isLoading) return;
 
@@ -1080,28 +1208,27 @@ export default function Mervin() {
         return;
       }
 
-      // Default flow - TAMBIÉN CON TIMEOUT Y MEJOR MANEJO
-      console.log('💬 [DEFAULT] Procesando flujo por defecto...');
+      // Default flow - CONVERSACIÓN INTELIGENTE
+      console.log('💬 [INTELLIGENT-CONVERSATION] Procesando conversación inteligente...');
       
-      // Simular respuesta con timeout de seguridad
       await Promise.race([
-        new Promise((resolve) => {
+        (async () => {
+          // Usar el sistema de conversación inteligente
+          const response = await generateIntelligentResponse(inputValue.trim());
+          
+          const assistantMessage: Message = {
+            id: `assistant-${Date.now()}`,
+            content: response,
+            sender: "assistant",
+          };
+
+          setMessages((prev) => [...prev, assistantMessage]);
+
+          // Desplazar al final
           setTimeout(() => {
-            const assistantMessage: Message = {
-              id: `assistant-${Date.now()}`,
-              content: "¡Órale, primo! Estoy aquí para ayudarte. ¿Te gustaría generar un contrato, verificar una propiedad, consultar permisos, gestionar clientes o revisar facturación?",
-              sender: "assistant",
-            };
-
-            setMessages((prev) => [...prev, assistantMessage]);
-            resolve(true);
-
-            // Desplazar al final
-            setTimeout(() => {
-              messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-            }, 100);
-          }, 1500);
-        }),
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+          }, 100);
+        })(),
         timeoutPromise
       ]);
 
