@@ -140,6 +140,8 @@ interface PermitResponse {
   requiredPermits: PermitData[];
   specialConsiderations: string[];
   process: string[];
+  buildingCodes?: any[];
+  contactInformation?: any;
   meta: {
     sources: string[];
     generated: string;
@@ -1485,12 +1487,12 @@ Para desbloquear Agent mode con todas las funciones avanzadas, puedes hacer upgr
       // Clear timeout in case of error
       clearTimeout(timeoutId);
       // Handle different error types
-      if (error.name === "AbortError") {
+      if (error instanceof Error && error.name === "AbortError") {
         console.error("DeepSearch AI request was aborted (timeout)");
         throw new Error(
           "La solicitud excedió el tiempo límite. Por favor intenta nuevamente.",
         );
-      } else if (error.code === "ECONNABORTED") {
+      } else if (error instanceof Error && 'code' in error && (error as any).code === "ECONNABORTED") {
         console.error("DeepSearch AI request was aborted");
         throw new Error(
           "La conexión fue interrumpida. Por favor intenta nuevamente.",
@@ -2504,7 +2506,7 @@ Para desbloquear Agent mode con todas las funciones avanzadas, puedes hacer upgr
         ]);
       }
     } else if (
-      contractFlowStep === "legal-clauses" &&
+      (contractFlowStep as ContractFlowStep) === "legal-clauses" &&
       input.includes("editar")
     ) {
       // User wants to edit clauses after preview
@@ -2519,7 +2521,7 @@ Para desbloquear Agent mode con todas las funciones avanzadas, puedes hacer upgr
         },
       ]);
     } else if (
-      contractFlowStep === "legal-clauses" &&
+      (contractFlowStep as ContractFlowStep) === "legal-clauses" &&
       (input === "sí" || input === "si" || input === "yes")
     ) {
       // User is satisfied with clauses preview, continue to project scope
@@ -3109,7 +3111,7 @@ ${
     ? permitResults.process
         .map(
           (step, index) =>
-            `${index + 1}. ${typeof step === "string" ? step : step.step || "Paso del proceso"}`,
+            `${index + 1}. ${typeof step === "string" ? step : (typeof step === "object" && step && 'step' in step ? (step as any).step : "Paso del proceso")}`,
         )
         .join("\n")
     : "No hay información del proceso disponible"

@@ -133,12 +133,8 @@ function Router() {
 
 
       {/* Rutas protegidas */}
-      <Route path="/">
-        {() => <ProtectedRoute component={Home} />}
-      </Route>
-      <Route path="/mervin">
-        {() => <ProtectedRoute component={Mervin} />}
-      </Route>
+      <Route path="/" component={() => <ProtectedRoute component={Home} />} />
+      <Route path="/mervin" component={() => <ProtectedRoute component={Mervin} />} />
       <Route path="/projects">
         {() => <ProtectedRoute component={Projects} />}
       </Route>
