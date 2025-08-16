@@ -1035,7 +1035,7 @@ export default function Mervin() {
       // FASE 2: INTENTAR SISTEMA AVANZADO (SI ESTÁ DISPONIBLE)
       console.log('🚀 [ADVANCED-SYSTEM] Intentando sistema avanzado...');
       
-      const userId = user?.uid || 'anonymous';
+      const userId = (user as any)?.uid || 'anonymous';
       const agentConfig = {
         userId,
         debug: true,
@@ -1056,6 +1056,9 @@ export default function Mervin() {
 
       const { ConversationEngine, DatabaseAgentMemory } = modules;
       
+      // 🔧 CORREGIR ERROR: Asegurar que user está definido
+      const currentUser = (user as any) || { uid: userId, email: 'anonymous' };
+      
       const conversationEngine = new ConversationEngine(userId);
       const databaseMemory = new DatabaseAgentMemory(userId);
 
@@ -1064,9 +1067,9 @@ export default function Mervin() {
       // Procesamiento con sistema avanzado simplificado
       const advancedResponse = await conversationEngine.processUserMessage(userMessage);
       
-      if (advancedResponse && advancedResponse.response) {
+      if (advancedResponse && (advancedResponse as any).response) {
         console.log('✅ [ADVANCED-SYSTEM] Respuesta avanzada generada exitosamente');
-        return advancedResponse.response;
+        return (advancedResponse as any).response;
       }
 
       console.log('📋 [FALLBACK] Sistema avanzado no generó respuesta, usando fallback');
@@ -1074,7 +1077,7 @@ export default function Mervin() {
 
     
     } catch (error) {
-      console.error('❌ [ADVANCED-SYSTEM] Error en sistema avanzado:', error?.message || 'Unknown error');
+      console.error('❌ [ADVANCED-SYSTEM] Error en sistema avanzado:', (error as any)?.message || 'Unknown error');
       console.log('📋 [FALLBACK] Usando respuesta inteligente de respaldo');
       return quickIntelligentResponse;
     }
@@ -1085,7 +1088,11 @@ export default function Mervin() {
     const userMessageLower = userMessage.toLowerCase();
     const isSpanish = /[ñáéíóúü]/i.test(userMessage) || userMessage.includes('que') || userMessage.includes('como');
 
-    // RESPUESTAS ESPECÍFICAS DE CONSTRUCCIÓN INTELIGENTES
+    // 🎯 DETECCIÓN DE COMPLEJIDAD DE PREGUNTA
+    const isSimpleGreeting = /^(hola|hello|hi|hey|good morning|buenos dias|que tal|como estas|how are you)[\s\.\?]*$/i.test(userMessage.trim());
+    const isSimpleQuestion = userMessage.trim().length < 30 && !userMessage.includes('?') && !userMessageLower.includes('explain') && !userMessageLower.includes('tell me about');
+    
+    // RESPUESTAS SIMPLES PARA PREGUNTAS SIMPLES
     
     // LICENCIAS DE CONTRATISTA (PREGUNTA ESPECÍFICA DEL USUARIO)
     if (userMessageLower.includes('c-13') || userMessageLower.includes('c13') || userMessageLower.includes('licencia') && userMessageLower.includes('concreto')) {
@@ -1233,28 +1240,29 @@ La licencia C-13 es específicamente para **cercas y trabajos de cercado**, NO p
 ¿Qué tipo de proyecto necesitas permisos, compadre?`;
     }
 
-    // SALUDOS Y CONVERSACIÓN GENERAL
-    if (userMessageLower.includes('hola') || userMessageLower.includes('como estas') || userMessageLower.includes('que tal') || userMessageLower.includes('hello') || userMessageLower.includes('how are you')) {
-      return `¡Órale, ${isSpanish ? 'primo' : 'dude'}! Todo excelente por aquí, echándole ganas como siempre.
-
-Soy Mervin AI, tu super contratista de confianza. Como experto en construcción, estoy aquí para platicar contigo sobre:
-
-🏗️ **Códigos de construcción** (IBC, IRC, NEC, UPC)
-📋 **Licencias de contratista** (C-13, C-8, B, etc.)
-🏠 **ADUs y proyectos residenciales**
-📋 **Permisos municipales**
-🔧 **Materiales y técnicas**
-💰 **Estimados y costos**
-📄 **Contratos profesionales**
-
-También puedo ayudarte a generar contratos, verificar propiedades, o crear estimados profesionales cuando los necesites.
-
-¿En qué proyecto andas trabajando, ${isSpanish ? 'compadre' : 'bro'}?`;
+    // SALUDOS SIMPLES Y DIRECTOS
+    if (isSimpleGreeting) {
+      if (isSpanish) {
+        return `¡Órale, primo! Todo muy bien por aquí, echándole ganas. ¿En qué te puedo ayudar?`;
+      } else {
+        return `Hey there, dude! All good here, working hard. What can I help you with?`;
+      }
     }
 
-    // RESPUESTA POR DEFECTO CONVERSACIONAL
+    // CONVERSACIÓN GENERAL (preguntas más elaboradas)
+    if (userMessageLower.includes('como estas') || userMessageLower.includes('que tal') || userMessageLower.includes('how are you')) {
+      if (isSpanish) {
+        return `¡Todo excelente, primo! Aquí andamos echándole ganas. Soy Mervin AI, tu super contratista de construcción. ¿En qué proyecto te puedo ayudar?`;
+      } else {
+        return `All good, dude! Working hard as always. I'm Mervin AI, your super contractor. What project can I help you with?`;
+      }
+    }
+
+    // RESPUESTA POR DEFECTO CONVERSACIONAL (solo para preguntas complejas o específicas)
     if (isSpanish) {
-      return `¡Órale, primo! Soy Mervin AI, tu super contratista especializado.
+      // Para preguntas complejas, dar información completa
+      if (!isSimpleQuestion) {
+        return `¡Órale, primo! Soy Mervin AI, tu super contratista especializado.
 
 Como experto en construcción puedo ayudarte con:
 🏗️ **Códigos de construcción** (IBC, IRC, NEC)
@@ -1265,11 +1273,15 @@ Como experto en construcción puedo ayudarte con:
 💰 **Estimados precisos**
 📄 **Contratos profesionales**
 
-También puedo generar documentos, verificar propiedades, y crear estimados cuando los necesites.
-
 ¿De qué quieres que platiquemos hoy, compadre?`;
+      } else {
+        // Para preguntas simples, respuesta simple
+        return `¡Órale, primo! Soy Mervin AI, tu super contratista. ¿En qué te puedo ayudar?`;
+      }
     } else {
-      return `Hey there, dude! I'm Mervin AI, your specialized super contractor.
+      // Para preguntas complejas, dar información completa
+      if (!isSimpleQuestion) {
+        return `Hey there, dude! I'm Mervin AI, your specialized super contractor.
 
 As a construction expert, I can help you with:
 🏗️ **Building codes** (IBC, IRC, NEC)
@@ -1280,9 +1292,11 @@ As a construction expert, I can help you with:
 💰 **Accurate estimates**
 📄 **Professional contracts**
 
-I can also generate documents, verify properties, and create estimates when you need them.
-
 What do you want to chat about today, bro?`;
+      } else {
+        // Para preguntas simples, respuesta simple
+        return `Hey there, dude! I'm Mervin AI, your super contractor. What can I help you with?`;
+      }
     }
   };
 

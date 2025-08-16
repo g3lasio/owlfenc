@@ -27,6 +27,7 @@ This project is an advanced AI-powered legal document and permit management plat
   * Manejo inteligente de emociones del usuario (frustración, entusiasmo, confusión)
   * Adaptación automática del tono y estilo según el contexto de la conversación
   * Memoria conversacional para mantener coherencia y personalización a lo largo de las interacciones
+  * RESPUESTAS PROPORCIONALES: Detección de complejidad de pregunta para dar respuestas apropiadas (simples para saludos, detalladas para preguntas técnicas)
 - CHAT RELIABILITY CRITICAL: Sistema robusto anti-cuelgues con timeouts, logging detallado y manejo comprehensivo de errores para evitar estados estáticos de "Procesando..."
 
 ## System Architecture
