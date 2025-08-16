@@ -67,7 +67,7 @@ export class SmartTaskCoordinator {
   private propertyAgent: PropertyTaskAgent;
   private permitAgent: PermitTaskAgent;
   private contextManager: ContextManager;
-  private agentMemory: AgentMemory;
+  private agentMemory: any; // Compatible with both AgentMemory and DatabaseAgentMemory
   private config: any;
   
   // Estado de coordinación

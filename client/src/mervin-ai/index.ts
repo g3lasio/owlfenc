@@ -18,6 +18,7 @@ export { LanguageDetector, languageDetector } from './core/LanguageDetector';
 // Services
 export { EndpointCoordinator } from './services/EndpointCoordinator';
 export { AgentMemory } from './services/AgentMemory';
+export { DatabaseAgentMemory } from './services/DatabaseAgentMemory';
 export { PermissionValidator } from './services/PermissionValidator';
 
 // Task agents

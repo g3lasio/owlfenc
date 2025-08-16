@@ -1024,129 +1024,127 @@ export default function Mervin() {
   //   }, 1500);
   // };
 
-  // 🧠 SISTEMA DE CONVERSACIÓN INTELIGENTE - SUPER CONTRATISTA
+  // 🧠 SISTEMA AVANZADO DE IA CON APRENDIZAJE Y MEMORIA PERSISTENTE
   const generateIntelligentResponse = async (userMessage: string): Promise<string> => {
-    console.log('🧠 [INTELLIGENT-RESPONSE] Analizando mensaje:', userMessage);
+    console.log('🧠 [MERVIN-AI] Procesando mensaje con sistema avanzado:', userMessage);
     
     try {
-      // Detectar idioma y contexto
-      const isSpanish = /[ñáéíóúü]/i.test(userMessage) || userMessage.includes('que') || userMessage.includes('como');
-      const userMessageLower = userMessage.toLowerCase();
+      // Inicializar sistema de IA avanzado con memoria persistente
+      const userId = user?.uid || 'anonymous';
+      const agentConfig = {
+        userId,
+        debug: true,
+        learningEnabled: true,
+        memoryPersistence: true
+      };
+
+      // Crear instancia del agente inteligente con componentes avanzados
+      const { MervinAgent, ConversationEngine, DatabaseAgentMemory, IntentionEngine } = await import('@/mervin-ai');
       
-      // CONOCIMIENTO ESPECÍFICO DE CONSTRUCCIÓN Y ADUs
-      if (userMessageLower.includes('adu') || userMessageLower.includes('accessory dwelling unit') || userMessageLower.includes('unidad de vivienda accesoria')) {
-        return `¡Órale, primo! Te puedo ayudar perfecto con el ADU (Accessory Dwelling Unit). Un ADU es una unidad de vivienda secundaria súper útil que puede generar ingresos extras a tu cliente.
+      const databaseMemory = new DatabaseAgentMemory(userId);
+      const mervinAgent = new MervinAgent(agentConfig);
+      const conversationEngine = new ConversationEngine(userId);
+      const intentionEngine = new IntentionEngine(agentConfig);
 
-🏠 **SOBRE LOS ADUs:**
-• Son unidades de vivienda independientes en la misma propiedad
-• Perfectos para ingresos de renta o familia extendida
-• Pueden ser casitas separadas, conversión de garaje, o adición a la casa principal
+      console.log('🤖 [MERVIN-AGENT] Componentes avanzados inicializados para:', userId);
+      
+      // 1. ANÁLISIS DE INTENCIÓN CON IA AVANZADA
+      const intention = await intentionEngine.analyzeUserInput(userMessage, messages);
+      console.log('🎯 [INTENTION-ANALYSIS] Intención detectada:', intention);
 
-📋 **PROCESO TÍPICO PARA CONSTRUIR UN ADU:**
+      // 2. PROCESAMIENTO CONVERSACIONAL INTELIGENTE
+      const conversationResponse = await conversationEngine.processUserMessage(userMessage);
+      console.log('🗣️ [CONVERSATION-ENGINE] Respuesta generada:', conversationResponse);
 
-**1. ZONIFICACIÓN Y PERMISOS (Primero y MÁS IMPORTANTE)**
-• Verificar que la zona permita ADUs (la mayoría en California sí desde 2020)
-• Revisar restricciones locales del condado/ciudad
-• Obtener permisos de construcción municipal
-
-**2. DISEÑO Y PLANIFICACIÓN**
-• Tamaño máximo: Generalmente 1,200 sq ft o 50% de la casa principal
-• Setbacks: Distancias mínimas de las líneas de propiedad (típicamente 4 pies)
-• Altura máxima: Usualmente 16 pies para un piso, 25 pies para dos pisos
-
-**3. UTILITIES Y CONEXIONES**
-• Conexiones separadas de agua, drenaje, electricidad
-• Medidor eléctrico independiente (opcional pero recomendado)
-• Internet/cable independiente
-
-**4. CONSIDERACIONES ESPECIALES**
-• Estacionamiento: 1 espacio requerido (algunas excepciones cerca de transporte público)
-• Acceso independiente requerido
-• Cocina completa obligatoria para ser considerado ADU
-
-¿Tu cliente ya tiene una propiedad específica en mente? Te puedo ayudar a revisar la zonificación y crear un plan de permisos completo, compadre.`;
+      // 3. EJECUCIÓN DE TAREAS COMPLEJAS (SI ES NECESARIO)
+      let taskResult = null;
+      if (intention.complexity === 'multi-step' || intention.requiresAction) {
+        console.log('🚀 [COMPLEX-TASK] Ejecutando tarea compleja con coordinador inteligente');
+        taskResult = await mervinAgent.processUserInput(userMessage, messages);
+        console.log('📊 [TASK-RESULT] Resultado de ejecución:', taskResult);
       }
 
-      // OTROS TEMAS DE CONSTRUCCIÓN
-      if (userMessageLower.includes('cerca') || userMessageLower.includes('fence') || userMessageLower.includes('bardas')) {
-        return `¡Perfecto, primo! Las cercas son mi especialidad. Te puedo guiar con todo el proceso:
-
-🏗️ **TIPOS DE CERCAS POPULARES:**
-• Vinilo: Duradero, bajo mantenimiento, 15-25 años vida útil
-• Madera: Clásico, 10-15 años con mantenimiento
-• Metal/Aluminio: Muy duradero, estilo moderno
-• Chain link: Económico, funcional
-
-📏 **REGULACIONES COMUNES:**
-• Altura máxima: 6 pies en patio trasero, 4 pies al frente (varía por ciudad)
-• Setbacks: Usualmente en línea de propiedad exacta
-• Permisos: Requeridos para cercas >6 pies de altura
-
-¿Qué tipo de cerca está considerando tu cliente y en qué área?`;
+      // 4. APRENDIZAJE PERSISTENTE Y MEMORIA
+      if (taskResult) {
+        console.log('🧠 [LEARNING] Almacenando patrón en memoria persistente');
+        await databaseMemory.learnFromTask(intention, taskResult);
       }
 
-      // CÓDIGOS DE CONSTRUCCIÓN GENERALES
-      if (userMessageLower.includes('codigo') || userMessageLower.includes('building code') || userMessageLower.includes('permisos') || userMessageLower.includes('permits')) {
-        return `¡Órale, compadre! Los códigos de construcción son súper importantes y yo manejo todos los principales:
-
-📜 **CÓDIGOS PRINCIPALES:**
-• IBC (International Building Code): Construcciones comerciales y residenciales grandes
-• IRC (International Residential Code): Casas unifamiliares y dúplex
-• NEC (National Electrical Code): Todo lo eléctrico
-• UPC/IPC: Plomería
-• IMC: Mecánico (HVAC)
-
-🏛️ **JURISDICCIONES EN CALIFORNIA:**
-• Estado de California adopta códigos internacionales con modificaciones
-• Cada ciudad/condado puede tener códigos más estrictos
-• Título 24: Eficiencia energética específica de California
-
-¿Necesitas ayuda con algún código específico o tipo de proyecto? Te puedo dar los detalles exactos, primo.`;
-      }
-
-      // CONVERSACIÓN GENERAL/PERSONAL
-      if (userMessageLower.includes('como estas') || userMessageLower.includes('que tal') || userMessageLower.includes('how are you')) {
-        return `¡Todo muy bien, primo! Aquí andamos echándole ganas. Gracias por preguntar.
-
-Como el super contratista de IA que soy, siempre estoy listo para ayudarte con cualquier tema de construcción. Desde ADUs hasta códigos de construcción, permisos, materiales, estimados... lo que necesites.
-
-¿En qué proyecto andas trabajando últimamente, compadre?`;
-      }
-
-      // RESPUESTA CONVERSACIONAL INTELIGENTE POR DEFECTO
-      if (isSpanish) {
-        return `¡Órale, primo! Soy Mervin AI, tu super contratista de confianza. 
-
-Como experto en construcción puedo platicar contigo sobre:
-🏗️ **Códigos de construcción** (IBC, IRC, NEC, etc.)
-🏠 **ADUs y proyectos residenciales**
-📋 **Permisos municipales** 
-🔧 **Materiales y técnicas de construcción**
-💰 **Estimados y costos**
-⚖️ **Regulaciones locales**
-
-También puedo generar contratos, verificar propiedades, o crear estimados cuando los necesites. Pero me gusta platicar de construcción también.
-
-¿De qué quieres que platiquemos, compadre? Cuéntame más de tu proyecto.`;
+      // 5. GENERAR RESPUESTA FINAL INTELIGENTE
+      let finalResponse = '';
+      
+      if (taskResult && taskResult.success) {
+        // Usar respuesta de tarea compleja
+        finalResponse = taskResult.data?.conversationalResponse || 
+                       taskResult.data?.response || 
+                       conversationResponse.response;
       } else {
-        return `Hey there, dude! I'm Mervin AI, your super contractor AI.
+        // Usar respuesta conversacional directa con personalidad
+        finalResponse = conversationResponse.response;
+      }
 
-As a construction expert, I can chat with you about:
-🏗️ **Building codes** (IBC, IRC, NEC, etc.)
-🏠 **ADUs and residential projects**
-📋 **Municipal permits**
-🔧 **Construction materials and techniques**
-💰 **Estimates and costs**
-⚖️ **Local regulations**
+      // 6. PREDICCIONES Y OPTIMIZACIONES INTELIGENTES
+      const predictions = await databaseMemory.predictUserNeeds({
+        currentMessage: userMessage,
+        conversationHistory: messages,
+        userProfile: user
+      });
 
-I can also generate contracts, verify properties, or create estimates when you need them. But I love talking construction too.
+      if (predictions.length > 0) {
+        console.log(`🔮 [PREDICTIONS] Generé ${predictions.length} predicciones inteligentes`);
+      }
 
-What do you want to chat about, bro? Tell me more about your project.`;
+      // 7. CONTEXTO ACTUALIZADO Y MEMORIA CONTEXTUAL
+      await databaseMemory.updateContextualMemory('conversation', {
+        lastMessage: userMessage,
+        intention: intention.primary,
+        userSatisfaction: null // Se actualizará con feedback
+      }, 7);
+
+      console.log('✅ [MERVIN-AI] Respuesta generada con sistema avanzado completo');
+      return finalResponse;
+    
+    } catch (error) {
+      console.error('❌ [MERVIN-AI] Error en sistema avanzado:', error);
+      
+      // Sistema de fallback inteligente con aprendizaje de errores
+      const isSpanish = /[ñáéíóúü]/i.test(userMessage) || userMessage.includes('que') || userMessage.includes('como');
+      
+      // Registrar error para aprendizaje futuro
+      try {
+        const { DatabaseAgentMemory } = await import('@/mervin-ai');
+        const databaseMemory = new DatabaseAgentMemory(user?.uid || 'anonymous');
+        await databaseMemory.learnFromTask(
+          { primary: 'error_recovery', complexity: 'simple', parameters: {} },
+          { success: false, error: error.message, executionTime: 0, endpointsUsed: [] }
+        );
+      } catch (memoryError) {
+        console.error('❌ [MEMORY] Error registrando fallo:', memoryError);
       }
       
-    } catch (error) {
-      console.error('❌ [INTELLIGENT-RESPONSE] Error:', error);
-      return '¡Órale, primo! Hubo un problemita procesando tu mensaje, pero aquí andamos. ¿Puedes intentar de nuevo?';
+      if (isSpanish) {
+        return `Lo siento, primo. Tuve un problemita técnico, pero mi sistema de aprendizaje ya está registrando esto para mejoras futuras.
+
+Como tu super contratista de IA con memoria persistente, estoy aquí para ayudarte con:
+🏗️ **Construcción y códigos**
+🏠 **ADUs y proyectos residenciales** 
+📋 **Permisos y regulaciones**
+💰 **Estimados inteligentes**
+📄 **Contratos profesionales**
+
+¿En qué te puedo apoyar, compadre?`;
+      } else {
+        return `Sorry about that, dude. Had a technical issue, but my learning system is already logging this for future improvements.
+
+As your super contractor AI with persistent memory, I'm here to help with:
+🏗️ **Construction and building codes**
+🏠 **ADUs and residential projects**
+📋 **Permits and regulations**
+💰 **Smart estimates**
+📄 **Professional contracts**
+
+What can I help you with, bro?`;
+      }
     }
   };
 

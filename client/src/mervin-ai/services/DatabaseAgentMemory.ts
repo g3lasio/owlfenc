@@ -135,22 +135,16 @@ export class DatabaseAgentMemory {
         userFeedback: undefined
       };
 
-      const response = await apiRequest('/api/memory/store-pattern', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': this.userId
-        },
-        body: pattern
-      });
+      const response = await apiRequest('/api/memory/store-pattern', 'POST', pattern);
 
-      if (response?.success) {
+      const responseData = await response.json();
+      if (responseData?.success) {
         console.log(`🧠 [DATABASE-MEMORY] Stored pattern: ${intention.primary} (${result.success ? 'success' : 'failed'})`);
         
         // Invalidar cache relacionado
         this.invalidateCache(['behavior-analysis', 'optimizations', 'predictions']);
       } else {
-        console.error('❌ [DATABASE-MEMORY] Failed to store pattern:', response?.error);
+        console.error('❌ [DATABASE-MEMORY] Failed to store pattern:', responseData?.error);
       }
 
     } catch (error) {
@@ -218,17 +212,11 @@ export class DatabaseAgentMemory {
     try {
       const cacheKey = `predictions-${Date.now()}`;
       
-      const response = await apiRequest('/api/memory/predict-needs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': this.userId
-        },
-        body: { currentContext: context }
-      });
+      const response = await apiRequest('/api/memory/predict-needs', 'POST', { currentContext: context });
+      const responseData = await response.json();
 
-      if (response?.success) {
-        const predictions = response?.predictions || [];
+      if (responseData?.success) {
+        const predictions = responseData?.predictions || [];
         this.setCache(cacheKey, predictions, this.CACHE_TTL);
         
         console.log(`🧠 [DATABASE-MEMORY] Generated ${predictions.length} predictions`);
@@ -256,10 +244,11 @@ export class DatabaseAgentMemory {
       }
 
       const refreshParam = forceRefresh ? '?refresh=true' : '';
-      const response = await apiRequest(`/api/memory/behavior-analysis/${this.userId}${refreshParam}`);
+      const response = await apiRequest(`/api/memory/behavior-analysis/${this.userId}${refreshParam}`, 'GET');
+      const responseData = await response.json();
 
-      if (response?.success) {
-        const analytics = response?.analytics;
+      if (responseData?.success) {
+        const analytics = responseData?.analytics;
         this.setCache(cacheKey, analytics, this.CACHE_TTL);
         
         console.log(`🧠 [DATABASE-MEMORY] Retrieved behavior analytics: ${analytics.adaptationLevel} level`);
@@ -287,10 +276,11 @@ export class DatabaseAgentMemory {
       }
 
       const generateParam = generateNew ? '?generate=true' : '';
-      const response = await apiRequest(`/api/memory/optimizations/${this.userId}${generateParam}`);
+      const response = await apiRequest(`/api/memory/optimizations/${this.userId}${generateParam}`, 'GET');
+      const responseData = await response.json();
 
-      if (response?.success) {
-        const optimizations = response?.optimizations || [];
+      if (responseData?.success) {
+        const optimizations = responseData?.optimizations || [];
         this.setCache(cacheKey, optimizations, this.CACHE_TTL);
         
         console.log(`🧠 [DATABASE-MEMORY] Retrieved ${optimizations.length} optimizations`);
@@ -314,10 +304,11 @@ export class DatabaseAgentMemory {
       const cached = this.getCache<LearningInsights>(cacheKey);
       if (cached) return cached;
 
-      const response = await apiRequest(`/api/memory/learning-insights/${this.userId}`);
+      const response = await apiRequest(`/api/memory/learning-insights/${this.userId}`, 'GET');
+      const responseData = await response.json();
 
-      if (response?.success) {
-        const insights = response?.insights;
+      if (responseData?.success) {
+        const insights = responseData?.insights;
         this.setCache(cacheKey, insights, this.CACHE_TTL);
         
         console.log(`🧠 [DATABASE-MEMORY] Retrieved learning insights: ${insights.adaptationLevel}`);
@@ -341,20 +332,14 @@ export class DatabaseAgentMemory {
     importance: number = 5
   ): Promise<void> {
     try {
-      const response = await apiRequest('/api/memory/update-context', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': this.userId
-        },
-        body: {
-          contextType,
-          entities,
-          importance
-        }
+      const response = await apiRequest('/api/memory/update-context', 'POST', {
+        contextType,
+        entities,
+        importance
       });
+      const responseData = await response.json();
 
-      if (response?.success) {
+      if (responseData?.success) {
         console.log(`🧠 [DATABASE-MEMORY] Updated context: ${contextType} (importance: ${importance})`);
         
         // Invalidar predicciones ya que el contexto cambió
@@ -371,19 +356,14 @@ export class DatabaseAgentMemory {
    */
   async provideFeedback(suggestionId: string, feedbackScore: number, applied: boolean = false): Promise<void> {
     try {
-      const response = await apiRequest('/api/memory/optimization-feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: {
-          suggestionId,
-          feedbackScore,
-          applied
-        }
+      const response = await apiRequest('/api/memory/optimization-feedback', 'POST', {
+        suggestionId,
+        feedbackScore,
+        applied
       });
+      const responseData = await response.json();
 
-      if (response?.success) {
+      if (responseData?.success) {
         console.log(`🧠 [DATABASE-MEMORY] Feedback provided for suggestion: ${suggestionId}`);
         
         // Invalidar cache de optimizaciones

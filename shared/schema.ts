@@ -746,12 +746,12 @@ export const learningProgress = pgTable('learning_progress', {
   totalInteractions: integer('total_interactions').notNull().default(0),
   successfulPredictions: integer('successful_predictions').notNull().default(0),
   totalPredictions: integer('total_predictions').notNull().default(0),
-  adaptationScore: decimal('adaptation_score', { precision: 5, scale: 2 }).notNull().default(0),
+  adaptationScore: decimal('adaptation_score', { precision: 5, scale: 2 }).notNull().default('0'),
   
   // Learning categories
-  intentionRecognitionAccuracy: decimal('intention_recognition_accuracy', { precision: 5, scale: 2 }).default(0),
-  workflowOptimizationScore: decimal('workflow_optimization_score', { precision: 5, scale: 2 }).default(0),
-  predictionAccuracy: decimal('prediction_accuracy', { precision: 5, scale: 2 }).default(0),
+  intentionRecognitionAccuracy: decimal('intention_recognition_accuracy', { precision: 5, scale: 2 }).default('0'),
+  workflowOptimizationScore: decimal('workflow_optimization_score', { precision: 5, scale: 2 }).default('0'),
+  predictionAccuracy: decimal('prediction_accuracy', { precision: 5, scale: 2 }).default('0'),
   
   // Learning state
   learningPhase: varchar('learning_phase', { length: 50 }).notNull().default('initial'), // 'initial', 'adapting', 'optimized', 'expert'
@@ -760,7 +760,7 @@ export const learningProgress = pgTable('learning_progress', {
   
   // Knowledge evolution
   knowledgeVersion: integer('knowledge_version').notNull().default(1),
-  learningVelocity: decimal('learning_velocity', { precision: 5, scale: 2 }).default(0), // Learning rate
+  learningVelocity: decimal('learning_velocity', { precision: 5, scale: 2 }).default('0'), // Learning rate
   
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
