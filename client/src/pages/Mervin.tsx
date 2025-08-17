@@ -743,11 +743,12 @@ export default function Mervin() {
       {/* Smart Input Area with Context-Aware Actions */}
       <div 
         className={`fixed bottom-0 right-0 bg-black/95 backdrop-blur-sm border-t border-cyan-900/30 pb-safe-area-inset-bottom transition-all duration-300 ease-in-out ${
-          // Solo aplicar margin en desktop (md:) cuando el sidebar esté visible
-          // En móviles (< 768px) siempre usar left-0 porque el sidebar es overlay
+          // Usar el mismo breakpoint que el sidebar (640px = sm)
+          // Phone (< 640px): siempre usar left-0 porque el sidebar es overlay
+          // Tablet/Desktop (>= 640px): ajustar margin según estado del sidebar
           isSidebarExpanded 
-            ? 'left-0 md:left-[280px]' // Móvil: sin margin, Desktop: ancho del sidebar expandido  
-            : 'left-0 md:left-[64px]'  // Móvil: sin margin, Desktop: ancho del sidebar colapsado (solo iconos)
+            ? 'left-0 sm:left-[280px]' // Phone: sin margin, Tablet/Desktop: ancho del sidebar expandido  
+            : 'left-0 sm:left-[64px]'  // Phone: sin margin, Tablet/Desktop: ancho del sidebar colapsado (solo iconos)
         }`}
       >
         <div className="p-4 md:p-3">
