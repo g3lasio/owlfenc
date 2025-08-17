@@ -247,13 +247,19 @@ export default function Mervin() {
         
         const responseContent = result.data?.conversationalResponse || 
           result.data?.response || 
-          "¡Órale primo! Completé la tarea. ¿En qué más te puedo ayudar?";
+          "¡Órale primo! ¿En qué más te puedo ayudar?";
+        
+        // Solo mostrar badge si es una tarea específica completada, no conversación normal
+        const isActualTaskCompletion = result.success && 
+          result.data && 
+          (result.data.fileGenerated || result.data.estimateCreated || result.data.contractGenerated || result.data.taskCompleted);
         
         const agentResponse: Message = {
           id: "assistant-" + Date.now(),
           content: responseContent,
           sender: "assistant",
-          taskResult: result
+          // Solo añadir taskResult para tareas específicas completadas
+          ...(isActualTaskCompletion && { taskResult: result })
         };
         setMessages(prev => [...prev, agentResponse]);
         
@@ -407,11 +413,17 @@ export default function Mervin() {
           result.data?.response || 
           `¡Listo primo! Activé ${action} para ti. ¿Qué más necesitas?`;
         
+        // Solo mostrar badge si realmente es una tarea específica completada, no conversación
+        const isActualTaskCompletion = result.success && 
+          result.data && 
+          (result.data.fileGenerated || result.data.estimateCreated || result.data.contractGenerated);
+        
         const resultMessage: Message = {
           id: "result-" + Date.now(),
           content: responseContent,
           sender: "assistant",
-          taskResult: result
+          // Solo añadir taskResult si es realmente una tarea específica completada
+          ...(isActualTaskCompletion && { taskResult: result })
         };
         setMessages(prev => [...prev, resultMessage]);
       } else {

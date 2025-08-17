@@ -70,6 +70,13 @@ class NetworkErrorHandler {
     return isKnownError || isKnownUrl;
   }
 
+  private logSilently(type: string, message: string, data?: any) {
+    // Solo log si está en modo debug explícito
+    if (window.location.search.includes('debug=network')) {
+      console.log(`🔧 [SILENT-${type.toUpperCase()}]`, message, data || '');
+    }
+  }
+
   private shouldBypassFetch(url: string): boolean {
     // Bypass fetch completely for URLs that frequently cause runtime-error-plugin issues
     const bypassPatterns = [
@@ -107,7 +114,7 @@ class NetworkErrorHandler {
         event.preventDefault();
         
         if (!this.isRateLimited()) {
-          console.debug('🔧 [SILENT] Network error handled:', error?.code || 'network-error');
+          this.logSilently('NETWORK', 'Error handled:', error?.code || 'network-error');
         }
         
         return;
@@ -125,7 +132,7 @@ class NetworkErrorHandler {
         event.preventDefault();
         
         if (!this.isRateLimited()) {
-          console.debug('🔧 [SILENT] Global error handled:', message);
+          this.logSilently('GLOBAL', 'Error handled:', message);
         }
         
         return;
@@ -143,7 +150,7 @@ class NetworkErrorHandler {
       // CRITICAL: Bypass fetch completely for known problematic URLs to avoid runtime-error-plugin detection
       if (this.shouldBypassFetch(url)) {
         if (!this.isRateLimited()) {
-          console.debug('🔧 [BYPASS] Avoiding fetch for problematic URL:', url.substring(0, 50));
+          this.logSilently('BYPASS', 'Avoiding fetch for problematic URL:', url.substring(0, 50));
         }
         
         // Return immediate mock response to prevent runtime-error-plugin detection
@@ -185,7 +192,7 @@ class NetworkErrorHandler {
             this.shouldSilenceError(error, url)) {
           
           if (!this.isRateLimited()) {
-            console.debug('🔧 [SILENT] Network error handled:', errorMessage.substring(0, 50));
+            this.logSilently('NETWORK', 'Error handled:', errorMessage.substring(0, 50));
           }
           
           // Crear una respuesta mock para requests que fallan constantemente
@@ -216,7 +223,7 @@ class NetworkErrorHandler {
     
     if (this.shouldSilenceError(error, queryKey)) {
       if (!this.isRateLimited()) {
-        console.debug('🔧 [SILENT] Query error handled:', queryKey);
+        this.logSilently('QUERY', 'Query error handled:', queryKey);
       }
       return null; // Silenciar el error
     }
@@ -233,7 +240,7 @@ if (typeof window !== 'undefined') {
   // Esperar un momento para que main.tsx configure su sistema primero
   setTimeout(() => {
     networkErrorHandler.init();
-    console.debug('🛡️ [NETWORK-HANDLER] Sistema avanzado de manejo silencioso activado');
+    networkErrorHandler.logSilently('INIT', 'Sistema avanzado de manejo silencioso activado', '');
   }, 100);
 }
 

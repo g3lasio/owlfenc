@@ -103,12 +103,35 @@ export class TaskOrchestrator {
         endpointsUsed: this.extractEndpointsUsed(result.completedSteps || [])
       };
 
-    } catch (error) {
-      console.error('❌ [TASK-ORCHESTRATOR] Error ejecutando tarea:', error);
+    } catch (error: unknown) {
+      const errorDetails = {
+        error,
+        errorType: typeof error,
+        errorMessage: error instanceof Error ? error.message : 'Sin mensaje de error',
+        errorStack: error instanceof Error ? error.stack : undefined,
+        errorName: error instanceof Error ? error.name : undefined,
+        errorCode: (error as any)?.code || undefined
+      };
+      
+      console.error('❌ [TASK-ORCHESTRATOR] Error ejecutando tarea:', errorDetails);
+      
+      // Determinar mensaje de error más específico
+      let errorMessage = 'Error desconocido en orquestador';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object') {
+        try {
+          errorMessage = JSON.stringify(error);
+        } catch {
+          errorMessage = 'Error no serializable';
+        }
+      }
       
       return {
         success: false,
-        error: `Error en orquestador: ${(error as Error).message}`,
+        error: `Error en orquestador: ${errorMessage}`,
         executionTime: Date.now() - startTime,
         stepsCompleted: 0,
         endpointsUsed: []
