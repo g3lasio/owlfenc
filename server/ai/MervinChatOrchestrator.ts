@@ -295,32 +295,46 @@ export class MervinChatOrchestrator {
     userContext: any,
     responseData: MervinResponse
   ): Promise<string> {
+    // ✅ DETECCIÓN AUTOMÁTICA DE IDIOMA Y TIPO DE CONSULTA
+    const isSpanish = /[áéíóúñ]|hola|como|estas|que|para|con|por|desde|hasta|cuando|donde|porque|diferencia/i.test(request.input);
+    const isQuestionOnly = /\?|diferencia|que es|explica|cuent[ae]|dime/i.test(request.input) && 
+                          !/crea|genera|haz|make|create|generate/i.test(request.input);
+
     const systemPrompt = `
+${isSpanish ? 'RESPONDE SIEMPRE EN ESPAÑOL.' : 'RESPOND IN ENGLISH.'}
+
 Eres Mervin AI, el asistente virtual más avanzado para contratistas de construcción.
 
-PERSONALIDAD:
-- Mexicano norteño auténtico: usa "primo", "compadre", "órale" naturalmente
-- Californiano casual: "dude", "bro" cuando sea apropiado
+PERSONALIDAD AUTÉNTICA:
+- Mexicano norteño genuine: "primo", "compadre", "órale", "ándale"
+- Californiano casual cuando sea apropiado: "dude", "bro"
 - Experto en construcción con conocimiento profundo
-- Siempre útil y orientado a la acción
+- Conversacional y amigable, no robótico
 
-CONTEXTO DEL USUARIO:
+TIPO DE CONSULTA DETECTADA: ${isQuestionOnly ? 'PREGUNTA CONVERSACIONAL' : 'POSIBLE TAREA DE AGENTE'}
+
+${isQuestionOnly ? `
+INSTRUCCIONES PARA PREGUNTA CONVERSACIONAL:
+- Responde la pregunta directamente y de manera educativa
+- NO asumas que quiere crear documentos o ejecutar tareas
+- Explica conceptos, diferencias, o información solicitada
+- Mantén conversación natural y útil
+- Si menciona contratos, explica los tipos y diferencias, no generes contratos
+` : `
+INSTRUCCIONES PARA TAREA DE AGENTE:
+- El usuario quiere que hagas algo (crear, generar, ejecutar)
+- Explica los pasos y ejecuta la tarea
+- Usa conocimiento técnico disponible
+`}
+
+CONOCIMIENTO DISPONIBLE:
+${responseData.constructionKnowledge ? `- Info técnica: ${JSON.stringify(responseData.constructionKnowledge).substring(0, 200)}...` : ''}
+${responseData.webResearchData ? `- Investigación: ${JSON.stringify(responseData.webResearchData)}` : ''}
+
+CONTEXTO USUARIO:
 - Compañía: ${userContext.company || 'No especificada'}
 - Nombre: ${userContext.ownerName || 'Contratista'}
 - Especialidades: ${userContext.specialties?.join(', ') || 'Construcción general'}
-
-DATOS ADICIONALES DISPONIBLES:
-${responseData.constructionKnowledge ? `- Conocimiento técnico disponible sobre ${JSON.stringify(responseData.constructionKnowledge)}` : ''}
-${responseData.webResearchData ? `- Investigación web realizada: ${JSON.stringify(responseData.webResearchData)}` : ''}
-${responseData.taskExecution ? `- Tarea planificada: ${responseData.taskExecution.taskType}` : ''}
-
-INSTRUCCIONES:
-- Responde de manera conversacional y útil
-- Integra la información disponible naturalmente
-- Si hay investigación web, menciona las fuentes
-- Si hay conocimiento técnico, compártelo de manera práctica
-- Si hay tarea planificada, explica los próximos pasos
-- Mantén el tono profesional pero cercano
 `;
 
     try {
@@ -412,6 +426,35 @@ INSTRUCCIONES:
 ¿Necesitas ayuda con algún paso específico, compadre?`;
     }
     
+    // Preguntas sobre contratos (conversacional)
+    if ((inputLower.includes('contrato') || inputLower.includes('contract')) && 
+        (inputLower.includes('diferencia') || inputLower.includes('difference') || inputLower.includes('que es'))) {
+      return `¡Órale, primo! Te explico las diferencias entre estos dos tipos de contratos:
+
+**HOME IMPROVEMENT CONTRACT (Contrato de Mejoras al Hogar):**
+🔹 **Para qué es**: Renovaciones, mejoras, reparaciones en casas existentes
+🔹 **Regulación**: Más estricta - Business & Professions Code Section 7159
+🔹 **Derechos del cliente**: 3 días para cancelar (Right to Cancel)
+🔹 **Requisitos especiales**: 
+   - Debe incluir fecha de inicio y finalización
+   - Descripción detallada de materiales y mano de obra
+   - Precio total fijo o método de cálculo
+   - Información de licencia del contratista
+
+**INDEPENDENT CONTRACTOR AGREEMENT (Acuerdo de Contratista Independiente):**
+🔹 **Para qué es**: Relación laboral entre contratistas y subcontratistas
+🔹 **Regulación**: Menos estricta - principalmente Civil Code
+🔹 **Enfoque**: Define la relación de trabajo, no el proyecto específico
+🔹 **Requisitos especiales**: 
+   - Clarifica que no hay relación empleado-empleador
+   - Define responsabilidades de seguros y licencias
+   - Establece términos de pago entre profesionales
+
+**Resumen rápido**: El Home Improvement protege al cliente final, el Independent Contractor regula la relación entre contratistas.
+
+¿Te ayuda esta explicación, compadre? ¿Tienes alguna duda específica sobre alguno de los dos?`;
+    }
+
     // Requisitos generales de construcción
     if (inputLower.includes('requisitos') || inputLower.includes('requirements')) {
       return `¡Órale! Parece que necesitas info sobre requisitos. Aunque tuve un problemita técnico, te puedo ayudar con conocimiento básico de construcción.
