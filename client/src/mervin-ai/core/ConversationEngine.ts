@@ -304,9 +304,9 @@ So, what can I do for you today, bro?`;
       );
     }
     
-    // Fallback a respuesta específica mejorada
-    console.log(`🔄 [FALLBACK] Usando respuesta específica estándar`);
-    return this.generateSpecificResponse(userMessage, messageType, intent, topic, emotionalContext, language);
+    // Fallback a respuesta específica SÚPER MEJORADA
+    console.log(`🔄 [FALLBACK] Generando respuesta contextual inteligente`);
+    return this.generateIntelligentContextualResponse(userMessage, messageType, intent, topic, emotionalContext, language, intelligentInferences);
   }
 
   private generateExpertLevelResponse(message: string, topic: string, isSpanish: boolean, inferences: any): string {
@@ -721,6 +721,45 @@ So, what can I do for you today, bro?`;
     return 'neutral';
   }
 
+  /**
+   * SISTEMA MEJORADO - Respuestas contextuales súper inteligentes
+   */
+  private generateIntelligentContextualResponse(
+    userMessage: string, 
+    messageType: string, 
+    intent: string, 
+    topic: string, 
+    emotionalContext: string, 
+    language: string,
+    inferences: any
+  ): string {
+    const isSpanish = language === 'spanish';
+    const normalizedMessage = userMessage.toLowerCase();
+    
+    // 🎯 ANÁLISIS CONTEXTUAL PROFUNDO
+    const context = this.analyzeDeepContext(normalizedMessage);
+    
+    // 🧠 RESPUESTAS SÚPER CONTEXTUALES
+    if (context.contains.license || context.contains.permit || normalizedMessage.includes('c-13') || normalizedMessage.includes('licencia')) {
+      return this.generateLicensePermitResponse(normalizedMessage, isSpanish);
+    }
+    
+    if (context.contains.pricing || context.contains.cost || context.contains.estimate) {
+      return this.generatePricingResponse(normalizedMessage, isSpanish);
+    }
+    
+    if (context.contains.contract || context.contains.agreement) {
+      return this.generateContractResponse(normalizedMessage, isSpanish);
+    }
+    
+    if (context.contains.business || context.contains.company) {
+      return this.generateBusinessResponse(normalizedMessage, isSpanish);
+    }
+    
+    // 🎭 RESPUESTAS ADAPTADAS POR TIPO DE MENSAJE
+    return this.generateAdaptiveResponse(userMessage, messageType, intent, topic, emotionalContext, isSpanish);
+  }
+
   private generateSpecificResponse(
     userMessage: string, 
     messageType: string, 
@@ -776,6 +815,119 @@ So, what can I do for you today, bro?`;
       default:
         return this.generateContextualStatement(intent, topic, emotionalContext, language, userMessage);
     }
+  }
+
+  /**
+   * Analizar contexto profundo del mensaje
+   */
+  private analyzeDeepContext(message: string): any {
+    return {
+      contains: {
+        license: /licencia|license|permit|c-13|c-27|contractors|contratista/.test(message),
+        permit: /permiso|permit|aplicar|apply|municipio|city|gobierno/.test(message),
+        pricing: /precio|cost|costo|cuanto|how much|estimate|estimado/.test(message),
+        estimate: /estimado|estimate|presupuesto|cotización|quote/.test(message),
+        contract: /contrato|contract|acuerdo|agreement|firma|sign/.test(message),
+        business: /negocio|business|empresa|company|trabajo|work/.test(message)
+      }
+    };
+  }
+
+  /**
+   * Respuesta especializada para licencias y permisos
+   */
+  private generateLicensePermitResponse(message: string, isSpanish: boolean): string {
+    if (message.includes('c-13') || message.includes('c13')) {
+      return isSpanish 
+        ? `¡Órale primo! La licencia C-13 es para fencing contractors. Te ayudo con todo el proceso. Necesitas experiencia comprobable, seguro de responsabilidad civil, y pasar el examen del estado. Te guío paso a paso - ¿en qué estado estás aplicando?`
+        : `Right on, dude! C-13 license is for fencing contractors. I'll help you with the whole process. You need verifiable experience, liability insurance, and to pass the state exam. I'll guide you step by step - which state are you applying in?`;
+    }
+    
+    return isSpanish
+      ? `Perfecto, compadre. Te ayudo con los permisos y licencias. Cada estado tiene sus requisitos específicos - dime exactamente qué licencia necesitas y en qué ubicación, y te armo el plan completo.`
+      : `Perfect, bro. I'll help you with permits and licenses. Each state has specific requirements - tell me exactly which license you need and the location, and I'll put together the complete plan for you.`;
+  }
+
+  /**
+   * Respuesta especializada para precios y estimados
+   */
+  private generatePricingResponse(message: string, isSpanish: boolean): string {
+    return isSpanish
+      ? `¡Ándale primo! Para darte un precio exacto necesito los detalles del proyecto. ¿Qué tipo de cerca necesitas? ¿Residencial o comercial? ¿Cuántos pies lineales? Con esa info te armo un estimado profesional al tiro.`
+      : `Let's do it, dude! To give you an exact price I need the project details. What type of fence do you need? Residential or commercial? How many linear feet? With that info I'll put together a professional estimate right away.`;
+  }
+
+  /**
+   * Respuesta especializada para contratos
+   */
+  private generateContractResponse(message: string, isSpanish: boolean): string {
+    return isSpanish
+      ? `¡Órale compadre! Te genero contratos profesionales con todas las cláusulas necesarias. Solo dime los detalles del trabajo y del cliente, y te armo el documento completo listo para firmar.`
+      : `Right on, bro! I'll generate professional contracts with all necessary clauses. Just give me the work details and client info, and I'll put together the complete document ready to sign.`;
+  }
+
+  /**
+   * Respuesta especializada para negocios
+   */
+  private generateBusinessResponse(message: string, isSpanish: boolean): string {
+    return isSpanish
+      ? `¡Simón primo! Te ayudo con todo lo del negocio - desde permisos y licencias hasta contratos y estimados. ¿En qué parte del proceso andas? ¿Empezando o ya tienes experiencia?`
+      : `For sure, dude! I'll help with all the business stuff - from permits and licenses to contracts and estimates. What part of the process are you at? Just starting or do you have experience?`;
+  }
+
+  /**
+   * Respuestas adaptivas mejoradas
+   */
+  private generateAdaptiveResponse(
+    userMessage: string, 
+    messageType: string, 
+    intent: string, 
+    topic: string, 
+    emotionalContext: string, 
+    isSpanish: boolean
+  ): string {
+    // Respuestas más inteligentes basadas en contexto
+    if (messageType === 'greeting') {
+      const greetings = isSpanish ? [
+        '¡Órale primo! ¿Cómo andas? ¿En qué te puedo echar la mano hoy?',
+        '¡Qué onda, compadre! ¿Todo bien? ¿Qué proyecto traes entre manos?',
+        '¡Ey, hermano! ¿Cómo está la cosa? ¿Listo para armar algo chingón?',
+        '¡Hola primo! ¿Qué tal todo? ¿En qué andamos trabajando hoy?'
+      ] : [
+        'Hey there, dude! What\'s up? How can I help you out today?',
+        'What\'s good, bro! How\'s everything? What project you working on?',
+        'Hey man! How\'s it going? Ready to build something awesome?',
+        'Hello there, dude! What\'s happening? What are we working on today?'
+      ];
+      return greetings[Math.floor(Math.random() * greetings.length)];
+    }
+    
+    if (messageType === 'question') {
+      return isSpanish
+        ? `Claro primo, te contesto eso. ${this.generateContextualHelp(userMessage, topic, isSpanish)}`
+        : `For sure, dude, I'll answer that. ${this.generateContextualHelp(userMessage, topic, isSpanish)}`;
+    }
+    
+    // Respuesta inteligente por defecto
+    return isSpanish
+      ? `Órale compadre, entiendo lo que necesitas. Dime más detalles específicos y te ayudo a resolverlo completamente.`
+      : `Right on, bro, I understand what you need. Give me more specific details and I'll help you solve it completely.`;
+  }
+
+  private generateContextualHelp(message: string, topic: string, isSpanish: boolean): string {
+    const helpTexts = isSpanish ? [
+      'Te explico todo paso a paso.',
+      'Te doy toda la información que necesitas.',
+      'Te armo la solución completa.',
+      'Te ayudo a resolverlo todo.'
+    ] : [
+      'I\'ll explain everything step by step.',
+      'I\'ll give you all the info you need.',
+      'I\'ll put together the complete solution.',
+      'I\'ll help you solve it all.'
+    ];
+    
+    return helpTexts[Math.floor(Math.random() * helpTexts.length)];
   }
 
   private generateQuestionResponse(intent: string, topic: string, language: string, userMessage: string): string {
