@@ -119,7 +119,7 @@ This project is an AI-powered legal document and permit management platform feat
 - **Technology Stack**: React.js with TypeScript, Tailwind CSS.
 - **Routing**: Wouter.
 - **Data Management**: TanStack Query.
-- **UI/UX Decisions**: Mobile optimization (safe areas, enhanced touch targets, mobile-first layouts, improved input areas, enhanced messaging). Clean, adaptive interface (Sparkles icon for agent mode, integrated agent functions in header).
+- **UI/UX Decisions**: Mobile optimization (safe areas, enhanced touch targets, mobile-first layouts, improved input areas, enhanced messaging). Clean, adaptive interface with sparkles icon for agent mode and integrated agent functions in header. Conversational onboarding and a smart action system using slash commands and contextual suggestions are key UI elements.
 
 ### Backend
 - **Server Framework**: Express.js server.
@@ -134,11 +134,9 @@ This project is an AI-powered legal document and permit management platform feat
 
 ### AI Architecture
 - **Mervin AI Unified System**: Unified backend supporting a superintelligent construction chatbot, autonomous task execution, and real-time web research. Utilizes differentiated roles for AI models. Key components include SmartTaskCoordinator, ParallelExecutionEngine, Decision Engine, Memory System, Risk Assessment, and a Conversational Intelligence module with advanced multilingual personality, language detection, contextual flow, dynamic personality adaptation, and emotion recognition. Access is via unified `/api/mervin/process` endpoint with specialized sub-endpoints.
+- **Mervin AI Autonomous Agent**: Modular system designed for intention analysis, smart task coordination, intelligent decision-making, parallel execution, specialized agents (estimates, contracts, permits, property verification), learning, memory, real-time feedback, permission intelligence, context awareness, endpoint consistency, performance optimization, and risk assessment.
 
 ### Core Features & Design Patterns
-- **Smart Action System**: Context-aware interface system using intelligent slash commands, contextual suggestions, and adaptive floating actions.
-- **Conversational Onboarding System**: Integrates onboarding directly into the Mervin AI chat, replacing traditional wizards with a natural, guided conversation flow.
-- **Mervin AI Autonomous Agent**: Modular system designed for intention analysis, smart task coordination, intelligent decision-making, parallel execution, specialized agents (estimates, contracts, permits, property verification), learning, memory, real-time feedback, permission intelligence, context awareness, endpoint consistency, performance optimization, and risk assessment.
 - **User Authentication & Authorization**: Enhanced OAuth, email/password, and a robust subscription-based permission system. Includes secure registration, automatic subscription degradation, real-time usage limit enforcement, 30-day persistent login with device fingerprinting, session validation, and WebAuthn API integration for biometric logins.
 - **Password Reset System**: Secure email-based password reset utilizing Resend, with database-stored, single-use, expiring tokens.
 - **Dynamic URL Generation**: Centralized utility (`server/utils/url-builder.ts`) for environment-agnostic URL generation.
