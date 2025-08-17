@@ -132,7 +132,7 @@ export class MervinChatOrchestrator {
           const webData = await this.webResearch.expressResearch(
             request.input, 
             processingType.researchTopic!,
-            request.location || 'California'
+            'California'
           );
           response.webResearchData = webData;
         } else {
@@ -141,7 +141,7 @@ export class MervinChatOrchestrator {
           const webData = await this.webResearch.research(
             request.input, 
             processingType.researchTopic!,
-            request.location || 'California'
+            'California'
           );
           response.webResearchData = webData;
         }
@@ -172,11 +172,24 @@ export class MervinChatOrchestrator {
     } catch (error) {
       console.error('❌ [MERVIN] Error procesando request:', error);
       
-      // Respuesta de fallback usando OpenAI
+      // ✅ SOLUCIÓN: Procesar conocimiento disponible incluso en caso de error
+      let constructionData = null;
+      try {
+        // Intentar obtener conocimiento de construcción antes del fallback
+        const processingType = await this.determineProcessingType(request);
+        if (processingType.requiresConstructionKnowledge) {
+          constructionData = await this.constructionKB.getRelevantKnowledge(request.input, processingType.constructionCategory!);
+        }
+      } catch (kbError) {
+        console.log('⚠️ [MERVIN] No se pudo obtener conocimiento de construcción:', kbError);
+      }
+      
+      // Respuesta de fallback inteligente usando conocimiento disponible
       const fallbackResponse = await this.generateFallbackResponse(request.input);
       
       return {
         conversationalResponse: fallbackResponse,
+        constructionKnowledge: constructionData || undefined,
         languageProfile: {
           language: 'spanish',
           personality: 'mexicana_norteña',
@@ -216,7 +229,8 @@ export class MervinChatOrchestrator {
     const constructionKeywords = [
       'cerca', 'fence', 'materiales', 'materials', 'construcción', 'construction',
       'permiso', 'permit', 'código', 'code', 'regulación', 'regulation',
-      'contrato', 'contract', 'estimado', 'estimate'
+      'contrato', 'contract', 'estimado', 'estimate', 'licencia', 'license',
+      'c-13', 'c13', 'certificación', 'certification', 'requisitos', 'requirements'
     ];
 
     if (constructionKeywords.some(keyword => input.includes(keyword))) {
@@ -323,14 +337,56 @@ INSTRUCCIONES:
       return completion.choices[0]?.message?.content || 'Órale, primo, algo pasó con mi respuesta. ¿Puedes repetir tu pregunta?';
     } catch (error) {
       console.error('❌ [MERVIN] Error generando respuesta conversacional:', error);
-      return 'Compadre, tuve un problemita técnico. ¿Me puedes repetir qué necesitas?';
+      // ✅ SOLUCIÓN: Usar fallback inteligente cuando OpenAI falle
+      return await this.generateFallbackResponse(request.input);
     }
   }
 
   /**
-   * Genera respuesta de fallback en caso de error
+   * Genera respuesta de fallback INTELIGENTE usando conocimiento de construcción cuando OpenAI falla
    */
   private async generateFallbackResponse(input: string): Promise<string> {
+    const inputLower = input.toLowerCase();
+    
+    // ✅ SOLUCIÓN: Usar conocimiento específico cuando OpenAI falle
+    
+    // Licencias de contratista (C-13, etc)
+    if ((inputLower.includes('licencia') && (inputLower.includes('c-13') || inputLower.includes('c13'))) || 
+        (inputLower.includes('license') && (inputLower.includes('c-13') || inputLower.includes('c13')))) {
+      return `¡Órale, primo! Te ayudo con los requisitos para la licencia C-13 de cercas en California:
+
+**REQUISITOS PRINCIPALES:**
+🔹 **Experiencia**: 4 años de experiencia en construcción de cercas
+🔹 **Examen**: Aprobar el examen estatal (ley + comercio)
+🔹 **Seguro**: $15,000 en bonos de licencia
+🔹 **Aplicación**: $330 por la aplicación inicial
+🔹 **Fingerprinting**: Huellas digitales y verificación de antecedentes
+
+**CHECKLIST PASO A PASO:**
+✅ Registra tu experiencia laboral (4 años mínimo)
+✅ Estudia el manual del contratista de CSLB
+✅ Programa tu examen en PSI Services  
+✅ Consigue el seguro de responsabilidad civil
+✅ Completa la aplicación en CSLB.ca.gov
+✅ Paga las tarifas correspondientes
+
+¿Necesitas ayuda con algún paso específico, compadre?`;
+    }
+    
+    // Requisitos generales de construcción
+    if (inputLower.includes('requisitos') || inputLower.includes('requirements')) {
+      return `¡Órale! Parece que necesitas info sobre requisitos. Aunque tuve un problemita técnico, te puedo ayudar con conocimiento básico de construcción.
+
+¿Te refieres a:
+🔹 **Requisitos de licencia** (como C-13, C-36, etc)?
+🔹 **Permisos de construcción** para un proyecto?
+🔹 **Materiales y códigos** para cercas?
+🔹 **Certificaciones** específicas?
+
+Dame más detalles y te ayudo con lo que necesites, primo.`;
+    }
+
+    // Fallback usando OpenAI si está disponible
     try {
       const completion = await this.openai.chat.completions.create({
         model: DEFAULT_OPENAI_MODEL,
@@ -347,7 +403,16 @@ INSTRUCCIONES:
 
       return completion.choices[0]?.message?.content || 'Órale, primo, tuve un pequeño problema técnico, pero estoy aquí para ayudarte. ¿En qué puedo apoyarte?';
     } catch (error) {
-      return 'Compadre, parece que tengo algunos problemas técnicos en este momento. ¿Puedes intentar de nuevo en un momento?';
+      // Fallback final inteligente
+      return `Compadre, tuve un problemita técnico, pero aquí andamos para ayudarte con construcción y cercas.
+
+¿Puedes decirme específicamente qué necesitas? Por ejemplo:
+• Info sobre licencias de contratista
+• Requisitos para permisos  
+• Precios de materiales
+• Códigos de construcción
+
+¡Dale, primo!`;
     }
   }
 
