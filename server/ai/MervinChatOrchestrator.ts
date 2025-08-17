@@ -336,14 +336,53 @@ INSTRUCCIONES:
 
       return completion.choices[0]?.message?.content || 'Órale, primo, algo pasó con mi respuesta. ¿Puedes repetir tu pregunta?';
     } catch (error) {
-      console.error('❌ [MERVIN] Error generando respuesta conversacional:', error);
-      // ✅ SOLUCIÓN: Usar fallback inteligente cuando OpenAI falle
+      console.error('❌ [MERVIN] Error con OpenAI, intentando con Anthropic...', error);
+      // ✅ SOLUCIÓN: Usar Anthropic como respaldo automático cuando OpenAI falle
+      return await this.generateAnthropicFallbackResponse(request, userContext, responseData, systemPrompt);
+    }
+  }
+
+  /**
+   * Sistema de respaldo usando Anthropic cuando OpenAI falla
+   */
+  private async generateAnthropicFallbackResponse(
+    request: MervinRequest,
+    userContext: any,
+    responseData: MervinResponse,
+    systemPrompt: string
+  ): Promise<string> {
+    try {
+      console.log('🔄 [MERVIN-ANTHROPIC] Usando Anthropic como respaldo...');
+      
+      const anthropicResponse = await this.anthropic.messages.create({
+        model: DEFAULT_ANTHROPIC_MODEL,
+        max_tokens: 1000,
+        temperature: 0.7,
+        system: systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: request.input
+          }
+        ]
+      });
+
+      const responseContent = anthropicResponse.content[0];
+      if (responseContent.type === 'text') {
+        console.log('✅ [MERVIN-ANTHROPIC] Respuesta generada exitosamente');
+        return responseContent.text;
+      }
+
+      throw new Error('Respuesta de Anthropic no válida');
+    } catch (anthropicError) {
+      console.error('❌ [MERVIN-ANTHROPIC] Error con Anthropic también:', anthropicError);
+      // Si ambas APIs fallan, usar el sistema de conocimiento específico
       return await this.generateFallbackResponse(request.input);
     }
   }
 
   /**
-   * Genera respuesta de fallback INTELIGENTE usando conocimiento de construcción cuando OpenAI falla
+   * Genera respuesta de fallback INTELIGENTE usando conocimiento de construcción cuando ambas APIs fallan
    */
   private async generateFallbackResponse(input: string): Promise<string> {
     const inputLower = input.toLowerCase();
@@ -386,37 +425,19 @@ INSTRUCCIONES:
 Dame más detalles y te ayudo con lo que necesites, primo.`;
     }
 
-    // Fallback usando OpenAI si está disponible
-    try {
-      const completion = await this.openai.chat.completions.create({
-        model: DEFAULT_OPENAI_MODEL,
-        messages: [
-          {
-            role: 'system',
-            content: 'Eres Mervin AI. Responde como un experto en construcción mexicano norteño. Algo salió mal en el sistema, pero ayuda al usuario de manera básica.'
-          },
-          { role: 'user', content: input }
-        ],
-        max_tokens: 300,
-        temperature: 0.7,
-      });
-
-      return completion.choices[0]?.message?.content || 'Órale, primo, tuve un pequeño problema técnico, pero estoy aquí para ayudarte. ¿En qué puedo apoyarte?';
-    } catch (error) {
-      // Fallback final inteligente
-      return `Compadre, tuve un problemita técnico, pero aquí andamos para ayudarte con construcción y cercas.
+    // Fallback final inteligente cuando TODAS las APIs fallan
+    console.log('⚠️ [MERVIN-FALLBACK] Usando respuestas inteligentes sin APIs externas');
+    return `Compadre, tuve un problemita técnico con las conexiones, pero aquí andamos para ayudarte con construcción y cercas.
 
 ¿Puedes decirme específicamente qué necesitas? Por ejemplo:
-• Info sobre licencias de contratista
-• Requisitos para permisos  
-• Precios de materiales
-• Códigos de construcción
+• Info sobre licencias de contratista (C-13, C-36, etc)
+• Requisitos para permisos de construcción
+• Precios de materiales y cercas
+• Códigos de construcción de California
 
-¡Dale, primo!`;
-    }
+¡Dale, primo! Aunque tenga fallas técnicas, conozco el negocio de construcción.`;
   }
-
-  // ==================== FASE 2: OPTIMIZACIONES SÚPER RÁPIDAS PARA CONTRATISTAS ====================
+}
 
   /**
    * DETECCIÓN INTELIGENTE DE URGENCIA EN CONSULTAS
