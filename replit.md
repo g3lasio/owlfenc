@@ -123,15 +123,15 @@ This project is an AI-powered legal document and permit management platform feat
 
 ### Frontend
 - **Technology Stack**: React.js with TypeScript, Tailwind CSS, Wouter for routing, TanStack Query for data management.
-- **UI/UX Decisions**: Mobile optimization with safe areas and enhanced touch targets; conversational onboarding guided by Mervin AI; smart action system using slash commands and contextual suggestions; adaptive UI elements; and agent functions/model selectors integrated into the header for consistent user experience.
+- **UI/UX Decisions**: Mobile optimization (safe areas, enhanced touch targets); conversational onboarding guided by Mervin AI; smart action system (slash commands, contextual suggestions); adaptive UI elements; agent functions and model selectors integrated into the header.
 
 ### Backend
 - **Server Framework**: Express.js.
-- **Database**: PostgreSQL with Drizzle ORM for main data, Firebase (Firestore) for client management data ensuring real-time sync and single source of truth.
+- **Database**: PostgreSQL with Drizzle ORM for main data, Firebase (Firestore) for client management data ensuring real-time sync.
 - **Authentication**: Firebase Admin SDK.
 
 ### AI Architecture
-- **Mervin AI Unified System**: Designed for superintelligent chatbot capabilities, autonomous task execution, and real-time web research. It features differentiated AI model roles, intelligent decision-making, parallel execution, and specialized agents (estimates, contracts, permits, property verification). Includes learning, memory, real-time feedback, and a Conversational Intelligence module with advanced multilingual personality and emotion recognition, specifically targeting a unique "Mexican Norteña" and "Californian casual" persona.
+- **Mervin AI Unified System**: Superintelligent chatbot with autonomous task execution and real-time web research. Features differentiated AI model roles, intelligent decision-making, parallel execution, and specialized agents (estimates, contracts, permits, property verification). Includes learning, memory, real-time feedback, and a Conversational Intelligence module with advanced multilingual personality and emotion recognition, targeting "Mexican Norteña" and "Californian casual" personas.
 
 ### Core Features & Design Patterns
 - **User Authentication & Authorization**: Robust subscription-based permission system supporting OAuth, email/password, secure registration, automatic subscription degradation, real-time usage limit enforcement, persistent login, device fingerprinting, session validation, and WebAuthn API for biometric logins.

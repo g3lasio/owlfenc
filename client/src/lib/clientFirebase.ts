@@ -47,7 +47,13 @@ export const saveClient = async (clientData: Omit<Client, 'id' | 'createdAt' | '
       updatedAt: Timestamp.now()
     };
 
-    const docRef = await addDoc(collection(db, "clients"), clientWithMeta);
+    // Timeout para Firebase
+    const savePromise = addDoc(collection(db, "clients"), clientWithMeta);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Firebase timeout')), 8000)
+    );
+    
+    const docRef = await Promise.race([savePromise, timeoutPromise]) as any;
     return { 
       id: docRef.id, 
       ...clientWithMeta,
@@ -55,7 +61,15 @@ export const saveClient = async (clientData: Omit<Client, 'id' | 'createdAt' | '
       updatedAt: clientWithMeta.updatedAt.toDate(),
     } as Client;
   } catch (error) {
-    console.error("Error al guardar cliente:", error);
+    console.error("❌ Firebase error:", error);
+    
+    // Mensajes específicos para errores comunes
+    if (error.message?.includes('network-request-failed') || error.message?.includes('auth/network-request-failed')) {
+      throw new Error('Sin conexión a Firebase');
+    } else if (error.message?.includes('timeout')) {
+      throw new Error('Firebase lento - reintenta');
+    }
+    
     throw error;
   }
 };

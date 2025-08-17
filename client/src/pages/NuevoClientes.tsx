@@ -493,13 +493,28 @@ export default function NuevoClientes() {
       
       // Guardar cada cliente procesado por la IA
       const savedClients = [];
-      for (const clientData of result.mappedClients) {
+      console.log(`🔄 Guardando ${result.mappedClients.length} clientes en Firebase...`);
+      
+      for (let i = 0; i < result.mappedClients.length; i++) {
+        const clientData = result.mappedClients[i];
         try {
+          console.log(`📝 Guardando cliente ${i + 1}/${result.mappedClients.length}:`, clientData.name);
           const savedClient = await saveClient(clientData);
           savedClients.push(savedClient);
+          console.log(`✅ Cliente ${i + 1} guardado exitosamente`);
         } catch (error) {
-          console.error("Error guardando cliente:", error);
+          console.error(`❌ Error guardando cliente ${i + 1}:`, error);
         }
+      }
+      
+      console.log(`🎯 Guardado completado: ${savedClients.length}/${result.mappedClients.length} clientes`);
+      
+      if (savedClients.length === 0) {
+        throw new Error(`Firebase no disponible. IA procesó ${result.mappedClients.length} clientes pero no se pudieron guardar. Intenta más tarde.`);
+      }
+      
+      if (savedClients.length < result.mappedClients.length) {
+        console.warn(`⚠️ Solo se guardaron ${savedClients.length}/${result.mappedClients.length} clientes por problemas de Firebase`);
       }
 
       // Actualizar lista de clientes
@@ -507,7 +522,7 @@ export default function NuevoClientes() {
 
       toast({
         title: "✨ Importación inteligente completada",
-        description: `Se importaron ${savedClients.length} clientes usando IA. Formato detectado: ${result.detectedFormat}`,
+        description: `Se importaron ${savedClients.length} de ${result.mappedClients.length} clientes usando IA. Formato: ${result.detectedFormat}`,
       });
 
       setShowImportDialog(false);
