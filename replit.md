@@ -33,6 +33,12 @@ This project is an advanced AI-powered legal document and permit management plat
   * DETECCIÓN EMOCIONAL AVANZADA: Reconoce frustración, satisfacción, urgencia y adapta respuestas empáticamente
   * ANTI-ROBÓTICO TOTAL: Eliminadas todas las respuestas templadas; cada respuesta es única y contextual al mensaje específico
 - CHAT RELIABILITY CRITICAL: Sistema robusto anti-cuelgues con timeouts, logging detallado y manejo comprehensivo de errores para evitar estados estáticos de "Procesando..." (FIXED 17/08/2025 - TaskOrchestrator config access errors resolved)
+- CONVERSATIONAL RESPONSES REVOLUTION: Sistema completamente reescrito para eliminar respuestas genéricas repetitivas (FIXED 17/08/2025):
+  * CONTEXTUAL PATTERN MATCHING: Detección específica de tipos de mensaje (follow-ups, referencias previas, confirmaciones, negaciones)
+  * INTELLIGENT CONVERSATION FLOW: Separación perfecta entre conversación simple vs tareas complejas usando isSimpleConversationalMessage()
+  * AUTHENTIC RESPONSES: Respuestas específicas contextuales en lugar de fallbacks genéricos como "Right on, bro, I understand what you need"
+  * MEXICAN NORTEÑA PERSONALITY: Personalidad auténtica integrada en cada tipo de respuesta contextual
+  * SMART FALLBACK SYSTEM: Sistema de respaldo inteligente que pide clarificación específica en lugar de respuestas vagas
 - MOBILE UX OPTIMIZATION COMPLETED: Optimización completa de Mervin AI chat para iPhone y dispositivos móviles (16/08/2025):
   * SAFE AREA SUPPORT: Soporte completo para iPhone notch y Dynamic Island usando CSS env() variables
   * ENHANCED TOUCH TARGETS: Botones y elementos interactivos con mínimo 44px según Apple Human Interface Guidelines
@@ -74,7 +80,7 @@ This project is an advanced AI-powered legal document and permit management plat
 - **Routing**: Wouter for client-side routing.
 - **Data Management**: TanStack Query for efficient data fetching and state management.
 - **AI System**: Modular Mervin AI with 14 specialized components including Smart Task Coordinator.
-- **Status**: ✅ Fully operational - Critical Mervin AI TaskOrchestrator errors fixed, conversational system restored (August 17, 2025)
+- **Status**: ✅ Fully operational - Critical Mervin AI TaskOrchestrator errors fixed, conversational system revolutionized with contextual intelligence (August 17, 2025)
 
 ### Backend
 - **Server Framework**: Express.js server.

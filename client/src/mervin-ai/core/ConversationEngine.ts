@@ -886,8 +886,10 @@ So, what can I do for you today, bro?`;
     emotionalContext: string, 
     isSpanish: boolean
   ): string {
-    // Respuestas más inteligentes basadas en contexto
-    if (messageType === 'greeting') {
+    const normalizedMessage = userMessage.toLowerCase();
+    
+    // 🎯 ANÁLISIS CONTEXTUAL INTELIGENTE PRIMERO
+    if (messageType === 'greeting' || /^(hola|hello|hi|hey|qué tal|what's up)/i.test(normalizedMessage)) {
       const greetings = isSpanish ? [
         '¡Órale primo! ¿Cómo andas? ¿En qué te puedo echar la mano hoy?',
         '¡Qué onda, compadre! ¿Todo bien? ¿Qué proyecto traes entre manos?',
@@ -902,16 +904,51 @@ So, what can I do for you today, bro?`;
       return greetings[Math.floor(Math.random() * greetings.length)];
     }
     
-    if (messageType === 'question') {
+    // 🤝 RESPUESTAS DE CONTINUACIÓN (follow-up)
+    if (/^(solo en eso|only that|just that|that's it)/i.test(normalizedMessage)) {
+      return isSpanish 
+        ? `Perfecto, primo. Si necesitas algo más específico o quieres que cambiemos de tema, nomás me dices.`
+        : `Perfect, dude. If you need something more specific or want to change topics, just let me know.`;
+    }
+    
+    if (/^(i gave you|ya te di|te dije|i told you|already gave)/i.test(normalizedMessage)) {
+      return isSpanish
+        ? `Órale primo, tienes razón. Déjame revisar bien la información que me diste para darte la respuesta que necesitas.`
+        : `Right on, dude, you're right. Let me review the info you gave me properly to give you the response you need.`;
+    }
+    
+    // 🤔 RESPUESTAS DE CONFIRMACIÓN
+    if (/^(sí|yes|ok|okay|correcto|right|sure)/i.test(normalizedMessage)) {
+      return isSpanish
+        ? `¡Simón! ¿En qué más te ayudo o qué quieres que hagamos ahora?`
+        : `Cool! What else can I help you with or what should we do now?`;
+    }
+    
+    // ❌ RESPUESTAS DE NEGACIÓN
+    if (/^(no|nope|nah|not really)/i.test(normalizedMessage)) {
+      return isSpanish
+        ? `No hay problema, compadre. ¿Hay algo más en lo que te pueda ayudar o quieres que veamos otra cosa?`
+        : `No worries, bro. Is there something else I can help you with or want to look at something different?`;
+    }
+    
+    // 🤷 RESPUESTAS VAGAS - Pedir clarificación
+    if (normalizedMessage.length < 15) {
+      return isSpanish
+        ? `¿Puedes darme un poco más de contexto, primo? Así te ayudo mejor con lo que necesitas.`
+        : `Can you give me a bit more context, dude? That way I can help you better with what you need.`;
+    }
+    
+    // 📝 PREGUNTAS
+    if (messageType === 'question' || normalizedMessage.includes('?') || /^(cómo|how|qué|what|cuándo|when|dónde|where)/i.test(normalizedMessage)) {
       return isSpanish
         ? `Claro primo, te contesto eso. ${this.generateContextualHelp(userMessage, topic, isSpanish)}`
         : `For sure, dude, I'll answer that. ${this.generateContextualHelp(userMessage, topic, isSpanish)}`;
     }
     
-    // Respuesta inteligente por defecto
+    // 🔄 FALLBACK INTELIGENTE - Ya no genérico
     return isSpanish
-      ? `Órale compadre, entiendo lo que necesitas. Dime más detalles específicos y te ayudo a resolverlo completamente.`
-      : `Right on, bro, I understand what you need. Give me more specific details and I'll help you solve it completely.`;
+      ? `Entiendo, compadre. ¿Podrías ser más específico sobre lo que necesitas? Así te doy una respuesta más precisa.`
+      : `I understand, bro. Could you be more specific about what you need? That way I can give you a more precise answer.`;
   }
 
   private generateContextualHelp(message: string, topic: string, isSpanish: boolean): string {
