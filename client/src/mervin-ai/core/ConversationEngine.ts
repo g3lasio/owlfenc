@@ -82,6 +82,7 @@ class ConversationEngine {
     };
 
     console.log(`🗣️ [CONVERSATION-ENGINE] Initialized for user: ${userId}`);
+    console.log(`🧠 [ADVANCED-INTELLIGENCE] Sistema súper avanzado activado`);
   }
 
   /**
@@ -91,11 +92,19 @@ class ConversationEngine {
     // 🛡️ SANITIZACIÓN DE SEGURIDAD - Prevenir XSS
     const sanitizedMessage = this.sanitizeInput(userMessage);
     
+    console.log(`🧠 [SUPER-ADVANCED] Procesando mensaje: "${sanitizedMessage}"`);
+    
     // 🧠 ANÁLISIS CONVERSACIONAL SÚPER AVANZADO
     const advancedAnalysis = await this.advancedIntelligence.analyzeAdvancedConversationalContext(
       sanitizedMessage, 
       this.state.conversationHistory
     );
+    
+    console.log(`🎯 [ADVANCED-ANALYSIS]`, {
+      linguistic: advancedAnalysis.linguisticAnalysis?.complexity,
+      emotional: advancedAnalysis.emotionalInsights?.current,
+      inferences: advancedAnalysis.intelligentInferences?.implicit?.length || 0
+    });
 
     // 1. Detectar idioma y personalidad (mejorado con análisis avanzado)
     const languageProfile = this.languageDetector.detectLanguage(sanitizedMessage);
@@ -296,6 +305,7 @@ So, what can I do for you today, bro?`;
     }
     
     // Fallback a respuesta específica mejorada
+    console.log(`🔄 [FALLBACK] Usando respuesta específica estándar`);
     return this.generateSpecificResponse(userMessage, messageType, intent, topic, emotionalContext, language);
   }
 
