@@ -101,6 +101,40 @@ export class MervinAgent {
   }
 
   /**
+   * Determina si el input requiere ejecución autónoma de agentes
+   */
+  private requiresAutonomousExecution(input: string, taskType: string): boolean {
+    // Palabras clave que indican tareas específicas que requieren agentes
+    const autonomousKeywords = [
+      'crear', 'generar', 'hacer', 'armar', 'calcular', 'preparar',
+      'estimado', 'contrato', 'permiso', 'propiedad', 'verificar',
+      'create', 'generate', 'make', 'calculate', 'estimate', 'contract'
+    ];
+    
+    const lowerInput = input.toLowerCase();
+    
+    // Comandos slash siempre requieren ejecución autónoma
+    if (lowerInput.startsWith('/')) return true;
+    
+    // Si el tipo de tarea ya no es conversación, requiere ejecución
+    if (taskType !== 'conversation' && taskType !== 'general') return true;
+    
+    // Verificar palabras clave de tareas específicas
+    const hasTaskKeywords = autonomousKeywords.some(keyword => lowerInput.includes(keyword));
+    
+    // Patrones que indican solicitudes específicas de acción
+    const actionPatterns = [
+      /\b(crear?|generar?|hacer|armar)\b.*\b(estimado|contrato)\b/i,
+      /\bcuanto cuesta\b.*\b(cerca|construcción|proyecto)\b/i,
+      /\b(verificar?|revisar)\b.*\b(propiedad|permiso)\b/i
+    ];
+    
+    const hasActionPattern = actionPatterns.some(pattern => pattern.test(lowerInput));
+    
+    return hasTaskKeywords || hasActionPattern;
+  }
+
+  /**
    * Método principal para procesar input del usuario
    * Analiza intenciones y ejecuta tareas autónomamente con conversación inteligente
    */
@@ -125,24 +159,49 @@ export class MervinAgent {
     }
 
     try {
+      // 1. ANÁLISIS INTELIGENTE - Determinar si requiere capacidades autónomas
+      const extractedTaskType = this.extractTaskType(input);
+      const requiresAutonomousAction = this.requiresAutonomousExecution(input, extractedTaskType);
+      
+      if (!requiresAutonomousAction) {
+        // Para conversaciones normales, usar solo motor conversacional
+        if (this.config.debug) {
+          console.log('💬 [CONVERSATION-MODE] Normal chat detected - using conversation engine only');
+        }
+        
+        const conversationResponse = await this.conversationEngine.processUserMessage(input);
+        this.updateState({ isActive: false, lastActivity: new Date() });
+        
+        return {
+          success: true,
+          data: {
+            conversationalResponse: conversationResponse.message,
+            languageProfile: conversationResponse.languageProfile,
+            isConversational: true
+          },
+          executionTime: Date.now() - (this.state.lastActivity?.getTime() || 0),
+          stepsCompleted: 1,
+          endpointsUsed: []
+        };
+      }
+      
+      // Solo activar para tareas que requieren ejecución autónoma
       this.updateState({ isActive: true, lastActivity: new Date() });
       
-      // 1. CONECTAR AL BACKEND REORGANIZADO FASE 2
-      // Usar el nuevo endpoint unificado /api/mervin/process
-      const extractedTaskType = this.extractTaskType(input);
+      // 2. CONECTAR AL BACKEND REORGANIZADO FASE 2
       const backendRequest = {
         input: input,
         userId: this.config.userId,
-        agentMode: 'intelligent',  // Backend espera 'intelligent' o 'executor'
-        conversationHistory: conversationHistory.slice(-5), // Últimos 5 mensajes para contexto
+        agentMode: 'executor',  // Usar 'executor' para tareas específicas
+        conversationHistory: conversationHistory.slice(-5),
         subscriptionLevel: this.config.subscriptionLevel,
         requiresWebResearch: this.requiresResearch(input),
-        taskType: extractedTaskType === 'conversation' ? 'general' : extractedTaskType, // Mapear 'conversation' a 'general'
-        location: 'California' // Default location
+        taskType: extractedTaskType === 'conversation' ? 'general' : extractedTaskType,
+        location: 'California'
       };
 
       if (this.config.debug) {
-        console.log('🤖 [AGENT-MODE] Processing with full autonomous capabilities');
+        console.log('🤖 [AUTONOMOUS-TASK] Task execution required:', extractedTaskType);
       }
 
       // Procesar con el backend unificado reorganizado

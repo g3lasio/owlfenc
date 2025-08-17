@@ -480,7 +480,6 @@ Dame más detalles y te ayudo con lo que necesites, primo.`;
 
 ¡Dale, primo! Aunque tenga fallas técnicas, conozco el negocio de construcción.`;
   }
-}
 
   /**
    * DETECCIÓN INTELIGENTE DE URGENCIA EN CONSULTAS

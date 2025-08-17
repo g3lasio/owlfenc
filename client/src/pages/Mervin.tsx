@@ -71,6 +71,44 @@ export default function Mervin() {
   const isFreeUser = userPlan?.id === 1 || userPlan?.name === "Primo Chambeador";
   const canUseAgentMode = !isFreeUser;
 
+  // Función para determinar si el input requiere capacidades de agente autónomo
+  const isTaskRequiringAgent = (input: string): boolean => {
+    const taskKeywords = [
+      // Estimados y cotizaciones
+      'estimado', 'cotizar', 'presupuesto', 'precio', 'cuanto cuesta', 'costo',
+      'quote', 'estimate', 'pricing', 'cost', 'budget',
+      
+      // Contratos y documentos legales
+      'contrato', 'acuerdo', 'firmar', 'documento legal', 'terms',
+      'contract', 'agreement', 'sign', 'legal document',
+      
+      // Permisos y regulaciones
+      'permiso', 'municipal', 'ciudad', 'building code', 'regulation',
+      'permit', 'city', 'approval', 'code', 'inspection',
+      
+      // Verificación de propiedades
+      'propiedad', 'dueño', 'propietario', 'verificar ownership', 
+      'property', 'owner', 'ownership', 'verify', 'title',
+      
+      // Generación de documentos
+      'generar', 'crear', 'hacer un', 'preparar', 'armar',
+      'generate', 'create', 'make', 'prepare', 'build'
+    ];
+    
+    const lowerInput = input.toLowerCase();
+    
+    // Comandos slash siempre requieren agente
+    if (lowerInput.startsWith('/')) return true;
+    
+    // Verificar si contiene palabras clave de tareas específicas
+    const hasTaskKeywords = taskKeywords.some(keyword => lowerInput.includes(keyword));
+    
+    // Verificar patrones de solicitudes específicas
+    const hasActionPattern = /\b(crear?|generar?|hacer|armar|calcular|verificar|revisar)\b.*\b(estimado|contrato|permiso|propiedad)\b/i.test(lowerInput);
+    
+    return hasTaskKeywords || hasActionPattern;
+  };
+
   // Initialize systems and onboarding detection
   useEffect(() => {
     if (!conversationEngineRef.current && currentUser?.uid) {
@@ -223,47 +261,74 @@ export default function Mervin() {
       const agent = mervinAgentRef.current;
 
       if (selectedModel === "agent" && agent) {
-        // AUTONOMOUS AGENT MODE - Full power
-        console.log('🤖 [AGENT-MODE] Processing with full autonomous capabilities');
+        // CONTROL INTELIGENTE - Solo activar agente autónomo para tareas específicas
+        const requiresAgentAction = isTaskRequiringAgent(currentInput);
         
-        // Remove thinking message and add processing
-        setMessages(prev => prev.slice(0, -1));
-        
-        const processingMessage: Message = {
-          id: "processing-" + Date.now(),
-          content: "🤖 **Modo Agente Autónomo Activado**\n\nAnalizando tu solicitud y coordinando acciones...\n\n*Procesando con inteligencia artificial avanzada...*",
-          sender: "assistant",
-          state: "analyzing"
-        };
-        setMessages(prev => [...prev, processingMessage]);
-        
-        // Execute with full agent capabilities
-        const conversationHistory = messages
-          .filter(m => m.sender === 'user')
-          .map(m => ({ content: m.content, timestamp: new Date() }));
-        
-        const result = await agent.processUserInput(currentInput, conversationHistory);
-        
-        // Remove processing message
-        setMessages(prev => prev.slice(0, -1));
-        
-        const responseContent = result.data?.conversationalResponse || 
-          result.data?.response || 
-          "¡Órale primo! ¿En qué más te puedo ayudar?";
-        
-        // Solo mostrar badge si es una tarea específica completada, no conversación normal
-        const isActualTaskCompletion = result.success && 
-          result.data && 
-          (result.data.fileGenerated || result.data.estimateCreated || result.data.contractGenerated || result.data.taskCompleted);
-        
-        const agentResponse: Message = {
-          id: "assistant-" + Date.now(),
-          content: responseContent,
-          sender: "assistant",
-          // Solo añadir taskResult para tareas específicas completadas
-          ...(isActualTaskCompletion && { taskResult: result })
-        };
-        setMessages(prev => [...prev, agentResponse]);
+        if (requiresAgentAction) {
+          console.log('🤖 [AGENT-MODE] Task detected - activating autonomous capabilities');
+          
+          // Remove thinking message and add processing
+          setMessages(prev => prev.slice(0, -1));
+          
+          const processingMessage: Message = {
+            id: "processing-" + Date.now(),
+            content: "🤖 **Ejecutando Tarea Autónoma**\n\nCoordinando acciones para completar tu solicitud...\n\n*Agente trabajando en tu proyecto...*",
+            sender: "assistant",
+            state: "analyzing"
+          };
+          setMessages(prev => [...prev, processingMessage]);
+          
+          // Execute with full agent capabilities
+          const conversationHistory = messages
+            .filter(m => m.sender === 'user')
+            .map(m => ({ content: m.content, timestamp: new Date() }));
+          
+          const result = await agent.processUserInput(currentInput, conversationHistory);
+          
+          // Remove processing message
+          setMessages(prev => prev.slice(0, -1));
+          
+          const responseContent = result.data?.conversationalResponse || 
+            result.data?.response || 
+            "¡Órale primo! ¿En qué más te puedo ayudar?";
+          
+          // Solo mostrar badge si es una tarea específica completada, no conversación normal
+          const isActualTaskCompletion = result.success && 
+            result.data && 
+            (result.data.fileGenerated || result.data.estimateCreated || result.data.contractGenerated || result.data.taskCompleted);
+          
+          const agentResponse: Message = {
+            id: "assistant-" + Date.now(),
+            content: responseContent,
+            sender: "assistant",
+            // Solo añadir taskResult para tareas específicas completadas
+            ...(isActualTaskCompletion && { taskResult: result })
+          };
+          setMessages(prev => [...prev, agentResponse]);
+        } else {
+          // Para conversaciones normales, usar solo el motor conversacional
+          console.log('💬 [AGENT-CONVERSATION] Normal chat - using conversational mode only');
+          setMessages(prev => prev.slice(0, -1)); // Remove thinking
+          
+          if (engine) {
+            const response = await engine.processUserMessage(currentInput);
+            
+            const assistantMessage: Message = {
+              id: "assistant-" + Date.now(),
+              content: response.message,
+              sender: "assistant"
+            };
+            setMessages(prev => [...prev, assistantMessage]);
+          } else {
+            // Fallback si no hay engine
+            const assistantMessage: Message = {
+              id: "assistant-" + Date.now(),
+              content: "¡Órale primo! Se me trabó un poco el sistema, pero aquí ando. ¿En qué te puedo ayudar?",
+              sender: "assistant"
+            };
+            setMessages(prev => [...prev, assistantMessage]);
+          }
+        }
         
       } else if (engine) {
         // LEGACY MODE - Conversational only
