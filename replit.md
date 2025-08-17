@@ -123,7 +123,7 @@ This project is an AI-powered legal document and permit management platform feat
 
 ### Frontend
 - **Technology Stack**: React.js with TypeScript, Tailwind CSS, Wouter for routing, TanStack Query for data management.
-- **UI/UX Decisions**: Mobile optimization with safe areas and enhanced touch targets, conversational onboarding guided by Mervin AI, smart action system using slash commands and contextual suggestions, adaptive UI elements, and agent functions/model selectors integrated into the header for consistent user experience.
+- **UI/UX Decisions**: Mobile optimization with safe areas and enhanced touch targets; conversational onboarding guided by Mervin AI; smart action system using slash commands and contextual suggestions; adaptive UI elements; and agent functions/model selectors integrated into the header for consistent user experience.
 
 ### Backend
 - **Server Framework**: Express.js.

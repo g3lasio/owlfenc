@@ -60,7 +60,7 @@ export class IntelligentImportService {
       // Usar IA para mapear las columnas
       const mappingInstructions = await this.generateMappingWithAI(headers, dataRows.slice(0, 3)); // Solo las primeras 3 filas para el análisis
 
-      console.log('🎯 [INTELLIGENT-IMPORT] Mapeo generado por IA:', mappingInstructions);
+      console.log('🎯 [INTELLIGENT-IMPORT] Mapeo generado por IA:', JSON.stringify(mappingInstructions, null, 2));
 
       // Aplicar el mapeo a todos los datos
       const mappedClients = this.applyMapping(headers, dataRows, mappingInstructions);
@@ -159,7 +159,23 @@ Ejemplo de respuesta:
 
       const content = response.content[0];
       if (content.type === 'text') {
-        return JSON.parse(content.text);
+        let jsonText = content.text.trim();
+        
+        // Extraer JSON de markdown code blocks si está presente
+        if (jsonText.includes('```json')) {
+          const jsonMatch = jsonText.match(/```json\s*([\s\S]*?)\s*```/);
+          if (jsonMatch) {
+            jsonText = jsonMatch[1].trim();
+          }
+        } else if (jsonText.includes('```')) {
+          const jsonMatch = jsonText.match(/```\s*([\s\S]*?)\s*```/);
+          if (jsonMatch) {
+            jsonText = jsonMatch[1].trim();
+          }
+        }
+        
+        console.log('🔍 [INTELLIGENT-IMPORT] JSON extraído para parsing:', jsonText.substring(0, 200) + '...');
+        return JSON.parse(jsonText);
       }
       
       throw new Error('Respuesta inesperada de la IA');
@@ -276,7 +292,9 @@ Ejemplo de respuesta:
       
       // Asegurar que el nombre no esté vacío
       if (!client.name || client.name.trim() === '') {
-        client.name = 'Cliente Importado';
+        // Usar el primer campo disponible como nombre
+        const availableFields = ['email', 'phone', 'address'].find(field => client[field as keyof MappedClient]);
+        client.name = availableFields ? (client[availableFields as keyof MappedClient] as string) : `Cliente ${Date.now()}`;
       }
       
       // Limpiar campos vacíos

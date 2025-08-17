@@ -441,8 +441,16 @@ export default function NuevoClientes() {
     try {
       console.log("🤖 Iniciando importación inteligente con IA...");
       
+      // Agregar timeout de 30 segundos para la solicitud de IA
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: La IA está tardando demasiado')), 30000)
+      );
+      
       // Usar el servicio de importación inteligente con IA
-      const result = await intelligentImportService.processCSVWithAI(csvFile, userId);
+      const result = await Promise.race([
+        intelligentImportService.processCSVWithAI(csvFile, userId),
+        timeoutPromise
+      ]) as any;
       
       if (!result.success) {
         // Si la IA falla, usar método básico como fallback
@@ -507,11 +515,21 @@ export default function NuevoClientes() {
 
     } catch (error: any) {
       console.error("Error en importación inteligente:", error);
-      toast({
-        variant: "destructive",
-        title: "Error en importación inteligente",
-        description: error.message || "Error desconocido durante la importación con IA",
-      });
+      
+      // Si es un timeout, mostrar mensaje específico
+      if (error.message && error.message.includes('Timeout')) {
+        toast({
+          variant: "destructive",
+          title: "Timeout de IA",
+          description: "La IA está tardando demasiado. Inténtalo de nuevo o usa el método básico.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error en importación inteligente",
+          description: error.message || "Error desconocido durante la importación con IA",
+        });
+      }
     } finally {
       setIsAiProcessing(false);
     }
