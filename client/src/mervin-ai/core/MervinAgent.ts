@@ -127,11 +127,61 @@ export class MervinAgent {
     try {
       this.updateState({ isActive: true, lastActivity: new Date() });
       
-      // 1. Procesar mensaje con motor conversacional
+      // 1. CONECTAR AL BACKEND REORGANIZADO FASE 2
+      // Usar el nuevo endpoint unificado /api/mervin/process
+      const extractedTaskType = this.extractTaskType(input);
+      const backendRequest = {
+        input: input,
+        userId: this.config.userId,
+        agentMode: 'intelligent',  // Backend espera 'intelligent' o 'executor'
+        conversationHistory: conversationHistory.slice(-5), // Últimos 5 mensajes para contexto
+        subscriptionLevel: this.config.subscriptionLevel,
+        requiresWebResearch: this.requiresResearch(input),
+        taskType: extractedTaskType === 'conversation' ? 'general' : extractedTaskType, // Mapear 'conversation' a 'general'
+        location: 'California' // Default location
+      };
+
+      if (this.config.debug) {
+        console.log('🤖 [AGENT-MODE] Processing with full autonomous capabilities');
+      }
+
+      // Procesar con el backend unificado reorganizado
+      let backendResponse: any = null;
+      try {
+        backendResponse = await this.endpointCoordinator.executeEndpoint('/api/mervin/process', backendRequest);
+      } catch (error) {
+        if (this.config.debug) {
+          console.log('⚠️ [BACKEND-FALLBACK] Error conectando al backend reorganizado, usando local:', error);
+        }
+      }
+
+      // 2. Procesar mensaje con motor conversacional local (como backup)
       const conversationResponse = await this.conversationEngine.processUserMessage(input);
       
       if (this.config.debug) {
         console.log('🗣️ [CONVERSATION-RESPONSE]', conversationResponse);
+      }
+
+      // 3. Si tenemos respuesta del backend reorganizado, usarla
+      if (backendResponse && backendResponse.conversationalResponse) {
+        if (this.config.debug) {
+          console.log('✅ [BACKEND-INTEGRATED] Usando respuesta del backend reorganizado');
+        }
+        
+        return {
+          success: true,
+          data: {
+            conversationalResponse: backendResponse.conversationalResponse,
+            languageProfile: backendResponse.languageProfile || conversationResponse.languageProfile,
+            webResearchData: backendResponse.webResearchData,
+            constructionKnowledge: backendResponse.constructionKnowledge,
+            taskExecution: backendResponse.taskExecution,
+            isBackendPowered: true
+          },
+          executionTime: Date.now() - (this.state.lastActivity?.getTime() || 0),
+          stepsCompleted: backendResponse.stepsCompleted || 1,
+          endpointsUsed: backendResponse.endpointsUsed || ['/api/mervin/process']
+        };
       }
 
       // 2. CRÍTICO: Determinar si es conversación simple o requiere acción
@@ -277,6 +327,72 @@ export class MervinAgent {
    */
   getConversationSummary(): string {
     return this.conversationEngine.getConversationSummary();
+  }
+
+  /**
+   * MÉTODOS DE INTEGRACIÓN CON BACKEND REORGANIZADO - FASE 2
+   * 
+   * Estos métodos ayudan al agente a determinar cuándo usar el backend 
+   * reorganizado y qué tipo de procesamiento requiere el input del usuario.
+   */
+  
+  /**
+   * Determinar si el input requiere investigación web
+   */
+  private requiresResearch(input: string): boolean {
+    const researchKeywords = [
+      'precio', 'precios', 'costo', 'costos', 'cuanto', 'cuánto',
+      'actualizado', 'actual', 'mercado', 'competencia', 'tendencia',
+      'permiso', 'permisos', 'regulacion', 'regulación', 'código', 'códigos',
+      'material', 'materiales', 'producto', 'productos', 'proveedor',
+      'mano de obra', 'labor', 'salario', 'salarios', 'tarifa', 'tarifas',
+      'licencia', 'certificación', 'normativa', 'ley', 'legal',
+      'investigar', 'buscar', 'averiguar', 'verificar', 'confirmar',
+      'web', 'internet', 'google', 'información', 'datos'
+    ];
+    
+    const inputLower = input.toLowerCase();
+    return researchKeywords.some(keyword => inputLower.includes(keyword));
+  }
+
+  /**
+   * Extraer tipo de tarea del input del usuario
+   */
+  private extractTaskType(input: string): string {
+    const inputLower = input.toLowerCase();
+    
+    // Patrones específicos para diferentes tipos de tareas
+    if (inputLower.includes('estimado') || inputLower.includes('estimate') || 
+        inputLower.includes('cotización') || inputLower.includes('quote')) {
+      return 'estimate';
+    }
+    
+    if (inputLower.includes('contrato') || inputLower.includes('contract') ||
+        inputLower.includes('acuerdo') || inputLower.includes('agreement')) {
+      return 'contract';
+    }
+    
+    if (inputLower.includes('permiso') || inputLower.includes('permit') ||
+        inputLower.includes('licencia') || inputLower.includes('license')) {
+      return 'permit';
+    }
+    
+    if (inputLower.includes('propiedad') || inputLower.includes('property') ||
+        inputLower.includes('dirección') || inputLower.includes('address')) {
+      return 'property';
+    }
+    
+    if (inputLower.includes('cliente') || inputLower.includes('client') ||
+        inputLower.includes('contacto') || inputLower.includes('contact')) {
+      return 'client';
+    }
+    
+    if (this.requiresResearch(input)) {
+      return 'research';
+    }
+    
+    // Default para conversación general
+    return 'conversation';
   }
 
   /**

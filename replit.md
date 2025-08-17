@@ -1,7 +1,7 @@
 # Legal Document & Permit Management Platform
 
 ## Overview
-This project is an advanced AI-powered legal document and permit management platform featuring Mervin AI, an autonomous intelligent agent. Mervin AI transforms from a simple chatbot into an intelligent agent capable of executing complex multi-step tasks such as generating estimates, creating contracts, analyzing permits, verifying properties, and coordinating over 20 API endpoints autonomously. The platform aims to streamline complex legal and permit processes by automating tasks, offering significant market potential.
+This project is an AI-powered legal document and permit management platform featuring Mervin AI, an autonomous intelligent agent. The platform streamlines complex legal and permit processes by automating tasks, such as generating estimates, creating contracts, analyzing permits, verifying properties, and coordinating over 20 API endpoints autonomously. This offers significant market potential by evolving Mervin AI from a chatbot into a capable intelligent agent.
 
 ## User Preferences
 - Respuestas técnicas y detalladas cuando se requiera análisis
@@ -50,6 +50,14 @@ This project is an advanced AI-powered legal document and permit management plat
   * PRIORITY SOURCE ROUTING: Fuentes priorizadas especializadas (HomeDepot, Lowes, California.gov, ICC, OSHA)
   * AGGRESSIVE TIMEOUTS: Timeouts optimizados (12s normal, 5s express) para respuestas rápidas sin esperas
   * COMPREHENSIVE API ENDPOINTS: 6 endpoints especializados para todas las funcionalidades de investigación optimizada
+- FASE 3 FRONTEND INTEGRATION COMPLETED: Integración completa del frontend del chat de Mervin con backend reorganizado:
+  * ENDPOINT CONNECTION: Frontend conectado exitosamente a /api/mervin/process y /api/mervin-research/*
+  * AUTOMATIC DETECTION: Métodos requiresResearch() y extractTaskType() implementados para detección inteligente
+  * PARAMETER MAPPING: Formato correcto de parámetros (agentMode: 'intelligent', taskType: 'general', etc.)
+  * BACKEND FALLBACK: Sistema de fallback local mantenido para compatibilidad y robustez
+  * TIMEOUT OPTIMIZATION: Timeouts específicos para diferentes tipos de endpoints (8s express research, 30s processing)
+  * REAL-TIME INTEGRATION: Chat UI completamente integrado con capacidades de investigación súper rápida
+  * BILINGUAL RESPONSES: Respuestas en español con personalidad mexicana norteña desde backend reorganizado
 - MOBILE UX OPTIMIZATION COMPLETED: Optimización completa de Mervin AI chat para iPhone y dispositivos móviles:
   * SAFE AREA SUPPORT: Soporte completo para iPhone notch y Dynamic Island usando CSS env() variables
   * ENHANCED TOUCH TARGETS: Botones y elementos interactivos con mínimo 44px según Apple Human Interface Guidelines
@@ -104,30 +112,12 @@ This project is an advanced AI-powered legal document and permit management plat
 - **Memory System**: Persistent learning and pattern optimization.
 - **Risk Assessment**: Automatic evaluation with adaptive strategies.
 - **Conversational Intelligence**: Advanced multilingual personality system with language detection, contextual conversation flow, dynamic personality adaptation (Mexican norteño / Californian style), and emotion recognition.
+- **MERVIN AI UNIFIED SYSTEM**: Unified backend for Mervin AI supporting a superintelligent construction chatbot, autonomous task execution, and real-time web research. Utilizes differentiated roles for AI models (Anthropic for research/analysis, OpenAI for conversation/quick tasks). Key components include `MervinChatOrchestrator.ts`, `ConstructionKnowledgeBase.ts`, `WebResearchService.ts`, `TaskExecutionCoordinator.ts`, `UserContextProvider.ts`, accessed via a unified `/api/mervin/process` endpoint with specialized sub-endpoints.
 
 ### Core Features & Design Patterns
-- **MERVIN AI UNIFIED SYSTEM**: A revolutionary unified backend for Mervin AI supporting:
-    *   **Superintelligent Construction Chatbot**: Specialized knowledge in construction.
-    *   **Autonomous Task Execution System (Jarvis)**: Executes tasks using existing endpoints and user data.
-    *   **Real-time Web Research**: Capabilities using Anthropic for updated information.
-    *   **Differentiated Role Architecture**: Anthropic for deep research/analysis, OpenAI for conversation/quick tasks.
-    *   **Key Components**: `MervinChatOrchestrator.ts`, `ConstructionKnowledgeBase.ts`, `WebResearchService.ts`, `TaskExecutionCoordinator.ts`, `UserContextProvider.ts`.
-    *   Unified `/api/mervin/process` endpoint with specialized sub-endpoints.
 - **Smart Action System Revolution**: Context-aware interface system using intelligent slash commands, contextual suggestions, and adaptive floating actions.
 - **Conversational Onboarding System**: Onboarding integrated into Mervin AI chat, replacing traditional wizards with natural guided conversation.
-- **Mervin AI Autonomous Agent**: Transformed into a modular system with specialized components for:
-    -   **Intention Analysis**: Natural language understanding for multi-step tasks.
-    -   **Smart Task Coordination**: Intelligent coordination with parallel execution.
-    -   **Intelligent Decision Making**: Autonomous decision engine with confidence scoring and alternative analysis.
-    -   **Parallel Execution**: Multi-agent coordination with load balancing and auto-recovery.
-    -   **Specialized Agents**: Domain-specific agents for estimates, contracts, permits, property verification.
-    -   **Learning & Memory**: Persistent learning system optimizing workflows.
-    -   **Real-time Feedback**: Live progress tracking.
-    -   **Permission Intelligence**: Dynamic validation with upgrade suggestions.
-    -   **Context Awareness**: Maintains conversation context, user preferences, and project history.
-    -   **Endpoint Consistency**: Agents utilize existing, verified endpoints.
-    -   **Performance Optimization**: Intelligent task ordering and dependency resolution.
-    -   **Risk Assessment**: Automatic risk evaluation with adaptive strategies.
+- **Mervin AI Autonomous Agent**: Modular system with specialized components for intention analysis, smart task coordination, intelligent decision making, parallel execution, specialized agents (estimates, contracts, permits, property verification), learning & memory, real-time feedback, permission intelligence, context awareness, endpoint consistency, performance optimization, and risk assessment.
 - **User Authentication & Authorization**: Enhanced OAuth, email/password, and a robust subscription-based permission system (`primo_chambeador`, `mero_patron`, `master_contractor`, `trial_master`). Includes secure registration, automatic subscription degradation, and real-time usage limit enforcement.
 - **Login Persistence**: 30-day persistent login with device fingerprinting and session validation.
 - **Biometric Authentication**: WebAuthn API integration for biometric logins (Face ID, Touch ID, Windows Hello, fingerprint).
@@ -143,12 +133,6 @@ This project is an advanced AI-powered legal document and permit management plat
 - Stripe
 - PostgreSQL
 - Drizzle ORM
-- React.js
-- TypeScript
-- Tailwind CSS
-- Wouter
-- TanStack Query
-- Express.js
-- react-hook-form
-- shadcn/ui
-- Zod
+- Resend
+- Anthropic
+```

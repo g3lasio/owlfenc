@@ -231,6 +231,68 @@ export class EndpointCoordinator {
    */
   private initializeEndpoints(): void {
     const endpoints: Record<string, EndpointConfig> = {
+      // ==================== FASE 2: NUEVOS ENDPOINTS SÚPER OPTIMIZADOS ====================
+      // Mervin AI Unified System - Backend reorganizado
+      '/api/mervin/process': {
+        url: '/api/mervin/process',
+        method: 'POST',
+        timeout: 30000,
+        retries: 2,
+        requiresAuth: true,
+        responseType: 'json'
+      },
+      '/api/mervin/conversation': {
+        url: '/api/mervin/conversation',
+        method: 'POST',
+        timeout: 15000,
+        retries: 2,
+        requiresAuth: true,
+        responseType: 'json'
+      },
+      
+      // Investigación súper rápida para contratistas (FASE 2)
+      '/api/mervin-research/express-research': {
+        url: '/api/mervin-research/express-research',
+        method: 'POST',
+        timeout: 8000, // Express research debe ser súper rápido
+        retries: 1,
+        requiresAuth: false, // Puede funcionar sin auth para pruebas
+        responseType: 'json'
+      },
+      '/api/mervin-research/parallel-research': {
+        url: '/api/mervin-research/parallel-research', 
+        method: 'POST',
+        timeout: 20000,
+        retries: 2,
+        requiresAuth: false,
+        responseType: 'json'
+      },
+      '/api/mervin-research/estimate-research': {
+        url: '/api/mervin-research/estimate-research',
+        method: 'POST',
+        timeout: 15000,
+        retries: 2,
+        requiresAuth: false,
+        responseType: 'json'
+      },
+      '/api/mervin-research/performance-stats': {
+        url: '/api/mervin-research/performance-stats',
+        method: 'GET',
+        timeout: 5000,
+        retries: 1,
+        requiresAuth: false,
+        responseType: 'json'
+      },
+      '/api/mervin-research/health': {
+        url: '/api/mervin-research/health',
+        method: 'GET',
+        timeout: 5000,
+        retries: 1,
+        requiresAuth: false,
+        responseType: 'json'
+      },
+      
+      // ==================== ENDPOINTS LEGACY (mantener compatibilidad) ====================
       // Estimates - Endpoints reales de EstimatesNew.tsx
       '/api/clients': {
         url: '/api/clients',
