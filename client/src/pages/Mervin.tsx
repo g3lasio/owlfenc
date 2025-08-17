@@ -739,9 +739,9 @@ export default function Mervin() {
       </div>
 
       {/* Smart Input Area with Context-Aware Actions */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-sm border-t border-cyan-900/30 pb-safe-area-inset-bottom">
+      <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-sm border-t border-cyan-900/30 pb-safe-area-inset-bottom z-50">
         <div className="p-4 md:p-3">
-          <div className="relative max-w-screen-lg mx-auto">
+          <div className="relative max-w-screen-lg mx-auto z-10">
             {/* Smart Action System */}
             <SmartActionSystem 
               onAction={handleAction}
@@ -753,7 +753,8 @@ export default function Mervin() {
               <Button
                 variant="outline"
                 size="icon"
-                className="bg-gray-800 text-cyan-500 border-cyan-900/50 min-h-[48px] min-w-[48px] md:min-h-[40px] md:min-w-[40px] flex-shrink-0"
+                className="bg-gray-800 text-cyan-500 border-cyan-900/50 min-h-[48px] min-w-[48px] md:min-h-[40px] md:min-w-[40px] flex-shrink-0 relative z-10"
+                title="Subir archivos"
               >
                 <Paperclip className="h-5 w-5 md:h-4 md:w-4" />
               </Button>
