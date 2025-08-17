@@ -446,9 +446,20 @@ So, what can I do for you today, bro?`;
     // Respuestas específicas por tipo de mensaje y contexto
     switch (messageType) {
       case 'greeting':
-        return language === 'spanish' 
-          ? '¡Órale primo! ¿Cómo andas? ¿En qué te puedo echar la mano hoy?'
-          : 'Hey there, dude! What\'s up? How can I help you out today?';
+        const greetings = language === 'spanish' ? [
+          '¡Órale primo! ¿Cómo andas? ¿En qué te puedo echar la mano hoy?',
+          '¡Qué onda, compadre! ¿Todo bien? ¿Qué necesitas que hagamos?',
+          '¡Ey, hermano! ¿Cómo está la cosa? ¿En qué andas trabajando?',
+          '¡Hola primo! ¿Qué tal todo? ¿Cómo te ayudo el día de hoy?',
+          '¡Órale, qué bueno verte! ¿Todo chido? ¿Qué proyecto traes?'
+        ] : [
+          'Hey there, dude! What\'s up? How can I help you out today?',
+          'What\'s good, bro! How\'s it going? What can I do for you?',
+          'Hey man! How\'s everything? What are you working on?',
+          'Hello there, dude! What\'s happening? How can I help today?',
+          'Hey, good to see you! What\'s up? What project you got going?'
+        ];
+        return greetings[Math.floor(Math.random() * greetings.length)];
 
       case 'question':
         return this.generateQuestionResponse(intent, topic, language, userMessage);
@@ -457,9 +468,18 @@ So, what can I do for you today, bro?`;
         return this.generateConfirmationResponse(topic, language);
 
       case 'negation':
-        return language === 'spanish'
-          ? 'No hay problema, primo. ¿Hay algo más que te interese o quieres que cambiemos de rumbo?'
-          : 'No worries at all, dude. Is there something else you\'re interested in or want to pivot to?';
+        const negationResponses = language === 'spanish' ? [
+          'No hay problema, primo. ¿Hay algo más que te interese o quieres que cambiemos de rumbo?',
+          'Todo bien, compadre. ¿Qué otra cosa podemos hacer o en qué más te ayudo?',
+          'Órale, no hay pedo. ¿Quieres que veamos algo diferente o cómo le hacemos?',
+          'Perfecto, hermano. ¿Hay otra cosa que necesites o cambiamos de tema?'
+        ] : [
+          'No worries at all, dude. Is there something else you\'re interested in or want to pivot to?',
+          'All good, bro. What else can we work on or how else can I help?',
+          'Cool, no problem. Want to try something different or what should we do?',
+          'Totally fine, man. Is there something else you need or should we switch gears?'
+        ];
+        return negationResponses[Math.floor(Math.random() * negationResponses.length)];
 
       case 'request':
         return this.generateRequestResponse(intent, topic, language, userMessage);
@@ -499,9 +519,18 @@ So, what can I do for you today, bro?`;
         : 'I\'ll explain whatever you need, bro. Tell me specifically what part you want me to break down.';
     }
     
-    return isSpanish
-      ? 'Dime más detalles sobre lo que necesitas, primo. Mientras más me cuentes, mejor te puedo ayudar.'
-      : 'Tell me more about what you need, dude. The more you share, the better I can help you out.';
+    const responses = isSpanish ? [
+      'Dime más detalles sobre lo que necesitas, primo. Mientras más me cuentes, mejor te puedo ayudar.',
+      'Órale, cuéntame bien qué andas buscando, compadre. Entre más me expliques, mejor te voy a poder ayudar.',
+      'Ándale, primo, platícame más detalles. Así te doy la ayuda que necesitas.',
+      'Explícame un poco más sobre lo que necesitas, hermano. Quiero ayudarte bien.'
+    ] : [
+      'Tell me more about what you need, dude. The more you share, the better I can help you out.',
+      'Break it down for me, bro. The more details you give me, the better I can help.',
+      'Give me more info about what you\'re looking for, man. Want to help you properly.',
+      'Fill me in on what you need, dude. More details means better help from me.'
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
   }
 
   private generateConfirmationResponse(topic: string, language: string): string {
@@ -556,27 +585,59 @@ So, what can I do for you today, bro?`;
     const isSpanish = language === 'spanish';
     
     if (emotionalContext === 'frustrated') {
-      return isSpanish
-        ? 'Órale primo, veo que algo no está funcionando bien. Platícame qué está pasando para que lo arreglemos juntos.'
-        : 'Hey dude, I can see something isn\'t working right. Tell me what\'s going on so we can fix it together.';
+      const responses = isSpanish ? [
+        'Órale primo, veo que algo no está funcionando bien. Platícame qué está pasando para que lo arreglemos juntos.',
+        'No te preocupes, compadre. Entiendo que es frustrante. Dime qué problema tienes y lo resolvemos.',
+        'Tranquilo, primo. Vamos a ver qué está fallando y lo componemos de una vez.'
+      ] : [
+        'Hey dude, I can see something isn\'t working right. Tell me what\'s going on so we can fix it together.',
+        'No worries, bro. I get that it\'s frustrating. Tell me what\'s up and we\'ll sort it out.',
+        'Chill, man. Let\'s see what\'s going wrong and get it fixed right away.'
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
     }
     
     if (emotionalContext === 'satisfied') {
-      return isSpanish
-        ? '¡Qué bueno escuchar eso, compadre! Me da mucho gusto que todo esté saliendo bien. ¿Qué sigue en la lista?'
-        : 'So great to hear that, bro! Really stoked that everything is working out. What\'s next on the list?';
+      const responses = isSpanish ? [
+        '¡Qué bueno escuchar eso, compadre! Me da mucho gusto que todo esté saliendo bien. ¿Qué sigue en la lista?',
+        '¡Órale, perfecto! Me da mucho gusto que esté funcionando chido. ¿En qué más te ayudo?',
+        '¡Está padrísimo, primo! Me alegra que todo vaya bien. ¿Qué otro proyecto traes?'
+      ] : [
+        'So great to hear that, bro! Really stoked that everything is working out. What\'s next on the list?',
+        'Awesome, dude! Super happy that it\'s working smoothly. What else can I help with?',
+        'That\'s rad, man! Glad everything\'s going well. What other project you got going?'
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
     }
     
     // Respuesta inteligente basada en contenido específico
     if (userMessage.toLowerCase().includes('gracias') || userMessage.toLowerCase().includes('thank')) {
-      return isSpanish
-        ? '¡De nada, primo! Para eso estamos. Si necesitas algo más, aquí andamos.'
-        : 'You\'re welcome, dude! That\'s what we\'re here for. If you need anything else, just let me know.';
+      const responses = isSpanish ? [
+        '¡De nada, primo! Para eso estamos. Si necesitas algo más, aquí andamos.',
+        '¡Órale, no hay de qué, compadre! Cualquier cosa que necesites, aquí me tienes.',
+        '¡Para eso andamos, hermano! Lo que se te ofrezca, nada más dime.'
+      ] : [
+        'You\'re welcome, dude! That\'s what we\'re here for. If you need anything else, just let me know.',
+        'No problem, bro! Happy to help. Just holler if you need anything else.',
+        'Totally, man! That\'s what I\'m here for. Hit me up for whatever you need.'
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
     }
     
-    return isSpanish
-      ? 'Entiendo, primo. Cuéntame más para saber exactamente cómo ayudarte mejor.'
-      : 'I hear you, dude. Tell me more so I know exactly how to help you better.';
+    // Respuestas variadas para casos generales
+    const generalResponses = isSpanish ? [
+      'Entiendo, primo. Cuéntame más para saber exactamente cómo ayudarte mejor.',
+      'Órale, sí veo. Dame más detalles para ayudarte como debe ser, compadre.',
+      'Ándale, primo. Explícame un poquito más para darte la mejor ayuda.',
+      'Simón, hermano. Entre más me cuentes, mejor te voy a poder echar la mano.'
+    ] : [
+      'I hear you, dude. Tell me more so I know exactly how to help you better.',
+      'Got it, bro. Give me more details so I can help you properly.',
+      'Right on, man. Break it down a bit more so I can give you the best help.',
+      'For sure, dude. The more you tell me, the better I can help you out.'
+    ];
+    
+    return generalResponses[Math.floor(Math.random() * generalResponses.length)];
   }
 
   private determineResponseEmotion(messageType: string, emotionalContext: string, intent: string): ConversationResponse['emotion'] {
