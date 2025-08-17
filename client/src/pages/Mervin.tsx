@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { useOnboarding } from "@/hooks/useOnboarding";
+import { useSidebar } from "@/contexts/SidebarContext";
 import {
   Send,
   Paperclip,
@@ -64,6 +65,7 @@ export default function Mervin() {
   const { currentUser } = useAuth();
   const { userPlan } = usePermissions();
   const { needsOnboarding, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
+  const { isSidebarExpanded } = useSidebar();
 
   // Detect if user is free plan (Primo Chambeador)
   const isFreeUser = userPlan?.id === 1 || userPlan?.name === "Primo Chambeador";
@@ -739,9 +741,17 @@ export default function Mervin() {
       </div>
 
       {/* Smart Input Area with Context-Aware Actions */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-sm border-t border-cyan-900/30 pb-safe-area-inset-bottom z-50">
+      <div 
+        className={`fixed bottom-0 right-0 bg-black/95 backdrop-blur-sm border-t border-cyan-900/30 pb-safe-area-inset-bottom transition-all duration-300 ease-in-out ${
+          // Solo aplicar margin en desktop (md:) cuando el sidebar esté visible
+          // En móviles (< 768px) siempre usar left-0 porque el sidebar es overlay
+          isSidebarExpanded 
+            ? 'left-0 md:left-[280px]' // Móvil: sin margin, Desktop: ancho del sidebar expandido  
+            : 'left-0 md:left-[64px]'  // Móvil: sin margin, Desktop: ancho del sidebar colapsado (solo iconos)
+        }`}
+      >
         <div className="p-4 md:p-3">
-          <div className="relative max-w-screen-lg mx-auto z-10">
+          <div className="relative max-w-screen-lg mx-auto">
             {/* Smart Action System */}
             <SmartActionSystem 
               onAction={handleAction}
@@ -753,7 +763,7 @@ export default function Mervin() {
               <Button
                 variant="outline"
                 size="icon"
-                className="bg-gray-800 text-cyan-500 border-cyan-900/50 min-h-[48px] min-w-[48px] md:min-h-[40px] md:min-w-[40px] flex-shrink-0 relative z-10"
+                className="bg-gray-800 text-cyan-500 border-cyan-900/50 min-h-[48px] min-w-[48px] md:min-h-[40px] md:min-w-[40px] flex-shrink-0"
                 title="Subir archivos"
               >
                 <Paperclip className="h-5 w-5 md:h-4 md:w-4" />
