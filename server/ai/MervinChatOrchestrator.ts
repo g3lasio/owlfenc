@@ -10,6 +10,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
+import { OpenRouterClient } from './OpenRouterClient.js';
 import { ConstructionKnowledgeBase } from './construction-intelligence/ConstructionKnowledgeBase';
 import { WebResearchService } from './unified-chat/WebResearchService';
 import { TaskExecutionCoordinator } from './agent-endpoints/TaskExecutionCoordinator';
@@ -67,6 +68,7 @@ export interface MervinResponse {
 export class MervinChatOrchestrator {
   private anthropic: Anthropic;
   private openai: OpenAI;
+  private openRouter: OpenRouterClient | null;
   private constructionKB: ConstructionKnowledgeBase;
   private webResearch: WebResearchService;
   private taskCoordinator: TaskExecutionCoordinator;
@@ -82,13 +84,31 @@ export class MervinChatOrchestrator {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
+    // Inicializar OpenRouter si está disponible la API key
+    this.openRouter = null;
+    if (process.env.OPENROUTER_API_KEY) {
+      this.openRouter = new OpenRouterClient({
+        apiKey: process.env.OPENROUTER_API_KEY,
+        enableFailover: true,
+        fallbackModels: [
+          "anthropic/claude-3.5-sonnet",
+          "openai/gpt-4o", 
+          "google/gemini-pro",
+          "x-ai/grok-beta"
+        ]
+      });
+      console.log('🚀 [OPENROUTER] Cliente inicializado con failover automático');
+    } else {
+      console.log('⚠️ [OPENROUTER] No disponible - usando APIs individuales');
+    }
+
     // Inicializar componentes especializados
     this.constructionKB = new ConstructionKnowledgeBase(this.anthropic);
     this.webResearch = new WebResearchService(this.anthropic);
     this.taskCoordinator = new TaskExecutionCoordinator();
     // this.contextProvider = new UserContextProvider(); // Temporarily disabled
 
-    console.log('🤖 [MERVIN-ORCHESTRATOR] Inicializado con Anthropic + OpenAI');
+    console.log('🤖 [MERVIN-ORCHESTRATOR] Inicializado con OpenRouter + Anthropic + OpenAI');
   }
 
   /**
@@ -338,6 +358,26 @@ CONTEXTO USUARIO:
 `;
 
     try {
+      // 🚀 USAR OPENROUTER PRIMERO SI ESTÁ DISPONIBLE
+      if (this.openRouter) {
+        console.log('🚀 [OPENROUTER] Generando respuesta conversacional con OpenRouter');
+        
+        const openRouterResponse = await this.openRouter.generateConversationalResponse(
+          request.input,
+          request.conversationHistory,
+          userContext
+        );
+
+        if (openRouterResponse.success) {
+          console.log(`✅ [OPENROUTER] Éxito con modelo: ${openRouterResponse.model}`);
+          return openRouterResponse.content;
+        } else {
+          console.log(`⚠️ [OPENROUTER] Falló, usando fallback: ${openRouterResponse.error}`);
+        }
+      }
+
+      // Fallback a OpenAI individual si OpenRouter no está disponible o falló
+      console.log('🔄 [FALLBACK] Usando OpenAI directo');
       const completion = await this.openai.chat.completions.create({
         model: DEFAULT_OPENAI_MODEL,
         messages: [
