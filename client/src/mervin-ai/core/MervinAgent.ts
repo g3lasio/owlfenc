@@ -456,43 +456,55 @@ export class MervinAgent {
 
   /**
    * Determinar si es un mensaje conversacional simple que NO requiere TaskOrchestrator
+   * CRÍTICO: Mensajes en español SIEMPRE van al backend para mantener personalidad mexicana norteña
    */
   private isSimpleConversationalMessage(input: string, conversationResponse: any): boolean {
     const normalizedInput = input.toLowerCase().trim();
     
-    // Patrones de conversación simple que NO necesitan TaskOrchestrator
+    // 🇲🇽 DETECCIÓN DE ESPAÑOL - SIEMPRE usar backend para español
+    const isSpanish = /[áéíóúñ]|hola|como|estas|que|para|con|por|desde|hasta|cuando|donde|porque|diferencia|primo|compadre|órale|bueno|gracias|adiós/i.test(input);
+    
+    if (isSpanish) {
+      if (this.config.debug) {
+        console.log('🇲🇽 [SPANISH-DETECTED] Enviando al backend para mantener personalidad mexicana norteña');
+      }
+      return false; // ¡NUNCA usar frontend para español!
+    }
+    
+    // Patrones de conversación simple SOLO para inglés
     const conversationalPatterns = [
-      // Saludos
-      /^(hola|hello|hi|hey|buenos días|good morning|what's up|qué tal)/i,
+      // Saludos en inglés únicamente
+      /^(hello|hi|hey|good morning|what's up)/i,
       
-      // Preguntas simples sobre Mervin
-      /^(cómo estás|how are you|qué tal|como estas)/i,
+      // Preguntas simples en inglés
+      /^(how are you)/i,
       
-      // Agradecimientos
-      /^(gracias|thank you|thanks)/i,
+      // Agradecimientos en inglés
+      /^(thank you|thanks)/i,
       
-      // Despedidas
-      /^(adiós|bye|goodbye|hasta luego|see you)/i,
+      // Despedidas en inglés
+      /^(bye|goodbye|see you)/i,
       
-      // Confirmaciones simples
-      /^(ok|okay|sí|yes|correcto|entiendo)/i,
+      // Confirmaciones en inglés
+      /^(ok|okay|yes|correct|understood)/i,
       
-      // Preguntas sobre el sistema sin acción específica
-      /^(quién eres|who are you|qué puedes hacer|what can you do)/i
+      // Preguntas sobre el sistema en inglés sin acción específica
+      /^(who are you|what can you do)/i
     ];
 
-    // Si coincide con patrones conversacionales simples
+    // Si coincide con patrones conversacionales simples EN INGLÉS
     const isSimplePattern = conversationalPatterns.some(pattern => pattern.test(normalizedInput));
     
-    // Si es muy corto y no contiene palabras de acción específica
-    const actionWords = ['crear', 'generar', 'hacer', 'estimado', 'contrato', 'permiso', 'create', 'generate', 'make', 'estimate', 'contract', 'permit'];
+    // Si es muy corto EN INGLÉS y no contiene palabras de acción específica
+    const actionWords = ['create', 'generate', 'make', 'estimate', 'contract', 'permit'];
     const hasActionWords = actionWords.some(word => normalizedInput.includes(word));
     
-    const isSimpleLength = normalizedInput.length < 50 && !hasActionWords;
+    const isSimpleLength = normalizedInput.length < 50 && !hasActionWords && !isSpanish;
     
     if (this.config.debug) {
       console.log('🔍 [CONVERSATION-ANALYSIS]', {
         input: normalizedInput,
+        isSpanish,
         isSimplePattern,
         isSimpleLength,
         hasActionWords,

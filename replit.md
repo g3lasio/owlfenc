@@ -45,6 +45,12 @@ This project is an AI-powered legal document and permit management platform feat
   * AUTHENTIC RESPONSES: Respuestas específicas contextuales en lugar de fallbacks genéricos como "Right on, bro, I understand what you need"
   * MEXICAN NORTEÑA PERSONALITY: Personalidad auténtica integrada en cada tipo de respuesta contextual
   * SMART FALLBACK SYSTEM: Sistema de respaldo inteligente que pide clarificación específica en lugar de respuestas vagas
+- CRITICAL LANGUAGE CONSISTENCY FIX: Solución definitiva para problema "molestoso" de cambio de idioma español→inglés:
+  * SPANISH DETECTION: Detección automática de español usando acentos y palabras clave mexicanas
+  * BACKEND ROUTING: Mensajes en español SIEMPRE van al backend (MervinChatOrchestrator) que mantiene personalidad mexicana norteña
+  * FRONTEND LIMITATION: Frontend solo maneja conversación simple en inglés, nunca español
+  * LANGUAGE PRESERVATION: Sistema garantiza consistencia de idioma español durante toda la conversación
+  * ERROR ELIMINATION: Elimina completamente el problema fastidioso de cambios de idioma aleatorios
 - FASE 2 RESEARCH OPTIMIZATION COMPLETED: Sistema avanzado de investigación web súper rápida específicamente optimizado para contratistas ocupados:
   * INTELLIGENT CACHING SYSTEM: ResearchCacheService con expiración inteligente por tipo de información y alta eficiencia
   * SUPER FAST RESEARCH: Investigación express <5 segundos para consultas urgentes con detección automática de urgencia
@@ -67,7 +73,7 @@ This project is an AI-powered legal document and permit management platform feat
 - MOBILE UX OPTIMIZATION COMPLETED: Optimización completa de Mervin AI chat para iPhone y dispositivos móviles:
   * SAFE AREA SUPPORT: Soporte completo para iPhone notch y Dynamic Island usando CSS env() variables
   * ENHANCED TOUCH TARGETS: Botones y elementos interactivos con mínimo 44px según Apple Human Interface Guidelines
-  * MOBILE-FIRST LAYOUT: Reorganización de botones de acción en stack vertical para móvil vs grid horizontal para desktop
+  * MOBILE-FIRST LAYOUT: Reorganization of action buttons into vertical stack for mobile vs horizontal grid for desktop
   * IMPROVED INPUT AREAS: Campos de entrada optimizados con mayor tamaño y mejor accesibilidad en móviles
   * ENHANCED MESSAGING: Burbujas de mensaje mejoradas con mejor legibilidad y espaciado en pantallas móviles
   * CSS UTILITIES: Sistema completo de clases utilitarias para safe areas, touch targets y optimizaciones móviles
@@ -111,14 +117,7 @@ This project is an AI-powered legal document and permit management platform feat
 - **Authentication**: Firebase Admin SDK for backend authentication management.
 
 ### AI Architecture
-- **Mervin AI Unified System**: Unified backend supporting a superintelligent construction chatbot, autonomous task execution, and real-time web research. Utilizes differentiated roles for AI models (Anthropic for research/analysis, OpenAI for conversation/quick tasks). Key components include:
-    - **SmartTaskCoordinator**: Intelligent multi-agent coordination system.
-    - **ParallelExecutionEngine**: Concurrent task execution with load balancing.
-    - **Decision Engine**: Autonomous decision making with high confidence scoring.
-    - **Memory System**: Persistent learning and pattern optimization.
-    - **Risk Assessment**: Automatic evaluation with adaptive strategies.
-    - **Conversational Intelligence**: Advanced multilingual personality system with language detection, contextual conversation flow, dynamic personality adaptation (Mexican norteño / Californian style), and emotion recognition.
-- Access via unified `/api/mervin/process` endpoint with specialized sub-endpoints.
+- **Mervin AI Unified System**: Unified backend supporting a superintelligent construction chatbot, autonomous task execution, and real-time web research. Utilizes differentiated roles for AI models (Anthropic for research/analysis, OpenAI for conversation/quick tasks). Key components include: SmartTaskCoordinator, ParallelExecutionEngine, Decision Engine, Memory System, Risk Assessment, and Conversational Intelligence (advanced multilingual personality system with language detection, contextual conversation flow, dynamic personality adaptation, and emotion recognition). Access via unified `/api/mervin/process` endpoint with specialized sub-endpoints.
 
 ### Core Features & Design Patterns
 - **Smart Action System Revolution**: Context-aware interface system using intelligent slash commands, contextual suggestions, and adaptive floating actions.
