@@ -22,18 +22,16 @@ This project is an advanced AI-powered legal document and permit management plat
   * FUNCIONALIDAD REAL: Legacy = respuestas directas, Agent mode = sistema avanzado
   * CONTROL POR PERMISOS: Free trial solo Legacy, otros planes ambos modos
   * PROPUESTA COMPLETA: Sistema de permisos diferenciado por plan de usuario
-- MERVIN AI CONVERSATIONAL INTELLIGENCE: Sistema conversacional tipo GPT-5 con superinteligencia y personalidad humana:
-  * Detección automática de idioma del usuario (español, inglés, otros)
-  * Personalidad mexicana norteña auténtica: "primo", "compadre", "órale", estilo natural y cálido
-  * Personalidad californiana para inglés: "dude", "bro", "what's up", casual y genuino
-  * CONVERSACIÓN FLUIDA: Respuestas naturales que continúan el contexto sin roboticidad
-  * DETECCIÓN DE INTENCIONES: Entiende el contexto inmediato y responde específicamente a lo preguntado
-  * ANTI-ROBÓTICO: Nunca listar capacidades a menos que se pregunte específicamente
-  * HUMOR Y CONEXIÓN: Superinteligencia combinada con calidez humana y sentido del humor
-  * RESPUESTAS CONTEXTUALES: Cada respuesta basada en la conversación actual, no en templates
-  * VARIABILIDAD: Diferentes respuestas para situaciones similares para evitar repetitividad
-  * ENTENDIMIENTO UNIVERSAL: Capaz de entender hasta las conversaciones más básicas y seguimientos simples
-  * CONFIRMACIONES INTELIGENTES: Detecta y responde apropiadamente a confirmaciones, seguimientos, y emociones
+- MERVIN AI CONVERSATIONAL INTELLIGENCE: Sistema conversacional tipo GPT-5 con superinteligencia y personalidad humana (ACTUALIZADO 17/08/2025):
+  * ANÁLISIS CONTEXTUAL AVANZADO: Detección precisa de tipo de mensaje (pregunta, confirmación, solicitud, etc.), intención específica (crear, ver, modificar), tema principal (estimados, contratos), y contexto emocional
+  * RESPUESTAS CONTEXTUALES REALES: Sistema completamente reescrito que elimina respuestas genéricas y genera respuestas específicas al contenido exacto del mensaje del usuario
+  * PERSONALIDAD AUTÉNTICA: Mexicana norteña genuina ("primo", "compadre", "órale") y californiana casual ("dude", "bro") con variabilidad natural 
+  * ENTENDIMIENTO CONVERSACIONAL: Detecta saludos, confirmaciones, negaciones, solicitudes, seguimientos y responde apropiadamente a cada tipo
+  * INTELIGENCIA DE INTENCIÓN: Comprende intenciones específicas (crear, explicar, revisar) y responde con ayuda dirigida al objetivo del usuario
+  * SUGERENCIAS CONTEXTUALES: Genera sugerencias dinámicas específicas al tema y contexto de la conversación actual
+  * SEGUIMIENTOS INTELIGENTES: Preguntas de seguimiento que se adaptan al tipo de mensaje y tema, manteniendo fluidez conversacional natural
+  * DETECCIÓN EMOCIONAL AVANZADA: Reconoce frustración, satisfacción, urgencia y adapta respuestas empáticamente
+  * ANTI-ROBÓTICO TOTAL: Eliminadas todas las respuestas templadas; cada respuesta es única y contextual al mensaje específico
 - CHAT RELIABILITY CRITICAL: Sistema robusto anti-cuelgues con timeouts, logging detallado y manejo comprehensivo de errores para evitar estados estáticos de "Procesando..."
 - MOBILE UX OPTIMIZATION COMPLETED: Optimización completa de Mervin AI chat para iPhone y dispositivos móviles (16/08/2025):
   * SAFE AREA SUPPORT: Soporte completo para iPhone notch y Dynamic Island usando CSS env() variables

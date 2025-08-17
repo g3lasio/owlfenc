@@ -182,41 +182,23 @@ So, what can I do for you today, bro?`;
     userEmotion: string,
     context: any
   ): Promise<ConversationResponse> {
+    const { language } = languageProfile;
+    const { messageType, intent, topic, emotionalContext } = context.entities;
+    
     let baseResponse = '';
     let emotion: ConversationResponse['emotion'] = 'helpful';
     let suggestedActions: string[] = [];
     let followUpQuestions: string[] = [];
 
-    // Respuesta basada en emoción del usuario
-    switch (userEmotion) {
-      case 'frustrated':
-        baseResponse = this.languageDetector.generateEmpathyResponse(languageProfile);
-        emotion = 'empathetic';
-        break;
-      case 'excited':
-        baseResponse = this.languageDetector.generateExcitementResponse(languageProfile);
-        emotion = 'enthusiastic';
-        break;
-      case 'confused':
-        baseResponse = languageProfile.language === 'spanish' 
-          ? 'No te preocupes, primo. Te explico paso a paso.'
-          : 'No worries, dude. Let me break it down for you.';
-        emotion = 'clarifying';
-        break;
-      case 'satisfied':
-        baseResponse = languageProfile.language === 'spanish'
-          ? '¡Órale! Me da mucho gusto que todo esté funcionando bien.'
-          : 'Awesome! So stoked that everything is working out for you.';
-        emotion = 'celebrating';
-        break;
-      default:
-        baseResponse = this.languageDetector.generateFollowUpQuestion(languageProfile);
-        emotion = 'helpful';
-    }
-
-    // Generar sugerencias contextuales
-    suggestedActions = this.generateSuggestedActions(userMessage, languageProfile);
-    followUpQuestions = this.generateFollowUpQuestions(userMessage, languageProfile);
+    // Generar respuesta específica basada en análisis contextual
+    baseResponse = this.generateSpecificResponse(userMessage, messageType, intent, topic, emotionalContext, language);
+    
+    // Ajustar emoción de respuesta
+    emotion = this.determineResponseEmotion(messageType, emotionalContext, intent);
+    
+    // Generar sugerencias contextuales específicas
+    suggestedActions = this.generateContextualSuggestions(topic, intent, language);
+    followUpQuestions = this.generateIntelligentFollowUps(messageType, topic, intent, language);
 
     return {
       message: baseResponse,
@@ -311,61 +293,388 @@ So, what can I do for you today, bro?`;
   }
 
   private analyzeConversationContext(userMessage: string): ConversationContext {
-    // Analizar contexto básico del mensaje
+    const message = userMessage.toLowerCase().trim();
     const entities: Record<string, any> = {};
     const userPreferences: Record<string, any> = {};
     
-    // Detectar entidades simples
-    if (userMessage.toLowerCase().includes('estimate') || userMessage.toLowerCase().includes('estimado')) {
+    // Detectar tipo de mensaje
+    entities.messageType = this.detectMessageType(message);
+    
+    // Detectar temas principales con mayor precisión
+    if (message.includes('estimado') || message.includes('estimate') || message.includes('cotiz') || message.includes('presupuesto') || message.includes('quote')) {
       entities.topic = 'estimate';
-    } else if (userMessage.toLowerCase().includes('contract') || userMessage.toLowerCase().includes('contrato')) {
+      entities.specificity = 'high';
+    } else if (message.includes('contrato') || message.includes('contract') || message.includes('acuerdo') || message.includes('agreement')) {
       entities.topic = 'contract';
+      entities.specificity = 'high';
+    } else if (message.includes('propiedad') || message.includes('property') || message.includes('terreno') || message.includes('casa') || message.includes('house')) {
+      entities.topic = 'property';
+      entities.specificity = 'high';
+    } else if (message.includes('permiso') || message.includes('permit') || message.includes('licencia') || message.includes('municipal')) {
+      entities.topic = 'permit';
+      entities.specificity = 'high';
+    } else if (message.includes('pago') || message.includes('payment') || message.includes('factura') || message.includes('invoice')) {
+      entities.topic = 'payment';
+      entities.specificity = 'high';
+    } else {
+      entities.topic = 'general';
+      entities.specificity = 'low';
     }
+    
+    // Detectar intención específica
+    entities.intent = this.detectUserIntent(message);
+    
+    // Detectar contexto emocional específico
+    entities.emotionalContext = this.detectEmotionalContext(message);
 
     return {
-      topic: entities.topic || 'general',
+      topic: entities.topic,
       entities,
       userPreferences,
-      priority: 1
+      priority: entities.specificity === 'high' ? 2 : 1
     };
   }
 
-  private generateSuggestedActions(userMessage: string, languageProfile: LanguageProfile): string[] {
-    const { language } = languageProfile;
+  private detectMessageType(message: string): string {
+    // Preguntas
+    if (message.includes('?') || message.startsWith('qué') || message.startsWith('cómo') || 
+        message.startsWith('cuándo') || message.startsWith('dónde') || message.startsWith('por qué') ||
+        message.startsWith('what') || message.startsWith('how') || message.startsWith('when') ||
+        message.startsWith('where') || message.startsWith('why') || message.startsWith('can you')) {
+      return 'question';
+    }
     
-    if (language === 'spanish') {
-      return [
-        'Generar un estimado',
-        'Crear un contrato',
-        'Verificar una propiedad',
-        'Consultar permisos'
-      ];
-    } else {
-      return [
-        'Generate an estimate',
-        'Create a contract',
-        'Verify a property',
-        'Check permits'
-      ];
+    // Confirmaciones
+    if (message.includes('sí') || message.includes('yes') || message.includes('correcto') || 
+        message.includes('exacto') || message.includes('está bien') || message.includes('ok') ||
+        message.includes('está bien') || message.includes('perfecto') || message.includes('perfect')) {
+      return 'confirmation';
+    }
+    
+    // Negaciones
+    if (message.includes('no') || message.includes('not') || message.includes('never') ||
+        message.includes('nunca') || message.includes('no quiero') || message.includes("don't")) {
+      return 'negation';
+    }
+    
+    // Solicitudes/Comandos
+    if (message.startsWith('necesito') || message.startsWith('quiero') || message.startsWith('puedes') ||
+        message.startsWith('i need') || message.startsWith('i want') || message.startsWith('please') ||
+        message.startsWith('help') || message.startsWith('ayuda')) {
+      return 'request';
+    }
+    
+    // Saludos
+    if (message.includes('hola') || message.includes('hello') || message.includes('hi') ||
+        message.includes('buenos días') || message.includes('good morning') || message.includes('hey')) {
+      return 'greeting';
+    }
+    
+    // Seguimientos
+    if (message.includes('y después') || message.includes('and then') || message.includes('siguiente') ||
+        message.includes('next') || message.includes('también') || message.includes('también') || message.includes('also')) {
+      return 'followup';
+    }
+    
+    return 'statement';
+  }
+
+  private detectUserIntent(message: string): string {
+    // Crear/Generar
+    if (message.includes('crear') || message.includes('generar') || message.includes('hacer') ||
+        message.includes('create') || message.includes('generate') || message.includes('make')) {
+      return 'create';
+    }
+    
+    // Ver/Revisar
+    if (message.includes('ver') || message.includes('revisar') || message.includes('mostrar') ||
+        message.includes('show') || message.includes('view') || message.includes('check')) {
+      return 'view';
+    }
+    
+    // Modificar/Cambiar
+    if (message.includes('cambiar') || message.includes('modificar') || message.includes('editar') ||
+        message.includes('change') || message.includes('modify') || message.includes('edit')) {
+      return 'modify';
+    }
+    
+    // Eliminar
+    if (message.includes('eliminar') || message.includes('borrar') || message.includes('quitar') ||
+        message.includes('delete') || message.includes('remove')) {
+      return 'delete';
+    }
+    
+    // Explicar/Ayudar
+    if (message.includes('explicar') || message.includes('ayudar') || message.includes('cómo') ||
+        message.includes('explain') || message.includes('help') || message.includes('how')) {
+      return 'explain';
+    }
+    
+    return 'general';
+  }
+
+  private detectEmotionalContext(message: string): string {
+    // Frustración
+    if (message.includes('no funciona') || message.includes('problema') || message.includes('error') ||
+        message.includes("doesn't work") || message.includes('problem') || message.includes('broken')) {
+      return 'frustrated';
+    }
+    
+    // Satisfacción
+    if (message.includes('perfecto') || message.includes('excelente') || message.includes('genial') ||
+        message.includes('perfect') || message.includes('excellent') || message.includes('great')) {
+      return 'satisfied';
+    }
+    
+    // Urgencia
+    if (message.includes('urgente') || message.includes('rápido') || message.includes('ya') ||
+        message.includes('urgent') || message.includes('quickly') || message.includes('asap')) {
+      return 'urgent';
+    }
+    
+    return 'neutral';
+  }
+
+  private generateSpecificResponse(
+    userMessage: string, 
+    messageType: string, 
+    intent: string, 
+    topic: string, 
+    emotionalContext: string, 
+    language: string
+  ): string {
+    // Respuestas específicas por tipo de mensaje y contexto
+    switch (messageType) {
+      case 'greeting':
+        return language === 'spanish' 
+          ? '¡Órale primo! ¿Cómo andas? ¿En qué te puedo echar la mano hoy?'
+          : 'Hey there, dude! What\'s up? How can I help you out today?';
+
+      case 'question':
+        return this.generateQuestionResponse(intent, topic, language, userMessage);
+
+      case 'confirmation':
+        return this.generateConfirmationResponse(topic, language);
+
+      case 'negation':
+        return language === 'spanish'
+          ? 'No hay problema, primo. ¿Hay algo más que te interese o quieres que cambiemos de rumbo?'
+          : 'No worries at all, dude. Is there something else you\'re interested in or want to pivot to?';
+
+      case 'request':
+        return this.generateRequestResponse(intent, topic, language, userMessage);
+
+      case 'followup':
+        return this.generateFollowupResponse(topic, language);
+
+      default:
+        return this.generateContextualStatement(intent, topic, emotionalContext, language, userMessage);
     }
   }
 
-  private generateFollowUpQuestions(userMessage: string, languageProfile: LanguageProfile): string[] {
-    const { language } = languageProfile;
+  private generateQuestionResponse(intent: string, topic: string, language: string, userMessage: string): string {
+    const isSpanish = language === 'spanish';
     
-    if (language === 'spanish') {
-      return [
-        '¿Necesitas más detalles sobre algo específico?',
-        '¿Te gustaría que revisemos otra cosa?',
-        '¿Hay algo más en lo que pueda ayudarte?'
-      ];
-    } else {
-      return [
-        'Need more details about something specific?',
-        'Would you like me to check something else?',
-        'Anything else I can help you with?'
+    if (topic === 'estimate') {
+      return isSpanish 
+        ? 'Claro primo, te puedo ayudar con estimados. ¿Es para una cerca nueva, reparación, o qué tipo de trabajo necesitas cotizar?'
+        : 'Sure thing, dude! I can help with estimates. Is it for a new fence, repair, or what kind of work do you need quoted?';
+    }
+    
+    if (topic === 'contract') {
+      return isSpanish
+        ? '¡Por supuesto! Te ayudo con contratos, compadre. ¿Ya tienes los detalles del trabajo o necesitas que armemos todo desde cero?'
+        : 'Absolutely! I can help with contracts, bro. Do you have the job details or do we need to build everything from scratch?';
+    }
+    
+    if (topic === 'property') {
+      return isSpanish
+        ? 'Perfecto, primo. Te ayudo a verificar propiedades. ¿Tienes la dirección o número de parcela que quieres que revise?'
+        : 'Perfect, dude! I can help verify properties. Do you have the address or parcel number you want me to check?';
+    }
+    
+    if (intent === 'explain') {
+      return isSpanish
+        ? 'Te explico lo que necesites, compadre. Dime específicamente qué parte quieres que te detalle.'
+        : 'I\'ll explain whatever you need, bro. Tell me specifically what part you want me to break down.';
+    }
+    
+    return isSpanish
+      ? 'Dime más detalles sobre lo que necesitas, primo. Mientras más me cuentes, mejor te puedo ayudar.'
+      : 'Tell me more about what you need, dude. The more you share, the better I can help you out.';
+  }
+
+  private generateConfirmationResponse(topic: string, language: string): string {
+    const isSpanish = language === 'spanish';
+    
+    if (topic === 'estimate' || topic === 'contract' || topic === 'property') {
+      return isSpanish
+        ? '¡Perfecto primo! Vamos con eso. ¿Qué detalles tienes para que arranquemos?'
+        : 'Perfect, dude! Let\'s do this. What details do you have so we can get started?';
+    }
+    
+    return isSpanish
+      ? '¡Órale, perfecto! Entonces seguimos por ahí. ¿Qué sigue, compadre?'
+      : 'Awesome, perfect! So we\'re going with that. What\'s next, bro?';
+  }
+
+  private generateRequestResponse(intent: string, topic: string, language: string, userMessage: string): string {
+    const isSpanish = language === 'spanish';
+    
+    if (intent === 'create' && topic === 'estimate') {
+      return isSpanish
+        ? '¡Claro que sí, primo! Te ayudo a crear un estimado. Cuéntame: ¿qué tipo de cerca necesitas, para qué propiedad, y tienes las medidas?'
+        : 'Absolutely, dude! I\'ll help you create an estimate. Tell me: what type of fence do you need, for which property, and do you have measurements?';
+    }
+    
+    if (intent === 'create' && topic === 'contract') {
+      return isSpanish
+        ? '¡Por supuesto, compadre! Armamos un contrato profesional. ¿Ya tienes acordados los detalles del trabajo con el cliente?'
+        : 'Of course, bro! Let\'s build a professional contract. Do you already have the job details agreed upon with the client?';
+    }
+    
+    if (intent === 'view' || intent === 'check') {
+      return isSpanish
+        ? 'Te ayudo a revisar eso, primo. Dame más detalles sobre qué específicamente quieres que verifique.'
+        : 'I\'ll help you check that out, dude. Give me more details about what specifically you want me to verify.';
+    }
+    
+    return isSpanish
+      ? 'Entendido, primo. Te ayudo con eso. Compárteme los detalles para saber exactamente cómo proceder.'
+      : 'Got it, dude. I\'ll help you with that. Share the details so I know exactly how to proceed.';
+  }
+
+  private generateFollowupResponse(topic: string, language: string): string {
+    const isSpanish = language === 'spanish';
+    
+    return isSpanish
+      ? '¡Órale sí! Seguimos con eso, primo. Dime qué más necesitas que hagamos.'
+      : 'Oh yeah! Let\'s keep going with that, dude. Tell me what else we need to do.';
+  }
+
+  private generateContextualStatement(intent: string, topic: string, emotionalContext: string, language: string, userMessage: string): string {
+    const isSpanish = language === 'spanish';
+    
+    if (emotionalContext === 'frustrated') {
+      return isSpanish
+        ? 'Órale primo, veo que algo no está funcionando bien. Platícame qué está pasando para que lo arreglemos juntos.'
+        : 'Hey dude, I can see something isn\'t working right. Tell me what\'s going on so we can fix it together.';
+    }
+    
+    if (emotionalContext === 'satisfied') {
+      return isSpanish
+        ? '¡Qué bueno escuchar eso, compadre! Me da mucho gusto que todo esté saliendo bien. ¿Qué sigue en la lista?'
+        : 'So great to hear that, bro! Really stoked that everything is working out. What\'s next on the list?';
+    }
+    
+    // Respuesta inteligente basada en contenido específico
+    if (userMessage.toLowerCase().includes('gracias') || userMessage.toLowerCase().includes('thank')) {
+      return isSpanish
+        ? '¡De nada, primo! Para eso estamos. Si necesitas algo más, aquí andamos.'
+        : 'You\'re welcome, dude! That\'s what we\'re here for. If you need anything else, just let me know.';
+    }
+    
+    return isSpanish
+      ? 'Entiendo, primo. Cuéntame más para saber exactamente cómo ayudarte mejor.'
+      : 'I hear you, dude. Tell me more so I know exactly how to help you better.';
+  }
+
+  private determineResponseEmotion(messageType: string, emotionalContext: string, intent: string): ConversationResponse['emotion'] {
+    if (emotionalContext === 'frustrated') return 'empathetic';
+    if (emotionalContext === 'satisfied') return 'celebrating';
+    if (messageType === 'greeting') return 'enthusiastic';
+    if (messageType === 'confirmation') return 'enthusiastic';
+    if (intent === 'create' || intent === 'request') return 'helpful';
+    
+    return 'helpful';
+  }
+
+  private generateContextualSuggestions(topic: string, intent: string, language: string): string[] {
+    const isSpanish = language === 'spanish';
+    
+    if (topic === 'estimate') {
+      return isSpanish ? [
+        'Crear estimado detallado',
+        'Ver materiales disponibles',
+        'Calcular costos de mano de obra'
+      ] : [
+        'Create detailed estimate',
+        'View available materials', 
+        'Calculate labor costs'
       ];
     }
+    
+    if (topic === 'contract') {
+      return isSpanish ? [
+        'Generar contrato profesional',
+        'Ver términos estándar',
+        'Configurar firma digital'
+      ] : [
+        'Generate professional contract',
+        'View standard terms',
+        'Set up digital signature'
+      ];
+    }
+    
+    if (topic === 'property') {
+      return isSpanish ? [
+        'Verificar propiedad',
+        'Ver información catastral',
+        'Revisar permisos necesarios'
+      ] : [
+        'Verify property',
+        'View cadastral information',
+        'Check required permits'
+      ];
+    }
+    
+    return isSpanish ? [
+      'Generar estimado',
+      'Crear contrato',
+      'Verificar propiedad'
+    ] : [
+      'Generate estimate',
+      'Create contract',
+      'Verify property'
+    ];
+  }
+
+  private generateIntelligentFollowUps(messageType: string, topic: string, intent: string, language: string): string[] {
+    const isSpanish = language === 'spanish';
+    
+    if (messageType === 'question' && topic === 'estimate') {
+      return isSpanish ? [
+        '¿Qué tipo de material prefieres?',
+        '¿Cuáles son las medidas exactas?',
+        '¿Para cuándo necesitas el trabajo?'
+      ] : [
+        'What type of material do you prefer?',
+        'What are the exact measurements?',
+        'When do you need the work done?'
+      ];
+    }
+    
+    if (messageType === 'request' && intent === 'create') {
+      return isSpanish ? [
+        '¿Tienes todos los detalles necesarios?',
+        '¿Quieres que usemos un formato específico?',
+        '¿Hay algún plazo especial para esto?'
+      ] : [
+        'Do you have all the necessary details?',
+        'Want me to use a specific format?',
+        'Is there a special deadline for this?'
+      ];
+    }
+    
+    return isSpanish ? [
+      '¿En qué más puedo ayudarte?',
+      '¿Quieres que revisemos algo específico?',
+      '¿Hay algo más que necesites aclarar?'
+    ] : [
+      'What else can I help you with?',
+      'Want me to check something specific?',
+      'Is there anything else you need clarified?'
+    ];
   }
 
   private updateConversationHistory(
