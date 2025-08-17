@@ -130,18 +130,56 @@ export class MervinAgent {
       // 1. Procesar mensaje con motor conversacional
       const conversationResponse = await this.conversationEngine.processUserMessage(input);
       
-      // 2. Analizar la intención del usuario
+      if (this.config.debug) {
+        console.log('🗣️ [CONVERSATION-RESPONSE]', conversationResponse);
+      }
+
+      // 2. CRÍTICO: Determinar si es conversación simple o requiere acción
+      const isSimpleConversation = this.isSimpleConversationalMessage(input, conversationResponse);
+      
+      if (isSimpleConversation) {
+        // ✅ CONVERSACIÓN SIMPLE - Solo usar ConversationEngine
+        if (this.config.debug) {
+          console.log('💬 [SIMPLE-CONVERSATION] Respondiendo solo con ConversationEngine');
+        }
+
+        this.updateState({ 
+          isActive: false, 
+          currentTask: null, 
+          progress: 100,
+          activeEndpoints: [],
+          canInterrupt: true
+        });
+
+        return {
+          success: true,
+          data: {
+            conversationalResponse: conversationResponse.message,
+            languageProfile: conversationResponse.languageProfile,
+            isConversational: true
+          },
+          executionTime: Date.now() - (this.state.lastActivity?.getTime() || 0),
+          stepsCompleted: 1,
+          endpointsUsed: []
+        };
+      }
+
+      // 3. TAREA COMPLEJA - Usar análisis completo + TaskOrchestrator
+      if (this.config.debug) {
+        console.log('🤖 [COMPLEX-TASK] Requiere análisis de intención y ejecución');
+      }
+
+      // Analizar la intención del usuario para tareas complejas
       const intention = await this.intentionEngine.analyzeUserInput(input, conversationHistory);
       
       if (this.config.debug) {
         console.log('🎯 [INTENTION-ANALYSIS]', intention);
-        console.log('🗣️ [CONVERSATION-RESPONSE]', conversationResponse);
       }
 
-      // 3. Actualizar contexto con nueva información
+      // Actualizar contexto con nueva información
       await this.contextManager.updateContext(input, intention);
 
-      // 4. 🛡️ VALIDAR PERMISOS CRÍTICOS antes de ejecutar
+      // 🛡️ VALIDAR PERMISOS CRÍTICOS antes de ejecutar
       const permissionCheck = this.validateCriticalPermissions(input, intention);
       if (!permissionCheck.allowed) {
         return {
@@ -157,10 +195,10 @@ export class MervinAgent {
         };
       }
 
-      // 5. Generar y ejecutar plan de tareas
+      // Generar y ejecutar plan de tareas
       const taskResult = await this.taskOrchestrator.executeTask(intention);
 
-      // 6. Adaptar respuesta con personalidad conversacional
+      // Adaptar respuesta con personalidad conversacional
       if (taskResult.data) {
         taskResult.data.conversationalResponse = this.conversationEngine.adaptTaskResponse(
           taskResult.data.response || 'Tarea completada',
@@ -169,10 +207,10 @@ export class MervinAgent {
         taskResult.data.languageProfile = conversationResponse.languageProfile;
       }
 
-      // 7. Aprender de la ejecución para futuras mejoras
+      // Aprender de la ejecución para futuras mejoras
       await this.agentMemory.learnFromTask(intention, taskResult);
 
-      // 8. Actualizar estado final
+      // Actualizar estado final
       this.updateState({ 
         isActive: false, 
         currentTask: null, 
@@ -239,6 +277,55 @@ export class MervinAgent {
    */
   getConversationSummary(): string {
     return this.conversationEngine.getConversationSummary();
+  }
+
+  /**
+   * Determinar si es un mensaje conversacional simple que NO requiere TaskOrchestrator
+   */
+  private isSimpleConversationalMessage(input: string, conversationResponse: any): boolean {
+    const normalizedInput = input.toLowerCase().trim();
+    
+    // Patrones de conversación simple que NO necesitan TaskOrchestrator
+    const conversationalPatterns = [
+      // Saludos
+      /^(hola|hello|hi|hey|buenos días|good morning|what's up|qué tal)/i,
+      
+      // Preguntas simples sobre Mervin
+      /^(cómo estás|how are you|qué tal|como estas)/i,
+      
+      // Agradecimientos
+      /^(gracias|thank you|thanks)/i,
+      
+      // Despedidas
+      /^(adiós|bye|goodbye|hasta luego|see you)/i,
+      
+      // Confirmaciones simples
+      /^(ok|okay|sí|yes|correcto|entiendo)/i,
+      
+      // Preguntas sobre el sistema sin acción específica
+      /^(quién eres|who are you|qué puedes hacer|what can you do)/i
+    ];
+
+    // Si coincide con patrones conversacionales simples
+    const isSimplePattern = conversationalPatterns.some(pattern => pattern.test(normalizedInput));
+    
+    // Si es muy corto y no contiene palabras de acción específica
+    const actionWords = ['crear', 'generar', 'hacer', 'estimado', 'contrato', 'permiso', 'create', 'generate', 'make', 'estimate', 'contract', 'permit'];
+    const hasActionWords = actionWords.some(word => normalizedInput.includes(word));
+    
+    const isSimpleLength = normalizedInput.length < 50 && !hasActionWords;
+    
+    if (this.config.debug) {
+      console.log('🔍 [CONVERSATION-ANALYSIS]', {
+        input: normalizedInput,
+        isSimplePattern,
+        isSimpleLength,
+        hasActionWords,
+        final: isSimplePattern || isSimpleLength
+      });
+    }
+    
+    return isSimplePattern || isSimpleLength;
   }
 
   /**
