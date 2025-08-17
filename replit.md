@@ -1,7 +1,7 @@
 # Legal Document & Permit Management Platform
 
 ## Overview
-This project is an AI-powered legal document and permit management platform featuring Mervin AI, an autonomous intelligent agent. The platform streamlines complex legal and permit processes by automating tasks, such as generating estimates, creating contracts, analyzing permits, verifying properties, and coordinating over 20 API endpoints autonomously. This offers significant market potential by evolving Mervin AI from a chatbot into a capable intelligent agent.
+This project is an AI-powered legal document and permit management platform featuring Mervin AI, an autonomous intelligent agent. The platform streamlines complex legal and permit processes by automating tasks such as generating estimates, creating contracts, analyzing permits, verifying properties, and coordinating over 20 API endpoints autonomously. Its purpose is to evolve Mervin AI from a chatbot into a capable intelligent agent, offering significant market potential in legal and permit management.
 
 ## User Preferences
 - Respuestas técnicas y detalladas cuando se requiera análisis
@@ -22,6 +22,12 @@ This project is an AI-powered legal document and permit management platform feat
   * FUNCIONALIDAD REAL: Legacy = respuestas directas, Agent mode = sistema avanzado
   * CONTROL POR PERMISOS: Free trial solo Legacy, otros planes ambos modos
   * PROPUESTA COMPLETA: Sistema de permisos diferenciado por plan de usuario
+- AI INTEGRATION MODERNIZATION 2025: Investigación completa de alternativas modernas para integración de AI:
+  * OPENROUTER SOLUTION: Gateway unificado con acceso a 300+ modelos (OpenAI, Anthropic, Google, XAI) usando una sola API key
+  * OPENAI AGENT MODE 2025: Nuevas capacidades ChatGPT Agent, Responses API, Agent SDK, GPT-5 optimizado para agentes
+  * CREWAI FRAMEWORK: Sistema moderno de equipos de agentes con roles especializados y coordinación avanzada
+  * LANGRAPH ALTERNATIVA: Workflows visuales con orquestación de agentes de nueva generación
+  * UNIFIED API APPROACH: Eliminación de configuraciones múltiples y conflictos de API keys individuales
 - MERVIN AI CONVERSATIONAL INTELLIGENCE: Sistema conversacional tipo GPT-5 con superinteligencia y personalidad humana:
   * ANÁLISIS CONTEXTUAL AVANZADO: Detección precisa de tipo de mensaje (pregunta, confirmación, solicitud, etc.), intención específica (crear, ver, modificar), tema principal (estimados, contratos), y contexto emocional
   * RESPUESTAS CONTEXTUALES REALES: Sistema completamente reescrito que elimina respuestas genéricas y genera respuestas específicas al contenido exacto del mensaje del usuario
@@ -98,7 +104,6 @@ This project is an AI-powered legal document and permit management platform feat
 - **Technology Stack**: React.js with TypeScript, Tailwind CSS for responsive design.
 - **Routing**: Wouter for client-side routing.
 - **Data Management**: TanStack Query for efficient data fetching and state management.
-- **AI System**: Modular Mervin AI with 14 specialized components including Smart Task Coordinator.
 
 ### Backend
 - **Server Framework**: Express.js server.
@@ -106,21 +111,20 @@ This project is an AI-powered legal document and permit management platform feat
 - **Authentication**: Firebase Admin SDK for backend authentication management.
 
 ### AI Architecture
-- **SmartTaskCoordinator**: Intelligent multi-agent coordination system.
-- **ParallelExecutionEngine**: Concurrent task execution with load balancing.
-- **Decision Engine**: Autonomous decision making with high confidence scoring.
-- **Memory System**: Persistent learning and pattern optimization.
-- **Risk Assessment**: Automatic evaluation with adaptive strategies.
-- **Conversational Intelligence**: Advanced multilingual personality system with language detection, contextual conversation flow, dynamic personality adaptation (Mexican norteño / Californian style), and emotion recognition.
-- **MERVIN AI UNIFIED SYSTEM**: Unified backend for Mervin AI supporting a superintelligent construction chatbot, autonomous task execution, and real-time web research. Utilizes differentiated roles for AI models (Anthropic for research/analysis, OpenAI for conversation/quick tasks). Key components include `MervinChatOrchestrator.ts`, `ConstructionKnowledgeBase.ts`, `WebResearchService.ts`, `TaskExecutionCoordinator.ts`, `UserContextProvider.ts`, accessed via a unified `/api/mervin/process` endpoint with specialized sub-endpoints.
+- **Mervin AI Unified System**: Unified backend supporting a superintelligent construction chatbot, autonomous task execution, and real-time web research. Utilizes differentiated roles for AI models (Anthropic for research/analysis, OpenAI for conversation/quick tasks). Key components include:
+    - **SmartTaskCoordinator**: Intelligent multi-agent coordination system.
+    - **ParallelExecutionEngine**: Concurrent task execution with load balancing.
+    - **Decision Engine**: Autonomous decision making with high confidence scoring.
+    - **Memory System**: Persistent learning and pattern optimization.
+    - **Risk Assessment**: Automatic evaluation with adaptive strategies.
+    - **Conversational Intelligence**: Advanced multilingual personality system with language detection, contextual conversation flow, dynamic personality adaptation (Mexican norteño / Californian style), and emotion recognition.
+- Access via unified `/api/mervin/process` endpoint with specialized sub-endpoints.
 
 ### Core Features & Design Patterns
 - **Smart Action System Revolution**: Context-aware interface system using intelligent slash commands, contextual suggestions, and adaptive floating actions.
 - **Conversational Onboarding System**: Onboarding integrated into Mervin AI chat, replacing traditional wizards with natural guided conversation.
 - **Mervin AI Autonomous Agent**: Modular system with specialized components for intention analysis, smart task coordination, intelligent decision making, parallel execution, specialized agents (estimates, contracts, permits, property verification), learning & memory, real-time feedback, permission intelligence, context awareness, endpoint consistency, performance optimization, and risk assessment.
-- **User Authentication & Authorization**: Enhanced OAuth, email/password, and a robust subscription-based permission system (`primo_chambeador`, `mero_patron`, `master_contractor`, `trial_master`). Includes secure registration, automatic subscription degradation, and real-time usage limit enforcement.
-- **Login Persistence**: 30-day persistent login with device fingerprinting and session validation.
-- **Biometric Authentication**: WebAuthn API integration for biometric logins (Face ID, Touch ID, Windows Hello, fingerprint).
+- **User Authentication & Authorization**: Enhanced OAuth, email/password, and a robust subscription-based permission system (`primo_chambeador`, `mero_patron`, `master_contractor`, `trial_master`). Includes secure registration, automatic subscription degradation, real-time usage limit enforcement, 30-day persistent login with device fingerprinting, session validation, and WebAuthn API integration for biometric logins.
 - **Password Reset System**: Secure email-based password reset using Resend, with database-stored, single-use, expiring tokens.
 - **Dynamic URL Generation**: Centralized utility (`server/utils/url-builder.ts`) for environment-agnostic URL generation.
 - **Enhanced Error Handling**: Comprehensive Firebase authentication error handling, advanced unhandled rejection interceptors, and a triple-layer system to eliminate "Failed to fetch" errors.
@@ -135,4 +139,3 @@ This project is an AI-powered legal document and permit management platform feat
 - Drizzle ORM
 - Resend
 - Anthropic
-```
