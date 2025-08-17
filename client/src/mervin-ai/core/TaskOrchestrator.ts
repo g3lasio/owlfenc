@@ -71,7 +71,7 @@ export class TaskOrchestrator {
       // 1. Generar plan de ejecución
       const plan = await this.generateExecutionPlan(intention);
       
-      if (this.config.config.debug) {
+      if (this.config.debug) {
         console.log('📋 [TASK-ORCHESTRATOR] Plan generado:', plan);
       }
 
@@ -149,7 +149,7 @@ export class TaskOrchestrator {
   private async generateExecutionPlan(intention: UserIntention): Promise<TaskExecutionPlan> {
     // Obtener plan base desde IntentionEngine
     const { IntentionEngine } = await import('./IntentionEngine');
-    const intentionEngine = new IntentionEngine(this.config.config);
+    const intentionEngine = new IntentionEngine(this.config);
     const basePlan = await intentionEngine.generateExecutionPlan(intention);
 
     // Optimizar plan basado en memoria del agente
@@ -264,7 +264,7 @@ export class TaskOrchestrator {
     const startTime = Date.now();
     
     try {
-      if (this.config.config.debug) {
+      if (this.config.debug) {
         console.log(`🔄 [EXECUTING-STEP] ${step.name}`, step);
       }
 
@@ -428,7 +428,7 @@ export class TaskOrchestrator {
       }
     });
 
-    if (this.config.config.debug) {
+    if (this.config.debug) {
       console.log('📊 [PROGRESS-UPDATE]', progress);
     }
   }

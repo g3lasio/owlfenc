@@ -542,7 +542,7 @@ export class EndpointCoordinator {
     }
     
     // Para desarrollo, usar mocks
-    if (this.config.config.debug) {
+    if (this.config.debug) {
       return 'mock';
     }
     
