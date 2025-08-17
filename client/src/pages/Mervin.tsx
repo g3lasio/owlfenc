@@ -12,6 +12,9 @@ import {
   ChevronDown,
   GraduationCap,
   SkipForward,
+  Sparkles,
+  Lock,
+  Cpu,
 } from "lucide-react";
 import { ConversationEngine } from "../mervin-ai/core/ConversationEngine";
 import { MervinAgent } from "../mervin-ai/core/MervinAgent";
@@ -48,6 +51,7 @@ export default function Mervin() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState<"legacy" | "agent">("agent");
   const [showModelSelector, setShowModelSelector] = useState(false);
+  const [showAgentFunctions, setShowAgentFunctions] = useState(false);
   const [currentTask, setCurrentTask] = useState<AgentTask | null>(null);
   const [isProcessingTask, setIsProcessingTask] = useState(false);
   const [isOnboardingMode, setIsOnboardingMode] = useState(false);
@@ -60,6 +64,10 @@ export default function Mervin() {
   const { currentUser } = useAuth();
   const { userPlan } = usePermissions();
   const { needsOnboarding, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
+
+  // Detect if user is free plan (Primo Chambeador)
+  const isFreeUser = userPlan?.id === 1 || userPlan?.name === "Primo Chambeador";
+  const canUseAgentMode = !isFreeUser;
 
   // Initialize systems and onboarding detection
   useEffect(() => {
@@ -448,46 +456,141 @@ export default function Mervin() {
         <div className="flex items-center justify-between">
           <h1 className="text-xl md:text-2xl font-bold text-cyan-400 truncate">Mervin AI</h1>
           
-          {/* Model Selector */}
-          <div className="relative">
-            <Button
-              variant="outline"
-              size="default"
-              className="bg-gray-800 text-cyan-500 border-cyan-900/50 hover:bg-gray-700 min-h-[44px] min-w-[100px] text-sm md:text-base"
-              onClick={() => setShowModelSelector(!showModelSelector)}
-            >
-              {selectedModel === "agent" ? (
-                <><Brain className="w-5 h-5 md:w-4 md:h-4 mr-1 md:mr-2" /><span className="hidden sm:inline">Agent</span></>
-              ) : (
-                <><Zap className="w-5 h-5 md:w-4 md:h-4 mr-1 md:mr-2" /><span className="hidden sm:inline">Legacy</span></>
-              )}
-              <ChevronDown className="w-4 h-4 md:w-3 md:h-3 ml-1" />
-            </Button>
-            
-            {showModelSelector && (
-              <div className="absolute top-full right-0 mt-2 bg-gray-800 border border-cyan-900/50 rounded-lg shadow-xl z-50 min-w-[160px] md:min-w-[150px]">
-                <button
-                  className="w-full text-left px-4 py-4 md:px-3 md:py-2 text-cyan-400 hover:bg-gray-700 rounded-t-lg flex items-center min-h-[52px] md:min-h-[auto]"
-                  onClick={() => {
-                    setSelectedModel("agent");
-                    setShowModelSelector(false);
-                  }}
+          {/* Model Selector and Agent Functions */}
+          <div className="flex items-center gap-2">
+            {/* Agent Functions Button - Only visible in Agent Mode */}
+            {selectedModel === "agent" && canUseAgentMode && (
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  size="default"
+                  className="bg-gradient-to-r from-purple-800/50 to-cyan-800/50 text-cyan-300 border-cyan-500/30 hover:from-purple-700/60 hover:to-cyan-700/60 min-h-[44px] min-w-[44px] group transition-all duration-300"
+                  onClick={() => setShowAgentFunctions(!showAgentFunctions)}
                 >
-                  <Brain className="w-5 h-5 md:w-4 md:h-4 mr-3 md:mr-2" />
-                  <span className="text-base md:text-sm">Agent Mode</span>
-                </button>
-                <button
-                  className="w-full text-left px-4 py-4 md:px-3 md:py-2 text-cyan-400 hover:bg-gray-700 rounded-b-lg flex items-center min-h-[52px] md:min-h-[auto]"
-                  onClick={() => {
-                    setSelectedModel("legacy");
-                    setShowModelSelector(false);
-                  }}
-                >
-                  <Zap className="w-5 h-5 md:w-4 md:h-4 mr-3 md:mr-2" />
-                  <span className="text-base md:text-sm">Legacy</span>
-                </button>
+                  <Sparkles className="w-5 h-5 md:w-4 md:h-4 group-hover:animate-pulse" />
+                  <span className="sr-only">Agent Functions</span>
+                </Button>
+                
+                {showAgentFunctions && (
+                  <div className="absolute top-full right-0 mt-2 bg-gray-800/95 backdrop-blur-sm border border-cyan-500/30 rounded-lg shadow-xl z-50 min-w-[200px] animate-in slide-in-from-top-2 duration-200">
+                    <div className="p-2 space-y-1">
+                      <div className="flex items-center space-x-2 px-3 py-2 text-cyan-300 text-sm border-b border-gray-700">
+                        <Cpu className="w-4 h-4" />
+                        <span>Agent Functions</span>
+                      </div>
+                      <button
+                        className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-700/50 rounded transition-colors text-cyan-300"
+                        onClick={() => {
+                          handleAction('estimates', 'button');
+                          setShowAgentFunctions(false);
+                        }}
+                      >
+                        <Paperclip className="w-4 h-4" />
+                        <span className="text-sm">Generate Estimates</span>
+                      </button>
+                      <button
+                        className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-700/50 rounded transition-colors text-cyan-300"
+                        onClick={() => {
+                          handleAction('contracts', 'button');
+                          setShowAgentFunctions(false);
+                        }}
+                      >
+                        <Send className="w-4 h-4" />
+                        <span className="text-sm">Create Contracts</span>
+                      </button>
+                      <button
+                        className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-700/50 rounded transition-colors text-cyan-300"
+                        onClick={() => {
+                          handleAction('permits', 'button');
+                          setShowAgentFunctions(false);
+                        }}
+                      >
+                        <Brain className="w-4 h-4" />
+                        <span className="text-sm">Permit Advisor</span>
+                      </button>
+                      <button
+                        className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-700/50 rounded transition-colors text-cyan-300"
+                        onClick={() => {
+                          handleAction('properties', 'button');
+                          setShowAgentFunctions(false);
+                        }}
+                      >
+                        <GraduationCap className="w-4 h-4" />
+                        <span className="text-sm">Verify Properties</span>
+                      </button>
+                      <button
+                        className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-700/50 rounded transition-colors text-cyan-300"
+                        onClick={() => {
+                          handleAction('analytics', 'button');
+                          setShowAgentFunctions(false);
+                        }}
+                      >
+                        <Zap className="w-4 h-4" />
+                        <span className="text-sm">View Analytics</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+
+            {/* Model Selector */}
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="default"
+                className="bg-gray-800 text-cyan-500 border-cyan-900/50 hover:bg-gray-700 min-h-[44px] min-w-[100px] text-sm md:text-base"
+                onClick={() => setShowModelSelector(!showModelSelector)}
+              >
+                {selectedModel === "agent" ? (
+                  <><Brain className="w-5 h-5 md:w-4 md:h-4 mr-1 md:mr-2" /><span className="hidden sm:inline">Agent</span></>
+                ) : (
+                  <><Zap className="w-5 h-5 md:w-4 md:h-4 mr-1 md:mr-2" /><span className="hidden sm:inline">Legacy</span></>
+                )}
+                <ChevronDown className="w-4 h-4 md:w-3 md:h-3 ml-1" />
+              </Button>
+              
+              {showModelSelector && (
+                <div className="absolute top-full right-0 mt-2 bg-gray-800 border border-cyan-900/50 rounded-lg shadow-xl z-50 min-w-[160px] md:min-w-[150px]">
+                  <button
+                    className={`w-full text-left px-4 py-4 md:px-3 md:py-2 rounded-t-lg flex items-center justify-between min-h-[52px] md:min-h-[auto] ${
+                      canUseAgentMode 
+                        ? 'text-cyan-400 hover:bg-gray-700' 
+                        : 'text-gray-500 cursor-not-allowed bg-gray-700/50'
+                    }`}
+                    onClick={() => {
+                      if (canUseAgentMode) {
+                        setSelectedModel("agent");
+                        setShowModelSelector(false);
+                      } else {
+                        toast({
+                          title: "Upgrade Required",
+                          description: "Agent Mode is available for Mero Patrón and Master Contractor plans.",
+                          variant: "destructive"
+                        });
+                      }
+                    }}
+                    disabled={!canUseAgentMode}
+                  >
+                    <div className="flex items-center">
+                      <Brain className="w-5 h-5 md:w-4 md:h-4 mr-3 md:mr-2" />
+                      <span className="text-base md:text-sm">Agent Mode</span>
+                    </div>
+                    {!canUseAgentMode && <Lock className="w-4 h-4 text-yellow-500" />}
+                  </button>
+                  <button
+                    className="w-full text-left px-4 py-4 md:px-3 md:py-2 text-cyan-400 hover:bg-gray-700 rounded-b-lg flex items-center min-h-[52px] md:min-h-[auto]"
+                    onClick={() => {
+                      setSelectedModel("legacy");
+                      setShowModelSelector(false);
+                    }}
+                  >
+                    <Zap className="w-5 h-5 md:w-4 md:h-4 mr-3 md:mr-2" />
+                    <span className="text-base md:text-sm">Legacy</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -632,6 +735,7 @@ export default function Mervin() {
               onAction={handleAction}
               currentMessage={inputValue}
               isVisible={!isOnboardingMode}
+              showFAB={!(selectedModel === "agent" && canUseAgentMode)}
             />
             
             <div className="flex gap-3 md:gap-2">

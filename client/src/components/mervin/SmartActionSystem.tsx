@@ -18,6 +18,7 @@ interface SmartActionSystemProps {
   onAction: (action: string, source: 'slash' | 'smart' | 'fab') => void;
   currentMessage: string;
   isVisible: boolean;
+  showFAB?: boolean;
 }
 
 interface SmartSuggestion {
@@ -43,9 +44,9 @@ const slashCommands: SlashCommand[] = [
   { command: '/analytics', description: 'Analizar pagos', action: 'analytics', icon: <BarChart4 className="w-4 h-4" /> },
 ];
 
-export function SmartActionSystem({ onAction, currentMessage, isVisible }: SmartActionSystemProps) {
+export function SmartActionSystem({ onAction, currentMessage, isVisible, showFAB = true }: SmartActionSystemProps) {
   const [showSlashMenu, setShowSlashMenu] = useState(false);
-  const [showFAB, setShowFAB] = useState(false);
+  const [shouldShowFAB, setShouldShowFAB] = useState(false);
   const [smartSuggestions, setSmartSuggestions] = useState<SmartSuggestion[]>([]);
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
 
@@ -130,9 +131,9 @@ export function SmartActionSystem({ onAction, currentMessage, isVisible }: Smart
 
   // Mostrar FAB cuando no hay sugerencias y no está escribiendo
   useEffect(() => {
-    const shouldShowFAB = isVisible && currentMessage.length === 0 && smartSuggestions.length === 0;
-    setShowFAB(shouldShowFAB);
-  }, [isVisible, currentMessage, smartSuggestions]);
+    const shouldShow = isVisible && currentMessage.length === 0 && smartSuggestions.length === 0 && showFAB;
+    setShouldShowFAB(shouldShow);
+  }, [isVisible, currentMessage, smartSuggestions, showFAB]);
 
   // Filtrar comandos slash basado en input
   const filteredCommands = slashCommands.filter(cmd => 
@@ -193,7 +194,7 @@ export function SmartActionSystem({ onAction, currentMessage, isVisible }: Smart
       )}
 
       {/* Floating Action Button (FAB) */}
-      {showFAB && (
+      {shouldShowFAB && (
         <div className="fixed bottom-6 right-6 z-50">
           <div className="relative">
             {/* Opciones del FAB */}
