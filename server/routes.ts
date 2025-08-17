@@ -47,6 +47,7 @@ import clientRoutes from "./routes/clientRoutes";
 import quickbooksRoutes from "./routes/quickbooks-routes";
 import contactRoutes from "./routes/contact-route";
 import anthropicRoutes from "./routes/anthropic";
+import mervinAgentAPI from "./routes/mervin-agent-api"; // Import new unified Mervin AI API
 // PDF routes removed - using only premiumPdfService
 import paymentRoutes from "./routes/payment-routes"; // Import payment routes
 import usageLimitsRoutes from "./routes/usage-limits"; // Import usage limits routes
@@ -1539,6 +1540,10 @@ Output must be between 200-900 characters in English.`;
 
   // Registrar rutas de Anthropic (Claude)
   app.use("/api/anthropic", anthropicRoutes);
+
+  // 🤖 Registrar Mervin AI - Sistema Unificado de Inteligencia
+  console.log("🤖 [MERVIN-AI] Registrando sistema unificado de inteligencia...");
+  app.use("/api/mervin", mervinAgentAPI);
 
   // Registrar ruta de contacto
   app.use("/api/contact", contactRoutes);
