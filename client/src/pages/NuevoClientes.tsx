@@ -80,9 +80,7 @@ import {
   importClientsFromCsv,
   importClientsFromVcf,
 } from "../lib/clientFirebase";
-// Importación del componente de importación inteligente
-import { ImportWizard } from "@/components/ImportWizard";
-import { ContactImportWizard } from "@/components/ContactImportWizard";
+
 
 // Interfaces
 interface Client {
@@ -172,7 +170,7 @@ export default function NuevoClientes() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
-  const [showSmartImportDialog, setShowSmartImportDialog] = useState(false);
+
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [selectAllChecked, setSelectAllChecked] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -611,45 +609,6 @@ export default function NuevoClientes() {
     }
   };
 
-  // Manejar la importación inteligente de clientes
-  const handleSmartImportComplete = async (importedClients: Client[]) => {
-    try {
-      console.log(
-        "Procesando importación inteligente de clientes...",
-        importedClients,
-      );
-
-      // Asignar el userId a los clientes importados si existe un perfil
-      const clientsWithUserId = importedClients.map((client) => ({
-        ...client,
-        userId: profile?.id?.toString(),
-      }));
-
-      // Guardar los clientes en Firebase
-      for (const client of clientsWithUserId) {
-        await saveClient(client);
-      }
-
-      // Actualizar la lista de clientes
-      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
-
-      toast({
-        title: "Importación inteligente exitosa",
-        description: `Se han importado ${importedClients.length} clientes correctamente.`,
-      });
-
-      // Cerrar el diálogo de importación inteligente
-      setShowSmartImportDialog(false);
-    } catch (error: any) {
-      console.error("Error en la importación inteligente:", error);
-      toast({
-        variant: "destructive",
-        title: "Error en la importación inteligente",
-        description: error.message || "No se pudieron importar los clientes",
-      });
-    }
-  };
-
   // Manejar apertura del formulario de edición
   const openEditForm = (client: Client) => {
     setCurrentClient(client);
@@ -1046,13 +1005,7 @@ export default function NuevoClientes() {
             <Upload className="w-4 h-4 mr-2" />
             Importar
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => setShowSmartImportDialog(true)}
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Importación Inteligente
-          </Button>
+
           <Button onClick={openAddForm}>
             <UserPlus className="w-4 h-4 mr-2" />
             New Client
@@ -2122,13 +2075,6 @@ export default function NuevoClientes() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Diálogo de Importación Inteligente con mayor control de edición */}
-      <ContactImportWizard
-        isOpen={showSmartImportDialog}
-        onClose={() => setShowSmartImportDialog(false)}
-        onImportComplete={handleSmartImportComplete}
-      />
     </div>
   );
 }

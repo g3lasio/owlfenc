@@ -103,7 +103,7 @@ This project is an AI-powered legal document and permit management platform feat
   * IMPORT FUNCTIONALITY: Importación CSV y vCard/Apple Contacts integrada en backend
   * TYPE SAFETY: Interfaces TypeScript consistentes entre frontend y backend
   * DATA INTEGRITY: Single source of truth con aislamiento de datos por usuario
-  * REAL-TIME SYNC: Sincronización automática frontend-backend eliminando inconsistencias
+    * REAL-TIME SYNC: Sincronización automática frontend-backend eliminando inconsistencias
   * ERROR ELIMINATION: Corrección de 17+ errores LSP y conflictos de esquemas de datos
   * MASSIVE CODE ELIMINATION: Eliminadas 600+ líneas de código duplicado mediante componentes reutilizables
   * MODULAR ARCHITECTURE: Componentes especializados (ClientForm, ClientCard, ClientDetailModal, ExportClientsButton, MapboxAddressAutocomplete)
@@ -123,17 +123,17 @@ This project is an AI-powered legal document and permit management platform feat
 
 ### Frontend
 - **Technology Stack**: React.js with TypeScript, Tailwind CSS, Wouter for routing, TanStack Query for data management.
-- **UI/UX Decisions**: Mobile optimization with safe areas, enhanced touch targets, and mobile-first layouts. Clean, adaptive interface with a sparkles icon for agent mode and integrated agent functions in the header. Features conversational onboarding and a smart action system using slash commands and contextual suggestions.
+- **UI/UX Decisions**: Mobile optimization (safe areas, enhanced touch targets, mobile-first layouts). Conversational onboarding guided by Mervin AI. Smart action system with slash commands and contextual suggestions. Adaptive UI with a sparkles icon for agent mode and integrated agent functions in the header.
 
 ### Backend
 - **Server Framework**: Express.js.
 - **Database**: PostgreSQL with Drizzle ORM.
 - **Authentication**: Firebase Admin SDK.
-- **Client Management System**: Unified through Firebase (Firestore), with frontend communicating via `/api/clients` endpoints, ensuring a single source of truth, real-time sync, and data isolation. Supports CSV and vCard/Apple Contacts import.
+- **Client Management System**: Unified through Firebase (Firestore) with frontend communication via `/api/clients`, ensuring single source of truth, real-time sync, and data isolation. Supports CSV and vCard/Apple Contacts import.
 
 ### AI Architecture
-- **Mervin AI Unified System**: Supports a superintelligent construction chatbot, autonomous task execution, and real-time web research. It incorporates differentiated AI model roles and components like SmartTaskCoordinator, ParallelExecutionEngine, Decision Engine, Memory System, Risk Assessment, and a Conversational Intelligence module with advanced multilingual personality and emotion recognition.
-- **Mervin AI Autonomous Agent**: A modular system for intention analysis, smart task coordination, intelligent decision-making, parallel execution, and specialized agents (estimates, contracts, permits, property verification). Includes learning, memory, real-time feedback, permission intelligence, context awareness, endpoint consistency, performance optimization, and risk assessment.
+- **Mervin AI Unified System**: Supports a superintelligent construction chatbot, autonomous task execution, and real-time web research. Features differentiated AI model roles and components like SmartTaskCoordinator, ParallelExecutionEngine, Decision Engine, Memory System, Risk Assessment, and a Conversational Intelligence module with advanced multilingual personality and emotion recognition.
+- **Mervin AI Autonomous Agent**: Modular system for intention analysis, smart task coordination, intelligent decision-making, parallel execution, and specialized agents (estimates, contracts, permits, property verification). Includes learning, memory, real-time feedback, permission intelligence, context awareness, endpoint consistency, performance optimization, and risk assessment.
 
 ### Core Features & Design Patterns
 - **User Authentication & Authorization**: Enhanced OAuth, email/password, and a robust subscription-based permission system with secure registration, automatic subscription degradation, real-time usage limit enforcement, 30-day persistent login, device fingerprinting, session validation, and WebAuthn API for biometric logins.
