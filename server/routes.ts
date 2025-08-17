@@ -48,6 +48,7 @@ import quickbooksRoutes from "./routes/quickbooks-routes";
 import contactRoutes from "./routes/contact-route";
 import anthropicRoutes from "./routes/anthropic";
 import mervinAgentAPI from "./routes/mervin-agent-api"; // Import new unified Mervin AI API
+import mervinResearchAPI from "./routes/mervin-research-api"; // Import Mervin Research API - FASE 2 OPTIMIZATIONS
 // PDF routes removed - using only premiumPdfService
 import paymentRoutes from "./routes/payment-routes"; // Import payment routes
 import usageLimitsRoutes from "./routes/usage-limits"; // Import usage limits routes
@@ -1544,6 +1545,10 @@ Output must be between 200-900 characters in English.`;
   // 🤖 Registrar Mervin AI - Sistema Unificado de Inteligencia
   console.log("🤖 [MERVIN-AI] Registrando sistema unificado de inteligencia...");
   app.use("/api/mervin", mervinAgentAPI);
+  
+  // ==================== FASE 2: INVESTIGACIÓN SÚPER RÁPIDA PARA CONTRATISTAS ====================
+  console.log('🔬 [MERVIN-RESEARCH-API] Registrando sistema de investigación optimizado...');
+  app.use("/api/mervin-research", mervinResearchAPI);
 
   // Registrar ruta de contacto
   app.use("/api/contact", contactRoutes);
