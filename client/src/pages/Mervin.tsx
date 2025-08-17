@@ -735,7 +735,6 @@ export default function Mervin() {
               onAction={handleAction}
               currentMessage={inputValue}
               isVisible={!isOnboardingMode}
-              showFAB={!(selectedModel === "agent" && canUseAgentMode)}
             />
             
             <div className="flex gap-3 md:gap-2">

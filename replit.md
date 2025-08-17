@@ -56,12 +56,18 @@ This project is an advanced AI-powered legal document and permit management plat
 - SMART ACTION SYSTEM REVOLUTION: Sistema revolucionario de acciones inteligentes que reemplaza botones estáticos (16/08/2025):
   * SLASH COMMANDS: Sistema de comandos rápidos tipo Discord ("/estimate", "/contract", etc.)
   * CONTEXTUAL INTELLIGENCE: Detección automática de intenciones basada en texto del usuario
-  * FLOATING ACTION BUTTON: FAB minimalista que se expande en menú radial contextual
   * SMART SUGGESTIONS: Chips dinámicos que aparecen basados en contexto de conversación
   * ZERO INTERFERENCE: Elimina 90% del espacio ocupado por botones, mantiene flujo conversacional
   * ADAPTIVE UI: Aparece solo cuando es útil, desaparece durante escritura activa
-  * MULTI-SOURCE ACTIONS: Soporte para activación desde slash, inteligencia, FAB o legacy buttons
+  * MULTI-SOURCE ACTIONS: Soporte para activación desde slash, inteligencia o buttons
   * CONTEXTUAL FEEDBACK: Mensajes diferenciados según fuente de activación (comando vs detección)
+- AGENT FUNCTIONS HEADER INTEGRATION (17/08/2025): 
+  * SPARKLES ICON: Icono futurista (Sparkles) ubicado junto al selector de modelos
+  * AGENT MODE ONLY: Solo visible cuando selectedModel === "agent" para usuarios premium
+  * PERMISSION-BASED ACCESS: Usuarios Primo Chambeador ven Agent Mode con lock icon
+  * HEADER INTEGRATION: Funciones del agente integradas perfectamente en barra superior
+  * FAB ELIMINATION: Eliminado FAB flotante que interfería con botón de enviar mensaje
+  * CONSISTENT UX: Sistema completamente consistente con requisitos de usuario y permisos
 
 ## System Architecture
 

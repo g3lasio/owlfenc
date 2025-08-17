@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Plus, 
-  Zap, 
   FileSpreadsheet, 
   ClipboardList, 
   ClipboardCheck, 
@@ -9,7 +7,6 @@ import {
   BarChart4,
   Command,
   Sparkles,
-  MessageCircle,
   ArrowRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,7 +15,6 @@ interface SmartActionSystemProps {
   onAction: (action: string, source: 'slash' | 'smart' | 'fab') => void;
   currentMessage: string;
   isVisible: boolean;
-  showFAB?: boolean;
 }
 
 interface SmartSuggestion {
@@ -44,11 +40,9 @@ const slashCommands: SlashCommand[] = [
   { command: '/analytics', description: 'Analizar pagos', action: 'analytics', icon: <BarChart4 className="w-4 h-4" /> },
 ];
 
-export function SmartActionSystem({ onAction, currentMessage, isVisible, showFAB = true }: SmartActionSystemProps) {
+export function SmartActionSystem({ onAction, currentMessage, isVisible }: SmartActionSystemProps) {
   const [showSlashMenu, setShowSlashMenu] = useState(false);
-  const [shouldShowFAB, setShouldShowFAB] = useState(false);
   const [smartSuggestions, setSmartSuggestions] = useState<SmartSuggestion[]>([]);
-  const [fabMenuOpen, setFabMenuOpen] = useState(false);
 
   // Detectar comando slash
   useEffect(() => {
@@ -129,11 +123,7 @@ export function SmartActionSystem({ onAction, currentMessage, isVisible, showFAB
     }
   }, [currentMessage]);
 
-  // Mostrar FAB cuando no hay sugerencias y no está escribiendo
-  useEffect(() => {
-    const shouldShow = isVisible && currentMessage.length === 0 && smartSuggestions.length === 0 && showFAB;
-    setShouldShowFAB(shouldShow);
-  }, [isVisible, currentMessage, smartSuggestions, showFAB]);
+
 
   // Filtrar comandos slash basado en input
   const filteredCommands = slashCommands.filter(cmd => 
@@ -193,42 +183,7 @@ export function SmartActionSystem({ onAction, currentMessage, isVisible, showFAB
         </div>
       )}
 
-      {/* Floating Action Button (FAB) */}
-      {shouldShowFAB && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <div className="relative">
-            {/* Opciones del FAB */}
-            {fabMenuOpen && (
-              <div className="absolute bottom-16 right-0 space-y-2 animate-in slide-in-from-bottom-2 duration-200">
-                {slashCommands.map((cmd, index) => (
-                  <button
-                    key={cmd.command}
-                    className="flex items-center space-x-3 px-4 py-2 bg-gray-800/90 backdrop-blur-sm border border-cyan-900/50 rounded-full text-cyan-300 hover:bg-gray-700/90 transition-all duration-200 transform hover:scale-105 shadow-lg"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                    onClick={() => {
-                      onAction(cmd.action, 'fab');
-                      setFabMenuOpen(false);
-                    }}
-                  >
-                    {cmd.icon}
-                    <span className="text-sm font-medium whitespace-nowrap">{cmd.description}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-            
-            {/* Botón FAB Principal */}
-            <button
-              className={`w-14 h-14 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full shadow-lg flex items-center justify-center transform transition-all duration-300 ${
-                fabMenuOpen ? 'rotate-45 scale-110' : 'hover:scale-110'
-              }`}
-              onClick={() => setFabMenuOpen(!fabMenuOpen)}
-            >
-              <Plus className={`w-6 h-6 text-white transition-transform duration-300 ${fabMenuOpen ? 'rotate-45' : ''}`} />
-            </button>
-          </div>
-        </div>
-      )}
+
     </>
   );
 }
