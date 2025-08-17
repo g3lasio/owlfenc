@@ -73,6 +73,7 @@ import centralizedEmailRoutes from "./routes/centralized-email-routes"; // Impor
 import dualSignatureRoutes from "./routes/dualSignatureRoutes"; // Import Dual Signature routes
 import multiChannelRoutes from "./routes/multiChannelRoutes"; // Import Multi-Channel Delivery routes
 import deepSearchAiRoutes from "./routes/deepsearch-ai"; // Import DeepSearch AI routes
+import intelligentImportRoutes from "./routes/intelligentImportRoutes"; // Import Intelligent Import routes
 import invoiceRoutes from "./routes/billing-test"; // Import Invoice Management routes (using working filename)
 import express from "express"; // Import express to use express.raw
 import { verifyFirebaseAuth as requireAuth } from "./middleware/firebase-auth"; // Import Firebase authentication middleware
@@ -1517,6 +1518,10 @@ Output must be between 200-900 characters in English.`;
 
   // Registrar rutas de clientes
   app.use("/api/clients", clientRoutes);
+  
+  // Registrar rutas de importación inteligente con IA
+  app.use("/api/intelligent-import", intelligentImportRoutes);
+  
   app.use("/api/ai-processor", aiProcessorRoutes);
 
   // Registrar rutas de correo electrónico

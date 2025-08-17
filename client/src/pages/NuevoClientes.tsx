@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Trash2,
   FileSymlink,
@@ -70,7 +71,6 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProfile } from "@/hooks/use-profile";
 import { apiRequest } from "@/lib/queryClient";
-import { ScrollArea } from "@/components/ui/scroll-area";
 // Importaciones de Firebase
 import {
   getClients,
@@ -80,6 +80,7 @@ import {
   importClientsFromCsv,
   importClientsFromVcf,
 } from "../lib/clientFirebase";
+import { intelligentImportService } from "../services/intelligentImportService";
 
 
 // Interfaces
@@ -174,6 +175,7 @@ export default function NuevoClientes() {
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [selectAllChecked, setSelectAllChecked] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [currentClient, setCurrentClient] = useState<Client | null>(null);
   const [importType, setImportType] = useState<"csv" | "vcf">("csv");
   const [csvFile, setCsvFile] = useState<File | null>(null);
@@ -421,67 +423,97 @@ export default function NuevoClientes() {
     deleteClientMutation.mutate(currentClient.id);
   };
 
-  // Manejar importación CSV
+  // Manejar importación CSV con IA inteligente
   const handleCsvImport = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    try {
-      if (!csvFile) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Por favor selecciona un archivo CSV",
-        });
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        if (!e.target || typeof e.target.result !== "string") return;
-
-        try {
-          const csvData = e.target.result;
-
-          // Usar la función de Firebase para importar clientes desde CSV
-          console.log("Iniciando importación de clientes desde CSV...");
-          const importedClients = await importClientsFromCsv(csvData);
-          console.log(
-            `Importados ${importedClients.length} clientes desde CSV`,
-          );
-
-          // Actualizar lista de clientes
-          queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
-
-          toast({
-            title: "Importación exitosa",
-            description: `Se han importado ${importedClients.length} clientes desde CSV.`,
-          });
-
-          setShowImportDialog(false);
-          csvImportForm.reset();
-          setCsvFile(null);
-        } catch (error: any) {
-          console.error("Error processing CSV:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description:
-              "Error al procesar el archivo CSV: " +
-              (error.message || "Error desconocido"),
-          });
-        }
-      };
-
-      reader.readAsText(csvFile);
-    } catch (error: any) {
-      console.error("Error importing clients:", error);
+    if (!csvFile) {
       toast({
         variant: "destructive",
         title: "Error",
-        description:
-          "No se pudieron importar los clientes: " +
-          (error.message || "Error desconocido"),
+        description: "Por favor selecciona un archivo CSV",
       });
+      return;
+    }
+
+    setIsAiProcessing(true);
+
+    try {
+      console.log("🤖 Iniciando importación inteligente con IA...");
+      
+      // Usar el servicio de importación inteligente con IA
+      const result = await intelligentImportService.processCSVWithAI(csvFile, userId);
+      
+      if (!result.success) {
+        // Si la IA falla, usar método básico como fallback
+        console.log("⚠️ IA falló, usando método básico como fallback...");
+        
+        const reader = new FileReader();
+        reader.onload = async (readerEvent) => {
+          if (!readerEvent.target || typeof readerEvent.target.result !== "string") return;
+
+          try {
+            const csvData = readerEvent.target.result;
+            const importedClients = await importClientsFromCsv(csvData);
+            
+            queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
+
+            toast({
+              title: "Importación exitosa (método básico)",
+              description: `Se han importado ${importedClients.length} clientes desde CSV.`,
+            });
+
+            setShowImportDialog(false);
+            setCsvFile(null);
+          } catch (error: any) {
+            console.error("Error processing CSV with fallback:", error);
+            toast({
+              variant: "destructive",
+              title: "Error",
+              description: "Error al procesar el archivo CSV: " + (error.message || "Error desconocido"),
+            });
+          } finally {
+            setIsAiProcessing(false);
+          }
+        };
+        reader.readAsText(csvFile);
+        return;
+      }
+
+      // IA procesó exitosamente el CSV
+      console.log(`✅ IA procesó ${result.mappedClients.length} clientes - Formato detectado: ${result.detectedFormat}`);
+      
+      // Guardar cada cliente procesado por la IA
+      const savedClients = [];
+      for (const clientData of result.mappedClients) {
+        try {
+          const savedClient = await saveClient(clientData);
+          savedClients.push(savedClient);
+        } catch (error) {
+          console.error("Error guardando cliente:", error);
+        }
+      }
+
+      // Actualizar lista de clientes
+      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
+
+      toast({
+        title: "✨ Importación inteligente completada",
+        description: `Se importaron ${savedClients.length} clientes usando IA. Formato detectado: ${result.detectedFormat}`,
+      });
+
+      setShowImportDialog(false);
+      setCsvFile(null);
+
+    } catch (error: any) {
+      console.error("Error en importación inteligente:", error);
+      toast({
+        variant: "destructive",
+        title: "Error en importación inteligente",
+        description: error.message || "Error desconocido durante la importación con IA",
+      });
+    } finally {
+      setIsAiProcessing(false);
     }
   };
 
@@ -1899,19 +1931,24 @@ export default function NuevoClientes() {
 
       {/* Diálogo para importar clientes */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-        <DialogContent className="p-4 my-4 max-w-md">
-          <DialogHeader>
-            <DialogTitle className="my-4">Importar contactos</DialogTitle>
-            <DialogDescription className="my-4">
-              Importa tus contactos desde un archivo CSV o vCard.
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0">
+          {/* Header - Fixed */}
+          <div className="px-6 py-4 border-b bg-background shrink-0">
+            <DialogTitle className="text-lg font-semibold">
+              Importar contactos
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground mt-1">
+              Importa tus contactos desde un archivo CSV o vCard con mapeo inteligente de IA.
             </DialogDescription>
-          </DialogHeader>
+          </div>
 
-          <Tabs
-            value={importType}
-            onValueChange={(value) => setImportType(value as "csv" | "vcf")}
-            className="w-full my-4"
-          >
+          {/* Scrollable Content */}
+          <ScrollArea className="flex-1 px-6 py-4">
+            <Tabs
+              value={importType}
+              onValueChange={(value) => setImportType(value as "csv" | "vcf")}
+              className="w-full pr-3"
+            >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="csv">Archivo CSV</TabsTrigger>
               <TabsTrigger value="vcf">Archivo vCard</TabsTrigger>
@@ -1940,20 +1977,27 @@ export default function NuevoClientes() {
 
                 <div className="text-sm text-muted-foreground">
                   <h4 className="font-medium text-foreground mb-1">
-                    Formato esperado:
+                    ✨ Mapeo Inteligente con IA:
                   </h4>
                   <p>
-                    La primera línea debe contener encabezados:
-                    Nombre,Email,Teléfono,Dirección
+                    Nuestro sistema de IA puede mapear automáticamente columnas desordenadas.
+                    No importa el orden o nombres de las columnas.
                   </p>
-                  <p className="mt-2">Ejemplo:</p>
-                  <pre className="bg-muted p-2 rounded-md mt-1 ">
+                  <p className="mt-2">Formatos soportados:</p>
+                  <pre className="bg-muted p-2 rounded-md mt-1 text-xs">
                     <code>
-                      Nombre,Email,Teléfono,Dirección
+                      • Nombre,Email,Teléfono,Dirección
                       <br />
-                      Juan Pérez,juan@ejemplo.com,555-123-4567,Calle 123
+                      • First Name,Last Name,Phone,Email,Address
+                      <br />
+                      • Cliente,Correo,Tel,Ubicación
+                      <br />
+                      • Full_Name,Phone_Number,Email_Address,Street_Address
                     </code>
                   </pre>
+                  <p className="mt-2 text-green-600 font-medium">
+                    🎯 La IA detectará y mapeará automáticamente cualquier formato
+                  </p>
                 </div>
 
                 <DialogFooter>
@@ -1964,8 +2008,15 @@ export default function NuevoClientes() {
                   >
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={!csvFile}>
-                    Importar CSV
+                  <Button type="submit" disabled={!csvFile || isAiProcessing}>
+                    {isAiProcessing ? (
+                      <>
+                        <Spinner className="w-4 h-4 mr-2" />
+                        Procesando con IA...
+                      </>
+                    ) : (
+                      "Importar CSV con IA"
+                    )}
                   </Button>
                 </DialogFooter>
               </form>
@@ -2020,7 +2071,8 @@ export default function NuevoClientes() {
                 </DialogFooter>
               </form>
             </TabsContent>
-          </Tabs>
+            </Tabs>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 

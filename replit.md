@@ -123,20 +123,18 @@ This project is an AI-powered legal document and permit management platform feat
 
 ### Frontend
 - **Technology Stack**: React.js with TypeScript, Tailwind CSS, Wouter for routing, TanStack Query for data management.
-- **UI/UX Decisions**: Mobile optimization (safe areas, enhanced touch targets, mobile-first layouts). Conversational onboarding guided by Mervin AI. Smart action system with slash commands and contextual suggestions. Adaptive UI with a sparkles icon for agent mode and integrated agent functions in the header.
+- **UI/UX Decisions**: Mobile optimization with safe areas and enhanced touch targets, conversational onboarding guided by Mervin AI, smart action system using slash commands and contextual suggestions, adaptive UI elements, and agent functions/model selectors integrated into the header for consistent user experience.
 
 ### Backend
 - **Server Framework**: Express.js.
-- **Database**: PostgreSQL with Drizzle ORM.
+- **Database**: PostgreSQL with Drizzle ORM for main data, Firebase (Firestore) for client management data ensuring real-time sync and single source of truth.
 - **Authentication**: Firebase Admin SDK.
-- **Client Management System**: Unified through Firebase (Firestore) with frontend communication via `/api/clients`, ensuring single source of truth, real-time sync, and data isolation. Supports CSV and vCard/Apple Contacts import.
 
 ### AI Architecture
-- **Mervin AI Unified System**: Supports a superintelligent construction chatbot, autonomous task execution, and real-time web research. Features differentiated AI model roles and components like SmartTaskCoordinator, ParallelExecutionEngine, Decision Engine, Memory System, Risk Assessment, and a Conversational Intelligence module with advanced multilingual personality and emotion recognition.
-- **Mervin AI Autonomous Agent**: Modular system for intention analysis, smart task coordination, intelligent decision-making, parallel execution, and specialized agents (estimates, contracts, permits, property verification). Includes learning, memory, real-time feedback, permission intelligence, context awareness, endpoint consistency, performance optimization, and risk assessment.
+- **Mervin AI Unified System**: Designed for superintelligent chatbot capabilities, autonomous task execution, and real-time web research. It features differentiated AI model roles, intelligent decision-making, parallel execution, and specialized agents (estimates, contracts, permits, property verification). Includes learning, memory, real-time feedback, and a Conversational Intelligence module with advanced multilingual personality and emotion recognition, specifically targeting a unique "Mexican Norteña" and "Californian casual" persona.
 
 ### Core Features & Design Patterns
-- **User Authentication & Authorization**: Enhanced OAuth, email/password, and a robust subscription-based permission system with secure registration, automatic subscription degradation, real-time usage limit enforcement, 30-day persistent login, device fingerprinting, session validation, and WebAuthn API for biometric logins.
+- **User Authentication & Authorization**: Robust subscription-based permission system supporting OAuth, email/password, secure registration, automatic subscription degradation, real-time usage limit enforcement, persistent login, device fingerprinting, session validation, and WebAuthn API for biometric logins.
 - **Password Reset System**: Secure email-based password reset using Resend, with database-stored, single-use, expiring tokens.
 - **Dynamic URL Generation**: Centralized utility (`server/utils/url-builder.ts`) for environment-agnostic URL generation.
 - **Enhanced Error Handling**: Comprehensive Firebase authentication error handling, advanced unhandled rejection interceptors, and a triple-layer system to mitigate "Failed to fetch" errors.
@@ -151,3 +149,4 @@ This project is an AI-powered legal document and permit management platform feat
 - Drizzle ORM
 - Resend
 - Anthropic
+- Mapbox (simulated integration)

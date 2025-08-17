@@ -1,0 +1,6 @@
+Cliente,Tel,Correo Electrónico,Ubicación,Notas,Clasificación
+Juan Pérez,555-1234,juan@test.com,"123 Main St, Los Angeles, CA 90210","Cliente frecuente, prefiere cercos de vinyl","Residencial"
+María García,555-5678,maria@test.com,"456 Oak Ave, San Diego, CA 92101","Nuevo cliente, requiere estimado urgente","Comercial"
+Robert Smith,555-9012,robert@test.com,"789 Pine St, Sacramento, CA 95814","Cliente premium, múltiples proyectos","VIP"
+Ana Martínez,(619) 555-3456,ana.martinez@email.com,"321 Beach Blvd, San Diego, CA 92109","Referido por Juan Pérez","Residencial"
+Carlos González,+1-714-555-7890,carlos@construcciones.com,"555 Industrial Way, Anaheim, CA 92801","Contratista asociado","Proveedor"
