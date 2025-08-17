@@ -22,13 +22,15 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
         5000 // 5 segundos timeout
       );
       headers["Authorization"] = `Bearer ${token}`;
-      console.log("🔐 [API-REQUEST] Token de autenticación incluido en request");
+      // Token incluido exitosamente - no log para reducir spam
+      if (window.location.search.includes('debug=auth')) {
+        console.debug("🔧 [AUTH-DEBUG] Token included in request");
+      }
     } catch (error: any) {
-      console.warn("⚠️ [API-REQUEST] Error obteniendo token de Firebase:", {
-        code: error?.code || 'unknown',
-        message: error?.message || 'Network error',
-        type: error?.name || 'Error'
-      });
+      // Silenciar warnings de token - no interrumpen la funcionalidad
+      if (window.location.search.includes('debug=auth')) {
+        console.debug("🔧 [AUTH-DEBUG] Token fetch warning:", error?.code || 'network');
+      }
       
       // Intentar con refresh forzado si el primer intento falla
       try {
@@ -39,18 +41,23 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
           10000 // 10 segundos timeout para refresh
         );
         headers["Authorization"] = `Bearer ${refreshedToken}`;
-        console.log("✅ [API-REQUEST] Token refrescado exitosamente");
+        // Token refrescado exitosamente - no log para reducir spam
+        if (window.location.search.includes('debug=auth')) {
+          console.debug("🔧 [AUTH-DEBUG] Token refreshed successfully");
+        }
       } catch (refreshError: any) {
-        console.error("❌ [API-REQUEST] Error crítico obteniendo token:", {
-          originalError: error?.code || 'unknown',
-          refreshError: refreshError?.code || 'unknown',
-          action: 'continuing_without_auth'
-        });
+        // Silenciar completamente errores de token - no son críticos para UX
+        if (window.location.search.includes('debug=auth')) {
+          console.debug("🔧 [AUTH-DEBUG] Token refresh failed - continuing without auth");
+        }
         // Continuar sin token en lugar de fallar completamente
       }
     }
   } else {
-    console.warn("⚠️ [API-REQUEST] Usuario no autenticado - enviando request sin token");
+    // Usuario no autenticado es normal - no logear
+    if (window.location.search.includes('debug=auth')) {
+      console.debug("🔧 [AUTH-DEBUG] No authenticated user");
+    }
   }
   
   return headers;
@@ -73,9 +80,11 @@ async function retryWithTimeout<T>(
     } catch (error: any) {
       if (i === retries - 1) throw error;
       
-      // Backoff exponencial
+      // Backoff exponencial silencioso
       const delay = Math.min(1000 * Math.pow(2, i), 5000);
-      console.log(`🔄 [RETRY] Intento ${i + 1}/${retries} falló, reintentando en ${delay}ms...`);
+      if (window.location.search.includes('debug=retry')) {
+        console.debug(`🔧 [RETRY-DEBUG] Attempt ${i + 1}/${retries} failed, retrying...`);
+      }
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
@@ -96,7 +105,10 @@ export async function apiRequest(
     ...(data ? { "Content-Type": "application/json" } : {}),
   };
 
-  console.log(`🌐 [API-REQUEST] ${method} ${url} - Con autenticación: ${!!authHeaders.Authorization}`);
+  // Solo log en modo debug para reducir spam de console
+  if (window.location.search.includes('debug=api')) {
+    console.debug(`🔧 [API-DEBUG] ${method} ${url.substring(0, 30)} - Auth: ${!!authHeaders.Authorization}`);
+  }
 
   try {
     // Implementar fetch con timeout
@@ -125,11 +137,10 @@ export async function apiRequest(
       });
     }
     
-    // Solo log si el error no fue silenciado
-    console.debug(`🔧 [API-REQUEST] Network error in ${method} ${url}:`, {
-      message: error?.message || 'Unknown error',
-      type: error?.name || 'Error'
-    });
+    // Solo log en modo debug explícito
+    if (window.location.search.includes('debug=network')) {
+      console.debug(`🔧 [NETWORK-DEBUG] ${method} ${url}:`, error?.message?.substring(0, 30) || 'error');
+    }
     
     throw handledError;
   }
@@ -150,7 +161,10 @@ export const getQueryFn: <T>(options: {
     // Obtener headers de autenticación para queries también
     const authHeaders = await getAuthHeaders();
     
-    console.log(`🔍 [QUERY] GET ${queryKey[0]} - Con autenticación: ${!!authHeaders.Authorization}`);
+    // Solo log en modo debug para reducir spam de console
+    if (window.location.search.includes('debug=api')) {
+      console.debug(`🔧 [QUERY-DEBUG] GET ${(queryKey[0] as string).substring(0, 30)} - Auth: ${!!authHeaders.Authorization}`);
+    }
 
     try {
       // Implementar fetch con timeout para queries
@@ -183,11 +197,10 @@ export const getQueryFn: <T>(options: {
         return { error: "Network error handled silently", offline: true };
       }
       
-      // Solo log si el error no fue silenciado
-      console.debug(`🔧 [QUERY] Network error in GET ${queryKey[0]}:`, {
-        message: error?.message || 'Unknown error',
-        type: error?.name || 'Error'
-      });
+      // Solo log en modo debug explícito
+      if (window.location.search.includes('debug=network')) {
+        console.debug(`🔧 [QUERY-DEBUG] ${queryKey[0]}:`, error?.message?.substring(0, 30) || 'error');
+      }
       
       // Si es un error de timeout o red y el comportamiento es returnNull, devolver null
       if (unauthorizedBehavior === "returnNull" && 

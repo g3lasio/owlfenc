@@ -105,33 +105,31 @@ window.addEventListener('unhandledrejection', (event) => {
     // Prevent error from showing in console as unhandled
     event.preventDefault();
     
-    // Log silently based on error type
-    if (isNetworkError) {
-      // These are expected in poor network conditions - log very quietly
-      console.debug('🔧 [SILENT-HANDLED] Network connectivity issue handled:', error.code || 'network-error');
-    } else if (error.code === 'auth/network-request-failed') {
-      console.debug('🔧 [SILENT-HANDLED] Auth network request failed - handled');
-    } else if (error.message?.includes?.('requestStsToken') || error.message?.includes?.('_StsTokenManager')) {
-      console.debug('🔧 [SILENT-HANDLED] STS token refresh issue - handled');
-    } else {
-      // Other Firebase errors get minimal logging
-      console.debug('🔧 [SILENT-HANDLED] Firebase auth issue handled:', error.code || 'auth-error');
+    // Silenciar completamente a menos que esté en modo debug explícito
+    if (window.location.search.includes('debug=firebase')) {
+      if (isNetworkError) {
+        console.debug('🔧 [FB-DEBUG] Network issue handled');
+      } else if (error.code === 'auth/network-request-failed') {
+        console.debug('🔧 [FB-DEBUG] Auth network failed');
+      } else if (error.message?.includes?.('requestStsToken') || error.message?.includes?.('_StsTokenManager')) {
+        console.debug('🔧 [FB-DEBUG] STS token issue');
+      } else {
+        console.debug('🔧 [FB-DEBUG] Firebase issue:', error.code || 'unknown');
+      }
     }
     
     return; // Early return to prevent any further processing
   }
   
-  // Handle Stripe errors separately
+  // Handle Stripe errors separately - silenciar completamente
   if (error?.message?.includes?.('Stripe')) {
-    console.debug('🔧 [SILENT-HANDLED] Stripe error handled');
     event.preventDefault();
     return;
   }
 
-  // Handle runtime-error-plugin detection errors
+  // Handle runtime-error-plugin detection errors - silenciar completamente
   if (error?.message?.includes?.('runtime-error-plugin') || 
       error?.message?.includes?.('plugin:runtime-error-plugin')) {
-    console.debug('🔧 [SILENT-HANDLED] Runtime error plugin detected');
     event.preventDefault();
     return;
   }

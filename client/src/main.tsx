@@ -5,7 +5,10 @@ import "./i18n/i18n"; // Importamos la configuración de i18n
 import "./lib/network-error-handler"; // Inicializar manejador avanzado de errores
 
 // ESTRATEGIA CUÁDRUPLE: XMLHttpRequest + Network Handler + Runtime Error Plugin Bypass + Console Override
-console.log('🛡️ [ANTI-FETCH-ERRORS] Activando sistema de protección avanzado contra errores fastidiosos');
+// Sistema de protección silencioso contra errores fastidiosos activado
+if (window.location.search.includes('debug=init')) {
+  console.debug('🔧 [INIT-DEBUG] Anti-fetch protection enabled');
+}
 
 // CRITICAL: Interceptar console.error para bloquear runtime-error-plugin específicamente
 const originalConsoleError = console.error;
@@ -82,10 +85,10 @@ window.addEventListener('unhandledrejection', (e) => {
   if (isAnnoyingError) {
     e.preventDefault(); // Silenciar completamente
     
-    // Solo log muy esporádico para debugging
+    // Solo log en modo debug explícito para evitar spam
     errorCount++;
-    if (errorCount === 1) {
-      console.debug('🔧 [SILENT-MODE] Sistema de protección activado - silenciando errores de red fastidiosos');
+    if (window.location.search.includes('debug=silent') && errorCount === 1) {
+      console.debug('🔧 [SILENT-DEBUG] Network protection active');
     }
     return;
   }

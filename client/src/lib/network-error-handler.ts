@@ -71,9 +71,9 @@ class NetworkErrorHandler {
   }
 
   private logSilently(type: string, message: string, data?: any) {
-    // Solo log si está en modo debug explícito
-    if (window.location.search.includes('debug=network')) {
-      console.log(`🔧 [SILENT-${type.toUpperCase()}]`, message, data || '');
+    // Solo log si está en modo debug explícito - eliminando logs fastidiosos
+    if (window.location.search.includes('debug=silent') || window.location.search.includes('debug=network')) {
+      console.debug(`🔧 [${type.toUpperCase()}]`, message.substring(0, 30));
     }
   }
 
