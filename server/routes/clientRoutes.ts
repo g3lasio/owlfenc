@@ -1,86 +1,108 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { clientStorage } from '../DatabaseStorageClient';
-import { insertClientSchema, clients } from '@shared/schema';
-import { db } from '../db';
+import admin from 'firebase-admin';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 
 const router = Router();
 
-// Esquema para validar búsqueda de clientes por userId
-const getUserClientsSchema = z.object({
-  userId: z.coerce.number()
+// Initialize Firebase if not already done
+if (!admin.apps.length) {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      }),
+    });
+  } catch (error) {
+    console.log('Firebase admin already initialized or configuration missing');
+  }
+}
+
+// Esquemas de validación para clientes Firebase
+const clientSchema = z.object({
+  name: z.string().min(1, 'El nombre es requerido'),
+  email: z.string().email('Email inválido').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  mobilePhone: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zipCode: z.string().optional(),
+  notes: z.string().optional(),
+  source: z.string().optional(),
+  classification: z.string().optional(),
+  tags: z.array(z.string()).optional(),
 });
 
-// Esquema para validar edición de cliente
-const updateClientSchema = insertClientSchema.partial();
+const updateClientSchema = clientSchema.partial();
+const importClientsSchema = z.object({
+  clients: z.array(clientSchema),
+});
 
-// Obtener todos los clientes de un usuario
-router.get('/', async (req, res) => {
+// Obtener todos los clientes del usuario autenticado
+router.get('/', verifyFirebaseAuth, async (req, res) => {
   try {
-    console.log('=== INICIANDO CARGA DE CLIENTES ===');
-    console.log('Query params recibidos:', req.query);
+    console.log('🔒 [FIREBASE-CLIENTS] Obteniendo clientes para usuario:', req.firebaseUser?.uid);
     
-    // Intentar obtener clientes de la base de datos
-    try {
-      console.log('Obteniendo clientes de la base de datos...');
-      const allClients = await db.select().from(clients).limit(100);
-      console.log(`✅ Clientes encontrados en base de datos: ${allClients.length}`);
-      
-      // Mapear los datos para asegurar compatibilidad
-      const formattedClients = allClients.map(client => ({
-        id: client.id,
-        name: client.name || 'Sin nombre',
-        email: client.email || '',
-        phone: client.phone || '',
-        address: client.address || '',
-        city: client.city || '',
-        state: client.state || '',
-        zipCode: client.zipCode || '',
-      }));
-      
-      console.log('Primeros 3 clientes formateados:', formattedClients.slice(0, 3));
-      res.json(formattedClients);
-      
-    } catch (dbError) {
-      console.log('❌ Error en base de datos, usando clientStorage como respaldo...');
-      
-      // Intentar con clientStorage como respaldo
-      try {
-        const storageClients = await clientStorage.getClients();
-        console.log(`✅ Clientes obtenidos del storage: ${storageClients?.length || 0}`);
-        
-        if (storageClients && storageClients.length > 0) {
-          res.json(storageClients);
-        } else {
-          // Si no hay clientes en storage, devolver array vacío para que la interfaz funcione
-          console.log('No hay clientes disponibles, devolviendo array vacío');
-          res.json([]);
-        }
-      } catch (storageError) {
-        console.error('Error en clientStorage:', storageError);
-        // Devolver array vacío para que la interfaz funcione
-        res.json([]);
-      }
+    const userId = req.firebaseUser?.uid;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
     }
+
+    const db = admin.firestore();
+    const clientsRef = db.collection('clients');
+    const query = clientsRef.where('userId', '==', userId).orderBy('createdAt', 'desc');
     
+    const snapshot = await query.get();
+    const clients = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate() || new Date(),
+      updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+    }));
+
+    console.log(`✅ [FIREBASE-CLIENTS] Encontrados ${clients.length} clientes`);
+    res.json(clients);
+
   } catch (error) {
-    console.error('❌ Error general al obtener clientes:', error);
-    // Devolver array vacío para que la interfaz funcione
-    res.json([]);
+    console.error('❌ [FIREBASE-CLIENTS] Error al obtener clientes:', error);
+    res.status(500).json({ error: 'Error al obtener clientes' });
   }
 });
 
 // Obtener un cliente específico
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyFirebaseAuth, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    const client = await clientStorage.getClient(id);
+    const userId = req.firebaseUser?.uid;
+    const clientId = req.params.id;
     
-    if (!client) {
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    const db = admin.firestore();
+    const clientDoc = await db.collection('clients').doc(clientId).get();
+    
+    if (!clientDoc.exists) {
       return res.status(404).json({ error: 'Cliente no encontrado' });
     }
+
+    const clientData = clientDoc.data();
     
-    res.json(client);
+    // Verificar que el cliente pertenece al usuario
+    if (clientData?.userId !== userId) {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    res.json({
+      id: clientDoc.id,
+      ...clientData,
+      createdAt: clientData?.createdAt?.toDate() || new Date(),
+      updatedAt: clientData?.updatedAt?.toDate() || new Date(),
+    });
+
   } catch (error) {
     console.error('Error al obtener cliente:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
@@ -88,11 +110,36 @@ router.get('/:id', async (req, res) => {
 });
 
 // Crear un nuevo cliente
-router.post('/', async (req, res) => {
+router.post('/', verifyFirebaseAuth, async (req, res) => {
   try {
-    const clientData = insertClientSchema.parse(req.body);
-    const client = await clientStorage.createClient(clientData);
-    res.status(201).json(client);
+    const userId = req.firebaseUser?.uid;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    const clientData = clientSchema.parse(req.body);
+    
+    const db = admin.firestore();
+    const newClient = {
+      ...clientData,
+      userId,
+      clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      createdAt: admin.firestore.Timestamp.now(),
+      updatedAt: admin.firestore.Timestamp.now(),
+    };
+
+    const docRef = await db.collection('clients').add(newClient);
+    
+    const savedClient = {
+      id: docRef.id,
+      ...newClient,
+      createdAt: newClient.createdAt.toDate(),
+      updatedAt: newClient.updatedAt.toDate(),
+    };
+
+    console.log('✅ [FIREBASE-CLIENTS] Cliente creado:', savedClient.id);
+    res.status(201).json(savedClient);
+
   } catch (error) {
     console.error('Error al crear cliente:', error);
     if (error instanceof z.ZodError) {
@@ -103,19 +150,48 @@ router.post('/', async (req, res) => {
 });
 
 // Actualizar un cliente existente
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', verifyFirebaseAuth, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    const clientData = updateClientSchema.parse(req.body);
+    const userId = req.firebaseUser?.uid;
+    const clientId = req.params.id;
     
-    // Verificar si el cliente existe
-    const existingClient = await clientStorage.getClient(id);
-    if (!existingClient) {
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    const updateData = updateClientSchema.parse(req.body);
+    
+    const db = admin.firestore();
+    const clientRef = db.collection('clients').doc(clientId);
+    const clientDoc = await clientRef.get();
+    
+    if (!clientDoc.exists) {
       return res.status(404).json({ error: 'Cliente no encontrado' });
     }
+
+    const clientData = clientDoc.data();
+    if (clientData?.userId !== userId) {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    const updatedData = {
+      ...updateData,
+      updatedAt: admin.firestore.Timestamp.now(),
+    };
+
+    await clientRef.update(updatedData);
     
-    const updatedClient = await clientStorage.updateClient(id, clientData);
-    res.json(updatedClient);
+    const updatedDoc = await clientRef.get();
+    const result = {
+      id: updatedDoc.id,
+      ...updatedDoc.data(),
+      createdAt: updatedDoc.data()?.createdAt?.toDate() || new Date(),
+      updatedAt: updatedDoc.data()?.updatedAt?.toDate() || new Date(),
+    };
+
+    console.log('✅ [FIREBASE-CLIENTS] Cliente actualizado:', clientId);
+    res.json(result);
+
   } catch (error) {
     console.error('Error al actualizar cliente:', error);
     if (error instanceof z.ZodError) {
@@ -126,25 +202,82 @@ router.patch('/:id', async (req, res) => {
 });
 
 // Eliminar un cliente
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyFirebaseAuth, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const userId = req.firebaseUser?.uid;
+    const clientId = req.params.id;
     
-    // Verificar si el cliente existe
-    const existingClient = await clientStorage.getClient(id);
-    if (!existingClient) {
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    const db = admin.firestore();
+    const clientRef = db.collection('clients').doc(clientId);
+    const clientDoc = await clientRef.get();
+    
+    if (!clientDoc.exists) {
       return res.status(404).json({ error: 'Cliente no encontrado' });
     }
-    
-    const result = await clientStorage.deleteClient(id);
-    if (result) {
-      res.json({ success: true });
-    } else {
-      res.status(500).json({ error: 'No se pudo eliminar el cliente' });
+
+    const clientData = clientDoc.data();
+    if (clientData?.userId !== userId) {
+      return res.status(403).json({ error: 'Acceso denegado' });
     }
+
+    await clientRef.delete();
+    
+    console.log('✅ [FIREBASE-CLIENTS] Cliente eliminado:', clientId);
+    res.json({ success: true });
+
   } catch (error) {
     console.error('Error al eliminar cliente:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Importar múltiples clientes
+router.post('/import', verifyFirebaseAuth, async (req, res) => {
+  try {
+    const userId = req.firebaseUser?.uid;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    const { clients } = importClientsSchema.parse(req.body);
+    
+    const db = admin.firestore();
+    const batch = db.batch();
+    const clientIds: string[] = [];
+
+    clients.forEach((clientData) => {
+      const newClientRef = db.collection('clients').doc();
+      const newClient = {
+        ...clientData,
+        userId,
+        clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        createdAt: admin.firestore.Timestamp.now(),
+        updatedAt: admin.firestore.Timestamp.now(),
+      };
+      
+      batch.set(newClientRef, newClient);
+      clientIds.push(newClientRef.id);
+    });
+
+    await batch.commit();
+    
+    console.log(`✅ [FIREBASE-CLIENTS] Importados ${clients.length} clientes`);
+    res.json({ 
+      success: true, 
+      imported: clients.length,
+      clientIds 
+    });
+
+  } catch (error) {
+    console.error('Error al importar clientes:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    res.status(500).json({ error: 'Error al importar clientes' });
   }
 });
 

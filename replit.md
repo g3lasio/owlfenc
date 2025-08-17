@@ -1,7 +1,7 @@
 # Legal Document & Permit Management Platform
 
 ## Overview
-This project is an AI-powered legal document and permit management platform featuring Mervin AI, an autonomous intelligent agent. The platform streamlines complex legal and permit processes by automating tasks such as generating estimates, creating contracts, analyzing permits, verifying properties, and coordinating over 20 API endpoints autonomously. Its purpose is to evolve Mervin AI from a chatbot into a capable intelligent agent, offering significant market potential in legal and permit management.
+This project is an AI-powered legal document and permit management platform featuring Mervin AI, an autonomous intelligent agent. The platform streamlines complex legal and permit processes by automating tasks such as generating estimates, creating contracts, analyzing permits, verifying properties, and coordinating over 20 API endpoints autonomously. Its purpose is to evolve Mervin AI from a chatbot into a capable intelligent agent, offering significant market potential in legal and permit management within the legal and permit domain.
 
 ## User Preferences
 - Respuestas técnicas y detalladas cuando se requiera análisis
@@ -18,7 +18,7 @@ This project is an AI-powered legal document and permit management platform feat
 - LABEL ACCURACY: Usar "OTP Code" en lugar de "SMS Code" ya que el sistema usa email-based OTP
 - BIOMETRIC FUNCTIONALITY: Corregir problemas de lógica y funcionalidad en autenticación biométrica
 - BILLING-SUBSCRIPTION CONSISTENCY: Sincronización completa de precios, moneda y beneficios entre páginas Billing y Subscription
-- MERVIN AI MODEL SELECTOR: Implementación de selector de modelo estilo ChatGPT con opciones "Legacy" y "Agent mode" 
+- MERVIN AI MODEL SELECTOR: Implementación de selector de modelo estilo ChatGPT con opciones "Legacy" y "Agent mode"
   * FUNCIONALIDAD REAL: Legacy = respuestas directas, Agent mode = sistema avanzado
   * CONTROL POR PERMISOS: Free trial solo Legacy, otros planes ambos modos
   * PROPUESTA COMPLETA: Sistema de permisos diferenciado por plan de usuario
@@ -31,7 +31,7 @@ This project is an AI-powered legal document and permit management platform feat
 - MERVIN AI CONVERSATIONAL INTELLIGENCE: Sistema conversacional tipo GPT-5 con superinteligencia y personalidad humana:
   * ANÁLISIS CONTEXTUAL AVANZADO: Detección precisa de tipo de mensaje (pregunta, confirmación, solicitud, etc.), intención específica (crear, ver, modificar), tema principal (estimados, contratos), y contexto emocional
   * RESPUESTAS CONTEXTUALES REALES: Sistema completamente reescrito que elimina respuestas genéricas y genera respuestas específicas al contenido exacto del mensaje del usuario
-  * PERSONALIDAD AUTÉNTICA: Mexicana norteña genuina ("primo", "compadre", "órale") y californiana casual ("dude", "bro") con variabilidad natural 
+  * PERSONALIDAD AUTÉNTICA: Mexicana norteña genuina ("primo", "compadre", "órale") y californiana casual ("dude", "bro") con variabilidad natural
   * ENTENDIMIENTO CONVERSACIONAL: Detecta saludos, confirmaciones, negaciones, solicitudes, seguimientos y responde apropiadamente a cada tipo
   * INTELIGENCIA DE INTENCIÓN: Comprende intenciones específicas (crear, explicar, revisar) y responde con ayuda dirigida al objetivo del usuario
   * SUGERENCIAS CONTEXTUALES: Genera sugerencias dinámicas específicas al tema y contexto de la conversación actual
@@ -48,7 +48,7 @@ This project is an AI-powered legal document and permit management platform feat
 - CRITICAL LANGUAGE CONSISTENCY FIX: Solución definitiva para problema "molestoso" de cambio de idioma español→inglés:
   * SPANISH DETECTION: Detección automática de español usando acentos y palabras clave mexicanas
   * BACKEND ROUTING: Mensajes en español SIEMPRE van al backend (MervinChatOrchestrator) que mantiene personalidad mexicana norteña
-  * FRONTEND LIMITATION: Frontend solo maneja conversación simple en inglés, nunca español
+  * FRONTEND LIMITATION: Frontend solo maneja conversación simple en inglés, never español
   * LANGUAGE PRESERVATION: Sistema garantiza consistencia de idioma español durante toda la conversación
   * ERROR ELIMINATION: Elimina completamente el problema fastidioso de cambios de idioma aleatorios
 - FASE 2 RESEARCH OPTIMIZATION COMPLETED: Sistema avanzado de investigación web súper rápida específicamente optimizado para contratistas ocupados:
@@ -96,7 +96,16 @@ This project is an AI-powered legal document and permit management platform feat
   * ADAPTIVE UI: Aparece solo cuando es útil, desaparece durante escritura activa
   * MULTI-SOURCE ACTIONS: Soporte para activación desde slash, inteligencia o buttons
   * CONTEXTUAL FEEDBACK: Mensajes diferenciados según fuente de activación (comando vs detección)
-- AGENT FUNCTIONS HEADER INTEGRATION: 
+- CLIENT MANAGEMENT UNIFICATION COMPLETED: Sistema de gestión de clientes completamente unificado usando Firebase:
+  * FIREBASE EXCLUSIVE: Eliminación completa de fragmentación PostgreSQL/Firebase para clientes
+  * BACKEND API UNIFIED: Frontend usa servicios unificados `/api/clients` que llaman Firebase Admin SDK
+  * SECURITY INTEGRATION: Middleware de autenticación Firebase en todas las operaciones de clientes
+  * IMPORT FUNCTIONALITY: Importación CSV y vCard/Apple Contacts integrada en backend
+  * TYPE SAFETY: Interfaces TypeScript consistentes entre frontend y backend
+  * DATA INTEGRITY: Single source of truth con aislamiento de datos por usuario
+  * REAL-TIME SYNC: Sincronización automática frontend-backend eliminando inconsistencias
+  * ERROR ELIMINATION: Corrección de 17+ errores LSP y conflictos de esquemas de datos
+- AGENT FUNCTIONS HEADER INTEGRATION:
   * SPARKLES ICON: Icono futurista (Sparkles) ubicado junto al selector de modelos
   * AGENT MODE ONLY: Solo visible cuando selectedModel === "agent" para usuarios premium
   * PERMISSION-BASED ACCESS: Usuarios Primo Chambeador ven Agent Mode con lock icon
@@ -107,31 +116,38 @@ This project is an AI-powered legal document and permit management platform feat
 ## System Architecture
 
 ### Frontend
-- **Technology Stack**: React.js with TypeScript, Tailwind CSS for responsive design.
-- **Routing**: Wouter for client-side routing.
-- **Data Management**: TanStack Query for efficient data fetching and state management.
+- **Technology Stack**: React.js with TypeScript, Tailwind CSS.
+- **Routing**: Wouter.
+- **Data Management**: TanStack Query.
+- **UI/UX Decisions**: Mobile optimization (safe areas, enhanced touch targets, mobile-first layouts, improved input areas, enhanced messaging). Clean, adaptive interface (Sparkles icon for agent mode, integrated agent functions in header).
 
 ### Backend
 - **Server Framework**: Express.js server.
-- **Database**: PostgreSQL with Drizzle ORM.
+- **Database**: PostgreSQL with Drizzle ORM for main application data.
 - **Authentication**: Firebase Admin SDK for backend authentication management.
 
+### Client Management System
+- **Unified Firebase Architecture**: Complete unification of client management using Firebase exclusively, providing a single source of truth and real-time synchronization.
+- **Backend API Integration**: Frontend communicates via unified `/api/clients` endpoints, utilizing Firebase Admin SDK.
+- **Security**: User-based data isolation enforced through Firebase authentication middleware.
+- **Import/Export**: Integrated CSV and vCard/Apple Contacts import functionality.
+
 ### AI Architecture
-- **Mervin AI Unified System**: Unified backend supporting a superintelligent construction chatbot, autonomous task execution, and real-time web research. Utilizes differentiated roles for AI models (Anthropic for research/analysis, OpenAI for conversation/quick tasks). Key components include: SmartTaskCoordinator, ParallelExecutionEngine, Decision Engine, Memory System, Risk Assessment, and Conversational Intelligence (advanced multilingual personality system with language detection, contextual conversation flow, dynamic personality adaptation, and emotion recognition). Access via unified `/api/mervin/process` endpoint with specialized sub-endpoints.
+- **Mervin AI Unified System**: Unified backend supporting a superintelligent construction chatbot, autonomous task execution, and real-time web research. Utilizes differentiated roles for AI models. Key components include SmartTaskCoordinator, ParallelExecutionEngine, Decision Engine, Memory System, Risk Assessment, and a Conversational Intelligence module with advanced multilingual personality, language detection, contextual flow, dynamic personality adaptation, and emotion recognition. Access is via unified `/api/mervin/process` endpoint with specialized sub-endpoints.
 
 ### Core Features & Design Patterns
-- **Smart Action System Revolution**: Context-aware interface system using intelligent slash commands, contextual suggestions, and adaptive floating actions.
-- **Conversational Onboarding System**: Onboarding integrated into Mervin AI chat, replacing traditional wizards with natural guided conversation.
-- **Mervin AI Autonomous Agent**: Modular system with specialized components for intention analysis, smart task coordination, intelligent decision making, parallel execution, specialized agents (estimates, contracts, permits, property verification), learning & memory, real-time feedback, permission intelligence, context awareness, endpoint consistency, performance optimization, and risk assessment.
-- **User Authentication & Authorization**: Enhanced OAuth, email/password, and a robust subscription-based permission system (`primo_chambeador`, `mero_patron`, `master_contractor`, `trial_master`). Includes secure registration, automatic subscription degradation, real-time usage limit enforcement, 30-day persistent login with device fingerprinting, session validation, and WebAuthn API integration for biometric logins.
-- **Password Reset System**: Secure email-based password reset using Resend, with database-stored, single-use, expiring tokens.
+- **Smart Action System**: Context-aware interface system using intelligent slash commands, contextual suggestions, and adaptive floating actions.
+- **Conversational Onboarding System**: Integrates onboarding directly into the Mervin AI chat, replacing traditional wizards with a natural, guided conversation flow.
+- **Mervin AI Autonomous Agent**: Modular system designed for intention analysis, smart task coordination, intelligent decision-making, parallel execution, specialized agents (estimates, contracts, permits, property verification), learning, memory, real-time feedback, permission intelligence, context awareness, endpoint consistency, performance optimization, and risk assessment.
+- **User Authentication & Authorization**: Enhanced OAuth, email/password, and a robust subscription-based permission system. Includes secure registration, automatic subscription degradation, real-time usage limit enforcement, 30-day persistent login with device fingerprinting, session validation, and WebAuthn API integration for biometric logins.
+- **Password Reset System**: Secure email-based password reset utilizing Resend, with database-stored, single-use, expiring tokens.
 - **Dynamic URL Generation**: Centralized utility (`server/utils/url-builder.ts`) for environment-agnostic URL generation.
-- **Enhanced Error Handling**: Comprehensive Firebase authentication error handling, advanced unhandled rejection interceptors, and a triple-layer system to eliminate "Failed to fetch" errors.
-- **Dynamic Form Validation**: Client-side validation using Zod schema integrated with UI components.
-- **API Design**: Secure API endpoints for subscription management, usage tracking, authentication, and password reset functionality, with middleware enforcing access controls and usage limits.
+- **Enhanced Error Handling**: Comprehensive Firebase authentication error handling, advanced unhandled rejection interceptors, and a triple-layer system to mitigate "Failed to fetch" errors.
+- **Dynamic Form Validation**: Client-side validation implemented using Zod schema integrated with UI components.
+- **API Design**: Secure API endpoints for subscription management, usage tracking, authentication, and password reset functionality, enforced with middleware for access controls and usage limits.
 
 ## External Dependencies
-- Firebase (Authentication, Real-time Database)
+- Firebase (Firestore, Admin SDK)
 - OpenAI
 - Stripe
 - PostgreSQL

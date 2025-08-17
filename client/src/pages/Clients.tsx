@@ -12,8 +12,9 @@ import {
   updateClient as updateFirebaseClient,
   deleteClient as deleteFirebaseClient,
   importClientsFromCsv,
-  importClientsFromVcf
-} from "../lib/clientFirebase";
+  importClientsFromVcf,
+  type Client
+} from "../services/clientService";
 import { 
   Select, 
   SelectContent, 
@@ -46,8 +47,7 @@ const AddressAutocomplete = ({ value, onChange, placeholder }: {
   );
 };
 
-// Usar la interfaz de cliente de Firebase
-import { Client } from "../lib/clientFirebase";
+// Interfaz de cliente importada desde el servicio unificado
 
 // Schemas para la validación de formularios
 const clientFormSchema = z.object({
@@ -118,17 +118,17 @@ export default function Clients() {
     const fetchClients = async () => {
       try {
         setIsLoading(true);
-        console.log("Cargando clientes desde Firebase...");
+        console.log("🔄 [CLIENTES] Cargando clientes desde backend unificado...");
         const data = await getFirebaseClients();
-        console.log("Clientes cargados:", data);
+        console.log("✅ [CLIENTES] Clientes cargados desde backend:", data.length);
         setClients(data);
         setFilteredClients(data);
       } catch (error) {
-        console.error('Error fetching clients from Firebase:', error);
+        console.error('❌ [CLIENTES] Error cargando clientes desde backend:', error);
         toast({
           variant: "destructive",
-          title: "Error",
-          description: "No se pudieron cargar los clientes."
+          title: "Error de conexión",
+          description: "No se pudieron cargar los clientes. Verifica tu conexión e inicia sesión nuevamente."
         });
       } finally {
         setIsLoading(false);
@@ -224,12 +224,9 @@ export default function Clients() {
 
         setShowEditClientDialog(false);
       } else {
-        // Crear nuevo cliente usando Firebase
-        console.log("Creando nuevo cliente en Firebase:", values);
-        const newClient = await saveClient({
-          clientId: `client_${Date.now()}`,
-          ...values
-        });
+        // Crear nuevo cliente usando backend unificado
+        console.log("🔄 [CLIENTES] Creando nuevo cliente:", values);
+        const newClient = await saveClient(values);
 
         // Añadir el nuevo cliente a la lista
         setClients(prevClients => [...prevClients, newClient]);
@@ -306,16 +303,17 @@ export default function Clients() {
         try {
           const csvData = e.target.result;
 
-          // Usar la función de Firebase para importar CSV
-          console.log("Importando CSV a Firebase");
-          const importedClients = await importClientsFromCsv(csvData);
+          // Usar el backend unificado para importar CSV
+          console.log("🔄 [CLIENTES] Importando CSV al backend...");
+          const allClients = await importClientsFromCsv(csvData);
 
-          // Añadir los nuevos clientes a la lista
-          setClients(prevClients => [...prevClients, ...importedClients]);
+          // Actualizar la lista completa de clientes
+          setClients(allClients);
+          setFilteredClients(allClients);
 
           toast({
             title: "Importación exitosa",
-            description: `Se han importado ${importedClients.length} clientes desde CSV.`
+            description: `Se han importado clientes desde CSV. Total: ${allClients.length} clientes.`
           });
 
           setShowImportDialog(false);
@@ -370,16 +368,17 @@ export default function Clients() {
         try {
           const vcfData = e.target.result;
 
-          // Usar la función de Firebase para importar contactos de Apple
-          console.log("Importando contactos de Apple a Firebase");
-          const importedClients = await importClientsFromVcf(vcfData);
+          // Usar el backend unificado para importar contactos de Apple
+          console.log("🔄 [CLIENTES] Importando contactos de Apple al backend...");
+          const allClients = await importClientsFromVcf(vcfData);
 
-          // Añadir los nuevos clientes a la lista
-          setClients(prevClients => [...prevClients, ...importedClients]);
+          // Actualizar la lista completa de clientes
+          setClients(allClients);
+          setFilteredClients(allClients);
 
           toast({
             title: "Importación exitosa",
-            description: `Se importaron ${importedClients.length} contactos de Apple.`
+            description: `Se importaron contactos de Apple. Total: ${allClients.length} clientes.`
           });
 
           setShowImportDialog(false);

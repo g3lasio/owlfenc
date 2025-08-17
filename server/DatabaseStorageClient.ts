@@ -1,66 +1,31 @@
-import { 
-  clients, 
-  type Client, 
-  type InsertClient 
-} from "@shared/schema";
-import { db } from "./db";
-import { eq } from "drizzle-orm";
+// DEPRECATED: PostgreSQL client storage disabled in favor of Firebase
+// This file is kept for reference but all client operations now use Firebase
+// See /routes/clientRoutes.ts for the new Firebase-based implementation
 
-// Interface para las operaciones relacionadas con clientes
+/*
+PostgreSQL client storage has been replaced with Firebase for better
+consistency with the frontend implementation and easier data management.
+
+All client operations are now handled through:
+- Firebase Firestore for data storage
+- Firebase Auth for user authentication and authorization
+- /api/clients routes for API access
+
+This change ensures:
+✅ Single source of truth (Firebase)
+✅ Better security with user-based data isolation
+✅ Consistent data schema across frontend and backend
+✅ Support for import/export functionality
+✅ Real-time data synchronization
+*/
+
 export interface IClientStorage {
-  getClient(id: number): Promise<Client | undefined>;
-  getClientByClientId(clientId: string): Promise<Client | undefined>;
-  getClientsByUserId(userId: number): Promise<Client[]>;
-  createClient(insertClient: InsertClient): Promise<Client>;
-  updateClient(id: number, clientData: Partial<Client>): Promise<Client>;
-  deleteClient(id: number): Promise<boolean>;
+  // Interface kept for compatibility but implementation moved to Firebase
 }
 
-// Implementación de las operaciones de cliente usando PostgreSQL
 export class DatabaseClientStorage implements IClientStorage {
-  async getClient(id: number): Promise<Client | undefined> {
-    const [client] = await db.select().from(clients).where(eq(clients.id, id));
-    return client || undefined;
-  }
-
-  async getClientByClientId(clientId: string): Promise<Client | undefined> {
-    const [client] = await db.select().from(clients).where(eq(clients.clientId, clientId));
-    return client || undefined;
-  }
-
-  async getClientsByUserId(userId: number): Promise<Client[]> {
-    return await db.select().from(clients).where(eq(clients.userId, userId));
-  }
-
-  async createClient(insertClient: InsertClient): Promise<Client> {
-    const [client] = await db
-      .insert(clients)
-      .values(insertClient)
-      .returning();
-    return client;
-  }
-
-  async updateClient(id: number, clientData: Partial<Client>): Promise<Client> {
-    const [client] = await db
-      .update(clients)
-      .set({
-        ...clientData,
-        updatedAt: new Date()
-      })
-      .where(eq(clients.id, id))
-      .returning();
-    return client;
-  }
-
-  async deleteClient(id: number): Promise<boolean> {
-    const [deletedClient] = await db
-      .delete(clients)
-      .where(eq(clients.id, id))
-      .returning({ id: clients.id });
-    
-    return !!deletedClient;
-  }
+  // Implementation disabled - use Firebase routes instead
 }
 
-// Exportar una instancia de DatabaseClientStorage
-export const clientStorage = new DatabaseClientStorage();
+// Deprecated - use Firebase routes instead
+export const clientStorage = null;
