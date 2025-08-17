@@ -13,6 +13,7 @@
  */
 
 import { LanguageDetector, LanguageProfile, languageDetector } from './LanguageDetector';
+import { AdvancedConversationalIntelligence } from './AdvancedConversationalIntelligence';
 
 export interface ConversationState {
   currentLanguageProfile: LanguageProfile;
@@ -51,6 +52,7 @@ export interface ConversationResponse {
 class ConversationEngine {
   private state: ConversationState;
   private languageDetector: LanguageDetector;
+  private advancedIntelligence: AdvancedConversationalIntelligence;
   private readonly MAX_HISTORY = 20; // Mantener últimas 20 interacciones
 
   constructor(userId: string) {
@@ -64,6 +66,7 @@ class ConversationEngine {
     }
 
     this.languageDetector = languageDetector;
+    this.advancedIntelligence = new AdvancedConversationalIntelligence();
     this.state = {
       currentLanguageProfile: {
         language: 'spanish',
@@ -82,35 +85,45 @@ class ConversationEngine {
   }
 
   /**
-   * Procesar mensaje del usuario y generar respuesta inteligente
+   * Procesar mensaje del usuario con INTELIGENCIA SÚPER AVANZADA
    */
   async processUserMessage(userMessage: string, context?: any): Promise<ConversationResponse> {
     // 🛡️ SANITIZACIÓN DE SEGURIDAD - Prevenir XSS
     const sanitizedMessage = this.sanitizeInput(userMessage);
-    // 1. Detectar idioma y personalidad
+    
+    // 🧠 ANÁLISIS CONVERSACIONAL SÚPER AVANZADO
+    const advancedAnalysis = await this.advancedIntelligence.analyzeAdvancedConversationalContext(
+      sanitizedMessage, 
+      this.state.conversationHistory
+    );
+
+    // 1. Detectar idioma y personalidad (mejorado con análisis avanzado)
     const languageProfile = this.languageDetector.detectLanguage(sanitizedMessage);
     this.updateLanguageProfile(languageProfile);
 
-    // 2. Detectar emoción del usuario
-    const userEmotion = this.languageDetector.detectUserEmotion(sanitizedMessage);
-    this.state.userEmotion = userEmotion;
+    // 2. Análisis emocional avanzado
+    this.state.userEmotion = this.determineAdvancedEmotion(advancedAnalysis.emotionalInsights);
 
-    // 3. Analizar contexto conversacional
+    // 3. Contexto conversacional inteligente
     const conversationContext = this.analyzeConversationContext(sanitizedMessage);
 
-    // 4. Generar respuesta contextual
-    const response = await this.generateContextualResponse(
+    // 4. Generar respuesta súper avanzada
+    const response = await this.generateAdvancedContextualResponse(
       sanitizedMessage,
       languageProfile,
-      userEmotion,
-      conversationContext
+      this.state.userEmotion,
+      conversationContext,
+      advancedAnalysis
     );
 
     // 🛡️ SANITIZACIÓN DE SALIDA - Prevenir XSS en respuestas
     response.message = this.sanitizeOutput(response.message);
 
-    // 5. Actualizar historial
-    this.updateConversationHistory(sanitizedMessage, response.message, languageProfile, userEmotion);
+    // 5. Actualizar memoria emocional y patrones
+    this.updateAdvancedMemory(sanitizedMessage, response.message, advancedAnalysis);
+
+    // 6. Actualizar historial con insights avanzados
+    this.updateConversationHistory(sanitizedMessage, response.message, languageProfile, this.state.userEmotion);
 
     return response;
   }
@@ -174,30 +187,56 @@ So, what can I do for you today, bro?`;
   }
 
   /**
-   * Generar respuesta contextual inteligente
+   * Generar respuesta contextual súper avanzada
    */
-  private async generateContextualResponse(
+  private async generateAdvancedContextualResponse(
     userMessage: string,
     languageProfile: LanguageProfile,
     userEmotion: string,
-    context: any
+    context: any,
+    advancedAnalysis: any
   ): Promise<ConversationResponse> {
     const { language } = languageProfile;
     const { messageType, intent, topic, emotionalContext } = context.entities;
+    
+    // 🧠 INTEGRAR INSIGHTS AVANZADOS
+    const { linguisticAnalysis, intelligentInferences, predictiveContext, adaptivePersonality } = advancedAnalysis;
     
     let baseResponse = '';
     let emotion: ConversationResponse['emotion'] = 'helpful';
     let suggestedActions: string[] = [];
     let followUpQuestions: string[] = [];
 
-    // Generar respuesta específica basada en análisis contextual
-    baseResponse = this.generateSpecificResponse(userMessage, messageType, intent, topic, emotionalContext, language);
+    // 🚀 GENERACIÓN DE RESPUESTA SÚPER AVANZADA
+    baseResponse = this.generateSuperAdvancedResponse(
+      userMessage, 
+      messageType, 
+      intent, 
+      topic, 
+      emotionalContext, 
+      language,
+      linguisticAnalysis,
+      intelligentInferences,
+      adaptivePersonality
+    );
     
-    // Ajustar emoción de respuesta
-    emotion = this.determineResponseEmotion(messageType, emotionalContext, intent);
+    // Ajustar emoción con insights emocionales avanzados
+    emotion = this.determineAdvancedResponseEmotion(
+      messageType, 
+      emotionalContext, 
+      intent,
+      advancedAnalysis.emotionalInsights
+    );
     
-    // Generar sugerencias contextuales específicas
-    suggestedActions = this.generateContextualSuggestions(topic, intent, language);
+    // 🎯 SUGERENCIAS PREDICTIVAS INTELIGENTES
+    suggestedActions = this.generatePredictiveSuggestions(
+      topic, 
+      intent, 
+      language,
+      predictiveContext,
+      intelligentInferences
+    );
+    
     followUpQuestions = this.generateIntelligentFollowUps(messageType, topic, intent, language);
 
     return {
@@ -207,6 +246,243 @@ So, what can I do for you today, bro?`;
       suggestedActions,
       followUpQuestions
     };
+  }
+
+  /**
+   * Generar respuesta súper avanzada con análisis profundo
+   */
+  private generateSuperAdvancedResponse(
+    userMessage: string,
+    messageType: string,
+    intent: string,
+    topic: string,
+    emotionalContext: string,
+    language: string,
+    linguisticAnalysis: any,
+    intelligentInferences: any,
+    adaptivePersonality: any
+  ): string {
+    const isSpanish = language === 'spanish';
+    
+    // 🎯 RESPUESTAS ADAPTADAS AL NIVEL DE EXPERTISE
+    if (linguisticAnalysis.complexity === 'expert') {
+      return this.generateExpertLevelResponse(userMessage, topic, isSpanish, intelligentInferences);
+    }
+    
+    if (linguisticAnalysis.complexity === 'basic' && intelligentInferences.missing_context.length > 0) {
+      return this.generateEducationalResponse(userMessage, topic, isSpanish, intelligentInferences);
+    }
+    
+    // 🔄 RESPUESTAS CON INFERENCIAS INTELIGENTES
+    if (intelligentInferences.implicit.length > 0) {
+      return this.generateImplicitAwareResponse(
+        userMessage, 
+        messageType, 
+        topic, 
+        isSpanish, 
+        intelligentInferences
+      );
+    }
+    
+    // 📈 RESPUESTAS PREDICTIVAS
+    if (intelligentInferences.anticipated_needs.length > 0) {
+      return this.generateAnticipatoryResponse(
+        userMessage, 
+        messageType, 
+        topic, 
+        isSpanish, 
+        intelligentInferences
+      );
+    }
+    
+    // Fallback a respuesta específica mejorada
+    return this.generateSpecificResponse(userMessage, messageType, intent, topic, emotionalContext, language);
+  }
+
+  private generateExpertLevelResponse(message: string, topic: string, isSpanish: boolean, inferences: any): string {
+    if (topic === 'estimate') {
+      return isSpanish 
+        ? `Perfecto, primo. Veo que manejas bien el tema. Te armo un estimado técnico completo con especificaciones detalladas, análisis de materiales premium y cronograma de implementación optimizado. ${inferences.implicit.length > 0 ? 'También incluyo ' + inferences.implicit[0].toLowerCase() + '.' : ''}`
+        : `Perfect, dude. I can see you know your stuff. I'll build you a comprehensive technical estimate with detailed specs, premium material analysis, and optimized implementation timeline. ${inferences.implicit.length > 0 ? 'I\'ll also include ' + inferences.implicit[0].toLowerCase() + '.' : ''}`;
+    }
+    
+    return isSpanish
+      ? `Órale, compadre, veo que tienes experiencia en esto. Te doy la información técnica completa que necesitas.`
+      : `Right on, bro. I can see you've got experience with this. I'll give you the full technical breakdown you need.`;
+  }
+
+  private generateEducationalResponse(message: string, topic: string, isSpanish: boolean, inferences: any): string {
+    const missingInfo = inferences.missing_context[0] || 'información adicional';
+    
+    if (topic === 'estimate') {
+      return isSpanish 
+        ? `Te ayudo con eso, primo. Para darte un estimado preciso, necesito ${missingInfo.toLowerCase()}. Te explico paso a paso cómo funciona todo el proceso para que tengas claridad completa.`
+        : `I'll help you with that, dude. To give you an accurate estimate, I need ${missingInfo.toLowerCase()}. Let me walk you through the whole process step by step so you have complete clarity.`;
+    }
+    
+    return isSpanish
+      ? `Claro, compadre. Te explico todo con detalle para que entiendas perfectamente el proceso.`
+      : `For sure, bro. I'll break it all down so you understand the process perfectly.`;
+  }
+
+  private generateImplicitAwareResponse(
+    message: string, 
+    messageType: string, 
+    topic: string, 
+    isSpanish: boolean, 
+    inferences: any
+  ): string {
+    const implicitNeed = inferences.implicit[0] || '';
+    
+    return isSpanish
+      ? `Perfecto, primo. ${implicitNeed ? 'Además de lo que me pides, ' + implicitNeed.toLowerCase() + '. ' : ''}Así tenemos todo completo desde el principio.`
+      : `Perfect, dude. ${implicitNeed ? 'Besides what you\'re asking for, ' + implicitNeed.toLowerCase() + '. ' : ''}This way we have everything complete from the start.`;
+  }
+
+  private generateAnticipatoryResponse(
+    message: string, 
+    messageType: string, 
+    topic: string, 
+    isSpanish: boolean, 
+    inferences: any
+  ): string {
+    const nextNeed = inferences.anticipated_needs[0] || '';
+    
+    return isSpanish
+      ? `Órale sí, primo. Te ayudo con eso ahora, y después probablemente vas a necesitar ${nextNeed.toLowerCase()}. ¿Te preparo todo de una vez?`
+      : `Oh yeah, dude. I'll help you with that now, and then you'll probably need ${nextNeed.toLowerCase()}. Want me to prepare everything at once?`;
+  }
+
+  /**
+   * MÉTODOS SÚPER AVANZADOS PARA INTELIGENCIA CONVERSACIONAL
+   */
+  private determineAdvancedEmotion(emotionalInsights: any): 'frustrated' | 'excited' | 'confused' | 'satisfied' | 'neutral' {
+    if (!emotionalInsights?.current) return 'neutral';
+    
+    const { confidence, satisfaction, urgency, engagement } = emotionalInsights.current;
+    
+    // Lógica avanzada de determinación emocional
+    if (satisfaction < 0.3 && urgency > 0.7) return 'frustrated';
+    if (satisfaction > 0.8 && engagement > 0.7) return 'excited';
+    if (confidence < 0.3 && engagement < 0.4) return 'confused';
+    if (satisfaction > 0.6 && confidence > 0.6) return 'satisfied';
+    
+    return 'neutral';
+  }
+
+  private updateAdvancedMemory(userMessage: string, agentResponse: string, advancedAnalysis: any): void {
+    // Actualizar expertise del usuario basado en análisis
+    if (advancedAnalysis.linguisticAnalysis?.complexity === 'expert') {
+      this.advancedIntelligence.updateUserExpertise('expert');
+    } else if (advancedAnalysis.linguisticAnalysis?.complexity === 'advanced') {
+      this.advancedIntelligence.updateUserExpertise('advanced');
+    }
+    
+    // Incrementar profundidad de relación
+    this.advancedIntelligence.incrementRelationshipDepth();
+    
+    // Agregar patrón conversacional si es relevante
+    if (advancedAnalysis.predictiveContext?.conversation_trajectory) {
+      const pattern = {
+        type: 'workflow' as const,
+        pattern: userMessage.toLowerCase().substring(0, 50),
+        frequency: 1,
+        context: [advancedAnalysis.linguisticAnalysis?.complexity || 'basic'],
+        predictive: {
+          nextLikely: advancedAnalysis.intelligentInferences?.anticipated_needs || [],
+          confidence: 0.7
+        }
+      };
+      this.advancedIntelligence.addConversationalPattern(pattern);
+    }
+  }
+
+  private determineAdvancedResponseEmotion(
+    messageType: string, 
+    emotionalContext: string, 
+    intent: string,
+    emotionalInsights: any
+  ): ConversationResponse['emotion'] {
+    // Lógica súper avanzada para determinar emoción de respuesta
+    if (emotionalInsights?.current?.satisfaction < 0.3) return 'empathetic';
+    if (emotionalInsights?.current?.engagement > 0.8) return 'enthusiastic';
+    if (messageType === 'confirmation' && emotionalInsights?.current?.satisfaction > 0.7) return 'celebrating';
+    if (emotionalContext === 'frustrated') return 'empathetic';
+    if (messageType === 'greeting') return 'enthusiastic';
+    if (intent === 'create' || intent === 'request') return 'helpful';
+    if (emotionalInsights?.current?.confidence < 0.4) return 'clarifying';
+    
+    return 'helpful';
+  }
+
+  private generatePredictiveSuggestions(
+    topic: string, 
+    intent: string, 
+    language: string,
+    predictiveContext: any,
+    intelligentInferences: any
+  ): string[] {
+    const isSpanish = language === 'spanish';
+    const suggestions: string[] = [];
+    
+    // Sugerencias basadas en necesidades anticipadas
+    if (intelligentInferences?.anticipated_needs?.length > 0) {
+      const nextNeed = intelligentInferences.anticipated_needs[0];
+      suggestions.push(
+        isSpanish 
+          ? `Preparar ${nextNeed.toLowerCase()}`
+          : `Prepare ${nextNeed.toLowerCase()}`
+      );
+    }
+    
+    // Sugerencias predictivas basadas en contexto
+    if (predictiveContext?.next_user_message?.length > 0) {
+      suggestions.push(
+        isSpanish 
+          ? 'Explorar opciones avanzadas'
+          : 'Explore advanced options'
+      );
+    }
+    
+    // Sugerencias específicas por tema con inteligencia predictiva
+    if (topic === 'estimate') {
+      suggestions.push(
+        isSpanish 
+          ? 'Generar estimado inteligente'
+          : 'Generate smart estimate'
+      );
+      
+      if (intelligentInferences?.missing_context?.includes('Ubicación o dirección de la propiedad')) {
+        suggestions.push(
+          isSpanish 
+            ? 'Agregar ubicación automáticamente'
+            : 'Add location automatically'
+        );
+      }
+    }
+    
+    if (topic === 'contract') {
+      suggestions.push(
+        isSpanish 
+          ? 'Crear contrato profesional'
+          : 'Create professional contract'
+      );
+      
+      if (intelligentInferences?.implicit?.some((i: string) => i.includes('firma'))) {
+        suggestions.push(
+          isSpanish 
+            ? 'Configurar firma digital'
+            : 'Set up digital signature'
+        );
+      }
+    }
+    
+    // Fallback con sugerencias contextuales mejoradas
+    if (suggestions.length === 0) {
+      suggestions.push(...this.generateContextualSuggestions(topic, intent, language));
+    }
+    
+    return suggestions.slice(0, 4); // Máximo 4 sugerencias para no abrumar
   }
 
   /**
