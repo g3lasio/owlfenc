@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { robustSubscriptionService } from '../services/robustSubscriptionService';
+import { userMappingService } from '../services/userMappingService';
 
 /**
  * ENDPOINT QUE REEMPLAZA /user/subscription
@@ -9,43 +10,56 @@ import { robustSubscriptionService } from '../services/robustSubscriptionService
 
 export function registerRobustUserSubscriptionRoutes(app: any) {
   
-  // NUEVO: Reemplaza completamente /user/subscription  
-  app.get('/api/user/subscription-robust/:userId', async (req: Request, res: Response) => {
+  // NUEVO: Reemplaza completamente /user/subscription con Firebase UID mapping
+  app.get('/api/user/subscription-robust/:firebaseUid', async (req: Request, res: Response) => {
     try {
-      const { userId } = req.params;
+      const { firebaseUid } = req.params;
       
-      console.log(`🔍 [ROBUST-USER-SUBSCRIPTION] Getting REAL subscription for: ${userId}`);
+      console.log(`🔍 [ROBUST-USER-SUBSCRIPTION] Getting REAL subscription for Firebase UID: ${firebaseUid}`);
       
-      const subscription = await robustSubscriptionService.getUserSubscription(userId);
+      // Usar el servicio de mapeo para obtener suscripción por Firebase UID
+      const subscriptionData = await userMappingService.getUserSubscriptionByFirebaseUid(firebaseUid);
       
-      if (!subscription) {
+      if (!subscriptionData) {
+        // Si no tiene suscripción, ofrecer crear trial automático
+        console.log(`📝 [ROBUST-USER-SUBSCRIPTION] No subscription found, offering trial for: ${firebaseUid}`);
+        
         return res.status(404).json({
           active: false,
           error: 'No subscription found',
-          message: 'Usuario no tiene suscripción activa'
+          message: 'Usuario no tiene suscripción activa',
+          canCreateTrial: true,
+          trialEndpoint: '/api/user/create-trial'
         });
       }
+      
+      const { subscription, plan } = subscriptionData;
 
+      // Calcular días restantes
+      const now = new Date();
+      const endDate = new Date(subscription.currentPeriodEnd || now);
+      const daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+      
       // Formato compatible con frontend existente
       const response = {
-        active: subscription.isActive,
+        active: subscription.status === 'active' || subscription.status === 'trialing',
         subscription: {
-          id: `robust_${subscription.planId}`,
-          userId,
+          id: `robust_${subscription.id}`,
+          userId: firebaseUid, // Usar Firebase UID para compatibilidad con frontend
           planId: subscription.planId,
           status: subscription.status,
-          planName: subscription.planName,
-          features: subscription.features,
-          daysRemaining: subscription.daysRemaining,
-          isTrialing: subscription.isTrialing,
-          currentPeriodEnd: new Date().toISOString(), // Placeholder
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          planName: plan?.name,
+          features: plan?.features,
+          daysRemaining,
+          isTrialing: subscription.status === 'trialing',
+          currentPeriodEnd: subscription.currentPeriodEnd?.toISOString(),
+          createdAt: subscription.createdAt?.toISOString(),
+          updatedAt: subscription.updatedAt?.toISOString()
         },
         plan: {
           id: subscription.planId,
-          name: subscription.planName,
-          features: subscription.features
+          name: plan?.name,
+          features: plan?.features
         }
       };
 
@@ -62,14 +76,14 @@ export function registerRobustUserSubscriptionRoutes(app: any) {
     }
   });
 
-  // Verificar límites REALES para una feature específica
-  app.get('/api/user/can-use/:userId/:feature', async (req: Request, res: Response) => {
+  // Verificar límites REALES para una feature específica usando Firebase UID
+  app.get('/api/user/can-use/:firebaseUid/:feature', async (req: Request, res: Response) => {
     try {
-      const { userId, feature } = req.params;
+      const { firebaseUid, feature } = req.params;
       
-      console.log(`🔍 [ROBUST-USER-SUBSCRIPTION] Checking if ${userId} can use ${feature}`);
+      console.log(`🔍 [ROBUST-USER-SUBSCRIPTION] Checking if ${firebaseUid} can use ${feature}`);
       
-      const check = await robustSubscriptionService.canUseFeature(userId, feature);
+      const check = await userMappingService.canUseFeature(firebaseUid, feature);
       
       res.json({
         success: true,
@@ -77,7 +91,8 @@ export function registerRobustUserSubscriptionRoutes(app: any) {
         used: check.used,
         limit: check.limit,
         isUnlimited: check.limit === -1,
-        feature
+        feature,
+        planName: check.planName
       });
       
     } catch (error) {
@@ -90,29 +105,26 @@ export function registerRobustUserSubscriptionRoutes(app: any) {
     }
   });
 
-  // Usar feature CON CONTROL REAL (BLOQUEA si excede límites)
-  app.post('/api/user/use-feature', async (req: Request, res: Response) => {
+  // Crear suscripción trial para Firebase UID
+  app.post('/api/user/create-trial', async (req: Request, res: Response) => {
     try {
-      const { userId, feature, count = 1 } = req.body;
+      const { firebaseUid, email } = req.body;
       
-      console.log(`📊 [ROBUST-USER-SUBSCRIPTION] ${userId} attempting to use ${feature} (${count}x)`);
-      
-      const allowed = await robustSubscriptionService.incrementUsage(userId, feature, count);
-      
-      if (!allowed) {
-        return res.status(403).json({
+      if (!firebaseUid || !email) {
+        return res.status(400).json({
           success: false,
-          error: 'LIMIT_EXCEEDED',
-          message: `Has alcanzado el límite para ${feature}`,
-          code: 'SUBSCRIPTION_LIMIT_EXCEEDED'
+          error: 'Firebase UID and email are required'
         });
       }
       
+      console.log(`🆓 [ROBUST-USER-SUBSCRIPTION] Creating trial for ${email} (${firebaseUid})`);
+      
+      const trial = await userMappingService.createTrialSubscriptionForFirebaseUid(firebaseUid, email);
+      
       res.json({
         success: true,
-        message: `${feature} usage incremented successfully`,
-        feature,
-        count
+        message: 'Trial subscription created successfully',
+        subscription: trial
       });
       
     } catch (error) {

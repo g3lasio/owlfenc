@@ -56,6 +56,7 @@ import usageLimitsRoutes from "./routes/usage-limits"; // Import usage limits ro
 import { registerSubscriptionControlRoutes } from "./routes/subscription-control"; // Import ROBUST subscription control
 import { registerRobustUserSubscriptionRoutes } from "./routes/robust-user-subscription"; // Import ROBUST user subscription endpoints
 import { registerSubscriptionDemoRoutes } from "./routes/subscription-demo"; // Import subscription demo routes
+import { registerRobustFirebaseAuthRoutes } from "./routes/robust-firebase-auth"; // Import robust Firebase auth routes
 import userProfileRoutes from "./routes/user-profile-routes"; // Import user profile routes
 import openaiChatRoutes from "./routes/openai-chat-routes"; // Import OpenAI chat routes
 import contractorPaymentRoutes from "./routes/contractor-payment-routes"; // Import contractor payment routes
@@ -6676,6 +6677,10 @@ Output must be between 200-900 characters in English.`;
   // 🎯 DEMO: Endpoints para demostrar el sistema robusto
   console.log("🎯 [SUBSCRIPTION-DEMO] Registrando endpoints de demostración...");
   registerSubscriptionDemoRoutes(app);
+  
+  // 🔐 ROBUST: Endpoints de autenticación Firebase robusta
+  console.log("🔐 [ROBUST-FIREBASE-AUTH] Registrando endpoints de autenticación robusta...");
+  registerRobustFirebaseAuthRoutes(app);
   
   // Registrar rutas del sistema de permisos y uso (LEGACY - por compatibilidad)
   registerUsageRoutes(app);
