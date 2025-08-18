@@ -5,6 +5,52 @@ import { z } from 'zod';
 // Import usage schemas
 export * from './usage-schema';
 
+// ================================
+// ROBUST SUBSCRIPTION & USAGE CONTROL TABLES
+// ================================
+
+// Límites de uso mensual por usuario - CONTROL REAL
+export const userUsageLimits = pgTable('user_usage_limits', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  month: text('month').notNull(), // "2025-08"
+  planId: integer('plan_id').notNull(),
+  
+  // Límites permitidos según el plan
+  basicEstimatesLimit: integer('basic_estimates_limit').default(0),
+  aiEstimatesLimit: integer('ai_estimates_limit').default(0),
+  contractsLimit: integer('contracts_limit').default(0),
+  propertyVerificationsLimit: integer('property_verifications_limit').default(0),
+  permitAdvisorLimit: integer('permit_advisor_limit').default(0),
+  projectsLimit: integer('projects_limit').default(0),
+  
+  // Uso actual del mes
+  basicEstimatesUsed: integer('basic_estimates_used').default(0),
+  aiEstimatesUsed: integer('ai_estimates_used').default(0),
+  contractsUsed: integer('contracts_used').default(0),
+  propertyVerificationsUsed: integer('property_verifications_used').default(0),
+  permitAdvisorUsed: integer('permit_advisor_used').default(0),
+  projectsUsed: integer('projects_used').default(0),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userMonthIdx: index('user_month_idx').on(table.userId, table.month),
+}));
+
+// Historial de uso detallado para auditoría
+export const usageAuditLog = pgTable('usage_audit_log', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  feature: text('feature').notNull(), // "contracts", "estimates", etc.
+  action: text('action').notNull(), // "created", "used_limit", "limit_exceeded"
+  details: jsonb('details'), // Información adicional
+  timestamp: timestamp('timestamp').defaultNow().notNull(),
+}, (table) => ({
+  userFeatureIdx: index('user_feature_idx').on(table.userId, table.feature),
+  timestampIdx: index('timestamp_idx').on(table.timestamp),
+}));
+
 // Users table
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -127,23 +173,35 @@ export const clients = pgTable('clients', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// Subscription plans table
+// Subscription plans table - REAL SCHEMA MATCHING DATABASE
 export const subscriptionPlans = pgTable('subscription_plans', {
-  id: text('id').primaryKey(),
-  name: varchar('name', { length: 255 }).notNull(),
-  price: decimal('price', { precision: 10, scale: 2 }).notNull(),
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  code: text('code'),
+  price: integer('price').notNull(), // Price in cents
+  yearly_price: integer('yearly_price'),
+  description: text('description'),
   features: jsonb('features').notNull(),
-  isActive: boolean('is_active').notNull().default(true),
+  motto: text('motto'),
+  is_active: boolean('is_active').notNull().default(true),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// User subscriptions table
+// User subscriptions table - REAL SCHEMA MATCHING DATABASE
 export const userSubscriptions = pgTable('user_subscriptions', {
-  id: text('id').primaryKey(),
+  id: serial('id').primaryKey(),
   userId: integer('user_id').notNull(),
-  planId: text('plan_id').notNull(),
-  status: varchar('status', { length: 50 }).notNull(),
-  startDate: timestamp('start_date').notNull(),
-  endDate: timestamp('end_date'),
+  planId: integer('plan_id').notNull(),
+  stripeCustomerId: text('stripe_customer_id'),
+  stripeSubscriptionId: text('stripe_subscription_id'),
+  status: text('status').notNull(),
+  currentPeriodStart: timestamp('current_period_start'),
+  currentPeriodEnd: timestamp('current_period_end'),
+  cancelAtPeriodEnd: boolean('cancel_at_period_end').default(false),
+  billingCycle: text('billing_cycle'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 // Payment history table

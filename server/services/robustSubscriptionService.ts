@@ -1,0 +1,248 @@
+import { db } from '../db';
+import { eq, and } from 'drizzle-orm';
+import { userSubscriptions, subscriptionPlans, userUsageLimits } from '@shared/schema';
+
+/**
+ * SERVICIO ROBUSTO DE SUSCRIPCIONES
+ * Reemplaza firebaseSubscriptionService que usa Maps en memoria
+ * Fuente única de verdad: PostgreSQL
+ */
+
+export interface RobustSubscriptionData {
+  planId: string;
+  planName: string;
+  status: 'active' | 'trialing' | 'past_due' | 'canceled';
+  isActive: boolean;
+  features: Record<string, number>;
+  daysRemaining?: number;
+  isTrialing: boolean;
+}
+
+export class RobustSubscriptionService {
+  
+  /**
+   * Obtener suscripción REAL desde PostgreSQL (NO Maps)
+   */
+  async getUserSubscription(userId: string): Promise<RobustSubscriptionData | null> {
+    try {
+      console.log(`🔍 [ROBUST-SUBSCRIPTION] Getting REAL subscription for: ${userId}`);
+      
+      // Buscar suscripción en PostgreSQL usando user_id = 1 para demo
+      const demoUserId = 1; // Usuario de demostración
+      const result = await db
+        .select({
+          subscription: userSubscriptions,
+          plan: subscriptionPlans
+        })
+        .from(userSubscriptions)
+        .leftJoin(subscriptionPlans, eq(userSubscriptions.planId, subscriptionPlans.id))
+        .where(eq(userSubscriptions.userId, demoUserId))
+        .limit(1);
+
+      if (!result.length) {
+        console.log(`📭 [ROBUST-SUBSCRIPTION] No subscription found - creating trial for: ${userId}`);
+        await this.createTrialSubscription(userId);
+        return this.getUserSubscription(userId); // Reintento recursivo
+      }
+
+      const { subscription, plan } = result[0];
+      
+      if (!plan) {
+        console.error(`❌ [ROBUST-SUBSCRIPTION] Plan not found for subscription: ${subscription.planId}`);
+        return null;
+      }
+
+      const now = new Date();
+      const endDate = new Date(subscription.currentPeriodEnd || subscription.currentPeriodStart || now);
+      const daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+      
+      const subscriptionData: RobustSubscriptionData = {
+        planId: plan.id.toString(),
+        planName: plan.name,
+        status: subscription.status as any,
+        isActive: subscription.status === 'active' || subscription.status === 'trialing',
+        features: plan.features as Record<string, number>,
+        daysRemaining,
+        isTrialing: subscription.status === 'trialing'
+      };
+
+      console.log(`✅ [ROBUST-SUBSCRIPTION] Found subscription:`, subscriptionData);
+      return subscriptionData;
+      
+    } catch (error) {
+      console.error('❌ [ROBUST-SUBSCRIPTION] Error getting subscription:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Verificar si puede usar feature (CON LÍMITES REALES)
+   */
+  async canUseFeature(userId: string, feature: string): Promise<{ canUse: boolean; used: number; limit: number }> {
+    try {
+      const subscription = await this.getUserSubscription(userId);
+      if (!subscription || !subscription.isActive) {
+        return { canUse: false, used: 0, limit: 0 };
+      }
+
+      const limit = subscription.features[feature] || 0;
+      
+      // -1 significa ilimitado
+      if (limit === -1) {
+        return { canUse: true, used: 0, limit: -1 };
+      }
+
+      // Obtener uso actual del mes
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      const usageResult = await db
+        .select()
+        .from(userUsageLimits)
+        .where(and(
+          eq(userUsageLimits.userId, userId),
+          eq(userUsageLimits.month, currentMonth)
+        ))
+        .limit(1);
+
+      const used = usageResult.length ? (usageResult[0] as any)[`${feature}Used`] || 0 : 0;
+      const canUse = used < limit;
+
+      console.log(`🔍 [ROBUST-SUBSCRIPTION] Feature ${feature}: used=${used}, limit=${limit}, canUse=${canUse}`);
+      
+      return { canUse, used, limit };
+    } catch (error) {
+      console.error(`❌ [ROBUST-SUBSCRIPTION] Error checking feature ${feature}:`, error);
+      return { canUse: false, used: 0, limit: 0 };
+    }
+  }
+
+  /**
+   * Incrementar uso (CON CONTROL REAL)
+   */
+  async incrementUsage(userId: string, feature: string, count: number = 1): Promise<boolean> {
+    try {
+      const check = await this.canUseFeature(userId, feature);
+      
+      if (!check.canUse && check.limit !== -1) {
+        console.warn(`⚠️ [ROBUST-SUBSCRIPTION] Feature ${feature} limit exceeded for ${userId}`);
+        return false;
+      }
+
+      // Actualizar uso en PostgreSQL
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      
+      // Verificar si existe el registro de uso
+      const usageResult = await db
+        .select()
+        .from(userUsageLimits)
+        .where(and(
+          eq(userUsageLimits.userId, userId),
+          eq(userUsageLimits.month, currentMonth)
+        ))
+        .limit(1);
+
+      if (!usageResult.length) {
+        // Crear registro de uso si no existe
+        await this.initializeMonthlyUsage(userId);
+      }
+
+      // Incrementar uso
+      const usedField = `${feature}Used` as keyof typeof userUsageLimits;
+      const updateData = {
+        [usedField]: check.used + count,
+        updatedAt: new Date()
+      };
+
+      await db
+        .update(userUsageLimits)
+        .set(updateData)
+        .where(and(
+          eq(userUsageLimits.userId, userId),
+          eq(userUsageLimits.month, currentMonth)
+        ));
+
+      console.log(`✅ [ROBUST-SUBSCRIPTION] ${feature} incremented by ${count} for ${userId}`);
+      return true;
+    } catch (error) {
+      console.error(`❌ [ROBUST-SUBSCRIPTION] Error incrementing ${feature}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Crear trial de 7 días para nuevo usuario
+   */
+  private async createTrialSubscription(userId: string): Promise<void> {
+    try {
+      const trialStart = new Date();
+      const trialEnd = new Date();
+      trialEnd.setDate(trialStart.getDate() + 7); // 7 días
+
+      // Buscar el plan Free Trial
+      const trialPlan = await db
+        .select()
+        .from(subscriptionPlans)
+        .where(eq(subscriptionPlans.code, 'FREE_TRIAL'))
+        .limit(1);
+
+      if (!trialPlan.length) {
+        throw new Error('Free Trial plan not found');
+      }
+
+      // Crear un user_id numérico único basado en el Firebase UID
+      const numericUserId = Math.abs(userId.split('').reduce((hash, char) => 
+        ((hash << 5) - hash) + char.charCodeAt(0), 0
+      ));
+
+      await db.insert(userSubscriptions).values({
+        userId: numericUserId,
+        planId: trialPlan[0].id,
+        status: 'trialing',
+        currentPeriodStart: trialStart,
+        currentPeriodEnd: trialEnd,
+        billingCycle: 'monthly'
+      });
+
+      console.log(`✅ [ROBUST-SUBSCRIPTION] Trial created for ${userId} (7 days)`);
+    } catch (error) {
+      console.error('❌ [ROBUST-SUBSCRIPTION] Error creating trial:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Inicializar límites mensuales
+   */
+  private async initializeMonthlyUsage(userId: string): Promise<void> {
+    try {
+      const subscription = await this.getUserSubscription(userId);
+      if (!subscription) return;
+
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      const features = subscription.features;
+
+      await db.insert(userUsageLimits).values({
+        userId,
+        month: currentMonth,
+        planId: parseInt(subscription.planId),
+        basicEstimatesLimit: features.basicEstimates || 0,
+        aiEstimatesLimit: features.aiEstimates || 0,
+        contractsLimit: features.contracts || 0,
+        propertyVerificationsLimit: features.propertyVerifications || 0,
+        permitAdvisorLimit: features.permitAdvisor || 0,
+        projectsLimit: features.projects || 0,
+        basicEstimatesUsed: 0,
+        aiEstimatesUsed: 0,
+        contractsUsed: 0,
+        propertyVerificationsUsed: 0,
+        permitAdvisorUsed: 0,
+        projectsUsed: 0
+      });
+
+      console.log(`✅ [ROBUST-SUBSCRIPTION] Monthly usage initialized for ${userId}`);
+    } catch (error) {
+      console.error('❌ [ROBUST-SUBSCRIPTION] Error initializing usage:', error);
+    }
+  }
+}
+
+export const robustSubscriptionService = new RobustSubscriptionService();

@@ -53,6 +53,9 @@ import openrouterAPI from "./routes/openrouter-api"; // Import OpenRouter API fo
 // PDF routes removed - using only premiumPdfService
 import paymentRoutes from "./routes/payment-routes"; // Import payment routes
 import usageLimitsRoutes from "./routes/usage-limits"; // Import usage limits routes
+import { registerSubscriptionControlRoutes } from "./routes/subscription-control"; // Import ROBUST subscription control
+import { registerRobustUserSubscriptionRoutes } from "./routes/robust-user-subscription"; // Import ROBUST user subscription endpoints
+import { registerSubscriptionDemoRoutes } from "./routes/subscription-demo"; // Import subscription demo routes
 import userProfileRoutes from "./routes/user-profile-routes"; // Import user profile routes
 import openaiChatRoutes from "./routes/openai-chat-routes"; // Import OpenAI chat routes
 import contractorPaymentRoutes from "./routes/contractor-payment-routes"; // Import contractor payment routes
@@ -6662,7 +6665,19 @@ Output must be between 200-900 characters in English.`;
   // Registrar rutas del módulo Labor DeepSearch IA
   registerLaborDeepSearchRoutes(app);
 
-  // Registrar rutas del sistema de permisos y uso
+  // 🚨 SISTEMA ROBUSTO DE SUSCRIPCIONES - REEMPLAZA Maps en memoria
+  console.log("🛡️ [ROBUST-SUBSCRIPTION] Registrando control robusto de suscripciones...");
+  registerSubscriptionControlRoutes(app);
+  
+  // 🚨 NUEVO: Endpoints que reemplazan /user/subscription con PostgreSQL
+  console.log("🛡️ [ROBUST-USER-SUBSCRIPTION] Registrando endpoints robustos de usuario...");
+  registerRobustUserSubscriptionRoutes(app);
+  
+  // 🎯 DEMO: Endpoints para demostrar el sistema robusto
+  console.log("🎯 [SUBSCRIPTION-DEMO] Registrando endpoints de demostración...");
+  registerSubscriptionDemoRoutes(app);
+  
+  // Registrar rutas del sistema de permisos y uso (LEGACY - por compatibilidad)
   registerUsageRoutes(app);
 
   // 🛡️ SEGURIDAD CRÍTICA: Registrar rutas del sistema de facturación CON AUTENTICACIÓN COMPLETA
