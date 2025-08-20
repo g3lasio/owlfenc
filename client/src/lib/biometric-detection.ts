@@ -72,7 +72,12 @@ export async function detectBiometricCapabilities(): Promise<BiometricDetectionR
     console.warn('⚠️ [BIOMETRIC-DETECTION] Error verificando authenticator:', error);
   }
 
-  const supportedMethods = getSupportedBiometricMethods(deviceInfo, isUserVerifyingPlatformAuthenticatorAvailable);
+  // Lógica mejorada para iOS: si es iOS y tiene WebAuthn, asumir soporte biométrico
+  // Ya que Apple Safari puede no reportar correctamente isUserVerifyingPlatformAuthenticatorAvailable
+  const effectiveHasAuthenticator = isUserVerifyingPlatformAuthenticatorAvailable || 
+    (deviceInfo.isIOS && deviceInfo.hasTouch);
+
+  const supportedMethods = getSupportedBiometricMethods(deviceInfo, effectiveHasAuthenticator);
   const recommendedMethod = getRecommendedMethod(deviceInfo, supportedMethods);
 
   const capabilities: BiometricCapabilities = {
@@ -83,7 +88,7 @@ export async function detectBiometricCapabilities(): Promise<BiometricDetectionR
     deviceInfo
   };
 
-  const isSupported = isWebAuthnSupported && isUserVerifyingPlatformAuthenticatorAvailable;
+  const isSupported = isWebAuthnSupported && effectiveHasAuthenticator;
   const message = generateCapabilityMessage(deviceInfo, isSupported, supportedMethods);
 
   console.log('🎯 [BIOMETRIC-DETECTION] Resultado final:', { isSupported, supportedMethods, recommendedMethod });
@@ -106,6 +111,11 @@ function getDeviceInfo() {
   const isAndroid = /Android/.test(userAgent);
   const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   
+  // Detección específica de dispositivos Apple
+  const isIPad = /iPad/.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isIPhone = /iPhone/.test(userAgent);
+  const isIPod = /iPod/.test(userAgent);
+  
   let browserName = 'Unknown';
   if (userAgent.includes('Chrome')) browserName = 'Chrome';
   else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) browserName = 'Safari';
@@ -117,12 +127,15 @@ function getDeviceInfo() {
     isIOS,
     isAndroid,
     hasTouch,
-    browserName
+    browserName,
+    isIPad,
+    isIPhone,
+    isIPod
   };
 }
 
 /**
- * Determina los métodos biométricos soportados según el dispositivo
+ * Determina los métodos biométricos soportados según el dispositivo específico
  */
 function getSupportedBiometricMethods(deviceInfo: any, hasAuthenticator: boolean): string[] {
   if (!hasAuthenticator) return [];
@@ -130,7 +143,15 @@ function getSupportedBiometricMethods(deviceInfo: any, hasAuthenticator: boolean
   const methods: string[] = [];
 
   if (deviceInfo.isIOS) {
-    methods.push('Face ID', 'Touch ID');
+    // Para dispositivos iOS específicos
+    if (deviceInfo.isIPad) {
+      methods.push('Touch ID');
+    } else if (deviceInfo.isIPhone) {
+      methods.push('Face ID');
+    } else {
+      // Otros dispositivos iOS o no específicamente identificados
+      methods.push('Face ID', 'Touch ID');
+    }
   } else if (deviceInfo.isAndroid) {
     methods.push('Huella Digital', 'Reconocimiento Facial');
   } else {
@@ -141,18 +162,25 @@ function getSupportedBiometricMethods(deviceInfo: any, hasAuthenticator: boolean
 }
 
 /**
- * Recomienda el mejor método según el dispositivo
+ * Recomienda el mejor método según el dispositivo específico
  */
 function getRecommendedMethod(deviceInfo: any, supportedMethods: string[]): string | undefined {
-  if (supportedMethods.length === 0) return undefined;
-
+  // Para dispositivos iOS específicos, determinar el método correcto
   if (deviceInfo.isIOS) {
-    return 'Face ID / Touch ID';
+    if (deviceInfo.isIPad) {
+      return 'Touch ID';
+    } else if (deviceInfo.isIPhone) {
+      return 'Face ID';
+    } else {
+      return 'Touch ID / Face ID';
+    }
   } else if (deviceInfo.isAndroid) {
     return 'Huella Digital';
   } else {
     return 'Windows Hello';
   }
+
+  if (supportedMethods.length === 0) return undefined;
 }
 
 /**
