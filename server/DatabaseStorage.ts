@@ -377,7 +377,7 @@ export class DatabaseStorage implements IStorage {
   async getAllSubscriptionPlans(): Promise<SubscriptionPlan[]> {
     return db.select()
       .from(subscriptionPlans)
-      .where(eq(subscriptionPlans.isActive, true))
+      .where(eq(subscriptionPlans.is_active, true))
       .orderBy(asc(subscriptionPlans.price));
   }
 
