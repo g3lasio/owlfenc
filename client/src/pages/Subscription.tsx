@@ -361,7 +361,7 @@ export default function Subscription() {
 
   const isLoadingData = isLoadingPlans || isLoadingUserSubscription;
   const hasError =
-    plansError || (!isLoadingPlans && (!plans || (plans as SubscriptionPlan[]).length === 0));
+    plansError || (!isLoadingPlans && (!plans || !Array.isArray(plans) || plans.length === 0));
 
   if (isLoadingData) {
     return (
@@ -443,7 +443,7 @@ export default function Subscription() {
           <p className="mb-4">
             Actualmente tienes el plan{" "}
             <span className="font-bold">
-              {(plans as SubscriptionPlan[])?.find((p: SubscriptionPlan) => p.id === activePlanId)?.name || "Desconocido"}
+              {Array.isArray(plans) ? plans.find((p: SubscriptionPlan) => p.id === activePlanId)?.name || "Desconocido" : "Desconocido"}
             </span>
             {expirationDate && (
               <>
@@ -469,8 +469,8 @@ export default function Subscription() {
 
       {/* Mostrar las tarjetas de planes */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-10">
-        {(plans as SubscriptionPlan[])
-          ?.filter((plan: SubscriptionPlan) => plan.isActive)
+        {Array.isArray(plans) && plans
+          .filter((plan: SubscriptionPlan) => plan.isActive)
           .map((plan: SubscriptionPlan) => (
             <PricingCard
               key={plan.id}
