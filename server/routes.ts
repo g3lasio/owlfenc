@@ -3974,101 +3974,121 @@ Output must be between 200-900 characters in English.`;
   // *** SUBSCRIPTION ROUTES ***
   app.get("/api/subscription/plans", async (req: Request, res: Response) => {
     try {
-      // Siempre usar los planes actualizados
-      const plans = null; // Forzar uso de planes por defecto actualizados
+      console.log("📋 [SUBSCRIPTION-PLANS] Obteniendo planes desde la base de datos");
+      
+      // Obtener planes desde la base de datos
+      const dbPlans = await storage.getAllSubscriptionPlans();
+      console.log("📋 [SUBSCRIPTION-PLANS] Planes obtenidos:", dbPlans?.length || 0);
 
-      // Devolver planes actualizados
-      if (!plans || plans.length === 0) {
-        const defaultPlans = [
-          {
-            id: 1,
-            name: "Primo Chambeador",
-            description:
-              "Plan gratuito para contratistas que empiezan su negocio",
-            price: 0,
-            yearlyPrice: 0,
-            features: [
-              "10 estimados básicos al mes (con marca de agua)",
-              "3 estimados con IA al mes (con marca de agua)",
-              "3 contratos al mes (con marca de agua)",
-              "5 Property Verification al mes",
-              "5 Permit Advisor al mes",
-              "Sin acceso a Invoices",
-              "Sin acceso a Payment Tracker",
-              "Owl Funding: Solo botón de vista (pop-up promocional)",
-              "Owl Academy: Solo botón de vista (pop-up promocional)",
-              "AI Project Manager: Solo botón de vista (pop-up promocional)",
-              "Mervin AI 2.0 (conversaciones básicas, amigable y divertido)",
-              "Acceso básico a comunidad",
-              "Soporte: Solo FAQ y comunidad",
-            ],
-            motto: "Ningún trabajo es pequeño cuando tu espíritu es grande.",
-            code: "primo_chambeador",
-            isActive: true,
-          },
-          {
-            id: 2,
-            name: "Mero Patrón",
-            description:
-              "Para el patrón que ya sabe cómo hacer que llueva el dinero",
-            price: 4999,
-            yearlyPrice: 49999,
-            features: [
-              "Estimados básicos ilimitados (sin marca de agua)",
-              "50 estimados con IA al mes (sin marca de agua, exceso con marca de agua)",
-              "Contratos ilimitados (sin marca de agua)",
-              "50 Property Verification al mes",
-              "50 Permit Advisor al mes",
-              "Invoices: Crear, enviar y rastrear pagos",
-              "Payment Tracker: Acceso básico",
-              "Owl Funding: Acceso básico (maquinaria, líneas de crédito)",
-              "Owl Academy: Módulos introductorios",
-              "AI Project Manager: Básico (limitado a 5 proyectos/mes)",
-              "Mervin AI 7.0 (avanzado, gestión limitada de proyectos y ejecución de comandos)",
-              "Comunidad: Acceso privado",
-              "Soporte: Chat prioritario",
-            ],
-            motto:
-              "No eres solo un patrón, eres el estratega que transforma el reto en victoria.",
-            code: "mero_patron",
-            isActive: true,
-          },
-          {
-            id: 3,
-            name: "Master Contractor",
-            description:
-              "Para el chingón que quiere delegar TODO el papeleo y subir su nivel a otra liga",
-            price: 9999,
-            yearlyPrice: 99999,
-            features: [
-              "Estimados ilimitados (básicos y con IA, sin marca de agua)",
-              "Contratos ilimitados (sin marca de agua)",
-              "Property Verification ilimitado",
-              "Permit Advisor ilimitado",
-              "Invoices: Gestión completa (notas, recordatorios automatizados)",
-              "Payment Tracker: Pro (integración QuickBooks, reportes avanzados)",
-              "Owl Funding: Gestión personalizada completa",
-              "Owl Academy: Acceso completo (todos los cursos, simulaciones, certificaciones)",
-              "AI Project Manager: Avanzado (automatización y proyectos ilimitados)",
-              "Mervin AI 7.0 (completamente avanzado, gestión ilimitada de proyectos, análisis predictivo, ejecución de comandos)",
-              "Comunidad: VIP con acceso beta",
-              "Soporte: VIP 24/7",
-            ],
-            motto:
-              "Tu voluntad es acero, tu obra es ley. Lidera como un verdadero campeón.",
-            code: "master_contractor",
-            isActive: true,
-          },
-        ];
-        return res.json(defaultPlans);
+      // Si hay planes en la base de datos, mapearlos al formato esperado por el frontend
+      if (dbPlans && dbPlans.length > 0) {
+        const formattedPlans = dbPlans.map(plan => {
+          // Convertir features desde formato JSONB a array de strings
+          let featuresArray: string[] = [];
+          if (plan.features) {
+            if (Array.isArray(plan.features)) {
+              featuresArray = plan.features;
+            } else if (typeof plan.features === 'object') {
+              // Convertir objeto de features a array de strings descriptivos en español
+              const featuresObj = plan.features as Record<string, number>;
+              const featureLabels: Record<string, string> = {
+                projects: 'Proyectos',
+                contracts: 'Contratos',
+                aiEstimates: 'Estimados con IA',
+                permitAdvisor: 'Permit Advisor',
+                basicEstimates: 'Estimados básicos',
+                propertyVerifications: 'Property Verifications'
+              };
+              
+              featuresArray = Object.entries(featuresObj).map(([key, value]) => {
+                const label = featureLabels[key] || key;
+                if (value === -1) return `${label} ilimitados`;
+                if (value === 0) return `Sin acceso a ${label}`;
+                return `${value} ${label} al mes`;
+              });
+            }
+          }
+          
+          return {
+            id: plan.id,
+            name: plan.name,
+            description: plan.description,
+            price: plan.price,
+            yearlyPrice: plan.yearly_price || plan.price * 10, // Fallback para yearly_price
+            features: featuresArray,
+            motto: plan.motto,
+            code: plan.code,
+            isActive: plan.is_active !== false, // Convertir boolean
+          };
+        });
+        
+        console.log("📋 [SUBSCRIPTION-PLANS] Planes formateados correctamente");
+        return res.json(formattedPlans);
       }
 
-      res.json(plans);
+      console.warn("⚠️ [SUBSCRIPTION-PLANS] No se encontraron planes en BD, usando planes por defecto");
+      
+      // Solo usar planes por defecto si no hay ninguno en la base de datos
+      const defaultPlans = [
+        {
+          id: 1,
+          name: "Primo Chambeador",
+          description: "Plan gratuito para contratistas que empiezan su negocio",
+          price: 0,
+          yearlyPrice: 0,
+          features: [
+            "10 estimados básicos al mes (con marca de agua)",
+            "3 estimados con IA al mes (con marca de agua)",
+            "3 contratos al mes (con marca de agua)",
+            "5 Property Verification al mes",
+            "5 Permit Advisor al mes",
+            "Sin acceso a Invoices",
+            "Sin acceso a Payment Tracker"
+          ],
+          motto: "Ningún trabajo es pequeño cuando tu espíritu es grande.",
+          code: "primo_chambeador",
+          isActive: true,
+        },
+        {
+          id: 2,
+          name: "Mero Patrón",
+          description: "Para el patrón que ya sabe cómo hacer que llueva el dinero",
+          price: 4999,
+          yearlyPrice: 49999,
+          features: [
+            "Estimados básicos ilimitados (sin marca de agua)",
+            "50 estimados con IA al mes (sin marca de agua)",
+            "Contratos ilimitados (sin marca de agua)",
+            "50 Property Verification al mes",
+            "50 Permit Advisor al mes"
+          ],
+          motto: "No eres solo un patrón, eres el estratega que transforma el reto en victoria.",
+          code: "mero_patron",
+          isActive: true,
+        },
+        {
+          id: 3,
+          name: "Master Contractor",
+          description: "Para el chingón que quiere delegar TODO el papeleo y subir su nivel a otra liga",
+          price: 9999,
+          yearlyPrice: 99999,
+          features: [
+            "Estimados ilimitados (básicos y con IA, sin marca de agua)",
+            "Contratos ilimitados (sin marca de agua)",
+            "Property Verification ilimitado",
+            "Permit Advisor ilimitado",
+            "Soporte VIP 24/7"
+          ],
+          motto: "Tu voluntad es acero, tu obra es ley. Lidera como un verdadero campeón.",
+          code: "master_contractor",
+          isActive: true,
+        },
+      ];
+      return res.json(defaultPlans);
+
     } catch (error) {
       console.error("Error al obtener planes de suscripción:", error);
-      res
-        .status(500)
-        .json({ message: "Error al obtener planes de suscripción" });
+      res.status(500).json({ message: "Error al obtener planes de suscripción" });
     }
   });
 
