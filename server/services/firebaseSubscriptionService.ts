@@ -21,13 +21,14 @@ export interface SubscriptionData {
 export class FirebaseSubscriptionService {
   
   // OWNER PRIVILEGES: Platform owner gets unlimited Master Contractor access
-  private readonly OWNER_USER_ID = 'user_shkwahab60_gmail_com';
+  private readonly OWNER_USER_ID = 'user_shkwahab60_gmail_com'; // Legacy support
+  private readonly OWNER_FIREBASE_UID = 'qztot1YEy3UWz605gIH2iwwWhW53'; // Real Firebase UID
   
   /**
-   * Check if user is the platform owner
+   * Check if user is the platform owner (supports both legacy email-based ID and Firebase UID)
    */
   private isOwner(userId: string): boolean {
-    return userId === this.OWNER_USER_ID;
+    return userId === this.OWNER_USER_ID || userId === this.OWNER_FIREBASE_UID;
   }
   
   /**

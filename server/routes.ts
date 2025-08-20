@@ -3369,7 +3369,29 @@ Output must be between 200-900 characters in English.`;
               "📋 [API] Fetching contractor profile to complete missing data...",
             );
             const { storage } = await import("./storage");
-            const user = await storage.getUserByFirebaseUid(firebaseUserId);
+            let user = await storage.getUserByFirebaseUid(firebaseUserId);
+        
+        // If user not found by Firebase UID in PostgreSQL, ensure mapping exists
+        if (!user && firebaseUserId) {
+          console.log("🔍 [USER-MAPPING] Usuario no encontrado por Firebase UID en PostgreSQL");
+          
+          const { UserMappingService } = await import('./services/userMappingService');
+          const userMappingService = new UserMappingService();
+          
+          // Try to get Firebase user info to create proper mapping
+          try {
+            const firebaseUser = await admin.auth().getUser(firebaseUserId);
+            if (firebaseUser && firebaseUser.email) {
+              const internalUserId = await userMappingService.createMapping(firebaseUserId, firebaseUser.email);
+              if (internalUserId) {
+                console.log(`✅ [USER-MAPPING] Mapeo creado para usuario: ${firebaseUser.email} -> ${internalUserId}`);
+                user = await storage.getUserByFirebaseUid(firebaseUserId);
+              }
+            }
+          } catch (firebaseLookupError) {
+            console.error("Error creating user mapping:", firebaseLookupError);
+          }
+        }
 
             if (user && user.profile) {
               console.log(
@@ -4097,12 +4119,30 @@ Output must be between 200-900 characters in English.`;
     "/api/subscription/user-subscription",
     async (req: Request, res: Response) => {
       try {
-        // Get email from query parameter or use default for testing
+        // Try to get Firebase UID from auth header first
+        let firebaseUserId;
+        const authHeader = req.headers.authorization;
+        
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+          try {
+            const token = authHeader.substring(7);
+            const decodedToken = await admin.auth().verifyIdToken(token);
+            firebaseUserId = decodedToken.uid;
+            console.log(`🔐 [SUBSCRIPTION-USER] Firebase UID from token: ${firebaseUserId}`);
+          } catch (authError) {
+            console.warn("⚠️ [SUBSCRIPTION-USER] Could not verify Firebase token");
+          }
+        }
+
+        // Fallback to email-based ID for legacy support
         const email = (req.query.email as string) || "shkwahab60@gmail.com";
-        const userId = `user_${email.replace(/[@.]/g, "_")}`;
+        const legacyUserId = `user_${email.replace(/[@.]/g, "_")}`;
+        
+        // Use Firebase UID if available, otherwise use legacy email-based ID
+        const userId = firebaseUserId || legacyUserId;
 
         console.log(
-          `👤 [SUBSCRIPTION-USER] Getting subscription for: ${userId}`,
+          `👤 [SUBSCRIPTION-USER] Getting subscription for: ${userId} (Firebase UID: ${!!firebaseUserId})`,
         );
 
         // Get subscription from Firebase
@@ -5682,7 +5722,30 @@ Output must be between 200-900 characters in English.`;
 
       // First try to get the user from PostgreSQL by Firebase UID
       try {
-        const user = await storage.getUserByFirebaseUid(firebaseUserId);
+        let user = await storage.getUserByFirebaseUid(firebaseUserId);
+        
+        // If user not found by Firebase UID, try to create/find mapping
+        if (!user && firebaseUserId) {
+          console.log("🔍 [USER-MAPPING] Usuario no encontrado por Firebase UID, intentando mapeo...");
+          
+          // Import UserMappingService to handle Firebase UID mapping
+          const { UserMappingService } = await import('./services/userMappingService');
+          const userMappingService = new UserMappingService();
+          
+          // Try to get Firebase user to get email for mapping
+          try {
+            const firebaseUser = await admin.auth().getUser(firebaseUserId);
+            if (firebaseUser && firebaseUser.email) {
+              const internalUserId = await userMappingService.createMapping(firebaseUserId, firebaseUser.email);
+              if (internalUserId) {
+                console.log(`✅ [USER-MAPPING] Mapeo creado exitosamente: ${firebaseUserId} -> user_id ${internalUserId}`);
+                user = await storage.getUserByFirebaseUid(firebaseUserId);
+              }
+            }
+          } catch (firebaseLookupError) {
+            console.error("Error getting Firebase user for mapping:", firebaseLookupError);
+          }
+        }
         if (user) {
           console.log("✅ Usuario encontrado en base de datos:", {
             id: user.id,
@@ -5738,13 +5801,14 @@ Output must be between 200-900 characters in English.`;
       }
 
       // If no user found in database, try to get from Firebase directly
-      console.log(
-        "🔍 No se encontró usuario en PostgreSQL, intentando Firebase...",
-      );
+      if (firebaseUserId) {
+        console.log(
+          "🔍 No se encontró usuario en PostgreSQL, intentando Firebase...",
+        );
 
-      // Try to get user data from Firebase Auth
-      try {
-        const firebaseUser = await admin.auth().getUser(firebaseUserId);
+        // Try to get user data from Firebase Auth
+        try {
+          const firebaseUser = await admin.auth().getUser(firebaseUserId);
         if (firebaseUser) {
           console.log("✅ Usuario encontrado en Firebase Auth");
 
@@ -5790,8 +5854,11 @@ Output must be between 200-900 characters in English.`;
 
           return res.json(firebaseProfile);
         }
-      } catch (fbError) {
-        console.error("Error getting user from Firebase Auth:", fbError);
+        } catch (fbError) {
+          console.error("Error getting user from Firebase Auth:", fbError);
+        }
+      } else {
+        console.warn("⚠️ No Firebase UID available, skipping Firebase Auth lookup");
       }
 
       // Last resort: return minimal profile with stored data if available
