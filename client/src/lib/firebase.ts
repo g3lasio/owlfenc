@@ -979,10 +979,16 @@ export const loginUser = async (email: string, password: string, rememberMe: boo
     
     // VALIDACIÓN PREVIA - Prevenir errores de split()
     if (!email || typeof email !== 'string' || !email.includes('@')) {
-      throw new Error('Email inválido o no proporcionado');
+      console.error('❌ [LOGIN] Email inválido:', email);
+      throw new Error('Por favor ingresa un email válido');
     }
     if (!password || typeof password !== 'string' || password.length === 0) {
-      throw new Error('Contraseña no proporcionada');
+      console.error('❌ [LOGIN] Contraseña vacía');
+      throw new Error('Por favor ingresa tu contraseña');
+    }
+    if (password.length < 6) {
+      console.error('❌ [LOGIN] Contraseña muy corta:', password.length);
+      throw new Error('La contraseña debe tener al menos 6 caracteres');
     }
     
     // Limpiar valores para prevenir errores de Firebase
@@ -990,6 +996,11 @@ export const loginUser = async (email: string, password: string, rememberMe: boo
     const cleanPassword = password.trim();
     
     console.log(`🔐 [LOGIN] Valores limpiados - Email: ${cleanEmail}, Password length: ${cleanPassword.length}`);
+    console.log(`🔐 [LOGIN] Verificando auth status:`, {
+      authInitialized: auth ? 'YES' : 'NO',
+      currentUser: auth?.currentUser ? 'LOGGED_IN' : 'NO_USER',
+      appName: auth?.app?.name || 'UNKNOWN'
+    });
     
     // Importar dinámicamente para evitar circular dependencies
     const { enhancedPersistenceService } = await import('./enhanced-persistence');
@@ -997,7 +1008,11 @@ export const loginUser = async (email: string, password: string, rememberMe: boo
     // Configurar persistencia según opción "recordarme"
     await enhancedPersistenceService.configurePersistence(rememberMe);
     
-    const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
+    console.log(`🔐 [LOGIN] Llamando a Firebase signInWithEmailAndPassword...`);
+    
+    // USAR WRAPPER SEGURO PARA EVITAR BUG DE SPLIT()
+    const { safeSignInWithEmailAndPassword } = await import('./firebase-auth-wrapper');
+    const userCredential = await safeSignInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
     console.log("✅ [LOGIN] Usuario logueado exitosamente:", userCredential.user.uid);
     
     // Crear sesión persistente si el usuario eligió "recordarme"
@@ -1011,15 +1026,55 @@ export const loginUser = async (email: string, password: string, rememberMe: boo
     
     return userCredential.user;
   } catch (error: any) {
-    console.error("❌ [LOGIN] Error iniciando sesión:", error);
+    console.error("❌ [LOGIN] Error detallado:", {
+      code: error?.code,
+      message: error?.message,
+      customData: error?.customData,
+      name: error?.name,
+      stack: error?.stack?.substring(0, 500)
+    });
     
-    // SAFE ERROR HANDLING
-    const { safeFirebaseError, getErrorMessage } = await import('./firebase-error-fix');
-    const safeError = safeFirebaseError(error);
-    const userMessage = getErrorMessage(error);
-    
-    console.error("🔧 [LOGIN] Safe error details:", safeError);
-    throw new Error(userMessage);
+    // MANEJO ESPECÍFICO DE ERRORES
+    if (error?.code === 'auth/user-not-found') {
+      console.error("❌ [LOGIN] Usuario no existe en la base de datos");
+      throw new Error('No existe una cuenta con este email. Por favor regístrate primero.');
+    } 
+    else if (error?.code === 'auth/wrong-password' || error?.code === 'auth/invalid-credential') {
+      console.error("❌ [LOGIN] Contraseña incorrecta");
+      throw new Error('Contraseña incorrecta. Por favor verifica e intenta de nuevo.');
+    }
+    else if (error?.code === 'auth/invalid-email') {
+      console.error("❌ [LOGIN] Formato de email inválido");
+      throw new Error('El formato del email es inválido.');
+    }
+    else if (error?.code === 'auth/too-many-requests') {
+      console.error("❌ [LOGIN] Demasiados intentos fallidos");
+      throw new Error('Demasiados intentos. Por favor espera unos minutos.');
+    }
+    else if (error?.code === 'auth/network-request-failed') {
+      // Log específico para el error de red
+      console.error("❌ [LOGIN] Error de red específico:", {
+        innerMessage: error?.customData?.message,
+        appName: error?.customData?.appName,
+        fullError: JSON.stringify(error)
+      });
+      
+      // Si es el error de split, es un problema interno de Firebase
+      if (error?.customData?.message?.includes('split')) {
+        console.error("❌ [LOGIN] BUG DE FIREBASE DETECTADO - split() undefined");
+        throw new Error('Error interno de autenticación. Por favor intenta con Google o Apple.');
+      }
+      
+      throw new Error('Error de conexión con Firebase. Verifica tu conexión.');
+    }
+    else if (error?.message) {
+      console.error("❌ [LOGIN] Error genérico:", error.message);
+      throw new Error(error.message);
+    }
+    else {
+      console.error("❌ [LOGIN] Error desconocido");
+      throw new Error('Error al iniciar sesión. Por favor intenta de nuevo.');
+    }
   }
 };
 
