@@ -1008,11 +1008,25 @@ export const loginUser = async (email: string, password: string, rememberMe: boo
     // Configurar persistencia según opción "recordarme"
     await enhancedPersistenceService.configurePersistence(rememberMe);
     
-    console.log(`🔐 [LOGIN] Llamando a Firebase signInWithEmailAndPassword...`);
+    console.log(`🔐 [LOGIN] Usando autenticación directa REST API...`);
     
-    // USAR WRAPPER SEGURO PARA EVITAR BUG DE SPLIT()
-    const { safeSignInWithEmailAndPassword } = await import('./firebase-auth-wrapper');
-    const userCredential = await safeSignInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
+    // BYPASS COMPLETO - USAR REST API DIRECTAMENTE
+    const { directFirebaseLogin } = await import('./firebase-auth-direct');
+    const result = await directFirebaseLogin(cleanEmail, cleanPassword);
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Error al iniciar sesión');
+    }
+    
+    // Simular estructura de UserCredential
+    const userCredential = {
+      user: {
+        uid: result.user.uid,
+        email: result.user.email,
+        getIdToken: async () => result.user.idToken,
+        refreshToken: result.user.refreshToken
+      }
+    };
     console.log("✅ [LOGIN] Usuario logueado exitosamente:", userCredential.user.uid);
     
     // Crear sesión persistente si el usuario eligió "recordarme"

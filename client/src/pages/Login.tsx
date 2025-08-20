@@ -45,6 +45,7 @@ import BiometricLoginButton from "@/components/auth/BiometricLoginButton";
 
 import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
+import { handleOAuthCallback, isOAuthCallback } from "@/lib/oauth-callback-handler";
 
 type LoginFormValues = {
   email: string;
@@ -114,6 +115,25 @@ export default function AuthPage() {
   useEffect(() => {
     const handleOAuthReturn = async () => {
       try {
+        // Primero intentar con el nuevo handler de OAuth callbacks
+        if (isOAuthCallback()) {
+          console.log('🔐 [OAUTH-CALLBACK] Procesando callback de OAuth...');
+          const result = await handleOAuthCallback();
+          
+          if (result.success) {
+            console.log('✅ [OAUTH-CALLBACK] Login exitoso via OAuth');
+            toast({
+              title: "Autenticación exitosa",
+              description: "Te has autenticado correctamente",
+            });
+            showSuccessEffect();
+            return;
+          } else if (result.error) {
+            throw new Error(result.error);
+          }
+        }
+        
+        // Fallback al método antiguo si no es un callback nuevo
         const hasToken = await checkForOAuthToken();
         if (hasToken) {
           console.log('🔄 [OAUTH-RETURN] Procesando token OAuth...');

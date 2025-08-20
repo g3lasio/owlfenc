@@ -65,23 +65,31 @@ export function BiometricLoginButton({
       return;
     }
 
-    // Validar que hay email
-    if (!email) {
-      toast({
-        title: "Email requerido",
-        description: "Por favor ingresa tu email primero",
-        variant: "destructive",
-      });
-      return;
+    // Si no hay email, usar el último email guardado o permitir login sin email
+    let loginEmail = email;
+    if (!loginEmail) {
+      // Intentar obtener el último email usado
+      loginEmail = localStorage.getItem('last_biometric_email') || '';
+      
+      if (!loginEmail) {
+        // Si no hay email guardado, usar un identificador único del dispositivo
+        loginEmail = `device_${navigator.userAgent.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '')}_${Date.now()}@biometric.local`;
+        console.log('🔐 [BIOMETRIC-BUTTON] Usando identificador de dispositivo:', loginEmail);
+      }
     }
 
-    console.log('🔐 [BIOMETRIC-BUTTON] Iniciando login biométrico para:', email);
+    console.log('🔐 [BIOMETRIC-BUTTON] Iniciando login biométrico para:', loginEmail);
     setIsLoading(true);
 
     try {
+      // Guardar email para futuros logins
+      if (loginEmail && !loginEmail.includes('@biometric.local')) {
+        localStorage.setItem('last_biometric_email', loginEmail);
+      }
+      
       // Intentar autenticación biométrica con manejo de errores mejorado
       console.log('🔐 [BIOMETRIC-BUTTON] Llamando a webauthnService.authenticateUser');
-      const credential = await webauthnService.authenticateUser(email);
+      const credential = await webauthnService.authenticateUser(loginEmail);
       
       if (!credential) {
         console.log('❌ [BIOMETRIC-BUTTON] No se obtuvo credencial');
@@ -107,7 +115,7 @@ export function BiometricLoginButton({
         },
         body: JSON.stringify({
           credential,
-          email
+          email: loginEmail
         }),
       });
 
