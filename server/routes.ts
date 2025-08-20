@@ -3974,11 +3974,12 @@ Output must be between 200-900 characters in English.`;
   // *** SUBSCRIPTION ROUTES ***
   app.get("/api/subscription/plans", async (req: Request, res: Response) => {
     try {
-      console.log("📋 [SUBSCRIPTION-PLANS] Obteniendo planes desde la base de datos");
+      console.log("📋 [SUBSCRIPTION-PLANS] Obteniendo planes desde Firebase");
       
-      // Obtener planes desde la base de datos
-      const dbPlans = await storage.getAllSubscriptionPlans();
-      console.log("📋 [SUBSCRIPTION-PLANS] Planes obtenidos:", dbPlans?.length || 0);
+      // Usar Firebase directamente para obtener planes
+      const firebaseStorage = new (await import('./FirebaseStorage')).FirebaseStorage();
+      const dbPlans = await firebaseStorage.getAllSubscriptionPlans();
+      console.log("📋 [SUBSCRIPTION-PLANS] Planes obtenidos desde Firebase:", dbPlans?.length || 0);
 
       // Si hay planes en la base de datos, mapearlos al formato esperado por el frontend
       if (dbPlans && dbPlans.length > 0) {
