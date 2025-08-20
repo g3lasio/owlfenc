@@ -977,13 +977,27 @@ export const loginUser = async (email: string, password: string, rememberMe: boo
   try {
     console.log(`🔐 [LOGIN] Iniciando sesión para: ${email}, recordarme: ${rememberMe}`);
     
+    // VALIDACIÓN PREVIA - Prevenir errores de split()
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      throw new Error('Email inválido o no proporcionado');
+    }
+    if (!password || typeof password !== 'string' || password.length === 0) {
+      throw new Error('Contraseña no proporcionada');
+    }
+    
+    // Limpiar valores para prevenir errores de Firebase
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+    
+    console.log(`🔐 [LOGIN] Valores limpiados - Email: ${cleanEmail}, Password length: ${cleanPassword.length}`);
+    
     // Importar dinámicamente para evitar circular dependencies
     const { enhancedPersistenceService } = await import('./enhanced-persistence');
     
     // Configurar persistencia según opción "recordarme"
     await enhancedPersistenceService.configurePersistence(rememberMe);
     
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
     console.log("✅ [LOGIN] Usuario logueado exitosamente:", userCredential.user.uid);
     
     // Crear sesión persistente si el usuario eligió "recordarme"
@@ -999,20 +1013,13 @@ export const loginUser = async (email: string, password: string, rememberMe: boo
   } catch (error: any) {
     console.error("❌ [LOGIN] Error iniciando sesión:", error);
     
-    // Traducir errores de Firebase a mensajes más amigables
-    if (error.code === 'auth/user-not-found') {
-      throw new Error('No existe una cuenta con este correo electrónico. Por favor, regístrate primero.');
-    } else if (error.code === 'auth/wrong-password') {
-      throw new Error('Contraseña incorrecta. Por favor, intenta de nuevo o usa "Olvidé mi contraseña".');
-    } else if (error.code === 'auth/too-many-requests') {
-      throw new Error('Demasiados intentos fallidos. Por favor, intenta más tarde o restablece tu contraseña.');
-    } else if (error.code === 'auth/invalid-email') {
-      throw new Error('El formato del correo electrónico es inválido. Por favor, revisa e intenta de nuevo.');
-    } else if (error.code === 'auth/invalid-credential') {
-      throw new Error('Credenciales inválidas. Por favor, verifica tu correo y contraseña.');
-    } else {
-      throw new Error(error.message || 'Error al iniciar sesión. Por favor, intenta de nuevo más tarde.');
-    }
+    // SAFE ERROR HANDLING
+    const { safeFirebaseError, getErrorMessage } = await import('./firebase-error-fix');
+    const safeError = safeFirebaseError(error);
+    const userMessage = getErrorMessage(error);
+    
+    console.error("🔧 [LOGIN] Safe error details:", safeError);
+    throw new Error(userMessage);
   }
 };
 
