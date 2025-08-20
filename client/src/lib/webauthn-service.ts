@@ -68,7 +68,8 @@ export class WebAuthnService {
     console.log('🔐 [WEBAUTHN] Iniciando registro de credencial para:', email);
 
     try {
-      // Solicitar opciones de registro al servidor
+      // Solicitar opciones de registro al servidor con manejo de errores
+      console.log('🌐 [WEBAUTHN] Solicitando opciones de registro al servidor');
       const optionsResponse = await fetch('/api/webauthn/register/begin', {
         method: 'POST',
         headers: {
@@ -76,6 +77,14 @@ export class WebAuthnService {
         },
         body: JSON.stringify({ email }),
       });
+
+      console.log('📡 [WEBAUTHN] Respuesta del servidor:', optionsResponse.status);
+      
+      if (!optionsResponse.ok) {
+        const errorData = await optionsResponse.text();
+        console.error('❌ [WEBAUTHN] Error del servidor:', errorData);
+        throw new Error(`Server error: ${optionsResponse.status} - ${errorData}`);
+      }
 
       if (!optionsResponse.ok) {
         throw new Error(`Error obteniendo opciones: ${optionsResponse.statusText}`);

@@ -38,8 +38,14 @@ router.post('/register/begin', async (req, res) => {
       return res.status(400).json({ error: 'Email es requerido' });
     }
 
+    // Validar conexión a base de datos
+    if (!db) {
+      console.error('❌ [WEBAUTHN] Base de datos no disponible');
+      return res.status(500).json({ error: 'Database connection error' });
+    }
+
     // Buscar usuario por email
-    const [user] = await db!
+    const [user] = await db
       .select()
       .from(users)
       .where(eq(users.email, email))
@@ -50,7 +56,7 @@ router.post('/register/begin', async (req, res) => {
     }
 
     // Verificar credenciales existentes
-    const existingCredentials = await db!
+    const existingCredentials = await db
       .select()
       .from(webauthnCredentials)
       .where(eq(webauthnCredentials.userId, user.id));

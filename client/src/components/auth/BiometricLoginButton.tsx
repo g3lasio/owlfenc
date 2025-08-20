@@ -79,8 +79,19 @@ export function BiometricLoginButton({
     setIsLoading(true);
 
     try {
-      // Intentar autenticación biométrica
+      // Intentar autenticación biométrica con manejo de errores mejorado
+      console.log('🔐 [BIOMETRIC-BUTTON] Llamando a webauthnService.authenticateUser');
       const credential = await webauthnService.authenticateUser(email);
+      
+      if (!credential) {
+        console.log('❌ [BIOMETRIC-BUTTON] No se obtuvo credencial');
+        toast({
+          title: "Error biométrico",
+          description: "No se pudo obtener la credencial biométrica",
+          variant: "destructive",
+        });
+        return;
+      }
       
       if (!credential) {
         throw new Error('No se recibió credencial de autenticación');

@@ -21,6 +21,7 @@ import {
   resetPassword,
   devMode,
 } from "../lib/firebase";
+import { safeFirebaseError, getErrorMessage } from "../lib/firebase-error-fix";
 
 type User = {
   uid: string;
@@ -319,8 +320,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return appUser;
     } catch (err: any) {
       console.error(`❌ [AUTH-CONTEXT] Error en login para: ${email}`, err);
-      setError(err.message || "Error al iniciar sesión");
-      throw err;
+      
+      // USAR SAFE ERROR HANDLING
+      const safeError = safeFirebaseError(err);
+      const userMessage = getErrorMessage(err);
+      
+      console.error("🔧 [AUTH-CONTEXT] Safe error:", safeError);
+      setError(userMessage);
+      throw new Error(userMessage);
     } finally {
       setLoading(false);
     }
@@ -360,8 +367,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       return appUser;
     } catch (err: any) {
-      setError(err.message || "Error al registrar usuario");
-      throw err;
+      // USAR SAFE ERROR HANDLING PARA REGISTRO
+      const safeError = safeFirebaseError(err);
+      const userMessage = getErrorMessage(err);
+      
+      console.error("🔧 [AUTH-CONTEXT] Safe register error:", safeError);
+      setError(userMessage);
+      throw new Error(userMessage);
     } finally {
       setLoading(false);
     }
