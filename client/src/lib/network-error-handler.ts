@@ -17,14 +17,8 @@ const SILENT_ERROR_PATTERNS = [
   'Request timeout',
   'Timeout',
   'AbortError',
-  'auth/network-request-failed',
-  'auth/too-many-requests',
-  'firestore',
-  'Firebase',
-  'requestStsToken',
-  '_StsTokenManager',
-  'getIdToken',
-  '_performFetchWithErrorHandling'
+  // REMOVIDO: Patrones de auth/Firebase para permitir errores reales de autenticación
+  'firestore'
 ];
 
 // URLs que generan muchos errores y pueden ser ignorados silenciosamente
@@ -35,9 +29,8 @@ const SILENT_URL_PATTERNS = [
   '/api/usage',
   '/api/profile',
   '/api/property',
-  '/api/dual-signature',
-  '/api/oauth',
-  '/api/auth'
+  '/api/dual-signature'
+  // REMOVIDO: '/api/oauth' y '/api/auth' para permitir autenticación
 ];
 
 class NetworkErrorHandler {
@@ -70,7 +63,7 @@ class NetworkErrorHandler {
     return isKnownError || isKnownUrl;
   }
 
-  private logSilently(type: string, message: string, data?: any) {
+  logSilently(type: string, message: string, data?: any) {
     // Solo log si está en modo debug explícito - eliminando logs fastidiosos
     if (window.location.search.includes('debug=silent') || window.location.search.includes('debug=network')) {
       console.debug(`🔧 [${type.toUpperCase()}]`, message.substring(0, 30));
@@ -79,15 +72,11 @@ class NetworkErrorHandler {
 
   private shouldBypassFetch(url: string): boolean {
     // Bypass fetch completely for URLs that frequently cause runtime-error-plugin issues
+    // REMOVIDO: Patrones de autenticación para permitir login real
     const bypassPatterns = [
-      'googleapis.com',
-      'firebase',
       'gstatic.com',
-      '/api/subscription',
-      '/api/auth',
-      '/api/oauth',
-      'identitytoolkit.googleapis.com',
-      'securetoken.googleapis.com'
+      '/api/subscription'
+      // REMOVIDO: firebase, googleapis, oauth, auth para permitir autenticación
     ];
     
     return bypassPatterns.some(pattern => url.includes(pattern));
@@ -185,18 +174,16 @@ class NetworkErrorHandler {
       } catch (error: any) {
         // Interceptar específicamente errores de runtime-error-plugin y Firebase STS
         const errorMessage = error?.message || '';
-        if (errorMessage.includes('Failed to fetch') ||
-            errorMessage.includes('StsTokenManager') ||
-            errorMessage.includes('requestStsToken') ||
-            errorMessage.includes('_performFetchWithErrorHandling') ||
-            this.shouldSilenceError(error, url)) {
+        // REMOVIDO: Interceptación de Firebase/Auth - permitir errores reales de autenticación
+        if (this.shouldSilenceError(error, url)) {
           
           if (!this.isRateLimited()) {
             this.logSilently('NETWORK', 'Error handled:', errorMessage.substring(0, 50));
           }
           
           // Crear una respuesta mock para requests que fallan constantemente
-          if (url.includes('/api/') || url.includes('googleapis.com') || url.includes('firebase')) {
+          // REMOVIDO: Excepciones para autenticación - permitir errores reales de googleapis.com y firebase
+          if (url.includes('/api/subscription') || url.includes('/api/contracts')) {
             const mockResponse = new Response(
               JSON.stringify({ error: 'Network unavailable', offline: true }), 
               { 
