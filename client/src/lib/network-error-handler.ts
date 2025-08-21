@@ -144,11 +144,22 @@ class NetworkErrorHandler {
       const error = event.reason;
       const errorMessage = error?.message || '';
       
+      // DIAGNÓSTICO: Loguear todos los errores para identificar exactamente qué está fallando
+      if (!this.isRateLimited()) {
+        console.log('🚨 [UNHANDLED-REJECTION]', {
+          message: errorMessage.substring(0, 100),
+          type: error?.constructor?.name,
+          stack: error?.stack?.substring(0, 200)
+        });
+      }
+      
       // Solo silenciar errores específicos que sabemos que son problemáticos
       if (errorMessage.includes('Failed to fetch') && 
           (errorMessage.includes('googleapis.com') || 
            errorMessage.includes('firebaseapp.com') ||
-           errorMessage.includes('_vite/ping'))) {
+           errorMessage.includes('_vite/ping') ||
+           errorMessage.includes('sts.googleapis.com') ||
+           errorMessage.includes('identitytoolkit.googleapis.com'))) {
         if (!this.isRateLimited()) {
           this.logSilently('UNHANDLED', 'Silenciando error conocido:', errorMessage.substring(0, 50));
         }
