@@ -34,13 +34,25 @@ const originalConsoleError = console.error;
 console.error = (...args) => {
   const message = args.join(' ').toString();
   
-  // Bloquear específicamente mensajes del runtime-error-plugin
-  if (message.includes('[plugin:runtime-error-plugin]') ||
-      message.includes('Failed to fetch') ||
-      message.includes('runtime-error-plugin')) {
-    
-    // Silenciar completamente - no imprimir nada
-    console.debug('🔧 [RUNTIME-PLUGIN-BLOCKED] Silenciando:', message.substring(0, 50));
+  // Patrones específicos de errores molestos a silenciar COMPLETAMENTE
+  const annoyingPatterns = [
+    '[plugin:runtime-error-plugin]',
+    'plugin:runtime-error-plugin',
+    'runtime-error-plugin',
+    'Failed to fetch',
+    'Network request failed',
+    'ERR_NETWORK',
+    'Request timeout',
+    'AbortError'
+  ];
+  
+  // Verificar si el mensaje contiene algún patrón molestoso
+  const isAnnoyingError = annoyingPatterns.some(pattern => 
+    message.toLowerCase().includes(pattern.toLowerCase())
+  );
+  
+  if (isAnnoyingError) {
+    // Silenciar COMPLETAMENTE - no imprimir nada, ni siquiera debug
     return;
   }
   

@@ -17,6 +17,10 @@ const SILENT_ERROR_PATTERNS = [
   'Request timeout',
   'Timeout',
   'AbortError',
+  // CRÍTICO: Silenciar específicamente errores del runtime-error-plugin
+  'runtime-error-plugin',
+  '[plugin:runtime-error-plugin]',
+  'plugin:runtime-error-plugin',
   // REMOVIDO: Patrones de auth/Firebase para permitir errores reales de autenticación
   'firestore'
 ];
@@ -154,22 +158,22 @@ class NetworkErrorHandler {
       }
       
       try {
-        // Use timeout wrapper to prevent hanging requests
+        // Simplificado: usar AbortController sin Promise.race para evitar runtime-error-plugin
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // Reduced to 10 seconds
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
         
-        const response = await Promise.race([
-          originalFetch(input, {
+        try {
+          const response = await originalFetch(input, {
             ...init,
             signal: init?.signal || controller.signal
-          }),
-          new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('Request timeout')), 8000)
-          )
-        ]);
-        
-        clearTimeout(timeoutId);
-        return response;
+          });
+          
+          clearTimeout(timeoutId);
+          return response;
+        } catch (fetchError: any) {
+          clearTimeout(timeoutId);
+          throw fetchError;
+        }
         
       } catch (error: any) {
         // Interceptar específicamente errores de runtime-error-plugin y Firebase STS
