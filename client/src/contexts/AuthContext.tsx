@@ -309,6 +309,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         getIdToken: () => user.getIdToken(),
       };
 
+      // 🔧 CRÍTICO: Actualizar inmediatamente el estado del usuario 
+      // Sin esperar a onAuthStateChanged para evitar redirección al login
+      setCurrentUser(appUser);
+      setLoading(false);
+
       // Inicializar monitoreo de actividad si "recordarme" está activado
       if (rememberMe) {
         // Importar dinámicamente para evitar circular dependencies
@@ -316,7 +321,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         enhancedPersistenceService.initActivityMonitoring();
       }
 
-      console.log(`✅ [AUTH-CONTEXT] Login exitoso para: ${email}`);
+      console.log(`✅ [AUTH-CONTEXT] Login exitoso para: ${email} - Estado actualizado inmediatamente`);
       return appUser;
     } catch (err: any) {
       console.error(`❌ [AUTH-CONTEXT] Error en login para: ${email}`, err);
@@ -361,9 +366,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         getIdToken: () => user.getIdToken(),
       };
 
+      // 🔧 CRÍTICO: Actualizar inmediatamente el estado del usuario 
+      // Sin esperar a onAuthStateChanged para evitar redirección al login
+      setCurrentUser(appUser);
+      setLoading(false);
+
       // Note: Welcome email functionality would be implemented here
       // Currently not available in the email service
-      console.log("Usuario registrado exitosamente:", email);
+      console.log("Usuario registrado exitosamente:", email, "- Estado actualizado inmediatamente");
 
       return appUser;
     } catch (err: any) {

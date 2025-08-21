@@ -89,10 +89,8 @@ export default function AuthPage() {
   useEffect(() => {
     // Si hay un usuario autenticado y estamos en login, redirigir inmediatamente
     if (currentUser && !authLoading) {
-      console.log('🎯 [AUTO-REDIRECT] Usuario autenticado detectado, redirigiendo...');
-      setTimeout(() => {
-        navigate("/");
-      }, 100);
+      console.log('🎯 [AUTO-REDIRECT] Usuario autenticado detectado, redirigiendo inmediatamente...');
+      navigate("/");
     }
   }, [currentUser, authLoading, navigate]);
   
@@ -198,17 +196,10 @@ export default function AuthPage() {
     // Reproducir el audio
     audio.play().catch((e) => console.log("Audio play prevented: ", e));
 
-    // Redirección más rápida (1.5 segundos) para mejor UX
-    setTimeout(() => {
-      setShowSuccess(false);
-      console.log("🎯 [LOGIN-SUCCESS] Redirigiendo al dashboard...");
-      navigate("/");
-    }, 1500);
-    
-    // Redirección de respaldo inmediata después de 500ms
-    setTimeout(() => {
-      navigate("/");
-    }, 500);
+    // 🔧 REDIRECCIÓN INMEDIATA - Sin retraso para evitar problemas de redirección
+    setShowSuccess(false);
+    console.log("🎯 [LOGIN-SUCCESS] Redirigiendo al dashboard inmediatamente...");
+    navigate("/");
   };
 
   // Manejar inicio de sesión con email y contraseña
