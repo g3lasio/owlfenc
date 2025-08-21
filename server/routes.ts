@@ -3997,42 +3997,46 @@ Output must be between 200-900 characters in English.`;
   app.get("/api/subscription/plans", async (req: Request, res: Response) => {
     try {
       console.log("📋 [SUBSCRIPTION-PLANS] Obteniendo planes desde Firebase");
+      console.log("📋 [SUBSCRIPTION-PLANS] Environment check:", {
+        hasApiKey: !!process.env.FIREBASE_API_KEY,
+        hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
+        projectId: process.env.FIREBASE_PROJECT_ID?.substring(0, 10) + "...",
+        nodeEnv: process.env.NODE_ENV
+      });
       
-      // Usar Firebase como la única fuente de datos
+      // Usar Firebase como la única fuente de datos auténticos
       const firebaseStorage = new (await import('./FirebaseStorage')).FirebaseStorage();
-      let dbPlans = await firebaseStorage.getAllSubscriptionPlans();
+      const dbPlans = await firebaseStorage.getAllSubscriptionPlans();
       console.log("📋 [SUBSCRIPTION-PLANS] Planes obtenidos desde Firebase:", dbPlans?.length || 0);
 
-      // Si no hay planes en Firebase, inicializarlos automáticamente
+      // Si no hay planes en Firebase, diagnosticar el problema del deployment
       if (!dbPlans || dbPlans.length === 0) {
-        console.log("📋 [SUBSCRIPTION-PLANS] No se encontraron planes en Firebase - inicializando...");
+        console.error("❌ [SUBSCRIPTION-PLANS] No se encontraron planes en Firebase");
         
-        try {
-          const { setupFirebaseSubscriptionPlans } = await import('./scripts/setupFirebaseSubscriptionPlans');
-          await setupFirebaseSubscriptionPlans();
-          
-          // Obtener planes después de la inicialización
-          dbPlans = await firebaseStorage.getAllSubscriptionPlans();
-          console.log("📋 [SUBSCRIPTION-PLANS] Planes inicializados:", dbPlans?.length || 0);
-          
-          if (!dbPlans || dbPlans.length === 0) {
-            return res.status(500).json({
-              success: false,
-              error: "Error configurando planes de suscripción",
-              message: "No se pudieron inicializar los planes en Firebase"
-            });
-          }
-        } catch (initError) {
-          console.error("❌ [SUBSCRIPTION-PLANS] Error inicializando planes:", initError);
+        // Verificar configuración crítica para deployment
+        const missingVars = [];
+        if (!process.env.FIREBASE_API_KEY) missingVars.push('FIREBASE_API_KEY');
+        if (!process.env.FIREBASE_PROJECT_ID) missingVars.push('FIREBASE_PROJECT_ID');
+        if (!process.env.FIREBASE_AUTH_DOMAIN) missingVars.push('FIREBASE_AUTH_DOMAIN');
+        
+        if (missingVars.length > 0) {
           return res.status(500).json({
             success: false,
-            error: "Error inicializando planes de suscripción",
-            message: "No se pudieron crear los planes en Firebase"
+            error: "Configuración de Firebase incompleta",
+            message: "Variables de entorno faltantes: " + missingVars.join(', '),
+            details: "El deployment necesita las variables de entorno de Firebase configuradas"
           });
         }
+        
+        return res.status(404).json({
+          success: false,
+          error: "No se encontraron planes de suscripción",
+          message: "Firebase conectado pero sin datos de planes",
+          details: "Verificar la colección 'subscriptionPlans' en Firestore o ejecutar script de inicialización"
+        });
       }
 
-      // Mapear planes al formato esperado por el frontend
+      // Mapear planes auténticos de Firebase al formato esperado por el frontend
       const formattedPlans = dbPlans.map(plan => {
         // Convertir features desde formato Firebase a array de strings
         let featuresArray: string[] = [];
@@ -4073,7 +4077,7 @@ Output must be between 200-900 characters in English.`;
         };
       });
       
-      console.log("📋 [SUBSCRIPTION-PLANS] Planes formateados correctamente");
+      console.log("📋 [SUBSCRIPTION-PLANS] Planes auténticos formateados correctamente");
       res.json(formattedPlans);
       
     } catch (error) {
@@ -4081,7 +4085,7 @@ Output must be between 200-900 characters in English.`;
       res.status(500).json({
         success: false,
         error: "Error interno del servidor",
-        message: "No se pudieron cargar los planes de suscripción"
+        message: "No se pudieron cargar los planes de suscripción desde Firebase"
       });
     }
   });
