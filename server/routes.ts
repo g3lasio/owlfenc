@@ -3996,87 +3996,45 @@ Output must be between 200-900 characters in English.`;
   // *** SUBSCRIPTION ROUTES ***
   app.get("/api/subscription/plans", async (req: Request, res: Response) => {
     try {
-      console.log("📋 [SUBSCRIPTION-PLANS] Obteniendo planes desde PostgreSQL");
+      console.log("📋 [SUBSCRIPTION-PLANS] Obteniendo planes desde Firebase");
       
-      // Usar PostgreSQL como fuente principal más confiable
-      const databaseStorage = new (await import('./DatabaseStorage')).DatabaseStorage();
-      let dbPlans = await databaseStorage.getAllSubscriptionPlans();
-      console.log("📋 [SUBSCRIPTION-PLANS] Planes obtenidos desde PostgreSQL:", dbPlans?.length || 0);
+      // Usar Firebase como la única fuente de datos
+      const firebaseStorage = new (await import('./FirebaseStorage')).FirebaseStorage();
+      let dbPlans = await firebaseStorage.getAllSubscriptionPlans();
+      console.log("📋 [SUBSCRIPTION-PLANS] Planes obtenidos desde Firebase:", dbPlans?.length || 0);
 
-      // Si no hay planes en PostgreSQL, crear planes por defecto
+      // Si no hay planes en Firebase, inicializarlos automáticamente
       if (!dbPlans || dbPlans.length === 0) {
-        console.log("📋 [SUBSCRIPTION-PLANS] No hay planes - creando planes por defecto");
+        console.log("📋 [SUBSCRIPTION-PLANS] No se encontraron planes en Firebase - inicializando...");
         
-        // Planes por defecto para el sistema
-        const defaultPlans = [
-          {
-            id: 1,
-            name: "Plan Básico",
-            description: "Perfecto para contratistas pequeños",
-            price: 29,
-            yearly_price: 290,
-            features: {
-              projects: 5,
-              contracts: 3,
-              aiEstimates: 10,
-              basicEstimates: 20,
-              permitAdvisor: 2,
-              propertyVerifications: 5
-            },
-            motto: "Empieza tu negocio",
-            code: "BASIC",
-            is_active: true,
-            created_at: new Date(),
-            updated_at: new Date()
-          },
-          {
-            id: 2,
-            name: "Primo Chambeador",
-            description: "Para contratistas que crecen",
-            price: 59,
-            yearly_price: 590,
-            features: {
-              projects: 20,
-              contracts: 15,
-              aiEstimates: 50,
-              basicEstimates: 100,
-              permitAdvisor: 10,
-              propertyVerifications: 25
-            },
-            motto: "Crece tu negocio",
-            code: "PRO",
-            is_active: true,
-            created_at: new Date(),
-            updated_at: new Date()
-          },
-          {
-            id: 3,
-            name: "Master Contractor",
-            description: "Para contratistas profesionales",
-            price: 99,
-            yearly_price: 990,
-            features: {
-              projects: -1, // Ilimitado
-              contracts: -1,
-              aiEstimates: -1,
-              basicEstimates: -1,
-              permitAdvisor: -1,
-              propertyVerifications: -1
-            },
-            motto: "Sin límites",
-            code: "MASTER",
-            is_active: true,
-            created_at: new Date(),
-            updated_at: new Date()
+        try {
+          const { setupFirebaseSubscriptionPlans } = await import('./scripts/setupFirebaseSubscriptionPlans');
+          await setupFirebaseSubscriptionPlans();
+          
+          // Obtener planes después de la inicialización
+          dbPlans = await firebaseStorage.getAllSubscriptionPlans();
+          console.log("📋 [SUBSCRIPTION-PLANS] Planes inicializados:", dbPlans?.length || 0);
+          
+          if (!dbPlans || dbPlans.length === 0) {
+            return res.status(500).json({
+              success: false,
+              error: "Error configurando planes de suscripción",
+              message: "No se pudieron inicializar los planes en Firebase"
+            });
           }
-        ];
-
-        dbPlans = defaultPlans;
+        } catch (initError) {
+          console.error("❌ [SUBSCRIPTION-PLANS] Error inicializando planes:", initError);
+          return res.status(500).json({
+            success: false,
+            error: "Error inicializando planes de suscripción",
+            message: "No se pudieron crear los planes en Firebase"
+          });
+        }
       }
 
       // Mapear planes al formato esperado por el frontend
       const formattedPlans = dbPlans.map(plan => {
-        // Convertir features desde formato JSONB a array de strings
+        // Convertir features desde formato Firebase a array de strings
         let featuresArray: string[] = [];
         if (plan.features) {
           if (Array.isArray(plan.features)) {
@@ -4107,81 +4065,24 @@ Output must be between 200-900 characters in English.`;
           name: plan.name,
           description: plan.description,
           price: plan.price,
-          yearlyPrice: plan.yearly_price || plan.price * 10, // Fallback para yearly_price
+          yearlyPrice: plan.yearly_price || plan.price * 10,
           features: featuresArray,
           motto: plan.motto,
           code: plan.code,
-          isActive: plan.is_active !== false, // Convertir boolean
+          isActive: plan.is_active !== false,
         };
-        });
-        
-        console.log("📋 [SUBSCRIPTION-PLANS] Planes formateados correctamente");
-        return res.json(formattedPlans);
-      }
-
-      console.warn("⚠️ [SUBSCRIPTION-PLANS] No se encontraron planes en BD, usando planes por defecto");
+      });
       
-      // Solo usar planes por defecto si no hay ninguno en la base de datos
-      const defaultPlans = [
-        {
-          id: 1,
-          name: "Primo Chambeador",
-          description: "Plan gratuito para contratistas que empiezan su negocio",
-          price: 0,
-          yearlyPrice: 0,
-          features: [
-            "10 estimados básicos al mes (con marca de agua)",
-            "3 estimados con IA al mes (con marca de agua)",
-            "3 contratos al mes (con marca de agua)",
-            "5 Property Verification al mes",
-            "5 Permit Advisor al mes",
-            "Sin acceso a Invoices",
-            "Sin acceso a Payment Tracker"
-          ],
-          motto: "Ningún trabajo es pequeño cuando tu espíritu es grande.",
-          code: "primo_chambeador",
-          isActive: true,
-        },
-        {
-          id: 2,
-          name: "Mero Patrón",
-          description: "Para el patrón que ya sabe cómo hacer que llueva el dinero",
-          price: 4999,
-          yearlyPrice: 49999,
-          features: [
-            "Estimados básicos ilimitados (sin marca de agua)",
-            "50 estimados con IA al mes (sin marca de agua)",
-            "Contratos ilimitados (sin marca de agua)",
-            "50 Property Verification al mes",
-            "50 Permit Advisor al mes"
-          ],
-          motto: "No eres solo un patrón, eres el estratega que transforma el reto en victoria.",
-          code: "mero_patron",
-          isActive: true,
-        },
-        {
-          id: 3,
-          name: "Master Contractor",
-          description: "Para el chingón que quiere delegar TODO el papeleo y subir su nivel a otra liga",
-          price: 9999,
-          yearlyPrice: 99999,
-          features: [
-            "Estimados ilimitados (básicos y con IA, sin marca de agua)",
-            "Contratos ilimitados (sin marca de agua)",
-            "Property Verification ilimitado",
-            "Permit Advisor ilimitado",
-            "Soporte VIP 24/7"
-          ],
-          motto: "Tu voluntad es acero, tu obra es ley. Lidera como un verdadero campeón.",
-          code: "master_contractor",
-          isActive: true,
-        },
-      ];
-      return res.json(defaultPlans);
-
+      console.log("📋 [SUBSCRIPTION-PLANS] Planes formateados correctamente");
+      res.json(formattedPlans);
+      
     } catch (error) {
-      console.error("Error al obtener planes de suscripción:", error);
-      res.status(500).json({ message: "Error al obtener planes de suscripción" });
+      console.error("❌ [SUBSCRIPTION-PLANS] Error obteniendo planes:", error);
+      res.status(500).json({
+        success: false,
+        error: "Error interno del servidor",
+        message: "No se pudieron cargar los planes de suscripción"
+      });
     }
   });
 
