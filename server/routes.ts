@@ -4404,6 +4404,7 @@ Output must be between 200-900 characters in English.`;
 
   app.post(
     "/api/subscription/create-checkout",
+    requireAuth,
     async (req: Request, res: Response) => {
       console.log(
         `[${new Date().toISOString()}] Iniciando creación de checkout`,
@@ -4491,18 +4492,27 @@ Output must be between 200-900 characters in English.`;
             .json({ message: "Plan de suscripción no encontrado" });
         }
 
-        // Use provided user data or defaults
-        const email = userEmail || "cliente@example.com";
-        const name = userName || "Cliente";
+        // Verify authentication and get user data
+        if (!req.firebaseUser?.uid || !req.firebaseUser?.email) {
+          return res.status(401).json({ 
+            message: "Usuario no autenticado",
+            error: "Se requiere autenticación para crear checkout" 
+          });
+        }
+
+        // Use authenticated user data - no fallbacks allowed
+        const email = req.firebaseUser.email;
+        const name = req.firebaseUser.displayName || req.firebaseUser.email.split('@')[0];
+        const userId = req.firebaseUser.uid;
 
         console.log(
-          `Creando sesión de checkout para plan: ${plan.name}, ciclo: ${billingCycle}`,
+          `Creando sesión de checkout para usuario autenticado: ${email}, plan: ${plan.name}, ciclo: ${billingCycle}`,
         );
 
         try {
           const checkoutUrl = await stripeService.createSubscriptionCheckout({
             planId,
-            userId: 1, // This will be replaced with Firebase UID in webhook
+            userId, // Pass Firebase UID directly as string
             email,
             name,
             billingCycle,
@@ -4631,59 +4641,8 @@ Output must be between 200-900 characters in English.`;
     res.json({ status: "test webhook received" });
   });
 
-  // Simulate checkout completion for testing
-  app.post(
-    "/api/subscription/simulate-checkout",
-    async (req: Request, res: Response) => {
-      try {
-        const { email, planId } = req.body;
-        console.log(
-          `🔧 [SIMULATE-CHECKOUT] Simulating checkout completion for email: ${email}, plan: ${planId}`,
-        );
-
-        // For development, use email as user ID (skip Firebase Auth dependency)
-        const userId = `user_${email.replace(/[@.]/g, "_")}`;
-
-        console.log(`🔧 [SIMULATE-CHECKOUT] Using user ID: ${userId}`);
-
-        // Create subscription data directly in Firebase
-        const subscriptionData = {
-          id: `sub_prod_${Date.now()}`,
-          status: "active" as const,
-          planId: planId,
-          stripeSubscriptionId: `sub_prod_${Date.now()}`,
-          stripeCustomerId: `cus_prod_${Date.now()}`,
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-          cancelAtPeriodEnd: false,
-          billingCycle: "monthly" as const,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-
-        await firebaseSubscriptionService.createOrUpdateSubscription(
-          userId,
-          subscriptionData,
-        );
-
-        console.log(
-          `✅ [SIMULATE-CHECKOUT] Subscription created for user ${userId}`,
-        );
-
-        res.json({
-          success: true,
-          message: "Checkout completion simulated successfully",
-          userId: userId,
-          planId: planId,
-        });
-      } catch (error) {
-        console.error("❌ [SIMULATE-CHECKOUT] Error:", error);
-        res
-          .status(500)
-          .json({ error: "Failed to simulate checkout completion" });
-      }
-    },
-  );
+  // REMOVED: simulate-checkout endpoint (SECURITY VULNERABILITY)
+  // Subscriptions now only activated via secure Stripe webhooks
 
   // Webhook endpoint for Stripe events
   app.post(

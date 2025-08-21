@@ -5,6 +5,7 @@ import {
   PaymentHistory,
 } from "@shared/schema";
 import { storage } from "../storage";
+import { firebaseSubscriptionService } from "./firebaseSubscriptionService";
 
 // Verificar que la clave secreta de Stripe esté configurada
 // MODO PRODUCCIÓN - usar STRIPE_API_KEY
@@ -35,7 +36,7 @@ console.log(
 
 interface SubscriptionCheckoutOptions {
   planId: number;
-  userId: number;
+  userId: string; // Changed to string to support Firebase UIDs
   email: string;
   name: string;
   billingCycle: "monthly" | "yearly";
@@ -255,9 +256,9 @@ class StripeService {
           success_url: options.successUrl,
           cancel_url: options.cancelUrl,
           customer_email: options.email,
-          client_reference_id: options.userId.toString(),
+          client_reference_id: options.userId,
           metadata: {
-            userId: options.userId.toString(),
+            userId: options.userId,
             planId: options.planId.toString(),
             billingCycle: options.billingCycle,
           },
@@ -422,60 +423,58 @@ class StripeService {
       console.log(
         `[${new Date().toISOString()}] Manejando evento checkout.session.completed - Sesión ID: ${session.id}`,
       );
-      const userId = parseInt(session.metadata.userId);
+      
+      // Extract metadata - handle both Firebase UID and email
+      const userEmail = session.customer_email || session.customer_details?.email;
       const planId = parseInt(session.metadata.planId);
       const billingCycle = session.metadata.billingCycle;
 
-      // Obtener detalles de la suscripción de Stripe
+      if (!userEmail) {
+        console.error(`[${new Date().toISOString()}] No customer email found in session metadata`);
+        return;
+      }
+
+      // Convert email to Firebase user ID format for consistency
+      const userId = `user_${userEmail.replace(/[@.]/g, '_')}`;
+      
+      console.log(
+        `[${new Date().toISOString()}] Processing for user: ${userId} (email: ${userEmail}), plan: ${planId}`,
+      );
+
+      // Get subscription details from Stripe
       const subscription = await stripe.subscriptions.retrieve(
         session.subscription,
       );
 
-      // Convertir los timestamp de Unix a objetos Date
+      // Convert Unix timestamps to Date objects
       const currentPeriodStart = new Date(
         subscription.current_period_start * 1000,
       );
       const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
 
-      // Crear o actualizar la suscripción en nuestra base de datos
-      const existingSubscription =
-        await storage.getUserSubscriptionByUserId(userId);
+      // Create subscription data for Firebase
+      const subscriptionData = {
+        id: subscription.id,
+        status: subscription.status as "active" | "inactive" | "canceled" | "trialing",
+        planId: planId,
+        stripeSubscriptionId: session.subscription,
+        stripeCustomerId: session.customer,
+        currentPeriodStart: currentPeriodStart,
+        currentPeriodEnd: currentPeriodEnd,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        billingCycle: billingCycle as "monthly" | "yearly",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-      if (existingSubscription) {
-        console.log(
-          `[${new Date().toISOString()}] Actualizando suscripción existente - ID: ${existingSubscription.id}`,
-        );
-        // Actualizar la suscripción existente
-        await storage.updateUserSubscription(existingSubscription.id, {
-          planId,
-          stripeCustomerId: session.customer,
-          stripeSubscriptionId: session.subscription,
-          status: subscription.status,
-          currentPeriodStart: currentPeriodStart,
-          currentPeriodEnd: currentPeriodEnd,
-          cancelAtPeriodEnd: subscription.cancel_at_period_end,
-          billingCycle,
-          updatedAt: new Date(),
-        });
-      } else {
-        console.log(
-          `[${new Date().toISOString()}] Creando nueva suscripción para usuario - ID: ${userId}`,
-        );
-        // Crear una nueva suscripción
-        await storage.createUserSubscription({
-          userId,
-          planId,
-          stripeCustomerId: session.customer,
-          stripeSubscriptionId: session.subscription,
-          status: subscription.status,
-          currentPeriodStart: currentPeriodStart,
-          currentPeriodEnd: currentPeriodEnd,
-          cancelAtPeriodEnd: subscription.cancel_at_period_end,
-          billingCycle,
-        });
-      }
+      // Create or update subscription in Firebase
+      await firebaseSubscriptionService.createOrUpdateSubscription(
+        userId,
+        subscriptionData,
+      );
+
       console.log(
-        `[${new Date().toISOString()}] Evento checkout.session.completed manejado correctamente`,
+        `[${new Date().toISOString()}] ✅ Subscription created/updated in Firebase for user: ${userId}`,
       );
     } catch (error) {
       console.error(

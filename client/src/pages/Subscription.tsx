@@ -26,40 +26,27 @@ export default function Subscription() {
   const { currentUser } = useAuth();
   const userEmail = currentUser?.email || "";
 
-  // Automatic subscription activation when returning from successful payment
+  // Check for successful payment and refresh subscription status
   useEffect(() => {
     const checkSuccessRedirect = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const success = urlParams.get("success");
-      const planId = urlParams.get("planId");
+      const sessionId = urlParams.get("session_id");
       
-      if (success === "true" && planId && userEmail) {
-        console.log("✅ Successful payment detected, activating subscription...");
-        try {
-          // Activate subscription automatically
-          const response = await fetch("/api/subscription/simulate-checkout", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              email: userEmail,
-              planId: parseInt(planId),
-            }),
-          });
-          
-          if (response.ok) {
-            toast({
-              title: "¡Suscripción activada!",
-              description: "Tu suscripción ha sido activada correctamente.",
-              variant: "default",
-            });
-            // Refresh subscription data
-            queryClient.invalidateQueries({ queryKey: ["/api/subscription/user-subscription", userEmail] });
-          }
-        } catch (error) {
-          console.error("Error activating subscription:", error);
-        }
+      if (success === "true" && sessionId && userEmail) {
+        console.log("✅ Payment completed, checking subscription status...");
+        
+        // Show success message
+        toast({
+          title: "¡Pago procesado!",
+          description: "Verificando el estado de tu suscripción...",
+          variant: "default",
+        });
+        
+        // Wait a moment for webhook processing, then refresh subscription data
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ["/api/subscription/user-subscription", userEmail] });
+        }, 2000);
         
         // Clean up URL parameters
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -137,7 +124,7 @@ export default function Subscription() {
         userEmail,
         planId,
         billingCycle: isYearly ? "yearly" : "monthly",
-        successUrl: window.location.origin + "/subscription?success=true&planId=" + planId,
+        successUrl: window.location.origin + "/subscription?success=true&session_id={CHECKOUT_SESSION_ID}",
         cancelUrl: window.location.origin + "/subscription?canceled=true",
       };
 
