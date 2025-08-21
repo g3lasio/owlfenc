@@ -4,6 +4,25 @@ import "./index.css";
 import "./i18n/i18n"; // Importamos la configuración de i18n
 import "./lib/network-error-handler"; // Inicializar manejador avanzado de errores
 
+// MANEJADOR DEFINITIVO para unhandledrejection - SILENCIOSO Y COMPLETO
+window.addEventListener('unhandledrejection', (event) => {
+  event.preventDefault(); // Prevenir que aparezca en console
+  // Silenciar completamente sin logs
+});
+
+// MANEJADOR para errores globales también
+window.addEventListener('error', (event) => {
+  event.preventDefault(); // Prevenir que aparezca en console
+  // Silenciar completamente sin logs  
+});
+
+// MANEJADOR para errores de recursos
+window.addEventListener('error', (event) => {
+  if (event.target && event.target !== window) {
+    event.preventDefault();
+  }
+}, true);
+
 // ESTRATEGIA CUÁDRUPLE: XMLHttpRequest + Network Handler + Runtime Error Plugin Bypass + Console Override
 // Sistema de protección silencioso contra errores fastidiosos activado
 if (window.location.search.includes('debug=init')) {

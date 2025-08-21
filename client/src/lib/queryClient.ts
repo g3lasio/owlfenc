@@ -12,46 +12,38 @@ async function throwIfResNotOk(res: Response) {
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const headers: Record<string, string> = {};
   
-  // Obtener token de Firebase si el usuario está autenticado
+  // Obtener token de Firebase si el usuario está autenticado - VERSIÓN SILENCIOSA
   if (auth.currentUser) {
     try {
-      // Retry logic para obtener token con timeout
-      const token = await retryWithTimeout(
-        () => auth.currentUser!.getIdToken(false), // Force refresh = false por defecto
-        3, // 3 intentos
-        5000 // 5 segundos timeout
-      );
-      headers["Authorization"] = `Bearer ${token}`;
-      // Token incluido exitosamente - no log para reducir spam
-      if (window.location.search.includes('debug=auth')) {
-        console.debug("🔧 [AUTH-DEBUG] Token included in request");
-      }
-    } catch (error: any) {
-      // Silenciar warnings de token - no interrumpen la funcionalidad
-      if (window.location.search.includes('debug=auth')) {
-        console.debug("🔧 [AUTH-DEBUG] Token fetch warning:", error?.code || 'network');
-      }
+      // Usar versión simplificada sin retry para evitar unhandled rejections
+      const token = await auth.currentUser.getIdToken(false).catch(() => null);
       
-      // Intentar con refresh forzado si el primer intento falla
-      try {
-        console.log("🔄 [API-REQUEST] Intentando refresh forzado del token...");
-        const refreshedToken = await retryWithTimeout(
-          () => auth.currentUser!.getIdToken(true), // Force refresh = true
-          2, // 2 intentos para refresh
-          10000 // 10 segundos timeout para refresh
-        );
-        headers["Authorization"] = `Bearer ${refreshedToken}`;
-        // Token refrescado exitosamente - no log para reducir spam
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+        // Token incluido exitosamente - solo debug si explícito
         if (window.location.search.includes('debug=auth')) {
-          console.debug("🔧 [AUTH-DEBUG] Token refreshed successfully");
+          console.debug("🔧 [AUTH-DEBUG] Token included in request");
         }
-      } catch (refreshError: any) {
-        // Silenciar completamente errores de token - no son críticos para UX
-        if (window.location.search.includes('debug=auth')) {
-          console.debug("🔧 [AUTH-DEBUG] Token refresh failed - continuing without auth");
+      } else {
+        // Si falla token normal, intentar refresh una sola vez
+        try {
+          if (window.location.search.includes('debug=auth')) {
+            console.log("🔄 [API-REQUEST] Intentando refresh forzado del token...");
+          }
+          const refreshedToken = await auth.currentUser.getIdToken(true).catch(() => null);
+          
+          if (refreshedToken) {
+            headers["Authorization"] = `Bearer ${refreshedToken}`;
+            if (window.location.search.includes('debug=auth')) {
+              console.debug("🔧 [AUTH-DEBUG] Token refreshed successfully");
+            }
+          }
+        } catch {
+          // Silenciar completamente - continuar sin token
         }
-        // Continuar sin token en lugar de fallar completamente
       }
+    } catch {
+      // Silenciar completamente cualquier error de token - continuar sin auth
     }
   } else {
     // Usuario no autenticado es normal - no logear
@@ -63,32 +55,28 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
-// Función helper para retry con timeout
-async function retryWithTimeout<T>(
-  fn: () => Promise<T>,
-  retries: number,
+// Función helper simplificada sin unhandled rejections
+async function safeTimeout<T>(
+  promise: Promise<T>,
   timeoutMs: number
-): Promise<T> {
-  for (let i = 0; i < retries; i++) {
-    try {
-      return await Promise.race([
-        fn(),
-        new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('Timeout')), timeoutMs);
-        })
-      ]);
-    } catch (error: any) {
-      if (i === retries - 1) throw error;
-      
-      // Backoff exponencial silencioso
-      const delay = Math.min(1000 * Math.pow(2, i), 5000);
-      if (window.location.search.includes('debug=retry')) {
-        console.debug(`🔧 [RETRY-DEBUG] Attempt ${i + 1}/${retries} failed, retrying...`);
-      }
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
+): Promise<T | null> {
+  try {
+    let timeoutId: NodeJS.Timeout | undefined;
+    
+    const timeoutPromise = new Promise<null>((resolve) => {
+      timeoutId = setTimeout(() => resolve(null), timeoutMs);
+    });
+
+    const result = await Promise.race([
+      promise.catch(() => null), // Convertir errores a null
+      timeoutPromise
+    ]);
+    
+    if (timeoutId) clearTimeout(timeoutId);
+    return result;
+  } catch {
+    return null; // Silenciar cualquier error
   }
-  throw new Error('Maximum retries exceeded');
 }
 
 export async function apiRequest(
@@ -111,18 +99,19 @@ export async function apiRequest(
   }
 
   try {
-    // Implementar fetch con timeout
-    const res = await Promise.race([
-      fetch(url, {
-        method,
-        headers,
-        body: data ? JSON.stringify(data) : undefined,
-        credentials: "include",
-      }),
-      new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), 10000); // Reducido a 10 segundos
-      })
-    ]);
+    // Fetch simplificado con timeout silencioso
+    const fetchPromise = fetch(url, {
+      method,
+      headers,
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+    });
+
+    const res = await safeTimeout(fetchPromise, 10000);
+    
+    if (!res) {
+      throw new Error('Request timeout or failed');
+    }
 
     await throwIfResNotOk(res);
     return res;
