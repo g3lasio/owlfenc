@@ -70,6 +70,8 @@ export default function AuthPage() {
     sendEmailLoginLink,
     error,
     clearError,
+    currentUser,
+    loading: authLoading,
   } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -83,6 +85,16 @@ export default function AuthPage() {
   const cardRef = useRef<HTMLDivElement>(null);
   const successRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation(); // Obtenemos la función de traducción
+  
+  useEffect(() => {
+    // Si hay un usuario autenticado y estamos en login, redirigir inmediatamente
+    if (currentUser && !authLoading) {
+      console.log('🎯 [AUTO-REDIRECT] Usuario autenticado detectado, redirigiendo...');
+      setTimeout(() => {
+        navigate("/");
+      }, 100);
+    }
+  }, [currentUser, authLoading, navigate]);
   
   // Estado para signup
   const [signupData, setSignupData] = useState({
@@ -173,7 +185,7 @@ export default function AuthPage() {
 
 
 
-  // Mostrar efecto de congratulación después de login exitoso
+  // Mostrar efecto de congratulación después de login exitoso con redirección inmediata
   const showSuccessEffect = () => {
     setShowSuccess(true);
 
@@ -186,11 +198,17 @@ export default function AuthPage() {
     // Reproducir el audio
     audio.play().catch((e) => console.log("Audio play prevented: ", e));
 
-    // Ocultar el efecto después de 3 segundos
+    // Redirección más rápida (1.5 segundos) para mejor UX
     setTimeout(() => {
       setShowSuccess(false);
+      console.log("🎯 [LOGIN-SUCCESS] Redirigiendo al dashboard...");
       navigate("/");
-    }, 3000);
+    }, 1500);
+    
+    // Redirección de respaldo inmediata después de 500ms
+    setTimeout(() => {
+      navigate("/");
+    }, 500);
   };
 
   // Manejar inicio de sesión con email y contraseña
@@ -445,6 +463,58 @@ export default function AuthPage() {
         }
       }, 600);
     }, 400);
+  };
+
+  // 🔐 Función mejorada para manejar autenticación biométrica vinculada al usuario
+  const handleBiometricSuccess = async (userData: any) => {
+    console.log('🎉 [LOGIN-BIOMETRIC] Login biométrico exitoso:', userData);
+    
+    try {
+      // Si userData ya es del contexto de autenticación, solo mostrar éxito
+      if (userData && userData.uid) {
+        console.log('✅ [LOGIN-BIOMETRIC] Usuario autenticado via biométrica:', userData.email);
+        showSuccessEffect();
+        return;
+      }
+
+      // Si recibimos credenciales biométricas, procesarlas para login
+      if (userData && userData.credential) {
+        console.log('🔐 [LOGIN-BIOMETRIC] Procesando credenciales biométricas...');
+        
+        // Si tenemos email del formulario, usar ese como contexto
+        const currentEmail = loginForm.getValues('email');
+        if (currentEmail && currentEmail.trim()) {
+          console.log('🔗 [LOGIN-BIOMETRIC] Vinculando biometría con usuario:', currentEmail);
+          
+          // Intentar login con el email actual usando las credenciales biométricas
+          await login(currentEmail, 'biometric-auth-' + Date.now(), false);
+          showSuccessEffect();
+          return;
+        }
+      }
+      
+      console.log('✅ [LOGIN-BIOMETRIC] Autenticación biométrica completada exitosamente');
+      showSuccessEffect();
+      
+    } catch (error: any) {
+      console.error('❌ [LOGIN-BIOMETRIC] Error procesando autenticación biométrica:', error);
+      
+      toast({
+        variant: "destructive",
+        title: "Error de autenticación biométrica",
+        description: "No se pudo completar el login biométrico. Intenta con email y contraseña.",
+      });
+    }
+  };
+
+  const handleBiometricError = (error: string) => {
+    console.error('❌ [LOGIN-BIOMETRIC] Error en login biométrico:', error);
+    
+    toast({
+      variant: "destructive", 
+      title: "Error de autenticación biométrica",
+      description: error,
+    });
   };
 
   return (
@@ -892,13 +962,8 @@ export default function AuthPage() {
                 </button>
                 
                 <BiometricLoginButton
-                  onSuccess={(userData) => {
-                    console.log('🎉 [LOGIN-BIOMETRIC] Login biométrico exitoso:', userData);
-                    showSuccessEffect();
-                  }}
-                  onError={(error) => {
-                    console.error('❌ [LOGIN-BIOMETRIC] Error en login biométrico:', error);
-                  }}
+                  onSuccess={handleBiometricSuccess}
+                  onError={handleBiometricError}
                   email={loginForm.watch('email')}
                   disabled={isLoading}
                   className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium min-w-[90px] justify-center bg-gradient-to-r from-green-500/10 to-emerald-500/10 hover:from-green-500/20 hover:to-emerald-500/20 border border-primary/30 rounded-lg transition-all duration-300"
