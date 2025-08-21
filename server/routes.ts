@@ -3996,53 +3996,123 @@ Output must be between 200-900 characters in English.`;
   // *** SUBSCRIPTION ROUTES ***
   app.get("/api/subscription/plans", async (req: Request, res: Response) => {
     try {
-      console.log("📋 [SUBSCRIPTION-PLANS] Obteniendo planes desde Firebase");
+      console.log("📋 [SUBSCRIPTION-PLANS] Obteniendo planes desde PostgreSQL");
       
-      // Usar Firebase directamente para obtener planes
-      const firebaseStorage = new (await import('./FirebaseStorage')).FirebaseStorage();
-      const dbPlans = await firebaseStorage.getAllSubscriptionPlans();
-      console.log("📋 [SUBSCRIPTION-PLANS] Planes obtenidos desde Firebase:", dbPlans?.length || 0);
+      // Usar PostgreSQL como fuente principal más confiable
+      const databaseStorage = new (await import('./DatabaseStorage')).DatabaseStorage();
+      let dbPlans = await databaseStorage.getAllSubscriptionPlans();
+      console.log("📋 [SUBSCRIPTION-PLANS] Planes obtenidos desde PostgreSQL:", dbPlans?.length || 0);
 
-      // Si hay planes en la base de datos, mapearlos al formato esperado por el frontend
-      if (dbPlans && dbPlans.length > 0) {
-        const formattedPlans = dbPlans.map(plan => {
-          // Convertir features desde formato JSONB a array de strings
-          let featuresArray: string[] = [];
-          if (plan.features) {
-            if (Array.isArray(plan.features)) {
-              featuresArray = plan.features;
-            } else if (typeof plan.features === 'object') {
-              // Convertir objeto de features a array de strings descriptivos en español
-              const featuresObj = plan.features as Record<string, number>;
-              const featureLabels: Record<string, string> = {
-                projects: 'Proyectos',
-                contracts: 'Contratos',
-                aiEstimates: 'Estimados con IA',
-                permitAdvisor: 'Permit Advisor',
-                basicEstimates: 'Estimados básicos',
-                propertyVerifications: 'Property Verifications'
-              };
-              
-              featuresArray = Object.entries(featuresObj).map(([key, value]) => {
-                const label = featureLabels[key] || key;
-                if (value === -1) return `${label} ilimitados`;
-                if (value === 0) return `Sin acceso a ${label}`;
-                return `${value} ${label} al mes`;
-              });
-            }
+      // Si no hay planes en PostgreSQL, crear planes por defecto
+      if (!dbPlans || dbPlans.length === 0) {
+        console.log("📋 [SUBSCRIPTION-PLANS] No hay planes - creando planes por defecto");
+        
+        // Planes por defecto para el sistema
+        const defaultPlans = [
+          {
+            id: 1,
+            name: "Plan Básico",
+            description: "Perfecto para contratistas pequeños",
+            price: 29,
+            yearly_price: 290,
+            features: {
+              projects: 5,
+              contracts: 3,
+              aiEstimates: 10,
+              basicEstimates: 20,
+              permitAdvisor: 2,
+              propertyVerifications: 5
+            },
+            motto: "Empieza tu negocio",
+            code: "BASIC",
+            is_active: true,
+            created_at: new Date(),
+            updated_at: new Date()
+          },
+          {
+            id: 2,
+            name: "Primo Chambeador",
+            description: "Para contratistas que crecen",
+            price: 59,
+            yearly_price: 590,
+            features: {
+              projects: 20,
+              contracts: 15,
+              aiEstimates: 50,
+              basicEstimates: 100,
+              permitAdvisor: 10,
+              propertyVerifications: 25
+            },
+            motto: "Crece tu negocio",
+            code: "PRO",
+            is_active: true,
+            created_at: new Date(),
+            updated_at: new Date()
+          },
+          {
+            id: 3,
+            name: "Master Contractor",
+            description: "Para contratistas profesionales",
+            price: 99,
+            yearly_price: 990,
+            features: {
+              projects: -1, // Ilimitado
+              contracts: -1,
+              aiEstimates: -1,
+              basicEstimates: -1,
+              permitAdvisor: -1,
+              propertyVerifications: -1
+            },
+            motto: "Sin límites",
+            code: "MASTER",
+            is_active: true,
+            created_at: new Date(),
+            updated_at: new Date()
           }
-          
-          return {
-            id: plan.id,
-            name: plan.name,
-            description: plan.description,
-            price: plan.price,
-            yearlyPrice: plan.yearly_price || plan.price * 10, // Fallback para yearly_price
-            features: featuresArray,
-            motto: plan.motto,
-            code: plan.code,
-            isActive: plan.is_active !== false, // Convertir boolean
-          };
+        ];
+
+        dbPlans = defaultPlans;
+      }
+
+      // Mapear planes al formato esperado por el frontend
+      const formattedPlans = dbPlans.map(plan => {
+        // Convertir features desde formato JSONB a array de strings
+        let featuresArray: string[] = [];
+        if (plan.features) {
+          if (Array.isArray(plan.features)) {
+            featuresArray = plan.features;
+          } else if (typeof plan.features === 'object') {
+            // Convertir objeto de features a array de strings descriptivos en español
+            const featuresObj = plan.features as Record<string, number>;
+            const featureLabels: Record<string, string> = {
+              projects: 'Proyectos',
+              contracts: 'Contratos',
+              aiEstimates: 'Estimados con IA',
+              permitAdvisor: 'Asesoría de Permisos',
+              basicEstimates: 'Estimados básicos',
+              propertyVerifications: 'Verificaciones de Propiedad'
+            };
+            
+            featuresArray = Object.entries(featuresObj).map(([key, value]) => {
+              const label = featureLabels[key] || key;
+              if (value === -1) return `${label} ilimitados`;
+              if (value === 0) return `Sin acceso a ${label}`;
+              return `${value} ${label} al mes`;
+            });
+          }
+        }
+        
+        return {
+          id: plan.id,
+          name: plan.name,
+          description: plan.description,
+          price: plan.price,
+          yearlyPrice: plan.yearly_price || plan.price * 10, // Fallback para yearly_price
+          features: featuresArray,
+          motto: plan.motto,
+          code: plan.code,
+          isActive: plan.is_active !== false, // Convertir boolean
+        };
         });
         
         console.log("📋 [SUBSCRIPTION-PLANS] Planes formateados correctamente");
