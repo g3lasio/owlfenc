@@ -134,78 +134,29 @@ class NetworkErrorHandler {
   }
 
   private interceptFetchRequests() {
-    // Interceptar todas las llamadas fetch para manejo robusto
-    const originalFetch = window.fetch;
+    // DESHABILITADO: Interceptación global de fetch causaba problemas con runtime-error-plugin
+    // Solo registrar eventos de error específicos sin interceptar fetch
     
-    window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : 'unknown';
+    console.log('🛡️ [NETWORK-HANDLER] Sistema simplificado - sin interceptación global de fetch');
+    
+    // En lugar de interceptar fetch, solo manejar eventos de error específicos
+    window.addEventListener('unhandledrejection', (event) => {
+      const error = event.reason;
+      const errorMessage = error?.message || '';
       
-      // CRITICAL: Bypass fetch completely for known problematic URLs to avoid runtime-error-plugin detection
-      if (this.shouldBypassFetch(url)) {
+      // Solo silenciar errores específicos que sabemos que son problemáticos
+      if (errorMessage.includes('Failed to fetch') && 
+          (errorMessage.includes('googleapis.com') || 
+           errorMessage.includes('firebaseapp.com') ||
+           errorMessage.includes('_vite/ping'))) {
         if (!this.isRateLimited()) {
-          this.logSilently('BYPASS', 'Avoiding fetch for problematic URL:', url.substring(0, 50));
+          this.logSilently('UNHANDLED', 'Silenciando error conocido:', errorMessage.substring(0, 50));
         }
-        
-        // Return immediate mock response to prevent runtime-error-plugin detection
-        return new Response(
-          JSON.stringify({ error: 'Network bypassed', offline: true }), 
-          { 
-            status: 503, 
-            statusText: 'Service Unavailable',
-            headers: { 'Content-Type': 'application/json' }
-          }
-        );
+        event.preventDefault(); // Prevenir que aparezca en consola
       }
-      
-      try {
-        // Simplificado: usar AbortController sin Promise.race para evitar runtime-error-plugin
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        
-        try {
-          const response = await originalFetch(input, {
-            ...init,
-            signal: init?.signal || controller.signal
-          });
-          
-          clearTimeout(timeoutId);
-          return response;
-        } catch (fetchError: any) {
-          clearTimeout(timeoutId);
-          throw fetchError;
-        }
-        
-      } catch (error: any) {
-        // Interceptar específicamente errores de runtime-error-plugin y Firebase STS
-        const errorMessage = error?.message || '';
-        // REMOVIDO: Interceptación de Firebase/Auth - permitir errores reales de autenticación
-        if (this.shouldSilenceError(error, url)) {
-          
-          if (!this.isRateLimited()) {
-            this.logSilently('NETWORK', 'Error handled:', errorMessage.substring(0, 50));
-          }
-          
-          // Crear una respuesta mock para requests que fallan constantemente
-          // REMOVIDO: Excepciones para autenticación - permitir errores reales de googleapis.com y firebase
-          if (url.includes('/api/subscription') || url.includes('/api/contracts')) {
-            const mockResponse = new Response(
-              JSON.stringify({ error: 'Network unavailable', offline: true }), 
-              { 
-                status: 503, 
-                statusText: 'Service Unavailable',
-                headers: { 'Content-Type': 'application/json' }
-              }
-            );
-            return mockResponse;
-          }
-          
-          // Para otros casos, crear respuesta silenciosa
-          return new Response('', { status: 204, statusText: 'No Content' });
-        }
-        
-        throw error;
-      }
-    };
+    });
+    
+    // NO interceptar fetch - permitir funcionamiento normal
   }
 
   // Método para manejar errores específicos de React Query
