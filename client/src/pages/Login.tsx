@@ -461,40 +461,45 @@ export default function AuthPage() {
     console.log('🎉 [LOGIN-BIOMETRIC] Login biométrico exitoso:', userData);
     
     try {
-      // Si userData ya es del contexto de autenticación, solo mostrar éxito
-      if (userData && userData.uid) {
-        console.log('✅ [LOGIN-BIOMETRIC] Usuario autenticado via biométrica:', userData.email);
+      // Si userData contiene información del usuario autenticado (del backend)
+      if (userData && userData.user && userData.user.email) {
+        console.log('✅ [LOGIN-BIOMETRIC] Usuario autenticado via biométrica:', userData.user.email);
+        
+        // Usar el login del contexto para establecer la sesión
+        await login(userData.user.email, 'biometric-verified-' + Date.now(), true);
         showSuccessEffect();
         return;
       }
 
-      // Si recibimos credenciales biométricas, procesarlas para login
-      if (userData && userData.credential) {
-        console.log('🔐 [LOGIN-BIOMETRIC] Procesando credenciales biométricas...');
+      // Si userData ya es un usuario autenticado directamente
+      if (userData && userData.uid && userData.email) {
+        console.log('✅ [LOGIN-BIOMETRIC] Usuario ya autenticado:', userData.email);
+        showSuccessEffect();
+        return;
+      }
+
+      // Si tenemos un email en el formulario, intentar autenticación tradicional
+      const currentEmail = loginForm.getValues('email');
+      if (currentEmail && currentEmail.trim()) {
+        console.log('🔗 [LOGIN-BIOMETRIC] Usando email del formulario para biometría:', currentEmail);
         
-        // Si tenemos email del formulario, usar ese como contexto
-        const currentEmail = loginForm.getValues('email');
-        if (currentEmail && currentEmail.trim()) {
-          console.log('🔗 [LOGIN-BIOMETRIC] Vinculando biometría con usuario:', currentEmail);
-          
-          // Intentar login con el email actual usando las credenciales biométricas
-          await login(currentEmail, 'biometric-auth-' + Date.now(), false);
-          showSuccessEffect();
-          return;
-        }
+        // Usar autenticación biométrica como "contraseña verificada"
+        await login(currentEmail, 'biometric-auth-verified', true);
+        showSuccessEffect();
+        return;
       }
       
-      console.log('✅ [LOGIN-BIOMETRIC] Autenticación biométrica completada exitosamente');
-      showSuccessEffect();
+      // Fallback: mostrar éxito pero solicitar email
+      console.log('⚠️ [LOGIN-BIOMETRIC] Biometría exitosa pero falta vinculación con email');
+      toast({
+        title: "Autenticación biométrica exitosa",
+        description: "Por favor ingresa tu email para completar el login.",
+        variant: "default",
+      });
       
     } catch (error: any) {
       console.error('❌ [LOGIN-BIOMETRIC] Error procesando autenticación biométrica:', error);
-      
-      toast({
-        variant: "destructive",
-        title: "Error de autenticación biométrica",
-        description: "No se pudo completar el login biométrico. Intenta con email y contraseña.",
-      });
+      handleBiometricError('No se pudo completar el login biométrico. Intenta con email y contraseña.');
     }
   };
 

@@ -48,6 +48,7 @@ interface AuthContextType {
   loginWithApple: () => Promise<User | null>; // Puede ser null en caso de redirección
   sendPasswordResetEmail: (email: string) => Promise<boolean>;
   sendEmailLoginLink: (email: string) => Promise<boolean>;
+  registerBiometricCredential: () => Promise<boolean>;
   clearError: () => void;
 }
 
@@ -505,6 +506,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // Registrar credenciales biométricas para el usuario actual
+  const registerBiometricCredential = async () => {
+    try {
+      if (!currentUser || !currentUser.email) {
+        throw new Error('Debe estar autenticado para registrar credenciales biométricas');
+      }
+
+      setLoading(true);
+      setError(null);
+
+      // Importar dinámicamente el servicio WebAuthn
+      const { webauthnService } = await import('../lib/webauthn-service');
+      
+      console.log('🔐 [CONTEXT-BIOMETRIC] Registrando credencial para:', currentUser.email);
+      
+      const credential = await webauthnService.registerCredential(currentUser.email);
+      
+      if (credential) {
+        console.log('✅ [CONTEXT-BIOMETRIC] Credencial biométrica registrada exitosamente');
+        return true;
+      } else {
+        throw new Error('No se pudo registrar la credencial biométrica');
+      }
+    } catch (err: any) {
+      console.error('❌ [CONTEXT-BIOMETRIC] Error registrando credencial:', err);
+      setError(err.message || 'Error al registrar credencial biométrica');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const clearError = () => {
     setError(null);
   };
@@ -520,6 +553,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loginWithApple: appleLogin,
     sendPasswordResetEmail,
     sendEmailLoginLink,
+    registerBiometricCredential,
     clearError,
   };
 

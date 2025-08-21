@@ -154,8 +154,10 @@ export function BiometricLoginButton({
         errorMessage = 'Acceso biométrico no autorizado. Verifica que tu dispositivo tenga configurada autenticación biométrica';
       } else if (errorString.includes('no soportada') || errorString.includes('not supported') || errorString.includes('NotSupportedError')) {
         errorMessage = 'Autenticación biométrica no soportada en este dispositivo';
-      } else if (errorString.includes('no encontraron credenciales') || errorString.includes('no credentials') || errorString.includes('InvalidStateError')) {
-        errorMessage = 'No hay credenciales biométricas configuradas. Registra tu biometría primero';
+      } else if (errorString.includes('no encontraron credenciales') || errorString.includes('no credentials') || errorString.includes('InvalidStateError') || errorString.includes('Credencial no encontrada')) {
+        // Si no hay credenciales, intentar registrarlas automáticamente
+        await handleAutoRegister(loginEmail);
+        return;
       } else if (errorString.includes('Network') || errorString.includes('fetch')) {
         errorMessage = 'Error de conexión. Verifica tu internet e intenta de nuevo';
       } else if (errorString.includes('timeout') || errorString.includes('TimeoutError')) {
@@ -173,6 +175,54 @@ export function BiometricLoginButton({
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Función para manejar el registro automático de credenciales biométricas
+  const handleAutoRegister = async (email: string) => {
+    if (!email || email.includes('@biometric.local')) {
+      toast({
+        title: "Registro biométrico",
+        description: "Ingresa tu email para vincular la autenticación biométrica a tu cuenta.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      console.log('🔐 [BIOMETRIC-REGISTER] Iniciando registro automático para:', email);
+      
+      toast({
+        title: "Configurando autenticación biométrica",
+        description: "Se te pedirá usar tu Face ID, Touch ID o huella digital para configurar el acceso rápido.",
+        variant: "default",
+      });
+
+      // Registrar credencial biométrica
+      const credential = await webauthnService.registerCredential(email);
+      
+      if (credential) {
+        console.log('✅ [BIOMETRIC-REGISTER] Credencial registrada exitosamente');
+        
+        toast({
+          title: "Autenticación biométrica configurada",
+          description: "Ahora puedes usar Face ID/Touch ID para acceder más rápido.",
+          variant: "default",
+        });
+
+        // Intentar login inmediatamente después del registro
+        setTimeout(() => {
+          handleBiometricLogin();
+        }, 1000);
+      }
+    } catch (error: any) {
+      console.error('❌ [BIOMETRIC-REGISTER] Error en registro automático:', error);
+      
+      toast({
+        title: "No se pudo configurar autenticación biométrica",
+        description: "Puedes intentar nuevamente después de hacer login con email y contraseña.",
+        variant: "destructive",
+      });
     }
   };
 
