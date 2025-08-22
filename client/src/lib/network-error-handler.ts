@@ -3,9 +3,10 @@
  * Intercepta y maneja todos los errores de red silenciosamente
  */
 
-// Lista de errores que debemos manejar silenciosamente
+// Lista expandida de errores que debemos manejar silenciosamente
 const SILENT_ERROR_PATTERNS = [
   'Failed to fetch',
+  'TypeError: Failed to fetch',
   'NetworkError', 
   'fetch',
   'Network request failed',
@@ -28,7 +29,10 @@ const SILENT_ERROR_PATTERNS = [
   'refresh',
   '_performFetchWithErrorHandling',
   'firestore',
-  'auth/network-request-failed'
+  'auth/network-request-failed',
+  // Patrones adicionales específicos observados en logs
+  'window.fetch',
+  'eruda.js'
 ];
 
 // URLs que generan muchos errores y pueden ser ignorados silenciosamente
@@ -58,11 +62,13 @@ class NetworkErrorHandler {
   private shouldSilenceError(error: any, url?: string): boolean {
     const errorMessage = error?.message || error?.toString() || '';
     const errorCode = error?.code || '';
+    const errorStack = error?.stack || '';
     
-    // Check error patterns
+    // Check error patterns (más agresivo para capturar todos los casos)
     const isKnownError = SILENT_ERROR_PATTERNS.some(pattern => 
       errorMessage.toLowerCase().includes(pattern.toLowerCase()) ||
-      errorCode.toLowerCase().includes(pattern.toLowerCase())
+      errorCode.toLowerCase().includes(pattern.toLowerCase()) ||
+      errorStack.toLowerCase().includes(pattern.toLowerCase())
     );
 
     // Check URL patterns
@@ -70,7 +76,11 @@ class NetworkErrorHandler {
       url.includes(pattern)
     ));
 
-    return isKnownError || isKnownUrl;
+    // Verificación adicional específica para TypeError: Failed to fetch
+    const isFailedFetch = errorMessage.includes('Failed to fetch') || 
+                         (error instanceof TypeError && errorMessage.includes('fetch'));
+
+    return isKnownError || isKnownUrl || isFailedFetch;
   }
 
   logSilently(type: string, message: string, data?: any) {
@@ -105,11 +115,20 @@ class NetworkErrorHandler {
   }
 
   private interceptUnhandledRejections() {
-    // Manejo más agresivo de promesas rechazadas
+    // Manejo centralizado y efectivo de promesas rechazadas
     window.addEventListener('unhandledrejection', (event) => {
       const error = event.reason;
       const errorMessage = error?.message || error?.toString() || '';
       const errorStack = error?.stack || '';
+      
+      // Expandir patrones para cubrir todos los casos de "Failed to fetch"
+      const failedFetchPatterns = [
+        'Failed to fetch',
+        'TypeError: Failed to fetch',
+        'NetworkError',
+        'fetch',
+        'Network request failed'
+      ];
       
       // Check for Firebase token refresh errors specifically
       const isFirebaseTokenError = errorStack.includes('requestStsToken') || 
@@ -117,11 +136,17 @@ class NetworkErrorHandler {
                                    errorStack.includes('_performFetchWithErrorHandling') ||
                                    errorMessage.includes('auth/network-request-failed');
       
-      if (this.shouldSilenceError(error) || isFirebaseTokenError) {
+      // Check for failed fetch errors
+      const isFailedFetchError = failedFetchPatterns.some(pattern => 
+        errorMessage.includes(pattern)
+      );
+      
+      if (this.shouldSilenceError(error) || isFirebaseTokenError || isFailedFetchError) {
         event.preventDefault();
         
-        if (!this.isRateLimited()) {
-          this.logSilently('FIREBASE-AUTH', 'Token refresh error silenced', error?.code || 'network-error');
+        // Solo log en modo debug para evitar spam
+        if (!this.isRateLimited() && window.location.search.includes('debug=network')) {
+          console.debug('🔧 [NETWORK-HANDLER] Error silenced:', errorMessage.substring(0, 50));
         }
         
         return;
@@ -153,33 +178,8 @@ class NetworkErrorHandler {
     
     console.log('🛡️ [NETWORK-HANDLER] Sistema simplificado - sin interceptación global de fetch');
     
-    // En lugar de interceptar fetch, solo manejar eventos de error específicos
-    window.addEventListener('unhandledrejection', (event) => {
-      const error = event.reason;
-      const errorMessage = error?.message || '';
-      
-      // DIAGNÓSTICO: Loguear todos los errores para identificar exactamente qué está fallando
-      if (!this.isRateLimited()) {
-        console.log('🚨 [UNHANDLED-REJECTION]', {
-          message: errorMessage.substring(0, 100),
-          type: error?.constructor?.name,
-          stack: error?.stack?.substring(0, 200)
-        });
-      }
-      
-      // Solo silenciar errores específicos que sabemos que son problemáticos
-      if (errorMessage.includes('Failed to fetch') && 
-          (errorMessage.includes('googleapis.com') || 
-           errorMessage.includes('firebaseapp.com') ||
-           errorMessage.includes('_vite/ping') ||
-           errorMessage.includes('sts.googleapis.com') ||
-           errorMessage.includes('identitytoolkit.googleapis.com'))) {
-        if (!this.isRateLimited()) {
-          this.logSilently('UNHANDLED', 'Silenciando error conocido:', errorMessage.substring(0, 50));
-        }
-        event.preventDefault(); // Prevenir que aparezca en consola
-      }
-    });
+    // Manejo unificado de errores de fetch ya se hace en interceptUnhandledRejections()
+    console.log('🛡️ [NETWORK-HANDLER] Sistema simplificado activado');
     
     // NO interceptar fetch - permitir funcionamiento normal
   }

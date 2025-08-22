@@ -5,10 +5,7 @@ import "./i18n/i18n"; // Importamos la configuración de i18n
 import "./lib/network-error-handler"; // Inicializar manejador avanzado de errores
 
 // MANEJADOR DEFINITIVO para unhandledrejection - SILENCIOSO Y COMPLETO
-window.addEventListener('unhandledrejection', (event) => {
-  event.preventDefault(); // Prevenir que aparezca en console
-  // Silenciar completamente sin logs
-});
+// REMOVIDO: Conflictaba con network-error-handler.ts
 
 // MANEJADOR para errores globales también
 window.addEventListener('error', (event) => {
@@ -93,39 +90,7 @@ const ANNOYING_ERROR_PATTERNS = [
   'WebSocket'
 ];
 
-// Interceptor más agresivo para unhandled rejections
-let errorCount = 0;
-let lastReset = Date.now();
-
-window.addEventListener('unhandledrejection', (e) => {
-  const error = e.reason;
-  const errorMessage = error?.message || error?.toString() || '';
-  
-  // Reset counter cada minuto
-  if (Date.now() - lastReset > 60000) {
-    errorCount = 0;
-    lastReset = Date.now();
-  }
-  
-  // Verificar si es un error fastidioso
-  const isAnnoyingError = ANNOYING_ERROR_PATTERNS.some(pattern => 
-    errorMessage.toLowerCase().includes(pattern.toLowerCase()) ||
-    (error?.code && error.code.toLowerCase().includes(pattern.toLowerCase()))
-  );
-  
-  if (isAnnoyingError) {
-    e.preventDefault(); // Silenciar completamente
-    
-    // Solo log en modo debug explícito para evitar spam
-    errorCount++;
-    if (window.location.search.includes('debug=silent') && errorCount === 1) {
-      console.debug('🔧 [SILENT-DEBUG] Network protection active');
-    }
-    return;
-  }
-  
-  // Los demás errores se manejan normalmente
-});
+// REMOVIDO: Interceptor duplicado - se maneja en network-error-handler.ts
 
 // NOTE: console.error override already handled above
 
