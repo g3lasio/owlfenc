@@ -21,8 +21,14 @@ const SILENT_ERROR_PATTERNS = [
   'runtime-error-plugin',
   '[plugin:runtime-error-plugin]',
   'plugin:runtime-error-plugin',
-  // REMOVIDO: Patrones de auth/Firebase para permitir errores reales de autenticación
-  'firestore'
+  // Firebase STS token refresh errors
+  'requestStsToken',
+  'getToken',
+  'getIdToken',
+  'refresh',
+  '_performFetchWithErrorHandling',
+  'firestore',
+  'auth/network-request-failed'
 ];
 
 // URLs que generan muchos errores y pueden ser ignorados silenciosamente
@@ -102,12 +108,20 @@ class NetworkErrorHandler {
     // Manejo más agresivo de promesas rechazadas
     window.addEventListener('unhandledrejection', (event) => {
       const error = event.reason;
+      const errorMessage = error?.message || error?.toString() || '';
+      const errorStack = error?.stack || '';
       
-      if (this.shouldSilenceError(error)) {
+      // Check for Firebase token refresh errors specifically
+      const isFirebaseTokenError = errorStack.includes('requestStsToken') || 
+                                   errorStack.includes('getIdToken') ||
+                                   errorStack.includes('_performFetchWithErrorHandling') ||
+                                   errorMessage.includes('auth/network-request-failed');
+      
+      if (this.shouldSilenceError(error) || isFirebaseTokenError) {
         event.preventDefault();
         
         if (!this.isRateLimited()) {
-          this.logSilently('NETWORK', 'Error handled:', error?.code || 'network-error');
+          this.logSilently('FIREBASE-AUTH', 'Token refresh error silenced', error?.code || 'network-error');
         }
         
         return;
