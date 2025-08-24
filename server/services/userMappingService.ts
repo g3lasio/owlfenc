@@ -189,9 +189,9 @@ export class UserMappingService {
         throw new Error('Free Trial plan not found');
       }
       
-      // Crear suscripción trial
+      // Crear suscripción trial de 21 días
       const trialStart = new Date();
-      const trialEnd = new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)); // 7 días
+      const trialEnd = new Date(Date.now() + (21 * 24 * 60 * 60 * 1000)); // 21 días
       
       const newSubscription = await db!
         .insert(userSubscriptions)

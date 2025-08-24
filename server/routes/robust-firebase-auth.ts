@@ -22,12 +22,14 @@ export function registerRobustFirebaseAuthRoutes(app: any) {
 
       console.log(`🔐 [ROBUST-AUTH] Getting complete user data for: ${email} (${firebaseUid})`);
 
-      // Obtener o crear mapeo de usuario
+      // Verificar si es usuario completamente nuevo o existente
       let internalUserId = await userMappingService.getInternalUserId(firebaseUid);
+      let isNewUser = false;
       
       if (!internalUserId) {
         console.log(`📝 [ROBUST-AUTH] Creating new user mapping for: ${email}`);
         internalUserId = await userMappingService.createMapping(firebaseUid, email);
+        isNewUser = true; // Usuario completamente nuevo
       }
 
       if (!internalUserId) {
@@ -37,19 +39,21 @@ export function registerRobustFirebaseAuthRoutes(app: any) {
         });
       }
 
-      // Obtener suscripción
+      // Obtener suscripción existente (incluyendo expiradas)
       const subscriptionData = await userMappingService.getUserSubscriptionByFirebaseUid(firebaseUid);
       
-      // Si no tiene suscripción, crear trial automáticamente
+      // CRÍTICO: Solo crear trial para usuarios COMPLETAMENTE NUEVOS
       let subscription = subscriptionData;
-      if (!subscription) {
-        console.log(`🆓 [ROBUST-AUTH] Auto-creating trial for new user: ${email}`);
+      if (!subscription && isNewUser) {
+        console.log(`🆓 [ROBUST-AUTH] Creating trial for brand new user: ${email}`);
         try {
           await userMappingService.createTrialSubscriptionForFirebaseUid(firebaseUid, email);
           subscription = await userMappingService.getUserSubscriptionByFirebaseUid(firebaseUid);
         } catch (error) {
           console.error('❌ [ROBUST-AUTH] Failed to create trial:', error);
         }
+      } else if (!subscription && !isNewUser) {
+        console.log(`🔒 [ROBUST-AUTH] Existing user ${email} without subscription - keeping as free user (no new trial)`);
       }
 
       const response = {
