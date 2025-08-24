@@ -121,9 +121,11 @@ export default function History() {
                 ID: {project.id}
               </p>
               <div className="flex justify-end mt-4">
-                <Button size="sm" variant="outline">
-                  <i className="ri-file-text-line mr-1"></i> View
-                </Button>
+                <Link href={`/estimates?edit=${project.id}`}>
+                  <Button size="sm" variant="outline">
+                    <i className="ri-file-text-line mr-1"></i> View
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>

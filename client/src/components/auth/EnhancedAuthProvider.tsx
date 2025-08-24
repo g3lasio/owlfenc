@@ -272,9 +272,10 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     try {
       await enhancedAuth.getCurrentUserToken(true);
     } catch (error: any) {
-      console.error('Token refresh failed:', error);
-      // Force sign out if token refresh fails
-      await signOut();
+      console.debug('🔧 [TOKEN-REFRESH] Token refresh failed but continuing session:', error?.code || 'network');
+      // SOLUCION: NO hacer logout automático - permitir que el usuario continúe
+      // El logout automático estaba causando que users fueran deslogueados al acceder estimates
+      // Solo loggear el error para debugging sin afectar la experiencia del usuario
     }
   };
 
