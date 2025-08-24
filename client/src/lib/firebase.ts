@@ -303,8 +303,22 @@ export const getProjects = async (filters?: { status?: string, fenceType?: strin
     // CRITICAL SECURITY: Get current authenticated user
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      console.warn("🔒 SECURITY: No authenticated user - returning empty array");
-      return [];
+      console.warn("🔧 [PROJECTS-DEBUG] auth.currentUser is null, checking state...");
+      
+      // SOLUTION: Wait for auth state to be ready
+      return new Promise((resolve) => {
+        const unsubscribe = onAuthStateChanged(auth, (user: any) => {
+          unsubscribe();
+          if (user) {
+            console.log("🔧 [PROJECTS-DEBUG] Auth state restored, user found:", user.uid);
+            // Recursively call with authenticated user
+            getProjects(filters).then(resolve);
+          } else {
+            console.warn("🔒 SECURITY: No authenticated user - returning empty array");
+            resolve([]);
+          }
+        });
+      });
     }
 
     // Verifica si estamos en modo de desarrollo

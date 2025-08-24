@@ -11,6 +11,7 @@ import {
   updateDoc,
   deleteDoc
 } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "./firebase";
 
 // Interfaz para el cliente
@@ -80,8 +81,22 @@ export const getClients = async (userId?: string, filters?: { tag?: string, sour
     // CRITICAL SECURITY: Get current authenticated user
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      console.warn("🔒 SECURITY: No authenticated user - returning empty array");
-      return [];
+      console.warn("🔧 [CLIENTS-DEBUG] auth.currentUser is null, checking state...");
+      
+      // SOLUTION: Wait for auth state to be ready
+      return new Promise((resolve) => {
+        const unsubscribe = onAuthStateChanged(auth, (user: any) => {
+          unsubscribe();
+          if (user) {
+            console.log("🔧 [CLIENTS-DEBUG] Auth state restored, user found:", user.uid);
+            // Recursively call with authenticated user
+            getClients(userId, filters).then(resolve);
+          } else {
+            console.warn("🔒 SECURITY: No authenticated user - returning empty array");
+            resolve([]);
+          }
+        });
+      });
     }
 
     // CRITICAL SECURITY: Use authenticated user's ID if none provided
