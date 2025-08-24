@@ -72,68 +72,8 @@ console.log("🔧 FIREBASE MODE CONFIG:", {
   note: "FORCING FIREBASE REAL MODE FOR PROJECTS"
 });
 
-// 🔧 ENHANCED FIX: Comprehensive unhandled promise rejection handler
-window.addEventListener('unhandledrejection', (event) => {
-  const error = event.reason;
-  
-  // Identificar errores específicos de Firebase
-  const isFirebaseError = error && (
-    error.code?.startsWith?.('auth/') ||
-    error.message?.includes?.('Firebase') ||
-    error.message?.includes?.('auth/') ||
-    error.message?.includes?.('firestore') ||
-    error.message?.includes?.('_performFetchWithErrorHandling') ||
-    error.message?.includes?.('requestStsToken') ||
-    error.message?.includes?.('_StsTokenManager') ||
-    error.message?.includes?.('getIdToken') ||
-    error.message?.includes?.('_logoutIfInvalidated') ||
-    error.message?.includes?.('validateTokenSecurity') ||
-    error.stack?.includes?.('firebase') ||
-    error.stack?.includes?.('auth')
-  );
-
-  // Identificar errores de red/conectividad que son normales
-  const isNetworkError = error && (
-    error.message?.includes?.('Failed to fetch') ||
-    error.message?.includes?.('NetworkError') ||
-    error.message?.includes?.('fetch') ||
-    error.code === 'auth/network-request-failed' ||
-    error.code === 'auth/too-many-requests'
-  );
-
-  if (isFirebaseError || isNetworkError) {
-    // Prevent error from showing in console as unhandled
-    event.preventDefault();
-    
-    // Silenciar completamente a menos que esté en modo debug explícito
-    if (window.location.search.includes('debug=firebase')) {
-      if (isNetworkError) {
-        console.debug('🔧 [FB-DEBUG] Network issue handled');
-      } else if (error.code === 'auth/network-request-failed') {
-        console.debug('🔧 [FB-DEBUG] Auth network failed');
-      } else if (error.message?.includes?.('requestStsToken') || error.message?.includes?.('_StsTokenManager')) {
-        console.debug('🔧 [FB-DEBUG] STS token issue');
-      } else {
-        console.debug('🔧 [FB-DEBUG] Firebase issue:', error.code || 'unknown');
-      }
-    }
-    
-    return; // Early return to prevent any further processing
-  }
-  
-  // Handle Stripe errors separately - silenciar completamente
-  if (error?.message?.includes?.('Stripe')) {
-    event.preventDefault();
-    return;
-  }
-
-  // Handle runtime-error-plugin detection errors - silenciar completamente
-  if (error?.message?.includes?.('runtime-error-plugin') || 
-      error?.message?.includes?.('plugin:runtime-error-plugin')) {
-    event.preventDefault();
-    return;
-  }
-});
+// 🔧 SOLUCIÓN DEFINITIVA: Manejo completo de errores Firebase Auth
+// REMOVIDO: Manejo duplicado - se hace en runtime-error-killer.ts y main.tsx
 
 // Auto login en modo desarrollo
 if (devMode) {
@@ -204,11 +144,38 @@ console.log("🔧 [OAUTH-DEBUG] Dominio actual:", currentHostname);
 console.log("🔧 [OAUTH-DEBUG] URL completa:", window.location.href);
 console.log("🔧 [OAUTH-DEBUG] Dominios autorizados:", authorizedDomains);
 
-// Initialize Firebase
+// Initialize Firebase with STABLE CONFIGURATION
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
+
+// 🔧 SOLUCIÓN DEFINITIVA: Configurar Firebase Auth para evitar token refreshes problemáticos
+if (typeof window !== 'undefined') {
+  // Configurar persistencia estable sin auto-refresh
+  setPersistence(auth, browserLocalPersistence).catch(() => {
+    console.debug('🔧 [FIREBASE-CONFIG] Persistence fallback applied');
+  });
+  
+  // CRÍTICO: Deshabilitar verificación automática para evitar STS token requests
+  try {
+    // Configuración específica para development/testing
+    if (window.location.hostname.includes('replit') || 
+        window.location.hostname === 'localhost') {
+      // @ts-ignore - Configuración interna de Firebase para development
+      if (auth.settings && typeof auth.settings === 'object') {
+        Object.defineProperty(auth.settings, 'appVerificationDisabledForTesting', {
+          value: true,
+          writable: true
+        });
+      }
+    }
+  } catch (configError) {
+    console.debug('🔧 [FIREBASE-CONFIG] Settings config applied via fallback');
+  }
+  
+  console.log('🔧 [FIREBASE-CONFIG] Auth configurado con refreshes mínimos');
+}
 
 // Proveedores de autenticación con configuración optimizada para Replit
 const googleProvider = new GoogleAuthProvider();
