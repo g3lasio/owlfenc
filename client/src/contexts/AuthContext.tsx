@@ -303,10 +303,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const appUser: User = {
         uid: user.uid,
         email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        phoneNumber: user.phoneNumber,
-        emailVerified: user.emailVerified,
+        displayName: (user as any).displayName || null,
+        photoURL: (user as any).photoURL || null,
+        phoneNumber: (user as any).phoneNumber || null,
+        emailVerified: (user as any).emailVerified || false,
         getIdToken: () => user.getIdToken(),
       };
 
@@ -361,9 +361,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         uid: user.uid,
         email: user.email,
         displayName: displayName, // Usamos el displayName proporcionado
-        photoURL: user.photoURL,
-        phoneNumber: user.phoneNumber,
-        emailVerified: user.emailVerified,
+        photoURL: user.photoURL || null,
+        phoneNumber: user.phoneNumber || null,
+        emailVerified: user.emailVerified || false,
         getIdToken: () => user.getIdToken(),
       };
 
