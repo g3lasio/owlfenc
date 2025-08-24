@@ -1,12 +1,11 @@
-import { useContext } from 'react';
-import { PermissionContext } from '@/contexts/PermissionContext';
+import { usePermissions as usePermissionsContext } from '@/contexts/PermissionContext';
 
 // Re-export del hook desde el contexto para consistencia
 export { usePermissions } from '@/contexts/PermissionContext';
 
 // Hook auxiliar para verificaciones específicas de features
 export function useFeatureAccess() {
-  const { hasAccess, canUse, getRemainingUsage, isLimitReached, showUpgradeModal } = usePermissions();
+  const { hasAccess, canUse, getRemainingUsage, isLimitReached, showUpgradeModal } = usePermissionsContext();
 
   return {
     // Estimados
@@ -38,7 +37,7 @@ export function useFeatureAccess() {
 
 // Hook para obtener información de marcas de agua
 export function useWatermark() {
-  const { userPlan } = usePermissions();
+  const { userPlan } = usePermissionsContext();
   
   const shouldShowWatermark = (feature: 'estimates' | 'contracts'): boolean => {
     if (!userPlan) return true;

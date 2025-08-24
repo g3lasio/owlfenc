@@ -64,21 +64,22 @@ const PLANS: Plan[] = [
     motto: "Ningún trabajo es pequeño cuando tu espíritu es grande",
     price: 0,
     limits: {
-      basicEstimates: 10,
-      aiEstimates: 3,
-      contracts: 3,
-      propertyVerifications: 5,
-      permitAdvisor: 5,
-      projects: 0,
+      basicEstimates: 5,
+      aiEstimates: 1,
+      contracts: 2,
+      propertyVerifications: 2,
+      permitAdvisor: 0,
+      projects: 5,
       invoices: 0,
       paymentTracking: 0
     },
     features: [
-      "10 estimados básicos/mes (con marca de agua)",
-      "3 estimados con IA/mes (con marca de agua)",
-      "3 contratos/mes (con marca de agua)",
-      "5 Property Verification/mes",
-      "5 Permit Advisor/mes",
+      "5 estimados básicos/mes (con marca de agua)",
+      "1 estimado con IA/mes (con marca de agua)",
+      "2 contratos/mes (con marca de agua)",
+      "2 Property Verification/mes",
+      "0 Permit Advisor/mes",
+      "5 proyectos/mes",
       "Vista demo de funciones premium"
     ]
   },
@@ -88,22 +89,22 @@ const PLANS: Plan[] = [
     motto: "No eres solo un patrón, eres el estratega que transforma el reto en victoria",
     price: 4999,
     limits: {
-      basicEstimates: -1,
-      aiEstimates: 50,
-      contracts: -1,
-      propertyVerifications: 50,
-      permitAdvisor: 50,
-      projects: 5,
+      basicEstimates: 50,
+      aiEstimates: 20,
+      contracts: 25,
+      propertyVerifications: 15,
+      permitAdvisor: 10,
+      projects: 30,
       invoices: -1,
       paymentTracking: 1
     },
     features: [
-      "Estimados básicos ilimitados (sin marca de agua)",
-      "50 estimados con IA/mes (sin marca de agua)",
-      "Contratos ilimitados (sin marca de agua)",
-      "50 Property Verification/mes",
-      "50 Permit Advisor/mes",
-      "5 proyectos AI/mes",
+      "50 estimados básicos/mes (sin marca de agua)",
+      "20 estimados con IA/mes (sin marca de agua)",
+      "25 contratos/mes (sin marca de agua)",
+      "15 Property Verification/mes",
+      "10 Permit Advisor/mes",
+      "30 proyectos AI/mes",
       "Sistema de facturación completo"
     ]
   },
@@ -175,41 +176,48 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
   const [upgradeFeature, setUpgradeFeature] = useState('');
 
   const loadUserPlan = useCallback(async () => {
+    if (!currentUser?.uid) {
+      console.log(`📭 [PERMISSION-CONTEXT] No user - using default free plan`);
+      setUserPlan(PLANS[0]);
+      return;
+    }
+
     try {
-      // PRIORITY: Always call the API first to check for owner privileges
-      const response = await fetch('/api/subscription/user-subscription', {
-        method: 'GET',
+      // PRIORITY: Use robust backend system
+      const response = await fetch(`/api/auth/user-data`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          firebaseUid: currentUser.uid,
+          email: currentUser.email
+        })
       });
 
       if (response.ok) {
         const data = await response.json();
-        const planData = data.plan;
         
-        // Mapear plan del servidor a nuestro formato local
-        const plan = PLANS.find(p => p.id === planData.id) || PLANS[0];
-        setUserPlan(plan);
-        
-        // Owner privileges detected - Master Contractor
-        if (planData.id === 3 && data.subscription?.id === 'owner_unlimited') {
-          console.log(`👑 [PERMISSION-CONTEXT] Platform owner detected - Master Contractor privileges granted`);
-          setIsTrialUser(false);
-          setTrialDaysRemaining(0);
-          return; // Skip dev simulation completely
+        if (data.success && data.subscription) {
+          const { planName, daysRemaining, isTrialing } = data.subscription;
+          
+          // Map backend plan name to frontend plan
+          let planId = 1; // Default to Primo Chambeador
+          if (planName === 'Primo Chambeador') planId = 1;
+          else if (planName === 'Mero Patrón') planId = 2;
+          else if (planName === 'Master Contractor') planId = 3;
+          else if (planName === 'Free Trial' || planName === 'Trial Master') planId = 4;
+          
+          const plan = PLANS.find(p => p.id === planId) || PLANS[0];
+          setUserPlan(plan);
+          
+          // Set trial information
+          setIsTrialUser(isTrialing || false);
+          setTrialDaysRemaining(daysRemaining || 0);
+          
+          console.log(`✅ [PERMISSION-CONTEXT] Loaded plan: ${planName} (ID: ${planId}), Trial: ${isTrialing}, Days: ${daysRemaining}`);
+          return;
         }
-        
-        // Manejar información de trial
-        if (planData.id === 4) {
-          setIsTrialUser(true);
-          setTrialDaysRemaining(data.trialDaysRemaining || 0);
-          console.log(`🆓 [PERMISSION-CONTEXT] Trial Master detected - ${data.trialDaysRemaining} días restantes`);
-        } else {
-          setIsTrialUser(false);
-          setTrialDaysRemaining(0);
-        }
-        return; // API response successful, skip dev simulation
       }
 
       // FALLBACK: Only use dev simulation if API fails
@@ -243,26 +251,47 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
       console.error('Error loading user plan:', error);
       setUserPlan(PLANS[0]); // Fallback al plan gratuito
     }
-  }, []);
+  }, [currentUser?.uid]);
 
   const loadUserUsage = useCallback(async () => {
-    if (!currentUser) return;
+    if (!currentUser?.uid) {
+      setUserUsage({
+        basicEstimates: 0,
+        aiEstimates: 0,
+        contracts: 0,
+        propertyVerifications: 0,
+        permitAdvisor: 0,
+        projects: 0,
+        month: new Date().toISOString().slice(0, 7)
+      });
+      setLoading(false);
+      return;
+    }
 
     try {
-      // En desarrollo, usar el usuario simulado del backend
-      const isDevelopment = window.location.hostname.includes('replit') || window.location.hostname.includes('localhost');
-      const userId = currentUser.uid;
-      
-      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-      const response = await fetch(`/api/usage/${userId}?month=${currentMonth}`);
+      // Get real usage data from robust backend
+      const response = await fetch(`/api/auth/can-access/${currentUser.uid}/basicEstimates`);
       
       if (response.ok) {
-        const usage = await response.json();
-        console.log(`✅ [PERMISSION-CONTEXT] Datos de uso cargados exitosamente:`, usage);
-        console.log(`📊 [PERMISSION-CONTEXT] propertyVerifications: ${usage.propertyVerifications}, permitAdvisor: ${usage.permitAdvisor}`);
-        setUserUsage(usage);
+        const data = await response.json();
+        
+        if (data.success && data.usage) {
+          // Map backend usage to frontend format
+          const usage = {
+            basicEstimates: data.usage.used || 0,
+            aiEstimates: 0, // Will be loaded separately if needed
+            contracts: 0,   // Will be loaded separately if needed
+            propertyVerifications: 0, // Will be loaded separately if needed
+            permitAdvisor: 0, // Will be loaded separately if needed
+            projects: 0,
+            month: new Date().toISOString().slice(0, 7)
+          };
+          
+          setUserUsage(usage);
+          console.log(`✅ [PERMISSION-CONTEXT] Usage loaded: ${data.usage.used}/${data.usage.limit} for basicEstimates`);
+        }
       } else {
-        // Inicializar uso vacío para el mes actual
+        // Fallback to empty usage
         setUserUsage({
           basicEstimates: 0,
           aiEstimates: 0,
@@ -270,15 +299,24 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
           propertyVerifications: 0,
           permitAdvisor: 0,
           projects: 0,
-          month: currentMonth
+          month: new Date().toISOString().slice(0, 7)
         });
       }
     } catch (error) {
       console.error('Error loading user usage:', error);
+      setUserUsage({
+        basicEstimates: 0,
+        aiEstimates: 0,
+        contracts: 0,
+        propertyVerifications: 0,
+        permitAdvisor: 0,
+        projects: 0,
+        month: new Date().toISOString().slice(0, 7)
+      });
     } finally {
       setLoading(false);
     }
-  }, [currentUser]);
+  }, [currentUser?.uid]);
 
   // Simplified useEffect to prevent dependency loops
   useEffect(() => {
