@@ -216,6 +216,7 @@ export class UserMappingService {
 
   /**
    * Verificar si el usuario puede usar una feature específica
+   * CORREGIDO: Ahora usa el sistema robusto de PostgreSQL
    */
   async canUseFeature(firebaseUid: string, feature: string): Promise<{
     canUse: boolean;
@@ -224,29 +225,60 @@ export class UserMappingService {
     planName?: string;
   }> {
     try {
-      const subscriptionData = await this.getUserSubscriptionByFirebaseUid(firebaseUid);
-      
-      if (!subscriptionData) {
+      // Obtener user_id interno
+      const internalUserId = await this.getInternalUserId(firebaseUid);
+      if (!internalUserId) {
         return { canUse: false, used: 0, limit: 0 };
       }
+
+      // Usar sistema robusto de PostgreSQL
+      const { subscriptionControlService } = await import('./subscriptionControlService');
+      const usageStatus = await subscriptionControlService.canUseFeature(internalUserId.toString(), feature);
       
-      const { plan } = subscriptionData;
-      const features = plan?.features as Record<string, number> || {};
-      const limit = features[feature] || 0;
-      
-      // TODO: Implementar contador real de uso desde userUsageLimits
-      const used = 0; // Por ahora 0, luego implementar real
+      // Obtener nombre del plan
+      const subscriptionData = await this.getUserSubscriptionByFirebaseUid(firebaseUid);
+      const planName = subscriptionData?.plan?.name;
       
       return {
-        canUse: limit === -1 || used < limit,
-        used,
-        limit,
-        planName: plan?.name
+        canUse: usageStatus.canUse,
+        used: usageStatus.used,
+        limit: usageStatus.limit,
+        planName
       };
       
     } catch (error) {
       console.error('❌ [USER-MAPPING] Error checking feature:', error);
       return { canUse: false, used: 0, limit: 0 };
+    }
+  }
+
+  /**
+   * Incrementar uso de una feature específica
+   * NUEVO: Método para incrementar conteo real
+   */
+  async incrementFeatureUsage(firebaseUid: string, feature: string, count: number = 1): Promise<boolean> {
+    try {
+      const internalUserId = await this.getInternalUserId(firebaseUid);
+      if (!internalUserId) {
+        console.error('❌ [USER-MAPPING] No internal user ID found for incrementing usage');
+        return false;
+      }
+
+      // Usar sistema robusto de PostgreSQL
+      const { subscriptionControlService } = await import('./subscriptionControlService');
+      const success = await subscriptionControlService.incrementUsage(internalUserId.toString(), feature, count);
+      
+      if (success) {
+        console.log(`✅ [USER-MAPPING] Incremented ${feature} usage by ${count} for Firebase UID: ${firebaseUid}`);
+      } else {
+        console.warn(`⚠️ [USER-MAPPING] Failed to increment ${feature} usage - limit exceeded for Firebase UID: ${firebaseUid}`);
+      }
+      
+      return success;
+      
+    } catch (error) {
+      console.error('❌ [USER-MAPPING] Error incrementing feature usage:', error);
+      return false;
     }
   }
 }

@@ -32,14 +32,14 @@ export class SubscriptionControlService {
    */
   async getUserSubscriptionStatus(userId: string): Promise<SubscriptionStatus | null> {
     try {
-      const result = await db
+      const result = await db!
         .select({
           userSub: userSubscriptions,
           plan: subscriptionPlans
         })
         .from(userSubscriptions)
         .leftJoin(subscriptionPlans, eq(userSubscriptions.planId, subscriptionPlans.id))
-        .where(eq(userSubscriptions.userId, userId))
+        .where(eq(userSubscriptions.userId, parseInt(userId)))
         .limit(1);
 
       if (!result.length) {
@@ -49,7 +49,7 @@ export class SubscriptionControlService {
 
       const { userSub, plan } = result[0];
       const now = new Date();
-      const periodEnd = new Date(userSub.currentPeriodEnd);
+      const periodEnd = new Date(userSub.currentPeriodEnd || new Date());
       const daysRemaining = Math.max(0, Math.ceil((periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 
       return {
@@ -58,7 +58,7 @@ export class SubscriptionControlService {
         planId: userSub.planId,
         daysRemaining,
         isTrialing: userSub.status === 'trialing',
-        trialDaysUsed: userSub.trialDaysUsed || 0,
+        trialDaysUsed: 0, // Simplificado por ahora
         currentPeriodEnd: periodEnd
       };
     } catch (error) {
