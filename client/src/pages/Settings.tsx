@@ -326,27 +326,6 @@ export default function Settings() {
     });
   };
 
-  // Billing functions
-  const handleViewPlans = () => {
-    toast({
-      title: "Redirecting to Plans",
-      description: "Opening subscription plans page...",
-    });
-  };
-
-  const handleAddPaymentMethod = () => {
-    toast({
-      title: "Add Payment Method",
-      description: "Opening payment method setup...",
-    });
-  };
-
-  const handleDownloadBilling = () => {
-    toast({
-      title: "Download Started",
-      description: "Preparing billing history download...",
-    });
-  };
 
   // Security & Privacy handlers
   const handleEnable2FA = async () => {
@@ -485,15 +464,6 @@ export default function Settings() {
                   </span>
                 </TabsTrigger>
 
-                <TabsTrigger
-                  value="billing"
-                  className="flex flex-col items-center justify-center gap-2 p-4 h-20 text-xs font-medium text-slate-300 bg-slate-800/70 border border-slate-600/50 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-cyan-400/70 data-[state=active]:text-cyan-200 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20 hover:bg-slate-700/70 hover:border-slate-500/60 hover:text-slate-200 transition-all duration-300 cursor-pointer w-full"
-                >
-                  <CreditCard className="h-6 w-6 flex-shrink-0" />
-                  <span className="text-[11px] font-medium leading-none text-center">
-                    Billing
-                  </span>
-                </TabsTrigger>
 
                 <TabsTrigger
                   value="notifications"
@@ -661,149 +631,50 @@ export default function Settings() {
             </div>
           </TabsContent>
 
-          {/* BILLING TAB */}
-          <TabsContent value="billing" className="space-y-4 md:space-y-6">
-            {/* Current Plan - Cyberpunk Style */}
+          {/* BILLING REDIRECT TAB */}
+          <TabsContent value="billing-redirect" className="space-y-4 md:space-y-6">
             <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-              <Card className="relative bg-slate-900/80 backdrop-blur border border-cyan-400/30 hover:border-cyan-400/50 transition-all duration-300">
-                {/* Corner Brackets */}
-                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan-400"></div>
-                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyan-400"></div>
-                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyan-400"></div>
-                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-cyan-400"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-emerald-500/10 blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+              <Card className="relative bg-slate-900/80 backdrop-blur border border-green-400/30 hover:border-green-400/50 transition-all duration-300">
+                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-green-400"></div>
+                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-green-400"></div>
+                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-green-400"></div>
+                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-green-400"></div>
 
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-cyan-300">
-                    <CreditCard className="h-5 w-5" />
-                    SUBSCRIPTION & BILLING
+                <CardHeader className="pb-4 text-center">
+                  <CardTitle className="flex items-center justify-center gap-2 text-green-300">
+                    <CreditCard className="h-6 w-6" />
+                    GESTIÓN DE FACTURACIÓN
                   </CardTitle>
                   <CardDescription className="text-slate-400">
-                    Manage your subscription, payment methods, and billing
-                    history.
+                    Accede a tu panel completo de facturación y suscripciones
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Current Plan */}
-                  <div className="relative p-4 md:p-6 bg-gradient-to-r from-cyan-500/20 via-blue-500/10 to-purple-500/20 rounded-lg border border-cyan-400/50 backdrop-blur-sm">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
-                      <div>
-                        <h3 className="text-xl md:text-2xl font-bold text-cyan-300 mb-1">
-                          SUBSCRIPTION PLAN
-                        </h3>
-                        <p className="text-slate-300 text-sm md:text-base">
-                          Manage your subscription details
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                      <div className="text-center sm:text-left">
-                        <p className="text-xs md:text-sm text-slate-400 uppercase tracking-wide">
-                          Monthly Price
-                        </p>
-                        <p className="text-xl md:text-2xl font-bold text-slate-400">
-                          Not Set
-                        </p>
-                      </div>
-                      <div className="text-center sm:text-left">
-                        <p className="text-xs md:text-sm text-slate-400 uppercase tracking-wide">
-                          Next Billing
-                        </p>
-                        <p className="font-semibold text-slate-400">
-                          Not Scheduled
-                        </p>
-                      </div>
-                      <div className="text-center sm:text-left">
-                        <p className="text-xs md:text-sm text-slate-400 uppercase tracking-wide">
-                          Payment Method
-                        </p>
-                        <p className="font-semibold text-slate-400">
-                          Not Added
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
-                      <Button
-                        onClick={handleViewPlans}
-                        variant="outline"
-                        className="bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400 text-xs md:text-sm"
-                      >
-                        View Plans
-                      </Button>
-                      <Button
-                        onClick={handleAddPaymentMethod}
-                        variant="outline"
-                        className="bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400 text-xs md:text-sm"
-                      >
-                        Add Payment Method
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Payment Methods */}
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3 text-cyan-300 uppercase tracking-wide">
-                      Payment Methods
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="flex flex-col items-center justify-center gap-3 p-8 bg-slate-800/30 border border-slate-700/50 rounded-lg">
-                        <CreditCard className="h-12 w-12 text-slate-500" />
-                        <div className="text-center">
-                          <p className="font-medium text-slate-400 mb-1">
-                            No payment methods added
-                          </p>
-                          <p className="text-sm text-slate-500">
-                            Add a payment method to manage your subscription
-                          </p>
-                        </div>
-                      </div>
-
-                      <Button
-                        onClick={handleAddPaymentMethod}
-                        variant="outline"
-                        className="w-full bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400"
-                      >
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        Add Payment Method
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Billing History */}
-                  <div>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                      <h3 className="text-lg font-semibold text-cyan-300 uppercase tracking-wide">
-                        Billing History
+                <CardContent className="space-y-6 text-center">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="p-8 bg-gradient-to-r from-green-500/20 via-emerald-500/10 to-teal-500/20 rounded-lg border border-green-400/50 backdrop-blur-sm">
+                      <h3 className="text-xl font-bold text-green-300 mb-3">
+                        PANEL DE FACTURACIÓN COMPLETO
                       </h3>
-                      <Button
-                        onClick={handleDownloadBilling}
-                        variant="outline"
-                        size="sm"
-                        className="bg-slate-800/50 border-cyan-400/50 text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400 text-xs md:text-sm"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download All
-                      </Button>
-                    </div>
-
-                    <div className="flex flex-col items-center justify-center gap-3 p-8 bg-slate-800/30 border border-slate-700/50 rounded-lg">
-                      <FileText className="h-12 w-12 text-slate-500" />
-                      <div className="text-center">
-                        <p className="font-medium text-slate-400 mb-1">
-                          No billing history
-                        </p>
-                        <p className="text-sm text-slate-500">
-                          Your billing transactions will appear here
-                        </p>
-                      </div>
+                      <p className="text-slate-300 mb-6">
+                        Gestiona métodos de pago, historial de facturación, uso de beneficios y cancelaciones en un solo lugar.
+                      </p>
+                      <Link href="/billing">
+                        <Button 
+                          size="lg"
+                          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-8 py-3"
+                        >
+                          <CreditCard className="h-5 w-5 mr-2" />
+                          Ir a Facturación
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
+
 
           {/* NOTIFICATIONS TAB */}
           <TabsContent value="notifications" className="space-y-6">

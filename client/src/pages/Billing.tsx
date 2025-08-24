@@ -15,6 +15,8 @@ import { Loader2, CreditCard, Info, AlertCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { CardForm } from "@/components/payments/CardForm";
 import { Link } from "wouter";
+import { BenefitsTracker } from "@/components/ui/benefits-tracker";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 // Interfaces para tipos de datos
 interface PaymentMethod {
@@ -139,6 +141,35 @@ export default function Billing() {
     },
   });
 
+  // Mutación para cancelar suscripción
+  const cancelSubscriptionMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest(
+        "POST",
+        "/api/subscription/cancel",
+        {},
+      );
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Suscripción cancelada",
+        description: "Tu suscripción ha sido cancelada exitosamente. Mantienes acceso hasta el final del período actual.",
+      });
+      // Refresh subscription data
+      queryClient.invalidateQueries({
+        queryKey: ["/api/subscription/user-subscription"],
+      });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo cancelar la suscripción. Por favor, contacta a soporte.",
+      });
+    },
+  });
+
   // Función para formatear fecha de un timestamp
   const formatDate = (timestamp: number): string => {
     const date = new Date(timestamp * 1000);
@@ -197,6 +228,11 @@ export default function Billing() {
     createCustomerPortalMutation.mutate();
   };
 
+  // Manejar cancelación de suscripción
+  const handleCancelSubscription = () => {
+    cancelSubscriptionMutation.mutate();
+  };
+
   // Verificar si hay redirección desde Stripe
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -249,6 +285,9 @@ export default function Billing() {
             </TabsTrigger>
             <TabsTrigger value="billing-history" className="whitespace-nowrap">
               Historial de Facturación
+            </TabsTrigger>
+            <TabsTrigger value="benefits" className="whitespace-nowrap">
+              Uso de Beneficios
             </TabsTrigger>
             <TabsTrigger value="subscription" className="whitespace-nowrap">
               Suscripción
@@ -414,6 +453,11 @@ export default function Billing() {
           </Card>
         </TabsContent>
 
+        {/* TAB: USO DE BENEFICIOS */}
+        <TabsContent value="benefits" className="space-y-4">
+          <BenefitsTracker showAlerts={false} />
+        </TabsContent>
+
         {/* TAB: SUSCRIPCIÓN */}
         <TabsContent value="subscription" className="space-y-4">
           <Card>
@@ -476,18 +520,19 @@ export default function Billing() {
                 </>
               )}
             </CardContent>
-            <CardFooter className="flex flex-col md:flex-row gap-4 md:justify-between">
+            <CardFooter className="flex flex-col gap-4">
               <div className="text-sm text-muted-foreground">
                 <p>
                   Puedes cambiar de plan o cancelar tu suscripción en cualquier
                   momento.
                 </p>
               </div>
-              <div className="flex gap-4">
+              <div className="flex flex-col md:flex-row gap-4">
                 <Button
                   variant="outline"
                   onClick={handleOpenStripePortal}
                   disabled={createCustomerPortalMutation.isPending}
+                  className="flex-1"
                 >
                   {createCustomerPortalMutation.isPending ? (
                     <>
@@ -498,12 +543,61 @@ export default function Billing() {
                     <>Gestionar Suscripción</>
                   )}
                 </Button>
-                <Link href="/subscription">
+                <Link href="/subscription" className="flex-1">
                   <Button variant="default" className="w-full">
                     Ver Planes Disponibles
                   </Button>
                 </Link>
               </div>
+              
+              {/* Botón específico de cancelación */}
+              {userSubscription?.status === "active" && (
+                <div className="pt-4 border-t">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+                      >
+                        <AlertCircle className="mr-2 h-4 w-4" />
+                        Cancelar Suscripción
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Cancelar suscripción?</AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-2">
+                          <p>Al cancelar tu suscripción:</p>
+                          <ul className="list-disc list-inside space-y-1 text-sm">
+                            <li>Mantienes acceso hasta {getNextBillingDate()}</li>
+                            <li>No se realizarán más cobros automáticos</li>
+                            <li>Tus datos se conservan por si decides regresar</li>
+                            <li>Puedes reactivar en cualquier momento</li>
+                          </ul>
+                          <p className="text-sm font-medium">Esta acción se puede revertir.</p>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Mantener Suscripción</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={handleCancelSubscription}
+                          disabled={cancelSubscriptionMutation.isPending}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          {cancelSubscriptionMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Cancelando...
+                            </>
+                          ) : (
+                            "Sí, Cancelar"
+                          )}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              )}
             </CardFooter>
           </Card>
         </TabsContent>
