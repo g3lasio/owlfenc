@@ -64,17 +64,38 @@ router.get('/google/callback', async (req, res) => {
     const userInfo = userResponse.data;
     console.log('✅ [OAUTH-DIRECT] Google User:', userInfo.email);
     
-    // Crear custom token de Firebase
+    // Verificar si el usuario ya existe en Firebase
     const { getAuth } = await import('firebase-admin/auth');
-    const customToken = await getAuth().createCustomToken(userInfo.id, {
+    const firebaseAdmin = getAuth();
+    
+    let isNewUser = false;
+    let customToken: string;
+    
+    try {
+      // Intentar obtener el usuario existente por email
+      await firebaseAdmin.getUserByEmail(userInfo.email);
+      console.log('✅ [OAUTH-DIRECT] Usuario existente encontrado:', userInfo.email);
+      isNewUser = false;
+    } catch (userError: any) {
+      if (userError.code === 'auth/user-not-found') {
+        console.log('🆕 [OAUTH-DIRECT] Nuevo usuario detectado:', userInfo.email);
+        isNewUser = true;
+      } else {
+        throw userError;
+      }
+    }
+    
+    // Crear custom token con información adicional
+    customToken = await firebaseAdmin.createCustomToken(userInfo.id, {
       email: userInfo.email,
       name: userInfo.name,
       picture: userInfo.picture,
-      provider: 'google'
+      provider: 'google',
+      isNewUser
     });
     
-    // Redirigir al frontend con el token
-    const frontendUrl = `${req.protocol}://${req.get('host')}/login?token=${customToken}&provider=google&state=${state}`;
+    // Redirigir al frontend con el token y información de usuario nuevo
+    const frontendUrl = `${req.protocol}://${req.get('host')}/login?token=${customToken}&provider=google&state=${state}&new_user=${isNewUser}`;
     res.redirect(frontendUrl);
     
   } catch (error) {
@@ -123,20 +144,42 @@ router.post('/apple/callback', async (req, res) => {
     
     // Para Apple, usaremos la información básica disponible
     const userInfo = user ? JSON.parse(user) : { email: 'apple_user@unknown.com' };
+    const userEmail = userInfo.email || 'apple_user@unknown.com';
     const appleUserId = `apple_${Date.now()}`;
     
     console.log('✅ [OAUTH-DIRECT] Apple User Info:', userInfo);
     
-    // Crear custom token de Firebase
+    // Verificar si el usuario ya existe en Firebase
     const { getAuth } = await import('firebase-admin/auth');
-    const customToken = await getAuth().createCustomToken(appleUserId, {
-      email: userInfo.email || 'apple_user@unknown.com',
+    const firebaseAdmin = getAuth();
+    
+    let isNewUser = false;
+    let customToken: string;
+    
+    try {
+      // Intentar obtener el usuario existente por email
+      await firebaseAdmin.getUserByEmail(userEmail);
+      console.log('✅ [OAUTH-DIRECT] Usuario existente encontrado:', userEmail);
+      isNewUser = false;
+    } catch (userError: any) {
+      if (userError.code === 'auth/user-not-found') {
+        console.log('🆕 [OAUTH-DIRECT] Nuevo usuario detectado:', userEmail);
+        isNewUser = true;
+      } else {
+        throw userError;
+      }
+    }
+    
+    // Crear custom token con información adicional
+    customToken = await firebaseAdmin.createCustomToken(appleUserId, {
+      email: userEmail,
       name: userInfo.name?.firstName ? `${userInfo.name.firstName} ${userInfo.name.lastName || ''}`.trim() : 'Apple User',
-      provider: 'apple'
+      provider: 'apple',
+      isNewUser
     });
     
-    // Redirigir al frontend con el token
-    const frontendUrl = `${req.protocol}://${req.get('host')}/login?token=${customToken}&provider=apple&state=${state}`;
+    // Redirigir al frontend con el token y información de usuario nuevo
+    const frontendUrl = `${req.protocol}://${req.get('host')}/login?token=${customToken}&provider=apple&state=${state}&new_user=${isNewUser}`;
     res.redirect(frontendUrl);
     
   } catch (error) {

@@ -131,11 +131,21 @@ export default function AuthPage() {
           const result = await handleOAuthCallback();
           
           if (result.success) {
-            console.log('✅ [OAUTH-CALLBACK] Login exitoso via OAuth');
-            toast({
-              title: "Autenticación exitosa",
-              description: "Te has autenticado correctamente",
-            });
+            console.log(`✅ [OAUTH-CALLBACK] Login exitoso via ${result.provider}, usuario nuevo: ${result.isNewUser}`);
+            
+            // Manejar diferente mensaje según si es usuario nuevo o existente
+            if (result.isNewUser) {
+              toast({
+                title: "¡Cuenta creada!",
+                description: `Tu nueva cuenta ha sido creada con ${result.provider === 'google' ? 'Google' : 'Apple ID'}`,
+              });
+            } else {
+              toast({
+                title: "¡Bienvenido de vuelta!",
+                description: `Has iniciado sesión con ${result.provider === 'google' ? 'Google' : 'Apple ID'}`,
+              });
+            }
+            
             showSuccessEffect();
             return;
           } else if (result.error) {
@@ -320,20 +330,56 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       clearError();
-      console.log("=== INICIANDO GOOGLE AUTH DESDE LOGIN PAGE ===");
+      console.log(`🔵 [GOOGLE-AUTH] Iniciando en modo: ${authMode}`);
       
-      // ALTERNATIVA ULTRA SIMPLE - Redirección inmediata
-      instantGoogleLogin();
+      if (authMode === "signup") {
+        // MODO SIGNUP: Crear nueva cuenta con Google
+        console.log("🔵 [GOOGLE-SIGNUP] Creando nueva cuenta...");
+        const user = await loginWithGoogle();
+        
+        if (user) {
+          console.log("✅ [GOOGLE-SIGNUP] Nueva cuenta creada:", user.email);
+          toast({
+            title: "¡Cuenta creada!",
+            description: `Bienvenido ${user.displayName || user.email}`,
+          });
+          showSuccessEffect();
+        }
+      } else {
+        // MODO LOGIN: Iniciar sesión existente
+        console.log("🔵 [GOOGLE-LOGIN] Iniciando sesión...");
+        const user = await loginWithGoogle();
+        
+        if (user) {
+          console.log("✅ [GOOGLE-LOGIN] Sesión iniciada:", user.email);
+          toast({
+            title: "¡Bienvenido de vuelta!",
+            description: `Sesión iniciada como ${user.displayName || user.email}`,
+          });
+          showSuccessEffect();
+        } else {
+          // Redirección en proceso
+          toast({
+            title: "Redirigiendo a Google",
+            description: "Se abrirá la página de autenticación de Google.",
+          });
+        }
+      }
       
-      // La función robustOAuthHandler maneja la redirección
-      console.log("GOOGLE REDIRECCIÓN INICIADA");
-      
-      toast({
-        title: "Redirigiendo a Google",
-        description: "Se abrirá la página de autenticación de Google.",
-      });
     } catch (err: any) {
-      console.error("ERROR EN GOOGLE AUTH:", err);
+      console.error("❌ [GOOGLE-AUTH] Error:", err);
+      
+      // Verificar si es usuario no registrado intentando hacer login
+      if (authMode === "login" && (err.code === "auth/user-not-found" || err.message?.includes('user-not-found'))) {
+        toast({
+          variant: "default",
+          title: "Usuario no registrado",
+          description: "Esta cuenta no existe. ¿Quieres crear una cuenta nueva?",
+        });
+        // Cambiar automáticamente a modo signup
+        setTimeout(() => setAuthMode("signup"), 2000);
+        return;
+      }
       
       // Mapear errores a mensajes amigables
       let errorDescription = err.message;
@@ -367,23 +413,56 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       clearError();
+      console.log(`🍎 [APPLE-AUTH] Iniciando en modo: ${authMode}`);
 
-      console.log("=== INICIANDO APPLE AUTH DESDE LOGIN PAGE ===");
-      console.log("Modo:", authMode);
-      console.log("URL:", window.location.href);
-
-      // ALTERNATIVA ULTRA SIMPLE - Redirección inmediata  
-      instantAppleLogin();
-
-      // La función robustOAuthHandler maneja la redirección
-      console.log("REDIRECCIÓN INICIADA - Procesando en nueva página");
+      if (authMode === "signup") {
+        // MODO SIGNUP: Crear nueva cuenta con Apple
+        console.log("🍎 [APPLE-SIGNUP] Creando nueva cuenta...");
+        const user = await loginWithApple();
+        
+        if (user) {
+          console.log("✅ [APPLE-SIGNUP] Nueva cuenta creada:", user.email);
+          toast({
+            title: "¡Cuenta creada!",
+            description: `Bienvenido ${user.displayName || user.email}`,
+          });
+          showSuccessEffect();
+        }
+      } else {
+        // MODO LOGIN: Iniciar sesión existente
+        console.log("🍎 [APPLE-LOGIN] Iniciando sesión...");
+        const user = await loginWithApple();
+        
+        if (user) {
+          console.log("✅ [APPLE-LOGIN] Sesión iniciada:", user.email);
+          toast({
+            title: "¡Bienvenido de vuelta!",
+            description: `Sesión iniciada como ${user.displayName || user.email}`,
+          });
+          showSuccessEffect();
+        } else {
+          // Redirección en proceso
+          toast({
+            title: "Redirigiendo a Apple",
+            description: "Se abrirá la página de autenticación de Apple ID.",
+          });
+        }
+      }
       
-      toast({
-        title: "Redirigiendo a Apple",
-        description: "Se abrirá la página de autenticación de Apple ID.",
-      });
     } catch (err: any) {
-      console.error("ERROR EN APPLE AUTH:", err);
+      console.error("❌ [APPLE-AUTH] Error:", err);
+
+      // Verificar si es usuario no registrado intentando hacer login
+      if (authMode === "login" && (err.code === "auth/user-not-found" || err.message?.includes('user-not-found'))) {
+        toast({
+          variant: "default",
+          title: "Usuario no registrado",
+          description: "Esta cuenta no existe. ¿Quieres crear una cuenta nueva?",
+        });
+        // Cambiar automáticamente a modo signup
+        setTimeout(() => setAuthMode("signup"), 2000);
+        return;
+      }
 
       // Mapear errores a mensajes amigables
       let errorTitle = "Error de Apple ID";

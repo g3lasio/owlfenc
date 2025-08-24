@@ -8,7 +8,7 @@ import { signInWithCustomToken, getAuth } from 'firebase/auth';
 /**
  * Procesar callback de OAuth
  */
-export async function handleOAuthCallback(): Promise<{ success: boolean; error?: string }> {
+export async function handleOAuthCallback(): Promise<{ success: boolean; error?: string; isNewUser?: boolean; provider?: string }> {
   console.log('🔍 [OAUTH-HANDLER] Verificando callback de OAuth...');
   
   // Obtener parámetros de la URL
@@ -16,6 +16,7 @@ export async function handleOAuthCallback(): Promise<{ success: boolean; error?:
   const token = urlParams.get('token');
   const provider = urlParams.get('provider');
   const error = urlParams.get('error');
+  const newUser = urlParams.get('new_user') === 'true';
   
   // Si hay error, manejarlo
   if (error) {
@@ -46,7 +47,7 @@ export async function handleOAuthCallback(): Promise<{ success: boolean; error?:
     return { success: false };
   }
   
-  console.log('✅ [OAUTH-HANDLER] Token recibido de:', provider);
+  console.log(`✅ [OAUTH-HANDLER] Token recibido de ${provider}, usuario nuevo: ${newUser}`);
   
   try {
     // Autenticar con el custom token de Firebase
@@ -55,14 +56,39 @@ export async function handleOAuthCallback(): Promise<{ success: boolean; error?:
     
     console.log('✅ [OAUTH-HANDLER] Usuario autenticado:', userCredential.user.email);
     
+    // Disparar evento para notificar el resultado con información adicional
+    const oauthResultEvent = new CustomEvent('oauth-login-result', {
+      detail: {
+        success: true,
+        provider,
+        isNewUser: newUser,
+        user: {
+          email: userCredential.user.email,
+          displayName: userCredential.user.displayName,
+          photoURL: userCredential.user.photoURL
+        }
+      }
+    });
+    window.dispatchEvent(oauthResultEvent);
+    
     // Limpiar la URL
     const cleanUrl = window.location.pathname;
     window.history.replaceState({}, document.title, cleanUrl);
     
-    return { success: true };
+    return { success: true, isNewUser: newUser, provider: provider || undefined };
     
   } catch (error: any) {
     console.error('❌ [OAUTH-HANDLER] Error procesando token:', error);
+    
+    // Disparar evento para notificar el error
+    const oauthErrorEvent = new CustomEvent('oauth-login-result', {
+      detail: {
+        success: false,
+        provider,
+        error: error.message
+      }
+    });
+    window.dispatchEvent(oauthErrorEvent);
     
     // Si el token es inválido o expirado
     if (error?.code === 'auth/invalid-custom-token') {
