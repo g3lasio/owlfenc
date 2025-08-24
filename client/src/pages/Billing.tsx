@@ -16,7 +16,10 @@ import { apiRequest } from "@/lib/queryClient";
 import { CardForm } from "@/components/payments/CardForm";
 import { Link } from "wouter";
 import { BenefitsTracker } from "@/components/ui/benefits-tracker";
+import { IntelligentAlerts } from "@/components/ui/intelligent-alerts";
+import { EnhancedCustomerPortal } from "@/components/subscription/enhanced-customer-portal";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { UnifiedContainer, UnifiedCard, designSystem } from "@/components/ui/visual-design-system";
 
 // Interfaces para tipos de datos
 interface PaymentMethod {
@@ -269,28 +272,42 @@ export default function Billing() {
   }, [paymentMethods]);
 
   return (
-    <div className="container p-4 max-w-5xl mx-auto py-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Facturación y Pagos</h1>
-        <p className="text-muted-foreground">
+    <UnifiedContainer variant="billing">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+          💳 Facturación y Pagos
+        </h1>
+        <p className="text-muted-foreground text-lg">
           Administra tu información de pago y revisa tu historial de facturación
         </p>
       </div>
 
-      <Tabs defaultValue="payment-methods" className="space-y-4">
+      <Tabs defaultValue="benefits" className={designSystem.spacing.section}>
         <div className="overflow-x-auto">
-          <TabsList className="flex w-max min-w-full gap-2 px-2">
-            <TabsTrigger value="payment-methods" className="whitespace-nowrap">
-              Métodos de Pago
+          <TabsList className="flex w-max min-w-full gap-2 px-2 bg-green-50/50 border border-green-200">
+            <TabsTrigger 
+              value="benefits" 
+              className="whitespace-nowrap data-[state=active]:bg-green-600 data-[state=active]:text-white"
+            >
+              📊 Uso de Beneficios
             </TabsTrigger>
-            <TabsTrigger value="billing-history" className="whitespace-nowrap">
-              Historial de Facturación
+            <TabsTrigger 
+              value="subscription" 
+              className="whitespace-nowrap data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+            >
+              💎 Suscripción
             </TabsTrigger>
-            <TabsTrigger value="benefits" className="whitespace-nowrap">
-              Uso de Beneficios
+            <TabsTrigger 
+              value="payment-methods" 
+              className="whitespace-nowrap data-[state=active]:bg-green-600 data-[state=active]:text-white"
+            >
+              💳 Métodos de Pago
             </TabsTrigger>
-            <TabsTrigger value="subscription" className="whitespace-nowrap">
-              Suscripción
+            <TabsTrigger 
+              value="billing-history" 
+              className="whitespace-nowrap data-[state=active]:bg-green-600 data-[state=active]:text-white"
+            >
+              📋 Historial
             </TabsTrigger>
           </TabsList>
         </div>
@@ -455,20 +472,23 @@ export default function Billing() {
 
         {/* TAB: USO DE BENEFICIOS */}
         <TabsContent value="benefits" className="space-y-4">
-          <BenefitsTracker showAlerts={false} />
+          <div className="grid gap-4 md:grid-cols-2">
+            <BenefitsTracker showAlerts={false} />
+            <IntelligentAlerts showOnlyHigh={false} />
+          </div>
         </TabsContent>
 
         {/* TAB: SUSCRIPCIÓN */}
         <TabsContent value="subscription" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Detalles de Suscripción</CardTitle>
-              <CardDescription>
-                Información sobre tu plan actual y opciones de suscripción
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {isLoadingSubscription ? (
+          <EnhancedCustomerPortal 
+            onPlanChange={(planId) => {
+              toast({
+                title: "Plan actualizado",
+                description: `Se ha programado el cambio al plan ${planId}`,
+              });
+            }}
+          />
+        </TabsContent>
                 <div className="flex items-center justify-center py-10">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
@@ -602,6 +622,6 @@ export default function Billing() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </UnifiedContainer>
   );
 }
