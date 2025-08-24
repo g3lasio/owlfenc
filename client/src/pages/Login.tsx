@@ -41,7 +41,6 @@ import { robustOAuthHandler } from "@/lib/simple-oauth";
 import { instantGoogleLogin, instantAppleLogin, popupGoogleLogin, popupAppleLogin } from "@/lib/ultra-simple-oauth";
 
 import OTPAuth from "@/components/auth/OTPAuth";
-import BiometricLoginButton from "@/components/auth/BiometricLoginButton";
 
 import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
@@ -535,62 +534,6 @@ export default function AuthPage() {
     }, 400);
   };
 
-  // 🔐 Función mejorada para manejar autenticación biométrica vinculada al usuario
-  const handleBiometricSuccess = async (userData: any) => {
-    console.log('🎉 [LOGIN-BIOMETRIC] Login biométrico exitoso:', userData);
-    
-    try {
-      // Si userData contiene información del usuario autenticado (del backend)
-      if (userData && userData.user && userData.user.email) {
-        console.log('✅ [LOGIN-BIOMETRIC] Usuario autenticado via biométrica:', userData.user.email);
-        
-        // Usar el login del contexto para establecer la sesión
-        await login(userData.user.email, 'biometric-verified-' + Date.now(), true);
-        showSuccessEffect();
-        return;
-      }
-
-      // Si userData ya es un usuario autenticado directamente
-      if (userData && userData.uid && userData.email) {
-        console.log('✅ [LOGIN-BIOMETRIC] Usuario ya autenticado:', userData.email);
-        showSuccessEffect();
-        return;
-      }
-
-      // Si tenemos un email en el formulario, intentar autenticación tradicional
-      const currentEmail = loginForm.getValues('email');
-      if (currentEmail && currentEmail.trim()) {
-        console.log('🔗 [LOGIN-BIOMETRIC] Usando email del formulario para biometría:', currentEmail);
-        
-        // Usar autenticación biométrica como "contraseña verificada"
-        await login(currentEmail, 'biometric-auth-verified', true);
-        showSuccessEffect();
-        return;
-      }
-      
-      // Fallback: mostrar éxito pero solicitar email
-      console.log('⚠️ [LOGIN-BIOMETRIC] Biometría exitosa pero falta vinculación con email');
-      toast({
-        title: "Autenticación biométrica exitosa",
-        description: "Por favor ingresa tu email para completar el login.",
-        variant: "default",
-      });
-      
-    } catch (error: any) {
-      console.error('❌ [LOGIN-BIOMETRIC] Error procesando autenticación biométrica:', error);
-      handleBiometricError('No se pudo completar el login biométrico. Intenta con email y contraseña.');
-    }
-  };
-
-  const handleBiometricError = (error: string) => {
-    console.error('❌ [LOGIN-BIOMETRIC] Error en login biométrico:', error);
-    
-    toast({
-      variant: "destructive", 
-      title: "Error de autenticación biométrica",
-      description: error,
-    });
-  };
 
   return (
     <div className="flex min-h-[100dvh] h-full items-center justify-center bg-background py-2 px-4 ">
@@ -1023,27 +966,17 @@ export default function AuthPage() {
             </div>
           </CardContent>
 
-          <CardFooter className="px-6 py-4 flex items-center justify-center gap-4 border-t border-primary/20 bg-muted/10">
+          <CardFooter className="px-6 py-4 flex items-center justify-center border-t border-primary/20 bg-muted/10">
             {authMode === "login" && loginMethod === "email" ? (
-              <>
-                <button
-                  type="button"
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 hover:from-blue-500/20 hover:to-purple-500/20 text-primary text-sm font-medium transition-all duration-300 border border-primary/30 min-w-[80px] justify-center"
-                  onClick={() => setLoginMethod("otp")}
-                  title="Login with OTP Code"
-                >
-                  <RiShieldKeyholeLine className="h-5 w-5" />
-                  <span>OTP Code</span>
-                </button>
-                
-                <BiometricLoginButton
-                  onSuccess={handleBiometricSuccess}
-                  onError={handleBiometricError}
-                  email={loginForm.watch('email')}
-                  disabled={isLoading}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium min-w-[90px] justify-center bg-gradient-to-r from-green-500/10 to-emerald-500/10 hover:from-green-500/20 hover:to-emerald-500/20 border border-primary/30 rounded-lg transition-all duration-300"
-                />
-              </>
+              <button
+                type="button"
+                className="flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 hover:from-blue-500/20 hover:to-purple-500/20 text-primary text-sm font-medium transition-all duration-300 border border-primary/30 justify-center"
+                onClick={() => setLoginMethod("otp")}
+                title="Login with OTP Code"
+              >
+                <RiShieldKeyholeLine className="h-5 w-5" />
+                <span>OTP Code</span>
+              </button>
             ) : authMode === "login" && loginMethod === "otp" ? (
               <button
                 type="button"
