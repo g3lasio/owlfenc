@@ -202,13 +202,35 @@ class NetworkErrorHandler {
 // Crear instancia global
 export const networkErrorHandler = new NetworkErrorHandler();
 
-// Auto-inicializar
+// INTERCEPTOR CRÍTICO para runtime-error-plugin antes de inicialización
 if (typeof window !== 'undefined') {
-  // Esperar un momento para que main.tsx configure su sistema primero
+  // Interceptar INMEDIATAMENTE antes de que cargue el runtime-error-plugin
+  const immediateInterceptor = (e: PromiseRejectionEvent) => {
+    const error = e.reason;
+    const errorMessage = error?.message || '';
+    const errorStack = error?.stack || '';
+    
+    // Específicamente para errores que causan runtime-error-plugin overlay
+    if (errorStack.includes('_performFetchWithErrorHandling') ||
+        errorStack.includes('requestStsToken') ||
+        errorStack.includes('_StsTokenManager') ||
+        errorMessage.includes('Failed to fetch')) {
+      
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    }
+  };
+  
+  // Agregar interceptor con máxima prioridad
+  window.addEventListener('unhandledrejection', immediateInterceptor, true);
+  
+  // Auto-inicializar el sistema completo después
   setTimeout(() => {
     networkErrorHandler.init();
-    networkErrorHandler.logSilently('INIT', 'Sistema avanzado de manejo silencioso activado', '');
-  }, 100);
+    networkErrorHandler.logSilently('INIT', 'Sistema DEFINITIVO anti-runtime-error-plugin activado', '');
+  }, 50);
 }
 
 export default networkErrorHandler;

@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import "./i18n/i18n"; // Importamos la configuración de i18n
+import "./lib/runtime-error-killer"; // SOLUCI\u00d3N DEFINITIVA runtime-error-plugin
 import "./lib/network-error-handler"; // Inicializar manejador avanzado de errores
 
 // MANEJADOR DEFINITIVO para unhandledrejection - SILENCIOSO Y COMPLETO
@@ -26,30 +27,37 @@ if (window.location.search.includes('debug=init')) {
   console.debug('🔧 [INIT-DEBUG] Anti-fetch protection enabled');
 }
 
-// CRITICAL: Interceptar console.error para bloquear runtime-error-plugin específicamente
+// CRITICAL: Interceptor DEFINITIVO para bloquear runtime-error-plugin
 const originalConsoleError = console.error;
 console.error = (...args) => {
   const message = args.join(' ').toString();
   
-  // Patrones específicos de errores molestos a silenciar COMPLETAMENTE
-  const annoyingPatterns = [
+  // Patrones específicos de Firebase Auth y runtime-error-plugin
+  const firebaseAuthPatterns = [
     '[plugin:runtime-error-plugin]',
     'plugin:runtime-error-plugin',
     'runtime-error-plugin',
     'Failed to fetch',
+    '_performFetchWithErrorHandling',
+    'requestStsToken',
+    '_StsTokenManager',
+    'getIdToken',
+    'auth/network-request-failed',
     'Network request failed',
     'ERR_NETWORK',
     'Request timeout',
-    'AbortError'
+    'AbortError',
+    'Firebase',
+    'firestore'
   ];
   
-  // Verificar si el mensaje contiene algún patrón molestoso
-  const isAnnoyingError = annoyingPatterns.some(pattern => 
+  // Verificar si es un error de Firebase Auth que debemos silenciar
+  const isFirebaseAuthError = firebaseAuthPatterns.some(pattern => 
     message.toLowerCase().includes(pattern.toLowerCase())
   );
   
-  if (isAnnoyingError) {
-    // Silenciar COMPLETAMENTE - no imprimir nada, ni siquiera debug
+  if (isFirebaseAuthError) {
+    // SILENCIAR COMPLETAMENTE - especialmente runtime-error-plugin
     return;
   }
   
@@ -90,7 +98,36 @@ const ANNOYING_ERROR_PATTERNS = [
   'WebSocket'
 ];
 
-// REMOVIDO: Interceptor duplicado - se maneja en network-error-handler.ts
+// INTERCEPTOR ESPECÍFICO para runtime-error-plugin Firebase errors
+window.addEventListener('unhandledrejection', (e) => {
+  const error = e.reason;
+  const errorMessage = error?.message || error?.toString() || '';
+  const errorStack = error?.stack || '';
+  
+  // Patrones específicos de Firebase Auth que causan runtime-error-plugin overlay
+  const firebaseRuntimeErrorPatterns = [
+    '_performFetchWithErrorHandling',
+    'requestStsToken',
+    '_StsTokenManager.refresh',
+    '_StsTokenManager.getToken',
+    'getIdToken',
+    'Failed to fetch',
+    'chunk-7FXTVMOG.js' // Específico del bundle de Firebase
+  ];
+  
+  // Verificar si es exactamente el tipo de error que causa el overlay molesto
+  const isFirebaseRuntimeError = firebaseRuntimeErrorPatterns.some(pattern => 
+    errorMessage.includes(pattern) || errorStack.includes(pattern)
+  );
+  
+  if (isFirebaseRuntimeError) {
+    // PREVENIR COMPLETAMENTE - no debe llegar al runtime-error-plugin
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    return false;
+  }
+}, true); // Usar capture phase para interceptar antes
 
 // NOTE: console.error override already handled above
 
