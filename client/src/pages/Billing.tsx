@@ -488,7 +488,16 @@ export default function Billing() {
               });
             }}
           />
-        </TabsContent>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Detalles de Suscripción</CardTitle>
+              <CardDescription>
+                Información sobre tu plan actual y próxima facturación
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isLoadingSubscription ? (
                 <div className="flex items-center justify-center py-10">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
