@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
@@ -18,6 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,6 +39,8 @@ import {
   Moon,
   Sun,
   CreditCard,
+  Mail,
+  Edit3,
 } from "lucide-react";
 
 export default function Settings() {
@@ -43,6 +54,11 @@ export default function Settings() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  
+  // Email change functionality
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
 
   // Handlers
   const handleLanguageChange = (value: string) => {
@@ -106,6 +122,65 @@ export default function Settings() {
 
   const handleChangePassword = () => {
     window.location.href = "/reset-password";
+  };
+
+  const handleEmailChange = async () => {
+    if (!newEmail.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newEmail === currentUser?.email) {
+      toast({
+        title: "Error",
+        description: "The new email is the same as your current email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsChangingEmail(true);
+    try {
+      // Firebase will send verification email to new address before changing
+      const { verifyBeforeUpdateEmail } = await import('firebase/auth');
+      const { auth } = await import('@/lib/firebase');
+      
+      if (auth.currentUser) {
+        await verifyBeforeUpdateEmail(auth.currentUser, newEmail);
+        
+        toast({
+          title: "Verification Email Sent",
+          description: `A verification email has been sent to ${newEmail}. Please verify your new email address to complete the change.`,
+        });
+        
+        setIsEmailDialogOpen(false);
+        setNewEmail("");
+      }
+    } catch (error: any) {
+      console.error('Error updating email:', error);
+      
+      let errorMessage = "Failed to change email. Please try again.";
+      
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = "This email is already in use by another account.";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "Please enter a valid email address.";
+      } else if (error.code === 'auth/requires-recent-login') {
+        errorMessage = "Please log out and log back in before changing your email.";
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsChangingEmail(false);
+    }
   };
 
   return (
@@ -287,6 +362,84 @@ export default function Settings() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
+                  {/* Current Email Display */}
+                  <div className="p-4 border rounded-lg bg-muted/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Mail className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">Email Address</p>
+                          <p className="text-sm text-muted-foreground">
+                            {currentUser?.email || "No email set"}
+                          </p>
+                        </div>
+                      </div>
+                      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="flex items-center gap-2">
+                            <Edit3 className="h-4 w-4" />
+                            Change Email
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Change Email Address</DialogTitle>
+                            <DialogDescription>
+                              Enter your new email address. A verification email will be sent to confirm the change.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4 pt-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="current-email">Current Email</Label>
+                              <Input
+                                id="current-email"
+                                value={currentUser?.email || ""}
+                                disabled
+                                className="bg-muted"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="new-email">New Email Address</Label>
+                              <Input
+                                id="new-email"
+                                type="email"
+                                placeholder="Enter new email address"
+                                value={newEmail}
+                                onChange={(e) => setNewEmail(e.target.value)}
+                                disabled={isChangingEmail}
+                              />
+                            </div>
+                            <div className="flex justify-end gap-2 pt-4">
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  setIsEmailDialogOpen(false);
+                                  setNewEmail("");
+                                }}
+                                disabled={isChangingEmail}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                onClick={handleEmailChange}
+                                disabled={isChangingEmail || !newEmail.trim()}
+                              >
+                                {isChangingEmail ? (
+                                  <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                                    Sending...
+                                  </>
+                                ) : (
+                                  "Send Verification"
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </div>
+
                   <div className="p-4 border rounded-lg">
                     <div className="flex items-center justify-between">
                       <div>

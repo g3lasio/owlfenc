@@ -36,6 +36,7 @@ import {
   reauthenticateWithCredential,
   updatePassword,
   updateEmail,
+  verifyBeforeUpdateEmail,
   linkWithPopup,
   unlink,
   deleteUser,
