@@ -274,40 +274,40 @@ export default function Billing() {
   return (
     <UnifiedContainer variant="billing">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-50">
           💳 Facturación y Pagos
         </h1>
-        <p className="text-muted-foreground text-lg">
+        <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-medium">
           Administra tu información de pago y revisa tu historial de facturación
         </p>
       </div>
 
       <Tabs defaultValue="benefits" className={designSystem.spacing.section}>
         <div className="overflow-x-auto">
-          <TabsList className="flex w-max min-w-full gap-2 px-2 bg-green-50/50 border border-green-200">
+          <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full gap-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
             <TabsTrigger 
               value="benefits" 
-              className="whitespace-nowrap data-[state=active]:bg-green-600 data-[state=active]:text-white"
+              className="text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
-              📊 Uso de Beneficios
+              <span className="hidden sm:inline">📊 </span>Beneficios
             </TabsTrigger>
             <TabsTrigger 
               value="subscription" 
-              className="whitespace-nowrap data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+              className="text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-blue-700 data-[state=active]:text-white text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
-              💎 Suscripción
+              <span className="hidden sm:inline">💎 </span>Suscripción
             </TabsTrigger>
             <TabsTrigger 
               value="payment-methods" 
-              className="whitespace-nowrap data-[state=active]:bg-green-600 data-[state=active]:text-white"
+              className="text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
-              💳 Métodos de Pago
+              <span className="hidden sm:inline">💳 </span>Métodos
             </TabsTrigger>
             <TabsTrigger 
               value="billing-history" 
-              className="whitespace-nowrap data-[state=active]:bg-green-600 data-[state=active]:text-white"
+              className="text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
-              📋 Historial
+              <span className="hidden sm:inline">📋 </span>Historial
             </TabsTrigger>
           </TabsList>
         </div>
@@ -316,8 +316,8 @@ export default function Billing() {
         <TabsContent value="payment-methods" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Métodos de Pago</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-gray-900 dark:text-gray-50 text-lg sm:text-xl font-bold">Métodos de Pago</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-300 text-sm sm:text-base font-medium">
                 Administra tus tarjetas y métodos de pago para facturación
                 automática
               </CardDescription>
@@ -332,26 +332,25 @@ export default function Billing() {
                   {paymentMethods.map((method) => (
                     <div
                       key={method.id}
-                      className="flex items-center p-4 border rounded-lg"
+                      className="flex flex-col sm:flex-row sm:items-center p-4 border rounded-lg space-y-2 sm:space-y-0"
                     >
                       <div className="flex-1">
-                        <div className="flex items-center">
-                          <CreditCard className="h-5 w-5 mr-2 text-muted-foreground" />
-                          <span className="font-medium capitalize">
+                        <div className="flex items-center flex-wrap gap-2">
+                          <CreditCard className="h-4 sm:h-5 w-4 sm:w-5 text-gray-500 dark:text-gray-400" />
+                          <span className="font-semibold capitalize text-sm sm:text-base text-gray-900 dark:text-gray-50">
                             {method.card?.brand || "Tarjeta"}
                           </span>
                           {method.id === activePaymentMethodId && (
-                            <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                            <span className="text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 px-2 py-0.5 rounded-full font-medium">
                               Predeterminado
                             </span>
                           )}
                         </div>
-                        <div className="mt-1 text-sm text-muted-foreground">
+                        <div className="mt-1 text-sm text-gray-700 dark:text-gray-300 font-mono">
                           •••• •••• •••• {method.card?.last4 || "****"}
                         </div>
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          Expira: {method.card?.exp_month}/
-                          {method.card?.exp_year}
+                        <div className="mt-1 text-xs text-gray-600 dark:text-gray-400 font-medium">
+                          Expira: {method.card?.exp_month}/{method.card?.exp_year}
                         </div>
                       </div>
                     </div>
@@ -362,16 +361,16 @@ export default function Billing() {
                   <div className="mb-2 flex justify-center">
                     <AlertCircle className="h-8 w-8 text-muted-foreground" />
                   </div>
-                  <p className="text-muted-foreground mb-4">
+                  <p className="text-gray-600 dark:text-gray-300 mb-4 font-medium">
                     No tienes métodos de pago registrados
                   </p>
 
-                  <div className="mx-auto max-w-md px-4">
-                    <h3 className="text-lg font-semibold mb-2">
+                  <div className="mx-auto max-w-md px-2 sm:px-4">
+                    <h3 className="text-base sm:text-lg font-bold mb-2 text-center text-gray-900 dark:text-gray-50">
                       Agregar tarjeta de crédito o débito
                     </h3>
                     <div className="mt-4">
-                      <div id="payment-form">
+                      <div id="payment-form" className="w-full">
                         <CardForm
                           onSuccess={() => {
                             queryClient.invalidateQueries({
@@ -407,8 +406,8 @@ export default function Billing() {
         <TabsContent value="billing-history" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Historial de Facturación</CardTitle>
-              <CardDescription>Tus facturas y pagos recientes</CardDescription>
+              <CardTitle className="text-gray-900 dark:text-gray-50 text-lg sm:text-xl font-bold">Historial de Facturación</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-300 text-sm sm:text-base font-medium">Tus facturas y pagos recientes</CardDescription>
             </CardHeader>
             <CardContent>
               {isLoadingInvoices ? (
@@ -416,52 +415,89 @@ export default function Billing() {
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
               ) : invoices && invoices.length > 0 ? (
-                <div className="rounded-md border">
-                  <div className="grid grid-cols-5 border-b bg-muted/50 p-3 text-sm font-medium">
-                    <div>Número</div>
-                    <div>Fecha</div>
-                    <div>Monto</div>
-                    <div>Estado</div>
-                    <div className="text-right">Acciones</div>
-                  </div>
-                  {invoices.map((invoice) => (
-                    <div
-                      key={invoice.id}
-                      className="grid grid-cols-5 p-3 text-sm"
-                    >
-                      <div>{invoice.number}</div>
-                      <div>{formatDate(invoice.created)}</div>
-                      <div>{formatAmount(invoice.amount_paid)}</div>
-                      <div>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs ${
-                            invoice.status === "paid"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}
-                        >
-                          {invoice.status === "paid" ? "Pagado" : "Pendiente"}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <a
-                          href={invoice.invoice_pdf}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          Descargar
-                        </a>
-                      </div>
+                <div className="space-y-4">
+                  {/* Vista de escritorio */}
+                  <div className="hidden md:block rounded-md border">
+                    <div className="grid grid-cols-5 border-b bg-gray-50 dark:bg-gray-800 p-3 text-sm font-bold text-gray-900 dark:text-gray-50">
+                      <div>Número</div>
+                      <div>Fecha</div>
+                      <div>Monto</div>
+                      <div>Estado</div>
+                      <div className="text-right">Acciones</div>
                     </div>
-                  ))}
+                    {invoices.map((invoice) => (
+                      <div
+                        key={invoice.id}
+                        className="grid grid-cols-5 p-3 text-sm hover:bg-muted/30"
+                      >
+                        <div>{invoice.number}</div>
+                        <div>{formatDate(invoice.created)}</div>
+                        <div>{formatAmount(invoice.amount_paid)}</div>
+                        <div>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs ${
+                              invoice.status === "paid"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {invoice.status === "paid" ? "Pagado" : "Pendiente"}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <a
+                            href={invoice.invoice_pdf}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-600 hover:underline"
+                          >
+                            Descargar
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Vista móvil/tablet */}
+                  <div className="md:hidden space-y-3">
+                    {invoices.map((invoice) => (
+                      <div key={invoice.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <div className="font-bold text-sm text-gray-900 dark:text-gray-50">{invoice.number}</div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400 font-medium">{formatDate(invoice.created)}</div>
+                          </div>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs ${
+                              invoice.status === "paid"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {invoice.status === "paid" ? "Pagado" : "Pendiente"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <div className="font-bold text-gray-900 dark:text-gray-50">{formatAmount(invoice.amount_paid)}</div>
+                          <a
+                            href={invoice.invoice_pdf}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-700 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 hover:underline text-sm font-semibold transition-colors"
+                          >
+                            Descargar PDF
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-10 border rounded-lg">
                   <div className="mb-2 flex justify-center">
                     <Info className="h-8 w-8 text-muted-foreground" />
                   </div>
-                  <p className="text-muted-foreground">
+                  <p className="text-gray-600 dark:text-gray-300 font-medium">
                     No hay facturas disponibles
                   </p>
                 </div>
@@ -491,8 +527,8 @@ export default function Billing() {
           
           <Card>
             <CardHeader>
-              <CardTitle>Detalles de Suscripción</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-gray-900 dark:text-gray-50 text-lg sm:text-xl font-bold">Detalles de Suscripción</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-300 text-sm sm:text-base font-medium">
                 Información sobre tu plan actual y próxima facturación
               </CardDescription>
             </CardHeader>
@@ -556,12 +592,13 @@ export default function Billing() {
                   momento.
                 </p>
               </div>
-              <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <Button
                   variant="outline"
                   onClick={handleOpenStripePortal}
                   disabled={createCustomerPortalMutation.isPending}
-                  className="flex-1"
+                  className="flex-1 text-sm sm:text-base"
+                  size={"sm"}
                 >
                   {createCustomerPortalMutation.isPending ? (
                     <>
@@ -573,7 +610,7 @@ export default function Billing() {
                   )}
                 </Button>
                 <Link href="/subscription" className="flex-1">
-                  <Button variant="default" className="w-full">
+                  <Button variant="default" className="w-full text-sm sm:text-base" size={"sm"}>
                     Ver Planes Disponibles
                   </Button>
                 </Link>

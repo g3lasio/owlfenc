@@ -216,7 +216,7 @@ export function EnhancedCustomerPortal({ onPlanChange }: EnhancedCustomerPortalP
               <Zap className="h-5 w-5" />
               Detalles de Suscripción
             </span>
-            {subscriptionDetails && getStatusBadge(subscriptionDetails.status)}
+            {subscriptionDetails && getStatusBadge(subscriptionDetails.status || 'inactive')}
           </CardTitle>
           <CardDescription>
             Gestiona tu suscripción y métodos de pago avanzados
@@ -230,10 +230,10 @@ export function EnhancedCustomerPortal({ onPlanChange }: EnhancedCustomerPortalP
                   <div>
                     <h4 className="font-medium mb-2">Plan Actual</h4>
                     <div className="flex items-center justify-between">
-                      <span className="text-lg font-semibold">{subscriptionDetails.planName}</span>
+                      <span className="text-lg font-semibold">{subscriptionDetails.planName || 'Plan Básico'}</span>
                       <span className="text-xl font-bold">
-                        {formatCurrency(subscriptionDetails.amount, subscriptionDetails.currency)}
-                        <span className="text-sm text-muted-foreground">/{subscriptionDetails.interval}</span>
+                        {formatCurrency(subscriptionDetails.amount || 0, subscriptionDetails.currency || 'USD')}
+                        <span className="text-sm text-muted-foreground">/{subscriptionDetails.interval || 'mes'}</span>
                       </span>
                     </div>
                   </div>
@@ -242,11 +242,11 @@ export function EnhancedCustomerPortal({ onPlanChange }: EnhancedCustomerPortalP
                     <h4 className="font-medium mb-2">Próximo Pago</h4>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>{formatDate(subscriptionDetails.currentPeriodEnd)}</span>
+                      <span>{subscriptionDetails.currentPeriodEnd ? formatDate(subscriptionDetails.currentPeriodEnd) : 'No disponible'}</span>
                     </div>
                   </div>
 
-                  {subscriptionDetails.trialEnd && (
+                  {subscriptionDetails?.trialEnd && (
                     <div>
                       <h4 className="font-medium mb-2">Fin de Prueba</h4>
                       <div className="flex items-center gap-2">
@@ -260,7 +260,7 @@ export function EnhancedCustomerPortal({ onPlanChange }: EnhancedCustomerPortalP
                 <div className="space-y-4">
                   {/* Acciones rápidas */}
                   <div className="flex flex-col gap-2">
-                    {subscriptionDetails.status === 'active' && !subscriptionDetails.cancelAtPeriodEnd && (
+                    {subscriptionDetails?.status === 'active' && !subscriptionDetails?.cancelAtPeriodEnd && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="outline" size="sm">
@@ -289,7 +289,7 @@ export function EnhancedCustomerPortal({ onPlanChange }: EnhancedCustomerPortalP
                       </AlertDialog>
                     )}
 
-                    {subscriptionDetails.status === 'paused' && (
+                    {subscriptionDetails?.status === 'paused' && (
                       <Button 
                         variant="default" 
                         size="sm"
@@ -301,12 +301,12 @@ export function EnhancedCustomerPortal({ onPlanChange }: EnhancedCustomerPortalP
                       </Button>
                     )}
 
-                    {subscriptionDetails.cancelAtPeriodEnd && (
+                    {subscriptionDetails?.cancelAtPeriodEnd && (
                       <div className="bg-yellow-50 dark:bg-yellow-950/50 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
                         <div className="flex items-center gap-2">
                           <AlertTriangle className="h-4 w-4 text-yellow-600" />
                           <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                            Cancelación programada para {formatDate(subscriptionDetails.currentPeriodEnd)}
+                            Cancelación programada para {subscriptionDetails?.currentPeriodEnd ? formatDate(subscriptionDetails.currentPeriodEnd) : 'fecha no disponible'}
                           </span>
                         </div>
                       </div>
@@ -318,7 +318,7 @@ export function EnhancedCustomerPortal({ onPlanChange }: EnhancedCustomerPortalP
               <Separator />
 
               {/* Programar cambio de plan */}
-              {availablePlans && availablePlans.length > 0 && (
+              {availablePlans && Array.isArray(availablePlans) && availablePlans.length > 0 && (
                 <div className="space-y-4">
                   <h4 className="font-medium flex items-center gap-2">
                     <ArrowUpCircle className="h-4 w-4" />
@@ -330,7 +330,7 @@ export function EnhancedCustomerPortal({ onPlanChange }: EnhancedCustomerPortalP
                         <SelectValue placeholder="Seleccionar nuevo plan" />
                       </SelectTrigger>
                       <SelectContent>
-                        {availablePlans.map((plan: PlanOption) => (
+                        {Array.isArray(availablePlans) && availablePlans.map((plan: PlanOption) => (
                           <SelectItem key={plan.id} value={plan.id}>
                             {plan.name} - {formatCurrency(plan.price, plan.currency)}/{plan.interval}
                           </SelectItem>
@@ -386,9 +386,9 @@ export function EnhancedCustomerPortal({ onPlanChange }: EnhancedCustomerPortalP
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {paymentMethods && paymentMethods.length > 0 ? (
+          {paymentMethods && Array.isArray(paymentMethods) && paymentMethods.length > 0 ? (
             <div className="space-y-3">
-              {paymentMethods.map((method: PaymentMethod) => (
+              {Array.isArray(paymentMethods) && paymentMethods.map((method: PaymentMethod) => (
                 <div 
                   key={method.id} 
                   className="flex items-center justify-between p-4 border rounded-lg"

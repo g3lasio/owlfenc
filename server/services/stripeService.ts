@@ -130,7 +130,7 @@ class StripeService {
         );
         await stripe.prices.create({
           product: product.id,
-          unit_amount: plan.yearlyPrice,
+          unit_amount: plan.yearly_price || plan.price * 12,
           currency: "usd",
           recurring: { interval: "year" },
           metadata: {
@@ -225,7 +225,7 @@ class StripeService {
         // Determine the correct price based on billing cycle
         const unitAmount =
           options.billingCycle === "yearly"
-            ? (plan as any).yearlyPrice || plan.price
+            ? (plan as any).yearly_price || plan.price * 12
             : plan.price;
 
         console.log(
@@ -602,13 +602,9 @@ class StripeService {
         // Registrar el pago exitoso
         await storage.createPaymentHistory({
           userId: subscription.userId,
-          subscriptionId: subscription.id,
-          stripePaymentIntentId: invoice.payment_intent,
-          stripeInvoiceId: invoice.id,
-          amount: invoice.amount_paid,
+          amount: (invoice.amount_paid / 100).toString(), // Convertir a dólares para decimal schema
           status: "succeeded",
-          paymentMethod: invoice.payment_method_details?.type || "unknown",
-          receiptUrl: invoice.hosted_invoice_url,
+          paymentDate: new Date(),
         });
         console.log(
           `[${new Date().toISOString()}] Pago exitoso registrado - ID: ${invoice.id}`,
@@ -657,13 +653,9 @@ class StripeService {
         // Registrar el pago fallido
         await storage.createPaymentHistory({
           userId: subscription.userId,
-          subscriptionId: subscription.id,
-          stripePaymentIntentId: invoice.payment_intent,
-          stripeInvoiceId: invoice.id,
-          amount: invoice.amount_due,
+          amount: (invoice.amount_due / 100).toString(), // Convertir a dólares para decimal schema
           status: "failed",
-          paymentMethod: invoice.payment_method_details?.type || "unknown",
-          receiptUrl: invoice.hosted_invoice_url,
+          paymentDate: new Date(),
         });
         console.log(
           `[${new Date().toISOString()}] Pago fallido registrado - ID: ${invoice.id}`,

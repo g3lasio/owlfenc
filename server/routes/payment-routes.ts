@@ -123,7 +123,10 @@ router.get('/stripe/oauth/callback', async (req: Request, res: Response) => {
 // Get Stripe Connect dashboard link
 router.get('/stripe/dashboard', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = req.user.id;
+    if (!req.user || typeof req.user === 'string') {
+      return res.status(401).json({ message: 'Usuario no autenticado' });
+    }
+    const userId = (req.user as any).id;
     const dashboardLink = await projectPaymentService.createConnectDashboardLink(userId);
 
     res.json({ url: dashboardLink });
@@ -136,7 +139,10 @@ router.get('/stripe/dashboard', isAuthenticated, async (req: Request, res: Respo
 // Create a payment link
 router.post('/payment-links', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = req.user.id;
+    if (!req.user || typeof req.user === 'string') {
+      return res.status(401).json({ message: 'Usuario no autenticado' });
+    }
+    const userId = (req.user as any).id;
     const validatedData = createPaymentLinkSchema.parse(req.body);
 
     const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
@@ -163,7 +169,10 @@ router.post('/payment-links', isAuthenticated, async (req: Request, res: Respons
 // Get all payment links for the current user
 router.get('/payment-links', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = req.user.id;
+    if (!req.user || typeof req.user === 'string') {
+      return res.status(401).json({ message: 'Usuario no autenticado' });
+    }
+    const userId = (req.user as any).id;
     const payments = await storage.getProjectPaymentsByUserId(userId);
 
     res.json(payments);
