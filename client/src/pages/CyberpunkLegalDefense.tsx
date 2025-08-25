@@ -616,13 +616,22 @@ export default function CyberpunkLegalDefense() {
 
   const updateClientInfo = useCallback(
     (field: string, value: string) => {
-      setExtractedData((prev: any) => ({
-        ...prev,
-        clientInfo: {
-          ...prev.clientInfo,
-          [field]: value,
-        },
-      }));
+      setExtractedData((prev: any) => {
+        const updated = {
+          ...prev,
+          clientInfo: {
+            ...prev?.clientInfo,
+            [field]: value,
+          },
+          // Also update direct fields for backwards compatibility
+          [`client${field.charAt(0).toUpperCase() + field.slice(1)}`]: value,
+        };
+        
+        console.log(`📝 Updated client ${field}:`, value);
+        console.log(`📄 Full extractedData:`, updated);
+        
+        return updated;
+      });
       markDirtyAndScheduleAutoSave();
     },
     [markDirtyAndScheduleAutoSave],
@@ -1499,16 +1508,26 @@ export default function CyberpunkLegalDefense() {
       const contractData = {
         client: {
           name:
-            extractedData.clientInfo?.name || extractedData.clientName || "",
+            extractedData?.clientInfo?.name || 
+            extractedData?.clientName || 
+            extractedData?.client?.name || 
+            "Client Name",
           address:
-            extractedData.clientInfo?.address ||
-            extractedData.clientAddress ||
-            extractedData.projectDetails?.location ||
-            "",
+            extractedData?.clientInfo?.address ||
+            extractedData?.clientAddress ||
+            extractedData?.client?.address ||
+            extractedData?.projectDetails?.location ||
+            "Property Address",
           email:
-            extractedData.clientInfo?.email || extractedData.clientEmail || "",
+            extractedData?.clientInfo?.email || 
+            extractedData?.clientEmail || 
+            extractedData?.client?.email || 
+            "client@example.com",
           phone:
-            extractedData.clientInfo?.phone || extractedData.clientPhone || "",
+            extractedData?.clientInfo?.phone || 
+            extractedData?.clientPhone || 
+            extractedData?.client?.phone || 
+            "(555) 000-0000",
         },
         contractor: {
           name: profile?.company || profile?.ownerName || "",
@@ -1602,13 +1621,24 @@ export default function CyberpunkLegalDefense() {
       // Contract data formatted for the working /api/generate-pdf endpoint
       const contractData = {
         client: {
-          name: extractedData.clientInfo?.name || "Client Name",
+          name: extractedData?.clientInfo?.name || 
+                extractedData?.clientName || 
+                extractedData?.client?.name || 
+                "Client Name",
           address:
-            extractedData.clientInfo?.address ||
-            extractedData.projectDetails?.location ||
+            extractedData?.clientInfo?.address ||
+            extractedData?.clientAddress ||
+            extractedData?.client?.address ||
+            extractedData?.projectDetails?.location ||
             "Client Address",
-          email: extractedData.clientInfo?.email || "",
-          phone: extractedData.clientInfo?.phone || "",
+          email: extractedData?.clientInfo?.email || 
+                 extractedData?.clientEmail || 
+                 extractedData?.client?.email || 
+                 "",
+          phone: extractedData?.clientInfo?.phone || 
+                 extractedData?.clientPhone || 
+                 extractedData?.client?.phone || 
+                 "",
         },
         contractor: {
           name: profile?.company || profile?.ownerName || "Contractor Name",
@@ -1914,10 +1944,45 @@ export default function CyberpunkLegalDefense() {
     try {
       setIsProcessing(true);
 
+      // Ensure client data is properly populated with fallbacks
+      const clientData = {
+        email: extractedData?.clientInfo?.email || 
+               extractedData?.clientEmail || 
+               extractedData?.client?.email || "",
+        name: extractedData?.clientInfo?.name || 
+              extractedData?.clientName || 
+              extractedData?.client?.name || 
+              "Client Name",
+        phone: extractedData?.clientInfo?.phone || 
+               extractedData?.clientPhone || 
+               extractedData?.client?.phone || "",
+        address: extractedData?.clientInfo?.address || 
+                 extractedData?.clientAddress || 
+                 extractedData?.client?.address || 
+                 extractedData?.projectDetails?.location || ""
+      };
+
+      // Validate that we have essential client data
+      if (!clientData.name || clientData.name === "Client Name") {
+        toast({
+          title: "Client Data Missing",
+          description: "Please ensure client name is provided before sending for signature.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("📝 Sending signature data:", clientData);
+
       const signatureData = {
-        clientEmail: extractedData.clientInfo?.email || "",
-        clientName: extractedData.clientInfo?.name || "",
-        contractData: extractedData,
+        clientEmail: clientData.email,
+        clientName: clientData.name,
+        clientPhone: clientData.phone,
+        clientAddress: clientData.address,
+        contractData: {
+          ...extractedData,
+          clientInfo: clientData, // Ensure consistent structure
+        },
         protections: approvedClauses,
       };
 
@@ -3153,10 +3218,7 @@ export default function CyberpunkLegalDefense() {
                                   ""
                                 }
                                 onChange={(e) =>
-                                  setExtractedData((prev) => ({
-                                    ...prev,
-                                    clientName: e.target.value,
-                                  }))
+                                  updateClientInfo("name", e.target.value)
                                 }
                                 className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
                               />
@@ -3169,22 +3231,14 @@ export default function CyberpunkLegalDefense() {
                                 type="text"
                                 name="clientAddress"
                                 value={
-                                  extractedData.clientInfo?.address ||
-                                  extractedData.projectDetails?.location ||
+                                  extractedData?.clientInfo?.address ||
+                                  extractedData?.clientAddress ||
+                                  extractedData?.client?.address ||
+                                  extractedData?.projectDetails?.location ||
                                   ""
                                 }
                                 onChange={(e) =>
-                                  setExtractedData((prev) => ({
-                                    ...prev,
-                                    clientInfo: {
-                                      ...prev.clientInfo,
-                                      address: e.target.value,
-                                    },
-                                    projectDetails: {
-                                      ...prev.projectDetails,
-                                      location: e.target.value,
-                                    },
-                                  }))
+                                  updateClientInfo("address", e.target.value)
                                 }
                                 className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
                               />
@@ -3196,15 +3250,14 @@ export default function CyberpunkLegalDefense() {
                               <input
                                 type="email"
                                 name="clientEmail"
-                                value={extractedData.clientInfo?.email || ""}
+                                value={
+                                  extractedData?.clientInfo?.email ||
+                                  extractedData?.clientEmail ||
+                                  extractedData?.client?.email ||
+                                  ""
+                                }
                                 onChange={(e) =>
-                                  setExtractedData((prev) => ({
-                                    ...prev,
-                                    clientInfo: {
-                                      ...prev.clientInfo,
-                                      email: e.target.value,
-                                    },
-                                  }))
+                                  updateClientInfo("email", e.target.value)
                                 }
                                 placeholder="client@email.com"
                                 className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
@@ -3217,15 +3270,14 @@ export default function CyberpunkLegalDefense() {
                               <input
                                 type="tel"
                                 name="clientPhone"
-                                value={extractedData.clientInfo?.phone || ""}
+                                value={
+                                  extractedData?.clientInfo?.phone ||
+                                  extractedData?.clientPhone ||
+                                  extractedData?.client?.phone ||
+                                  ""
+                                }
                                 onChange={(e) =>
-                                  setExtractedData((prev) => ({
-                                    ...prev,
-                                    clientInfo: {
-                                      ...prev.clientInfo,
-                                      phone: e.target.value,
-                                    },
-                                  }))
+                                  updateClientInfo("phone", e.target.value)
                                 }
                                 placeholder="(555) 123-4567"
                                 className="w-full mt-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-400 focus:outline-none"
@@ -3945,19 +3997,28 @@ export default function CyberpunkLegalDefense() {
                     <div>
                       <span className="text-gray-400">Client:</span>
                       <span className="text-white ml-2">
-                        {extractedData.clientInfo?.name || "Client Name"}
+                        {extractedData?.clientInfo?.name || 
+                         extractedData?.clientName || 
+                         extractedData?.client?.name || 
+                         "Client Name"}
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-400">Project:</span>
                       <span className="text-white ml-2">
-                        {extractedData.projectDetails?.type || "Project Type"}
+                        {extractedData?.projectDetails?.type || 
+                         extractedData?.projectType || 
+                         extractedData?.project?.type || 
+                         "Project Type"}
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-400">Total Amount:</span>
                       <span className="text-green-400 ml-2 font-mono">
-                        ${extractedData.financials?.total?.toFixed(2) || "0.00"}
+                        ${(extractedData?.financials?.total || 
+                           extractedData?.total || 
+                           extractedData?.project?.total || 
+                           0).toFixed(2)}
                       </span>
                     </div>
                     <div>
