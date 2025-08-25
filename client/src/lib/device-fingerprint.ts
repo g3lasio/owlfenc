@@ -41,7 +41,7 @@ class DeviceFingerprintService {
       navigator.cookieEnabled,
       canvasFingerprint.slice(-50), // Últimos 50 caracteres del canvas
       navigator.hardwareConcurrency || 'unknown',
-      navigator.deviceMemory || 'unknown'
+      (navigator as any).deviceMemory || 'unknown'
     ];
 
     // Crear hash simple de los componentes
