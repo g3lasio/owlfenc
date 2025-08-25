@@ -7017,33 +7017,55 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                   payloadSent: JSON.stringify(premiumPayload, null, 2)
                                 });
 
+                                // Use blob response for mobile compatibility
                                 const res = await axios.post(
                                   "/api/estimate-puppeteer-pdf",
                                   premiumPayload,
+                                  {
+                                    responseType: "blob", // Important for mobile PDF handling
+                                  }
                                 );
-                                const downloadUrl = res.data.download_url || res.data.data?.download_url;
 
-                                if (downloadUrl) {
-                                  window.open(downloadUrl, "_blank");
-                                  toast({
-                                    title: "✅ PDF Generado",
-                                    description:
-                                      "El PDF se ha generado y descargado correctamente",
-                                  });
-                                } else {
-                                  toast({
-                                    title: "Error",
-                                    description:
-                                      "No se pudo obtener la URL de descarga del PDF",
-                                    variant: "destructive",
-                                  });
-                                }
+                                // Create blob from response for mobile sharing
+                                const pdfBlob = new Blob([res.data], { type: "application/pdf" });
+                                
+                                // Generate mobile-friendly filename
+                                const clientName = estimate.clientName?.replace(/[^a-zA-Z0-9]/g, "_") || "client";
+                                const timestamp = new Date().toISOString().slice(0, 10);
+                                const filename = `estimate-${clientName}-${timestamp}.pdf`;
+
+                                // Use robust mobile sharing utility
+                                await shareOrDownloadPdf(pdfBlob, filename, {
+                                  title: `Estimate for ${estimate.clientName || "Client"}`,
+                                  text: `Professional estimate from ${profile?.company || "your contractor"}`,
+                                  clientName: estimate.clientName,
+                                  estimateNumber: `EST-${timestamp}`,
+                                });
+
+                                toast({
+                                  title: "✅ PDF Generado",
+                                  description: "El PDF se ha generado y descargado correctamente",
+                                });
                               } catch (error) {
                                 console.error("Error generating PDF:", error);
+                                
+                                // Enhanced error handling for mobile devices
+                                let errorMessage = "No se pudo generar el PDF. Inténtalo de nuevo.";
+                                
+                                if (error.response?.status === 400) {
+                                  errorMessage = "Datos incompletos. Verifica que toda la información esté completa.";
+                                } else if (error.response?.status === 500) {
+                                  errorMessage = "Error del servidor. Intenta nuevamente en unos momentos.";
+                                } else if (error.code === 'NETWORK_ERROR' || !navigator.onLine) {
+                                  errorMessage = "Sin conexión a internet. Verifica tu conexión e intenta nuevamente.";
+                                } else if (error.name === 'AbortError') {
+                                  // User cancelled, not really an error
+                                  return;
+                                }
+                                
                                 toast({
                                   title: "❌ Error al generar PDF",
-                                  description:
-                                    "No se pudo generar el PDF. Inténtalo de nuevo.",
+                                  description: errorMessage,
                                   variant: "destructive",
                                 });
                               }
