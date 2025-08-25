@@ -7058,7 +7058,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                             size="sm"
                             onClick={() => {
                               setShowEstimatesHistory(false);
-                              window.location.href = `/estimates?edit=${estimate.id}`;
+                              handleEditEstimate(estimate.id);
                             }}
                             className="h-6 w-6 p-1"
                             title="Editar estimado"
