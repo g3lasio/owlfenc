@@ -74,6 +74,10 @@ export class SubscriptionControlService {
     try {
       const currentMonth = new Date().toISOString().slice(0, 7); // "2025-08"
       
+      if (!db) {
+        throw new Error('Database connection not available');
+      }
+
       const usageResult = await db
         .select()
         .from(userUsageLimits)
@@ -138,6 +142,10 @@ export class SubscriptionControlService {
       const currentMonth = new Date().toISOString().slice(0, 7);
       const usedField = `${feature}Used`;
       
+      if (!db) {
+        throw new Error('Database connection not available');
+      }
+
       await db
         .update(userUsageLimits)
         .set({
@@ -172,6 +180,10 @@ export class SubscriptionControlService {
       const subscription = await this.getUserSubscriptionStatus(userId);
       if (!subscription) {
         throw new Error('User has no subscription');
+      }
+
+      if (!db) {
+        throw new Error('Database connection not available');
       }
 
       // Obtener límites del plan
@@ -214,6 +226,11 @@ export class SubscriptionControlService {
    */
   private async logUsage(userId: string, feature: string, action: string, details: any): Promise<void> {
     try {
+      if (!db) {
+        console.warn('Database connection not available for logging');
+        return;
+      }
+
       await db.insert(usageAuditLog).values({
         userId,
         feature,

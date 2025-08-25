@@ -37,7 +37,7 @@ if (!admin.apps.length) {
     }
     console.log('✅ Firebase Admin SDK inicializado correctamente');
   } catch (error) {
-    console.warn('⚠️ No se pudo inicializar Firebase Admin SDK:', error.message);
+    console.warn('⚠️ No se pudo inicializar Firebase Admin SDK:', (error as Error).message);
   }
 }
 

@@ -137,10 +137,17 @@ export default function Subscription() {
         JSON.stringify(params),
       );
 
+      // Obtener token de autenticación de Firebase
+      const token = await currentUser?.getIdToken();
+      if (!token) {
+        throw new Error("No se pudo obtener token de autenticación");
+      }
+
       const response = await fetch("/api/subscription/create-checkout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify(params),
       });
@@ -207,10 +214,17 @@ export default function Subscription() {
 
       console.log("Enviando solicitud para crear portal de cliente");
 
+      // Obtener token de autenticación de Firebase
+      const token = await currentUser?.getIdToken();
+      if (!token) {
+        throw new Error("No se pudo obtener token de autenticación");
+      }
+
       const response = await fetch("/api/subscription/create-portal", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify(params),
       });
