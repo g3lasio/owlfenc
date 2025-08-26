@@ -35,7 +35,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   // Si es una página de autenticación, mostrar solo el contenido sin sidebar ni header
   if (isAuthPage) {
     return (
-      <div className="min- bg-background flex flex-col">
+      <div className="min-h-screen bg-background flex flex-col">
         <div className="flex-1">{children}</div>
         <footer className="py-4 text-center text-sm text-muted-foreground">
           © {new Date().getFullYear()} Owl Fenc - Todos los derechos reservados
@@ -53,7 +53,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
   if (isPublicPage && !currentUser) {
     return (
-      <div className="flex flex-col min-">
+      <div className="flex flex-col min-h-screen">
         <header className="bg-white shadow-sm">
           <div className="container mx-auto px-4 py-3 flex justify-between items-center">
             <a href="/" className="text-2xl font-bold text-primary">
