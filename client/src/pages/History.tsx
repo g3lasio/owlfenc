@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { getProjects } from "@/lib/firebase";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -19,9 +20,20 @@ export default function History() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { currentUser, loading: authLoading } = useAuth();
   
   useEffect(() => {
     const fetchProjects = async () => {
+      // Verificación defensiva similar a la implementada en MisEstimados
+      if (!currentUser?.uid) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (!currentUser?.uid) {
+          setIsLoading(false);
+          return;
+        }
+      }
+
       try {
         setIsLoading(true);
         const data = await getProjects();
@@ -38,8 +50,10 @@ export default function History() {
       }
     };
     
-    fetchProjects();
-  }, [toast]);
+    if (currentUser && !authLoading) {
+      fetchProjects();
+    }
+  }, [currentUser, authLoading, toast]);
   
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {

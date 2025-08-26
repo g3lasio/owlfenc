@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { FileText, Eye, Download, Edit, Trash2, Calendar, DollarSign, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth, db } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
+import { db } from '@/lib/firebase';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 
 interface SavedEstimate {
@@ -28,18 +28,24 @@ export default function MisEstimados() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const [user] = useAuthState(auth);
+  const { currentUser, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (user) {
+    if (currentUser && !authLoading) {
       loadEstimates();
     }
-  }, [user]);
+  }, [currentUser, authLoading]);
 
   const loadEstimates = async () => {
-    if (!user) {
-      setLoading(false);
-      return;
+    // Verificación defensiva con reintento para autenticación
+    if (!currentUser?.uid) {
+      // Esperar un momento por si el estado de auth se está actualizando
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      if (!currentUser?.uid) {
+        setLoading(false);
+        return;
+      }
     }
 
     try {
@@ -51,7 +57,7 @@ export default function MisEstimados() {
       // Load from Firebase estimates collection
       const estimatesQuery = query(
         collection(db, 'estimates'),
-        where('firebaseUserId', '==', user.uid),
+        where('firebaseUserId', '==', currentUser.uid),
         orderBy('createdAt', 'desc')
       );
 
