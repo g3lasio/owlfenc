@@ -60,6 +60,11 @@ export default function Settings() {
   const [newEmail, setNewEmail] = useState("");
   const [isChangingEmail, setIsChangingEmail] = useState(false);
 
+  // Name change functionality
+  const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
+  const [newDisplayName, setNewDisplayName] = useState("");
+  const [isChangingName, setIsChangingName] = useState(false);
+
   // Handlers
   const handleLanguageChange = (value: string) => {
     setLanguage(value);
@@ -143,9 +148,18 @@ export default function Settings() {
       return;
     }
 
+    if (!currentUser) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to change your email",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsChangingEmail(true);
     try {
-      // Firebase will send verification email to new address before changing
+      // Usar Firebase auth directamente (evitando imports dinámicos innecesarios)
       const { verifyBeforeUpdateEmail } = await import('firebase/auth');
       const { auth } = await import('@/lib/firebase');
       
@@ -159,9 +173,11 @@ export default function Settings() {
         
         setIsEmailDialogOpen(false);
         setNewEmail("");
+      } else {
+        throw new Error("No authenticated user found");
       }
     } catch (error: any) {
-      console.error('Error updating email:', error);
+      console.error('❌ [SETTINGS] Error updating email:', error);
       
       let errorMessage = "Failed to change email. Please try again.";
       
@@ -171,6 +187,8 @@ export default function Settings() {
         errorMessage = "Please enter a valid email address.";
       } else if (error.code === 'auth/requires-recent-login') {
         errorMessage = "Please log out and log back in before changing your email.";
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = "Too many requests. Please try again later.";
       }
       
       toast({
@@ -180,6 +198,73 @@ export default function Settings() {
       });
     } finally {
       setIsChangingEmail(false);
+    }
+  };
+
+  const handleNameChange = async () => {
+    if (!newDisplayName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newDisplayName.trim() === currentUser?.displayName) {
+      toast({
+        title: "Error",
+        description: "The new name is the same as your current name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!currentUser) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to change your name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsChangingName(true);
+    try {
+      // Usar la función updateUserProfile de Firebase
+      const { updateUserProfile } = await import('@/lib/firebase');
+      
+      await updateUserProfile(newDisplayName.trim());
+      
+      toast({
+        title: "Name Updated",
+        description: `Your display name has been updated to "${newDisplayName.trim()}"`,
+      });
+      
+      setIsNameDialogOpen(false);
+      setNewDisplayName("");
+      
+      // Recargar la información del usuario para reflejar los cambios
+      const { auth } = await import('@/lib/firebase');
+      if (auth.currentUser) {
+        await auth.currentUser.reload();
+      }
+    } catch (error: any) {
+      console.error('❌ [SETTINGS] Error updating display name:', error);
+      
+      let errorMessage = "Failed to change name. Please try again.";
+      
+      if (error.code === 'auth/requires-recent-login') {
+        errorMessage = "Please log out and log back in before changing your name.";
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsChangingName(false);
     }
   };
 
@@ -362,6 +447,84 @@ export default function Settings() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
+                  {/* Current Name Display */}
+                  <div className="p-4 border rounded-lg bg-muted/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <User className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">Display Name</p>
+                          <p className="text-sm text-muted-foreground">
+                            {currentUser?.displayName || "No name set"}
+                          </p>
+                        </div>
+                      </div>
+                      <Dialog open={isNameDialogOpen} onOpenChange={setIsNameDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="flex items-center gap-2">
+                            <Edit3 className="h-4 w-4" />
+                            Change Name
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Change Display Name</DialogTitle>
+                            <DialogDescription>
+                              Enter your new display name. This will be shown throughout the application.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4 pt-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="current-name">Current Name</Label>
+                              <Input
+                                id="current-name"
+                                value={currentUser?.displayName || ""}
+                                disabled
+                                className="bg-muted"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="new-name">New Display Name</Label>
+                              <Input
+                                id="new-name"
+                                type="text"
+                                placeholder="Enter new display name"
+                                value={newDisplayName}
+                                onChange={(e) => setNewDisplayName(e.target.value)}
+                                disabled={isChangingName}
+                              />
+                            </div>
+                            <div className="flex justify-end gap-2 pt-4">
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  setIsNameDialogOpen(false);
+                                  setNewDisplayName("");
+                                }}
+                                disabled={isChangingName}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                onClick={handleNameChange}
+                                disabled={isChangingName || !newDisplayName.trim()}
+                              >
+                                {isChangingName ? (
+                                  <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                                    Updating...
+                                  </>
+                                ) : (
+                                  "Update Name"
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </div>
+
                   {/* Current Email Display */}
                   <div className="p-4 border rounded-lg bg-muted/50">
                     <div className="flex items-center justify-between">
