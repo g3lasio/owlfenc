@@ -116,13 +116,17 @@ export class SessionUnlockService {
         return { canUnlock: false };
       }
 
-      // Determinar método biométrico disponible
-      const deviceInfo = deviceFingerprintService.getDeviceInfo();
+      // Determinar método biométrico disponible basado en userAgent
+      const userAgent = navigator.userAgent;
       let method = 'biometría';
-      if (deviceInfo.isIOS) {
+      if (userAgent.includes('iPhone') || userAgent.includes('iPad')) {
         method = 'Face ID / Touch ID';
-      } else if (deviceInfo.isAndroid) {
+      } else if (userAgent.includes('Android')) {
         method = 'huella digital';
+      } else if (userAgent.includes('Mac')) {
+        method = 'Touch ID';
+      } else if (userAgent.includes('Windows')) {
+        method = 'Windows Hello';
       }
 
       console.log('✅ [SESSION-UNLOCK] Sesión disponible para desbloqueo');
