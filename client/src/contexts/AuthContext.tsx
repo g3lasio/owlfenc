@@ -20,6 +20,7 @@ import {
   devMode,
 } from "../lib/firebase";
 import { safeFirebaseError, getErrorMessage } from "../lib/firebase-error-fix";
+import { isDevelopmentMode, devLog } from "../lib/dev-session-config";
 
 type User = {
   uid: string;
@@ -153,13 +154,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Ejecutamos después de un breve delay para permitir que persisted auth cargue
     setTimeout(checkRedirectResult, 100);
 
-    // Función para manejar errores de Firebase con retry
+    // Función para manejar errores de Firebase con retry (DEV-FRIENDLY)
     const handleFirebaseError = async (error: any, context: string) => {
       console.error(`❌ [AUTH-SECURITY] ${context}:`, {
         code: error?.code || 'unknown',
         message: error?.message || 'Unknown error',
         name: error?.name || 'Error'
       });
+
+      // 🔧 DEV-FRIENDLY: Verificar si estamos en desarrollo
+      const isDevelopment = isDevelopmentMode();
 
       // Detectar errores de red
       if (error?.code === 'auth/network-request-failed' || 
@@ -168,15 +172,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         setNetworkRetryCount(prev => prev + 1);
         
+        // 🔧 DEV-FRIENDLY: En desarrollo, ser más tolerante con errores de red
+        const maxRetries = isDevelopment ? 10 : 3; // Más reintentos en dev
+        const retryDelay = isDevelopment ? 3000 : 5000; // Delay más corto en dev
+        
         // Si hay muchos reintentos, mostrar mensaje al usuario
-        if (networkRetryCount > 3) {
-          setError("Problemas de conectividad detectados. Verificando conexión...");
+        if (networkRetryCount > maxRetries) {
+          const message = isDevelopment 
+            ? "Conectividad en desarrollo - continuando..." 
+            : "Problemas de conectividad detectados. Verificando conexión...";
+          
+          setError(message);
           
           // Intentar reconectar después de un delay
           setTimeout(() => {
             setError(null);
             setNetworkRetryCount(0);
-          }, 5000);
+          }, retryDelay);
+        } else if (isDevelopment) {
+          console.log(`🛠️ [DEV-MODE] Reintento ${networkRetryCount}/${maxRetries} - continuando en desarrollo`);
         }
       }
     };
@@ -226,11 +240,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
             };
             setCurrentUser(appUser);
           } else {
-            // Solo limpiar usuario si no hay autenticación fallback válida
+            // 🔧 DEV-FRIENDLY: Solo limpiar usuario si no hay autenticación fallback válida
             const otpFallback = localStorage.getItem('otp-fallback-auth');
+            const isDevelopment = window.location.hostname.includes('replit') || 
+                                 window.location.hostname === 'localhost';
+            
             if (!otpFallback || currentUser) {
               console.log("🔓 Usuario no autenticado - Firebase signOut detectado");
-              setCurrentUser(null);
+              
+              // En desarrollo, mantener sesión por más tiempo antes de limpiar
+              if (isDevelopment && currentUser) {
+                console.log("🛠️ [DEV-MODE] Manteniendo usuario en desarrollo por posible reconexión");
+                
+                // Dar tiempo para reconexión automática antes de limpiar
+                setTimeout(() => {
+                  if (!auth.currentUser) {
+                    console.log("🛠️ [DEV-MODE] Timeout alcanzado - limpiando usuario");
+                    setCurrentUser(null);
+                  }
+                }, 3000); // 3 segundos en desarrollo
+              } else {
+                setCurrentUser(null);
+              }
             }
           }
           setLoading(false);

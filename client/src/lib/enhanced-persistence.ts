@@ -83,19 +83,28 @@ class EnhancedPersistenceService {
 
       const session: PersistentSession = JSON.parse(saved);
       
-      // Verificar expiración
+      // 🔧 DEV-FRIENDLY: Verificar si estamos en desarrollo
+      const isDevelopment = window.location.hostname.includes('replit') || 
+                           window.location.hostname === 'localhost' ||
+                           window.location.hostname.includes('127.0.0.1');
+      
+      // Verificar expiración (más permisiva en desarrollo)
       const age = Date.now() - session.createdAt;
-      if (age > this.SESSION_DURATION_MS) {
+      const maxAge = isDevelopment ? (7 * 24 * 60 * 60 * 1000) : this.SESSION_DURATION_MS; // 7 días en dev, 30 en prod
+      
+      if (age > maxAge) {
         console.log('⏰ [PERSISTENCE] Sesión expirada por tiempo');
         this.clearPersistentSession();
-        return { valid: false, reason: 'Sesión expirada (30 días)' };
+        return { valid: false, reason: `Sesión expirada (${isDevelopment ? '7' : '30'} días)` };
       }
 
-      // Verificar dispositivo
-      if (!deviceFingerprintService.isCurrentDevice()) {
+      // 🔧 DEV-FRIENDLY: Verificar dispositivo solo en producción
+      if (!isDevelopment && !deviceFingerprintService.isCurrentDevice()) {
         console.log('🔄 [PERSISTENCE] Dispositivo diferente detectado');
         this.clearPersistentSession();
         return { valid: false, reason: 'Dispositivo diferente detectado' };
+      } else if (isDevelopment) {
+        console.log('🛠️ [DEV-MODE] Saltando verificación de dispositivo en desarrollo');
       }
 
       // Actualizar último acceso
@@ -107,7 +116,17 @@ class EnhancedPersistenceService {
 
     } catch (error) {
       console.error('❌ [PERSISTENCE] Error validando sesión persistente:', error);
-      this.clearPersistentSession();
+      
+      // 🔧 DEV-FRIENDLY: En desarrollo, no limpiar sesión por errores menores
+      const isDevelopment = window.location.hostname.includes('replit') || 
+                           window.location.hostname === 'localhost';
+      
+      if (!isDevelopment) {
+        this.clearPersistentSession();
+      } else {
+        console.log('🛠️ [DEV-MODE] Manteniendo sesión a pesar del error de validación');
+      }
+      
       return { valid: false, reason: 'Error de validación' };
     }
   }
@@ -186,11 +205,18 @@ class EnhancedPersistenceService {
       document.addEventListener(event, updateActivity, { passive: true });
     });
 
-    // Limpiar al cerrar ventana si no es "recordarme"
+    // 🔧 DEV-FRIENDLY: Limpiar al cerrar ventana solo en producción
     window.addEventListener('beforeunload', () => {
-      const session = this.getSessionInfo();
-      if (session && !session.rememberMe) {
-        this.clearPersistentSession();
+      const isDevelopment = window.location.hostname.includes('replit') || 
+                           window.location.hostname === 'localhost';
+      
+      if (!isDevelopment) {
+        const session = this.getSessionInfo();
+        if (session && !session.rememberMe) {
+          this.clearPersistentSession();
+        }
+      } else {
+        console.log('🛠️ [DEV-MODE] Manteniendo sesión al cerrar ventana en desarrollo');
       }
     });
   }
