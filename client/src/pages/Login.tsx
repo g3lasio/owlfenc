@@ -582,12 +582,6 @@ export default function AuthPage() {
                         )}
                       />
                       
-                      <div className="flex items-center gap-3">
-                        <Separator className="flex-1 bg-muted-foreground/30" />
-                        <span className="text-xs text-muted-foreground">or</span>
-                        <Separator className="flex-1 bg-muted-foreground/30" />
-                      </div>
-
                       <Button
                         type="submit"
                         className="w-full h-10 bg-primary hover:bg-primary/80 text-black font-semibold"
@@ -595,6 +589,12 @@ export default function AuthPage() {
                       >
                         {isLoading ? t("auth.login") + "..." : t("auth.login")}
                       </Button>
+
+                      <div className="flex items-center gap-3">
+                        <Separator className="flex-1 bg-muted-foreground/30" />
+                        <span className="text-xs text-muted-foreground">or</span>
+                        <Separator className="flex-1 bg-muted-foreground/30" />
+                      </div>
                     </form>
                   </Form>
                 ) : (
