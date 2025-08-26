@@ -13,9 +13,27 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
-
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import { Input } from "@/components/ui/input";
 import {
@@ -35,6 +53,16 @@ import {
   TabContent,
   CardGrid,
 } from "@/components/layout/StandardLayoutContainers";
+
+interface ProjectDocument {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  uploadedAt: string | Date;
+  base64Data?: string;
+  downloadURL?: string;
+}
 
 interface Project {
   id: string;
@@ -69,6 +97,7 @@ interface Project {
   difficulty?: string;
   clientEmail?: string;
   clientPhone?: string;
+  documents?: ProjectDocument[];
 }
 
 
@@ -78,6 +107,23 @@ function Projects() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Advanced filtering and pagination states
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{
+    type: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
+
+  // Enhanced file management states
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+  const [dragOver, setDragOver] = useState(false);
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -87,6 +133,7 @@ function Projects() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { hasAccess, canUse, showUpgradeModal } = usePermissions();
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     if (user?.uid) {
@@ -229,13 +276,45 @@ function Projects() {
     }
   };
 
+  // Enhanced filtering logic
   const filteredProjects = projects.filter((project) => {
     const matchesSearch =
       project.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.address.toLowerCase().includes(searchTerm.toLowerCase());
+      project.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      project.projectType.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchesSearch;
+    const matchesStatus = statusFilter === "all" || project.status === statusFilter;
+    const matchesType = typeFilter === "all" || project.projectType === typeFilter;
+    
+    let matchesDate = true;
+    if (dateFilter !== "all") {
+      const projectDate = project.createdAt?.toDate?.() || new Date();
+      const now = new Date();
+      const diffInDays = Math.floor((now.getTime() - projectDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      switch (dateFilter) {
+        case "today":
+          matchesDate = diffInDays === 0;
+          break;
+        case "week":
+          matchesDate = diffInDays <= 7;
+          break;
+        case "month":
+          matchesDate = diffInDays <= 30;
+          break;
+        case "year":
+          matchesDate = diffInDays <= 365;
+          break;
+      }
+    }
+
+    return matchesSearch && matchesStatus && matchesType && matchesDate;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedProjects = filteredProjects.slice(startIndex, startIndex + itemsPerPage);
 
   const getProjectCategoryInfo = (project: Project) => {
     if (
@@ -348,8 +427,9 @@ function Projects() {
     return timestamp.toDate().toLocaleDateString();
   };
 
+
   const handleEditEstimate = (projectId: string) => {
-    window.location.href = `/estimates?edit=${projectId}`;
+    setLocation(`/estimates?edit=${projectId}`);
   };
 
   const handleViewProject = (projectId: string) => {
@@ -381,72 +461,226 @@ function Projects() {
     }
   };
 
+  // Enhanced confirmation dialog helper
+  const showConfirmation = (type: string, message: string, onConfirm: () => void) => {
+    setConfirmAction({ type, message, onConfirm });
+    setShowConfirmDialog(true);
+  };
+
+  // Bulk actions
+  const handleBulkStatusUpdate = async (newStatus: string) => {
+    if (selectedProjects.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Por favor selecciona al menos un proyecto.",
+      });
+      return;
+    }
+
+    showConfirmation(
+      "bulk-update",
+      `¿Estás seguro de que quieres cambiar el estado de ${selectedProjects.length} proyecto(s) a "${getStatusLabel(newStatus)}"?`,
+      async () => {
+        try {
+          await Promise.all(
+            selectedProjects.map(projectId => updateProjectProgress(projectId, newStatus))
+          );
+          
+          toast({
+            title: "Estados actualizados",
+            description: `Se actualizaron ${selectedProjects.length} proyectos exitosamente.`,
+          });
+          
+          setSelectedProjects([]);
+          loadProjects();
+        } catch (error) {
+          console.error("❌ Error updating bulk status:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "No se pudieron actualizar algunos proyectos.",
+          });
+        }
+      }
+    );
+  };
+
+  // Export functionality
+  const handleExportProjects = () => {
+    const csvContent = [
+      ['Cliente', 'Dirección', 'Tipo', 'Estado', 'Precio', 'Fecha'],
+      ...filteredProjects.map(project => [
+        project.clientName,
+        project.address,
+        project.projectType,
+        getStatusLabel(project.status),
+        project.totalPrice?.toString() || '0',
+        formatDate(project.createdAt)
+      ])
+    ].map(row => row.join(','))
+     .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `proyectos-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "Exportación completa",
+      description: "Los datos se han exportado exitosamente.",
+    });
+  };
+
   const handleProgressUpdate = async (
     projectId: string,
     newProgress: string,
   ) => {
-    try {
-      console.log(`🔒 SECURITY: Updating progress for project ${projectId} by user ${user?.uid}`);
-      console.log(`🔄 Updating progress from ${selectedProject?.projectProgress} to ${newProgress}`);
-      
-      // Usar updateProjectProgress que busca en ambas colecciones y verifica usuario
-      await updateProjectProgress(projectId, newProgress);
-      
-      setSelectedProject((prev) =>
-        prev ? { ...prev, projectProgress: newProgress } : null,
-      );
-      
-      toast({
-        title: "Progreso actualizado",
-        description:
-          "El progreso del proyecto ha sido actualizado exitosamente.",
-      });
-      
-      // Recargar proyectos para mostrar cambios
-      loadProjects();
-    } catch (error) {
-      console.error("❌ Error updating progress:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo actualizar el progreso del proyecto.",
-      });
-    }
+    showConfirmation(
+      "progress-update",
+      `¿Confirmas cambiar el progreso a "${getProgressDisplayText(newProgress)}"?`,
+      async () => {
+        try {
+          console.log(`🔒 SECURITY: Updating progress for project ${projectId} by user ${user?.uid}`);
+          console.log(`🔄 Updating progress from ${selectedProject?.projectProgress} to ${newProgress}`);
+          
+          // Usar updateProjectProgress que busca en ambas colecciones y verifica usuario
+          await updateProjectProgress(projectId, newProgress);
+          
+          setSelectedProject((prev) =>
+            prev ? { ...prev, projectProgress: newProgress } : null,
+          );
+          
+          toast({
+            title: "Progreso actualizado",
+            description:
+              "El progreso del proyecto ha sido actualizado exitosamente.",
+          });
+          
+          // Audit log
+          console.log(`🔍 AUDIT: User ${user?.uid} updated project ${projectId} progress to ${newProgress}`);
+          
+          // Recargar proyectos para mostrar cambios
+          loadProjects();
+        } catch (error) {
+          console.error("❌ Error updating progress:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "No se pudo actualizar el progreso del proyecto.",
+          });
+        }
+      }
+    );
   };
 
-  // Document management functions - Using Base64 storage to avoid Firebase Storage permissions
+  // Enhanced file validation
+  const validateFile = (file: File): { valid: boolean; error?: string } => {
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const allowedTypes = [
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+      'application/pdf',
+      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/plain', 'text/csv'
+    ];
+    
+    if (file.size > maxSize) {
+      return { valid: false, error: `El archivo ${file.name} excede el tamaño máximo de 10MB` };
+    }
+    
+    if (!allowedTypes.includes(file.type)) {
+      return { valid: false, error: `Tipo de archivo no permitido: ${file.type}` };
+    }
+    
+    // Sanitize filename
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    if (sanitizedName !== file.name) {
+      console.warn(`Filename sanitized: ${file.name} -> ${sanitizedName}`);
+    }
+    
+    return { valid: true };
+  };
+
+  // Enhanced file upload with Firebase Storage
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || !selectedProject) return;
 
+    // Validate all files first
+    const validationResults = Array.from(files).map(file => ({
+      file,
+      validation: validateFile(file)
+    }));
+    
+    const invalidFiles = validationResults.filter(r => !r.validation.valid);
+    if (invalidFiles.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "Archivos inválidos",
+        description: invalidFiles.map(f => f.validation.error).join(', '),
+      });
+      event.target.value = '';
+      return;
+    }
+
     setUploadingFile(true);
 
     try {
+      const { ref, uploadBytes, getDownloadURL } = await import("firebase/storage");
+      const { storage } = await import("@/lib/firebase");
+      const { updateDoc, doc } = await import("firebase/firestore");
+      const { db } = await import("@/lib/firebase");
+      
       const updatedDocuments = [...(selectedProject.documents || [])];
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const fileId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
         
-        // Convert file to Base64 to store in Firestore
-        const base64Data = await fileToBase64(file);
+        // Update progress
+        setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
         
-        const document = {
-          id: fileId,
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          uploadedAt: new Date().toISOString(),
-          base64Data: base64Data
-        };
+        try {
+          // Upload to Firebase Storage
+          const storageRef = ref(storage, `projects/${selectedProject.id}/documents/${fileId}-${sanitizedName}`);
+          const snapshot = await uploadBytes(storageRef, file);
+          const downloadURL = await getDownloadURL(snapshot.ref);
+          
+          const document: ProjectDocument = {
+            id: fileId,
+            name: sanitizedName,
+            type: file.type,
+            size: file.size,
+            uploadedAt: new Date().toISOString(),
+            downloadURL: downloadURL
+          };
 
-        updatedDocuments.push(document);
+          updatedDocuments.push(document);
+          
+          // Update progress to 100%
+          setUploadProgress(prev => ({ ...prev, [fileId]: 100 }));
+          
+          // Audit log
+          console.log(`🔍 AUDIT: User ${user?.uid} uploaded document ${sanitizedName} to project ${selectedProject.id}`);
+          
+        } catch (error) {
+          console.error(`Error uploading file ${file.name}:`, error);
+          toast({
+            variant: "destructive",
+            title: "Error de subida",
+            description: `No se pudo subir el archivo ${file.name}`,
+          });
+        }
       }
 
       // Update project in Firebase Firestore
-      const { updateDoc, doc } = await import("firebase/firestore");
-      const { db } = await import("@/lib/firebase");
-      
       const projectRef = doc(db, "estimates", selectedProject.id);
       await updateDoc(projectRef, {
         documents: updatedDocuments
@@ -455,8 +689,8 @@ function Projects() {
       setSelectedProject({ ...selectedProject, documents: updatedDocuments });
 
       toast({
-        title: "Documents uploaded",
-        description: `${files.length} documento(s) subido(s) exitosamente.`,
+        title: "Documentos subidos",
+        description: `${updatedDocuments.length - (selectedProject.documents?.length || 0)} documento(s) subido(s) exitosamente.`,
       });
 
     } catch (error) {
@@ -468,12 +702,88 @@ function Projects() {
       });
     } finally {
       setUploadingFile(false);
-      // Reset file input
+      setUploadProgress({});
       event.target.value = '';
     }
   };
 
-  // Helper function to convert file to Base64
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+    
+    // Simulate file input change event
+    const fakeEvent = {
+      target: {
+        files: files,
+        value: ''
+      }
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    await handleFileUpload(fakeEvent);
+  };
+
+  // Selection handlers
+  const handleSelectProject = (projectId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedProjects(prev => [...prev, projectId]);
+    } else {
+      setSelectedProjects(prev => prev.filter(id => id !== projectId));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedProjects(paginatedProjects.map(p => p.id));
+    } else {
+      setSelectedProjects([]);
+    }
+  };
+
+  // Enhanced keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key) {
+          case 'a':
+            e.preventDefault();
+            handleSelectAll(!selectedProjects.length);
+            break;
+          case 'e':
+            e.preventDefault();
+            if (selectedProjects.length === 1) {
+              handleEditEstimate(selectedProjects[0]);
+            }
+            break;
+          case 'Escape':
+            setSelectedProjects([]);
+            break;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedProjects]);
+
+  // Get unique values for filters
+  const uniqueStatuses = [...new Set(projects.map(p => p.status))];
+  const uniqueTypes = [...new Set(projects.map(p => p.projectType))];
+
+  // Helper function to convert file to Base64 (legacy support)
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -530,33 +840,57 @@ function Projects() {
   const handleDeleteDocument = async (documentId: string) => {
     if (!selectedProject) return;
 
-    try {
-      const updatedDocuments = selectedProject.documents?.filter(doc => doc.id !== documentId) || [];
+    const documentToDelete = selectedProject.documents?.find(doc => doc.id === documentId);
+    if (!documentToDelete) return;
 
-      // Update project in Firebase
-      const { updateDoc, doc } = await import("firebase/firestore");
-      const { db } = await import("@/lib/firebase");
-      
-      const projectRef = doc(db, "estimates", selectedProject.id);
-      await updateDoc(projectRef, {
-        documents: updatedDocuments
-      });
+    showConfirmation(
+      "delete-document",
+      `¿Estás seguro de que quieres eliminar el documento "${documentToDelete.name}"? Esta acción no se puede deshacer.`,
+      async () => {
+        try {
+          const { deleteObject, ref } = await import("firebase/storage");
+          const { storage } = await import("@/lib/firebase");
+          const { updateDoc, doc } = await import("firebase/firestore");
+          const { db } = await import("@/lib/firebase");
+          
+          // Delete from Firebase Storage if it has downloadURL
+          if (documentToDelete.downloadURL) {
+            try {
+              const storageRef = ref(storage, documentToDelete.downloadURL);
+              await deleteObject(storageRef);
+            } catch (storageError) {
+              console.warn("Could not delete from storage (may not exist):", storageError);
+            }
+          }
+          
+          const updatedDocuments = selectedProject.documents?.filter(doc => doc.id !== documentId) || [];
 
-      setSelectedProject({ ...selectedProject, documents: updatedDocuments });
+          // Update project in Firebase
+          const projectRef = doc(db, "estimates", selectedProject.id);
+          await updateDoc(projectRef, {
+            documents: updatedDocuments
+          });
 
-      toast({
-        title: "Document deleted",
-        description: "El documento ha sido eliminado exitosamente.",
-      });
+          setSelectedProject({ ...selectedProject, documents: updatedDocuments });
 
-    } catch (error) {
-      console.error("Error deleting document:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo eliminar el documento.",
-      });
-    }
+          // Audit log
+          console.log(`🔍 AUDIT: User ${user?.uid} deleted document ${documentToDelete.name} from project ${selectedProject.id}`);
+
+          toast({
+            title: "Documento eliminado",
+            description: "El documento ha sido eliminado exitosamente.",
+          });
+
+        } catch (error) {
+          console.error("Error deleting document:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "No se pudo eliminar el documento.",
+          });
+        }
+      }
+    );
   };
 
   // Function to generate PDF from project data
@@ -867,27 +1201,140 @@ function Projects() {
           </div>
         </div>
 
+        {/* Enhanced Filters and Search Bar */}
         <div className="mb-4 space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Buscar</label>
               <Input
-                placeholder="Buscar por cliente o dirección..."
+                placeholder="Cliente, dirección, tipo..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full"
               />
             </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Estado</label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos los estados" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los estados</SelectItem>
+                  {uniqueStatuses.filter(status => status).map(status => (
+                    <SelectItem key={status} value={status}>
+                      {getStatusLabel(status)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Tipo</label>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos los tipos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los tipos</SelectItem>
+                  {uniqueTypes.filter(type => type).map(type => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Fecha</label>
+              <Select value={dateFilter} onValueChange={setDateFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas las fechas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las fechas</SelectItem>
+                  <SelectItem value="today">Hoy</SelectItem>
+                  <SelectItem value="week">Esta semana</SelectItem>
+                  <SelectItem value="month">Este mes</SelectItem>
+                  <SelectItem value="year">Este año</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-
-
-          <div className="text-sm text-muted-foreground">
-            {filteredProjects.length}{" "}
-            {filteredProjects.length === 1
-              ? "proyecto encontrado"
-              : "proyectos encontrados"}
+          {/* Filter Status and Actions */}
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Mostrando {paginatedProjects.length} de {filteredProjects.length} proyecto(s)
+              {filteredProjects.length !== projects.length && (
+                <span> (filtrado de {projects.length} total)</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {(statusFilter !== "all" || typeFilter !== "all" || dateFilter !== "all" || searchTerm) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setStatusFilter("all");
+                    setTypeFilter("all");
+                    setDateFilter("all");
+                    setSearchTerm("");
+                    setCurrentPage(1);
+                  }}
+                >
+                  <i className="ri-close-line mr-1"></i>
+                  Limpiar filtros
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportProjects}
+              >
+                <i className="ri-download-line mr-2"></i>
+                Exportar CSV
+              </Button>
+            </div>
           </div>
+
+          {/* Bulk Actions Bar */}
+          {selectedProjects.length > 0 && (
+            <div className="flex items-center justify-between p-4 bg-primary/10 border border-primary/20 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={selectedProjects.length === paginatedProjects.length}
+                  onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                />
+                <span className="text-sm font-medium">
+                  {selectedProjects.length} proyecto(s) seleccionado(s)
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedProjects([])}
+                >
+                  Deseleccionar todo
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Select onValueChange={handleBulkStatusUpdate}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Cambiar estado..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Marcar como Pendiente</SelectItem>
+                    <SelectItem value="in_progress">Marcar como En Progreso</SelectItem>
+                    <SelectItem value="completed">Marcar como Completado</SelectItem>
+                    <SelectItem value="approved">Marcar como Aprobado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <div className="p-6">
@@ -903,14 +1350,21 @@ function Projects() {
             cols={{ default: 1, md: 2, lg: 3 }}
             className="gap-6 md:h-[40dvh] overflow-y-auto "
           >
-            {filteredProjects.map((project) => {
+            {paginatedProjects.map((project) => {
               const displayInfo = getProjectDisplayInfo(project);
               return (
                 <Card
                   key={project.id}
-                  className="hover:shadow-lg transition-shadow cursor-pointer group"
+                  className="hover:shadow-lg transition-shadow cursor-pointer group relative"
                 >
-                  <CardContent className="p-4">
+                  <div className="absolute top-2 left-2 z-10">
+                    <Checkbox
+                      checked={selectedProjects.includes(project.id)}
+                      onCheckedChange={(checked) => handleSelectProject(project.id, !!checked)}
+                      className="bg-background border-2"
+                    />
+                  </div>
+                  <CardContent className="p-4 pt-8">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-lg truncate group-hover:text-primary transition-colors">
@@ -972,15 +1426,11 @@ function Projects() {
                       )}
 
                       {
-                        //@ts-ignore
-                        project.total && (
+                        (project as any).total && (
                           <div className="flex items-center gap-2 text-sm font-medium text-green-600">
                             <i className="ri-money-dollar-circle-line"></i>
                             <span>
-                              {
-                                //@ts-ignore
-                                project.total
-                              }
+                              ${((project as any).total || 0).toLocaleString()}
                             </span>
                           </div>
                         )
@@ -1018,7 +1468,15 @@ function Projects() {
               <table className="w-full min-w-[640px]">
                 <thead className="bg-muted/50">
                   <tr className="border-b">
-                    <th className="text-left p-3 font-medium">Cliente</th>
+                    <th className="text-left p-3 font-medium">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={selectedProjects.length === paginatedProjects.length && paginatedProjects.length > 0}
+                          onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                        />
+                        <span>Cliente</span>
+                      </div>
+                    </th>
                     <th className="text-left p-3 font-medium hidden md:table-cell">
                       Dirección
                     </th>
@@ -1036,7 +1494,7 @@ function Projects() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredProjects.map((project) => {
+                  {paginatedProjects.map((project) => {
                     const displayInfo = getProjectDisplayInfo(project);
                     return (
                       <tr
@@ -1044,11 +1502,19 @@ function Projects() {
                         className="border-b hover:bg-muted/30 transition-colors"
                       >
                         <td className="p-3">
-                          <div className="font-medium">
-                            {project.clientName}
-                          </div>
-                          <div className="text-sm text-muted-foreground md:hidden">
-                            {project.address}
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={selectedProjects.includes(project.id)}
+                              onCheckedChange={(checked) => handleSelectProject(project.id, !!checked)}
+                            />
+                            <div>
+                              <div className="font-medium">
+                                {project.clientName}
+                              </div>
+                              <div className="text-sm text-muted-foreground md:hidden">
+                                {project.address}
+                              </div>
+                            </div>
                           </div>
                         </td>
                         <td className="p-3 hidden md:table-cell">
@@ -1126,6 +1592,66 @@ function Projects() {
                   })}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6 p-4 border-t bg-muted/30 rounded-b-lg">
+            <div className="text-sm text-muted-foreground">
+              Página {currentPage} de {totalPages}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+              >
+                <i className="ri-skip-back-line"></i>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <i className="ri-arrow-left-s-line"></i>
+              </Button>
+              <span className="px-3 py-1 bg-background border rounded text-sm min-w-[3rem] text-center">
+                {currentPage}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                <i className="ri-arrow-right-s-line"></i>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                <i className="ri-skip-forward-line"></i>
+              </Button>
+              <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+                setItemsPerPage(parseInt(value));
+                setCurrentPage(1);
+              }}>
+                <SelectTrigger className="w-20 ml-4">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         )}
@@ -1387,6 +1913,44 @@ function Projects() {
           </DialogContent>
         </Dialog>
       )}
+      
+      {/* Enhanced Confirmation Dialog */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <i className="ri-alert-line text-yellow-500"></i>
+              Confirmar Acción
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-muted-foreground">
+              {confirmAction?.message}
+            </p>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowConfirmDialog(false);
+                setConfirmAction(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                confirmAction?.onConfirm();
+                setShowConfirmDialog(false);
+                setConfirmAction(null);
+              }}
+            >
+              Confirmar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
