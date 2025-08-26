@@ -72,6 +72,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [networkRetryCount, setNetworkRetryCount] = useState(0);
+  const [lastValidUser, setLastValidUser] = useState<User | null>(null);
 
   useEffect(() => {
     // Verificar autenticación persistida de OTP primero
@@ -239,6 +240,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               },
             };
             setCurrentUser(appUser);
+            setLastValidUser(appUser); // Guardar último usuario válido
           } else {
             // 🔧 DEV-FRIENDLY: Solo limpiar usuario si no hay autenticación fallback válida
             const otpFallback = localStorage.getItem('otp-fallback-auth');

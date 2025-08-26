@@ -66,6 +66,7 @@ import ContractSignature from './pages/ContractSignature';
 
 
 import { Redirect } from "wouter";
+import { useState, useEffect } from "react";
 
 // 🔧 FIX: Global error handler for unhandled promises - ENHANCED
 setupGlobalErrorHandlers();
@@ -83,9 +84,31 @@ type ProtectedRouteProps = {
 function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   const { currentUser, loading } = useAuth();
   const { needsOnboarding, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
+  const [authStable, setAuthStable] = useState(false);
+
+  // Estabilizar el estado de auth para evitar redirecciones por cambios temporales
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    
+    if (!loading && !onboardingLoading) {
+      if (currentUser) {
+        // Si hay usuario, marcar como estable inmediatamente
+        setAuthStable(true);
+      } else {
+        // Si no hay usuario, esperar un poco antes de redirigir (evitar redirecciones por estado temporal)
+        timeoutId = setTimeout(() => {
+          setAuthStable(true);
+        }, 1500); // Esperar 1.5 segundos antes de considerar la pérdida de auth como real
+      }
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [currentUser, loading, onboardingLoading]);
 
   // Muestra un indicador de carga mientras se verifica la autenticación o onboarding
-  if (loading || onboardingLoading) {
+  if (loading || onboardingLoading || !authStable) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -93,7 +116,7 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     );
   }
 
-  // Redirige a login si no hay usuario autenticado
+  // Redirige a login solo después de que el estado sea estable y realmente no hay usuario
   if (!currentUser) {
     return <Redirect to="/login" />;
   }

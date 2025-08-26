@@ -2238,13 +2238,24 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
   // Robust save function that syncs to Firebase and projects dashboard
   const handleSaveEstimate = async () => {
+    // Verificación defensiva con reintento mejorado
     if (!currentUser?.uid) {
-      toast({
-        title: "Error de autenticación",
-        description: "Debes estar conectado para guardar estimados",
-        variant: "destructive",
-      });
-      return;
+      // Esperar un momento por si el estado de auth se está actualizando
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      if (!currentUser?.uid) {
+        toast({
+          title: "Estado de autenticación temporal",
+          description: "Reintentando guardar en un momento...",
+          variant: "default",
+        });
+        
+        // Reintentar después de un breve delay - SIN stale closure
+        setTimeout(() => {
+          handleSaveEstimate(); // Re-evaluará currentUser con el estado actual
+        }, 1000);
+        return;
+      }
     }
 
     if (!estimate.client || estimate.items.length === 0) {
@@ -3751,6 +3762,21 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
   const handleDownload = async () => {
     try {
+      // Verificación defensiva de autenticación
+      if (!currentUser?.uid) {
+        // Esperar un momento por si el estado de auth se está actualizando
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (!currentUser?.uid) {
+          toast({
+            title: "Estado de autenticación temporal",
+            description: "Por favor espera un momento e intenta de nuevo",
+            variant: "default",
+          });
+          return;
+        }
+      }
+
       // Validar que el perfil del contractor esté completo
       if (!profile?.company) {
         toast({
@@ -6037,7 +6063,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                       <Button
                         onClick={() => handleSaveEstimate()}
-                        disabled={isSaving}
+                        disabled={isSaving || !currentUser?.uid}
                         size="sm"
                         className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
                       >
@@ -6216,7 +6242,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               {currentStep === STEPS.length - 1 ? (
                 <Button
                   onClick={handleDownload}
-                  disabled={!estimate.client || estimate.items.length === 0}
+                  disabled={!estimate.client || estimate.items.length === 0 || !currentUser?.uid}
                   className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 w-full sm:w-auto shadow-lg shadow-cyan-500/25"
                 >
                   <Download className="h-4 w-4 mr-2" />
