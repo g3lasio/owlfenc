@@ -36,6 +36,9 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 
 import OTPAuth from "@/components/auth/OTPAuth";
+import SessionUnlockPrompt from "@/components/auth/SessionUnlockPrompt";
+import BiometricSetupButton from "@/components/auth/BiometricSetupButton";
+import { sessionUnlockService } from "@/lib/session-unlock-service";
 
 import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
@@ -73,6 +76,12 @@ export default function AuthPage() {
   );
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showSessionUnlock, setShowSessionUnlock] = useState(false);
+  const [sessionUnlockInfo, setSessionUnlockInfo] = useState<{
+    canUnlock: boolean;
+    email?: string;
+    method?: string;
+  }>({ canUnlock: false });
   const cardRef = useRef<HTMLDivElement>(null);
   const successRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation(); // Obtenemos la función de traducción
@@ -84,6 +93,33 @@ export default function AuthPage() {
       navigate("/");
     }
   }, [currentUser, authLoading, navigate]);
+
+  // Verificar si hay sesión disponible para desbloqueo biométrico
+  useEffect(() => {
+    const checkSessionUnlock = async () => {
+      try {
+        console.log('🔓 [SESSION-CHECK] Verificando sesión disponible para desbloqueo...');
+        const unlockInfo = sessionUnlockService.canUnlockSession();
+        
+        if (unlockInfo.canUnlock) {
+          console.log('✅ [SESSION-CHECK] Sesión disponible para desbloqueo:', unlockInfo.email);
+          setSessionUnlockInfo(unlockInfo);
+          setShowSessionUnlock(true);
+        } else {
+          console.log('❌ [SESSION-CHECK] No hay sesión disponible para desbloqueo');
+          setShowSessionUnlock(false);
+        }
+      } catch (error) {
+        console.error('❌ [SESSION-CHECK] Error verificando sesión:', error);
+        setShowSessionUnlock(false);
+      }
+    };
+
+    // Solo verificar si no hay usuario autenticado y no está cargando
+    if (!currentUser && !authLoading) {
+      checkSessionUnlock();
+    }
+  }, [currentUser, authLoading]);
   
   // Estado para signup
   const [signupData, setSignupData] = useState({
@@ -125,6 +161,28 @@ export default function AuthPage() {
   });
 
 
+
+  // Handler para desbloqueo de sesión exitoso
+  const handleSessionUnlockSuccess = (user: any) => {
+    console.log('🔓 [SESSION-UNLOCK] Desbloqueo exitoso:', user.email);
+    toast({
+      title: "Sesión desbloqueada",
+      description: `¡Bienvenido de vuelta, ${user.displayName || user.email}!`,
+    });
+    showSuccessEffect();
+  };
+
+  // Handler para cuando se necesita reautenticación
+  const handleNeedReauth = () => {
+    console.log('🔐 [SESSION-UNLOCK] Necesita reautenticación - mostrando login normal');
+    setShowSessionUnlock(false);
+    sessionUnlockService.clearStoredSession();
+    toast({
+      title: "Sesión expirada",
+      description: "Por favor, inicia sesión nuevamente.",
+      variant: "default",
+    });
+  };
 
   // Mostrar efecto de congratulación después de login exitoso con redirección inmediata
   const showSuccessEffect = () => {
@@ -421,9 +479,18 @@ export default function AuthPage() {
 
           <CardContent className="px-6 py-6">
             <div className="space-y-5">
-
-              {/* Formulario */}
-              {authMode === "login" ? (
+              
+              {/* Mostrar desbloqueo biométrico si hay sesión disponible */}
+              {showSessionUnlock && sessionUnlockInfo.canUnlock ? (
+                <SessionUnlockPrompt
+                  onUnlockSuccess={handleSessionUnlockSuccess}
+                  onNeedReauth={handleNeedReauth}
+                  className="mb-6"
+                />
+              ) : (
+                <>
+                  {/* Formulario de login/signup normal */}
+                  {authMode === "login" ? (
                 loginMethod === "email" ? (
                   <Form {...loginForm}>
                     <form
@@ -698,6 +765,8 @@ export default function AuthPage() {
                     {isLoading ? "Creando cuenta..." : t("auth.createAccount")}
                   </Button>
                 </div>
+              )}
+                </>
               )}
             </div>
           </CardContent>
