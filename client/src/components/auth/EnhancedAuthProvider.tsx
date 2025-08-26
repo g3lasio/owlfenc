@@ -14,8 +14,6 @@ interface AuthContextType {
   loading: boolean;
   isEmailVerified: boolean;
   
-  // 🌐 OAuth Methods
-  signInWithGoogle: () => Promise<void>;
   
   // 📧 Email Methods
   signInWithEmail: (email: string, password: string) => Promise<void>;
@@ -80,27 +78,6 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return unsubscribe;
   }, [toast]);
 
-  // 🌐 OAuth Authentication
-  const signInWithGoogle = async () => {
-    try {
-      setLoading(true);
-      await enhancedAuth.signInWithGoogle();
-      
-      toast({
-        title: "Welcome!",
-        description: "Successfully signed in with Google.",
-        variant: "default",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Sign-in Failed",
-        description: getErrorMessage(error.code),
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // 📧 Email Authentication
   const signInWithEmail = async (email: string, password: string) => {
@@ -327,7 +304,6 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     user,
     loading,
     isEmailVerified,
-    signInWithGoogle,
     signInWithEmail,
     createAccount,
     sendVerificationEmail,

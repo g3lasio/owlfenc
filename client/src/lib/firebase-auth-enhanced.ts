@@ -6,9 +6,6 @@
 import {
   Auth,
   User,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signInWithRedirect,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendEmailVerification,
@@ -47,16 +44,6 @@ const SECURITY_CONFIG = {
   disableTokenValidation: true,
 } as const;
 
-// 📱 OAUTH PROVIDERS CONFIGURATION
-const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({
-  prompt: 'select_account',
-  access_type: 'offline',
-});
-
-// Add additional scopes for enhanced profile data
-googleProvider.addScope('profile');
-googleProvider.addScope('email');
 
 // 🔐 ENHANCED AUTHENTICATION CLASS
 export class EnhancedFirebaseAuth {
@@ -162,99 +149,7 @@ export class EnhancedFirebaseAuth {
     return true;
   }
 
-  // 🌐 ROBUST GOOGLE OAUTH AUTHENTICATION
-  async signInWithGoogle(): Promise<UserCredential> {
-    this.logSecurityEvent('GOOGLE_SIGNIN_ATTEMPT', {});
-    
-    const provider = new GoogleAuthProvider();
-    provider.addScope('email');
-    provider.addScope('profile');
-    provider.setCustomParameters({
-      prompt: 'select_account',
-      access_type: 'online'
-    });
-    
-    // Multi-strategy approach for auth/internal-error
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        console.log(`🛡️ [ROBUST-GOOGLE] Attempt ${attempt}/3 - using popup`);
-        
-        // Add progressive delay for retries
-        if (attempt > 1) {
-          await new Promise(resolve => setTimeout(resolve, attempt * 1500));
-        }
-        
-        const result = await signInWithPopup(this.auth, provider);
-        
-        this.logSecurityEvent('GOOGLE_SIGNIN_SUCCESS', { 
-          uid: result.user.uid,
-          email: result.user.email,
-          attempt
-        });
-
-        console.log(`✅ [ROBUST-GOOGLE] Success on attempt ${attempt}`);
-        return result;
-        
-      } catch (error: any) {
-        console.log(`❌ [ROBUST-GOOGLE] Attempt ${attempt} failed:`, error.code);
-        
-        // Don't retry user-caused errors
-        if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(error.code)) {
-          this.logSecurityEvent('GOOGLE_SIGNIN_FAILED', { 
-            error: error.code,
-            reason: 'user_action'
-          });
-          throw this.createUserFriendlyGoogleError(error);
-        }
-        
-        // For auth/internal-error, try redirect as last resort
-        if (error.code === 'auth/internal-error' && attempt === 3) {
-          console.log('🔄 [ROBUST-GOOGLE] Using redirect fallback for persistent internal-error');
-          try {
-            sessionStorage.setItem('oauth-return-url', window.location.pathname);
-            await signInWithRedirect(this.auth, provider);
-            return null as any; // Will complete after redirect
-          } catch (redirectError: any) {
-            this.logSecurityEvent('GOOGLE_SIGNIN_FAILED', { 
-              error: redirectError.code,
-              attempts: attempt
-            });
-            throw this.createUserFriendlyGoogleError(redirectError);
-          }
-        }
-        
-        // Retry for auth/internal-error
-        if (error.code === 'auth/internal-error' && attempt < 3) {
-          continue;
-        }
-        
-        // Other errors - don't retry
-        this.logSecurityEvent('GOOGLE_SIGNIN_FAILED', { 
-          error: error.code,
-          attempt
-        });
-        throw this.createUserFriendlyGoogleError(error);
-      }
-    }
-    
-    throw new Error('All Google authentication strategies failed');
-  }
   
-  private createUserFriendlyGoogleError(error: any): Error {
-    const friendlyMessages: Record<string, string> = {
-      'auth/popup-blocked': 'Tu navegador bloqueó la ventana de autenticación de Google. Permite popups para este sitio y reintenta.',
-      'auth/popup-closed-by-user': 'Cerraste la ventana de autenticación de Google. Completa el proceso para continuar.',
-      'auth/unauthorized-domain': 'Error de configuración del dominio. Contacta al administrador del sistema.',
-      'auth/internal-error': 'Error interno del sistema de Google. Esto puede ser temporal - reintenta en unos minutos o usa autenticación con email.',
-      'auth/network-request-failed': 'Error de conexión con Google. Verifica tu internet y reintenta.',
-      'auth/too-many-requests': 'Demasiados intentos con Google. Espera unos minutos antes de reintentar.'
-    };
-    
-    const message = friendlyMessages[error.code] || 
-                   'Error en autenticación con Google. Reintenta o usa email/contraseña.';
-    
-    return new Error(message);
-  }
 
   // 📧 EMAIL/PASSWORD AUTHENTICATION
   async signInWithEmail(email: string, password: string): Promise<UserCredential> {

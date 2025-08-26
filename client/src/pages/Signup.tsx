@@ -23,8 +23,6 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { FcGoogle } from "react-icons/fc";
-import { FaApple } from "react-icons/fa";
 import { useAuth } from "@/contexts/AuthContext";
 import { RiEyeLine, RiEyeOffLine } from "react-icons/ri";
 // Esquema de validación para el formulario
@@ -50,7 +48,7 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function Signup() {
   const [, navigate] = useLocation();
-  const { register, loginWithGoogle, loginWithApple, error, clearError } =
+  const { register, error, clearError } =
     useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -97,117 +95,7 @@ export default function Signup() {
     }
   };
 
-  // Manejar registro con Google
-  const handleGoogleSignup = async () => {
-    setIsLoading(true);
-    try {
-      clearError();
-      console.log("=== INICIANDO GOOGLE SIGNUP ===");
-      
-      const result = await loginWithGoogle();
-      
-      if (result) {
-        // Registro exitoso inmediato
-        console.log("GOOGLE SIGNUP EXITOSO");
-        
-        toast({
-          title: "Registro exitoso",
-          description: "Tu cuenta ha sido creada correctamente con Google.",
-        });
-        
-        navigate("/");
-      } else {
-        // Redirección iniciada
-        console.log("GOOGLE SIGNUP REDIRECCIÓN INICIADA");
-        
-        toast({
-          title: "Redirigiendo a Google",
-          description: "Se abrirá la página de registro de Google.",
-        });
-      }
-    } catch (err: any) {
-      console.error("ERROR EN GOOGLE SIGNUP:", err);
-      
-      // Mapear errores a mensajes amigables
-      let errorDescription = err.message;
-      
-      if (err.code === "auth/popup-blocked") {
-        toast({
-          title: "Popup bloqueado",
-          description: "Permite ventanas emergentes para completar el registro.",
-        });
-        return;
-      } else if (err.code === "auth/account-exists-with-different-credential") {
-        errorDescription = "Ya tienes una cuenta con este email. Intenta iniciar sesión.";
-      } else if (!err.message || err.message.length > 100) {
-        errorDescription = "Error al registrarte con Google. Intenta con email/contraseña.";
-      }
 
-      toast({
-        variant: "destructive",
-        title: "Error de registro",
-        description: errorDescription,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Manejar registro con Apple
-  const handleAppleSignup = async () => {
-    setIsLoading(true);
-    try {
-      clearError();
-      console.log("=== INICIANDO APPLE SIGNUP ===");
-      
-      const result = await loginWithApple();
-      
-      if (result) {
-        // Registro exitoso inmediato
-        console.log("APPLE SIGNUP EXITOSO");
-        
-        toast({
-          title: "Registro exitoso",
-          description: "Tu cuenta ha sido creada correctamente con Apple ID.",
-        });
-        
-        navigate("/");
-      } else {
-        // Redirección iniciada
-        console.log("APPLE SIGNUP REDIRECCIÓN INICIADA");
-        
-        toast({
-          title: "Redirigiendo a Apple",
-          description: "Se abrirá la página de registro de Apple ID.",
-        });
-      }
-    } catch (err: any) {
-      console.error("ERROR EN APPLE SIGNUP:", err);
-      
-      // Mapear errores a mensajes amigables
-      let errorDescription = err.message;
-      
-      if (err.code === "auth/popup-blocked") {
-        toast({
-          title: "Popup bloqueado",
-          description: "Permite ventanas emergentes para completar el registro.",
-        });
-        return;
-      } else if (err.code === "auth/account-exists-with-different-credential") {
-        errorDescription = "Ya tienes una cuenta con este email. Intenta iniciar sesión.";
-      } else if (!err.message || err.message.length > 100) {
-        errorDescription = "Error al registrarte con Apple. Intenta con email/contraseña.";
-      }
-
-      toast({
-        variant: "destructive",
-        title: "Error de registro",
-        description: errorDescription,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="flex  items-center justify-center bg-background p-4">
@@ -251,38 +139,6 @@ export default function Signup() {
 
           <CardContent className="px-6 py-6">
             <div className="space-y-5">
-              {/* Botones de registro con proveedores */}
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={handleGoogleSignup}
-                  className="w-full h-11 rounded-lg border border-primary/20 hover:bg-primary/10 hover:border-primary/30 transition-all"
-                >
-                  <FcGoogle className="mr-2 h-5 w-5" />
-                  <span>Google</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={handleAppleSignup}
-                  className="w-full h-11 rounded-lg border border-primary/20 hover:bg-primary/10 hover:border-primary/30 transition-all"
-                >
-                  <FaApple className="mr-2 h-5 w-5" />
-                  <span>Apple</span>
-                </Button>
-              </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <Separator className="w-full border-primary/20" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">
-                    O regístrate con email
-                  </span>
-                </div>
-              </div>
 
               {/* Toggle para seleccionar sección de formulario */}
               <div className="rounded-lg border border-primary/20 p-1 mb-4">

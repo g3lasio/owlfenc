@@ -15,8 +15,6 @@ import {
   loginUser,
   registerUser,
   logoutUser,
-  loginWithGoogle,
-  loginWithApple,
   sendEmailLink,
   resetPassword,
   devMode,
@@ -44,8 +42,6 @@ interface AuthContextType {
     displayName: string,
   ) => Promise<User>;
   logout: () => Promise<boolean>;
-  loginWithGoogle: () => Promise<User | null>; // Puede ser null en caso de redirección
-  loginWithApple: () => Promise<User | null>; // Puede ser null en caso de redirección
   sendPasswordResetEmail: (email: string) => Promise<boolean>;
   sendEmailLoginLink: (email: string) => Promise<boolean>;
   registerBiometricCredential: () => Promise<boolean>;
@@ -421,58 +417,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  // Login con Google
-  const googleLogin = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const user = await loginWithGoogle();
 
-      // Si el usuario es null (redirección), retornar null
-      if (!user) {
-        console.log("Redirección iniciada con Google");
-        return null;
-      }
-
-      // User es un objeto Firebase User válido
-      const appUser: User = {
-        uid: user.uid || '',
-        email: user.email || '',
-        displayName: user.displayName || '',
-        photoURL: user.photoURL || '',
-        phoneNumber: user.phoneNumber || '',
-        emailVerified: user.emailVerified,
-        getIdToken: () => user.getIdToken(),
-      };
-
-      return appUser;
-    } catch (err: any) {
-      setError(err.message || "Error al iniciar sesión con Google");
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Login con Apple
-  const appleLogin = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      // loginWithApple siempre devuelve null porque usamos redirección directa
-      await loginWithApple();
-
-      console.log("Redirección a Apple iniciada, no hay usuario inmediato");
-      // Siempre retornamos null porque redireccionamos
-      return null;
-    } catch (err: any) {
-      console.error("Error detallado en appleLogin:", err);
-      setError(err.message || "Error al iniciar sesión con Apple");
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Método de Microsoft eliminado intencionalmente
 
@@ -549,8 +494,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     register,
     logout,
-    loginWithGoogle: googleLogin,
-    loginWithApple: appleLogin,
     sendPasswordResetEmail,
     sendEmailLoginLink,
     registerBiometricCredential,

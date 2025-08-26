@@ -8,15 +8,11 @@ import axios from 'axios';
 
 const router = Router();
 
-// Google OAuth directo
+// Google OAuth directo - DESHABILITADO
 router.get('/google', (req, res) => {
   try {
-    const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/oauth-direct/google/callback`;
-    
-    if (!clientId) {
-      return res.status(500).json({ error: 'Google OAuth no configurado' });
-    }
+    console.log('⛔ [OAUTH-DIRECT] Google OAuth deshabilitado');
+    return res.status(404).json({ error: 'Google OAuth ha sido deshabilitado. Use autenticación por email u OTP.' });
     
     const authUrl = `https://accounts.google.com/oauth2/authorize?` +
       `client_id=${clientId}&` +
@@ -33,13 +29,12 @@ router.get('/google', (req, res) => {
   }
 });
 
-// Google OAuth callback
+// Google OAuth callback - DESHABILITADO
 router.get('/google/callback', async (req, res) => {
   try {
-    const { code, state } = req.query;
-    const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/oauth-direct/google/callback`;
+    console.log('⛔ [OAUTH-DIRECT] Google OAuth callback deshabilitado');
+    res.redirect(`${req.protocol}://${req.get('host')}/login?error=oauth_disabled`);
+    return;
     
     if (!code) {
       return res.status(400).json({ error: 'Código de autorización no recibido' });
@@ -104,15 +99,11 @@ router.get('/google/callback', async (req, res) => {
   }
 });
 
-// Apple OAuth directo
+// Apple OAuth directo - DESHABILITADO  
 router.get('/apple', (req, res) => {
   try {
-    const clientId = process.env.APPLE_OAUTH_CLIENT_ID;
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/oauth-direct/apple/callback`;
-    
-    if (!clientId) {
-      return res.status(500).json({ error: 'Apple OAuth no configurado' });
-    }
+    console.log('⛔ [OAUTH-DIRECT] Apple OAuth deshabilitado');
+    return res.status(404).json({ error: 'Apple OAuth ha sido deshabilitado. Use autenticación por email u OTP.' });
     
     const authUrl = `https://appleid.apple.com/auth/authorize?` +
       `client_id=${clientId}&` +
@@ -130,14 +121,12 @@ router.get('/apple', (req, res) => {
   }
 });
 
-// Apple OAuth callback (POST porque Apple usa form_post)
+// Apple OAuth callback (POST porque Apple usa form_post) - DESHABILITADO
 router.post('/apple/callback', async (req, res) => {
   try {
-    const { code, state, user } = req.body;
-    
-    if (!code) {
-      return res.status(400).json({ error: 'Código de autorización no recibido' });
-    }
+    console.log('⛔ [OAUTH-DIRECT] Apple OAuth callback deshabilitado');
+    res.redirect(`${req.protocol}://${req.get('host')}/login?error=oauth_disabled`);
+    return;
     
     // Apple OAuth es más complejo, implementaremos versión simplificada
     console.log('🍎 [OAUTH-DIRECT] Apple Code received:', !!code);

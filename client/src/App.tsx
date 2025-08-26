@@ -40,7 +40,6 @@ import AuthPage from "@/pages/Login"; // Renombrado el import aunque el archivo 
 import RecuperarPassword from "@/pages/RecuperarPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import EmailLinkCallback from "@/pages/EmailLinkCallback";
-import AppleCallback from "@/pages/AppleCallback";
 import SecuritySettings from "@/pages/SecuritySettings";
 import CyberpunkContractGenerator from "@/pages/CyberpunkContractGenerator";
 import { setupGlobalErrorHandlers } from "@/lib/error-handlers";
@@ -60,7 +59,6 @@ import { PermissionProvider } from "@/contexts/PermissionContext";
 import ChatOnboarding from "@/components/onboarding/ChatOnboarding";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import AuthDiagnostic from './pages/AuthDiagnostic';
-import AppleAuthTest from './pages/AppleAuthTest';
 import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
 import SimpleContractGenerator from './pages/SimpleContractGenerator';
@@ -120,9 +118,7 @@ function Router() {
       <Route path="/forgot-password" component={RecuperarPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/login/email-link-callback" component={EmailLinkCallback} />
-      <Route path="/apple-callback" component={AppleCallback} />
       <Route path="/auth-diagnostic" component={AuthDiagnostic} />
-      <Route path="/apple-auth-test" component={AppleAuthTest} />
       <Route path="/about-owlfenc" component={AboutOwlFence} />
       
       {/* Public signature routes */}

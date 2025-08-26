@@ -24,8 +24,6 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FcGoogle } from "react-icons/fc";
-import { FaApple } from "react-icons/fa";
 import { HiMail } from "react-icons/hi";
 import {
   RiMailSendLine,
@@ -36,15 +34,11 @@ import {
   RiCheckboxCircleLine,
 } from "react-icons/ri";
 import { useAuth } from "@/contexts/AuthContext";
-import { processOAuthToken, checkForOAuthToken } from "@/lib/oauth-token-handler";
-import { robustOAuthHandler } from "@/lib/simple-oauth";
-import { instantGoogleLogin, instantAppleLogin, popupGoogleLogin, popupAppleLogin } from "@/lib/ultra-simple-oauth";
 
 import OTPAuth from "@/components/auth/OTPAuth";
 
 import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
-import { handleOAuthCallback, isOAuthCallback } from "@/lib/oauth-callback-handler";
 
 type LoginFormValues = {
   email: string;
@@ -64,8 +58,6 @@ export default function AuthPage() {
   const {
     login,
     register,
-    loginWithGoogle,
-    loginWithApple,
     sendEmailLoginLink,
     error,
     clearError,
@@ -120,64 +112,6 @@ export default function AuthPage() {
       path: ["confirmPassword"],
     });
   
-  // Procesar tokens OAuth al cargar la página
-  useEffect(() => {
-    const handleOAuthReturn = async () => {
-      try {
-        // Primero intentar con el nuevo handler de OAuth callbacks
-        if (isOAuthCallback()) {
-          console.log('🔐 [OAUTH-CALLBACK] Procesando callback de OAuth...');
-          const result = await handleOAuthCallback();
-          
-          if (result.success) {
-            console.log(`✅ [OAUTH-CALLBACK] Login exitoso via ${result.provider}, usuario nuevo: ${result.isNewUser}`);
-            
-            // Manejar diferente mensaje según si es usuario nuevo o existente
-            if (result.isNewUser) {
-              toast({
-                title: "¡Cuenta creada!",
-                description: `Tu nueva cuenta ha sido creada con ${result.provider === 'google' ? 'Google' : 'Apple ID'}`,
-              });
-            } else {
-              toast({
-                title: "¡Bienvenido de vuelta!",
-                description: `Has iniciado sesión con ${result.provider === 'google' ? 'Google' : 'Apple ID'}`,
-              });
-            }
-            
-            showSuccessEffect();
-            return;
-          } else if (result.error) {
-            throw new Error(result.error);
-          }
-        }
-        
-        // Fallback al método antiguo si no es un callback nuevo
-        const hasToken = await checkForOAuthToken();
-        if (hasToken) {
-          console.log('🔄 [OAUTH-RETURN] Procesando token OAuth...');
-          const user = await processOAuthToken();
-          if (user) {
-            console.log('✅ [OAUTH-RETURN] Usuario autenticado via OAuth:', user.email);
-            toast({
-              title: "Autenticación exitosa",
-              description: "Te has autenticado correctamente",
-            });
-            showSuccessEffect();
-          }
-        }
-      } catch (error: any) {
-        console.error('❌ [OAUTH-RETURN] Error:', error);
-        toast({
-          title: "Error de autenticación",
-          description: error.message || "Error procesando autenticación",
-          variant: "destructive",
-        });
-      }
-    };
-    
-    handleOAuthReturn();
-  }, []);
 
   // Configurar el formulario de login
   const loginForm = useForm<LoginFormValues>({
@@ -324,174 +258,7 @@ export default function AuthPage() {
     }
   };
 
-  // Manejar login/registro con Google
-  const handleGoogleAuth = async () => {
-    setIsLoading(true);
-    try {
-      clearError();
-      console.log(`🔵 [GOOGLE-AUTH] Iniciando en modo: ${authMode}`);
-      
-      if (authMode === "signup") {
-        // MODO SIGNUP: Crear nueva cuenta con Google
-        console.log("🔵 [GOOGLE-SIGNUP] Creando nueva cuenta...");
-        const user = await loginWithGoogle();
-        
-        if (user) {
-          console.log("✅ [GOOGLE-SIGNUP] Nueva cuenta creada:", user.email);
-          toast({
-            title: "¡Cuenta creada!",
-            description: `Bienvenido ${user.displayName || user.email}`,
-          });
-          showSuccessEffect();
-        }
-      } else {
-        // MODO LOGIN: Iniciar sesión existente
-        console.log("🔵 [GOOGLE-LOGIN] Iniciando sesión...");
-        const user = await loginWithGoogle();
-        
-        if (user) {
-          console.log("✅ [GOOGLE-LOGIN] Sesión iniciada:", user.email);
-          toast({
-            title: "¡Bienvenido de vuelta!",
-            description: `Sesión iniciada como ${user.displayName || user.email}`,
-          });
-          showSuccessEffect();
-        } else {
-          // Redirección en proceso
-          toast({
-            title: "Redirigiendo a Google",
-            description: "Se abrirá la página de autenticación de Google.",
-          });
-        }
-      }
-      
-    } catch (err: any) {
-      console.error("❌ [GOOGLE-AUTH] Error:", err);
-      
-      // Verificar si es usuario no registrado intentando hacer login
-      if (authMode === "login" && (err.code === "auth/user-not-found" || err.message?.includes('user-not-found'))) {
-        toast({
-          variant: "default",
-          title: "Usuario no registrado",
-          description: "Esta cuenta no existe. ¿Quieres crear una cuenta nueva?",
-        });
-        // Cambiar automáticamente a modo signup
-        setTimeout(() => setAuthMode("signup"), 2000);
-        return;
-      }
-      
-      // Mapear errores a mensajes amigables
-      let errorDescription = err.message;
-      
-      if (err.code === "auth/popup-blocked") {
-        toast({
-          title: "Popup bloqueado",
-          description: "Permite ventanas emergentes o se usará redirección automáticamente.",
-        });
-        return;
-      } else if (err.code === "auth/unauthorized-domain") {
-        errorDescription = "Este dominio no está autorizado. Contacta al administrador.";
-      } else if (err.code === "auth/network-request-failed") {
-        errorDescription = "Error de conexión. Verifica tu internet e intenta nuevamente.";
-      } else if (!err.message || err.message.length > 100) {
-        errorDescription = "Error al conectar con Google. Intenta con email/contraseña.";
-      }
 
-      toast({
-        variant: "destructive",
-        title: "Error de Google",
-        description: errorDescription,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Manejar login/registro con Apple
-  const handleAppleAuth = async () => {
-    setIsLoading(true);
-    try {
-      clearError();
-      console.log(`🍎 [APPLE-AUTH] Iniciando en modo: ${authMode}`);
-
-      if (authMode === "signup") {
-        // MODO SIGNUP: Crear nueva cuenta con Apple
-        console.log("🍎 [APPLE-SIGNUP] Creando nueva cuenta...");
-        const user = await loginWithApple();
-        
-        if (user) {
-          console.log("✅ [APPLE-SIGNUP] Nueva cuenta creada:", user.email);
-          toast({
-            title: "¡Cuenta creada!",
-            description: `Bienvenido ${user.displayName || user.email}`,
-          });
-          showSuccessEffect();
-        }
-      } else {
-        // MODO LOGIN: Iniciar sesión existente
-        console.log("🍎 [APPLE-LOGIN] Iniciando sesión...");
-        const user = await loginWithApple();
-        
-        if (user) {
-          console.log("✅ [APPLE-LOGIN] Sesión iniciada:", user.email);
-          toast({
-            title: "¡Bienvenido de vuelta!",
-            description: `Sesión iniciada como ${user.displayName || user.email}`,
-          });
-          showSuccessEffect();
-        } else {
-          // Redirección en proceso
-          toast({
-            title: "Redirigiendo a Apple",
-            description: "Se abrirá la página de autenticación de Apple ID.",
-          });
-        }
-      }
-      
-    } catch (err: any) {
-      console.error("❌ [APPLE-AUTH] Error:", err);
-
-      // Verificar si es usuario no registrado intentando hacer login
-      if (authMode === "login" && (err.code === "auth/user-not-found" || err.message?.includes('user-not-found'))) {
-        toast({
-          variant: "default",
-          title: "Usuario no registrado",
-          description: "Esta cuenta no existe. ¿Quieres crear una cuenta nueva?",
-        });
-        // Cambiar automáticamente a modo signup
-        setTimeout(() => setAuthMode("signup"), 2000);
-        return;
-      }
-
-      // Mapear errores a mensajes amigables
-      let errorTitle = "Error de Apple ID";
-      let errorDescription = err.message;
-
-      if (err.code === "auth/popup-blocked") {
-        toast({
-          title: "Popup bloqueado",
-          description: "Permite ventanas emergentes o se usará redirección automáticamente.",
-        });
-        return;
-      } else if (err.code === "auth/unauthorized-domain") {
-        errorDescription = "Este dominio no está autorizado. Intenta con Google o email/contraseña.";
-      } else if (err.code === "auth/internal-error") {
-        errorDescription = "Error de configuración. Intenta con Google o email/contraseña.";
-      } else if (err.message?.includes("Apple ID no está disponible")) {
-        errorDescription = err.message;
-      } else if (!err.message || err.message.length > 100) {
-        errorDescription = "Apple ID no está disponible. Intenta con Google o email/contraseña.";
-      }
-
-      toast({
-        variant: "destructive",
-        title: errorTitle,
-        description: errorDescription,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Toggle entre login y signup con efecto de escaneo Stark Tech
   const toggleAuthMode = () => {
@@ -654,37 +421,6 @@ export default function AuthPage() {
 
           <CardContent className="px-6 py-6">
             <div className="space-y-5">
-              {/* Botones de proveedor */}
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-10 flex items-center justify-center gap-2 border-muted-foreground/30 hover:bg-primary/10"
-                  onClick={handleGoogleAuth}
-                  disabled={isLoading}
-                >
-                  <FcGoogle className="h-5 w-5" />
-                  <span>Google</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-10 flex items-center justify-center gap-2 border-muted-foreground/30 hover:bg-primary/10"
-                  onClick={handleAppleAuth}
-                  disabled={isLoading}
-                >
-                  <FaApple className="h-5 w-5" />
-                  <span>Apple</span>
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Separator className="flex-1 bg-muted-foreground/30" />
-                <span className="text-sm text-muted-foreground">
-                  {t("auth.orContinueWith")}
-                </span>
-                <Separator className="flex-1 bg-muted-foreground/30" />
-              </div>
 
               {/* Formulario */}
               {authMode === "login" ? (

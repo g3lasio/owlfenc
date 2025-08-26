@@ -10,15 +10,15 @@ const router = Router();
 // Endpoint para obtener configuración OAuth para el cliente
 router.get('/config', (req, res) => {
   try {
-    // Solo enviamos los Client IDs (son públicos y seguros)
+    // Google y Apple OAuth deshabilitados - solo OTP y email habilitados
     const oauthConfig = {
       google: {
-        clientId: process.env.GOOGLE_OAUTH_CLIENT_ID || null,
-        enabled: !!process.env.GOOGLE_OAUTH_CLIENT_ID && !!process.env.GOOGLE_OAUTH_CLIENT_SECRET
+        clientId: null,
+        enabled: false  // Deshabilitado intencionalmente
       },
       apple: {
-        clientId: process.env.APPLE_OAUTH_CLIENT_ID || null,
-        enabled: !!process.env.APPLE_OAUTH_CLIENT_ID && !!process.env.APPLE_OAUTH_CLIENT_SECRET
+        clientId: null,
+        enabled: false  // Deshabilitado intencionalmente
       }
     };
 

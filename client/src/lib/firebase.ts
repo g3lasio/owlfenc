@@ -18,10 +18,6 @@ import {
   getAuth,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithPopup,
-  signInWithRedirect,
-  GoogleAuthProvider,
-  OAuthProvider,
   sendPasswordResetEmail,
   confirmPasswordReset,
   signInWithPhoneNumber,
@@ -178,15 +174,6 @@ if (typeof window !== 'undefined') {
   console.log('🔧 [FIREBASE-CONFIG] Auth configurado con refreshes mínimos');
 }
 
-// Proveedores de autenticación con configuración optimizada para Replit
-const googleProvider = new GoogleAuthProvider();
-googleProvider.addScope('email');
-googleProvider.addScope('profile');
-
-// Configuración específica para resolver "refuse to connect" en Replit
-googleProvider.setCustomParameters({
-  'prompt': 'select_account', // Permitir selección de cuenta
-});
 
 // Email verification functions
 export const sendVerificationEmail = async () => {
@@ -231,54 +218,7 @@ export const checkEmailVerification = async () => {
   }
 };
 
-// Configuración dinámica de proveedores OAuth basada en secretos del servidor
-import { getOAuthConfig } from './oauth-config';
 
-let oauthConfigCache: any = null;
-
-// Función para inicializar proveedores OAuth dinámicamente
-const initializeOAuthProviders = async () => {
-  try {
-    if (oauthConfigCache) return oauthConfigCache;
-    
-    const config = await getOAuthConfig();
-    
-    // Google Provider - solo configurar si está habilitado
-    let googleProvider = null;
-    if (config.google.enabled && config.google.clientId) {
-      googleProvider = new GoogleAuthProvider();
-      googleProvider.addScope('email');
-      googleProvider.addScope('profile');
-      googleProvider.setCustomParameters({
-        'prompt': 'select_account'
-        // NO incluir client_id aquí - debe estar en Firebase Console
-      });
-    }
-    
-    // Apple Provider - solo configurar si está habilitado  
-    let appleProvider = null;
-    if (config.apple.enabled && config.apple.clientId) {
-      appleProvider = new OAuthProvider('apple.com');
-      appleProvider.addScope('email');
-      appleProvider.addScope('name');
-      // NO incluir client_id aquí - debe estar en Firebase Console
-    }
-    
-    oauthConfigCache = { googleProvider, appleProvider, config };
-    return oauthConfigCache;
-  } catch (error) {
-    console.error('❌ [OAUTH-INIT] Error inicializando proveedores:', error);
-    return { googleProvider: null, appleProvider: null, config: null };
-  }
-};
-
-// Función legacy para compatibilidad
-const createAppleProvider = () => {
-  const provider = new OAuthProvider('apple.com');
-  provider.addScope('email');
-  provider.addScope('name');
-  return provider;
-};
 
 // Projects collection
 export const saveProject = async (projectData: any) => {
@@ -1076,98 +1016,6 @@ export const loginUser = async (email: string, password: string, rememberMe: boo
 
 // Espacio reservado para comentarios
 
-// Iniciar sesión con Google - IMPLEMENTACIÓN BYPASS FIREBASE CONSOLE
-export const loginWithGoogle = async () => {
-  try {
-    console.log("🔵 [GOOGLE-AUTH] Iniciando OAuth directo simplificado...");
-    
-    // SOLUCIÓN DIRECTA - Sin verificaciones complejas después de 3 días
-    const currentUrl = window.location.origin;
-    const oauthUrl = `${currentUrl}/api/oauth-direct/google?state=login`;
-    
-    console.log("🔵 [GOOGLE-AUTH] Redirigiendo:", oauthUrl);
-    window.location.href = oauthUrl;
-    
-    return null;
-    console.log("🔵 [GOOGLE-AUTH] Iniciando autenticación con Google");
-    console.log("🔧 [GOOGLE-AUTH] Configuración de Firebase Auth:", {
-      currentUser: auth.currentUser ? 'autenticado' : 'no autenticado',
-      authDomain: firebaseConfig.authDomain,
-      apiKey: firebaseConfig.apiKey ? 'presente' : 'ausente'
-    });
-    
-    // Verificar que Firebase esté inicializado correctamente
-    if (!auth) {
-      throw new Error("Firebase Auth no está inicializado");
-    }
-    
-    // Usar el proveedor configurado dinámicamente
-    const provider = googleProvider;
-    
-    // El proveedor ya está configurado con los scopes y parámetros necesarios
-    
-    console.log("🔵 [GOOGLE-AUTH] Proveedor configurado, intentando popup...");
-    
-    try {
-      // Intentar popup con timeout
-      const result = await Promise.race([
-        signInWithPopup(auth, provider),
-        new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('timeout')), 30000)
-        )
-      ]);
-      
-      console.log("✅ [GOOGLE-AUTH] Autenticación exitosa:", result.user.email);
-      return result.user;
-      
-    } catch (popupError: any) {
-      console.log("⚠️ [GOOGLE-AUTH] Popup falló:", popupError.code, popupError.message);
-      
-      // Manejar casos específicos de popup
-      if (popupError.code === 'auth/popup-blocked' || 
-          popupError.code === 'auth/popup-closed-by-user' ||
-          popupError.message === 'timeout') {
-        
-        console.log("🔵 [GOOGLE-AUTH] Usando redirección como fallback");
-        await signInWithRedirect(auth, provider);
-        return null; // La redirección manejará el resultado
-      }
-      
-      // Para errores internos, usar manejo especial
-      if (popupError.code === 'auth/internal-error') {
-        console.error("🔧 [GOOGLE-AUTH] Error interno detectado - posible configuración OAuth");
-        throw new Error("Error de configuración de Google Sign-In. Verifica que Google OAuth esté habilitado en Firebase Console.");
-      }
-      
-      // Relanzar otros errores
-      throw popupError;
-    }
-    
-  } catch (error: any) {
-    console.error("❌ [GOOGLE-AUTH] Error completo:", {
-      code: error.code,
-      message: error.message,
-      customData: error.customData
-    });
-    
-    // Mapear errores a mensajes amigables
-    if (error.code === 'auth/unauthorized-domain') {
-      throw new Error("Este dominio no está autorizado para Google Sign-In. Contacta al administrador.");
-    } else if (error.code === 'auth/popup-blocked') {
-      throw new Error("Popup bloqueado por el navegador. Permite popups y reintenta.");
-    } else if (error.code === 'auth/popup-closed-by-user') {
-      throw new Error("Ventana de autenticación cerrada. Reintenta el proceso.");
-    } else if (error.code === 'auth/network-request-failed') {
-      throw new Error("Error de conexión. Verifica tu internet y reintenta.");
-    } else if (error.code === 'auth/internal-error') {
-      throw new Error("Google Sign-In no está disponible. Intenta con email/contraseña.");
-    } else if (error.message?.includes('timeout')) {
-      throw new Error("Tiempo de espera agotado. Verifica tu conexión e intenta nuevamente.");
-    } else {
-      throw new Error(error.message || "Error al conectar con Google. Intenta con email/contraseña.");
-    }
-  }
-};
 
 // Función para autenticación con Repl Auth (fallback)
 const initReplAuth = () => {
@@ -1243,48 +1091,6 @@ const initReplAuth = () => {
   });
 };
 
-// Iniciar sesión con Apple - IMPLEMENTACIÓN BYPASS FIREBASE CONSOLE
-export const loginWithApple = async () => {
-  try {
-    console.log("🍎 [APPLE-AUTH] Iniciando autenticación bypass...");
-    
-    // SOLUCIÓN DIRECTA: Ir directo al endpoint sin verificación de configuración
-    const currentUrl = window.location.origin;
-    const oauthUrl = `${currentUrl}/api/oauth-direct/apple?state=login`;
-    
-    console.log("🍎 [APPLE-AUTH] Redirigiendo a OAuth directo:", oauthUrl);
-    window.location.href = oauthUrl;
-    
-    // Esta función no retorna porque redirige
-    return null;
-
-    
-  } catch (error: any) {
-    console.error("❌ [APPLE-AUTH] Error completo:", {
-      code: error.code,
-      message: error.message,
-      customData: error.customData
-    });
-    
-    // Mapear errores a mensajes amigables
-    if (error.code === 'auth/unauthorized-domain') {
-      throw new Error("Este dominio no está autorizado para Apple Sign-In. Contacta al administrador.");
-    } else if (error.code === 'auth/popup-blocked') {
-      throw new Error("Popup bloqueado por el navegador. Permite popups y reintenta.");
-    } else if (error.code === 'auth/popup-closed-by-user') {
-      throw new Error("Ventana de autenticación cerrada. Reintenta el proceso.");
-    } else if (error.code === 'auth/network-request-failed') {
-      throw new Error("Error de conexión. Verifica tu internet y reintenta.");
-    } else if (error.code === 'auth/internal-error') {
-      throw new Error("Apple Sign-In no está disponible en este momento. Intenta con Google o email/contraseña.");
-    } else if (error.message?.includes('timeout')) {
-      throw new Error("Tiempo de espera agotado. Verifica tu conexión e intenta nuevamente.");
-    } else {
-      // Para Apple, usar mensaje más genérico ya que a menudo no está disponible
-      throw new Error("Apple Sign-In no está disponible. Intenta con Google o email/contraseña.");
-    }
-  }
-};
 
 // Método de inicio de sesión con Microsoft eliminado intencionalmente
 
