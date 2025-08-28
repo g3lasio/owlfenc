@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MervinWorkingEffect } from "@/components/ui/mervin-working-effect";
 import { DeepSearchEffect } from "@/components/ui/deepsearch-effect";
 import { EmailVerification } from "@/components/auth/EmailVerification";
+import { DeepSearchChat } from "@/components/DeepSearchChat";
 // Usar el logo correcto de OWL FENCE
 const mervinLogoUrl =
   "https://ik.imagekit.io/lp5czyx2a/ChatGPT%20Image%20May%2010,%202025,%2005_35_38%20PM.png?updatedAt=1748157114019";
@@ -5354,6 +5355,90 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </div>
                     </div>
                   ))}
+
+                  {/* CHAT IA REFINEMENT BUTTON */}
+                  {estimate.items.length > 0 && (
+                    <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 border border-purple-200 mb-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-purple-100 rounded-lg">
+                            <Brain className="h-5 w-5 text-purple-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-purple-800">Refinar Lista con IA</h4>
+                            <p className="text-sm text-purple-600">
+                              Ajusta cantidades, precios y materiales mediante chat inteligente
+                            </p>
+                          </div>
+                        </div>
+                        <DeepSearchChat
+                          initialResult={{
+                            projectType: "Construcción",
+                            projectScope: estimate.projectDetails || "Proyecto de construcción",
+                            materials: estimate.items.map(item => ({
+                              id: item.id,
+                              name: item.name,
+                              description: item.description,
+                              category: item.category || "General",
+                              quantity: item.quantity,
+                              unit: item.unit,
+                              unitPrice: item.price,
+                              totalPrice: item.total,
+                              supplier: "",
+                              specifications: ""
+                            })),
+                            laborCosts: [],
+                            additionalCosts: [],
+                            totalMaterialsCost: estimate.subtotal,
+                            totalLaborCost: 0,
+                            totalAdditionalCost: 0,
+                            grandTotal: estimate.total,
+                            confidence: 0.95,
+                            recommendations: [],
+                            warnings: [],
+                            location: estimate.client?.city + ", " + estimate.client?.state || "General"
+                          }}
+                          projectDescription={estimate.projectDetails || "Proyecto de construcción"}
+                          location={estimate.client?.city + ", " + estimate.client?.state || "General"}
+                          onResultsUpdated={(updatedResult) => {
+                            console.log("🤖 [AI-REFINEMENT] Aplicando cambios del chat IA");
+                            
+                            // Convertir los materiales actualizados de DeepSearch al formato del estimado
+                            const updatedItems = updatedResult.materials.map(material => ({
+                              id: material.id,
+                              materialId: material.id,
+                              name: material.name,
+                              description: material.description,
+                              price: material.unitPrice,
+                              quantity: material.quantity,
+                              unit: material.unit,
+                              total: material.totalPrice,
+                              category: material.category
+                            }));
+
+                            // Actualizar el estimado con los materiales refinados
+                            setEstimate(prev => ({
+                              ...prev,
+                              items: updatedItems
+                            }));
+
+                            toast({
+                              title: "Lista refinada con IA",
+                              description: `${updatedItems.length} materiales actualizados exitosamente`,
+                              duration: 4000
+                            });
+                          }}
+                          onApplyChanges={() => {
+                            toast({
+                              title: "Cambios aplicados",
+                              description: "Los refinamientos de IA han sido integrados al estimado",
+                              duration: 3000
+                            });
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   <div className="border-t pt-4 space-y-3">
                     {/* Sleek Dark Tax and Discount Controls */}
