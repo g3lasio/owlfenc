@@ -69,10 +69,11 @@ type AuthProviderProps = {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // ✅ FIXED: Start with false for better UX
   const [error, setError] = useState<string | null>(null);
   const [networkRetryCount, setNetworkRetryCount] = useState(0);
   const [lastValidUser, setLastValidUser] = useState<User | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     // Verificar autenticación persistida de OTP primero
