@@ -2236,6 +2236,7 @@ Output must be between 200-900 characters in English.`;
               Date.now() + 30 * 24 * 60 * 60 * 1000,
             ).toLocaleDateString(),
             project_description:
+              requestData.project_description ||
               originalData?.projectDescription ||
               client?.notes ||
               "Construction project as specified",

@@ -4560,43 +4560,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     className="min-h-[120px] max-h-[300px] text-sm resize-none pr-12 pb-8"
                   />
                   
-                  {/* 📊 CHARACTER COUNTER & STATUS INDICATORS */}
-                  <div className="absolute bottom-2 left-3 right-12 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-3">
-                      {/* Character Counter */}
-                      <div className={`flex items-center gap-1 ${
-                        estimate.projectDetails.length > 500 
-                          ? 'text-yellow-400' 
-                          : estimate.projectDetails.length > 800 
-                            ? 'text-orange-400' 
-                            : 'text-gray-400'
-                      }`}>
-                        <span className="font-mono">
-                          {estimate.projectDetails.length}/∞
-                        </span>
-                        {estimate.projectDetails.length > 500 && (
-                          <span className="text-yellow-400 font-mono">
-                            (→500 en PDF)
-                          </span>
-                        )}
-                      </div>
-                      
-                      {/* OCR Processing Indicator */}
-                      {isUploading && (
-                        <div className="flex items-center gap-1 text-cyan-400">
-                          <div className="w-3 h-3 border border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
-                          <span>OCR...</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Smart Summarize Indicator */}
-                    {estimate.projectDetails.length > 500 && (
-                      <div className="text-yellow-400 text-xs font-mono">
-                        🧠 Se resumirá inteligentemente
-                      </div>
-                    )}
-                  </div>
                   
                   {/* Attachment Button inside textarea */}
                   <div className="absolute top-3 right-3 flex items-center gap-2">
