@@ -196,6 +196,80 @@ export default function EstimatesWizardFixed() {
     null,
   );
 
+  // 📱 CONTACT IMPORT FUNCTIONALITY
+  const importFromPhoneContacts = async () => {
+    try {
+      // Check if Contacts API is supported
+      if (!('contacts' in navigator) || !('ContactsManager' in window)) {
+        toast({
+          title: "🚫 Función No Disponible",
+          description: "La importación de contactos no está disponible en este navegador. Usa un navegador móvil compatible.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Request access to contacts
+      const contacts = await (navigator as any).contacts.select([
+        'name', 
+        'email', 
+        'tel', 
+        'address'
+      ], { multiple: false });
+
+      if (contacts && contacts.length > 0) {
+        const contact = contacts[0];
+        
+        // Map contact data to newClient state
+        const contactData = {
+          name: contact.name && contact.name.length > 0 ? contact.name[0] : '',
+          email: contact.email && contact.email.length > 0 ? contact.email[0] : '',
+          phone: contact.tel && contact.tel.length > 0 ? contact.tel[0] : '',
+          address: contact.address && contact.address.length > 0 ? 
+            `${contact.address[0].addressLine || ''} ${contact.address[0].city || ''} ${contact.address[0].region || ''} ${contact.address[0].postalCode || ''}`.trim() : '',
+        };
+
+        // Update newClient state
+        setNewClient(prev => ({
+          ...prev,
+          name: contactData.name || prev.name,
+          email: contactData.email || prev.email,
+          phone: contactData.phone || prev.phone,
+          address: contactData.address || prev.address,
+        }));
+
+        toast({
+          title: "✅ Contacto Importado",
+          description: `Datos de ${contactData.name || 'contacto'} importados exitosamente.`,
+        });
+
+        console.log("📱 [CONTACT-IMPORT] Contact imported successfully:", contactData);
+      }
+    } catch (error) {
+      console.error("❌ [CONTACT-IMPORT] Error importing contact:", error);
+      
+      if (error.name === 'NotAllowedError') {
+        toast({
+          title: "🚫 Permiso Denegado",
+          description: "Necesitas permitir el acceso a los contactos para usar esta función.",
+          variant: "destructive",
+        });
+      } else if (error.name === 'AbortError') {
+        toast({
+          title: "❌ Importación Cancelada",
+          description: "La importación de contacto fue cancelada.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "❌ Error de Importación",
+          description: "No se pudo importar el contacto. Intenta nuevamente.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   // Mobile sharing capabilities
   const [sharingCapabilities, setSharingCapabilities] = useState(() =>
     getSharingCapabilities(),
@@ -3990,6 +4064,27 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                             CREAR NUEVO CLIENTE
                           </div>
                           <div className="h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent mt-2"></div>
+                        </div>
+
+                        {/* Contact Import Button */}
+                        <div className="flex justify-center pb-4 border-b border-cyan-400/10">
+                          <button
+                            type="button"
+                            onClick={importFromPhoneContacts}
+                            className="
+                              flex items-center gap-2 px-4 py-2 
+                              bg-gradient-to-r from-purple-500/20 to-blue-500/20
+                              border border-purple-400/40 text-purple-400 
+                              hover:border-purple-400/60 hover:text-purple-300
+                              hover:bg-gradient-to-r hover:from-purple-500/30 hover:to-blue-500/30
+                              transition-all duration-300 rounded-md font-mono text-sm tracking-wide
+                              disabled:opacity-50 disabled:cursor-not-allowed
+                            "
+                            title="Importar contacto desde tu teléfono"
+                          >
+                            <Smartphone className="h-4 w-4" />
+                            <span>IMPORTAR CONTACTO</span>
+                          </button>
                         </div>
 
                         {/* Form Fields with Cyberpunk Styling */}
