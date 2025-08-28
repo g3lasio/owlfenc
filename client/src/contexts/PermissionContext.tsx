@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
+import { smartPermissionLoader } from '@/services/smartPermissionLoader';
+import { devModeManager, debugLog } from '@/utils/devModeUtils';
 
 // Tipos para el sistema de permisos
 export interface Plan {

@@ -73,6 +73,7 @@ import { aiEnhancementRoutes } from "./routes/aiEnhancementRoutes"; // Import ne
 import { registerDeepSearchRoutes } from "./routes/deepSearchRoutes"; // Import DeepSearch AI routes
 import { registerLaborDeepSearchRoutes } from "./routes/laborDeepSearchRoutes"; // Import Labor DeepSearch AI routes
 import { registerUsageRoutes } from "./routes/usage"; // Import Usage & Permissions routes
+import { analyticsRouter } from './analytics-service'; // Import analytics service for system monitoring
 // import legalDefenseRoutes from "./routes/legal-defense-routes"; // Temporarily disabled for horizontal navigation
 import unifiedContractRoutes from "./routes/unifiedContractRoutes"; // Import Unified Contract Management routes
 import pdfContractProcessorRoutes from "./routes/pdf-contract-processor"; // Import PDF Contract Processor routes
@@ -6810,6 +6811,9 @@ Output must be between 200-900 characters in English.`;
   
   // Registrar rutas del sistema de permisos y uso (LEGACY - por compatibilidad)
   registerUsageRoutes(app);
+  
+  // ✅ FASE 3: Analytics and monitoring endpoints
+  app.use("/api/analytics", analyticsRouter);
 
   // 🛡️ SEGURIDAD CRÍTICA: Registrar rutas del sistema de facturación CON AUTENTICACIÓN COMPLETA
   // TEMP COMMENTED for Property Verifier testing: app.use('/api/invoices', invoiceRoutes);
