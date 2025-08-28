@@ -206,7 +206,7 @@ Puedes pedirme:
         if (result.updatedResult) {
           setCurrentResult(result.updatedResult);
           setHasChanges(true);
-          onResultsUpdated(result.updatedResult);
+          // NO aplicar cambios automáticamente - esperar a que el usuario haga clic en "Aplicar Cambios"
         }
 
         // Agregar respuesta del asistente
@@ -220,11 +220,12 @@ Puedes pedirme:
 
         setMessages(prev => [...prev, assistantMessage]);
 
-        // Toast de éxito si hubo cambios
+        // Toast informativo si hubo cambios
         if (result.updatedResult) {
           toast({
-            title: 'Estimado actualizado',
-            description: 'He aplicado los cambios solicitados al estimado.'
+            title: 'Refinamiento completado',
+            description: 'Haz clic en "Aplicar Cambios" para actualizar tu estimado.',
+            duration: 4000
           });
         }
 
@@ -255,11 +256,23 @@ Puedes pedirme:
 
   // Aplicar cambios al estimado principal
   const handleApplyChanges = () => {
-    onApplyChanges();
+    // Aplicar los cambios actualizados al estimado principal
+    if (currentResult && onResultsUpdated) {
+      onResultsUpdated(currentResult);
+    }
+    
+    // Llamar callback adicional si existe
+    if (onApplyChanges) {
+      onApplyChanges();
+    }
+    
     toast({
-      title: 'Cambios aplicados',
-      description: 'Los refinamientos han sido aplicados al estimado principal.'
+      title: 'Cambios aplicados exitosamente',
+      description: 'El estimado ha sido actualizado con los refinamientos de IA.',
+      duration: 3000
     });
+    
+    // Cerrar el chat automáticamente
     setIsOpen(false);
     setHasChanges(false);
   };
@@ -465,13 +478,18 @@ Puedes pedirme:
 
                 {/* Botón aplicar cambios */}
                 {hasChanges && (
-                  <Button 
-                    onClick={handleApplyChanges}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white shadow-lg text-sm sm:text-base py-2 sm:py-3"
-                  >
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Aplicar Cambios
-                  </Button>
+                  <div className="space-y-2">
+                    <div className="text-xs text-slate-600 text-center">
+                      Los cambios están listos para aplicar
+                    </div>
+                    <Button 
+                      onClick={handleApplyChanges}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white shadow-lg text-sm sm:text-base py-3 sm:py-4"
+                    >
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Aplicar al Estimado & Cerrar
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
