@@ -7264,7 +7264,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                       Date.now() + 30 * 24 * 60 * 60 * 1000,
                                     ).toLocaleDateString(),
                                     project_description: estimate.projectDetails?.length > 500 ? 
-                                      (await smartSummarizeDescription(estimate.projectDetails)).substring(0, 500) :
+                                      await smartSummarizeDescription(estimate.projectDetails) :
                                       estimate.projectDetails || "",
                                     items: items.map((item: any) => ({
                                       code:
