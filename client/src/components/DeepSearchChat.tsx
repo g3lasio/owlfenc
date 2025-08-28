@@ -202,11 +202,15 @@ Puedes pedirme:
       setMessages(prev => prev.filter(m => m.id !== processingMessage.id));
 
       if (result.success) {
-        // Actualizar resultado si hay cambios
+        console.log("🤖 [AI-REFINEMENT] Respuesta recibida:", result);
+        
+        // Siempre marcar como que hay cambios después de una conversación exitosa
+        setHasChanges(true);
+        
+        // Actualizar resultado si viene específicamente un resultado actualizado
         if (result.updatedResult) {
+          console.log("🔄 [AI-REFINEMENT] Actualizando resultado:", result.updatedResult);
           setCurrentResult(result.updatedResult);
-          setHasChanges(true);
-          // NO aplicar cambios automáticamente - esperar a que el usuario haga clic en "Aplicar Cambios"
         }
 
         // Agregar respuesta del asistente
@@ -220,14 +224,12 @@ Puedes pedirme:
 
         setMessages(prev => [...prev, assistantMessage]);
 
-        // Toast informativo si hubo cambios
-        if (result.updatedResult) {
-          toast({
-            title: 'Refinamiento completado',
-            description: 'Haz clic en "Aplicar Cambios" para actualizar tu estimado.',
-            duration: 4000
-          });
-        }
+        // Toast informativo 
+        toast({
+          title: 'Refinamiento completado',
+          description: 'Haz clic en "Aplicar Cambios" para actualizar tu estimado.',
+          duration: 4000
+        });
 
       } else {
         throw new Error(result.error || 'Error desconocido');
@@ -476,19 +478,22 @@ Puedes pedirme:
                   </div>
                 </div>
 
-                {/* Botón aplicar cambios */}
-                {hasChanges && (
-                  <div className="space-y-2">
-                    <div className="text-xs text-slate-600 text-center">
-                      Los cambios están listos para aplicar
+                {/* Botón aplicar cambios - SIEMPRE VISIBLE después de mensajes */}
+                {(hasChanges || messages.length > 1) && (
+                  <div className="space-y-2 bg-green-50 rounded-lg p-3 border border-green-200">
+                    <div className="text-xs text-green-700 text-center font-medium">
+                      💡 {hasChanges ? 'Los cambios están listos para aplicar' : 'Aplicar refinamientos al estimado'}
                     </div>
                     <Button 
                       onClick={handleApplyChanges}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white shadow-lg text-sm sm:text-base py-3 sm:py-4"
+                      className="w-full bg-green-600 hover:bg-green-700 text-white shadow-lg text-sm sm:text-base py-3 sm:py-4 transition-all"
                     >
                       <CheckCircle2 className="mr-2 h-4 w-4" />
                       Aplicar al Estimado & Cerrar
                     </Button>
+                    <div className="text-xs text-green-600 text-center">
+                      Los cambios se aplicarán al cerrar el chat
+                    </div>
                   </div>
                 )}
               </CardContent>
