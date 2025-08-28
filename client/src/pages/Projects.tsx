@@ -537,6 +537,27 @@ function Projects() {
     });
   };
 
+  const getProgressDisplayText = (progress: string) => {
+    switch (progress) {
+      case "estimate_created":
+        return "Estimado";
+      case "rejected":
+        return "Rechazado";
+      case "in_contract":
+        return "Contrato";
+      case "scheduled":
+        return "Programado";
+      case "in_progress":
+        return "En Progreso";
+      case "paid":
+        return "Pagado";
+      case "completed":
+        return "Completado";
+      default:
+        return "Desconocido";
+    }
+  };
+
   const handleProgressUpdate = async (
     projectId: string,
     newProgress: string,
@@ -728,10 +749,10 @@ function Projects() {
     // Simulate file input change event
     const fakeEvent = {
       target: {
-        files: files,
+        files: files as any,
         value: ''
       }
-    } as React.ChangeEvent<HTMLInputElement>;
+    } as any;
     
     await handleFileUpload(fakeEvent);
   };
@@ -780,8 +801,8 @@ function Projects() {
   }, [selectedProjects]);
 
   // Get unique values for filters
-  const uniqueStatuses = [...new Set(projects.map(p => p.status))];
-  const uniqueTypes = [...new Set(projects.map(p => p.projectType))];
+  const uniqueStatuses = Array.from(new Set(projects.map(p => p.status)));
+  const uniqueTypes = Array.from(new Set(projects.map(p => p.projectType)));
 
   // Helper function to convert file to Base64 (legacy support)
   const fileToBase64 = (file: File): Promise<string> => {
