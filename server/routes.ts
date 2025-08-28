@@ -1828,13 +1828,24 @@ Output must be between 200-900 characters in English.`;
           date: new Date().toLocaleDateString(),
           due_date: dueDate,
           items:
-            estimate.items?.map((item) => ({
-              code: item.name || "Item",
-              description: item.description || "",
-              qty: item.quantity || 1,
-              unit_price: `$${Number(item.unitPrice || 0).toFixed(2)}`,
-              total: `$${Number(item.totalPrice || 0).toFixed(2)}`,
-            })) || [],
+            estimate.items?.map((item) => {
+              // FIXED: Handle string prices with $ symbols
+              const unitPrice = typeof item.unitPrice === 'string' 
+                ? parseFloat(item.unitPrice.replace(/[$,]/g, '')) 
+                : Number(item.unitPrice || 0);
+              
+              const totalPrice = typeof item.totalPrice === 'string' 
+                ? parseFloat(item.totalPrice.replace(/[$,]/g, '')) 
+                : Number(item.totalPrice || 0);
+
+              return {
+                code: item.name || "Item",
+                description: item.description || "",
+                qty: item.quantity || 1,
+                unit_price: `$${unitPrice.toFixed(2)}`,
+                total: `$${totalPrice.toFixed(2)}`,
+              };
+            }) || [],
           subtotal: `$${Number(estimate.subtotal || 0).toFixed(2)}`,
           discounts:
             Number(estimate.discountAmount || 0) > 0
