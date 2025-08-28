@@ -288,32 +288,32 @@ Puedes pedirme:
         </Button>
       </DialogTrigger>
       
-      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-[95vw] sm:max-w-4xl lg:max-w-6xl max-h-[90vh] flex flex-col p-2 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MessageCircle className="h-6 w-6 text-purple-600" />
-            DeepSearch Chat Interactivo
+          <DialogTitle className="flex items-center gap-2 text-slate-800">
+            <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+            <span className="text-base sm:text-lg">Chat IA de Refinamiento</span>
           </DialogTitle>
-          <DialogDescription>
-            Refina y ajusta tu estimado en tiempo real con IA conversacional
+          <DialogDescription className="text-slate-600 text-sm">
+            Refina tu estimado conversando con la IA
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-1 gap-4 min-h-[600px]">
+        <div className="flex flex-col lg:flex-row flex-1 gap-2 sm:gap-4 min-h-[500px] lg:min-h-[600px]">
           {/* Panel de chat */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col order-2 lg:order-1">
             {/* Área de mensajes */}
-            <div className="flex-1 overflow-y-auto p-4 bg-slate-50 rounded-lg space-y-4 max-h-[400px]">
+            <div className="flex-1 overflow-y-auto p-2 sm:p-4 bg-gradient-to-b from-slate-50 to-slate-100 rounded-lg space-y-3 sm:space-y-4 max-h-[300px] sm:max-h-[400px] border border-slate-200">
               {messages.map(message => (
                 <div
                   key={message.id}
                   className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-lg px-4 py-3 ${
+                    className={`max-w-[85%] sm:max-w-[80%] rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base ${
                       message.sender === 'user'
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-white text-slate-800 shadow-sm border border-slate-200'
+                        ? 'bg-purple-600 text-white shadow-lg'
+                        : 'bg-white text-slate-800 shadow-md border border-slate-300'
                     }`}
                   >
                     <div className="whitespace-pre-wrap">
@@ -326,12 +326,12 @@ Puedes pedirme:
                     
                     {/* Acciones sugeridas */}
                     {message.suggestedActions && message.suggestedActions.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-1">
+                      <div className="mt-2 sm:mt-3 flex flex-wrap gap-1">
                         {message.suggestedActions.map((action, index) => (
                           <button
                             key={index}
                             onClick={() => handleSuggestedAction(action)}
-                            className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors"
+                            className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors border border-purple-200"
                           >
                             {action}
                           </button>
@@ -339,7 +339,7 @@ Puedes pedirme:
                       </div>
                     )}
                     
-                    <div className={`text-xs mt-2 opacity-70 ${message.sender === 'user' ? 'text-purple-100' : 'text-slate-500'}`}>
+                    <div className={`text-xs mt-1 sm:mt-2 opacity-70 ${message.sender === 'user' ? 'text-purple-100' : 'text-slate-500'}`}>
                       {message.timestamp.toLocaleTimeString()}
                     </div>
                   </div>
@@ -348,10 +348,10 @@ Puedes pedirme:
               
               {isProcessing && (
                 <div className="flex justify-start">
-                  <div className="bg-white text-slate-800 shadow-sm border border-slate-200 rounded-lg px-4 py-3">
+                  <div className="bg-blue-50 text-blue-800 shadow-md border border-blue-200 rounded-lg px-3 sm:px-4 py-2 sm:py-3">
                     <div className="flex items-center space-x-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
-                      <span>Analizando y procesando...</span>
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                      <span className="text-sm sm:text-base">Analizando y procesando...</span>
                     </div>
                   </div>
                 </div>
@@ -361,7 +361,7 @@ Puedes pedirme:
             </div>
 
             {/* Área de input */}
-            <div className="mt-4">
+            <div className="mt-2 sm:mt-4 bg-white rounded-lg border border-slate-300 p-2 sm:p-3 shadow-sm">
               <div className="flex items-end space-x-2">
                 <div className="flex-1">
                   <textarea
@@ -369,8 +369,8 @@ Puedes pedirme:
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Describe qué quieres ajustar... (ej: 'Los precios de labor parecen altos para Texas')"
-                    className="w-full resize-none border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Ej: 'Los precios parecen altos para mi zona' o 'Cambia cantidad de postes a 15'"
+                    className="w-full resize-none border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-800 bg-white placeholder-slate-500 text-sm sm:text-base"
                     rows={2}
                     maxLength={500}
                     disabled={isProcessing}
@@ -380,79 +380,85 @@ Puedes pedirme:
                 <Button
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || isProcessing}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg h-10 w-10 sm:h-12 sm:w-12"
+                  size="sm"
                 >
                   {isProcessing ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Send className="w-4 h-4" />
+                    <Send className="w-3 h-3 sm:w-4 sm:h-4" />
                   )}
                 </Button>
               </div>
               
-              <div className="flex justify-between items-center mt-1 text-xs text-slate-500">
-                <span>Enter para enviar • Shift+Enter para nueva línea</span>
-                <span>{inputValue.length}/500</span>
+              <div className="flex justify-between items-center mt-2 text-xs text-slate-600">
+                <span className="hidden sm:inline">Enter para enviar • Shift+Enter para nueva línea</span>
+                <span className="sm:hidden">Enter: enviar</span>
+                <span className="text-slate-500">{inputValue.length}/500</span>
               </div>
             </div>
           </div>
 
           {/* Panel de resumen actual */}
-          <div className="w-80">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Target className="h-5 w-5 text-purple-600" />
-                  Estimado Actual
+          <div className="w-full lg:w-80 order-1 lg:order-2">
+            <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-300 shadow-lg">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-slate-800">
+                  <Target className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
+                  <span>Estimado Actual</span>
                   {hasChanges && (
-                    <Badge className="bg-orange-500 text-white">
+                    <Badge className="bg-orange-500 text-white text-xs">
                       Actualizado
                     </Badge>
                   )}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 sm:space-y-4">
                 {/* Resumen de materiales */}
-                <div>
+                <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium flex items-center gap-1">
-                      <Package className="h-4 w-4" />
-                      Materiales
+                    <span className="font-medium flex items-center gap-1 text-blue-800">
+                      <Package className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm sm:text-base">Materiales</span>
                     </span>
-                    <Badge variant="outline">{currentResult.materials.length}</Badge>
+                    <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300">
+                      {currentResult.materials.length}
+                    </Badge>
                   </div>
                   <div className="text-right">
-                    <span className="font-semibold text-lg">
+                    <span className="font-semibold text-lg text-blue-900">
                       {formatCurrency(currentResult.totalMaterialsCost)}
                     </span>
                   </div>
                 </div>
 
                 {/* Resumen de labor */}
-                <div>
+                <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium flex items-center gap-1">
-                      <DollarSign className="h-4 w-4" />
-                      Labor
+                    <span className="font-medium flex items-center gap-1 text-orange-800">
+                      <DollarSign className="h-4 w-4 text-orange-600" />
+                      <span className="text-sm sm:text-base">Labor</span>
                     </span>
-                    <Badge variant="outline">{currentResult.laborCosts.length}</Badge>
+                    <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-300">
+                      {currentResult.laborCosts.length}
+                    </Badge>
                   </div>
                   <div className="text-right">
-                    <span className="font-semibold text-lg">
+                    <span className="font-semibold text-lg text-orange-900">
                       {formatCurrency(currentResult.totalLaborCost)}
                     </span>
                   </div>
                 </div>
 
                 {/* Total */}
-                <div className="pt-4 border-t">
+                <div className="bg-green-50 rounded-lg p-3 border border-green-200">
                   <div className="flex justify-between items-center">
-                    <span className="font-bold">Total:</span>
-                    <span className="font-bold text-xl text-green-600">
+                    <span className="font-bold text-green-800 text-sm sm:text-base">Total:</span>
+                    <span className="font-bold text-xl text-green-700">
                       {formatCurrency(currentResult.grandTotal)}
                     </span>
                   </div>
-                  <div className="text-sm text-slate-500 text-right">
+                  <div className="text-xs sm:text-sm text-green-600 text-right mt-1">
                     Confianza: {Math.round(currentResult.confidence * 100)}%
                   </div>
                 </div>
@@ -461,7 +467,7 @@ Puedes pedirme:
                 {hasChanges && (
                   <Button 
                     onClick={handleApplyChanges}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white shadow-lg text-sm sm:text-base py-2 sm:py-3"
                   >
                     <CheckCircle2 className="mr-2 h-4 w-4" />
                     Aplicar Cambios
