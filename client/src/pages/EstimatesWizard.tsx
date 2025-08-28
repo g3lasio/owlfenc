@@ -486,53 +486,65 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     };
   };
 
-  // 🧠 INTELLIGENT PROJECT DESCRIPTION SUMMARIZER
-  const smartSummarizeDescription = async (text: string, maxLength: number = 500): Promise<string> => {
-    if (text.length <= maxLength) return text;
+  // 🔧 SIMPLE & FUNCTIONAL PROJECT DESCRIPTION REWRITER
+  const rewriteProjectDescription = (text: string, maxLength: number = 500): string => {
+    if (!text || text.length <= maxLength) return text;
+
+    // Extract key information using simple regex patterns
+    const measurements = text.match(/\d+[,.]?\d*\s*(sq\s*ft|sqft|square\s*feet|ft|feet|metros?|m²|pies)/gi) || [];
+    const materials = text.match(/(laminate|hardwood|flooring|vinyl|tile|carpet|wood|engineered)/gi) || [];
+    const actions = text.match(/(remove|install|replace|repair|clean|inspect|dispose)/gi) || [];
     
-    try {
-      const response = await fetch('/api/anthropic/summarize-description', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          text, 
-          maxLength,
-          projectContext: "construcción/contratista"
-        })
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        return result.summary || text.substring(0, maxLength);
-      }
-    } catch (error) {
-      console.error('Error al resumir descripción:', error);
+    // Build condensed description with essential info
+    let rewritten = "PROYECTO: ";
+    
+    // Add project type
+    if (text.toLowerCase().includes('flooring') || text.toLowerCase().includes('piso')) {
+      rewritten += "Reemplazo de pisos. ";
+    } else if (text.toLowerCase().includes('fence') || text.toLowerCase().includes('cerca')) {
+      rewritten += "Instalación de cercas. ";
+    } else {
+      rewritten += "Trabajo de construcción. ";
     }
     
-    // Fallback: Resumir inteligentemente manteniendo información clave
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim());
-    let summary = '';
-    const keywords = ['alcance', 'materiales', 'labor', 'tiempo', 'precio', 'incluye', 'excluye', 'especificaciones'];
-    
-    // Priorizar oraciones con palabras clave
-    const prioritySentences = sentences.filter(s => 
-      keywords.some(keyword => s.toLowerCase().includes(keyword))
-    );
-    
-    for (const sentence of prioritySentences) {
-      if ((summary + sentence).length <= maxLength - 20) {
-        summary += sentence.trim() + '. ';
-      }
+    // Add measurements
+    if (measurements.length > 0) {
+      rewritten += `ÁREA: ${measurements[0]}. `;
     }
     
-    // Completar con otras oraciones si hay espacio
-    for (const sentence of sentences) {
-      if (!prioritySentences.includes(sentence) && (summary + sentence).length <= maxLength - 20) {
-        summary += sentence.trim() + '. ';
-      }
+    // Add materials
+    if (materials.length > 0) {
+      const uniqueMaterials = [...new Set(materials.slice(0, 3))];
+      rewritten += `MATERIALES: ${uniqueMaterials.join(', ')}. `;
     }
     
-    return summary.trim() || text.substring(0, maxLength);
+    // Add key actions
+    if (actions.length > 0) {
+      const uniqueActions = [...new Set(actions.slice(0, 4))];
+      rewritten += `TRABAJOS: ${uniqueActions.join(', ')}. `;
+    }
+    
+    // Add any cost/pricing info
+    const costInfo = text.match(/(\$\d+[,.]?\d*|\d+\s*dollars?|precio|cost|total)/gi);
+    if (costInfo && costInfo.length > 0) {
+      rewritten += "Incluye costos de materiales y mano de obra. ";
+    }
+    
+    // Add timeline if found
+    const timeInfo = text.match(/(\d+\s*(days?|semanas?|weeks?|months?|meses?))/gi);
+    if (timeInfo && timeInfo.length > 0) {
+      rewritten += `TIEMPO: ${timeInfo[0]}. `;
+    }
+    
+    // Add scope summary
+    rewritten += "Trabajo profesional según especificaciones técnicas y códigos de construcción.";
+    
+    // Ensure it fits in maxLength
+    if (rewritten.length > maxLength) {
+      rewritten = rewritten.substring(0, maxLength - 3) + "...";
+    }
+    
+    return rewritten;
   };
 
   // 📄 OCR PROCESSING FOR ATTACHMENTS
@@ -7263,9 +7275,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                     valid_until: new Date(
                                       Date.now() + 30 * 24 * 60 * 60 * 1000,
                                     ).toLocaleDateString(),
-                                    project_description: estimate.projectDetails?.length > 500 ? 
-                                      await smartSummarizeDescription(estimate.projectDetails) :
-                                      estimate.projectDetails || "",
+                                    project_description: rewriteProjectDescription(estimate.projectDetails || "", 500),
                                     items: items.map((item: any) => ({
                                       code:
                                         item.name || item.material || "Item",
