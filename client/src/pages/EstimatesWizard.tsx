@@ -486,7 +486,125 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     };
   };
 
-  // File upload functions
+  // 🧠 INTELLIGENT PROJECT DESCRIPTION SUMMARIZER
+  const smartSummarizeDescription = async (text: string, maxLength: number = 500): Promise<string> => {
+    if (text.length <= maxLength) return text;
+    
+    try {
+      const response = await fetch('/api/anthropic/summarize-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          text, 
+          maxLength,
+          projectContext: "construcción/contratista"
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        return result.summary || text.substring(0, maxLength);
+      }
+    } catch (error) {
+      console.error('Error al resumir descripción:', error);
+    }
+    
+    // Fallback: Resumir inteligentemente manteniendo información clave
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim());
+    let summary = '';
+    const keywords = ['alcance', 'materiales', 'labor', 'tiempo', 'precio', 'incluye', 'excluye', 'especificaciones'];
+    
+    // Priorizar oraciones con palabras clave
+    const prioritySentences = sentences.filter(s => 
+      keywords.some(keyword => s.toLowerCase().includes(keyword))
+    );
+    
+    for (const sentence of prioritySentences) {
+      if ((summary + sentence).length <= maxLength - 20) {
+        summary += sentence.trim() + '. ';
+      }
+    }
+    
+    // Completar con otras oraciones si hay espacio
+    for (const sentence of sentences) {
+      if (!prioritySentences.includes(sentence) && (summary + sentence).length <= maxLength - 20) {
+        summary += sentence.trim() + '. ';
+      }
+    }
+    
+    return summary.trim() || text.substring(0, maxLength);
+  };
+
+  // 📄 OCR PROCESSING FOR ATTACHMENTS
+  const processAttachmentWithOCR = async (file: File): Promise<string> => {
+    if (!file.type.includes('pdf') && !file.type.includes('image')) {
+      return '';
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('pdf', file);
+
+      const response = await fetch('/api/ocr/extract-simple', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.projectDescription) {
+          return result.projectDescription;
+        }
+        
+        // Extraer información relevante del texto raw
+        if (result.rawText) {
+          const relevantInfo = extractProjectInfoFromText(result.rawText);
+          return relevantInfo;
+        }
+      }
+    } catch (error) {
+      console.error('Error procesando archivo con OCR:', error);
+    }
+    
+    return '';
+  };
+
+  // 🔍 EXTRACT PROJECT INFO FROM TEXT
+  const extractProjectInfoFromText = (text: string): string => {
+    const lines = text.split('\n').filter(line => line.trim());
+    const projectInfo: string[] = [];
+    
+    // Buscar información relevante del proyecto
+    const patterns = {
+      scope: /(?:scope|alcance|trabajo|project|obra)[:.]?\s*(.+)/i,
+      materials: /(?:materials?|materiales?)[:.]?\s*(.+)/i,
+      specifications: /(?:spec|especificacion|specification)[:.]?\s*(.+)/i,
+      dimensions: /(?:\d+\s*(?:ft|feet|metros?|m|x|\*)\s*\d+|\d+\s*(?:sq|square|cubic))/gi,
+      timeline: /(?:time|tiempo|plazo|schedule|cronograma)[:.]?\s*(.+)/i
+    };
+
+    for (const line of lines) {
+      // Buscar dimensiones y medidas
+      const dimensions = line.match(patterns.dimensions);
+      if (dimensions) {
+        projectInfo.push(`Dimensiones: ${dimensions.join(', ')}`);
+      }
+      
+      // Buscar información de alcance
+      for (const [key, pattern] of Object.entries(patterns)) {
+        if (key !== 'dimensions') {
+          const match = line.match(pattern);
+          if (match && match[1] && match[1].trim().length > 10) {
+            projectInfo.push(match[1].trim());
+          }
+        }
+      }
+    }
+    
+    return projectInfo.slice(0, 3).join('. ') + (projectInfo.length > 0 ? '.' : '');
+  };
+
+  // File upload functions with OCR INTEGRATION
   const handleFileUpload = async (files: FileList | File[]) => {
     const fileArray = Array.from(files);
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
@@ -516,6 +634,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       });
 
       const newAttachments: ProjectAttachment[] = [];
+      let extractedProjectInfo = '';
       
       for (const file of validFiles) {
         const attachment: ProjectAttachment = {
@@ -528,17 +647,37 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           uploadDate: new Date(),
         };
         newAttachments.push(attachment);
+
+        // 📄 PROCESS WITH OCR IF IT'S A PDF OR IMAGE
+        if (file.type.includes('pdf') || file.type.includes('image')) {
+          toast({
+            title: "🔍 Procesando archivo...",
+            description: `Extrayendo información de ${file.name} con OCR...`,
+          });
+          
+          const ocrInfo = await processAttachmentWithOCR(file);
+          if (ocrInfo.trim()) {
+            extractedProjectInfo += `\n\n📄 Información extraída de ${file.name}:\n${ocrInfo}`;
+          }
+        }
       }
 
       setEstimate(prev => ({
         ...prev,
         attachments: [...prev.attachments, ...newAttachments],
+        // 🧠 AUTO-ENRICH PROJECT DESCRIPTION WITH OCR DATA
+        projectDetails: extractedProjectInfo ? 
+          (prev.projectDetails + extractedProjectInfo).trim() : 
+          prev.projectDetails
       }));
 
       if (newAttachments.length > 0) {
+        const ocrMessage = extractedProjectInfo ? 
+          ` Se extrajo información adicional del proyecto usando OCR.` : '';
+        
         toast({
-          title: "Archivos subidos exitosamente",
-          description: `${newAttachments.length} archivo${newAttachments.length > 1 ? 's' : ''} agregado${newAttachments.length > 1 ? 's' : ''} al proyecto.`,
+          title: "✅ Archivos procesados exitosamente",
+          description: `${newAttachments.length} archivo${newAttachments.length > 1 ? 's' : ''} agregado${newAttachments.length > 1 ? 's' : ''} al proyecto.${ocrMessage}`,
         });
       }
     } catch (error) {
@@ -4406,8 +4545,46 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                         projectDetails: e.target.value,
                       }))
                     }
-                    className="min-h-[120px] max-h-[300px] text-sm resize-none pr-12"
+                    className="min-h-[120px] max-h-[300px] text-sm resize-none pr-12 pb-8"
                   />
+                  
+                  {/* 📊 CHARACTER COUNTER & STATUS INDICATORS */}
+                  <div className="absolute bottom-2 left-3 right-12 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-3">
+                      {/* Character Counter */}
+                      <div className={`flex items-center gap-1 ${
+                        estimate.projectDetails.length > 500 
+                          ? 'text-yellow-400' 
+                          : estimate.projectDetails.length > 800 
+                            ? 'text-orange-400' 
+                            : 'text-gray-400'
+                      }`}>
+                        <span className="font-mono">
+                          {estimate.projectDetails.length}/∞
+                        </span>
+                        {estimate.projectDetails.length > 500 && (
+                          <span className="text-yellow-400 font-mono">
+                            (→500 en PDF)
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* OCR Processing Indicator */}
+                      {isUploading && (
+                        <div className="flex items-center gap-1 text-cyan-400">
+                          <div className="w-3 h-3 border border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                          <span>OCR...</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Smart Summarize Indicator */}
+                    {estimate.projectDetails.length > 500 && (
+                      <div className="text-yellow-400 text-xs font-mono">
+                        🧠 Se resumirá inteligentemente
+                      </div>
+                    )}
+                  </div>
                   
                   {/* Attachment Button inside textarea */}
                   <div className="absolute top-3 right-3 flex items-center gap-2">
@@ -7086,14 +7263,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                                     valid_until: new Date(
                                       Date.now() + 30 * 24 * 60 * 60 * 1000,
                                     ).toLocaleDateString(),
-                                    project_description: (
-                                      estimateData.projectDetails
-                                        ?.description ||
-                                      estimateData.projectDescription ||
-                                      estimateData.projectScope ||
-                                      estimate.projectDetails ||
-                                      ""
-                                    ).substring(0, 500),
+                                    project_description: estimate.projectDetails?.length > 500 ? 
+                                      (await smartSummarizeDescription(estimate.projectDetails)).substring(0, 500) :
+                                      estimate.projectDetails || "",
                                     items: items.map((item: any) => ({
                                       code:
                                         item.name || item.material || "Item",

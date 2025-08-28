@@ -64,6 +64,7 @@ import userProfileRoutes from "./routes/user-profile-routes"; // Import user pro
 import openaiChatRoutes from "./routes/openai-chat-routes"; // Import OpenAI chat routes
 import contractorPaymentRoutes from "./routes/contractor-payment-routes"; // Import contractor payment routes
 import estimatesRoutes from "./routes/estimates"; // Import new estimates routes
+import anthropicSummarizeRoutes from "./routes/anthropic-summarize"; // Import intelligent description summarizer
 import { invoicePdfService } from "./invoice-pdf-service";
 import { sendInvoiceEmail } from "./services/invoiceEmailService";
 import { puppeteerPdfService } from "./puppeteer-pdf-service";
@@ -1631,6 +1632,7 @@ Output must be between 200-900 characters in English.`;
 
   // Registrar rutas de Anthropic (Claude)
   app.use("/api/anthropic", anthropicRoutes);
+  app.use("/api/anthropic", anthropicSummarizeRoutes); // 🧠 Intelligent summarization service
 
   // 🤖 Registrar Mervin AI - Sistema Unificado de Inteligencia
   console.log("🤖 [MERVIN-AI] Registrando sistema unificado de inteligencia...");
