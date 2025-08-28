@@ -1470,7 +1470,7 @@ Output must be between 200-900 characters in English.`;
                   messages: [
                     {
                       role: "user",
-                      content: `You are a professional construction project manager. Transform this description into detailed, professional specifications:\n\n${text}`,
+                      content: `You are a professional construction project manager. Transform this description into detailed, professional English specifications (200-900 characters):\n\n${text}`,
                     },
                   ],
                 }),
@@ -1508,15 +1508,19 @@ Output must be between 200-900 characters in English.`;
               "⚠️ Both AI services failed, using smart enhancement...",
             );
 
-            // Smart enhancement fallback
-            const words = text.split(" ");
+            // Smart enhancement fallback - ALWAYS English output
             const enhanced = text
               .replace(/\b(fence|cerca)\b/gi, "professional fence installation")
               .replace(/\b(wood|madera)\b/gi, "premium cedar wood")
               .replace(/\b(install|instalar)\b/gi, "professionally install")
-              .replace(/\b(yard|patio)\b/gi, "residential property");
+              .replace(/\b(yard|patio)\b/gi, "residential property")
+              .replace(/\b(piso|floor|flooring)\b/gi, "flooring installation")
+              .replace(/\b(laminado|laminate)\b/gi, "laminate flooring")
+              .replace(/\b(hardwood|dura)\b/gi, "hardwood flooring")
+              .replace(/\b(remover|remove)\b/gi, "remove existing")
+              .replace(/\b(sqft|sq ft|pies cuadrados)\b/gi, "square feet");
 
-            enhancedDescription = `Professional Project Specification:\n\n${enhanced}\n\nThis project includes:\n- Material procurement and delivery\n- Professional installation services\n- Quality assurance and cleanup\n- Warranty coverage\n\nEstimated timeline: 2-3 business days\nAll work performed to local building codes and standards.`;
+            enhancedDescription = `Professional Construction Specification: ${enhanced}. This comprehensive project includes material procurement and delivery, professional installation services, comprehensive quality assurance, complete site cleanup, warranty coverage, and compliance with local building codes and industry standards.`;
 
             console.log("✅ Smart enhancement completed as fallback");
           }
@@ -1535,8 +1539,14 @@ Output must be between 200-900 characters in English.`;
       } catch (openAiError) {
         console.error("❌ Error during AI processing:", openAiError);
 
-        // Ultimate fallback - always return something useful with proper length
-        let enhancedFallback = `Professional ${projectType || "Construction"} Specification: ${text} This project includes professional grade materials, expert installation services, comprehensive quality assurance, and complete cleanup. All work performed to industry standards with warranty coverage and compliance to local building codes.`;
+        // Ultimate fallback - always return something useful with proper length IN ENGLISH
+        const projectTypeEnglish = (body?.projectType || "construction").replace(/estimado|estimado de construcción/gi, "construction estimate");
+        let enhancedFallback = `Professional ${projectTypeEnglish} Specification: Construction project involving ${text.replace(/\b(piso|cerca|instalar|remover)\b/gi, match => ({
+          'piso': 'flooring',
+          'cerca': 'fence',
+          'instalar': 'install',
+          'remover': 'remove'
+        }[match.toLowerCase()] || match))}. This project includes professional grade materials, expert installation services, comprehensive quality assurance, and complete cleanup. All work performed to industry standards with warranty coverage and compliance to local building codes.`;
 
         // Ensure fallback is within 200-900 character limits
         if (enhancedFallback.length < 200) {
