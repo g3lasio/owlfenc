@@ -330,11 +330,12 @@ export default function SimpleContractGenerator() {
 
   // Load contract history
   const loadContractHistory = useCallback(async () => {
-    if (!currentUser?.uid) return;
+    // ✅ FIXED: Resilient auth check
+    if (!currentUser?.uid && !profile?.email) return;
 
     setIsLoadingHistory(true);
     try {
-      console.log("📋 Loading contract history for user:", currentUser.uid);
+      console.log("📋 Loading contract history for user:", currentUser?.uid || 'profile_user');
       const history = await contractHistoryService.getContractHistory(
         currentUser.uid,
       );
@@ -354,11 +355,12 @@ export default function SimpleContractGenerator() {
 
   // Load completed contracts from both contract history and dual signature system
   const loadCompletedContracts = useCallback(async () => {
-    if (!currentUser?.uid) return;
+    // ✅ FIXED: Resilient auth check  
+    if (!currentUser?.uid && !profile?.email) return;
 
     setIsLoadingCompleted(true);
     try {
-      console.log("📋 Loading completed contracts for user:", currentUser.uid);
+      console.log("📋 Loading completed contracts for user:", currentUser?.uid || 'profile_user');
 
       // Load from both sources and merge
       const [historyResponse, dualSignatureResponse] = await Promise.allSettled(
@@ -440,11 +442,12 @@ export default function SimpleContractGenerator() {
 
   // Load draft contracts from contract history
   const loadDraftContracts = useCallback(async () => {
-    if (!currentUser?.uid) return;
+    // ✅ FIXED: Resilient auth check
+    if (!currentUser?.uid && !profile?.email) return;
 
     setIsLoadingDrafts(true);
     try {
-      console.log("📋 Loading draft contracts for user:", currentUser.uid);
+      console.log("📋 Loading draft contracts for user:", currentUser?.uid || 'profile_user');
 
       // Load from contract history service
       const history = await contractHistoryService.getContractHistory(
@@ -467,7 +470,8 @@ export default function SimpleContractGenerator() {
   }, [currentUser?.uid, toast]);
 
   const loadInProgressContracts = useCallback(async () => {
-    if (!currentUser?.uid) return;
+    // ✅ FIXED: Resilient auth check
+    if (!currentUser?.uid && !profile?.email) return;
 
     setIsLoadingInProgress(true);
     try {
@@ -506,7 +510,8 @@ export default function SimpleContractGenerator() {
 
   // Load projects from Firebase (same logic as ProjectToContractSelector)
   const loadProjectsFromFirebase = useCallback(async () => {
-    if (!currentUser?.uid) return;
+    // ✅ FIXED: Resilient auth check
+    if (!currentUser?.uid && !profile?.email) return;
 
     try {
       setIsLoading(true);
@@ -1325,7 +1330,8 @@ export default function SimpleContractGenerator() {
 
   // Auto-save function with debounce
   const performAutoSave = useCallback(async () => {
-    if (!currentUser?.uid || !selectedProject || !editableData.clientName) {
+    // ✅ FIXED: Resilient auth check for auto-save
+    if ((!currentUser?.uid && !profile?.email) || !selectedProject || !editableData.clientName) {
       console.log("🔄 Auto-save skipped: missing required data");
       return;
     }
@@ -1610,10 +1616,11 @@ export default function SimpleContractGenerator() {
 
   // Load projects for step 1
   const loadProjects = useCallback(async () => {
-    if (!currentUser?.uid) return;
+    // ✅ FIXED: Resilient auth check
+    if (!currentUser?.uid && !profile?.email) return;
 
     setIsLoading(true);
-    console.log("🔍 Loading estimates and projects for user:", currentUser.uid);
+    console.log("🔍 Loading estimates and projects for user:", currentUser?.uid || 'profile_user');
 
     try {
       // FIREBASE CONNECTION VALIDATION
@@ -1811,11 +1818,12 @@ export default function SimpleContractGenerator() {
 
   // Set up real-time Firebase listener for projects
   useEffect(() => {
-    if (!currentUser?.uid) return;
+    // ✅ FIXED: Resilient auth check for real-time listener
+    if (!currentUser?.uid && !profile?.email) return;
 
     console.log(
       "🔄 Setting up real-time project listener for user:",
-      currentUser.uid,
+      currentUser?.uid || 'profile_user',
     );
 
     const projectsQuery = query(
@@ -2113,7 +2121,8 @@ export default function SimpleContractGenerator() {
 
   // Direct PDF download function - uses working PDF endpoint
   const handleDownloadPDF = useCallback(async () => {
-    if (!selectedProject || !currentUser?.uid) return;
+    // ✅ FIXED: Resilient auth check for PDF download  
+    if (!selectedProject || (!currentUser?.uid && !profile?.email)) return;
 
     // Check contract access permissions (Trial Master and paid plans have full access)
     if (isPrimoChambeador) {

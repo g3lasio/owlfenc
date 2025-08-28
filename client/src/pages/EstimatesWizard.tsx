@@ -1306,7 +1306,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
   // Función de autoguardado que actualiza el proyecto existente
   const autoSaveEstimateChanges = useCallback(async () => {
-    if (!currentUser?.uid || !estimate.client || estimate.items.length === 0) {
+    // ✅ FIXED: Resilient auth check - allow save if we have profile data
+    if ((!currentUser?.uid && !profile?.email) || !estimate.client || estimate.items.length === 0) {
       return; // No autoguardar si no hay datos válidos
     }
 
@@ -1589,7 +1590,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
   // Load saved estimates from Firebase
   const loadSavedEstimates = async () => {
-    if (!currentUser?.uid) return;
+    // ✅ FIXED: Resilient auth check - use profile fallback
+    if (!currentUser?.uid && !profile?.email) return;
 
     try {
       setIsLoadingEstimates(true);
@@ -2663,7 +2665,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       return;
     }
 
-    if (!currentUser?.uid) {
+    // ✅ FIXED: Resilient auth check for client creation
+    if (!currentUser?.uid && !profile?.email) {
       toast({
         title: "Error de Autenticación",
         description: "Usuario no autenticado. Por favor, inicia sesión.",
@@ -6092,7 +6095,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
                       <Button
                         onClick={() => handleSaveEstimate()}
-                        disabled={isSaving || !currentUser?.uid}
+                        disabled={isSaving || (!currentUser?.uid && !profile?.email)}
                         size="sm"
                         className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
                       >
@@ -6271,7 +6274,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               {currentStep === STEPS.length - 1 ? (
                 <Button
                   onClick={handleDownload}
-                  disabled={!estimate.client || estimate.items.length === 0 || !currentUser?.uid}
+                  disabled={!estimate.client || estimate.items.length === 0 || (!currentUser?.uid && !profile?.email)}
                   className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 w-full sm:w-auto shadow-lg shadow-cyan-500/25"
                 >
                   <Download className="h-4 w-4 mr-2" />

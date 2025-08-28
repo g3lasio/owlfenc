@@ -166,9 +166,10 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
   const { currentUser } = useAuth();
   const [userPlan, setUserPlan] = useState<Plan | null>(null);
   const [userUsage, setUserUsage] = useState<UserUsage | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // ✅ FIXED: Start with false for better UX
   const [isTrialUser, setIsTrialUser] = useState(false);
   const [trialDaysRemaining, setTrialDaysRemaining] = useState(0);
+  const [isInitialized, setIsInitialized] = useState(false); // ✅ FIXED: Separate initialization state
 
   // Estado para modal de upgrade
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
@@ -265,6 +266,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         month: new Date().toISOString().slice(0, 7)
       });
       setLoading(false);
+      setIsInitialized(true); // ✅ FIXED: Mark as initialized even with no user
       return;
     }
 
@@ -315,6 +317,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
       });
     } finally {
       setLoading(false);
+      setIsInitialized(true); // ✅ FIXED: Mark as initialized regardless of success/failure
     }
   }, [currentUser?.uid]);
 
@@ -337,6 +340,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         month: new Date().toISOString().slice(0, 7)
       });
       setLoading(false);
+      setIsInitialized(true); // ✅ FIXED: Always mark as initialized in fallback
     }
   }, [currentUser?.uid]); // Solo depender del UID del usuario
 

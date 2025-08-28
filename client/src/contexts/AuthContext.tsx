@@ -92,33 +92,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           console.log('⚠️ [PERSISTENCE] Sesión inválida:', sessionValidation.reason);
         }
         
-        // Verificar token custom exitoso (OTP legacy)
-        const otpSuccess = localStorage.getItem('otp-auth-success');
-        if (otpSuccess) {
-          const authData = JSON.parse(otpSuccess);
-          // Validar que no sea muy antiguo (24 horas)
-          if (Date.now() - authData.timestamp < 24 * 60 * 60 * 1000) {
-            console.log('🔄 Restoring OTP authentication from localStorage');
-            return; // Firebase onAuthStateChanged manejará esto
-          } else {
-            localStorage.removeItem('otp-auth-success');
-          }
-        }
-        
-        // Verificar fallback auth
-        const otpFallback = localStorage.getItem('otp-fallback-auth');
-        if (otpFallback) {
-          const fallbackData = JSON.parse(otpFallback);
-          // Validar que no sea muy antiguo (24 horas)
-          if (Date.now() - fallbackData.timestamp < 24 * 60 * 60 * 1000) {
-            console.log('🔄 Restoring fallback OTP authentication');
-            setCurrentUser(fallbackData.user);
-            setLoading(false);
-            return;
-          } else {
-            localStorage.removeItem('otp-fallback-auth');
-          }
-        }
+        // ✅ FIXED: Removed redundant OTP localStorage fallbacks
+        // Enhanced persistence service now handles all session recovery
+        console.log('🧹 [SIMPLIFICATION] Using enhanced persistence only - removed redundant OTP fallbacks');
       } catch (error) {
         console.error('Error checking persisted auth:', error);
       }
@@ -143,8 +119,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             "Resultado de redirección procesado exitosamente:",
             result.user,
           );
-          // Limpiar autenticación fallback si Firebase funciona
-          localStorage.removeItem('otp-fallback-auth');
+          // ✅ FIXED: Enhanced persistence handles cleanup
           setNetworkRetryCount(0); // Reset retry count en éxito
           setError(null);
         }
@@ -207,8 +182,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setNetworkRetryCount(0);
             setError(null);
             
-            // Limpiar autenticación fallback si Firebase funciona
-            localStorage.removeItem('otp-fallback-auth');
+            // ✅ FIXED: Enhanced persistence handles cleanup
             
             // Convertir al tipo User para usar en nuestra aplicación con manejo de errores en getIdToken
             const appUser: User = {
@@ -242,13 +216,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
             };
             setCurrentUser(appUser);
             setLastValidUser(appUser); // Guardar último usuario válido
+            setIsInitializing(false); // ✅ FIXED: Auth successfully initialized
           } else {
-            // 🔧 DEV-FRIENDLY: Solo limpiar usuario si no hay autenticación fallback válida
-            const otpFallback = localStorage.getItem('otp-fallback-auth');
+            // ✅ FIXED: Simplified auth check using enhanced persistence only
+            let fallbackValid = false;
+            try {
+              const { enhancedPersistenceService } = require('../lib/enhanced-persistence');
+              fallbackValid = enhancedPersistenceService.validatePersistentSession().valid;
+            } catch (e) {
+              // Enhanced persistence not available, continue
+            }
             const isDevelopment = window.location.hostname.includes('replit') || 
                                  window.location.hostname === 'localhost';
             
-            if (!otpFallback || currentUser) {
+            if (!fallbackValid && !isDevelopment) {
               console.log("🔓 Usuario no autenticado - Firebase signOut detectado");
               
               // En desarrollo, mantener sesión por más tiempo antes de limpiar
@@ -268,9 +249,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
             }
           }
           setLoading(false);
+          if (!isInitializing) setIsInitializing(false); // ✅ FIXED: Ensure initialization completes
         } catch (error) {
           handleFirebaseError(error, "Auth state change error");
           setLoading(false);
+          setIsInitializing(false); // ✅ FIXED: Even on error, mark as initialized
         }
       },
       (error) => {
@@ -344,6 +327,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Sin esperar a onAuthStateChanged para evitar redirección al login
       setCurrentUser(appUser);
       setLoading(false);
+      setIsInitializing(false); // ✅ FIXED: Login completes initialization
 
       // Inicializar monitoreo de actividad si "recordarme" está activado
       if (rememberMe) {
@@ -401,6 +385,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Sin esperar a onAuthStateChanged para evitar redirección al login
       setCurrentUser(appUser);
       setLoading(false);
+      setIsInitializing(false); // ✅ FIXED: Registration completes initialization
 
       // Note: Welcome email functionality would be implemented here
       // Currently not available in the email service
