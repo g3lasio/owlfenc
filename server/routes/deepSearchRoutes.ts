@@ -9,6 +9,7 @@ import { Express, Request, Response } from 'express';
 import { z } from 'zod';
 import { deepSearchService } from '../services/deepSearchService';
 import { smartMaterialCacheService } from '../services/smartMaterialCacheService';
+import { deepSearchRefinementService } from '../services/deepSearchRefinementService';
 
 // Esquemas de validación
 const ProjectAnalysisSchema = z.object({
@@ -27,6 +28,59 @@ const MaterialsGenerationSchema = z.object({
 
 export function registerDeepSearchRoutes(app: Express): void {
   
+  /**
+   * POST /api/deepsearch/refine
+   * CHAT INTERACTIVO: Procesa solicitudes de refinamiento de DeepSearch
+   */
+  app.post('/api/deepsearch/refine', async (req: Request, res: Response) => {
+    console.log('🔍 [DEEPSEARCH-REFINE] Nueva solicitud de refinamiento');
+    
+    try {
+      const { userRequest, currentResult, projectDescription, location, conversationHistory } = req.body;
+
+      // Validar datos requeridos
+      if (!userRequest || !currentResult || !projectDescription) {
+        return res.status(400).json({
+          success: false,
+          error: 'Faltan datos requeridos: userRequest, currentResult, projectDescription'
+        });
+      }
+
+      console.log('📝 [DEEPSEARCH-REFINE] Procesando:', {
+        userRequest: userRequest.substring(0, 100) + '...',
+        location,
+        materialsCount: currentResult.materials?.length || 0,
+        currentTotal: currentResult.grandTotal || 0
+      });
+
+      // Procesar refinamiento
+      const refinementResult = await deepSearchRefinementService.processRefinementRequest({
+        userRequest,
+        currentResult,
+        projectDescription,
+        location,
+        conversationHistory
+      });
+
+      console.log('✅ [DEEPSEARCH-REFINE] Refinamiento completado:', {
+        success: refinementResult.success,
+        hasUpdatedResult: !!refinementResult.updatedResult,
+        suggestedActionsCount: refinementResult.suggestedActions?.length || 0
+      });
+
+      res.json(refinementResult);
+
+    } catch (error: any) {
+      console.error('❌ [DEEPSEARCH-REFINE] Error:', error);
+      
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor procesando refinamiento',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  });
+
   /**
    * POST /api/deepsearch/materials
    * ONLY MATERIALS: Genera únicamente materiales sin costos de labor

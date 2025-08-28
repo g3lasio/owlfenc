@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { Brain, Sparkles, Package, DollarSign, Clock, CheckCircle2, AlertCircle, Zap } from 'lucide-react';
+import { DeepSearchChat } from './DeepSearchChat';
 
 interface DeepSearchResult {
   projectType: string;
@@ -520,14 +521,37 @@ export function DeepSearchButton({
                 </CardContent>
               </Card>
 
-              {/* Apply Button */}
-              <div className="flex justify-end space-x-3">
-                <Button variant="outline" onClick={() => setShowResults(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={applyMaterials} className="bg-green-600 hover:bg-green-700">
-                  Aplicar al Estimado
-                </Button>
+              {/* Action Buttons */}
+              <div className="flex justify-between items-center">
+                <div className="flex space-x-2">
+                  {/* Chat Interactivo Button */}
+                  <DeepSearchChat
+                    initialResult={analysisResult}
+                    projectDescription={projectDescription}
+                    location={location}
+                    onResultsUpdated={(updatedResult) => {
+                      setAnalysisResult(updatedResult);
+                      toast({
+                        title: "Estimado actualizado",
+                        description: "Los cambios del chat han sido aplicados."
+                      });
+                    }}
+                    onApplyChanges={() => {
+                      if (analysisResult) {
+                        applyMaterials();
+                      }
+                    }}
+                  />
+                </div>
+                
+                <div className="flex space-x-3">
+                  <Button variant="outline" onClick={() => setShowResults(false)}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={applyMaterials} className="bg-green-600 hover:bg-green-700">
+                    Aplicar al Estimado
+                  </Button>
+                </div>
               </div>
             </div>
           )}
