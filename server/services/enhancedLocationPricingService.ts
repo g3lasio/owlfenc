@@ -137,8 +137,9 @@ export class EnhancedLocationPricingService {
   private async analyzeMarketFactors(locationData: LocationData): Promise<MarketFactors> {
     // Análisis avanzado de factores de mercado
     const stateFactors = this.getStateFactors(locationData.state);
-    const metroFactors = this.getMetroAreaFactors(locationData.metroArea);
-    const countyFactors = this.getCountyFactors(locationData.county, locationData.state);
+    // TODO: Implement getMetroAreaFactors and getCountyFactors methods
+    // const metroFactors = this.getMetroAreaFactors(locationData.metroArea);
+    // const countyFactors = this.getCountyFactors(locationData.county, locationData.state);
     
     return {
       costOfLiving: this.calculateCostOfLiving(locationData),

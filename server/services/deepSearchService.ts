@@ -16,6 +16,7 @@ import { smartMaterialCacheService } from './smartMaterialCacheService';
 import { expertContractorService } from './expertContractorService';
 import { MultiIndustryExpertService } from './multiIndustryExpertService';
 import { precisionQuantityCalculationService } from './precisionQuantityCalculationService';
+import { materialValidationService } from './materialValidationService';
 
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const anthropic = new Anthropic({
@@ -106,16 +107,36 @@ export class DeepSearchService {
       });
 
       if (cacheResult.found && cacheResult.data) {
-        console.log(`✅ DeepSearch: Encontrados materiales existentes (${cacheResult.source}) - recalculando cantidades`);
+        console.log(`✅ DeepSearch: Encontrados materiales existentes (${cacheResult.source}) - aplicando validación`);
         
-        // CRITICAL FIX: Always use Expert Contractor precision for cached results
-        // Apply expert contractor analysis even with cached materials
-        console.log('🎯 Applying Expert Contractor precision to cached materials');
-        return await this.applyExpertContractorPrecision(
-          cacheResult.data, 
-          projectDescription, 
-          location
+        // SISTEMA INFALIBLE: Validar materiales de cache también
+        const cacheValidation = materialValidationService.validateMaterialCompleteness(
+          cacheResult.data.materials,
+          projectType,
+          projectDescription
         );
+        
+        if (cacheValidation.isComplete && cacheValidation.confidence > 0.8) {
+          console.log('✅ CACHE VALIDATION PASSED: Using validated cached materials');
+          
+          // Apply expert contractor analysis even with cached materials
+          const enhancedCacheResult = await this.applyExpertContractorPrecision(
+            cacheResult.data, 
+            projectDescription, 
+            location
+          );
+          
+          // Agregar marca de cache validado
+          enhancedCacheResult.recommendations.push(
+            '🔄 Materials retrieved from validated cache - expert precision applied'
+          );
+          
+          return enhancedCacheResult;
+        } else {
+          console.log('⚠️ CACHE VALIDATION FAILED: Cache materials incomplete, running fresh analysis');
+          console.log('   Missing critical:', cacheValidation.missingCritical);
+          // Continuar con análisis fresco
+        }
       }
 
       // 2. GENERAR NUEVA LISTA - Solo si no existe previamente
@@ -152,23 +173,97 @@ export class DeepSearchService {
       // PRECISION FILTER: Remove any tools or equipment that may have slipped through
       enrichedResult.materials = this.filterOnlyConstructionMaterials(enrichedResult.materials);
 
-      console.log('✅ DeepSearch: Análisis completado', { 
+      // SISTEMA INFALIBLE: Validación de materiales críticos
+      console.log('🔍 VALIDATION: Running material completeness check...');
+      const validationResult = materialValidationService.validateMaterialCompleteness(
+        enrichedResult.materials,
+        projectType,
+        projectDescription
+      );
+
+      // Agregar warnings de validación
+      enrichedResult.warnings.push(...validationResult.warnings);
+      enrichedResult.recommendations.push(...validationResult.recommendations);
+
+      // ANÁLISIS SUPLEMENTARIO: Si faltan materiales críticos
+      if (validationResult.supplementaryAnalysisNeeded && validationResult.missingCritical.length > 0) {
+        console.log('🚨 CRITICAL MISSING MATERIALS DETECTED - Running supplementary analysis:', validationResult.missingCritical);
+        
+        try {
+          const supplementaryMaterials = await this.runSupplementaryAnalysis(
+            validationResult.missingCritical,
+            projectType,
+            projectDescription,
+            location
+          );
+
+          // Agregar materiales suplementarios
+          enrichedResult.materials.push(...supplementaryMaterials);
+          
+          // Recalcular totales
+          enrichedResult.totalMaterialsCost = enrichedResult.materials.reduce((sum, item) => sum + item.totalPrice, 0);
+          enrichedResult.grandTotal = enrichedResult.totalMaterialsCost + enrichedResult.totalLaborCost + enrichedResult.totalAdditionalCost;
+          
+          // Validar nuevamente para confirmar completitud
+          const finalValidation = materialValidationService.validateMaterialCompleteness(
+            enrichedResult.materials,
+            projectType,
+            projectDescription
+          );
+          
+          enrichedResult.confidence = finalValidation.confidence;
+          enrichedResult.recommendations.push(
+            `🔧 Added ${supplementaryMaterials.length} critical materials through supplementary analysis`
+          );
+          
+          console.log('✅ SUPPLEMENTARY ANALYSIS COMPLETE:', {
+            addedMaterials: supplementaryMaterials.length,
+            finalConfidence: finalValidation.confidence,
+            nowComplete: finalValidation.isComplete
+          });
+          
+        } catch (suppError) {
+          console.error('❌ Supplementary analysis failed:', suppError);
+          enrichedResult.warnings.push('⚠️ Some critical materials may be missing - manual review recommended');
+          enrichedResult.confidence = Math.min(enrichedResult.confidence, 0.7);
+        }
+      } else {
+        enrichedResult.confidence = validationResult.confidence;
+        console.log('✅ VALIDATION PASSED: All critical materials present');
+      }
+
+      // Validación adicional de precios
+      const pricingWarnings = materialValidationService.validatePricingReasonableness(
+        enrichedResult.materials,
+        projectType
+      );
+      enrichedResult.warnings.push(...pricingWarnings);
+
+      console.log('✅ DeepSearch: Análisis completado con validación infalible', { 
         materialCount: enrichedResult.materials.length,
-        totalCost: enrichedResult.grandTotal 
+        totalCost: enrichedResult.grandTotal,
+        confidence: enrichedResult.confidence,
+        isComplete: validationResult.isComplete
       });
 
-      // 3. CONTRIBUIR AL SISTEMA GLOBAL - Para beneficio de toda la comunidad
-      await smartMaterialCacheService.saveMaterialsList(
-        projectType,
-        projectDescription,
-        region,
-        enrichedResult
-      );
-
-      // Agregar marca de contribución al sistema
-      enrichedResult.recommendations.push(
-        '🌍 Esta lista ha sido contribuida al sistema global de DeepSearch para beneficiar a toda la comunidad'
-      );
+      // 3. CONTRIBUIR AL SISTEMA GLOBAL - Solo si está validado como completo
+      if (validationResult.isComplete) {
+        await smartMaterialCacheService.saveMaterialsList(
+          projectType,
+          projectDescription,
+          region,
+          enrichedResult
+        );
+        
+        enrichedResult.recommendations.push(
+          '🌍 Esta lista validada ha sido contribuida al sistema global de DeepSearch'
+        );
+      } else {
+        console.log('⚠️ Skipping cache save - list not fully validated');
+        enrichedResult.recommendations.push(
+          '⚠️ Esta lista requiere revisión manual antes de ser guardada en cache'
+        );
+      }
 
       return enrichedResult;
 
@@ -1240,6 +1335,189 @@ Focus on PRECISION and RELEVANCE. Exclude irrelevant materials completely.`;
     }
     
     return matrix[str2.length][str1.length];
+  }
+
+  /**
+   * SISTEMA INFALIBLE: Ejecuta análisis suplementario para materiales faltantes
+   */
+  private async runSupplementaryAnalysis(
+    missingCategories: string[],
+    projectType: string,
+    projectDescription: string,
+    location?: string
+  ): Promise<MaterialItem[]> {
+    try {
+      console.log('🔧 SUPPLEMENTARY ANALYSIS: Finding missing critical materials:', missingCategories);
+      
+      // Generar prompt específico para materiales faltantes
+      const supplementaryPrompt = materialValidationService.generateSupplementaryAnalysisPrompt(
+        missingCategories,
+        projectType,
+        projectDescription,
+        location
+      );
+
+      console.log('🤖 Running focused AI analysis for missing materials...');
+      
+      // Usar Claude con prompt específico para materiales faltantes
+      const response = await anthropic.messages.create({
+        model: this.MODEL,
+        max_tokens: 4000,
+        temperature: 0.05, // Muy baja temperatura para precisión máxima
+        system: this.getSupplementarySystemPrompt(),
+        messages: [
+          {
+            role: 'user',
+            content: supplementaryPrompt
+          }
+        ]
+      });
+
+      const responseContent = response.content[0];
+      if (responseContent.type !== 'text') {
+        throw new Error('Invalid response type from supplementary analysis');
+      }
+
+      // Parsear respuesta específica del análisis suplementario
+      const supplementaryMaterials = this.parseSupplementaryResponse(responseContent.text);
+      
+      console.log('✅ SUPPLEMENTARY ANALYSIS: Found', supplementaryMaterials.length, 'missing materials');
+      
+      return supplementaryMaterials;
+      
+    } catch (error) {
+      console.error('❌ SUPPLEMENTARY ANALYSIS FAILED:', error);
+      
+      // FALLBACK: Usar Expert Contractor Service para generar materiales críticos
+      console.log('🔄 Using Expert Contractor Service as fallback for missing materials');
+      
+      const expertResult = expertContractorService.generateExpertEstimate(
+        `Find missing ${missingCategories.join(', ')} for: ${projectDescription}`,
+        location || 'CA',
+        projectType
+      );
+      
+      // Filtrar solo los materiales que corresponden a las categorías faltantes
+      const fallbackMaterials = expertResult.materials
+        .filter(material => this.materialMatchesMissingCategory(material, missingCategories))
+        .map(material => ({
+          id: material.id,
+          name: material.name,
+          description: material.description + ' (Expert Contractor Fallback)',
+          category: material.category,
+          quantity: material.quantity,
+          unit: material.unit,
+          unitPrice: material.unitPrice,
+          totalPrice: material.totalPrice,
+          specifications: material.specifications,
+          supplier: material.supplier || 'Expert Contractor Recommendation'
+        }));
+      
+      console.log('✅ FALLBACK: Generated', fallbackMaterials.length, 'materials using Expert Contractor');
+      
+      return fallbackMaterials;
+    }
+  }
+
+  /**
+   * Sistema prompt específico para análisis suplementario
+   */
+  private getSupplementarySystemPrompt(): string {
+    return `
+You are a MASTER GENERAL CONTRACTOR specialized in FINDING MISSING CRITICAL MATERIALS.
+
+Your task is to identify specific materials that were missed in the initial analysis.
+
+CRITICAL RULES:
+1. Focus ONLY on the missing critical materials specified
+2. Use precise contractor formulas for quantities
+3. Include exact technical specifications
+4. Apply current market pricing for the location
+5. DO NOT repeat materials already provided
+6. Ensure every material has a clear purpose and category match
+
+PRECISION REQUIREMENTS:
+- Exact material names with dimensions
+- Specific grades and technical specifications
+- Accurate quantities based on project dimensions
+- Regional pricing adjustments
+- Clear category classification
+
+ALWAYS respond in valid JSON format.
+ALL TEXT MUST BE IN ENGLISH ONLY.
+`;
+  }
+
+  /**
+   * Parsea la respuesta del análisis suplementario
+   */
+  private parseSupplementaryResponse(responseText: string): MaterialItem[] {
+    try {
+      console.log('🔍 Parsing supplementary analysis response...');
+      
+      // Extraer JSON de la respuesta
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No valid JSON found in supplementary response');
+      }
+
+      const parsed = JSON.parse(jsonMatch[0]);
+      
+      if (!parsed.supplementaryMaterials || !Array.isArray(parsed.supplementaryMaterials)) {
+        throw new Error('Invalid supplementary response structure');
+      }
+
+      // Convertir a formato MaterialItem
+      return parsed.supplementaryMaterials.map((item: any, index: number) => ({
+        id: item.id || `supp_${Date.now()}_${index}`,
+        name: item.name || 'Unknown Material',
+        description: item.description || '',
+        category: item.category || 'materials',
+        quantity: Math.max(0, Number(item.quantity) || 0),
+        unit: item.unit || 'pieces',
+        unitPrice: Math.max(0, Number(item.unitPrice) || 0),
+        totalPrice: Math.max(0, Number(item.totalPrice) || 0),
+        supplier: item.supplier || 'Contractor Recommendation',
+        specifications: item.specifications || ''
+      }));
+      
+    } catch (error) {
+      console.error('Error parsing supplementary response:', error);
+      return []; // Return empty array if parsing fails
+    }
+  }
+
+  /**
+   * Verifica si un material corresponde a una categoría faltante
+   */
+  private materialMatchesMissingCategory(material: any, missingCategories: string[]): boolean {
+    const materialName = material.name.toLowerCase();
+    const materialCategory = (material.category || '').toLowerCase();
+    const materialDescription = (material.description || '').toLowerCase();
+    
+    return missingCategories.some(category => {
+      const categoryLower = category.toLowerCase();
+      
+      // Mapeo de categorías a keywords
+      const categoryKeywords: Record<string, string[]> = {
+        'posts': ['post', 'pole', '4x4', '6x6'],
+        'boards_or_panels': ['board', 'panel', 'slat', 'picket', '1x6', '1x8'],
+        'hardware': ['nail', 'screw', 'bolt', 'bracket'],
+        'concrete_or_foundation': ['concrete', 'cement', 'foundation'],
+        'shingles_or_material': ['shingle', 'tile', 'metal', 'membrane'],
+        'underlayment': ['underlayment', 'felt', 'synthetic'],
+        'fasteners': ['nail', 'screw', 'fastener'],
+        'flashing': ['flashing', 'drip edge', 'valley']
+      };
+      
+      const keywords = categoryKeywords[categoryLower] || [categoryLower];
+      
+      return keywords.some(keyword => 
+        materialName.includes(keyword) ||
+        materialCategory.includes(keyword) ||
+        materialDescription.includes(keyword)
+      );
+    });
   }
 }
 
