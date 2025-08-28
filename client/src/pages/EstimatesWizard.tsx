@@ -1823,9 +1823,29 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     }
   };
 
-  // Simple edit function that matches Projects.tsx exactly
+  // FIXED: Edit function without page reload - maintains authentication state
   const handleEditEstimate = (projectId: string) => {
-    window.location.href = `/estimates?edit=${projectId}`;
+    console.log("🔧 [EDIT-FIX] Editing estimate:", projectId, "without page reload");
+    
+    // Set edit mode and ID without reloading the page
+    setIsEditMode(true);
+    setEditingEstimateId(projectId);
+    
+    // Update URL parameters without navigation
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('edit', projectId);
+    window.history.replaceState({}, document.title, newUrl.toString());
+    
+    // Load the estimate data for editing
+    loadProjectForEdit(projectId);
+    
+    // Close the history dialog
+    setShowEstimatesHistory(false);
+    
+    toast({
+      title: "✅ Editando estimado",
+      description: "Los datos del estimado han sido cargados para editar",
+    });
   };
 
   // AI Enhancement Function - Using new Mervin Working Effect
