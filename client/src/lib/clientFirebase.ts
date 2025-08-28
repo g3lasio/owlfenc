@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "./firebase";
+import { devModeManager, debugLog } from "@/utils/devModeUtils";
 
 // Interfaz para el cliente
 export interface Client {
@@ -75,40 +76,64 @@ export const saveClient = async (clientData: Omit<Client, 'id' | 'createdAt' | '
   }
 };
 
-// Obtener todos los clientes
+// ✅ FIXED: Obtener todos los clientes con autenticación robusta
 export const getClients = async (userId?: string, filters?: { tag?: string, source?: string }) => {
   try {
-    // CRITICAL SECURITY: Get current authenticated user
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      console.warn("🔧 [CLIENTS-DEBUG] auth.currentUser is null, checking state...");
+    devModeManager.markStart('clients-load');
+    
+    // ✅ SOLUTION: Wait for auth state to be completely ready
+    const currentUser = await new Promise<any>((resolve) => {
+      // If already authenticated, return immediately
+      if (auth.currentUser) {
+        debugLog('CLIENTS', 'Auth already ready, user found:', auth.currentUser.uid);
+        resolve(auth.currentUser);
+        return;
+      }
       
-      // SOLUTION: Wait for auth state to be ready
-      return new Promise((resolve) => {
-        const unsubscribe = onAuthStateChanged(auth, (user: any) => {
+      debugLog('CLIENTS', 'Waiting for auth state to be ready...');
+      
+      // Wait for auth state with timeout
+      let resolved = false;
+      const timeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          debugLog('CLIENTS', 'Auth timeout - proceeding without user');
+          resolve(null);
+        }
+      }, 3000); // 3 second timeout
+      
+      const unsubscribe = onAuthStateChanged(auth, (user: any) => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
           unsubscribe();
+          
           if (user) {
-            console.log("🔧 [CLIENTS-DEBUG] Auth state restored, user found:", user.uid);
-            // Recursively call with authenticated user
-            getClients(userId, filters).then(resolve);
+            debugLog('CLIENTS', 'Auth state restored, user found:', user.uid);
+            resolve(user);
           } else {
-            console.warn("🔒 SECURITY: No authenticated user - returning empty array");
-            resolve([]);
+            debugLog('CLIENTS', 'No authenticated user found');
+            resolve(null);
           }
-        });
+        }
       });
+    });
+    
+    if (!currentUser) {
+      debugLog('CLIENTS', 'No authenticated user - returning empty array');
+      return [];
     }
 
-    // CRITICAL SECURITY: Use authenticated user's ID if none provided
+    // ✅ FIXED: Use authenticated user's ID if none provided
     const targetUserId = userId || currentUser.uid;
     
-    // CRITICAL SECURITY: Verify user can only access their own data
+    // ✅ SECURITY: Verify user can only access their own data
     if (userId && userId !== currentUser.uid) {
-      console.warn("🔒 SECURITY: User attempting to access another user's clients - access denied");
+      debugLog('CLIENTS', 'Security violation: User attempting to access another user\'s clients');
       throw new Error("Access denied - cannot access other users' data");
     }
     
-    console.log(`🔒 SECURITY: Loading clients for user: ${targetUserId}`);
+    debugLog('CLIENTS', `Loading clients for user: ${targetUserId}`);
     
     // Build query constraints with mandatory user filtering
     const queryConstraints = [];
@@ -185,23 +210,21 @@ export const getClients = async (userId?: string, filters?: { tag?: string, sour
       } as Client;
     });
     
-    console.log(`🔒 SECURITY: Successfully loaded ${results.length} clients for user ${targetUserId}`);
+    const loadTime = devModeManager.markEnd('clients-load');
+    debugLog('CLIENTS', `Successfully loaded ${results.length} clients for user ${targetUserId} in ${loadTime?.toFixed(2)}ms`);
+    
     return results;
     
   } catch (error: any) {
-    console.error("=== ERROR CRÍTICO EN CARGA DE CLIENTES ===");
-    console.error("Tipo de error:", error.name || "Desconocido");
-    console.error("Código de error:", error.code || "No disponible");
-    console.error("Mensaje de error:", error.message || "No disponible");
-    console.error("Stack trace:", error.stack || "No disponible");
-    console.error("Error completo:", error);
-    
-    // Información de contexto
-    console.error("CONTEXTO DEL ERROR:");
-    console.error("- Firebase inicializado:", !!db);
-    console.error("- Usuario autenticado:", !!auth.currentUser);
-    console.error("- Project ID:", db?.app?.options?.projectId || "No disponible");
-    console.error("- Timestamp:", new Date().toISOString());
+    debugLog('CLIENTS', 'CRITICAL ERROR loading clients', {
+      errorName: error.name || 'Unknown',
+      errorCode: error.code || 'No code',
+      errorMessage: error.message || 'No message',
+      firebaseInitialized: !!db,
+      userAuthenticated: !!auth.currentUser,
+      projectId: db?.app?.options?.projectId || 'Not available',
+      timestamp: new Date().toISOString()
+    });
     
     throw error;
   }
