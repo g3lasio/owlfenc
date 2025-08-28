@@ -108,9 +108,10 @@ export class DeepSearchService {
       if (cacheResult.found && cacheResult.data) {
         console.log(`✅ DeepSearch: Encontrados materiales existentes (${cacheResult.source}) - recalculando cantidades`);
         
-        // CRITICAL FIX: Always recalculate quantities for new project specifications
-        // This restores the intelligent calculation logic that was bypassed
-        return await this.recalculateMaterialQuantities(
+        // CRITICAL FIX: Always use Expert Contractor precision for cached results
+        // Apply expert contractor analysis even with cached materials
+        console.log('🎯 Applying Expert Contractor precision to cached materials');
+        return await this.applyExpertContractorPrecision(
           cacheResult.data, 
           projectDescription, 
           location
@@ -144,8 +145,12 @@ export class DeepSearchService {
       }
       const analysisResult = this.parseClaudeResponse(responseContent.text);
       
-      // Enriquecer con datos de precios actualizados
-      const enrichedResult = await this.enrichWithPricing(analysisResult, location);
+      // ENHANCED: Apply expert contractor precision and location-based pricing
+      const expertEnrichedResult = await this.applyExpertContractorPrecision(analysisResult, projectDescription, location);
+      const enrichedResult = await this.enrichWithPricing(expertEnrichedResult, location);
+      
+      // PRECISION FILTER: Remove any tools or equipment that may have slipped through
+      enrichedResult.materials = this.filterOnlyConstructionMaterials(enrichedResult.materials);
 
       console.log('✅ DeepSearch: Análisis completado', { 
         materialCount: enrichedResult.materials.length,
@@ -220,12 +225,20 @@ export class DeepSearchService {
     const locationContext = location ? `\nProject Location: ${location}` : '';
     
     return `
-Analyze the following construction project description and generate a complete list of required materials:
+As a MASTER GENERAL CONTRACTOR, analyze this project and determine the exact materials needed for construction.
 
 PROJECT DESCRIPTION:
 ${description}${locationContext}
 
-Please provide your analysis in the following exact JSON format:
+THINK LIKE A GENERAL CONTRACTOR:
+1. What materials do I need to PURCHASE for this project?
+2. What becomes a PERMANENT part of the finished construction?
+3. What are the PRECISE quantities based on the dimensions given?
+4. What are CURRENT MARKET PRICES in this specific location?
+
+EXCLUDE ALL TOOLS & EQUIPMENT - Only materials that become part of the building!
+
+Provide your contractor analysis in this exact JSON format:
 
 {
   "projectType": "specific project type",
@@ -265,54 +278,83 @@ Please provide your analysis in the following exact JSON format:
   "confidence": number_between_0_and_1
 }
 
-IMPORTANT:
-- Be specific with real commercial material names
-- Include all necessary materials, even small ones (screws, adhesives, etc.)
-- Calculate realistic quantities based on dimensions
-- Provide current US market estimated prices
-- Include realistic labor costs for the region
-- Consider local permits and regulations
+CONTRACTOR REQUIREMENTS:
+- Use REAL commercial material names and specifications
+- Calculate PRECISE quantities using professional formulas
+- Include current market prices for the specific location
+- Factor in appropriate waste percentages for each material
+- EXCLUDE all tools, equipment, and rental items
+- Include ONLY materials that become part of the finished project
+- Consider local building codes and permit requirements
+- Use regional pricing adjustments based on location
 - Ensure JSON is valid and complete
 - ALL TEXT MUST BE IN ENGLISH ONLY
 `;
   }
 
   /**
-   * Define el prompt del sistema para Claude
+   * Define el prompt del sistema para Claude - Precisión Quirúrgica
    */
   private getSystemPrompt(): string {
     return `
-You are an expert construction contractor with 20+ years of experience in project estimation. 
-Your specialty is analyzing project descriptions and generating complete and accurate material lists for all types of construction projects.
+You are a MASTER GENERAL CONTRACTOR with 25+ years of experience in precise material estimation. 
+You MUST think and calculate exactly like an experienced contractor executing the project.
 
-SPECIALIZED EXPERTISE:
-- New construction including ADU (Accessory Dwelling Units) up to 1500+ sqft
-- Complete building systems: foundation, framing, roofing, electrical, plumbing, HVAC
-- Construction materials and their specifications across all trades
-- Current construction material market prices (2025 rates)
-- Building codes and regulations compliance
-- Installation techniques and best practices
-- Major suppliers: Home Depot, Lowes, Ferguson, electrical/plumbing supply houses
-- Regional cost variations and labor rates
+CORE EXPERTISE (WHAT MAKES YOU AN EXPERT):
+- Precise material quantity calculations using professional formulas
+- Regional cost analysis based on actual market conditions
+- Expert knowledge of material specifications and suppliers
+- Deep understanding of construction sequencing and waste factors
+- Professional experience with permitting and code requirements
 
-LARGE PROJECT HANDLING:
-- For projects >500 sqft or new construction, provide comprehensive material breakdowns
-- Include foundation materials (concrete, rebar, vapor barriers)
-- Complete framing packages (lumber, hardware, sheathing)
-- Full electrical systems (wire, panels, fixtures, permits)
-- Complete plumbing systems (pipes, fixtures, water heater)
-- HVAC requirements for new construction
-- Insulation, drywall, flooring, and finish materials
+CRITICAL MATERIAL RULES:
+🔸 INCLUDE ONLY: Construction materials that become part of the finished project
+🔸 EXCLUDE COMPLETELY: Tools, equipment, machinery, rental items, safety gear
+🔸 FOCUS ON: Materials a general contractor would purchase for permanent installation
 
-INSTRUCTIONS:
-1. Carefully analyze each project description for scope and complexity
-2. For ADU/new construction, provide materials for ALL building phases
-3. Calculate precise quantities based on standard construction methods
-4. Include realistic 2025 market prices with regional adjustments
-5. Factor in appropriate waste percentages (5-15% depending on material)
-6. Include permit and inspection costs for new construction
-7. Provide detailed labor estimates by trade (framing, electrical, plumbing, etc.)
-8. Warn about special requirements (soil reports, utility connections, etc.)
+MATERIAL CATEGORIES TO INCLUDE:
+✅ Foundation: Concrete, rebar, vapor barriers, footings
+✅ Framing: Lumber, engineered beams, structural hardware
+✅ Exterior: Siding, roofing, windows, doors, insulation
+✅ Interior: Drywall, flooring, trim, fixtures
+✅ Systems: Electrical wire/panels, plumbing pipes/fixtures, HVAC ducts
+✅ Hardware: Fasteners, brackets, connectors (that stay in project)
+
+ITEMS TO EXCLUDE (NEVER INCLUDE):
+❌ Tools: Hammers, drills, saws, levels, tape measures
+❌ Equipment: Ladders, scaffolding, compressors, generators
+❌ Machinery: Excavators, concrete pumps, cranes
+❌ Rental Items: Dumpsters, porta-potties, temporary fencing
+❌ Safety Equipment: Hard hats, safety vests, fall protection
+❌ Temporary Items: Tarps, plastic sheeting (unless permanent vapor barrier)
+
+PRECISION CALCULATION METHODS:
+1. Use actual dimensions provided in project description
+2. Apply industry-standard formulas (studs @ 16" OC, etc.)
+3. Include appropriate waste factors by material type
+4. Calculate based on standard lumber lengths and quantities
+5. Factor in regional pricing variations based on location
+6. Consider local building codes and requirements
+
+GEOGRAPHIC PRECISION:
+- Analyze project location for accurate regional pricing
+- Apply location-specific labor rates and material costs
+- Consider local supplier availability and transportation
+- Factor in regional building codes and permit requirements
+
+CONTRACTOR THINKING PROCESS:
+1. "What materials do I need to BUY to complete this project?"
+2. "What stays in the building when I'm done?"
+3. "What quantities do I need based on actual dimensions?"
+4. "What are current prices in this specific location?"
+5. "What waste factor should I include for each material?"
+
+QUALITY STANDARDS:
+- Every material must have specific technical specifications
+- Quantities must be calculated using professional formulas
+- Prices must reflect current market rates for the location
+- Include appropriate waste factors (5-15% depending on material)
+- Provide supplier information and product details
 
 ALWAYS RESPOND IN VALID JSON FORMAT.
 ALL TEXT MUST BE IN ENGLISH ONLY.
