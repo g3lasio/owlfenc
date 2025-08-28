@@ -256,13 +256,13 @@ export default function EstimatesWizardFixed() {
     } catch (error) {
       console.error("❌ [CONTACT-IMPORT] Error importing contact:", error);
       
-      if (error.name === 'NotAllowedError') {
+      if ((error as Error).name === 'NotAllowedError') {
         toast({
           title: "🚫 Permiso Denegado",
           description: "Necesitas permitir el acceso a los contactos para usar esta función.",
           variant: "destructive",
         });
-      } else if (error.name === 'AbortError') {
+      } else if ((error as Error).name === 'AbortError') {
         toast({
           title: "❌ Importación Cancelada",
           description: "La importación de contacto fue cancelada.",
@@ -522,13 +522,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     
     // Add materials
     if (materials.length > 0) {
-      const uniqueMaterials = [...new Set(materials.slice(0, 3))];
+      const uniqueMaterials = Array.from(new Set(materials.slice(0, 3)));
       rewritten += `MATERIALES: ${uniqueMaterials.join(', ')}. `;
     }
     
     // Add key actions
     if (actions.length > 0) {
-      const uniqueActions = [...new Set(actions.slice(0, 4))];
+      const uniqueActions = Array.from(new Set(actions.slice(0, 4)));
       rewritten += `TRABAJOS: ${uniqueActions.join(', ')}. `;
     }
     
@@ -838,11 +838,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               result.materials.length,
             );
             console.log("📋 Materials data:", result.materials);
-            console.log("👤 Current user UID:", currentUser.uid);
+            console.log("👤 Current user UID:", currentUser?.uid);
 
             MaterialInventoryService.addMaterialsFromDeepSearch(
               result.materials,
-              currentUser.uid,
+              currentUser?.uid,
               estimate.projectDetails,
             )
               .then((saveResults) => {
@@ -909,7 +909,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
             MaterialInventoryService.addMaterialsFromDeepSearch(
               laborMaterials,
-              currentUser.uid,
+              currentUser?.uid,
               estimate.projectDetails,
             )
               .then((saveResults) => {
@@ -976,7 +976,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
             MaterialInventoryService.addMaterialsFromDeepSearch(
               combinedLaborMaterials,
-              currentUser.uid,
+              currentUser?.uid,
               estimate.projectDetails,
             )
               .then((saveResults) => {
@@ -1044,13 +1044,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
   useEffect(() => {
     // Envolver todas las funciones async para evitar unhandled rejections
     loadClients().catch(error => {
-      console.warn('🛡️ [LOAD-CLIENTS] Error silenciado:', error.message);
+      console.warn('🛡️ [LOAD-CLIENTS] Error silenciado:', (error as Error).message);
     });
     loadMaterials().catch(error => {
-      console.warn('🛡️ [LOAD-MATERIALS] Error silenciado:', error.message);
+      console.warn('🛡️ [LOAD-MATERIALS] Error silenciado:', (error as Error).message);
     });
     loadContractorProfile().catch(error => {
-      console.warn('🛡️ [LOAD-PROFILE] Error silenciado:', error.message);
+      console.warn('🛡️ [LOAD-PROFILE] Error silenciado:', (error as Error).message);
     });
   }, [currentUser]);
 
@@ -1416,18 +1416,18 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         errorMessage =
           "The analysis is taking longer than expected. For large projects like ADU construction, this may be normal. Please try again or contact support.";
       } else if (
-        error.message?.includes("connection") ||
-        error.message?.includes("reach")
+        (error as Error).message?.includes("connection") ||
+        (error as Error).message?.includes("reach")
       ) {
         errorTitle = "Connection Error";
         errorMessage =
           "Unable to connect to AI services. Please check your internet connection and try again.";
-      } else if (error.message?.includes("server error")) {
+      } else if ((error as Error).message?.includes("server error")) {
         errorTitle = "Server Error";
         errorMessage =
           "The server is processing a complex project. This is normal for large construction projects. Please wait a moment and try again.";
-      } else if (error.message) {
-        errorMessage = error.message;
+      } else if ((error as Error).message) {
+        errorMessage = (error as Error).message;
       }
 
       toast({
@@ -1518,7 +1518,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     const timeoutId = setTimeout(() => {
       // Envolver en .catch() para evitar unhandled rejections
       autoSaveEstimateChanges().catch(error => {
-        console.warn('🛡️ [AUTO-SAVE] Error en autoguardado silenciado:', error.message);
+        console.warn('🛡️ [AUTO-SAVE] Error en autoguardado silenciado:', (error as Error).message);
       });
     }, 2000); // Wait 2 seconds after changes
 
@@ -1550,7 +1550,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       // Preparar datos completos del estimado con descuentos e impuestos
       const estimateNumber = `EST-${Date.now()}`;
       const estimateData = {
-        firebaseUserId: currentUser.uid,
+        firebaseUserId: currentUser?.uid,
         estimateNumber,
 
         // Información completa del cliente
@@ -1616,7 +1616,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       const existingQuery = query(
         collection(db, "estimates"),
-        where("firebaseUserId", "==", currentUser.uid),
+        where("firebaseUserId", "==", currentUser?.uid),
         where("clientName", "==", estimate.client.name),
       );
 
@@ -1762,7 +1762,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     try {
       setIsLoadingMaterials(true);
       const materialsRef = collection(db, "materials");
-      const q = query(materialsRef, where("userId", "==", currentUser.uid));
+      const q = query(materialsRef, where("userId", "==", currentUser?.uid));
       const querySnapshot = await getDocs(q);
 
       const materialsData: Material[] = [];
@@ -1792,7 +1792,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       try {
         console.log("🔧 AUTO-CORRECTING INFLATED PRICES...");
         await MaterialInventoryService.fixInflatedPricesInDatabase(
-          currentUser.uid,
+          currentUser?.uid,
         );
       } catch (error) {
         console.error("Error during automatic price correction:", error);
@@ -1842,7 +1842,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       try {
         const projectsQuery = query(
           collection(db, "projects"),
-          where("firebaseUserId", "==", currentUser.uid),
+          where("firebaseUserId", "==", currentUser?.uid),
         );
 
         const projectsSnapshot = await getDocs(projectsQuery);
@@ -1922,7 +1922,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       try {
         const estimatesQuery = query(
           collection(db, "estimates"),
-          where("firebaseUserId", "==", currentUser.uid),
+          where("firebaseUserId", "==", currentUser?.uid),
         );
 
         const estimatesSnapshot = await getDocs(estimatesQuery);
@@ -2574,8 +2574,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       const estimateData = {
         // Firebase user association
-        firebaseUserId: currentUser.uid,
-        userId: currentUser.uid,
+        firebaseUserId: currentUser?.uid,
+        userId: currentUser?.uid,
 
         // Basic info with complete identification
         estimateNumber: estimateNumber,
@@ -2776,7 +2776,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       // 7. Fallback: Try to save minimal data locally or show helpful error
       const errorMessage =
-        error instanceof Error ? error.message : "Error desconocido";
+        error instanceof Error ? (error as Error).message : "Error desconocido";
 
       toast({
         title: "Error al guardar",
@@ -2790,7 +2790,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         const fallbackData = {
           estimate,
           timestamp: new Date().toISOString(),
-          userId: currentUser.uid,
+          userId: currentUser?.uid,
         };
         localStorage.setItem(
           `estimate_fallback_${Date.now()}`,
@@ -2831,7 +2831,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       address: client.address,
       city: client.city,
       state: client.state,
-      zipCode: client.zipCode || client.zipcode,
+      zipCode: client.zipCode || (client as any).zipcode,
       email: client.email,
       phone: client.phone,
     });
@@ -2911,7 +2911,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     try {
       const clientData = {
         clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-        userId: currentUser.uid, // Esta es la clave que faltaba
+        userId: currentUser?.uid, // Esta es la clave que faltaba
         name: newClient.name,
         email: newClient.email,
         phone: newClient.phone || "",
@@ -2967,7 +2967,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       // Forzar recarga de clientes para sincronizar
       setTimeout(() => {
         loadClients().catch(error => {
-          console.warn('🛡️ [LOAD-CLIENTS-AFTER-SAVE] Error silenciado:', error.message);
+          console.warn('🛡️ [LOAD-CLIENTS-AFTER-SAVE] Error silenciado:', (error as Error).message);
         });
       }, 1000);
     } catch (error) {
@@ -2976,7 +2976,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         title: "Error al Crear Cliente",
         description:
           error instanceof Error
-            ? error.message
+            ? (error as Error).message
             : "No se pudo crear el cliente. Verifica tu conexión e intenta nuevamente.",
         variant: "destructive",
         duration: 6000,
@@ -3695,7 +3695,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             const estimateRef = doc(collection(db, "estimates"));
             await setDoc(estimateRef, {
               ...estimateData,
-              firebaseUserId: currentUser.uid,
+              firebaseUserId: currentUser?.uid,
               status: "sent",
               sentAt: new Date(),
               createdAt: new Date(),
@@ -4021,7 +4021,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     try {
       // FIXED: More resilient authentication check - allow PDF generation even with temporary auth issues
       if (!currentUser?.uid) {
-        console.warn("⚠️ [PDF-RESILIENT] No currentUser.uid detected, attempting PDF generation anyway");
+        console.warn("⚠️ [PDF-RESILIENT] No currentUser?.uid detected, attempting PDF generation anyway");
         
         // Only block if we have absolutely no user data and no profile
         if (!currentUser && !profile?.email) {
@@ -4060,7 +4060,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         user: currentUser?.uid
           ? [
               {
-                uid: currentUser.uid,
+                uid: currentUser?.uid,
                 email: currentUser.email,
                 displayName: currentUser.displayName,
               },

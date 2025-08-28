@@ -392,7 +392,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("❌ [DATA-INTEGRITY] Check failed:", error);
       res.status(500).json({
         error: "Data integrity check failed",
-        details: error.message
+        details: (error as Error).message
       });
     }
   });
@@ -422,7 +422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("❌ [DATA-INTEGRITY] User mapping test failed:", error);
       res.status(500).json({
         error: "User mapping test failed",
-        details: error.message
+        details: (error as Error).message
       });
     }
   });
@@ -850,7 +850,7 @@ ${extractedText}`,
         res.status(500).json({
           success: false,
           error: "Error processing PDF",
-          details: error.message,
+          details: (error as Error).message,
         });
       }
     },
@@ -1124,7 +1124,7 @@ ${extractedText}`,
       res.status(500).json({
         success: false,
         error: "Failed to process project contract data",
-        details: error.message,
+        details: (error as Error).message,
       });
     }
   });
@@ -1948,7 +1948,7 @@ Output must be between 200-900 characters in English.`;
       res.status(500).json({
         success: false,
         error: "Failed to generate Invoice PDF",
-        details: error.message,
+        details: (error as Error).message,
       });
     }
   });
@@ -2345,7 +2345,7 @@ Output must be between 200-900 characters in English.`;
         res.status(500).json({
           success: false,
           error: "Failed to generate PDF",
-          details: error.message,
+          details: (error as Error).message,
         });
       }
     },
@@ -4664,7 +4664,7 @@ Output must be between 200-900 characters in English.`;
         console.error("Error general al crear sesión de checkout:", error);
         res.status(500).json({
           message: "Error al crear sesión de checkout",
-          details: error.message || "Error desconocido",
+          details: (error as Error).message || "Error desconocido",
         });
       }
     },
@@ -4746,7 +4746,7 @@ Output must be between 200-900 characters in English.`;
         console.error("Error general al crear portal de cliente:", error);
         res.status(500).json({
           message: "Error al crear portal de cliente",
-          details: error.message || "Error desconocido",
+          details: (error as Error).message || "Error desconocido",
         });
       }
     },
@@ -5072,7 +5072,7 @@ Output must be between 200-900 characters in English.`;
         console.error("Error al crear enlace de onboarding:", error);
         res.status(500).json({
           message: "Error al crear enlace de onboarding",
-          details: error.message || "Error desconocido",
+          details: (error as Error).message || "Error desconocido",
         });
       }
     },
@@ -5111,7 +5111,7 @@ Output must be between 200-900 characters in English.`;
         console.error("Error al obtener estado de cuenta Connect:", error);
         res.status(500).json({
           message: "Error al obtener estado de cuenta",
-          details: error.message || "Error desconocido",
+          details: (error as Error).message || "Error desconocido",
         });
       }
     },
@@ -5255,7 +5255,7 @@ Output must be between 200-900 characters in English.`;
         console.error("Error al obtener cuentas bancarias:", error);
         res.status(500).json({
           message: "Error al obtener cuentas bancarias",
-          details: error.message || "Error desconocido",
+          details: (error as Error).message || "Error desconocido",
         });
       }
     },
@@ -5313,7 +5313,7 @@ Output must be between 200-900 characters in English.`;
         console.error("Error al crear enlace al dashboard:", error);
         res.status(500).json({
           message: "Error al crear enlace al dashboard",
-          details: error.message || "Error desconocido",
+          details: (error as Error).message || "Error desconocido",
         });
       }
     },
