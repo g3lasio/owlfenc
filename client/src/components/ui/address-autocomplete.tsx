@@ -38,7 +38,10 @@ export function AddressAutocomplete({
   // Verificar si el token de Mapbox está disponible
   useEffect(() => {
     const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
-    setHasMapboxToken(!!token);
+    const tokenAvailable = !!token && token.length > 10;
+    setHasMapboxToken(tokenAvailable);
+    
+    console.log(`📍 [MAPBOX] Token status: ${tokenAvailable ? 'AVAILABLE' : 'MISSING'} (${token?.substring(0, 20)}...)`);  
   }, []);
 
   // Sincronizar valor interno con prop externa
@@ -69,32 +72,42 @@ export function AddressAutocomplete({
       const xhr = new XMLHttpRequest();
       const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?` +
                   `access_token=${token}&` +
-                  `country=US&` +
-                  `types=address,poi&` +
-                  `limit=5&` +
+                  `country=US,MX,CA&` +
+                  `types=address,place,locality&` +
+                  `limit=6&` +
                   `language=es`;
 
-      // Timeout de 5 segundos
-      xhr.timeout = 5000;
+      // Timeout de 8 segundos para mejor conectividad
+      xhr.timeout = 8000;
       
       xhr.onload = () => {
         try {
           if (xhr.status === 200) {
             const data = JSON.parse(xhr.responseText);
             if (data && data.features && Array.isArray(data.features)) {
-              setSuggestions(data.features);
-              setShowSuggestions(data.features.length > 0);
+              // Filtrar y procesar sugerencias
+              const processedSuggestions = data.features
+                .filter(feature => feature.place_name && feature.place_name.trim())
+                .slice(0, 5); // Máximo 5 sugerencias
+              
+              setSuggestions(processedSuggestions);
+              setShowSuggestions(processedSuggestions.length > 0);
+              
+              console.log(`📍 [MAPBOX] Found ${processedSuggestions.length} address suggestions for: "${query}"`);
             } else {
               setSuggestions([]);
               setShowSuggestions(false);
+              console.log(`📍 [MAPBOX] No results found for: "${query}"`);
             }
           } else {
             setSuggestions([]);
             setShowSuggestions(false);
+            console.warn(`📍 [MAPBOX] API returned status ${xhr.status} for: "${query}"`);
           }
-        } catch {
+        } catch (error) {
           setSuggestions([]);
           setShowSuggestions(false);
+          console.error(`📍 [MAPBOX] Error parsing response for: "${query}"`, error);
         }
         setIsLoading(false);
         resolve();
@@ -104,6 +117,7 @@ export function AddressAutocomplete({
         setSuggestions([]);
         setShowSuggestions(false);
         setIsLoading(false);
+        console.error(`📍 [MAPBOX] Network error for query: "${query}"`);
         resolve();
       };
 
@@ -138,10 +152,10 @@ export function AddressAutocomplete({
       return;
     }
 
-    // Buscar después de 1000ms de inactividad (aumentado aún más)
+    // Buscar después de 300ms de inactividad - OPTIMIZADO
     debounceTimer.current = setTimeout(() => {
       searchAddresses(newValue);
-    }, 1000);
+    }, 300);
   };
 
   // Seleccionar una sugerencia
@@ -236,20 +250,20 @@ export function AddressAutocomplete({
         </div>
       )}
 
-      {/* Lista de sugerencias */}
+      {/* Lista de sugerencias - CYBERPUNK THEME */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 ">
+        <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-cyan-400/30 rounded-md shadow-xl shadow-cyan-400/10 max-h-60 overflow-y-auto backdrop-blur-sm">
           {suggestions.map((suggestion, index) => (
             <button
               key={index}
               type="button"
-              className="w-full px-4 py-3 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none border-b border-gray-100 last:border-b-0"
+              className="w-full px-4 py-3 text-left hover:bg-cyan-400/10 focus:bg-cyan-400/20 focus:outline-none border-b border-gray-700/50 last:border-b-0 transition-all duration-200"
               onClick={() => handleSelectSuggestion(suggestion)}
             >
               <div className="flex items-start">
-                <MapPin className="h-4 w-4 text-gray-400 mt-0.5 mr-3 flex-shrink-0" />
+                <MapPin className="h-4 w-4 text-cyan-400 mt-0.5 mr-3 flex-shrink-0" />
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900">
+                  <div className="text-sm font-medium text-white hover:text-cyan-300">
                     {suggestion.place_name}
                   </div>
                 </div>
