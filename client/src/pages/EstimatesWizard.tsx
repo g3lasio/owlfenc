@@ -2145,6 +2145,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           client: clientData,
           items: estimateItems,
           projectDetails,
+          attachments: [], // FIXED: Always initialize attachments array to prevent undefined errors
           subtotal: 0, // Will be recalculated by useEffect
           tax: 0, // Will be recalculated by useEffect
           total: 0, // Will be recalculated by useEffect
@@ -4304,9 +4305,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                   
                   {/* Attachment Button inside textarea */}
                   <div className="absolute top-3 right-3 flex items-center gap-2">
-                    {estimate.attachments.length > 0 && (
+                    {estimate.attachments && estimate.attachments.length > 0 && (
                       <Badge variant="secondary" className="bg-cyan-400/20 text-cyan-400 border-cyan-400/30 text-xs px-2 py-1">
-                        {estimate.attachments.length}
+                        {estimate.attachments?.length || 0}
                       </Badge>
                     )}
                     <Button
