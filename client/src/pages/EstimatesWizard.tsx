@@ -147,6 +147,14 @@ interface EstimateData {
   client: Client | null;
   items: EstimateItem[];
   projectDetails: string;
+  projectDescription?: string; // Add this property to fix errors
+  projectName?: string; // Add this property to fix errors
+  estimateAmount?: number; // Add this property to fix errors
+  title?: string; // Add this property to fix errors
+  projectType?: string; // Add this property to fix errors
+  estimateNumber?: string; // Add this property to fix errors
+  notes?: string; // Add this property to fix errors
+  scope?: string; // Add this property to fix errors
   attachments: ProjectAttachment[];
   subtotal: number;
   tax: number;

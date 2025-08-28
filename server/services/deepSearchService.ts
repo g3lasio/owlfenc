@@ -1082,6 +1082,165 @@ Focus on PRECISION and RELEVANCE. Exclude irrelevant materials completely.`;
       return true;
     });
   }
+
+  /**
+   * Aplica precisión de contratista experto al resultado
+   */
+  private async applyExpertContractorPrecision(
+    result: DeepSearchResult,
+    projectDescription: string,
+    location?: string
+  ): Promise<DeepSearchResult> {
+    try {
+      console.log('🎯 Applying Expert Contractor precision analysis');
+      
+      // Use expertContractorService to enhance materials with precise calculations
+      const expertResult = expertContractorService.generateExpertEstimate(
+        projectDescription,
+        location || 'CA',
+        this.extractProjectType(projectDescription)
+      );
+      
+      // Merge expert contractor results with existing results
+      const enhancedMaterials = result.materials.map(material => {
+        // Find matching expert material by name similarity
+        const expertMaterial = expertResult.materials.find(expert => 
+          this.areMaterialsSimilar(material.name, expert.name)
+        );
+        
+        if (expertMaterial) {
+          return {
+            ...material,
+            quantity: expertMaterial.quantity,
+            unitPrice: expertMaterial.unitPrice,
+            totalPrice: expertMaterial.totalPrice,
+            specifications: expertMaterial.specifications
+          };
+        }
+        
+        return material;
+      });
+      
+      // Add any new expert materials that weren't in original list
+      const newExpertMaterials = expertResult.materials
+        .filter(expertMat => !result.materials.some(mat => 
+          this.areMaterialsSimilar(mat.name, expertMat.name)
+        ))
+        .map(expertMat => ({
+          id: expertMat.id,
+          name: expertMat.name,
+          description: expertMat.description,
+          category: expertMat.category,
+          quantity: expertMat.quantity,
+          unit: expertMat.unit,
+          unitPrice: expertMat.unitPrice,
+          totalPrice: expertMat.totalPrice,
+          specifications: expertMat.specifications
+        }));
+      
+      const allMaterials = [...enhancedMaterials, ...newExpertMaterials];
+      
+      return {
+        ...result,
+        materials: allMaterials,
+        totalMaterialsCost: allMaterials.reduce((sum, item) => sum + item.totalPrice, 0),
+        recommendations: [
+          ...result.recommendations,
+          '🎯 Expert contractor precision analysis applied',
+          `📈 ${newExpertMaterials.length} materials enhanced with expert calculations`
+        ]
+      };
+      
+    } catch (error) {
+      console.error('❌ Error applying expert contractor precision:', error);
+      return result; // Return original result if expert analysis fails
+    }
+  }
+
+  /**
+   * Filtra solo materiales de construcción, removiendo herramientas y equipos
+   */
+  private filterOnlyConstructionMaterials(materials: MaterialItem[]): MaterialItem[] {
+    const toolsAndEquipmentKeywords = [
+      'drill', 'saw', 'hammer', 'level', 'tape measure', 'shovel', 'ladder',
+      'wheelbarrow', 'mixer', 'compressor', 'nailer', 'grinder', 'cutter',
+      'generator', 'truck', 'equipment rental', 'tool rental', 'safety gear'
+    ];
+    
+    return materials.filter(material => {
+      const name = material.name.toLowerCase();
+      const description = (material.description || '').toLowerCase();
+      
+      // Remove if it's clearly a tool or equipment
+      const isToolOrEquipment = toolsAndEquipmentKeywords.some(keyword => 
+        name.includes(keyword) || description.includes(keyword)
+      );
+      
+      if (isToolOrEquipment) {
+        console.log(`⚙️ Filtered tool/equipment: ${material.name}`);
+        return false;
+      }
+      
+      return true;
+    });
+  }
+
+  /**
+   * Determina si dos materiales son similares para propósitos de matching
+   */
+  private areMaterialsSimilar(name1: string, name2: string): boolean {
+    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const norm1 = normalize(name1);
+    const norm2 = normalize(name2);
+    
+    // Check if one contains the other or if they share significant words
+    return norm1.includes(norm2) || norm2.includes(norm1) ||
+           this.calculateSimilarity(norm1, norm2) > 0.6;
+  }
+
+  /**
+   * Calcula similaridad básica entre strings
+   */
+  private calculateSimilarity(str1: string, str2: string): number {
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    
+    if (longer.length === 0) return 1.0;
+    
+    const editDistance = this.levenshteinDistance(longer, shorter);
+    return (longer.length - editDistance) / longer.length;
+  }
+
+  /**
+   * Calcula la distancia de Levenshtein entre dos strings
+   */
+  private levenshteinDistance(str1: string, str2: string): number {
+    const matrix = [];
+    
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
+    }
+    
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+    
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+    
+    return matrix[str2.length][str1.length];
+  }
 }
 
 export const deepSearchService = new DeepSearchService();

@@ -132,7 +132,7 @@ function calculateFencePrice(
 
   // Apply height multiplier
   const heightMultiplier =
-    config.fenceRules.heightFactors[height.toString()] || 1; // Use config for height factors
+    (config.fenceRules.heightFactors as any)[height.toString()] || 1; // Use config for height factors
 
   return Math.round(basePrice * length * heightMultiplier);
 }
@@ -662,6 +662,9 @@ ${extractedText}`,
           let clientName = "";
           let clientAddress = "";
 
+          // Parse text lines from extracted text
+          const textLines = extractedText.split('\n').filter(line => line.trim());
+          
           for (let i = 0; i < textLines.length; i++) {
             const line = textLines[i].trim();
 
@@ -687,9 +690,9 @@ ${extractedText}`,
 
             // Buscar información del cliente después de "ADDRESS"
             if (line.includes("ADDRESS") && i + 1 < textLines.length) {
-              clientName = textLines[i + 1];
+              clientName = textLines[i + 1] || "";
               if (i + 2 < textLines.length) {
-                clientAddress = textLines[i + 2];
+                clientAddress = textLines[i + 2] || "";
               }
             }
           }

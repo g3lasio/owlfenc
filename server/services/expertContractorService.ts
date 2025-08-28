@@ -210,7 +210,7 @@ export class ExpertContractorService {
     }
 
     // Buscar datos específicos o usar defaults inteligentes
-    const stateData = this.geographicDatabase[state];
+    const stateData = (this.geographicDatabase as any)[state];
     if (stateData && stateData[city]) {
       return {
         state,
@@ -240,7 +240,7 @@ export class ExpertContractorService {
     return {
       state,
       city,
-      ...(stateDefaults[state] || stateDefaults['CA'])
+      ...((stateDefaults as any)[state] || stateDefaults['CA'])
     };
   }
 
@@ -438,7 +438,7 @@ export class ExpertContractorService {
       'nails_galv_8d': '8d Galvanized Ring Shank Nails',
       'concrete_4000psi': 'High Strength Concrete 4000 PSI'
     };
-    return names[materialId] || materialId;
+    return (names as any)[materialId] || materialId;
   }
 
   private getMaterialDescription(materialId: string): string {
@@ -450,7 +450,7 @@ export class ExpertContractorService {
       'nails_galv_8d': 'Hot-dipped galvanized ring shank nails for exterior use',
       'concrete_4000psi': 'Ready-mix concrete for post setting applications'
     };
-    return descriptions[materialId] || '';
+    return (descriptions as any)[materialId] || '';
   }
 
   private getMaterialUnit(materialId: string): string {
@@ -462,7 +462,7 @@ export class ExpertContractorService {
       'nails_galv_8d': 'lbs',
       'concrete_4000psi': 'cubic yards'
     };
-    return units[materialId] || 'pieces';
+    return (units as any)[materialId] || 'pieces';
   }
 
   private getMaterialSupplier(materialId: string): string {
@@ -474,7 +474,7 @@ export class ExpertContractorService {
       'nails_galv_8d': 'Fastener Specialty Store',
       'concrete_4000psi': 'Ready Mix Concrete Company'
     };
-    return suppliers[materialId] || 'Construction Supply';
+    return (suppliers as any)[materialId] || 'Construction Supply';
   }
 }
 
