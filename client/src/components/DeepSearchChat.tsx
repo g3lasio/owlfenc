@@ -303,8 +303,8 @@ Puedes pedirme:
         </Button>
       </DialogTrigger>
       
-      <DialogContent className="max-w-[95vw] sm:max-w-4xl lg:max-w-6xl max-h-[90vh] flex flex-col p-2 sm:p-6">
-        <DialogHeader>
+      <DialogContent className="max-w-[98vw] sm:max-w-5xl lg:max-w-6xl h-[95vh] sm:h-[90vh] flex flex-col p-3 sm:p-6">
+        <DialogHeader className="flex-shrink-0 pb-3">
           <DialogTitle className="flex items-center gap-2 text-slate-800">
             <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
             <span className="text-base sm:text-lg">Chat IA de Refinamiento</span>
@@ -314,11 +314,11 @@ Puedes pedirme:
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col lg:flex-row flex-1 gap-2 sm:gap-4 min-h-[500px] lg:min-h-[600px]">
+        <div className="flex flex-col lg:flex-row flex-1 gap-3 sm:gap-4 min-h-0 overflow-hidden">
           {/* Panel de chat */}
-          <div className="flex-1 flex flex-col order-2 lg:order-1">
+          <div className="flex-1 flex flex-col order-2 lg:order-1 min-h-0">
             {/* Área de mensajes */}
-            <div className="flex-1 overflow-y-auto p-2 sm:p-4 bg-gradient-to-b from-slate-50 to-slate-100 rounded-lg space-y-3 sm:space-y-4 max-h-[300px] sm:max-h-[400px] border border-slate-200">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 bg-gradient-to-b from-slate-50 to-slate-100 rounded-lg space-y-3 border border-slate-200 min-h-0">
               {messages.map(message => (
                 <div
                   key={message.id}
@@ -388,8 +388,8 @@ Puedes pedirme:
             </div>
 
             {/* Área de input */}
-            <div className="mt-2 sm:mt-4 bg-white rounded-lg border border-slate-300 p-2 sm:p-3 shadow-sm">
-              <div className="flex items-end space-x-2">
+            <div className="flex-shrink-0 mt-3 bg-white rounded-lg border border-slate-300 p-3 shadow-sm">
+              <div className="flex items-end gap-2">
                 <div className="flex-1">
                   <textarea
                     ref={inputRef}
@@ -407,13 +407,13 @@ Puedes pedirme:
                 <Button
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || isProcessing}
-                  className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg h-10 w-10 sm:h-12 sm:w-12"
+                  className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg flex-shrink-0"
                   size="sm"
                 >
                   {isProcessing ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Send className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <Send className="w-4 h-4" />
                   )}
                 </Button>
               </div>
@@ -427,8 +427,8 @@ Puedes pedirme:
           </div>
 
           {/* Panel de resumen simplificado */}
-          <div className="w-full lg:w-80 order-1 lg:order-2">
-            <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-300 shadow-lg">
+          <div className="w-full lg:w-72 xl:w-80 order-1 lg:order-2 flex-shrink-0">
+            <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-300 shadow-lg h-full">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-slate-800">
                   <Target className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
@@ -440,7 +440,7 @@ Puedes pedirme:
                   )}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 sm:space-y-4">
+              <CardContent className="space-y-3">
                 {/* Resumen simple */}
                 <div className="text-center py-4">
                   <div className="text-sm text-slate-600 mb-2">
