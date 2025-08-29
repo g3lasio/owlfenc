@@ -362,15 +362,26 @@ export default function SimpleContractGenerator() {
     try {
       console.log("📋 Loading completed contracts for user:", currentUser?.uid || 'profile_user');
 
+      // Get Firebase authentication token
+      const authToken = await currentUser.getIdToken();
+
+      // Prepare headers with Firebase authentication
+      const authHeaders = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+        'x-firebase-uid': currentUser.uid
+      };
+
       // Load from both sources and merge
       const [historyResponse, dualSignatureResponse] = await Promise.allSettled(
         [
           // Source 1: Contract History (contracts completed via Simple Generator)
           contractHistoryService.getContractHistory(currentUser.uid),
           // Source 2: Dual Signature System (contracts signed via signature workflow)
-          fetch(`/api/dual-signature/completed/${currentUser.uid}`).then(
-            (res) => (res.ok ? res.json() : { contracts: [] }),
-          ),
+          fetch(`/api/dual-signature/completed/${currentUser.uid}`, {
+            method: 'GET',
+            headers: authHeaders
+          }).then((res) => (res.ok ? res.json() : { contracts: [] })),
         ],
       );
 
@@ -869,8 +880,21 @@ export default function SimpleContractGenerator() {
       try {
         console.log("👀 Opening signed contract view for:", contractId);
 
+        // Prepare headers with authentication
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json'
+        };
+
+        if (currentUser?.uid) {
+          headers['x-user-id'] = currentUser.uid;
+        }
+
         const htmlResponse = await fetch(
           `/api/dual-signature/download-html/${contractId}`,
+          {
+            method: 'GET',
+            headers
+          }
         );
 
         if (!htmlResponse.ok) {
@@ -1193,12 +1217,38 @@ export default function SimpleContractGenerator() {
           return;
         }
 
-        // Create download link for HTML
-        const downloadUrl = `/api/dual-signature/download-html/${contractId}`;
+        // Prepare headers with authentication
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json'
+        };
 
-        // Create temporary link and trigger download
+        if (currentUser?.uid) {
+          headers['x-user-id'] = currentUser.uid;
+        }
+
+        // Fetch the HTML content with authentication
+        const response = await fetch(
+          `/api/dual-signature/download-html/${contractId}`,
+          {
+            method: 'GET',
+            headers
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to download contract");
+        }
+
+        // Get the HTML content
+        const htmlContent = await response.text();
+
+        // Create blob and download
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = window.URL.createObjectURL(blob);
+        
         const link = document.createElement("a");
-        link.href = downloadUrl;
+        link.href = url;
         link.setAttribute(
           "download",
           `contract_${clientName.replace(/\s+/g, "_")}_${contractId}.html`,
@@ -1206,6 +1256,9 @@ export default function SimpleContractGenerator() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        
+        // Clean up
+        window.URL.revokeObjectURL(url);
 
         toast({
           title: "Download Started",

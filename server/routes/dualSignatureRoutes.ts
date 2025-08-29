@@ -265,56 +265,6 @@ router.get("/status/:contractId", async (req, res) => {
   }
 });
 
-/**
- * GET /api/dual-signature/download/:contractId
- * Descargar PDF firmado completado
- */
-router.get("/download/:contractId", async (req, res) => {
-  try {
-    const { contractId } = req.params;
-
-    console.log("📥 [API] PDF download requested:", contractId);
-
-    const result = await dualSignatureService.getSignedPdf(contractId);
-
-    if (result.success && result.pdfBuffer && result.filename) {
-      console.log("✅ [API] Serving signed PDF for download");
-
-      // Validate PDF buffer
-      if (!Buffer.isBuffer(result.pdfBuffer) || result.pdfBuffer.length === 0) {
-        return res.status(500).json({
-          success: false,
-          message: "Invalid PDF buffer",
-        });
-      }
-
-      // Set headers for PDF preview (inline instead of attachment)
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader(
-        "Content-Disposition",
-        `inline; filename="${result.filename}"`,
-      );
-      res.setHeader("Content-Length", result.pdfBuffer.length.toString());
-      res.setHeader("Cache-Control", "no-cache");
-
-      // Send PDF buffer
-      res.send(result.pdfBuffer);
-    } else {
-      console.error("❌ [API] PDF not available:", result.message);
-      res.status(404).json({
-        success: false,
-        message: result.message,
-      });
-    }
-  } catch (error: any) {
-    console.error("❌ [API] Error in /download/:contractId:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
-  }
-});
 
 /**
  * GET /api/dual-signature/in-progress/:userId
