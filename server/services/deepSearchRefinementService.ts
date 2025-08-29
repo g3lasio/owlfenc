@@ -183,29 +183,24 @@ export class DeepSearchRefinementService {
     const adjustmentPercent = ((adjustmentFactor - 1) * 100).toFixed(1);
     const directionText = adjustmentFactor > 1 ? 'incrementado' : 'reducido';
 
-    const responseMessage = `✅ **Total ajustado exitosamente a $${targetTotal.toLocaleString()}**
+    const responseMessage = `✅ **¡Perfecto! He ajustado tu estimado a $${targetTotal.toLocaleString()}**
 
-📊 **Resumen del ajuste:**
-• **Total anterior:** $${currentTotal.toLocaleString()}
-• **Total nuevo:** $${updatedResult.grandTotal.toLocaleString()}
-• **Diferencia:** ${difference >= 0 ? '+' : ''}$${difference.toLocaleString()}
-• **Ajuste aplicado:** ${directionText} ${Math.abs(parseFloat(adjustmentPercent))}%
+He ${directionText} todos los precios ${Math.abs(parseFloat(adjustmentPercent))}% para alcanzar tu objetivo:
 
-🔧 **Cambios realizados:**
-• **Materiales:** $${updatedResult.totalMaterialsCost.toLocaleString()}
-• **Labor:** $${updatedResult.totalLaborCost.toLocaleString()}
+**💰 Nuevo total:** $${updatedResult.grandTotal.toLocaleString()}
+**📦 Materiales:** $${updatedResult.totalMaterialsCost.toLocaleString()}
+**⚒️ Labor:** $${updatedResult.totalLaborCost.toLocaleString()}
 
-Los precios han sido ajustados proporcionalmente para alcanzar el total deseado. ¿Te parece bien este ajuste?`;
+Los ajustes están listos para aplicar. ¿Te parece bien?`;
 
     return {
       success: true,
       response: responseMessage,
       updatedResult: updatedResult,
       suggestedActions: [
-        'Ajustar solo materiales',
-        'Ajustar solo labor',
-        'Revisar desglose detallado',
-        'Aplicar cambios'
+        'Ajustar detalles',
+        'Ver desglose',
+        'Cambiar más cosas'
       ]
     };
   }
@@ -383,29 +378,25 @@ Responde en español, siendo específico sobre el material a agregar y su justif
    * Maneja solicitudes generales con IA
    */
   private async handleGeneralRequest(request: RefinementRequest): Promise<RefinementResponse> {
-    const prompt = `Eres un asistente experto en estimados de construcción que ayuda a contratistas a refinar sus estimados.
+    const prompt = `Eres Mervin AI, un asistente inteligente especializado en estimados de construcción. Tu personalidad es amigable, eficiente y directa. Ayudas a contratistas a refinar sus estimados de manera práctica.
 
-CONTEXTO DEL PROYECTO:
-- Descripción: ${request.projectDescription}
-- Ubicación: ${request.location || 'No especificada'}
-- Total actual: $${request.currentResult.grandTotal.toFixed(2)}
-- Materiales: ${request.currentResult.materials.length} items
-- Labor: ${request.currentResult.laborCosts.length} categorías
+PROYECTO ACTUAL:
+- ${request.projectDescription}
+- Ubicación: ${request.location || 'General'}  
+- Total: $${request.currentResult.grandTotal.toFixed(2)}
+- ${request.currentResult.materials.length} materiales, ${request.currentResult.laborCosts.length} categorías de labor
 
-SOLICITUD DEL USUARIO: "${request.userRequest}"
+EL USUARIO PREGUNTA: "${request.userRequest}"
 
-CONVERSACIÓN PREVIA:
-${request.conversationHistory?.slice(-3).join('\n') || 'Primera interacción'}
+COMO MERVIN AI:
+- Sé directo y claro
+- Da consejos prácticos 
+- Usa un tono amigable pero profesional
+- Responde en español
+- Ofrece soluciones específicas
+- Mantén respuestas concisas
 
-INSTRUCCIONES:
-1. Analiza la solicitud específica del usuario
-2. Proporciona consejos prácticos y actionables
-3. Si es posible, sugiere ajustes específicos
-4. Mantén un tono profesional pero amigable
-5. Responde en español
-6. Se específico y práctico
-
-Responde de manera conversacional y útil, enfocándote en ayudar al contratista.`;
+Ayuda al contratista de manera práctica y eficiente.`;
 
     const response = await this.anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -419,10 +410,9 @@ Responde de manera conversacional y útil, enfocándote en ayudar al contratista
       success: true,
       response: aiResponse,
       suggestedActions: [
-        'Revisar precios',
-        'Agregar detalles',
-        'Verificar cantidades',
-        'Optimizar costos'
+        'Ajustar precios',
+        'Revisar cantidades',
+        'Ver alternativas'
       ]
     };
   }

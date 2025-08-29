@@ -97,26 +97,17 @@ export function DeepSearchChat({
     if (isOpen && messages.length === 0) {
       const welcomeMessage: ChatMessage = {
         id: 'welcome',
-        content: `¡Hola! Soy tu asistente de DeepSearch. He analizado tu proyecto y generé **${currentResult.materials.length} materiales** por un total de **$${currentResult.grandTotal.toFixed(2)}**.
+        content: `¡Hola! Soy **Mervin AI** 🤖, tu asistente inteligente de estimados.
 
-🎯 **¿Cómo puedo ayudarte a mejorar este estimado?**
+He analizado tu proyecto y generé **${currentResult.materials.length} materiales** por **$${currentResult.grandTotal.toFixed(2)}**.
 
-Puedes pedirme:
-• "Necesito más precisión en los costos de labor"
-• "Los precios parecen altos para mi zona"
-• "Falta incluir [material específico]"
-• "Quiero ver alternativas más económicas"
-• "Cambia la cantidad de [material] a [nueva cantidad]"
-
-¿Qué te gustaría ajustar?`,
+¿Cómo puedo ayudarte a mejorar este estimado?`,
         sender: 'assistant',
         timestamp: new Date(),
         suggestedActions: [
-          'Revisar precios de labor',
-          'Agregar material faltante',
-          'Buscar alternativas económicas',
-          'Ajustar cantidades',
-          'Verificar para mi ubicación'
+          'Ajustar precios',
+          'Cambiar cantidades',
+          'Revisar total'
         ]
       };
       setMessages([welcomeMessage]);
@@ -303,30 +294,30 @@ Puedes pedirme:
         </Button>
       </DialogTrigger>
       
-      <DialogContent className="max-w-[98vw] sm:max-w-5xl lg:max-w-6xl h-[95vh] sm:h-[90vh] flex flex-col p-3 sm:p-6">
-        <DialogHeader className="flex-shrink-0 pb-3">
+      <DialogContent className="max-w-[95vw] sm:max-w-4xl lg:max-w-5xl h-[90vh] sm:h-[85vh] flex flex-col p-4">
+        <DialogHeader className="flex-shrink-0 pb-2">
           <DialogTitle className="flex items-center gap-2 text-slate-800">
-            <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-            <span className="text-base sm:text-lg">Chat IA de Refinamiento</span>
+            <MessageCircle className="h-5 w-5 text-purple-600" />
+            <span className="text-lg font-semibold">Mervin AI</span>
           </DialogTitle>
           <DialogDescription className="text-slate-600 text-sm">
-            Refina tu estimado conversando con la IA
+            Tu asistente inteligente de estimados
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Área de mensajes */}
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 bg-gradient-to-b from-slate-50 to-slate-100 rounded-lg space-y-3 border border-slate-200 min-h-0">
+          <div className="flex-1 overflow-y-auto p-3 bg-gradient-to-b from-purple-50 to-white rounded-lg space-y-2 border border-purple-200 min-h-0">
               {messages.map(message => (
                 <div
                   key={message.id}
                   className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[85%] sm:max-w-[80%] rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base ${
+                    className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
                       message.sender === 'user'
-                        ? 'bg-purple-600 text-white shadow-lg'
-                        : 'bg-white text-slate-800 shadow-md border border-slate-300'
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'bg-white text-slate-800 shadow-sm border border-purple-200'
                     }`}
                   >
                     <div className="whitespace-pre-wrap">
@@ -337,26 +328,26 @@ Puedes pedirme:
                       ))}
                     </div>
                     
-                    {/* Botón aplicar cambios - SOLO para mensajes de IA que proponen cambios */}
-                    {message.sender === 'assistant' && hasChanges && (
-                      <div className="mt-3">
+                    {/* Botón aplicar cambios - Aparece en el último mensaje de assistant cuando hay cambios */}
+                    {message.sender === 'assistant' && hasChanges && message.id === messages.filter(m => m.sender === 'assistant').pop()?.id && (
+                      <div className="mt-2">
                         <button
                           onClick={handleApplyChanges}
-                          className="text-xs px-3 py-1 bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors border border-green-300"
+                          className="text-xs px-3 py-1 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full hover:from-green-600 hover:to-green-700 transition-all shadow-sm font-medium"
                         >
-                          ✅ Aplicar cambios y cerrar
+                          ✅ Aplicar cambios
                         </button>
                       </div>
                     )}
                     
-                    {/* Acciones sugeridas */}
-                    {message.suggestedActions && message.suggestedActions.length > 0 && (
-                      <div className="mt-2 sm:mt-3 flex flex-wrap gap-1">
-                        {message.suggestedActions.map((action, index) => (
+                    {/* Acciones sugeridas - solo en el mensaje de bienvenida */}
+                    {message.suggestedActions && message.suggestedActions.length > 0 && message.id === 'welcome' && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {message.suggestedActions.slice(0, 3).map((action, index) => (
                           <button
                             key={index}
                             onClick={() => handleSuggestedAction(action)}
-                            className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors border border-purple-200"
+                            className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors"
                           >
                             {action}
                           </button>
@@ -364,19 +355,22 @@ Puedes pedirme:
                       </div>
                     )}
                     
-                    <div className={`text-xs mt-1 sm:mt-2 opacity-70 ${message.sender === 'user' ? 'text-purple-100' : 'text-slate-500'}`}>
-                      {message.timestamp.toLocaleTimeString()}
-                    </div>
+                    {/* Timestamp solo si no es el mensaje de bienvenida */}
+                    {message.id !== 'welcome' && (
+                      <div className={`text-xs mt-1 opacity-60 ${message.sender === 'user' ? 'text-purple-100' : 'text-slate-500'}`}>
+                        {message.timestamp.toLocaleTimeString()}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
               
               {isProcessing && (
                 <div className="flex justify-start">
-                  <div className="bg-blue-50 text-blue-800 shadow-md border border-blue-200 rounded-lg px-3 sm:px-4 py-2 sm:py-3">
+                  <div className="bg-purple-50 text-purple-800 shadow-sm border border-purple-200 rounded-lg px-3 py-2">
                     <div className="flex items-center space-x-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                      <span className="text-sm sm:text-base">Analizando y procesando...</span>
+                      <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
+                      <span className="text-sm">Mervin está analizando...</span>
                     </div>
                   </div>
                 </div>
@@ -386,7 +380,7 @@ Puedes pedirme:
             </div>
 
             {/* Área de input */}
-            <div className="flex-shrink-0 mt-3 bg-white rounded-lg border border-slate-300 p-3 shadow-sm">
+            <div className="flex-shrink-0 mt-2 bg-white rounded-lg border border-purple-200 p-3 shadow-sm">
               <div className="flex items-end gap-2">
                 <div className="flex-1">
                   <textarea
@@ -394,8 +388,8 @@ Puedes pedirme:
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Ej: 'Los precios parecen altos para mi zona' o 'Cambia cantidad de postes a 15'"
-                    className="w-full resize-none border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-800 bg-white placeholder-slate-500 text-sm sm:text-base"
+                    placeholder="Pregúntale a Mervin sobre tu estimado..."
+                    className="w-full resize-none border border-purple-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-800 bg-white placeholder-slate-400 text-sm"
                     rows={2}
                     maxLength={500}
                     disabled={isProcessing}
@@ -405,7 +399,7 @@ Puedes pedirme:
                 <Button
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || isProcessing}
-                  className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg flex-shrink-0"
+                  className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm flex-shrink-0"
                   size="sm"
                 >
                   {isProcessing ? (
@@ -416,10 +410,8 @@ Puedes pedirme:
                 </Button>
               </div>
               
-              <div className="flex justify-between items-center mt-2 text-xs text-slate-600">
-                <span className="hidden sm:inline">Enter para enviar • Shift+Enter para nueva línea</span>
-                <span className="sm:hidden">Enter: enviar</span>
-                <span className="text-slate-500">{inputValue.length}/500</span>
+              <div className="flex justify-end mt-1">
+                <span className="text-xs text-slate-500">{inputValue.length}/500</span>
               </div>
             </div>
           </div>
