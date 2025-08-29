@@ -107,6 +107,7 @@ export class DualSignatureService {
 
       // Prepare contract data for database
       const contractRecord: InsertDigitalContract = {
+        id: contractId, // CRITICAL FIX: Set the primary key ID
         userId: request.userId,
         contractId,
         contractorName: request.contractData.contractorName,
@@ -118,7 +119,7 @@ export class DualSignatureService {
         clientPhone: request.contractData.clientPhone || null,
         clientAddress: request.contractData.clientAddress || null,
         projectDescription: request.contractData.projectDescription,
-        totalAmount: request.contractData.totalAmount,
+        totalAmount: request.contractData.totalAmount.toString(),
         startDate: request.contractData.startDate
           ? new Date(request.contractData.startDate)
           : null,

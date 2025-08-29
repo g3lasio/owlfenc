@@ -564,7 +564,6 @@ router.get("/download-html/:contractId", async (req, res) => {
 
     let htmlContent =
       contract.contractHtml ||
-      contract.contractHTML ||
       "<p>Contract content not available</p>";
 
     if (!htmlContent || htmlContent.trim() === "") {

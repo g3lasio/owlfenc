@@ -489,7 +489,6 @@ export const passwordResetTokens = pgTable('password_reset_tokens', {
 });
 
 export const insertDigitalContractSchema = createInsertSchema(digitalContracts).omit({
-  id: true,
   createdAt: true,
   updatedAt: true,
 });
