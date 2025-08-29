@@ -186,6 +186,350 @@ console.log('🔐 [PASSWORD-RESET] Sistema de restablecimiento registrado en /ap
 // 🧠 Registrar sistema de memoria y aprendizaje
 app.use('/api/memory', memoryRoutes);
 console.log('🧠 [MEMORY-SYSTEM] Sistema de memoria y aprendizaje registrado en /api/memory');
+
+// 🖊️ Firma digital manejada por React frontend - rutas /sign/* van al cliente React
+// ELIMINADO: Interceptación del servidor - ahora React maneja las rutas de firma directamente 
+              border: 2px solid #475569; 
+              border-radius: 6px; 
+              background: #1e293b; 
+              color: white; 
+              font-size: 16px;
+            }
+            .form-group input:focus, .form-group textarea:focus { 
+              outline: none; 
+              border-color: ${partyColor}; 
+            }
+            .signature-type { 
+              display: flex; 
+              gap: 10px; 
+              margin: 15px 0; 
+            }
+            .signature-type button { 
+              padding: 10px 20px; 
+              border: 2px solid #475569; 
+              background: #1e293b; 
+              color: white; 
+              border-radius: 6px; 
+              cursor: pointer; 
+              transition: all 0.3s;
+            }
+            .signature-type button.active { 
+              background: ${partyColor}; 
+              border-color: ${partyColor}; 
+            }
+            .signature-canvas { 
+              border: 2px dashed #475569; 
+              border-radius: 6px; 
+              background: white; 
+              cursor: crosshair; 
+              display: block; 
+              margin: 10px 0; 
+            }
+            .signature-cursive { 
+              background: white; 
+              color: #1e293b; 
+              border: 2px dashed #475569; 
+              border-radius: 6px; 
+              padding: 20px; 
+              text-align: center; 
+              font-family: 'Brush Script MT', cursive; 
+              font-size: 24px; 
+              min-height: 80px; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center;
+            }
+            .button { 
+              background: ${partyColor}; 
+              color: white; 
+              border: none; 
+              padding: 12px 24px; 
+              border-radius: 6px; 
+              cursor: pointer; 
+              font-size: 16px; 
+              font-weight: bold; 
+              transition: all 0.3s;
+              margin: 5px;
+            }
+            .button:hover { 
+              opacity: 0.9; 
+              transform: translateY(-1px); 
+            }
+            .button:disabled { 
+              opacity: 0.5; 
+              cursor: not-allowed; 
+            }
+            .button.secondary { 
+              background: #475569; 
+            }
+            .status { 
+              text-align: center; 
+              padding: 20px; 
+              border-radius: 8px; 
+              margin: 20px 0; 
+            }
+            .status.success { 
+              background: #065f46; 
+              color: #d1fae5; 
+            }
+            .hidden { display: none; }
+            @media (max-width: 600px) {
+              .container { margin: 10px; }
+              .content { padding: 20px; }
+              .contract-info { grid-template-columns: 1fr; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Contract Signature</h1>
+              <div class="party">${partyName} Review & Signature</div>
+              <div style="font-size: 14px; opacity: 0.8; margin-top: 5px;">Contract ID: ${contractId}</div>
+            </div>
+
+            <div class="content">
+              <!-- Professional Contract Content -->
+              <div class="section">
+                <div class="professional-contract-display">
+                  ${professionalContractHTML}
+                </div>
+              </div>
+
+              <!-- Signature Section -->
+              <div class="signature-section">
+                <h2 style="color: white; border-bottom: 2px solid white; margin-bottom: 20px;">Electronic Signature</h2>
+                
+                <!-- Confirmation Checkbox -->
+                <div class="checkbox-container">
+                  <input type="checkbox" id="confirmRead" />
+                  <label for="confirmRead" style="color: white; font-weight: normal;">
+                    I have carefully read and reviewed the entire contract above. I understand all terms and conditions 
+                    and agree to be legally bound by this agreement.
+                  </label>
+                </div>
+
+                <!-- Name Input -->
+                <div class="form-group">
+                  <input type="text" id="fullName" value="${party === 'contractor' ? contract.contractorName : contract.clientName}" />
+                </div>
+
+                <!-- Signature Type -->
+                <div class="form-group">
+                  <div class="signature-type">
+                    <button type="button" id="cursiveBtn" class="active">Type Name</button>
+                    <button type="button" id="drawBtn">Draw Signature</button>
+                  </div>
+                </div>
+
+                <!-- Cursive Signature -->
+                <div id="cursiveSignature" class="signature-cursive">
+                  Your name will appear here
+                </div>
+
+                <!-- Canvas Signature -->
+                <canvas id="signatureCanvas" class="signature-canvas hidden" width="400" height="150"></canvas>
+
+                <!-- Action Buttons -->
+                <div style="text-align: center; margin-top: 25px;">
+                  <button type="button" id="clearBtn" class="button secondary">Clear Signature</button>
+                  <button type="button" id="submitBtn" class="button">Submit Signature</button>
+                </div>
+
+                <!-- Status Message -->
+                <div id="statusMessage" class="hidden"></div>
+              </div>
+            </div>
+          </div>
+
+          <script>
+            let signatureType = 'cursive';
+            let isDrawing = false;
+            let canvas = document.getElementById('signatureCanvas');
+            let ctx = canvas ? canvas.getContext('2d') : null;
+
+            // Initialize canvas
+            if (ctx) {
+              ctx.strokeStyle = '#1e40af';
+              ctx.lineWidth = 2;
+              ctx.lineCap = 'round';
+              ctx.lineJoin = 'round';
+            }
+
+            // Elements
+            const confirmCheckbox = document.getElementById('confirmRead');
+            const fullNameInput = document.getElementById('fullName');
+            const cursiveBtn = document.getElementById('cursiveBtn');
+            const drawBtn = document.getElementById('drawBtn');
+            const cursiveDiv = document.getElementById('cursiveSignature');
+            const submitBtn = document.getElementById('submitBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const statusDiv = document.getElementById('statusMessage');
+
+            // Update cursive signature display
+            function updateCursiveSignature() {
+              const name = fullNameInput.value || 'Your name will appear here';
+              cursiveDiv.textContent = name;
+            }
+
+            // Signature type switching
+            cursiveBtn.addEventListener('click', () => {
+              signatureType = 'cursive';
+              cursiveBtn.classList.add('active');
+              drawBtn.classList.remove('active');
+              cursiveDiv.classList.remove('hidden');
+              canvas.classList.add('hidden');
+              updateCursiveSignature();
+            });
+
+            drawBtn.addEventListener('click', () => {
+              signatureType = 'drawing';
+              drawBtn.classList.add('active');
+              cursiveBtn.classList.remove('active');
+              cursiveDiv.classList.add('hidden');
+              canvas.classList.remove('hidden');
+            });
+
+            // Name input handler
+            fullNameInput.addEventListener('input', updateCursiveSignature);
+
+            // Canvas drawing
+            function getMousePos(e) {
+              const rect = canvas.getBoundingClientRect();
+              const scaleX = canvas.width / rect.width;
+              const scaleY = canvas.height / rect.height;
+              return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+              };
+            }
+
+            function getTouchPos(e) {
+              const rect = canvas.getBoundingClientRect();
+              const scaleX = canvas.width / rect.width;
+              const scaleY = canvas.height / rect.height;
+              return {
+                x: (e.touches[0].clientX - rect.left) * scaleX,
+                y: (e.touches[0].clientY - rect.top) * scaleY
+              };
+            }
+
+            // Mouse events
+            canvas.addEventListener('mousedown', (e) => {
+              isDrawing = true;
+              const pos = getMousePos(e);
+              ctx.beginPath();
+              ctx.moveTo(pos.x, pos.y);
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+              if (!isDrawing) return;
+              const pos = getMousePos(e);
+              ctx.lineTo(pos.x, pos.y);
+              ctx.stroke();
+            });
+
+            canvas.addEventListener('mouseup', () => {
+              isDrawing = false;
+            });
+
+            // Touch events
+            canvas.addEventListener('touchstart', (e) => {
+              e.preventDefault();
+              isDrawing = true;
+              const pos = getTouchPos(e);
+              ctx.beginPath();
+              ctx.moveTo(pos.x, pos.y);
+            });
+
+            canvas.addEventListener('touchmove', (e) => {
+              e.preventDefault();
+              if (!isDrawing) return;
+              const pos = getTouchPos(e);
+              ctx.lineTo(pos.x, pos.y);
+              ctx.stroke();
+            });
+
+            canvas.addEventListener('touchend', (e) => {
+              e.preventDefault();
+              isDrawing = false;
+            });
+
+            // Clear signature
+            clearBtn.addEventListener('click', () => {
+              if (signatureType === 'drawing') {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+              } else {
+                fullNameInput.value = '${party === 'contractor' ? contract.contractorName : contract.clientName}';
+                updateCursiveSignature();
+              }
+            });
+
+            // Submit signature
+            submitBtn.addEventListener('click', async () => {
+              if (!confirmCheckbox.checked) {
+                alert('Please confirm that you have read the contract before signing.');
+                return;
+              }
+
+              const name = fullNameInput.value.trim();
+              if (!name) {
+                alert('Please enter your full name.');
+                return;
+              }
+
+              let signatureData = '';
+              if (signatureType === 'drawing') {
+                signatureData = canvas.toDataURL();
+                if (!signatureData || signatureData === 'data:,') {
+                  alert('Please draw your signature.');
+                  return;
+                }
+              } else {
+                signatureData = name;
+              }
+
+              submitBtn.disabled = true;
+              submitBtn.textContent = 'Submitting...';
+
+              try {
+                const response = await fetch('/api/dual-signature/sign', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    contractId: '${contractId}',
+                    party: '${party}',
+                    signatureData,
+                    signatureType,
+                    fullName: name
+                  })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                  statusDiv.className = 'status success';
+                  statusDiv.innerHTML = \`
+                    <h3>✅ Signature Submitted Successfully</h3>
+                    <p>\${result.message}</p>
+                    \${result.bothSigned ? '<p><strong>Both parties have signed! Final PDF will be sent shortly.</strong></p>' : '<p>Waiting for the other party to sign.</p>'}
+                  \`;
+                  statusDiv.classList.remove('hidden');
+                  
+                  // Hide form elements
+                  document.querySelector('.signature-section').style.display = 'none';
+                } else {
+                  alert('Error: ' + result.message);
+                }
+              } catch (error) {
+                alert('Network error. Please try again.');
+                console.error('Signature submission error:', error);
+              } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Signature';
+              }
+            });
+
 // Add logging middleware only for API routes
 app.use('/api', (req, res, next) => {
   const start = Date.now();
