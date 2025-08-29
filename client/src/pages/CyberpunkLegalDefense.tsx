@@ -12,7 +12,6 @@ import {
   professionalContractGenerator,
   ContractData,
 } from "@/services/professionalContractGenerator";
-import { useProfile } from "@/hooks/use-profile";
 import { contractHistoryService } from "@/services/contractHistoryService";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/contexts/PermissionContext";
@@ -213,44 +212,28 @@ export default function CyberpunkLegalDefense() {
     new Set(),
   );
   
-  // Permission access controls
-  const checkLegalDefenseAccess = () => {
-    if (isPrimoChambeador) {
+  // Simplified unified permission checker
+  const checkAccess = useCallback((feature: 'basic' | 'advanced' | 'contracts') => {
+    if (isPrimoChambeador && (feature === 'basic' || feature === 'contracts')) {
       return {
         allowed: false,
-        reason: "Upgrade to Mero Patrón to unlock Legal Defense system",
-        upgradeText: "Legal Defense requires Mero Patrón plan or higher"
+        reason: "Upgrade to Mero Patrón to unlock Legal Defense system"
+      };
+    }
+    if ((isPrimoChambeador || isMeroPatron) && feature === 'advanced') {
+      return {
+        allowed: false,
+        reason: "Upgrade to Master Contractor for unlimited advanced legal features"
+      };
+    }
+    if (feature === 'contracts' && isMeroPatron && !canUse('contracts')) {
+      return {
+        allowed: false,
+        reason: `Contract limit reached (${userUsage?.contracts || 0}/${currentPlan?.limits?.contracts}). Upgrade to Master Contractor.`
       };
     }
     return { allowed: true };
-  };
-  
-  const checkAdvancedFeaturesAccess = () => {
-    if (isPrimoChambeador || isMeroPatron) {
-      return {
-        allowed: false,
-        reason: "Upgrade to Master Contractor for unlimited advanced legal features",
-        upgradeText: "Advanced legal protections require Master Contractor plan"
-      };
-    }
-    return { allowed: true };
-  };
-  
-  const checkContractGenerationAccess = () => {
-    if (isPrimoChambeador) {
-      return {
-        allowed: false,
-        reason: "Contract generation requires Mero Patrón plan or higher"
-      };
-    }
-    if (isMeroPatron && !canUse('contracts')) {
-      return {
-        allowed: false,
-        reason: `You've reached your contract limit (${userUsage?.contracts || 0}/${currentPlan?.limits?.contracts}). Upgrade to Master Contractor for unlimited contracts.`
-      };
-    }
-    return { allowed: true };
-  };
+  }, [isPrimoChambeador, isMeroPatron, canUse, userUsage, currentPlan]);
 
   // Estados para términos de pago
   const [paymentTerms, setPaymentTerms] = useState<PaymentTerm[]>([
@@ -294,31 +277,11 @@ export default function CyberpunkLegalDefense() {
   const [completionDate, setCompletionDate] = useState<string>("");
   const [estimatedDuration, setEstimatedDuration] = useState<string>("");
 
-  // Profile data for contractor information
-  const { profile } = useProfile();
+  // Simplified authentication - using only useAuth for consistency
   const { user } = useAuth();
+  const currentUser = user;
 
-  // Auto-populate contractor data only once when reaching step 3 for the first time
-  const [hasAutoPopulated, setHasAutoPopulated] = useState(false);
-
-  useEffect(() => {
-    if (profile && currentStep === 3 && extractedData && !hasAutoPopulated) {
-      console.log("Auto-populating contractor data from profile:", profile);
-      setExtractedData((prev) => ({
-        ...prev,
-        contractorName:
-          prev.contractorName || profile.ownerName || profile.company || "",
-        contractorCompany: prev.contractorCompany || profile.company || "",
-        contractorAddress:
-          prev.contractorAddress ||
-          `${profile.address || ""} ${profile.city || ""} ${profile.state || ""} ${profile.zipCode || ""}`.trim(),
-        contractorPhone:
-          prev.contractorPhone || profile.phone || profile.mobilePhone || "",
-        contractorLicense: prev.contractorLicense || profile.license || "",
-      }));
-      setHasAutoPopulated(true);
-    }
-  }, [profile, currentStep, extractedData, hasAutoPopulated]);
+  // Simplified contractor data handling - removed complex auto-population
 
   // Estados del toggle de método de entrada
   const [dataInputMethod, setDataInputMethod] = useState<"upload" | "select">(
@@ -332,23 +295,13 @@ export default function CyberpunkLegalDefense() {
   
   // Override setCurrentStep to respect lockStepThree
   const safeSetCurrentStep = useCallback((step: number) => {
-    console.log(`🔒 SafeSetCurrentStep called: ${step}, lockStepThree: ${lockStepThree}`);
     if (lockStepThree && step === 2) {
-      console.log("🔒 BLOCKED: Attempted to regress from step 3 to step 2");
       return; // Block regression to step 2
     }
     setCurrentStep(step);
   }, [lockStepThree, setCurrentStep]);
   
-  // Monitor contractPreviewHtml changes
-  useEffect(() => {
-    console.log("[PREVIEW STATE] contractPreviewHtml changed:", {
-      hasContent: !!contractPreviewHtml,
-      length: contractPreviewHtml?.length,
-      currentStep,
-      showPreview
-    });
-  }, [contractPreviewHtml, currentStep, showPreview]);
+  // Monitor contractPreviewHtml changes for state management
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [loadingProjects, setLoadingProjects] = useState(false);
 
@@ -365,11 +318,12 @@ export default function CyberpunkLegalDefense() {
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Función para cargar automáticamente datos del contratista desde Company Profile
-  const loadContractorDataFromProfile = useCallback(() => {
-    if (!profile) return;
+  // Simplified contractor data loading - removed profile dependency
+  const loadContractorDataFromAuth = useCallback(() => {
+    if (!currentUser) return;
 
     // Check permission access
-    const accessCheck = checkLegalDefenseAccess();
+    const accessCheck = checkAccess('basic');
     if (!accessCheck.allowed) {
       toast({
         title: "⚠️ Access Restricted",
@@ -379,33 +333,20 @@ export default function CyberpunkLegalDefense() {
       return;
     }
 
-    console.log("📋 Loading contractor data from Company Profile:", profile);
-
-    // Auto-poblar datos del contratista con información del perfil
+    // Use basic user data for contractor information
     setExtractedData((prev) => ({
       ...prev,
-      contractorCompany: profile.company || prev?.contractorCompany || "",
-      contractorName:
-        profile.ownerName || profile.company || prev?.contractorName || "",
-      contractorAddress:
-        profile.address && profile.city && profile.state
-          ? `${profile.address}, ${profile.city}, ${profile.state} ${profile.zipCode || ""}`.trim()
-          : prev?.contractorAddress || "",
-      contractorPhone:
-        profile.phone || profile.mobilePhone || prev?.contractorPhone || "",
-      contractorEmail: profile.email || prev?.contractorEmail || "",
-      contractorLicense: profile.license || prev?.contractorLicense || "",
+      contractorEmail: currentUser.email || prev?.contractorEmail || "",
+      contractorName: currentUser.displayName || prev?.contractorName || "",
     }));
-
-    console.log("✅ Contractor data loaded from profile");
-  }, [profile, toast]);
+  }, [currentUser, toast, checkAccess]);
 
   // Sistema de autoguardado en tiempo real
   const performAutoSave = useCallback(async () => {
     if (!autoSaveEnabled || !user?.uid || !extractedData) return;
 
     try {
-      console.log("💾 Autoguardando cambios del contrato...");
+      // Autoguardando cambios del contrato
 
       const clientName =
         extractedData.clientInfo?.name || extractedData.clientName || "Cliente";
@@ -440,12 +381,12 @@ export default function CyberpunkLegalDefense() {
               "",
           },
           contractor: {
-            name: extractedData.contractorName || profile?.ownerName || "",
+            name: extractedData.contractorName || currentUser?.displayName || "",
             address: extractedData.contractorAddress || "",
-            email: extractedData.contractorEmail || profile?.email || "",
-            phone: extractedData.contractorPhone || profile?.phone || "",
-            license: extractedData.contractorLicense || profile?.license || "",
-            company: extractedData.contractorCompany || profile?.company || "",
+            email: extractedData.contractorEmail || currentUser?.email || "",
+            phone: extractedData.contractorPhone || "",
+            license: extractedData.contractorLicense || "",
+            company: extractedData.contractorCompany || "",
           },
           project: {
             type:
@@ -510,9 +451,9 @@ export default function CyberpunkLegalDefense() {
       setLastSaved(new Date());
       setIsDirty(false);
 
-      console.log("✅ Autoguardado completado exitosamente");
+      // Autoguardado completado exitosamente
     } catch (error) {
-      console.error("❌ Error en autoguardado:", error);
+      // Error en autoguardado - silenciado para mejor rendimiento
     }
   }, [
     autoSaveEnabled,
@@ -537,7 +478,6 @@ export default function CyberpunkLegalDefense() {
     permitNumbers,
     workmanshipWarranty,
     materialsWarranty,
-    profile,
     currentContractId,
   ]);
 
@@ -550,10 +490,10 @@ export default function CyberpunkLegalDefense() {
       clearTimeout(autoSaveTimeoutRef.current);
     }
 
-    // Programar autoguardado en 2 segundos
+    // Programar autoguardado en 5 segundos para mejor rendimiento
     autoSaveTimeoutRef.current = setTimeout(() => {
       performAutoSave();
-    }, 2000);
+    }, 5000);
   }, [performAutoSave]);
 
   // Cleanup del timeout al desmontar componente
@@ -627,8 +567,7 @@ export default function CyberpunkLegalDefense() {
           [`client${field.charAt(0).toUpperCase() + field.slice(1)}`]: value,
         };
         
-        console.log(`📝 Updated client ${field}:`, value);
-        console.log(`📄 Full extractedData:`, updated);
+        // Updated client field - debugging removed for performance
         
         return updated;
       });
@@ -651,7 +590,7 @@ export default function CyberpunkLegalDefense() {
   const toggleClause = useCallback(
     (clauseId: string) => {
       // Check access for advanced legal clause features
-      const accessCheck = checkAdvancedFeaturesAccess();
+      const accessCheck = checkAccess('advanced');
       if (!accessCheck.allowed) {
         toast({
           title: "🎯 Advanced Feature",
@@ -709,7 +648,7 @@ export default function CyberpunkLegalDefense() {
   const handleEditContract = useCallback(
     (contract: any) => {
       // Check contract generation access
-      const accessCheck = checkContractGenerationAccess();
+      const accessCheck = checkAccess('contracts');
       if (!accessCheck.allowed) {
         toast({
           title: "📝 Contract Edit Restricted",
@@ -762,33 +701,22 @@ export default function CyberpunkLegalDefense() {
           other: contract.contractData?.financials?.other || 0,
         },
 
-        // Contractor information - use profile as fallback only
+        // Contractor information - simplified without profile
         contractorInfo: {
           name:
             contract.contractData?.contractor?.name ||
-            profile?.ownerName ||
-            profile?.company ||
+            currentUser?.displayName ||
             "",
           company:
-            contract.contractData?.contractor?.company ||
-            profile?.company ||
-            "",
+            contract.contractData?.contractor?.company || "",
           address:
-            contract.contractData?.contractor?.address ||
-            (profile?.address
-              ? `${profile.address} ${profile.city || ""} ${profile.state || ""} ${profile.zipCode || ""}`.trim()
-              : ""),
+            contract.contractData?.contractor?.address || "",
           email:
-            contract.contractData?.contractor?.email || profile?.email || "",
+            contract.contractData?.contractor?.email || currentUser?.email || "",
           phone:
-            contract.contractData?.contractor?.phone ||
-            profile?.phone ||
-            profile?.mobilePhone ||
-            "",
+            contract.contractData?.contractor?.phone || "",
           license:
-            contract.contractData?.contractor?.license ||
-            profile?.license ||
-            "",
+            contract.contractData?.contractor?.license || "",
         },
 
         // Additional data preservation
@@ -813,8 +741,7 @@ export default function CyberpunkLegalDefense() {
         totalAmount: contract.contractData?.financials?.total || 0,
         contractorName:
           contract.contractData?.contractor?.name ||
-          profile?.ownerName ||
-          profile?.company ||
+          currentUser?.displayName ||
           "",
         contractorAddress: contract.contractData?.contractor?.address || "",
         contractorEmail: contract.contractData?.contractor?.email || "",
@@ -1230,7 +1157,7 @@ export default function CyberpunkLegalDefense() {
   const handleProjectSelection = useCallback(
     async (project: any) => {
       // Check legal defense access
-      const accessCheck = checkLegalDefenseAccess();
+      const accessCheck = checkAccess('basic');
       if (!accessCheck.allowed) {
         toast({
           title: "📁 Project Selection Restricted",
@@ -1446,7 +1373,7 @@ export default function CyberpunkLegalDefense() {
       customizations: Record<string, any>,
     ) => {
       // Check advanced features access for defense completion
-      const accessCheck = checkAdvancedFeaturesAccess();
+      const accessCheck = checkAccess('advanced');
       if (!accessCheck.allowed) {
         toast({
           title: "🛡️ Advanced Defense Restricted",
@@ -2059,7 +1986,7 @@ export default function CyberpunkLegalDefense() {
   const handleFileUpload = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
       // Check legal defense access
-      const accessCheck = checkLegalDefenseAccess();
+      const accessCheck = checkAccess('basic');
       if (!accessCheck.allowed) {
         toast({
           title: "📄 File Upload Restricted",
