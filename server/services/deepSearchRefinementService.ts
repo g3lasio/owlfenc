@@ -74,6 +74,8 @@ export class DeepSearchRefinementService {
 
       // Procesar según el tipo
       switch (requestType) {
+        case 'total_adjustment':
+          return await this.handleTotalAdjustment(request);
         case 'price_adjustment':
           return await this.handlePriceAdjustment(request);
         case 'quantity_change':
@@ -112,6 +114,7 @@ export class DeepSearchRefinementService {
 
     // Patrones para diferentes tipos de solicitudes
     const patterns = {
+      total_adjustment: /(?:total|cueste|valga|costo total|precio total|sea de|que sea|\$[\d,]+|[\d,]+\s*(?:dólares|dolares|pesos))/,
       price_adjustment: /(?:precio|cost|expensive|cheap|caro|barato|muy alto|muy bajo|expensive|affordable)/,
       quantity_change: /(?:cantidad|quantity|more|less|increase|decrease|cambiar|ajustar|agregar|quitar|más|menos)/,
       material_addition: /(?:falta|missing|add|agregar|include|incluir|necesito|need|forgot|olvidé)/,
@@ -129,6 +132,82 @@ export class DeepSearchRefinementService {
     }
 
     return 'general';
+  }
+
+  /**
+   * Maneja ajustes de total específico (ej: "que cueste $9,100")
+   */
+  private async handleTotalAdjustment(request: RefinementRequest): Promise<RefinementResponse> {
+    // Extraer el monto objetivo del texto
+    const amountMatch = request.userRequest.match(/\$?([\d,]+)(?:\s*(?:dólares|dolares|pesos))?/);
+    
+    if (!amountMatch) {
+      return {
+        success: true,
+        response: `🤔 **No pude identificar el monto específico**\n\n¿Podrías especificar el total exacto que necesitas? Por ejemplo:\n• "Que cueste $9,100"\n• "El total debe ser $10,000"\n• "Necesito que valga 8,500 dólares"`,
+        suggestedActions: [
+          'Especificar monto exacto',
+          'Ajustar total gradualmente',
+          'Revisar precios actuales',
+          'Mostrar desglose'
+        ]
+      };
+    }
+
+    const targetTotal = parseFloat(amountMatch[1].replace(/,/g, ''));
+    const currentTotal = request.currentResult.grandTotal;
+    const difference = targetTotal - currentTotal;
+    const adjustmentFactor = targetTotal / currentTotal;
+
+    // Crear resultado actualizado
+    const updatedResult = { ...request.currentResult };
+
+    // Ajustar proporcionalmente materiales y labor
+    updatedResult.materials = updatedResult.materials.map(material => ({
+      ...material,
+      unitPrice: material.unitPrice * adjustmentFactor,
+      totalPrice: material.totalPrice * adjustmentFactor
+    }));
+
+    updatedResult.laborCosts = updatedResult.laborCosts.map(labor => ({
+      ...labor,
+      rate: labor.rate * adjustmentFactor,
+      total: labor.total * adjustmentFactor
+    }));
+
+    // Recalcular totales
+    updatedResult.totalMaterialsCost = updatedResult.materials.reduce((sum, m) => sum + m.totalPrice, 0);
+    updatedResult.totalLaborCost = updatedResult.laborCosts.reduce((sum, l) => sum + l.total, 0);
+    updatedResult.grandTotal = updatedResult.totalMaterialsCost + updatedResult.totalLaborCost;
+
+    const adjustmentPercent = ((adjustmentFactor - 1) * 100).toFixed(1);
+    const directionText = adjustmentFactor > 1 ? 'incrementado' : 'reducido';
+
+    const responseMessage = `✅ **Total ajustado exitosamente a $${targetTotal.toLocaleString()}**
+
+📊 **Resumen del ajuste:**
+• **Total anterior:** $${currentTotal.toLocaleString()}
+• **Total nuevo:** $${updatedResult.grandTotal.toLocaleString()}
+• **Diferencia:** ${difference >= 0 ? '+' : ''}$${difference.toLocaleString()}
+• **Ajuste aplicado:** ${directionText} ${Math.abs(parseFloat(adjustmentPercent))}%
+
+🔧 **Cambios realizados:**
+• **Materiales:** $${updatedResult.totalMaterialsCost.toLocaleString()}
+• **Labor:** $${updatedResult.totalLaborCost.toLocaleString()}
+
+Los precios han sido ajustados proporcionalmente para alcanzar el total deseado. ¿Te parece bien este ajuste?`;
+
+    return {
+      success: true,
+      response: responseMessage,
+      updatedResult: updatedResult,
+      suggestedActions: [
+        'Ajustar solo materiales',
+        'Ajustar solo labor',
+        'Revisar desglose detallado',
+        'Aplicar cambios'
+      ]
+    };
   }
 
   /**
