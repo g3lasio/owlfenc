@@ -176,52 +176,10 @@ export default function PaymentHistory({
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  // Mock payment data for demonstration
-  const mockPayments = [
-    {
-      id: 1,
-      projectId: 1,
-      userId: 1,
-      amount: 250000, // $2,500 in cents
-      type: "deposit" as const,
-      status: "succeeded" as const,
-      clientName: "John Smith",
-      description: "Deposit payment for fence installation",
-      invoiceNumber: "INV-001",
-      paymentLinkUrl: "https://pay.stripe.com/example-link-1",
-      createdAt: "2025-01-15T10:00:00Z",
-      paidDate: "2025-01-15T14:30:00Z",
-    },
-    {
-      id: 2,
-      projectId: 2,
-      userId: 1,
-      amount: 180000, // $1,800 in cents
-      type: "final" as const,
-      status: "pending" as const,
-      clientName: "Maria Garcia",
-      description: "Final payment for deck construction",
-      invoiceNumber: "INV-002",
-      paymentLinkUrl: "https://pay.stripe.com/example-link-2",
-      createdAt: "2025-01-18T09:00:00Z",
-      dueDate: "2025-01-25T23:59:59Z",
-    },
-    {
-      id: 3,
-      projectId: 3,
-      userId: 1,
-      amount: 75000, // $750 in cents
-      type: "milestone" as const,
-      status: "failed" as const,
-      clientName: "Robert Johnson",
-      description: "Milestone payment for retaining wall",
-      invoiceNumber: "INV-003",
-      paymentLinkUrl: "https://pay.stripe.com/example-link-3",
-      createdAt: "2025-01-20T11:00:00Z",
-    },
-  ];
+  // NO MOCK DATA - Only show real Firebase data
 
-  const displayPayments = filteredPayments.length > 0 ? filteredPayments : mockPayments;
+  // CRITICAL: Only use REAL data from Firebase - NO fallback to mock data
+  const displayPayments = filteredPayments;
 
   return (
     <div className="space-y-6">

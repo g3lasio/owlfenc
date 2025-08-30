@@ -162,9 +162,10 @@ export default function ProjectPaymentWorkflow({
 
     onCreatePayment(paymentData);
     
-    // Simulate payment link generation
-    const mockLink = `https://owlfence.com/pay/${Math.random().toString(36).substr(2, 9)}`;
-    setGeneratedLink(mockLink);
+    // CRITICAL: Use REAL payment link from backend - NO mock links
+    // Payment link will be set when backend returns the actual Stripe link
+    // For now, show loading state until backend provides real link
+    setGeneratedLink(""); // Will be updated by backend response
     setCurrentStep("confirmation");
   };
 
