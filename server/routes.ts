@@ -39,7 +39,52 @@ import {
 import { promptGeneratorService } from "./services/promptGeneratorService";
 import { projectPaymentService } from "./services/projectPaymentService";
 import { determineJurisdiction } from "./utils/jurisdictionDetector";
+import { jurisdictionDetector } from "./services/nationwide/JurisdictionDetector";
+import { getCompanyConfig, getCompanyAddress } from "./config/company-config";
 import { registerPromptTemplateRoutes } from "./routes/prompt-templates";
+
+// 🗺️ FUNCIÓN HELPER PARA LEGAL COMPLIANCE NATIONWIDE
+async function getNationwideLegalCompliance(address: string) {
+  try {
+    const stateInfo = jurisdictionDetector.detectFromAddress(address);
+    
+    if (stateInfo) {
+      return {
+        jurisdiction: stateInfo.name,
+        state: stateInfo.code,
+        region: stateInfo.region,
+        contractorLicenseRequired: stateInfo.contractorLicenseRequired,
+        constructionBoard: stateInfo.constructionBoard,
+        constructionBoardUrl: stateInfo.constructionBoardUrl,
+        minimumInsurance: stateInfo.minimumInsurance,
+        buildingCodes: stateInfo.buildingCodes,
+        insuranceRequirements: stateInfo.contractorLicenseRequired 
+          ? "General liability and workers compensation required (state-regulated)"
+          : "General liability recommended (check local requirements)"
+      };
+    } else {
+      // Fallback para cuando no se puede detectar el estado
+      return {
+        jurisdiction: "USA (State not detected)",
+        state: "Unknown",
+        region: "United States",
+        contractorLicenseRequired: "Check local requirements",
+        constructionBoard: "Contact local building department",
+        constructionBoardUrl: "N/A",
+        minimumInsurance: "Check local requirements",
+        buildingCodes: ["Contact local building department"],
+        insuranceRequirements: "General liability and workers compensation recommended"
+      };
+    }
+  } catch (error) {
+    console.error('❌ Error getting legal compliance:', error);
+    return {
+      jurisdiction: "USA",
+      contractorLicenseRequired: true,
+      insuranceRequirements: "General liability and workers compensation required"
+    };
+  }
+}
 import { registerEstimateRoutes } from "./routes/estimate-routes";
 import { registerPropertyRoutes } from "./routes/property-routes";
 import contractRoutes from "./routes/contract-routes";
@@ -821,12 +866,7 @@ ${extractedText}`,
               "Liability limitations not clearly stated",
             ],
           },
-          legalCompliance: {
-            jurisdiction: "California",
-            contractorLicenseRequired: true,
-            insuranceRequirements:
-              "General liability and workers compensation required",
-          },
+          legalCompliance: await getNationwideLegalCompliance(extractedData.clientInfo.address),
         };
 
         console.log("✅ Análisis legal de Mervin AI completado");
@@ -6853,7 +6893,7 @@ Output must be between 200-900 characters in English.`;
           name: req.body.contractorBranding?.companyName || "Owl Fenc LLC",
           address:
             req.body.contractorBranding?.address ||
-            "2901 Owens Court, Fairfield, CA 94534",
+            getCompanyAddress(userContext?.address || userContext?.city),
           phone: req.body.contractorBranding?.phone || "202 549 3519",
           email: req.body.contractorBranding?.email || "info@owlfenc.com",
           license:

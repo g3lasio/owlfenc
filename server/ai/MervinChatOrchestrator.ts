@@ -15,6 +15,9 @@ import { ConstructionKnowledgeBase } from './construction-intelligence/Construct
 import { WebResearchService } from './unified-chat/WebResearchService';
 import { TaskExecutionCoordinator } from './agent-endpoints/TaskExecutionCoordinator';
 import { UserContextProvider } from './agent-endpoints/UserContextProvider';
+import { nationwideResearchService } from '../services/nationwide/NationwideResearchService.js';
+import { jurisdictionDetector } from '../services/nationwide/JurisdictionDetector.js';
+import { nationwideConstructionKB } from '../services/nationwide/NationwideConstructionKB.js';
 
 /*
 <important_code_snippet_instructions>
@@ -125,12 +128,17 @@ export class MervinChatOrchestrator {
       // 2. Determinar tipo de procesamiento necesario
       const processingType = await this.determineProcessingType(request);
       
+      // 🗺️ DETECTAR UBICACIÓN DEL USUARIO (NATIONWIDE)
+      const userLocation = userContext.address || userContext.city || 'USA';
+      const stateInfo = jurisdictionDetector.detectFromAddress(userLocation);
+      const detectedRegion = stateInfo ? stateInfo.name.toLowerCase() : 'nationwide';
+      
       let response: MervinResponse = {
         conversationalResponse: '',
         languageProfile: {
           language: 'spanish',
           personality: 'mexicana_norteña',
-          region: 'california'
+          region: detectedRegion
         }
       };
 
@@ -148,7 +156,7 @@ export class MervinChatOrchestrator {
           const webData = await this.webResearch.expressResearch(
             request.input, 
             processingType.researchTopic!,
-            'California'
+            userLocation
           );
           response.webResearchData = webData;
         } else {
@@ -157,7 +165,7 @@ export class MervinChatOrchestrator {
           const webData = await this.webResearch.research(
             request.input, 
             processingType.researchTopic!,
-            'California'
+            userLocation
           );
           response.webResearchData = webData;
         }
@@ -316,15 +324,29 @@ export class MervinChatOrchestrator {
     const isQuestionOnly = /\?|diferencia|que es|explica|cuent[ae]|dime/i.test(request.input) && 
                           !/crea|genera|haz|make|create|generate/i.test(request.input);
 
+    // 🗺️ CONTEXTO GEOGRÁFICO NATIONWIDE
+    const stateContext = stateInfo ? `
+UBICACIÓN DETECTADA: ${stateInfo.name} (${stateInfo.region} region)
+AUTORIDAD DE CONSTRUCCIÓN: ${stateInfo.constructionBoard}
+LICENCIA REQUERIDA: ${stateInfo.contractorLicenseRequired ? 'Sí' : 'No a nivel estatal'}
+CÓDIGOS DE CONSTRUCCIÓN: ${stateInfo.buildingCodes.join(', ')}
+` : 'UBICACIÓN: Nationwide USA';
+
     const systemPrompt = `
 ${isSpanish ? 'RESPONDE SIEMPRE EN ESPAÑOL.' : 'RESPOND IN ENGLISH.'}
 
-Eres Mervin AI, el asistente virtual más avanzado para contratistas de construcción.
+Eres Mervin AI, el asistente virtual más avanzado para contratistas de construcción EN TODOS LOS ESTADOS DE USA.
+
+🗺️ COBERTURA NATIONWIDE:
+- Experto en todos los estados y regiones de USA
+- Conocimiento de códigos federales, estatales y locales
+- Consciente de diferencias regionales en construcción
+${stateContext}
 
 PERSONALIDAD AUTÉNTICA:
 - Mexicano norteño genuine: "primo", "compadre", "órale", "ándale"
-- Californiano casual cuando sea apropiado: "dude", "bro"
-- Experto en construcción con conocimiento profundo
+- Adaptable a la región del usuario
+- Experto en construcción con conocimiento profundo nationwide
 - Conversacional y amigable, no robótico
 
 TIPO DE CONSULTA DETECTADA: ${isQuestionOnly ? 'PREGUNTA CONVERSACIONAL' : 'POSIBLE TAREA DE AGENTE'}
@@ -349,8 +371,17 @@ ${responseData.webResearchData ? `- Investigación: ${JSON.stringify(responseDat
 
 CONTEXTO USUARIO:
 - Compañía: ${userContext.company || 'No especificada'}
-- Nombre: ${userContext.ownerName || 'Contratista'}
+- Nombre: ${userContext.ownerName || 'Contratista'}  
+- Ubicación: ${userLocation}
+- Estado: ${stateInfo ? stateInfo.name : 'Not detected'}
+- Región: ${stateInfo ? stateInfo.region : 'USA'}
 - Especialidades: ${userContext.specialties?.join(', ') || 'Construcción general'}
+
+INSTRUCCIONES GEOGRÁFICAS:
+- Siempre considera las regulaciones específicas del estado del usuario
+- Menciona autoridades locales apropiadas
+- Adapta precios y costos a la región detectada
+- Si no detectas ubicación, pregunta por el estado/ciudad para dar info precisa
 `;
 
     try {
@@ -427,39 +458,66 @@ CONTEXTO USUARIO:
     } catch (anthropicError) {
       console.error('❌ [MERVIN-ANTHROPIC] Error con Anthropic también:', anthropicError);
       // Si ambas APIs fallan, usar el sistema de conocimiento específico
-      return await this.generateFallbackResponse(request.input);
+      return await this.generateFallbackResponse(request.input, userLocation);
     }
   }
 
   /**
    * Genera respuesta de fallback INTELIGENTE usando conocimiento de construcción cuando ambas APIs fallan
+   * 🗺️ NATIONWIDE - Adaptado para todos los estados de USA
    */
-  private async generateFallbackResponse(input: string): Promise<string> {
+  private async generateFallbackResponse(input: string, userLocation?: string): Promise<string> {
     const inputLower = input.toLowerCase();
     
-    // ✅ SOLUCIÓN: Usar conocimiento específico cuando OpenAI falle
+    // 🗺️ DETECTAR ESTADO PARA RESPUESTAS ESPECÍFICAS
+    const stateInfo = userLocation ? jurisdictionDetector.detectFromAddress(userLocation) : null;
+    const stateName = stateInfo ? stateInfo.name : 'your state';
+    const stateCode = stateInfo ? stateInfo.code : 'your state';
+    const constructionBoard = stateInfo ? stateInfo.constructionBoard : 'your state licensing board';
+    const boardUrl = stateInfo ? stateInfo.constructionBoardUrl : 'your state website';
     
-    // Licencias de contratista (C-13, etc)
-    if ((inputLower.includes('licencia') && (inputLower.includes('c-13') || inputLower.includes('c13'))) || 
-        (inputLower.includes('license') && (inputLower.includes('c-13') || inputLower.includes('c13')))) {
-      return `¡Órale, primo! Simón, te ayudo con la C-13 - esa licencia está padrísima para el negocio de cercas:
+    // ✅ SOLUCIÓN NATIONWIDE: Usar conocimiento específico cuando OpenAI falle
+    
+    // Licencias de contratista (adaptado para todos los estados)
+    if ((inputLower.includes('licencia') || inputLower.includes('license')) && 
+        (inputLower.includes('contrat') || inputLower.includes('c-13') || inputLower.includes('c13'))) {
+      
+      if (stateInfo && stateInfo.contractorLicenseRequired) {
+        return `¡Órale, primo! Simón, te ayudo con la licencia de contratista en ${stateName}:
 
-**LOS REQUISITOS MERO IMPORTANTES:**
-🔹 **Experiencia**: 4 años construyendo cercas (tiene que estar bien documentadito)
-🔹 **Examen**: El test del estado (ley + comercio) - está medio pesadito pero se puede
-🔹 **Seguro**: $15,000 en bonos - nel, no es opcional
-🔹 **Aplicación**: $330 para la aplicación inicial 
-🔹 **Fingerprinting**: Huellas y background check completo
+**LOS REQUISITOS EN ${stateName.toUpperCase()}:**
+🔹 **Autoridad**: ${constructionBoard}
+🔹 **Sitio web**: ${boardUrl}
+🔹 **Seguro mínimo**: ${stateInfo.minimumInsurance}
+🔹 **Experiencia**: Varía por estado - revisa requisitos específicos
+🔹 **Examen**: Depende del estado (ley + comercio)
 
 **EL CHECKLIST PARA NO BATALLAR:**
-✅ Junta toda tu experiencia laboral (mínimo 4 años, compadre)
-✅ Estudia el manual del CSLB - tantito pesado pero necesario
-✅ Agenda tu examen en PSI Services cerquita de tu casa
-✅ Consigue el seguro de responsabilidad civil ahoritita
-✅ Llena la aplicación en CSLB.ca.gov bien completita
-✅ Paga todas las tarifas de jalón
+✅ Visita ${boardUrl} para requisitos exactos
+✅ Revisa qué tipo de licencia necesitas (fencing, general, etc)
+✅ Junta experiencia laboral documentada
+✅ Consigue el seguro y bonos requeridos
+✅ Llena la aplicación oficial del estado
+✅ Agenda examen si es requerido
 
 ¿Con cuál paso necesitas que te eche la mano, primo?`;
+      } else {
+        return `¡Órale, primo! En ${stateName}, la licencia de contratista del estado no es requerida para la mayoría de trabajos, pero:
+
+**CUIDADO - PUEDE QUE SÍ NECESITES:**
+🔹 **Licencia local**: Muchas ciudades requieren licencia municipal
+🔹 **Seguro**: Siempre protégete con responsabilidad civil
+🔹 **Permisos**: Para construcción siempre necesitas permisos
+🔹 **Business license**: Para operar legalmente tu negocio
+
+**CHECKLIST PARA ${stateName.toUpperCase()}:**
+✅ Contacta tu ciudad para requisitos locales
+✅ Consigue seguro de responsabilidad civil
+✅ Registra tu negocio con el estado
+✅ Verifica si necesitas specialty licenses
+
+¿Te ayudo a contactar las autoridades locales, compadre?`;
+      }
     }
     
     // Preguntas sobre contratos (conversacional)

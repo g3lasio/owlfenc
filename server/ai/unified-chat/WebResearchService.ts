@@ -22,7 +22,7 @@ const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-20250514";
 const RESEARCH_TIMEOUT = 12000; // 12 segundos máximo
 const CACHE_FIRST_TIMEOUT = 2000; // 2 segundos para buscar en caché primero
 
-// Fuentes especializadas priorizadas para contratistas
+// Fuentes especializadas priorizadas para contratistas - NATIONWIDE
 const PRIORITY_SOURCES = {
   materials: [
     'HomeDepot.com', 'Lowes.com', 'BuildersMart.com', 
@@ -33,8 +33,8 @@ const PRIORITY_SOURCES = {
     'ChainLinkFence.com', 'WoodFence.com'
   ],
   permits: [
-    'California.gov building codes', 'Local city planning departments',
-    'ICC International Code Council', 'OSHA.gov'
+    'State licensing boards nationwide', 'Local city planning departments',
+    'ICC International Code Council', 'OSHA.gov', 'HUD.gov'
   ],
   pricing: [
     'RSMeans Construction Data', 'Craftsman Construction Estimating',
