@@ -206,20 +206,50 @@ export class LegalDefensePersonalizer {
 
   private async getCompanyProfile(): Promise<any> {
     try {
-      const response = await fetch('/api/user-profile');
+      // 🛡️ CRITICAL: Usar autenticación robusta
+      const { robustAuth } = await import('../lib/robust-auth-manager');
+      const token = await robustAuth.getAuthToken();
+      
+      const response = await fetch('/api/user-profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.status === 401) {
+        console.error('❌ [COMPANY-PROFILE] Token expirado o inválido');
+        return {};
+      }
+      
       return response.ok ? await response.json() : {};
     } catch (error) {
-      console.error('Error loading company profile:', error);
+      console.error('❌ [COMPANY-PROFILE] Error loading company profile:', error);
       return {};
     }
   }
 
   private async getLegalDefenseProfile(): Promise<any> {
     try {
-      const response = await fetch('/api/legal-defense-profile');
+      // 🛡️ CRITICAL: Usar autenticación robusta
+      const { robustAuth } = await import('../lib/robust-auth-manager');
+      const token = await robustAuth.getAuthToken();
+      
+      const response = await fetch('/api/legal-defense-profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.status === 401) {
+        console.error('❌ [LEGAL-PROFILE] Token expirado o inválido');
+        return {};
+      }
+      
       return response.ok ? await response.json() : {};
     } catch (error) {
-      console.error('Error loading legal defense profile:', error);
+      console.error('❌ [LEGAL-PROFILE] Error loading legal defense profile:', error);
       return {};
     }
   }

@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Shield, AlertTriangle, FileText, Scale } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { usePermissions } from "@/contexts/PermissionContext";
+import { Plus, Shield, AlertTriangle, FileText, Scale, Lock } from "lucide-react";
 
 interface LegalDefenseProfile {
   // Información Corporativa
@@ -54,6 +56,17 @@ interface LegalDefenseProfile {
 }
 
 export default function LegalDefenseProfile() {
+  // 🛡️ CRITICAL: Sistema de autenticación y permisos integrado
+  const { user } = useAuth();
+  const { 
+    userPlan,
+    hasAccess,
+    canUse,
+    isTrialUser,
+    showUpgradeModal,
+    getUpgradeReason
+  } = usePermissions();
+
   const [profile, setProfile] = useState<LegalDefenseProfile>({
     businessStructure: '',
     einNumber: '',
@@ -80,44 +93,126 @@ export default function LegalDefenseProfile() {
     type: '', carrier: '', policyNumber: '', coverage: '', limits: '', expirationDate: ''
   });
 
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  // 🛡️ Verificación de acceso - Solo usuarios autenticados con planes apropiados
+  const checkLegalDefenseAccess = () => {
+    if (!user) {
+      toast({
+        title: "🔐 Acceso Restringido",
+        description: "Debes iniciar sesión para acceder al perfil de defensa legal",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    // Solo Mero Patrón y Master Contractor pueden acceder
+    const currentPlan = userPlan;
+    if (currentPlan?.id === 1) { // Primo Chambeador
+      toast({
+        title: "⚡ Actualización Requerida",
+        description: "El perfil de defensa legal requiere plan Mero Patrón o superior",
+        variant: "destructive"
+      });
+      showUpgradeModal("legal-defense-profile");
+      return false;
+    }
+
+    return true;
+  };
 
   useEffect(() => {
     loadLegalProfile();
   }, []);
 
   const loadLegalProfile = async () => {
+    if (!checkLegalDefenseAccess()) return;
+    
+    setIsLoading(true);
     try {
-      const response = await fetch('/api/legal-defense-profile');
+      // 🛡️ CRITICAL: Usar sistema robusto de autenticación
+      const { robustAuth } = await import('../lib/robust-auth-manager');
+      const token = await robustAuth.getAuthToken();
+      
+      const response = await fetch('/api/legal-defense-profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       if (response.ok) {
         const data = await response.json();
         setProfile(data);
+        console.log('✅ [LEGAL-PROFILE] Perfil cargado exitosamente');
+      } else if (response.status === 401) {
+        toast({
+          title: "🔐 Sesión Expirada",
+          description: "Tu sesión ha expirado. Por favor inicia sesión nuevamente.",
+          variant: "destructive"
+        });
+      } else {
+        throw new Error(`Error HTTP: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error loading legal profile:', error);
+      console.error('❌ [LEGAL-PROFILE] Error loading legal profile:', error);
+      toast({
+        title: "⚠️ Error de Conexión",
+        description: "No se pudo cargar tu perfil legal. Verifica tu conexión.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const saveLegalProfile = async () => {
+    if (!checkLegalDefenseAccess()) return;
+    
+    setIsLoading(true);
     try {
+      // 🛡️ CRITICAL: Usar sistema robusto de autenticación
+      const { robustAuth } = await import('../lib/robust-auth-manager');
+      const token = await robustAuth.getAuthToken();
+      
       const response = await fetch('/api/legal-defense-profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profile)
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({
+          ...profile,
+          userId: user?.uid, // Asegurar que se guarde para el usuario correcto
+          lastUpdated: new Date().toISOString()
+        })
       });
 
       if (response.ok) {
         toast({
-          title: "Perfil Legal Guardado",
+          title: "✅ Perfil Legal Guardado",
           description: "Tu perfil de defensa legal ha sido actualizado exitosamente."
         });
+        console.log('✅ [LEGAL-PROFILE] Perfil guardado exitosamente');
+      } else if (response.status === 401) {
+        toast({
+          title: "🔐 Sesión Expirada", 
+          description: "Tu sesión ha expirado. Por favor inicia sesión nuevamente.",
+          variant: "destructive"
+        });
+      } else {
+        throw new Error(`Error HTTP: ${response.status}`);
       }
     } catch (error) {
+      console.error('❌ [LEGAL-PROFILE] Error saving legal profile:', error);
       toast({
-        title: "Error",
-        description: "No se pudo guardar el perfil legal.",
+        title: "❌ Error al Guardar",
+        description: "No se pudo guardar el perfil legal. Verifica tu conexión.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -141,6 +236,46 @@ export default function LegalDefenseProfile() {
     }
   };
 
+  // 🛡️ Renderizado condicional basado en autenticación
+  if (!user) {
+    return (
+      <div className="flex-1 p-6 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="pt-6 text-center">
+            <Lock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Acceso Restringido</h3>
+            <p className="text-gray-600 mb-4">
+              Debes iniciar sesión para acceder al perfil de defensa legal
+            </p>
+            <Button onClick={() => window.location.href = '/login'}>
+              Iniciar Sesión
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Verificar permisos de plan
+  if (userPlan?.id === 1) { // Primo Chambeador
+    return (
+      <div className="flex-1 p-6 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="pt-6 text-center">
+            <Shield className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Actualización Requerida</h3>
+            <p className="text-gray-600 mb-4">
+              El perfil de defensa legal requiere plan Mero Patrón o superior para acceso completo a funciones legales avanzadas.
+            </p>
+            <Button onClick={() => showUpgradeModal("legal-defense-profile")}>
+              Actualizar Plan
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -153,8 +288,22 @@ export default function LegalDefenseProfile() {
             Configura tu información legal para que Mervin AI pueda defenderte mejor en cada contrato
           </p>
         </div>
-        <Button onClick={saveLegalProfile} size="lg">
-          Guardar Perfil
+        <Button 
+          onClick={saveLegalProfile} 
+          size="lg"
+          disabled={isLoading || !user}
+        >
+          {isLoading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Guardando...
+            </>
+          ) : (
+            <>
+              <Shield className="h-4 w-4 mr-2" />
+              Guardar Perfil
+            </>
+          )}
         </Button>
       </div>
 

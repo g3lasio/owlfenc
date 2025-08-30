@@ -6,6 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
+import { usePermissions } from '@/contexts/PermissionContext';
 import { 
   Upload,
   Shield, 
@@ -55,7 +57,43 @@ interface ContractAnalysis {
 }
 
 export default function OptimizedLegalDefenseWorkflow() {
+  // 🛡️ CRITICAL: Sistema de autenticación y permisos integrado
+  const { user } = useAuth();
+  const { 
+    userPlan,
+    hasAccess,
+    canUse,
+    isTrialUser,
+    showUpgradeModal,
+    getUpgradeReason
+  } = usePermissions();
   const { toast } = useToast();
+
+  // 🛡️ Verificación de acceso - Solo usuarios autenticados
+  const checkWorkflowAccess = () => {
+    if (!user) {
+      toast({
+        title: "🔐 Acceso Restringido",
+        description: "Debes iniciar sesión para usar el workflow de defensa legal",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    // Solo Mero Patrón y Master Contractor pueden usar el workflow completo
+    const currentPlan = userPlan;
+    if (currentPlan?.id === 1) { // Primo Chambeador  
+      toast({
+        title: "⚡ Actualización Requerida",
+        description: "El workflow de defensa legal requiere plan Mero Patrón o superior",
+        variant: "destructive"
+      });
+      showUpgradeModal("legal-defense-workflow");
+      return false;
+    }
+
+    return true;
+  };
   
   // Estados principales del workflow
   const [currentPhase, setCurrentPhase] = useState<'upload' | 'validation' | 'analysis' | 'generation' | 'review' | 'signature' | 'completed'>('upload');
@@ -121,6 +159,9 @@ export default function OptimizedLegalDefenseWorkflow() {
 
   // Función 1: Manejo inteligente de archivos
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    // 🛡️ CRITICAL: Verificar acceso antes de procesamiento
+    if (!checkWorkflowAccess()) return;
+    
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -156,6 +197,9 @@ export default function OptimizedLegalDefenseWorkflow() {
 
   // Función 2: Procesamiento inteligente completo
   const startIntelligentProcessing = async (file: File) => {
+    // 🛡️ CRITICAL: Verificar acceso antes de procesamiento intensivo
+    if (!checkWorkflowAccess()) return;
+    
     setIsProcessing(true);
 
     try {
@@ -213,11 +257,18 @@ export default function OptimizedLegalDefenseWorkflow() {
     data: any;
     validation: ValidationResult;
   }> => {
+    // 🛡️ CRITICAL: Usar autenticación robusta
+    const { robustAuth } = await import('../lib/robust-auth-manager');
+    const token = await robustAuth.getAuthToken();
+    
     const formData = new FormData();
     formData.append('estimatePdf', file);
 
     const response = await fetch('/api/pdf-contract-processor/extract-and-validate', {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
       body: formData,
     });
 
@@ -240,13 +291,19 @@ export default function OptimizedLegalDefenseWorkflow() {
 
   // Función 4: Análisis legal avanzado
   const performLegalRiskAnalysis = async (projectData: any): Promise<ContractAnalysis> => {
+    // 🛡️ CRITICAL: Usar autenticación robusta
+    const { robustAuth } = await import('../lib/robust-auth-manager');
+    const token = await robustAuth.getAuthToken();
+    
     const response = await fetch('/api/legal-defense/advanced-analysis', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         projectData,
+        userId: user?.uid,
         includeStateCompliance: true,
         industrySpecificAnalysis: true,
         veteranProtections: true
@@ -262,13 +319,19 @@ export default function OptimizedLegalDefenseWorkflow() {
 
   // Función 5: Generación de contrato defensivo
   const generateDefensiveContract = async (projectData: any, analysis: ContractAnalysis): Promise<string> => {
+    // 🛡️ CRITICAL: Usar autenticación robusta
+    const { robustAuth } = await import('../lib/robust-auth-manager');
+    const token = await robustAuth.getAuthToken();
+    
     const response = await fetch('/api/pdf-contract-processor/pdf-to-contract', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         projectData,
+        userId: user?.uid,
         riskAnalysis: analysis,
         enhancementLevel: 'maximum_protection',
         includeVeteranClauses: true,
@@ -296,8 +359,15 @@ export default function OptimizedLegalDefenseWorkflow() {
       const formData = new FormData();
       formData.append('estimatePdf', file);
 
+      // 🛡️ CRITICAL: Usar autenticación robusta en fallback
+      const { robustAuth } = await import('../lib/robust-auth-manager');
+      const token = await robustAuth.getAuthToken();
+      
       const response = await fetch('/api/pdf-contract-processor/pdf-to-contract-simple', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formData,
       });
 
@@ -373,6 +443,46 @@ export default function OptimizedLegalDefenseWorkflow() {
       default: return 'text-gray-600';
     }
   };
+
+  // 🛡️ Renderizado condicional basado en autenticación
+  if (!user) {
+    return (
+      <div className="flex-1 p-6 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="pt-6 text-center">
+            <Lock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Acceso Restringido</h3>
+            <p className="text-gray-600 mb-4">
+              Debes iniciar sesión para usar el workflow de defensa legal
+            </p>
+            <Button onClick={() => window.location.href = '/login'}>
+              Iniciar Sesión
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Verificar permisos de plan
+  if (userPlan?.id === 1) { // Primo Chambeador
+    return (
+      <div className="flex-1 p-6 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="pt-6 text-center">
+            <Shield className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Actualización Requerida</h3>
+            <p className="text-gray-600 mb-4">
+              El workflow de defensa legal requiere plan Mero Patrón o superior para generación de contratos con IA.
+            </p>
+            <Button onClick={() => showUpgradeModal("legal-defense-workflow")}>
+              Actualizar Plan
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
