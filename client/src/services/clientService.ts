@@ -34,15 +34,22 @@ export type ClientInput = Omit<Client, 'id' | 'userId' | 'clientId' | 'createdAt
  */
 async function getAuthToken(): Promise<string> {
   const user = auth.currentUser;
+  console.log('🔐 [AUTH-TOKEN] Estado del usuario:', { 
+    isLoggedIn: !!user, 
+    uid: user?.uid, 
+    email: user?.email 
+  });
+  
   if (!user) {
     throw new Error('Usuario no autenticado');
   }
   
   try {
-    const token = await user.getIdToken();
+    const token = await user.getIdToken(true); // Forzar refresh del token
+    console.log('🔐 [AUTH-TOKEN] Token obtenido exitosamente, longitud:', token.length);
     return token;
   } catch (error) {
-    console.error('Error obteniendo token:', error);
+    console.error('❌ [AUTH-TOKEN] Error obteniendo token:', error);
     throw new Error('Error de autenticación');
   }
 }
@@ -370,13 +377,10 @@ export const importClientsFromCsvWithAI = async (csvContent: string): Promise<Cl
   try {
     console.log('🤖 [CLIENT-SERVICE] Iniciando importación inteligente con IA...');
     
-    // Obtener el usuario actual
-    const user = auth.currentUser;
-    if (!user) {
-      throw new Error('Usuario no autenticado para importación');
-    }
+    // Usar la función auxiliar para obtener token con logging mejorado
+    const token = await getAuthToken();
     
-    const token = await user.getIdToken();
+    console.log('🚀 [CLIENT-SERVICE] Enviando petición a API con token válido...');
     
     // Llamar a la API de importación inteligente del backend
     const response = await fetch('/api/intelligent-import/csv', {
@@ -386,8 +390,7 @@ export const importClientsFromCsvWithAI = async (csvContent: string): Promise<Cl
         'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ 
-        csvContent,
-        userId: user.uid 
+        csvContent
       }),
     });
 
@@ -415,7 +418,11 @@ export const importClientsFromCsvWithAI = async (csvContent: string): Promise<Cl
     return await getClients();
     
   } catch (error) {
-    console.error('❌ [CLIENT-SERVICE] Error en importación inteligente:', error);
+    console.error('❌ [CLIENT-SERVICE] Error en importación inteligente:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      fullError: error
+    });
     throw error;
   }
 };
