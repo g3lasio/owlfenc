@@ -61,6 +61,12 @@ const ContractSignature: React.FC = () => {
     try {
       console.log(`🔍 Loading contract ${contractId} for ${party}`);
       
+      // 🚨 CRITICAL DEBUG: Log exact frontend params
+      console.log("🚨 [FRONTEND-DEBUG] contractId:", contractId);
+      console.log("🚨 [FRONTEND-DEBUG] party:", party);
+      console.log("🚨 [FRONTEND-DEBUG] params object:", params);
+      console.log("🚨 [FRONTEND-DEBUG] URL being called:", `/api/dual-signature/contract/${contractId}/${party}`);
+      
       const response = await fetch(`/api/dual-signature/contract/${contractId}/${party}`);
       const data = await response.json();
       
@@ -209,18 +215,25 @@ const ContractSignature: React.FC = () => {
     setIsSubmitting(true);
 
     try {
+      const requestBody = {
+        contractId,
+        party,
+        signatureData: finalSignatureData,
+        signatureType,
+        fullName,
+      };
+      
+      // 🚨 CRITICAL DEBUG: Log exact request being sent
+      console.log("🚨 [FRONTEND-DEBUG] Request body being sent:", JSON.stringify(requestBody));
+      console.log("🚨 [FRONTEND-DEBUG] party value:", party);
+      console.log("🚨 [FRONTEND-DEBUG] contractId value:", contractId);
+      
       const response = await fetch('/api/dual-signature/sign', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          contractId,
-          party,
-          signatureData: finalSignatureData,
-          signatureType,
-          fullName,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const result = await response.json();

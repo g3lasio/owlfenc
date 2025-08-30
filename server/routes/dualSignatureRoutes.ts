@@ -93,10 +93,18 @@ router.get("/contract/:contractId/:party", async (req, res) => {
     const { contractId, party } = req.params;
     const requestingUserId = req.headers["x-user-id"] as string; // Para verificación de seguridad opcional
 
+    // 🚨 CRITICAL DEBUG: Log exact params received
+    console.log("🚨 [CRITICAL-DEBUG] RAW req.params:", JSON.stringify(req.params));
+    console.log("🚨 [CRITICAL-DEBUG] RAW req.url:", req.url);
+    console.log("🚨 [CRITICAL-DEBUG] RAW contractId:", contractId);
+    console.log("🚨 [CRITICAL-DEBUG] RAW party:", party);
+    console.log("🚨 [CRITICAL-DEBUG] RAW party type:", typeof party);
+
     if (!["contractor", "client"].includes(party)) {
+      console.log("🚨 [CRITICAL-DEBUG] Invalid party detected:", party);
       return res.status(400).json({
         success: false,
-        message: 'Invalid party. Must be "contractor" or "client"',
+        message: `Invalid party. Must be "contractor" or "client", received: ${party}`,
       });
     }
 
@@ -142,8 +150,16 @@ router.get("/contract/:contractId/:party", async (req, res) => {
 router.post("/sign", async (req, res) => {
   try {
     console.log("✍️ [API] Processing signature submission...");
+    
+    // 🚨 CRITICAL DEBUG: Log exact request body received
+    console.log("🚨 [CRITICAL-DEBUG] RAW req.body:", JSON.stringify(req.body));
+    console.log("🚨 [CRITICAL-DEBUG] RAW party from body:", req.body.party);
+    console.log("🚨 [CRITICAL-DEBUG] RAW contractId from body:", req.body.contractId);
 
     const validatedData = signatureSubmissionSchema.parse(req.body);
+    console.log("🚨 [CRITICAL-DEBUG] VALIDATED party:", validatedData.party);
+    console.log("🚨 [CRITICAL-DEBUG] VALIDATED contractId:", validatedData.contractId);
+    
     const requestingUserId = req.headers["x-user-id"] as string; // Para verificación de seguridad opcional
 
     console.log(
