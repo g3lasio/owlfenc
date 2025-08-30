@@ -1618,7 +1618,7 @@ Output must be between 200-900 characters in English.`;
   app.use("/api/clients", clientRoutes);
   
   // Registrar rutas de importación inteligente con IA
-  app.use("/api/intelligent-import", authMiddleware.authenticate, intelligentImportRoutes);
+  app.use("/api/intelligent-import", intelligentImportRoutes);
   
   app.use("/api/ai-processor", aiProcessorRoutes);
 
