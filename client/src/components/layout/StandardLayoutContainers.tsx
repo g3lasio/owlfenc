@@ -48,7 +48,7 @@ export const ScrollableContent: React.FC<ScrollableContentProps> = ({
   return (
     <div
       className={cn(
-        "flex-1  overflow-x-hidden custom-scroll",
+        "flex-1 overflow-x-hidden custom-scroll",
         padding && "p-4",
         className,
       )}

@@ -1200,7 +1200,7 @@ function Projects() {
   }
 
   return (
-    <div className=" bg-background">
+    <div className="bg-background">
       <div className="fixed-header p-6 border-b">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Proyectos</h1>
