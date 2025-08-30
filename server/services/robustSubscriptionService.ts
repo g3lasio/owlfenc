@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { userMappingService } from './userMappingService';
 import { eq, and } from 'drizzle-orm';
 import { userSubscriptions, subscriptionPlans, userUsageLimits } from '@shared/schema';
 
@@ -27,8 +28,14 @@ export class RobustSubscriptionService {
     try {
       console.log(`🔍 [ROBUST-SUBSCRIPTION] Getting REAL subscription for: ${userId}`);
       
-      // Buscar suscripción en PostgreSQL usando user_id = 1 para demo
-      const demoUserId = 1; // Usuario de demostración
+      if (!db) {
+        throw new Error('Database connection not available');
+      }
+      
+      // 🔐 SECURITY FIX: Usar user_id real del usuario actual (NO compartir límites)
+      const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(userId);
+      console.log(`🔐 [SECURITY] Using REAL user_id: ${dbUserId} for Firebase UID: ${userId}`);
+      
       const result = await db
         .select({
           subscription: userSubscriptions,
@@ -36,7 +43,7 @@ export class RobustSubscriptionService {
         })
         .from(userSubscriptions)
         .leftJoin(subscriptionPlans, eq(userSubscriptions.planId, subscriptionPlans.id))
-        .where(eq(userSubscriptions.userId, demoUserId))
+        .where(eq(userSubscriptions.userId, dbUserId))
         .limit(1);
 
       if (!result.length) {
@@ -80,6 +87,10 @@ export class RobustSubscriptionService {
    */
   async canUseFeature(userId: string, feature: string): Promise<{ canUse: boolean; used: number; limit: number }> {
     try {
+      // 🔐 SECURITY FIX: Usar user_id real del usuario (NO compartir límites)
+      const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(userId);
+      console.log(`🔐 [SECURITY] Checking limits for REAL user_id: ${dbUserId}`);
+      
       const subscription = await this.getUserSubscription(userId);
       if (!subscription || !subscription.isActive) {
         return { canUse: false, used: 0, limit: 0 };
@@ -94,11 +105,16 @@ export class RobustSubscriptionService {
 
       // Obtener uso actual del mes
       const currentMonth = new Date().toISOString().slice(0, 7);
+      
+      if (!db) {
+        throw new Error('Database connection not available');
+      }
+      
       const usageResult = await db
         .select()
         .from(userUsageLimits)
         .where(and(
-          eq(userUsageLimits.userId, userId),
+          eq(userUsageLimits.userId, dbUserId.toString()),
           eq(userUsageLimits.month, currentMonth)
         ))
         .limit(1);
@@ -120,6 +136,10 @@ export class RobustSubscriptionService {
    */
   async incrementUsage(userId: string, feature: string, count: number = 1): Promise<boolean> {
     try {
+      // 🔐 SECURITY FIX: Usar user_id real del usuario (NO compartir límites)
+      const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(userId);
+      console.log(`🔐 [SECURITY] Incrementing usage for REAL user_id: ${dbUserId}`);
+      
       const check = await this.canUseFeature(userId, feature);
       
       if (!check.canUse && check.limit !== -1) {
@@ -131,11 +151,15 @@ export class RobustSubscriptionService {
       const currentMonth = new Date().toISOString().slice(0, 7);
       
       // Verificar si existe el registro de uso
+      if (!db) {
+        throw new Error('Database connection not available');
+      }
+      
       const usageResult = await db
         .select()
         .from(userUsageLimits)
         .where(and(
-          eq(userUsageLimits.userId, userId),
+          eq(userUsageLimits.userId, dbUserId.toString()),
           eq(userUsageLimits.month, currentMonth)
         ))
         .limit(1);
@@ -156,7 +180,7 @@ export class RobustSubscriptionService {
         .update(userUsageLimits)
         .set(updateData)
         .where(and(
-          eq(userUsageLimits.userId, userId),
+          eq(userUsageLimits.userId, dbUserId.toString()),
           eq(userUsageLimits.month, currentMonth)
         ));
 
@@ -178,6 +202,10 @@ export class RobustSubscriptionService {
       trialEnd.setDate(trialStart.getDate() + 7); // 7 días
 
       // Buscar el plan Free Trial
+      if (!db) {
+        throw new Error('Database connection not available');
+      }
+      
       const trialPlan = await db
         .select()
         .from(subscriptionPlans)
@@ -193,6 +221,10 @@ export class RobustSubscriptionService {
         ((hash << 5) - hash) + char.charCodeAt(0), 0
       ));
 
+      if (!db) {
+        throw new Error('Database connection not available');
+      }
+      
       await db.insert(userSubscriptions).values({
         userId: numericUserId,
         planId: trialPlan[0].id,
@@ -214,14 +246,22 @@ export class RobustSubscriptionService {
    */
   private async initializeMonthlyUsage(userId: string): Promise<void> {
     try {
+      // 🔐 SECURITY FIX: Usar user_id real del usuario (NO compartir límites)
+      const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(userId);
+      console.log(`🔐 [SECURITY] Initializing usage for REAL user_id: ${dbUserId}`);
+      
       const subscription = await this.getUserSubscription(userId);
       if (!subscription) return;
 
       const currentMonth = new Date().toISOString().slice(0, 7);
       const features = subscription.features;
 
+      if (!db) {
+        throw new Error('Database connection not available');
+      }
+      
       await db.insert(userUsageLimits).values({
-        userId,
+        userId: dbUserId.toString(),
         month: currentMonth,
         planId: parseInt(subscription.planId),
         basicEstimatesLimit: features.basicEstimates || 0,

@@ -127,12 +127,13 @@ export const requireSubscriptionLevel = (requiredLevel: PermissionLevel) => {
       const userId = `user_${req.firebaseUser.email?.replace(/[@.]/g, '_')}`;
       const subscription = await getUserActiveSubscription(userId);
 
-      if (!subscription) {
+      let userSubscription = subscription;
+      if (!userSubscription) {
         // Sin suscripción = plan gratuito por defecto
-        subscription = { planId: 1, status: 'free' };
+        userSubscription = { planId: 1, status: 'free' };
       }
 
-      const userPermissions = PLAN_PERMISSIONS[subscription.planId] || [PermissionLevel.FREE];
+      const userPermissions = PLAN_PERMISSIONS[userSubscription.planId as keyof typeof PLAN_PERMISSIONS] || [PermissionLevel.FREE];
       
       // Verificar si el usuario tiene el nivel requerido
       if (!userPermissions.includes(requiredLevel)) {
@@ -147,9 +148,9 @@ export const requireSubscriptionLevel = (requiredLevel: PermissionLevel) => {
 
       // Añadir información de la suscripción al request para uso posterior
       req.userSubscription = {
-        planId: subscription.planId,
+        planId: userSubscription.planId,
         level: userPermissions,
-        limits: PLAN_LIMITS[subscription.planId]
+        limits: PLAN_LIMITS[userSubscription.planId as keyof typeof PLAN_LIMITS]
       };
 
       next();
@@ -185,11 +186,38 @@ export const validateUsageLimit = (feature: string) => {
         return;
       }
 
-      // TODO: Implementar contador de uso real desde la base de datos
-      // Por ahora, solo verificamos que tenga acceso
-      if (typeof featureLimit === 'number' && featureLimit > 0) {
+      // 🔐 SECURITY FIX: Implementar contador de uso REAL
+      const firebaseUid = req.firebaseUser.uid;
+      
+      try {
+        // Importar robustSubscriptionService dinámicamente
+        const { robustSubscriptionService } = await import('../services/robustSubscriptionService');
+        
+        // Verificar uso real desde la base de datos
+        const usageCheck = await robustSubscriptionService.canUseFeature(firebaseUid, feature);
+        
+        if (!usageCheck.canUse) {
+          return res.status(403).json({
+            error: 'Límite de uso alcanzado para esta función',
+            code: 'USAGE_LIMIT_EXCEEDED',
+            feature,
+            used: usageCheck.used,
+            limit: usageCheck.limit,
+            upgradeUrl: '/subscription'
+          });
+        }
+        
+        console.log(`✅ [USAGE-CHECK] Feature ${feature}: ${usageCheck.used}/${usageCheck.limit}`);
         next();
         return;
+        
+      } catch (error) {
+        console.error(`❌ [USAGE-CHECK] Error checking real usage for ${feature}:`, error);
+        // Fallback a verificación básica si falla la verificación real
+        if (typeof featureLimit === 'number' && featureLimit > 0) {
+          next();
+          return;
+        }
       }
 
       return res.status(403).json({
@@ -205,6 +233,44 @@ export const validateUsageLimit = (feature: string) => {
         error: 'Error interno validando límites',
         code: 'USAGE_VALIDATION_ERROR'
       });
+    }
+  };
+};
+
+/**
+ * Middleware que incrementa automáticamente el uso después de una operación exitosa
+ */
+export const incrementUsageOnSuccess = (feature: string) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Continuar con la operación normal
+      next();
+      
+      // Interceptar la respuesta para incrementar solo si es exitosa
+      const originalSend = res.send;
+      res.send = function(data) {
+        // Solo incrementar si la respuesta es exitosa (status 200-299)
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          (async () => {
+            try {
+              const firebaseUid = req.firebaseUser?.uid;
+              if (firebaseUid) {
+                const { robustSubscriptionService } = await import('../services/robustSubscriptionService');
+                await robustSubscriptionService.incrementUsage(firebaseUid, feature);
+                console.log(`📊 [USAGE-INCREMENT] ${feature} usage incremented for ${firebaseUid}`);
+              }
+            } catch (error) {
+              console.error(`❌ [USAGE-INCREMENT] Error incrementing ${feature}:`, error);
+            }
+          })();
+        }
+        
+        return originalSend.call(this, data);
+      };
+      
+    } catch (error) {
+      console.error('❌ [USAGE-INCREMENT] Error setting up usage increment:', error);
+      next(error);
     }
   };
 };
