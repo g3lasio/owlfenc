@@ -784,7 +784,7 @@ export default function Mervin() {
                   <img
                     src="https://i.postimg.cc/W4nKDvTL/logo-mervin.png"
                     alt="Mervin AI"
-                    className="w-8 h-8 md:w-6 md:h-6 animate-spin"
+                    className="w-8 h-8 md:w-6 md:h-6 animate-pulse"
                   />
                 </div>
                 <div className="flex flex-col">

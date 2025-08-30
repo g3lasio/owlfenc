@@ -68,8 +68,8 @@ import ContractSignature from './pages/ContractSignature';
 import { Redirect } from "wouter";
 import { useState, useEffect } from "react";
 
-// 🔧 FIX: Global error handler for unhandled promises - ENHANCED
-setupGlobalErrorHandlers();
+// 🔧 FIX: Global error handler for unhandled promises - DESHABILITADO TEMPORALMENTE
+// setupGlobalErrorHandlers(); // ❌ COMENTADO: Estaba silenciando errores legítimos del agente
 
 // 🔧 STRIPE ERROR HANDLER
 window.addEventListener('stripe-load-error', (event: any) => {

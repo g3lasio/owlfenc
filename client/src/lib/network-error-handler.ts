@@ -67,7 +67,7 @@ class NetworkErrorHandler {
     // Check error patterns (más agresivo para capturar todos los casos)
     const isKnownError = SILENT_ERROR_PATTERNS.some(pattern => 
       errorMessage.toLowerCase().includes(pattern.toLowerCase()) ||
-      (errorCode && errorCode.toLowerCase().includes(pattern.toLowerCase())) ||
+      (errorCode && typeof errorCode === 'string' && errorCode.toLowerCase().includes(pattern.toLowerCase())) ||
       errorStack.toLowerCase().includes(pattern.toLowerCase())
     );
 
