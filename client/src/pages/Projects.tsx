@@ -50,14 +50,19 @@ function Projects() {
         return;
       }
 
+      // ✅ FIXED: Revisar permisos pero permitir acceso temporal durante carga inicial
       if (!hasAccess('projects')) {
-        toast({
-          title: "⭐ Acceso Restringido",
-          description: "Tu plan actual no incluye acceso completo a gestión de proyectos",
-          variant: "destructive",
-        });
-        showUpgradeModal('projects', 'Gestiona proyectos con herramientas profesionales');
-        return;
+        // Solo bloquear si definitivamente no tiene acceso (no durante carga inicial)
+        const { loading } = usePermissions();
+        if (!loading) {
+          toast({
+            title: "⭐ Acceso Restringido",
+            description: "Tu plan actual no incluye acceso completo a gestión de proyectos",
+            variant: "destructive",
+          });
+          showUpgradeModal('projects', 'Gestiona proyectos con herramientas profesionales');
+          return;
+        }
       }
 
       console.log("🚀 NUEVA PÁGINA PROJECTS CARGANDO...");

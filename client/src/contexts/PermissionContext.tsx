@@ -347,7 +347,14 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
   }, [currentUser?.uid]); // Solo depender del UID del usuario
 
   const hasAccess = (feature: string): boolean => {
-    if (!userPlan) return false;
+    // ✅ FIXED: Si estamos cargando datos, permitir acceso temporalmente para evitar bloqueos
+    if (!userPlan) {
+      // Si hay usuario autenticado pero plan aún cargando, dar acceso temporal
+      if (currentUser?.uid && !isInitialized) {
+        return true; // Permitir acceso mientras carga
+      }
+      return false;
+    }
 
     const limit = userPlan.limits[feature as keyof UserLimits];
     return typeof limit === 'number' && limit !== 0;
