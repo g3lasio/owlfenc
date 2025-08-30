@@ -1,7 +1,7 @@
 import { Express, Request, Response } from "express";
 import { propertyService } from "../services/propertyService";
 import { verifyFirebaseAuth as requireAuth } from "../middleware/firebase-auth";
-import { getUserFromFirebaseUser } from "../utils/secureUserHelper";
+import { getSecureUserId } from "../utils/secureUserHelper";
 
 /**
  * Esta función registra las rutas relacionadas con la obtención
