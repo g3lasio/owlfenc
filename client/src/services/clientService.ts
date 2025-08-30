@@ -31,27 +31,64 @@ export type ClientInput = Omit<Client, 'id' | 'userId' | 'clientId' | 'createdAt
 
 /**
  * Obtener token de autenticación para las peticiones al backend
+ * Espera hasta que Firebase Auth esté sincronizado
  */
 async function getAuthToken(): Promise<string> {
-  const user = auth.currentUser;
-  console.log('🔐 [AUTH-TOKEN] Estado del usuario:', { 
-    isLoggedIn: !!user, 
-    uid: user?.uid, 
-    email: user?.email 
+  return new Promise((resolve, reject) => {
+    // Verificar primero si ya tenemos un usuario
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      console.log('🔐 [AUTH-TOKEN] Usuario ya disponible:', { 
+        uid: currentUser.uid, 
+        email: currentUser.email 
+      });
+      
+      currentUser.getIdToken(true)
+        .then(token => {
+          console.log('🔐 [AUTH-TOKEN] Token obtenido exitosamente, longitud:', token.length);
+          resolve(token);
+        })
+        .catch(error => {
+          console.error('❌ [AUTH-TOKEN] Error obteniendo token:', error);
+          reject(new Error('Error de autenticación'));
+        });
+      return;
+    }
+
+    console.log('🔐 [AUTH-TOKEN] Esperando sincronización de Firebase Auth...');
+    
+    // Si no hay usuario, esperar a que Firebase Auth se sincronice
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      unsubscribe();
+      
+      if (!user) {
+        console.error('❌ [AUTH-TOKEN] No hay usuario autenticado después de la sincronización');
+        reject(new Error('Usuario no autenticado'));
+        return;
+      }
+
+      console.log('✅ [AUTH-TOKEN] Usuario sincronizado:', { 
+        uid: user.uid, 
+        email: user.email 
+      });
+
+      user.getIdToken(true)
+        .then(token => {
+          console.log('🔐 [AUTH-TOKEN] Token obtenido exitosamente, longitud:', token.length);
+          resolve(token);
+        })
+        .catch(error => {
+          console.error('❌ [AUTH-TOKEN] Error obteniendo token:', error);
+          reject(new Error('Error de autenticación'));
+        });
+    });
+
+    // Timeout de seguridad (10 segundos)
+    setTimeout(() => {
+      unsubscribe();
+      reject(new Error('Timeout esperando autenticación'));
+    }, 10000);
   });
-  
-  if (!user) {
-    throw new Error('Usuario no autenticado');
-  }
-  
-  try {
-    const token = await user.getIdToken(true); // Forzar refresh del token
-    console.log('🔐 [AUTH-TOKEN] Token obtenido exitosamente, longitud:', token.length);
-    return token;
-  } catch (error) {
-    console.error('❌ [AUTH-TOKEN] Error obteniendo token:', error);
-    throw new Error('Error de autenticación');
-  }
 }
 
 /**
