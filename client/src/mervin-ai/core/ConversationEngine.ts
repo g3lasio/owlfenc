@@ -650,9 +650,15 @@ So, what can I do for you today, bro?`;
       return 'request';
     }
     
-    // Saludos
+    // Saludos y conversación casual
     if (message.includes('hola') || message.includes('hello') || message.includes('hi') ||
-        message.includes('buenos días') || message.includes('good morning') || message.includes('hey')) {
+        message.includes('buenos días') || message.includes('good morning') || message.includes('hey') ||
+        message.includes('como estas') || message.includes('como andas') || message.includes('que tal') ||
+        message.includes('how are you') || message.includes('how you doing') || message.includes('whats up') ||
+        message.includes('oye mervin') || message.includes('saludando') || message.includes('saludo') ||
+        message.includes('buenas') || message.includes('que onda') || message.includes('primo') ||
+        message.includes('espero que estes bien') || message.includes('hope you are well') ||
+        (message.includes('mervin') && (message.includes('estas') || message.includes('andas') || message.includes('tal')))) {
       return 'greeting';
     }
     
@@ -771,6 +777,32 @@ So, what can I do for you today, bro?`;
     // Respuestas específicas por tipo de mensaje y contexto
     switch (messageType) {
       case 'greeting':
+        // Respuestas específicas para "como estas" y conversación casual
+        if (userMessage.toLowerCase().includes('como estas') || userMessage.toLowerCase().includes('como andas')) {
+          const statusResponses = [
+            '¡Aquí andamos al cien, primo! Todo bien por aquí, trabajando duro para ayudarte. ¿Y tú qué tal? ¿Cómo van los proyectos?',
+            '¡Órale, todo chido por acá, compadre! Bien activo ayudando a contratistas como tú. ¿Cómo te ha ido? ¿En qué andas metido?',
+            '¡Todo bien, hermano! Aquí echándole ganas, siempre listo para echar la mano. ¿Y tú cómo andas? ¿Qué tal el trabajo?',
+            '¡De pelos, primo! Aquí en la lucha, pero con buena actitud. ¿Y tú qué cuentas? ¿Cómo van las cosas?',
+            '¡Al cien, compadre! Aquí siempre disponible para lo que necesites. ¿Tú cómo andas? ¿Todo bien con los proyectos?'
+          ];
+          return statusResponses[Math.floor(Math.random() * statusResponses.length)];
+        }
+        
+        // Respuestas para saludos de seguimiento o casuales
+        if (userMessage.toLowerCase().includes('saludando') || userMessage.toLowerCase().includes('saludo') || 
+            userMessage.toLowerCase().includes('espero que estes bien')) {
+          const casualResponses = [
+            '¡Órale, qué buena onda, primo! Muy amable de tu parte. Yo aquí andamos bien, siempre listo para platicar y ayudarte con lo que necesites.',
+            '¡Ay, qué chido, compadre! Muchas gracias, se agradece el detalle. Todo bien por acá. ¿Y tú cómo andas? ¿Todo tranquilo?',
+            '¡Qué padre, hermano! Muy gentil de tu parte preguntar. Aquí andamos de buenas, siempre disponible para platicar contigo.',
+            '¡Gracias, primo! Qué bueno que te des el tiempo de saludar. Aquí todo bien, trabajando y echándole ganas. ¿Y tú qué tal?',
+            '¡Órale, qué considerado! Se aprecia mucho, compadre. Todo chido por aquí. ¿Cómo has estado tú? ¿Todo bien?'
+          ];
+          return casualResponses[Math.floor(Math.random() * casualResponses.length)];
+        }
+        
+        // Saludos generales normales
         const greetings = language === 'spanish' ? [
           '¡Órale primo! ¿Cómo andas? ¿En qué te puedo echar la mano hoy?',
           '¡Qué onda, compadre! ¿Todo bien? ¿Qué necesitas que hagamos?',
