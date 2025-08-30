@@ -169,6 +169,7 @@ function Router() {
       </Route>
 
       <Route path="/clients" component={() => <ProtectedRoute component={NuevoClientes} />} />
+      <Route path="/clientes" component={() => <ProtectedRoute component={Clients} />} />
       <Route path="/materials">
         {() => <ProtectedRoute component={Materials} />}
       </Route>
