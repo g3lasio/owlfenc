@@ -8,6 +8,9 @@ import { z } from 'zod';
 import pdf from 'pdf-parse';
 import sharp from 'sharp';
 import { determineJurisdiction } from '../utils/jurisdictionDetector';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { requireSubscriptionLevel, PermissionLevel } from '../middleware/subscription-auth';
+import { userMappingService } from '../services/userMappingService';
 
 const router = express.Router();
 
@@ -267,9 +270,28 @@ Analyze this document thoroughly and extract all relevant project data:
 });
 
 // Get approved projects for user
-router.get('/approved-projects', async (req, res) => {
+router.get('/approved-projects', verifyFirebaseAuth, async (req, res) => {
   try {
-    const userId = req.query.userId ? parseInt(req.query.userId as string) : 1; // Default for demo
+    // 🔐 SECURITY FIX: Usar user_id real del usuario autenticado
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+    
+    // Usar UserMappingService para obtener userId real
+    const { UserMappingService } = await import('../services/UserMappingService');
+    const { DatabaseStorage } = await import('../DatabaseStorage');
+    const databaseStorage = new DatabaseStorage();
+    const userMappingService = UserMappingService.getInstance(databaseStorage);
+    
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ error: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Getting approved projects for REAL user_id: ${userId}`);
     
     const approvedProjects = await db!
       .select()
@@ -293,9 +315,24 @@ router.get('/approved-projects', async (req, res) => {
 });
 
 // Create project from extracted data
-router.post('/create-project', async (req, res) => {
+// 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger creación de proyectos
+router.post('/create-project', verifyFirebaseAuth, async (req, res) => {
   try {
-    const { extractedData, userId = 1 } = req.body;
+    const { extractedData } = req.body;
+    
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden crear proyectos
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ error: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Creating project for REAL user_id: ${userId}`);
 
     const projectData = {
       name: `${extractedData.projectDetails.type} - ${extractedData.clientInfo.name}`,

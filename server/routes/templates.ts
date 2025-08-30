@@ -4,6 +4,14 @@ import { templates } from "../../shared/schema";
 import { eq, and } from "drizzle-orm";
 import { db } from "../db";
 import { z } from "zod";
+import { verifyFirebaseAuth } from "../middleware/firebase-auth";
+import { requireSubscriptionLevel, PermissionLevel } from "../middleware/subscription-auth";
+import { UserMappingService } from "../services/UserMappingService";
+import { DatabaseStorage } from "../DatabaseStorage";
+
+// Inicializar UserMappingService
+const databaseStorage = new DatabaseStorage();
+const userMappingService = UserMappingService.getInstance(databaseStorage);
 
 const createProfessionalTemplate = async () => {
   try {
@@ -818,27 +826,33 @@ const createProfessionalTemplate = async () => {
 
 export function setupTemplatesRoutes(router: Router) {
   // Obtener todas las plantillas por tipo
-  router.get("/api/templates", async (req: Request, res: Response) => {
+  router.get("/api/templates", verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
       const type = req.query.type as string;
-      const userId = req.query.userId as string;
+      // 🔐 SECURITY FIX: Solo obtener templates del usuario autenticado
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ message: "Error creando mapeo de usuario" });
+      }
+      console.log(`🔐 [SECURITY] Getting templates for REAL user_id: ${userId}`);
       
       let templateList;
-      if (type && userId) {
-        // Para la compatibilidad actual, simplemente obtenemos las plantillas por tipo
-        templateList = await storage.getTemplatesByType(userId ? parseInt(userId) : 1, type);
-      } else if (type) {
-        templateList = await storage.getTemplatesByType(1, type);
-      } else if (userId) {
-        // Crear consulta personalizada para obtener las plantillas de un usuario
-        const templates = await db.select()
-          .from(templates)
-          .where(eq(templates.userId, parseInt(userId)));
-        templateList = templates;
+      if (type) {
+        templateList = await storage.getTemplatesByType(userId, type);
       } else {
-        // Obtener todas las plantillas
-        const allTemplates = await db.select().from(templates);
-        templateList = allTemplates;
+        // Obtener solo las plantillas del usuario autenticado o sistema (id=1)
+        const userTemplates = await db.select().from(templates)
+          .where(eq(templates.userId, userId));
+        const systemTemplates = await db.select().from(templates)
+          .where(eq(templates.userId, 1)); // Templates del sistema disponibles para todos
+        templateList = [...userTemplates, ...systemTemplates];
       }
       
       res.status(200).json(templateList);
@@ -849,13 +863,32 @@ export function setupTemplatesRoutes(router: Router) {
   });
 
   // Obtener plantilla por ID
-  router.get("/api/templates/:id", async (req: Request, res: Response) => {
+  router.get("/api/templates/:id", verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
+      // 🔐 SECURITY FIX: Verificar ownership de template
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ message: "Error creando mapeo de usuario" });
+      }
+      console.log(`🔐 [SECURITY] Getting template for REAL user_id: ${userId}`);
+      
       const template = await storage.getTemplate(id);
       
       if (!template) {
         return res.status(404).json({ message: "Plantilla no encontrada" });
+      }
+      
+      // 🔒 SECURITY: Solo permitir acceso a templates propias o del sistema
+      if (template.userId !== userId && template.userId !== 1) {
+        return res.status(403).json({ message: "Acceso denegado - template no pertenece al usuario" });
       }
       
       res.status(200).json(template);
@@ -866,7 +899,7 @@ export function setupTemplatesRoutes(router: Router) {
   });
 
   // Crear plantilla
-  router.post("/api/templates", async (req: Request, res: Response) => {
+  router.post("/api/templates", verifyFirebaseAuth, requireSubscriptionLevel(PermissionLevel.BASIC), async (req: Request, res: Response) => {
     try {
       const schema = z.object({
         userId: z.number(),
@@ -877,7 +910,24 @@ export function setupTemplatesRoutes(router: Router) {
         isDefault: z.boolean().optional(),
       });
 
-      const templateData = schema.parse(req.body);
+      // 🔐 SECURITY FIX: Usar user_id real del usuario autenticado
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ message: "Error creando mapeo de usuario" });
+      }
+      console.log(`🔐 [SECURITY] Creating template for REAL user_id: ${userId}`);
+      
+      const templateData = {
+        ...schema.parse(req.body),
+        userId // Usar userId real del usuario autenticado
+      };
       const template = await storage.createTemplate(templateData);
       
       res.status(201).json(template);
@@ -888,7 +938,7 @@ export function setupTemplatesRoutes(router: Router) {
   });
 
   // Actualizar plantilla
-  router.put("/api/templates/:id", async (req: Request, res: Response) => {
+  router.put("/api/templates/:id", verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const schema = z.object({
@@ -913,7 +963,7 @@ export function setupTemplatesRoutes(router: Router) {
   });
 
   // Eliminar plantilla
-  router.delete("/api/templates/:id", async (req: Request, res: Response) => {
+  router.delete("/api/templates/:id", verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteTemplate(id);
@@ -926,7 +976,7 @@ export function setupTemplatesRoutes(router: Router) {
   });
 
   // Crear plantillas profesionales
-  router.post("/api/templates/create-professional", async (req: Request, res: Response) => {
+  router.post("/api/templates/create-professional", verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
       const result = await createProfessionalTemplate();
       res.status(200).json(result);

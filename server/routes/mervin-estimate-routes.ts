@@ -1,11 +1,18 @@
 
 import { Express, Request, Response } from "express";
 import { z } from "zod";
-import { mervinEstimateService } from "../services/mervinEstimateService"; 
+import { mervinEstimateService } from "../services/mervinEstimateService";
+import { verifyFirebaseAuth } from "../middleware/firebase-auth";
+import { UserMappingService } from "../services/UserMappingService";
+import { DatabaseStorage } from "../DatabaseStorage";
+
+// Inicializar UserMappingService
+const databaseStorage = new DatabaseStorage();
+const userMappingService = UserMappingService.getInstance(databaseStorage); 
 
 export function registerMervinEstimateRoutes(app: Express): void {
   // Endpoint para procesar comando de estimado a través de Mervin
-  app.post('/api/mervin/estimate', async (req: Request, res: Response) => {
+  app.post('/api/mervin/estimate', verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
       const schema = z.object({
         message: z.string(),
@@ -13,7 +20,23 @@ export function registerMervinEstimateRoutes(app: Express): void {
         context: z.record(z.any()).optional()
       });
       
-      const { message, userId = 1, context = {} } = schema.parse(req.body);
+      const parsedBody = schema.parse(req.body);
+      
+      // 🔐 SECURITY FIX: Usar user_id real del usuario autenticado
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ type: "error", message: "Usuario no autenticado" });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ type: "error", message: "Error creando mapeo de usuario" });
+      }
+      console.log(`🔐 [SECURITY] Processing Mervin estimate for REAL user_id: ${userId}`);
+      
+      const { message, context = {} } = parsedBody;
       
       const result = await mervinEstimateService.processEstimateCommand(message, {
         userId,

@@ -2,6 +2,8 @@ import express, { Request, Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { ColumnMapping } from '../../client/src/lib/intelligentImport';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const anthropic = new Anthropic({
@@ -17,14 +19,29 @@ const router = express.Router();
 
 /**
  * Servicio que analiza la estructura de un CSV y detecta automáticamente los tipos de columnas
+ * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger análisis de CSV
  */
-router.post('/analyze-csv', async (req: Request, res: Response) => {
+router.post('/analyze-csv', verifyFirebaseAuth, async (req: Request, res: Response) => {
   try {
     const { csvData } = req.body;
 
     if (!csvData) {
       return res.status(400).json({ message: 'No se proporcionaron datos CSV' });
     }
+
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden analizar CSV
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ message: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ message: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Analyzing CSV for REAL user_id: ${userId}`);
 
     // Parse the CSV
     const rows = csvData.split('\n')
@@ -132,13 +149,28 @@ function extractExamplesForColumn(sampleRows: string[][], columnIndex: number): 
  * Enhanced contact data processing with name extraction
  * This endpoint takes the mapped data and tries to extract proper names from it
  */
-router.post('/enhance-contacts', async (req: Request, res: Response) => {
+// 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger mejora de contactos
+router.post('/enhance-contacts', verifyFirebaseAuth, async (req: Request, res: Response) => {
   try {
     const { contacts } = req.body;
     
     if (!contacts || !Array.isArray(contacts)) {
       return res.status(400).json({ message: 'No se proporcionaron datos de contactos válidos' });
     }
+
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden mejorar contactos
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ message: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ message: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Enhancing contacts for REAL user_id: ${userId}`);
     
     // Process contacts in batches to avoid hitting rate limits
     const batchSize = 10;

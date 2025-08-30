@@ -1,7 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { storage } from '../storage';
-import { requireAuth } from '../middleware/auth';
+import { verifyFirebaseAuth as requireAuth } from '../middleware/firebase-auth';
+import { UserMappingService } from '../services/UserMappingService';
+import { DatabaseStorage } from '../DatabaseStorage';
+
+// Inicializar UserMappingService
+const databaseStorage = new DatabaseStorage();
+const userMappingService = UserMappingService.getInstance(databaseStorage);
 
 const router = Router();
 
@@ -41,7 +47,19 @@ router.post('/', async (req, res) => {
     
     // Usar el firebaseUserId del frontend (autenticación requerida)
     const firebaseUserId = req.body.firebaseUserId;
-    const userId = 1; // ID numérico para PostgreSQL
+    // 🔐 SECURITY FIX: Usar user_id real del usuario autenticado
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ success: false, error: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ success: false, error: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Creating estimate for REAL user_id: ${userId}`);
     
     console.log(`👤 Usuario Firebase: ${firebaseUserId}, User ID: ${userId}`);
     
@@ -114,7 +132,19 @@ router.post('/', async (req, res) => {
 // GET /api/estimates - Obtener estimados del usuario
 router.get('/', async (req, res) => {
   try {
-    const userId = 1; // Usar ID por defecto para desarrollo
+    // 🔐 SECURITY FIX: Usar user_id real del usuario autenticado
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ success: false, error: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ success: false, error: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Getting estimates for REAL user_id: ${userId}`);
     const { status, limit = '50', offset = '0' } = req.query;
     
     let estimates = await storage.getEstimatesByUserId(userId);
@@ -152,7 +182,19 @@ router.get('/', async (req, res) => {
 // GET /api/estimates/:id - Obtener estimado específico
 router.get('/:id', requireAuth, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    // 🔐 SECURITY FIX: Usar user_id real del usuario autenticado  
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ success: false, error: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ success: false, error: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Operating with REAL user_id: ${userId}`);
     const estimateId = parseInt(req.params.id);
     
     if (isNaN(estimateId)) {
@@ -196,7 +238,19 @@ router.get('/:id', requireAuth, async (req, res) => {
 // PUT /api/estimates/:id - Actualizar estimado
 router.put('/:id', requireAuth, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    // 🔐 SECURITY FIX: Usar user_id real del usuario autenticado  
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ success: false, error: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ success: false, error: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Operating with REAL user_id: ${userId}`);
     const estimateId = parseInt(req.params.id);
     
     if (isNaN(estimateId)) {
@@ -272,7 +326,19 @@ router.put('/:id', requireAuth, async (req, res) => {
 // DELETE /api/estimates/:id - Eliminar estimado
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    // 🔐 SECURITY FIX: Usar user_id real del usuario autenticado  
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ success: false, error: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ success: false, error: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Operating with REAL user_id: ${userId}`);
     const estimateId = parseInt(req.params.id);
     
     if (isNaN(estimateId)) {
@@ -327,7 +393,19 @@ router.delete('/:id', requireAuth, async (req, res) => {
 // POST /api/estimates/:id/send - Enviar estimado por email
 router.post('/:id/send', requireAuth, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    // 🔐 SECURITY FIX: Usar user_id real del usuario autenticado  
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ success: false, error: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ success: false, error: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Operating with REAL user_id: ${userId}`);
     const estimateId = parseInt(req.params.id);
     const { email, message } = req.body;
     
@@ -391,7 +469,19 @@ router.post('/:id/send', requireAuth, async (req, res) => {
 // GET /api/estimates/stats - Estadísticas de estimados
 router.get('/stats/summary', requireAuth, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    // 🔐 SECURITY FIX: Usar user_id real del usuario autenticado  
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ success: false, error: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ success: false, error: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Operating with REAL user_id: ${userId}`);
     const estimates = await storage.getEstimatesByUserId(userId);
     
     const stats = {

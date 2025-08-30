@@ -8,6 +8,8 @@
 import { Router } from 'express';
 import { OpenRouterValidator } from '../ai/utils/OpenRouterValidator.js';
 import { OpenRouterClient } from '../ai/OpenRouterClient.js';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 const router = Router();
 
@@ -74,10 +76,31 @@ router.get('/diagnostic', async (req, res) => {
 /**
  * POST /api/openrouter/test
  * Test básico de conversación con OpenRouter
+ * 🔐 SECURITY FIX: Agregado verifyFirebaseAuth para proteger test de IA
  */
-router.post('/test', async (req, res) => {
+router.post('/test', verifyFirebaseAuth, async (req, res) => {
   try {
     const { message = 'Hola, soy un test de OpenRouter' } = req.body;
+    
+    // 🔐 SECURITY FIX: Solo usuarios autenticados pueden hacer tests de IA
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Testing OpenRouter for REAL user_id: ${userId}`);
     
     console.log('🧪 [OPENROUTER-API] Ejecutando test de conversación...');
     

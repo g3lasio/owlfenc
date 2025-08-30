@@ -5,14 +5,17 @@
 
 import { Router } from 'express';
 import { modernPdfService } from '../services/ModernPdfService';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 const router = Router();
 
 /**
  * Endpoint principal para generación rápida de PDF
  * Reemplaza completamente el sistema anterior
+ * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger generación de PDFs
  */
-router.post('/generate-pdf', async (req, res) => {
+router.post('/generate-pdf', verifyFirebaseAuth, async (req, res) => {
   const startTime = Date.now();
   console.log('🚀 [MODERN-ENDPOINT] Nueva solicitud de PDF recibida');
 
@@ -25,6 +28,26 @@ router.post('/generate-pdf', async (req, res) => {
         error: 'HTML requerido para generar PDF'
       });
     }
+
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden generar PDFs
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Generating PDF for REAL user_id: ${userId}`);
 
     console.log(`📄 [MODERN-ENDPOINT] Generando PDF tipo: ${type}`);
     console.log(`📏 [MODERN-ENDPOINT] Tamaño HTML: ${html.length} caracteres`);
@@ -77,8 +100,9 @@ router.post('/generate-pdf', async (req, res) => {
 
 /**
  * Endpoint específico para estimados (compatibilidad)
+ * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth
  */
-router.post('/generate-estimate', async (req, res) => {
+router.post('/generate-estimate', verifyFirebaseAuth, async (req, res) => {
   console.log('📊 [MODERN-ENDPOINT] Solicitud específica de estimado');
   req.body.type = 'estimate';
   return router.handle(req, res, () => {});
@@ -86,8 +110,9 @@ router.post('/generate-estimate', async (req, res) => {
 
 /**
  * Endpoint específico para contratos (futuro uso)
+ * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth
  */
-router.post('/generate-contract', async (req, res) => {
+router.post('/generate-contract', verifyFirebaseAuth, async (req, res) => {
   console.log('📋 [MODERN-ENDPOINT] Solicitud específica de contrato');
   req.body.type = 'contract';
   return router.handle(req, res, () => {});

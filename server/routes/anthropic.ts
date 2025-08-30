@@ -1,5 +1,7 @@
 import express from 'express';
 import Anthropic from '@anthropic-ai/sdk';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 const router = express.Router();
 
@@ -14,9 +16,28 @@ const anthropic = new Anthropic({
  * 
  * Este endpoint recibe el contenido de un archivo CSV y utiliza el modelo Claude
  * para analizar y estructurar los datos de materiales contenidos en él.
+ * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger API de IA costosa
  */
-router.post('/analyze-csv', async (req, res) => {
+router.post('/analyze-csv', verifyFirebaseAuth, async (req, res) => {
   try {
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar API de IA costosa
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Analyzing CSV with Anthropic for REAL user_id: ${userId}`);
+    
     const { csvContent } = req.body;
     
     if (!csvContent) {

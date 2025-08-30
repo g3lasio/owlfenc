@@ -13,6 +13,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { storage } from '../storage';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 const router = Router();
 
@@ -205,7 +206,16 @@ router.get('/list', async (req: Request, res: Response) => {
     }
     
     // 🛡️ SEGURIDAD CRÍTICA: Solo obtener proyectos del usuario autenticado
-    const projects = await storage.getProjectsByUserId(1); // Necesitamos mapear Firebase UID a user ID
+    // 🔐 CRITICAL SECURITY FIX: Mapear Firebase UID a user ID real
+    let userId = await userMappingService.getInternalUserId(req.firebaseUser.uid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(req.firebaseUser.uid, req.firebaseUser?.email || `${req.firebaseUser.uid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ error: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Getting projects for REAL user_id: ${userId} instead of hardcoded 1`);
+    const projects = await storage.getProjectsByUserId(userId);
     
     // Filtrar solo proyectos con facturas generadas del usuario actual
     const invoices = projects

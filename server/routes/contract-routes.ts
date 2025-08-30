@@ -7,6 +7,8 @@ import { MistralService } from "../services/mistralService";
 import generateContract from "../services/generateContract";
 import { hybridContractGenerator } from "../services/hybridContractGenerator";
 import OpenAI from "openai";
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 // Inicializar router y servicios
 const router = express.Router();
@@ -48,9 +50,30 @@ interface DatosExtraidos {
 }
 
 // Generate contract preview HTML
-router.post('/preview', async (req, res) => {
+// 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger generación de contratos
+router.post('/preview', verifyFirebaseAuth, async (req, res) => {
   try {
     console.log('📋 Generando preview del contrato...');
+    
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden generar contratos
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Generating contract preview for REAL user_id: ${userId}`);
     
     const contractData = req.body;
     
@@ -80,8 +103,26 @@ router.post('/preview', async (req, res) => {
 });
 
 // Generate contract pdf
-router.post("/generate-contract", async (req, res) => {
+router.post("/generate-contract", verifyFirebaseAuth, async (req, res) => {
   try {
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden generar contratos
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        err: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        err: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Generating contract for REAL user_id: ${userId}`);
+    
     const contract = req.body;
     const result = await generateContract(contract);
     res.status(200).json({
@@ -114,8 +155,26 @@ function guardarPDFTemporal(buffer: Buffer): string {
 
 // Ruta para generar contrato a partir de un PDF
 // API para manejar el flujo secuencial de preguntas para contratos
-router.post("/questions/next", async (req, res) => {
+router.post("/questions/next", verifyFirebaseAuth, async (req, res) => {
   try {
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden acceder al flujo de preguntas
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Processing contract questions for REAL user_id: ${userId}`);
+    
     const { currentQuestionId, answers } = req.body;
 
     // Aquí se definirían las preguntas del flujo y sus validaciones
@@ -288,8 +347,26 @@ router.post("/questions/next", async (req, res) => {
   }
 });
 
-router.post("/generar-contrato", upload.single("pdf"), async (req, res) => {
+router.post("/generar-contrato", verifyFirebaseAuth, upload.single("pdf"), async (req, res) => {
   try {
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden generar contratos desde PDF
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Generating contract from PDF for REAL user_id: ${userId}`);
+    
     if (!req.file) {
       return res.status(400).json({ error: "No se ha subido ningún archivo" });
     }
@@ -692,9 +769,29 @@ function generarContratoHTML(datos: DatosExtraidos): string {
 }
 
 // Enhanced contract generator endpoint
-router.post("/generate-hybrid", async (req, res) => {
+router.post("/generate-hybrid", verifyFirebaseAuth, async (req, res) => {
   try {
     console.log('🚀 [HYBRID-CONTRACT] Iniciando generación de contrato mejorado...');
+    
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden generar contratos híbridos
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        success: false,
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Generating hybrid contract for REAL user_id: ${userId}`);
     
     const { contractData, templatePreferences } = req.body;
     

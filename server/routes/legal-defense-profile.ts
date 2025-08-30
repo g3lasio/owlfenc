@@ -2,6 +2,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { storage } from '../storage';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 const router = Router();
 
@@ -41,9 +43,22 @@ const LegalDefenseProfileSchema = z.object({
 });
 
 // Obtener perfil de defensa legal
-router.get('/', async (req, res) => {
+// 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger perfiles legales
+router.get('/', verifyFirebaseAuth, async (req, res) => {
   try {
-    const userId = req.user?.id || 1; // Default para desarrollo
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden acceder a perfiles legales
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ error: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Getting legal profile for REAL user_id: ${userId}`);
     
     // Intentar cargar desde la base de datos
     const profile = await storage.getSettings(userId);
@@ -77,9 +92,23 @@ router.get('/', async (req, res) => {
 });
 
 // Guardar perfil de defensa legal
-router.post('/', async (req, res) => {
+// 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger guardado de perfiles
+router.post('/', verifyFirebaseAuth, async (req, res) => {
   try {
-    const userId = req.user?.id || 1; // Default para desarrollo
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden guardar perfiles legales
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ error: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Saving legal profile for REAL user_id: ${userId}`);
+    
     const profileData = LegalDefenseProfileSchema.parse(req.body);
     
     // Actualizar configuraciones del usuario con el perfil legal
@@ -103,9 +132,23 @@ router.post('/', async (req, res) => {
 });
 
 // Obtener configuración específica para el motor de defensa legal
-router.get('/defense-config/:projectType', async (req, res) => {
+// 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth
+router.get('/defense-config/:projectType', verifyFirebaseAuth, async (req, res) => {
   try {
-    const userId = req.user?.id || 1;
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden ver configuración de defensa
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ error: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Getting defense config for REAL user_id: ${userId}`);
+    
     const { projectType } = req.params;
     
     const profile = await storage.getSettings(userId);

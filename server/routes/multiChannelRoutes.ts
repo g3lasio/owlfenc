@@ -9,32 +9,48 @@
 
 import express from 'express';
 import multiChannelDeliveryService from '../services/multiChannelDeliveryService';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 const router = express.Router();
 
 /**
  * POST /api/multi-channel/initiate
  * Initiate secure multi-channel contract delivery
+ * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger entrega de contratos
  */
-router.post('/initiate', async (req, res) => {
+router.post('/initiate', verifyFirebaseAuth, async (req, res) => {
   try {
     console.log('🔐 [MULTI-CHANNEL API] Initiate request received');
     
     const { 
-      userId, 
       contractHTML, 
       deliveryMethods, 
       contractData, 
       securityFeatures 
     } = req.body;
 
-    // Validate required fields
-    if (!userId) {
-      return res.status(400).json({ 
-        error: 'User ID is required',
-        code: 'MISSING_USER_ID'
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden iniciar entrega
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        error: 'Usuario no autenticado',
+        code: 'UNAUTHORIZED'
       });
     }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        error: 'Error creando mapeo de usuario',
+        code: 'USER_MAPPING_FAILED'
+      });
+    }
+    console.log(`🔐 [SECURITY] Initiating contract delivery for REAL user_id: ${userId}`);
+
+    // Validate required fields
 
     if (!contractHTML) {
       return res.status(400).json({ 
@@ -144,10 +160,31 @@ router.post('/initiate', async (req, res) => {
 /**
  * GET /api/multi-channel/status/:contractId
  * Get delivery status for a contract
+ * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger estado de contratos
  */
-router.get('/status/:contractId', async (req, res) => {
+router.get('/status/:contractId', verifyFirebaseAuth, async (req, res) => {
   try {
     const { contractId } = req.params;
+    
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden ver estado de contratos
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        error: 'Usuario no autenticado',
+        code: 'UNAUTHORIZED'
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        error: 'Error creando mapeo de usuario',
+        code: 'USER_MAPPING_FAILED'
+      });
+    }
+    console.log(`🔐 [SECURITY] Getting contract status for REAL user_id: ${userId}`);
     
     // For now, return a mock status
     // In production, this would query a database for actual status

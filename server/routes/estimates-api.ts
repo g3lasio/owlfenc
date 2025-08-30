@@ -36,7 +36,7 @@ router.get('/', requireAuth, async (req, res) => {
     console.log('Obteniendo estimados para usuario:', userId);
     
     // Obtener estimados desde la base de datos
-    const estimates = await storage.getAllEstimates(userId);
+    const estimates = await storage.getEstimatesByUserId(userId);
     
     console.log('Estimados encontrados:', estimates.length);
     
@@ -115,14 +115,20 @@ router.post('/', requireAuth, requireSubscriptionLevel(PermissionLevel.BASIC), a
 });
 
 // GET /api/estimates/:id - Obtener un estimado específico
-router.get('/:id', async (req, res) => {
+router.get('/:id', requireAuth, async (req, res) => {
   try {
     // 🔐 SECURITY FIX: Usar user_id real del usuario autenticado
     const firebaseUid = req.firebaseUser?.uid;
     if (!firebaseUid) {
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
-    const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ error: 'Error creando mapeo de usuario' });
+    }
     console.log(`🔐 [SECURITY] Operating with REAL user_id: ${userId}`);
     const estimateId = parseInt(req.params.id);
     
@@ -154,14 +160,20 @@ router.get('/:id', async (req, res) => {
 });
 
 // PUT /api/estimates/:id - Actualizar un estimado
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAuth, async (req, res) => {
   try {
     // 🔐 SECURITY FIX: Usar user_id real del usuario autenticado
     const firebaseUid = req.firebaseUser?.uid;
     if (!firebaseUid) {
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
-    const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ error: 'Error creando mapeo de usuario' });
+    }
     console.log(`🔐 [SECURITY] Operating with REAL user_id: ${userId}`);
     const estimateId = parseInt(req.params.id);
     
@@ -205,7 +217,13 @@ router.delete('/:id', async (req, res) => {
     if (!firebaseUid) {
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
-    const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ error: 'Error creando mapeo de usuario' });
+    }
     console.log(`🔐 [SECURITY] Operating with REAL user_id: ${userId}`);
     const estimateId = parseInt(req.params.id);
     
@@ -242,14 +260,20 @@ router.delete('/:id', async (req, res) => {
 });
 
 // POST /api/estimates/:id/update-status - Actualizar estado del estimado
-router.post('/:id/update-status', async (req, res) => {
+router.post('/:id/update-status', requireAuth, async (req, res) => {
   try {
     // 🔐 SECURITY FIX: Usar user_id real del usuario autenticado
     const firebaseUid = req.firebaseUser?.uid;
     if (!firebaseUid) {
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
-    const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ error: 'Error creando mapeo de usuario' });
+    }
     console.log(`🔐 [SECURITY] Operating with REAL user_id: ${userId}`);
     const estimateId = parseInt(req.params.id);
     const { status } = req.body;

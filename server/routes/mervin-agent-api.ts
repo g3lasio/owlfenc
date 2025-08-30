@@ -13,6 +13,8 @@
 import express, { Request, Response } from 'express';
 import { MervinChatOrchestrator, MervinRequest, MervinResponse } from '../ai/MervinChatOrchestrator';
 import { z } from 'zod';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 const router = express.Router();
 
@@ -39,14 +41,35 @@ function getOrchestrator(): MervinChatOrchestrator {
 /**
  * POST /api/mervin/process
  * Endpoint principal para procesar requests de Mervin AI
+ * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger sistema Mervin AI
  */
-router.post('/process', async (req: Request, res: Response) => {
+router.post('/process', verifyFirebaseAuth, async (req: Request, res: Response) => {
   console.log('🤖 [MERVIN-API] Nueva request recibida');
   console.log('📝 [MERVIN-API] Body:', JSON.stringify(req.body, null, 2));
 
   try {
-    // Validar el request
-    const validatedRequest = mervinRequestSchema.parse(req.body);
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar Mervin AI
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        success: false,
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Processing Mervin request for REAL user_id: ${userId}`);
+    
+    // Validar el request (usar userId autenticado)
+    const validatedRequest = mervinRequestSchema.parse({...req.body, userId: userId.toString()});
     
     console.log(`🧠 [MERVIN-API] Procesando para usuario: ${validatedRequest.userId}`);
     console.log(`🎯 [MERVIN-API] Modo: ${validatedRequest.agentMode}`);

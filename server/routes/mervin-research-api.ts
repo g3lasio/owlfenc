@@ -16,6 +16,8 @@ import express from 'express';
 import { WebResearchService } from '../ai/unified-chat/WebResearchService';
 import { MervinChatOrchestrator } from '../ai/MervinChatOrchestrator';
 import Anthropic from '@anthropic-ai/sdk';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 const router = express.Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -25,11 +27,30 @@ const mervinOrchestrator = new MervinChatOrchestrator();
 /**
  * INVESTIGACIÓN EXPRESS - SÚPER RÁPIDA (< 5 segundos)
  * Para consultas urgentes de contratistas
+ * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger investigación de IA
  */
-router.post('/express-research', async (req, res) => {
+router.post('/express-research', verifyFirebaseAuth, async (req, res) => {
   console.log('⚡ [RESEARCH-API] Solicitud de investigación express recibida');
   
   try {
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar investigación de IA costosa
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Express research for REAL user_id: ${userId}`);
+    
     const { query, topic, location } = req.body;
     
     if (!query || !topic) {
@@ -67,11 +88,30 @@ router.post('/express-research', async (req, res) => {
 /**
  * BÚSQUEDAS PARALELAS - MÚLTIPLES CONSULTAS SIMULTÁNEAS
  * Para contratistas que necesitan información sobre varios temas a la vez
+ * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger investigación paralela
  */
-router.post('/parallel-research', async (req, res) => {
+router.post('/parallel-research', verifyFirebaseAuth, async (req, res) => {
   console.log('🚀 [RESEARCH-API] Solicitud de investigación paralela recibida');
   
   try {
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar investigación paralela costosa
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Parallel research for REAL user_id: ${userId}`);
+    
     const { queries } = req.body;
     
     if (!queries || !Array.isArray(queries)) {
@@ -114,10 +154,28 @@ router.post('/parallel-research', async (req, res) => {
  * INVESTIGACIÓN PARA ESTIMADOS - ESPECIALIZADA
  * Información específica que contratistas necesitan para crear estimados
  */
-router.post('/estimate-research', async (req, res) => {
+router.post('/estimate-research', verifyFirebaseAuth, async (req, res) => {
   console.log('💰 [RESEARCH-API] Solicitud de investigación para estimado recibida');
   
   try {
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar investigación de estimados
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Estimate research for REAL user_id: ${userId}`);
+    
     const { projectType, materials, location } = req.body;
     
     if (!projectType || !materials || !Array.isArray(materials)) {
@@ -194,10 +252,28 @@ router.get('/performance-stats', async (req, res) => {
  * INVALIDACIÓN INTELIGENTE - LIMPIAR DATOS DESACTUALIZADOS
  * Permite a los contratistas actualizar información cuando hay cambios de mercado
  */
-router.post('/invalidate-cache', async (req, res) => {
+router.post('/invalidate-cache', verifyFirebaseAuth, async (req, res) => {
   console.log('🔄 [RESEARCH-API] Solicitud de invalidación de caché');
   
   try {
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden invalidar caché
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Cache invalidation for REAL user_id: ${userId}`);
+    
     const { changeType } = req.body;
     
     const validTypes = ['prices', 'regulations', 'materials', 'all'];

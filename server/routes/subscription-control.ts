@@ -1,5 +1,12 @@
 import { Request, Response } from 'express';
 import { subscriptionControlService } from '../services/subscriptionControlService';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { UserMappingService } from '../services/UserMappingService';
+import { DatabaseStorage } from '../DatabaseStorage';
+
+// Inicializar UserMappingService
+const databaseStorage = new DatabaseStorage();
+const userMappingService = UserMappingService.getInstance(databaseStorage);
 
 /**
  * NUEVAS RUTAS PARA CONTROL ROBUSTO DE SUSCRIPCIONES
@@ -9,18 +16,28 @@ import { subscriptionControlService } from '../services/subscriptionControlServi
 export function registerSubscriptionControlRoutes(app: any) {
   
   // Obtener estado real de suscripción (REEMPLAZA /user/subscription)
-  app.get('/api/subscription/status/:userId', async (req: Request, res: Response) => {
+  app.get('/api/subscription/status', verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
-      const { userId } = req.params;
+      // 🔐 SECURITY FIX: Obtener userId del usuario autenticado
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ error: 'Usuario no autenticado', success: false });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ error: 'Error creando mapeo de usuario', success: false });
+      }
+      console.log(`📊 [SECURITY] Getting subscription status for REAL user_id: ${userId}`);
       
-      console.log(`📊 [SUBSCRIPTION-CONTROL] Getting real subscription status for: ${userId}`);
-      
-      const status = await subscriptionControlService.getUserSubscriptionStatus(userId);
+      const status = await subscriptionControlService.getUserSubscriptionStatus(userId.toString());
       
       if (!status) {
         // Usuario nuevo - crear trial automáticamente
-        await subscriptionControlService.createTrialSubscription(userId);
-        const newStatus = await subscriptionControlService.getUserSubscriptionStatus(userId);
+        await subscriptionControlService.createTrialSubscription(userId.toString());
+        const newStatus = await subscriptionControlService.getUserSubscriptionStatus(userId.toString());
         
         return res.json({
           success: true,
@@ -43,13 +60,27 @@ export function registerSubscriptionControlRoutes(app: any) {
   });
 
   // Verificar si puede usar feature específica
-  app.get('/api/subscription/can-use/:userId/:feature', async (req: Request, res: Response) => {
+  app.get('/api/subscription/can-use/:feature', verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
-      const { userId, feature } = req.params;
+      const { feature } = req.params;
+      
+      // 🔐 SECURITY FIX: Obtener userId del usuario autenticado
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ error: 'Usuario no autenticado', success: false });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ error: 'Error creando mapeo de usuario', success: false });
+      }
+      console.log(`🔐 [SECURITY] Checking feature access for REAL user_id: ${userId}`);
       
       console.log(`🔍 [SUBSCRIPTION-CONTROL] Checking if ${userId} can use ${feature}`);
       
-      const usageStatus = await subscriptionControlService.canUseFeature(userId, feature);
+      const usageStatus = await subscriptionControlService.canUseFeature(userId.toString(), feature);
       
       res.json({
         success: true,
@@ -66,13 +97,27 @@ export function registerSubscriptionControlRoutes(app: any) {
   });
 
   // Incrementar uso (CON CONTROL REAL)
-  app.post('/api/subscription/use-feature', async (req: Request, res: Response) => {
+  app.post('/api/subscription/use-feature', verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
-      const { userId, feature, count = 1 } = req.body;
+      const { feature, count = 1 } = req.body;
+      
+      // 🔐 SECURITY FIX: Obtener userId del usuario autenticado
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ error: 'Usuario no autenticado', success: false });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ error: 'Error creando mapeo de usuario', success: false });
+      }
+      console.log(`🔐 [SECURITY] Incrementing feature usage for REAL user_id: ${userId}`);
       
       console.log(`📊 [SUBSCRIPTION-CONTROL] Using feature ${feature} for ${userId}`);
       
-      const allowed = await subscriptionControlService.incrementUsage(userId, feature, count);
+      const allowed = await subscriptionControlService.incrementUsage(userId.toString(), feature, count);
       
       if (!allowed) {
         return res.status(403).json({
@@ -96,15 +141,27 @@ export function registerSubscriptionControlRoutes(app: any) {
   });
 
   // Obtener límites y uso actual
-  app.get('/api/subscription/usage-summary/:userId', async (req: Request, res: Response) => {
+  app.get('/api/subscription/usage-summary', verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
-      const { userId } = req.params;
+      // 🔐 SECURITY FIX: Obtener userId del usuario autenticado
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ error: 'Usuario no autenticado', success: false });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ error: 'Error creando mapeo de usuario', success: false });
+      }
+      console.log(`🔐 [SECURITY] Getting usage summary for REAL user_id: ${userId}`);
       
       const features = ['basicEstimates', 'aiEstimates', 'contracts', 'propertyVerifications', 'permitAdvisor', 'projects'];
       const summary = [];
       
       for (const feature of features) {
-        const status = await subscriptionControlService.canUseFeature(userId, feature);
+        const status = await subscriptionControlService.canUseFeature(userId.toString(), feature);
         summary.push(status);
       }
       

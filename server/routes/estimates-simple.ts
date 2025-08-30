@@ -5,11 +5,18 @@
 import { Router } from 'express';
 import { storage } from '../storage';
 import { insertProjectSchema } from '@shared/schema';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { UserMappingService } from '../services/UserMappingService';
+import { DatabaseStorage } from '../DatabaseStorage';
+
+// Inicializar UserMappingService
+const databaseStorage = new DatabaseStorage();
+const userMappingService = UserMappingService.getInstance(databaseStorage);
 
 const router = Router();
 
 // POST /api/estimates - Crear nuevo estimado y guardarlo como proyecto
-router.post('/', async (req, res) => {
+router.post('/', verifyFirebaseAuth, async (req, res) => {
   try {
     console.log('💾 Autoguardado - datos recibidos:', {
       firebaseUserId: req.body.firebaseUserId,
@@ -25,9 +32,23 @@ router.post('/', async (req, res) => {
     const projectId = `proj_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     const estimateNumber = `EST-${Date.now()}`;
 
+    // 🔐 SECURITY FIX: Usar user_id real del usuario autenticado
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ success: false, message: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ success: false, message: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Creating project for REAL user_id: ${userId}`);
+    
     // Preparar datos del proyecto para la base de datos
     const projectData = {
-      userId: 1, // Usuario por defecto para desarrollo
+      userId: userId, // Usuario REAL autenticado
       projectId: projectId,
       clientName: req.body.clientName || 'Cliente',
       clientEmail: req.body.clientEmail || '',
@@ -79,12 +100,25 @@ router.post('/', async (req, res) => {
 });
 
 // GET /api/estimates - Obtener estimados/proyectos
-router.get('/', async (req, res) => {
+router.get('/', verifyFirebaseAuth, async (req, res) => {
   try {
+    // 🔐 SECURITY FIX: Solo obtener proyectos del usuario autenticado
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ success: false, message: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ success: false, message: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Getting projects for REAL user_id: ${userId}`);
     console.log('📋 Obteniendo lista de proyectos...');
     
-    // Obtener todos los proyectos (que incluyen los estimados guardados)
-    const projects = await storage.getAllProjects();
+    // Obtener solo los proyectos del usuario autenticado
+    const projects = await storage.getProjectsByUserId(userId);
     
     console.log(`✅ Se encontraron ${projects.length} proyectos`);
     

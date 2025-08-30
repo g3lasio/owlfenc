@@ -6,11 +6,15 @@ import { Router } from 'express';
 import puppeteer from 'puppeteer';
 import { db } from '../db';
 import { contracts } from '../../shared/schema';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
+import { eq } from 'drizzle-orm';
 
 const router = Router();
 
 // Save contract to history
-router.post('/save', async (req, res) => {
+// 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger guardado de contratos
+router.post('/save', verifyFirebaseAuth, async (req, res) => {
   try {
     const { contractData, name, status = 'generated' } = req.body;
 
@@ -20,8 +24,23 @@ router.post('/save', async (req, res) => {
       });
     }
 
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden guardar contratos
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ error: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Saving contract for REAL user_id: ${userId}`);
+
     // Save to database
     const savedContract = await db.insert(contracts).values({
+      userId: userId, // 🔐 SECURITY: Asociar contrato al usuario autenticado
       clientName: contractData.contractData?.clientName || name,
       clientAddress: contractData.contractData?.clientAddress || '',
       projectType: contractData.contractData?.projectType || 'Construction Project',
@@ -59,7 +78,8 @@ router.post('/save', async (req, res) => {
 });
 
 // Generate PDF from contract HTML
-router.post('/generate-pdf', async (req, res) => {
+// 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger generación de PDFs
+router.post('/generate-pdf', verifyFirebaseAuth, async (req, res) => {
   let browser;
   
   try {
@@ -70,6 +90,20 @@ router.post('/generate-pdf', async (req, res) => {
         error: 'Missing required field: contractHtml' 
       });
     }
+
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden generar PDFs
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ error: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Generating PDF for REAL user_id: ${userId}`);
 
     // Launch Puppeteer
     browser = await puppeteer.launch({
@@ -199,9 +233,26 @@ router.post('/generate-pdf', async (req, res) => {
 });
 
 // Get contract history
-router.get('/history', async (req, res) => {
+// 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger historial de contratos
+router.get('/history', verifyFirebaseAuth, async (req, res) => {
   try {
-    const contractHistory = await db.select().from(contracts).orderBy(contracts.createdAt);
+    // 🔐 SECURITY FIX: Solo mostrar contratos del usuario autenticado
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ error: 'Error creando mapeo de usuario' });
+    }
+    console.log(`🔐 [SECURITY] Getting contract history for REAL user_id: ${userId}`);
+
+    const contractHistory = await db.select().from(contracts)
+      .where(eq(contracts.userId, userId))
+      .orderBy(contracts.createdAt);
     
     res.json({ 
       success: true, 

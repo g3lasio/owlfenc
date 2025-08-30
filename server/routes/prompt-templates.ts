@@ -3,12 +3,31 @@ import { z } from "zod";
 import { storage } from "../storage";
 import { promptGeneratorService } from "../services/promptGeneratorService";
 import { InsertPromptTemplate } from "@shared/schema";
+import { verifyFirebaseAuth } from "../middleware/firebase-auth";
+import { UserMappingService } from "../services/UserMappingService";
+import { DatabaseStorage } from "../DatabaseStorage";
+
+// Inicializar UserMappingService
+const databaseStorage = new DatabaseStorage();
+const userMappingService = UserMappingService.getInstance(databaseStorage);
 
 export function registerPromptTemplateRoutes(app: Express): void {
   // Obtener todas las plantillas de prompts
-  app.get('/api/prompt-templates', async (req: Request, res: Response) => {
+  app.get('/api/prompt-templates', verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
-      const userId = req.query.userId ? parseInt(req.query.userId.toString()) : 1;
+      // 🔐 SECURITY FIX: Solo obtener templates del usuario autenticado
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ message: 'Usuario no autenticado' });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ message: 'Error creando mapeo de usuario' });
+      }
+      console.log(`🔐 [SECURITY] Getting prompt templates for REAL user_id: ${userId}`);
       
       // Obtener todas las plantillas de prompts del usuario
       const templates = await promptGeneratorService.getPromptTemplatesByCategory(userId, 'all');
@@ -21,10 +40,22 @@ export function registerPromptTemplateRoutes(app: Express): void {
   });
   
   // Obtener plantillas de prompts por categoría
-  app.get('/api/prompt-templates/category/:category', async (req: Request, res: Response) => {
+  app.get('/api/prompt-templates/category/:category', verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
       const { category } = req.params;
-      const userId = req.query.userId ? parseInt(req.query.userId.toString()) : 1;
+      // 🔐 SECURITY FIX: Solo obtener templates del usuario autenticado
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ message: 'Usuario no autenticado' });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ message: 'Error creando mapeo de usuario' });
+      }
+      console.log(`🔐 [SECURITY] Getting category templates for REAL user_id: ${userId}`);
       
       // Obtener plantillas de la categoría especificada
       const templates = await promptGeneratorService.getPromptTemplatesByCategory(userId, category);
@@ -37,7 +68,7 @@ export function registerPromptTemplateRoutes(app: Express): void {
   });
   
   // Obtener una plantilla de prompt por ID
-  app.get('/api/prompt-templates/:id', async (req: Request, res: Response) => {
+  app.get('/api/prompt-templates/:id', verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -45,11 +76,30 @@ export function registerPromptTemplateRoutes(app: Express): void {
         return res.status(400).json({ message: 'ID inválido' });
       }
       
+      // 🔐 SECURITY FIX: Verificar ownership del template
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ message: 'Usuario no autenticado' });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ message: 'Error creando mapeo de usuario' });
+      }
+      console.log(`🔐 [SECURITY] Getting template for REAL user_id: ${userId}`);
+      
       // Obtener plantilla
       const template = await promptGeneratorService.getPromptTemplate(id);
       
       if (!template) {
         return res.status(404).json({ message: 'Plantilla no encontrada' });
+      }
+      
+      // 🔒 SECURITY: Solo permitir acceso a templates propias o del sistema
+      if (template.userId !== userId && template.userId !== 1) {
+        return res.status(403).json({ message: 'Acceso denegado - template no pertenece al usuario' });
       }
       
       res.json(template);
@@ -60,10 +110,22 @@ export function registerPromptTemplateRoutes(app: Express): void {
   });
   
   // Obtener plantilla predeterminada por categoría
-  app.get('/api/prompt-templates/default/:category', async (req: Request, res: Response) => {
+  app.get('/api/prompt-templates/default/:category', verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
       const { category } = req.params;
-      const userId = req.query.userId ? parseInt(req.query.userId.toString()) : 1;
+      // 🔐 SECURITY FIX: Solo obtener templates del usuario autenticado
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ message: 'Usuario no autenticado' });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ message: 'Error creando mapeo de usuario' });
+      }
+      console.log(`🔐 [SECURITY] Getting default template for REAL user_id: ${userId}`);
       
       // Obtener plantilla predeterminada
       const template = await promptGeneratorService.getDefaultPromptTemplate(userId, category);
@@ -80,7 +142,7 @@ export function registerPromptTemplateRoutes(app: Express): void {
   });
   
   // Crear una nueva plantilla de prompt
-  app.post('/api/prompt-templates', async (req: Request, res: Response) => {
+  app.post('/api/prompt-templates', verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
       const schema = z.object({
         userId: z.number().optional(),
@@ -95,9 +157,23 @@ export function registerPromptTemplateRoutes(app: Express): void {
       // Validar datos
       const validatedData = schema.parse(req.body);
       
+      // 🔐 SECURITY FIX: Crear template para usuario autenticado
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ message: 'Usuario no autenticado' });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ message: 'Error creando mapeo de usuario' });
+      }
+      console.log(`🔐 [SECURITY] Creating template for REAL user_id: ${userId}`);
+      
       // Crear objeto para inserción
       const insertData: InsertPromptTemplate = {
-        userId: validatedData.userId || 1,
+        userId: userId,
         name: validatedData.name,
         category: validatedData.category,
         promptText: validatedData.promptText,
@@ -125,7 +201,7 @@ export function registerPromptTemplateRoutes(app: Express): void {
   });
   
   // Actualizar una plantilla de prompt
-  app.put('/api/prompt-templates/:id', async (req: Request, res: Response) => {
+  app.put('/api/prompt-templates/:id', verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -145,11 +221,30 @@ export function registerPromptTemplateRoutes(app: Express): void {
       // Validar datos
       const validatedData = schema.parse(req.body);
       
+      // 🔐 SECURITY FIX: Verificar ownership antes de actualizar
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ message: 'Usuario no autenticado' });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ message: 'Error creando mapeo de usuario' });
+      }
+      console.log(`🔐 [SECURITY] Updating template for REAL user_id: ${userId}`);
+      
       // Obtener la plantilla existente
       const existingTemplate = await promptGeneratorService.getPromptTemplate(id);
       
       if (!existingTemplate) {
         return res.status(404).json({ message: 'Plantilla no encontrada' });
+      }
+      
+      // 🔒 SECURITY: Solo permitir actualizar templates propias
+      if (existingTemplate.userId !== userId && existingTemplate.userId !== 1) {
+        return res.status(403).json({ message: 'Acceso denegado - template no pertenece al usuario' });
       }
       
       // Actualizar plantilla
@@ -171,7 +266,7 @@ export function registerPromptTemplateRoutes(app: Express): void {
   });
   
   // Eliminar una plantilla de prompt
-  app.delete('/api/prompt-templates/:id', async (req: Request, res: Response) => {
+  app.delete('/api/prompt-templates/:id', verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -179,11 +274,30 @@ export function registerPromptTemplateRoutes(app: Express): void {
         return res.status(400).json({ message: 'ID inválido' });
       }
       
+      // 🔐 SECURITY FIX: Verificar ownership antes de eliminar
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ message: 'Usuario no autenticado' });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ message: 'Error creando mapeo de usuario' });
+      }
+      console.log(`🔐 [SECURITY] Deleting template for REAL user_id: ${userId}`);
+      
       // Verificar que la plantilla existe
       const template = await promptGeneratorService.getPromptTemplate(id);
       
       if (!template) {
         return res.status(404).json({ message: 'Plantilla no encontrada' });
+      }
+      
+      // 🔒 SECURITY: Solo permitir eliminar templates propias (no del sistema)
+      if (template.userId !== userId) {
+        return res.status(403).json({ message: 'Acceso denegado - no puede eliminar templates del sistema o de otros usuarios' });
       }
       
       // Eliminar plantilla
@@ -201,7 +315,7 @@ export function registerPromptTemplateRoutes(app: Express): void {
   });
   
   // Generar un prompt completo a partir de datos del proyecto
-  app.post('/api/prompt-templates/generate', async (req: Request, res: Response) => {
+  app.post('/api/prompt-templates/generate', verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
       const schema = z.object({
         userId: z.number().optional(),
@@ -210,7 +324,23 @@ export function registerPromptTemplateRoutes(app: Express): void {
       });
       
       // Validar datos
-      const { userId = 1, projectData, category } = schema.parse(req.body);
+      const parsedData = schema.parse(req.body);
+      
+      // 🔐 SECURITY FIX: Usar userId del usuario autenticado
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ message: 'Usuario no autenticado' });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ message: 'Error creando mapeo de usuario' });
+      }
+      console.log(`🔐 [SECURITY] Generating prompt for REAL user_id: ${userId}`);
+      
+      const { projectData, category } = parsedData;
       
       // Generar prompt
       const prompt = await promptGeneratorService.generatePromptForProject(userId, projectData, category);
@@ -231,7 +361,7 @@ export function registerPromptTemplateRoutes(app: Express): void {
   });
   
   // Procesar un prompt con OpenAI para obtener una estimación
-  app.post('/api/prompt-templates/process', async (req: Request, res: Response) => {
+  app.post('/api/prompt-templates/process', verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
       const schema = z.object({
         prompt: z.string().min(1, "Se requiere un prompt"),

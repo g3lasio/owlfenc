@@ -1,12 +1,33 @@
 import { Router } from 'express';
 import OpenAI from 'openai';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 const router = Router();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // DeepSearch AI endpoint
-router.post('/deepsearch-ai', async (req, res) => {
+// 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger DeepSearch AI costoso
+router.post('/deepsearch-ai', verifyFirebaseAuth, async (req, res) => {
   try {
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar DeepSearch AI costoso
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] DeepSearch AI for REAL user_id: ${userId}`);
+    
     const { option, projectDescription, clientInfo } = req.body;
     
     console.log('🤖 DeepSearch AI request:', { option, projectDescription: projectDescription?.substring(0, 100) });

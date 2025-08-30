@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express';
 import OpenAI from 'openai';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 const router = express.Router();
 
@@ -9,8 +11,27 @@ const openai = new OpenAI({
 });
 
 // Chat completion endpoint for onboarding
-router.post('/chat', async (req: Request, res: Response) => {
+// 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger chat de IA
+router.post('/chat', verifyFirebaseAuth, async (req: Request, res: Response) => {
   try {
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar chat de IA costoso
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Processing AI chat for REAL user_id: ${userId}`);
+    
     const { messages, model = 'gpt-4o-mini', max_tokens = 150 } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
