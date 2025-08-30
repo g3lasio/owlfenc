@@ -2,6 +2,8 @@
 
 import { Router } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 const router = Router();
 
@@ -12,9 +14,30 @@ const anthropic = new Anthropic({
 
 /**
  * Endpoint para generar contratos usando Anthropic Claude
+ * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger generación de contratos
  */
-router.post('/generate-contract', async (req, res) => {
+router.post('/generate-contract', verifyFirebaseAuth, async (req, res) => {
   try {
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden generar contratos con IA
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        success: false,
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Contract generation for REAL user_id: ${userId}`);
+    
     const { prompt, projectData, baseTemplate, enhancementLevel, legalCompliance } = req.body;
 
     if (!prompt) {

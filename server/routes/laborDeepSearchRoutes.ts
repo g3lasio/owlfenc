@@ -72,15 +72,15 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
 
       // Estructura de respuesta compatible con DeepSearchResult
       const laborOnlyResult = {
-        projectType: laborResult.projectType || 'Labor Analysis',
+        projectType: 'Labor Analysis',
         projectScope: `Labor cost analysis for: ${validatedData.projectDescription.substring(0, 100)}...`,
         materials: [], // LABOR ONLY: Sin materiales
         laborCosts: laborResult.laborItems || [],
         additionalCosts: [],
         totalMaterialsCost: 0, // LABOR ONLY: $0 en materiales
-        totalLaborCost: laborResult.totalCost || 0,
+        totalLaborCost: laborResult.totalLaborCost || 0,
         totalAdditionalCost: 0,
-        grandTotal: laborResult.totalCost || 0,
+        grandTotal: laborResult.totalLaborCost || 0,
         confidence: 0.85,
         recommendations: ['Análisis enfocado únicamente en costos de labor'],
         warnings: laborResult.laborItems?.length === 0 ? ['No se encontraron tareas de labor específicas'] : []
@@ -88,7 +88,7 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
 
       console.log('✅ LABOR ONLY: Análisis completado', {
         laborItemsCount: laborResult.laborItems?.length || 0,
-        totalCost: laborResult.totalCost || 0
+        totalCost: laborResult.totalLaborCost || 0
       });
 
       res.json({
@@ -115,6 +115,26 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
   app.post('/api/labor-deepsearch/analyze', verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
       console.log('🔧 Labor DeepSearch API: Recibiendo solicitud de análisis de labor', req.body);
+
+      // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar análisis de labor costoso
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ 
+          success: false,
+          error: 'Usuario no autenticado' 
+        });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ 
+          success: false,
+          error: 'Error creando mapeo de usuario' 
+        });
+      }
+      console.log(`🔐 [SECURITY] Labor analysis for REAL user_id: ${userId}`);
 
       // Validar entrada
       const validatedData = LaborAnalysisSchema.parse(req.body);
@@ -161,6 +181,26 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
     try {
       console.log('🔧 Labor DeepSearch API: Generando items de labor compatibles');
 
+      // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar generación de items costoso
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ 
+          success: false,
+          error: 'Usuario no autenticado' 
+        });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ 
+          success: false,
+          error: 'Error creando mapeo de usuario' 
+        });
+      }
+      console.log(`🔐 [SECURITY] Labor items generation for REAL user_id: ${userId}`);
+
       // Validar entrada
       const validatedData = LaborAnalysisSchema.parse(req.body);
       
@@ -203,6 +243,26 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
   app.post('/api/labor-deepsearch/combined', verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
       console.log('🔧🔨 Combined DeepSearch API: Recibiendo solicitud de análisis combinado', req.body);
+
+      // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar análisis combinado costoso
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ 
+          success: false,
+          error: 'Usuario no autenticado' 
+        });
+      }
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      }
+      if (!userId) {
+        return res.status(500).json({ 
+          success: false,
+          error: 'Error creando mapeo de usuario' 
+        });
+      }
+      console.log(`🔐 [SECURITY] Combined analysis for REAL user_id: ${userId}`);
 
       // Validar entrada
       const validatedData = CombinedAnalysisSchema.parse(req.body);
@@ -298,7 +358,7 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
 
       // Formatear respuesta compatible con DeepSearchResult para FULL COSTS
       const fullCostsResult = {
-        projectType: combinedResult.projectType || 'Combined Analysis',
+        projectType: 'Combined Analysis',
         projectScope: `Complete analysis: ${validatedData.projectDescription.substring(0, 100)}...`,
         materials: combinedResult.materials || [],
         laborCosts: combinedResult.labor || [],

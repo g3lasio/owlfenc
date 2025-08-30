@@ -35,8 +35,27 @@ const anthropic = new Anthropic({
 });
 
 // PDF OCR extraction endpoint
-router.post('/extract-pdf', upload.single('pdf'), async (req, res) => {
+// 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger extracción de PDFs legales
+router.post('/extract-pdf', upload.single('pdf'), verifyFirebaseAuth, async (req, res) => {
   try {
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden procesar documentos legales
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Processing legal PDF for REAL user_id: ${userId}`);
+    
     if (!req.file) {
       return res.status(400).json({ error: 'No PDF file provided' });
     }

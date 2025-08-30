@@ -5,6 +5,8 @@
 
 import { Router } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 const router = Router();
 
@@ -27,9 +29,30 @@ const DEFAULT_MODEL_STR = "claude-sonnet-4-20250514";
 
 /**
  * Smart summarization endpoint for project descriptions
+ * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger sumarización de IA
  */
-router.post('/summarize-description', async (req, res) => {
+router.post('/summarize-description', verifyFirebaseAuth, async (req, res) => {
   try {
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar sumarización de IA costosa
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        success: false,
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Text summarization for REAL user_id: ${userId}`);
+    
     const { text, maxLength = 500, projectContext = "construcción" } = req.body;
 
     if (!text || typeof text !== 'string') {

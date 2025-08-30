@@ -7,7 +7,9 @@ import { fileURLToPath } from 'url';
 import pdf from 'pdf-parse';
 import sharp from 'sharp';
 import Anthropic from '@anthropic-ai/sdk';
-import LegalDefenseEngine from '../../client/src/services/legalDefenseEngine';
+import { LegalDefenseEngine } from '../../client/src/services/legalDefenseEngine';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 const router = Router();
 
@@ -57,11 +59,32 @@ const anthropic = new Anthropic({
 
 /**
  * Endpoint principal: PDF → Contrato Blindado
+ * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger procesamiento de PDFs legales
  */
-router.post('/pdf-to-contract', upload.single('estimatePdf'), async (req, res) => {
+router.post('/pdf-to-contract', verifyFirebaseAuth, upload.single('estimatePdf'), async (req, res) => {
   console.log('🛡️ LEGAL DEFENSE ENGINE: Processing document for defensive contract...');
   
   try {
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden procesar documentos legales
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        success: false,
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Processing legal PDF for REAL user_id: ${userId}`);
+    
     if (!req.file) {
       return res.status(400).json({
         success: false,

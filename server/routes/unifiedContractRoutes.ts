@@ -6,6 +6,8 @@
 import { Router, Request, Response } from 'express';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { ContractData, GeneratedContract, contractDataSchema } from '@shared/contractSchema';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 const router = Router();
 
@@ -16,9 +18,28 @@ const anthropic = new Anthropic({
 
 /**
  * Complete missing contract data using Anthropic AI
+ * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger completado de contratos
  */
-router.post('/complete-contract-data', async (req: Request, res: Response) => {
+router.post('/complete-contract-data', verifyFirebaseAuth, async (req: Request, res: Response) => {
   try {
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar completado de contratos con IA
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Completing contract data for REAL user_id: ${userId}`);
+    
     const { contractData } = req.body;
 
     console.log('🧠 Completando datos de contrato con Anthropic AI...');

@@ -4,7 +4,9 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import pdf from 'pdf-parse';
-import LegalDefenseEngine from '../../client/src/services/legalDefenseEngine';
+import { LegalDefenseEngine } from '../../client/src/services/legalDefenseEngine';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 const router = Router();
 
@@ -36,11 +38,32 @@ const upload = multer({
 
 /**
  * Endpoint optimizado: Extracción y validación inteligente
+ * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger extracción legal
  */
-router.post('/extract-and-validate', upload.single('estimatePdf'), async (req, res) => {
+router.post('/extract-and-validate', verifyFirebaseAuth, upload.single('estimatePdf'), async (req, res) => {
   console.log('🛡️ LEGAL DEFENSE: Extracción y validación inteligente iniciada...');
   
   try {
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar extracción legal
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        success: false,
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Legal extraction for REAL user_id: ${userId}`);
+    
     if (!req.file) {
       return res.status(400).json({
         success: false,

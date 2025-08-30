@@ -305,7 +305,7 @@ router.post("/questions/next", verifyFirebaseAuth, async (req, res) => {
 
         // Validar usando la función específica si existe
         if (currentQuestion.validate && typeof value !== "undefined") {
-          const validationError = currentQuestion.validate(value);
+          const validationError = currentQuestion.validate(value as string);
           if (validationError) {
             return res.status(400).json({ validationError });
           }
@@ -803,14 +803,14 @@ router.post("/generate-hybrid", verifyFirebaseAuth, async (req, res) => {
     }
 
     // Generate contract using the hybrid system
-    const result = await hybridContractGenerator.generateProfessionalContract({
+    const result = await hybridContractGenerator.generateProfessionalContract(
       contractData,
-      templatePreferences: templatePreferences || {
+      templatePreferences || {
         style: 'professional',
         includeProtections: true,
         pageLayout: '6-page'
       }
-    });
+    );
 
     if (result.success) {
       console.log('✅ [HYBRID-CONTRACT] Contrato generado exitosamente');

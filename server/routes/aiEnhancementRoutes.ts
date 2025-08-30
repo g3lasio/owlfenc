@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { enhanceProjectDescription, createFallbackEnhancement } from '../services/projectDescriptionAI';
 import OpenAI from 'openai';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { userMappingService } from '../services/userMappingService';
 
 const router = Router();
 
@@ -14,11 +16,32 @@ const enhanceRequestSchema = z.object({
 /**
  * POST /api/project/enhance-description
  * Mejora una descripción de proyecto usando OpenAI GPT-4
+ * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger mejora de IA
  */
-router.post('/enhance-description', async (req: Request, res: Response) => {
+router.post('/enhance-description', verifyFirebaseAuth, async (req: Request, res: Response) => {
   try {
     console.log('=== NUEVA SOLICITUD DE MEJORA DE DESCRIPCIÓN ===');
     console.log('📥 Datos recibidos:', req.body);
+
+    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar mejora de IA costosa
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Usuario no autenticado' 
+      });
+    }
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+    }
+    if (!userId) {
+      return res.status(500).json({ 
+        success: false,
+        error: 'Error creando mapeo de usuario' 
+      });
+    }
+    console.log(`🔐 [SECURITY] AI enhancement for REAL user_id: ${userId}`);
 
     // Validar entrada
     const validatedData = enhanceRequestSchema.parse(req.body);
