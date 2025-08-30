@@ -12,6 +12,8 @@
  * - Rate limiting y throttling
  */
 
+import { robustAuth } from '../../lib/robust-auth-manager';
+
 export interface EndpointConfig {
   url: string;
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -47,7 +49,6 @@ export class EndpointCoordinator {
   private performanceTracker: Map<string, EndpointPerformance>;
   private rateLimitTracker: Map<string, number[]>;
   private currentRequests: Map<string, Promise<any>>;
-
   constructor(config: any) {
     this.config = config;
     this.endpointMap = new Map();
@@ -470,8 +471,14 @@ export class EndpointCoordinator {
       
       // Agregar autenticación si es necesaria
       if (config.requiresAuth) {
-        // Aquí se podría agregar token de autenticación
-        headers['Authorization'] = `Bearer ${this.config.userId || 'anonymous'}`;
+        try {
+          // ✅ USAR TOKEN REAL DE FIREBASE AUTH EN LUGAR DE userId
+          const token = await robustAuth.getAuthToken();
+          headers['Authorization'] = `Bearer ${token}`;
+        } catch (error) {
+          console.warn('⚠️ [ENDPOINT-COORDINATOR] No se pudo obtener token de auth, usando fallback');
+          headers['Authorization'] = `Bearer ${this.config.userId || 'anonymous'}`;
+        }
       }
       
       const response = await fetch(config.url, {
