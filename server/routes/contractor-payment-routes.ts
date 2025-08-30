@@ -94,10 +94,10 @@ router.post(
  */
 router.post("/create", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.firebaseUser) {
       return res.status(401).json({ error: "User not authenticated" });
     }
-    const userId = req.user.id;
+    const userId = req.firebaseUser.uid; // Firebase UID
     const validatedData = createPaymentSchema.parse(req.body);
 
     const result = await contractorPaymentService.createProjectPayment({
@@ -278,7 +278,15 @@ router.post(
 
       // Verify payment belongs to user
       const payment = await storage.getProjectPayment(paymentId);
-      if (!payment || payment.userId !== req.firebaseUser.uid) {
+      if (!req.firebaseUser) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
+      // Convert Firebase UID to internal user_id for comparison
+      const userMapping = await import('../services/UserMappingService');
+      const internalUserId = await userMapping.UserMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
+      
+      if (!payment || payment.userId !== internalUserId) {
         return res.status(404).json({ message: "Payment not found" });
       }
 
@@ -335,7 +343,11 @@ router.get(
       const userId = req.firebaseUser.uid; // Firebase UID
       const { status, type, projectId } = req.query;
 
-      let payments = await storage.getProjectPaymentsByUserId(userId);
+      // Convert Firebase UID to internal user_id for database query
+      const userMapping = await import('../services/UserMappingService');
+      const internalUserId = await userMapping.UserMappingService.getOrCreateUserMapping(userId);
+      
+      let payments = await storage.getProjectPaymentsByUserId(internalUserId);
 
       // Apply filters
       if (status) {
@@ -375,7 +387,15 @@ router.get(
 
       // Verify project belongs to user
       const project = await storage.getProject(projectId);
-      if (!project || project.userId !== req.user.id) {
+      if (!req.firebaseUser) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
+      // Convert Firebase UID to internal user_id for comparison
+      const userMapping = await import('../services/UserMappingService');
+      const internalUserId = await userMapping.UserMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
+      
+      if (!project || project.userId !== internalUserId) {
         return res.status(404).json({ message: "Project not found" });
       }
 
@@ -406,7 +426,15 @@ router.get(
       const paymentId = parseInt(req.params.paymentId);
       const payment = await storage.getProjectPayment(paymentId);
 
-      if (!payment || payment.userId !== req.firebaseUser.uid) {
+      if (!req.firebaseUser) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
+      // Convert Firebase UID to internal user_id for comparison
+      const userMapping = await import('../services/UserMappingService');
+      const internalUserId = await userMapping.UserMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
+      
+      if (!payment || payment.userId !== internalUserId) {
         return res.status(404).json({ message: "Payment not found" });
       }
 
@@ -437,7 +465,15 @@ router.patch(
 
       // Verify payment belongs to user
       const payment = await storage.getProjectPayment(paymentId);
-      if (!payment || payment.userId !== req.firebaseUser.uid) {
+      if (!req.firebaseUser) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
+      // Convert Firebase UID to internal user_id for comparison
+      const userMapping = await import('../services/UserMappingService');
+      const internalUserId = await userMapping.UserMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
+      
+      if (!payment || payment.userId !== internalUserId) {
         return res.status(404).json({ message: "Payment not found" });
       }
 
