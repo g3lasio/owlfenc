@@ -80,7 +80,7 @@ import {
   importClientsFromCsv,
   importClientsFromVcf,
 } from "../lib/clientFirebase";
-import { intelligentImportService } from "../services/intelligentImportService";
+import { importClientsFromCsvWithAI } from "../services/clientService";
 
 
 // Interfaces
@@ -441,88 +441,30 @@ export default function NuevoClientes() {
     try {
       console.log("🤖 Iniciando importación inteligente con IA...");
       
-      // Agregar timeout de 30 segundos para la solicitud de IA
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout: La IA está tardando demasiado')), 30000)
-      );
-      
-      // Usar el servicio de importación inteligente con IA
-      const result = await Promise.race([
-        intelligentImportService.processCSVWithAI(csvFile, userId),
-        timeoutPromise
-      ]) as any;
-      
-      if (!result.success) {
-        // Si la IA falla, usar método básico como fallback
-        console.log("⚠️ IA falló, usando método básico como fallback...");
-        
-        const reader = new FileReader();
-        reader.onload = async (readerEvent) => {
-          if (!readerEvent.target || typeof readerEvent.target.result !== "string") return;
-
-          try {
-            const csvData = readerEvent.target.result;
-            const importedClients = await importClientsFromCsv(csvData);
-            
-            queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
-
-            toast({
-              title: "Importación exitosa (método básico)",
-              description: `Se han importado ${importedClients.length} clientes desde CSV.`,
-            });
-
-            setShowImportDialog(false);
-            setCsvFile(null);
-          } catch (error: any) {
-            console.error("Error processing CSV with fallback:", error);
-            toast({
-              variant: "destructive",
-              title: "Error",
-              description: "Error al procesar el archivo CSV: " + (error.message || "Error desconocido"),
-            });
-          } finally {
-            setIsAiProcessing(false);
+      // Leer el archivo CSV
+      const reader = new FileReader();
+      const csvContent = await new Promise<string>((resolve, reject) => {
+        reader.onload = (e) => {
+          if (e.target?.result && typeof e.target.result === 'string') {
+            resolve(e.target.result);
+          } else {
+            reject(new Error('No se pudo leer el archivo'));
           }
         };
+        reader.onerror = () => reject(new Error('Error leyendo archivo'));
         reader.readAsText(csvFile);
-        return;
-      }
-
-      // IA procesó exitosamente el CSV
-      console.log(`✅ IA procesó ${result.mappedClients.length} clientes - Formato detectado: ${result.detectedFormat}`);
+      });
       
-      // Guardar cada cliente procesado por la IA
-      const savedClients = [];
-      console.log(`🔄 Guardando ${result.mappedClients.length} clientes en Firebase...`);
+      // Usar la función de importación con IA que incluye autenticación
+      const importedClients = await importClientsFromCsvWithAI(csvContent);
+      console.log("✅ [CLIENTES] Importación CSV inteligente exitosa:", importedClients.length);
       
-      for (let i = 0; i < result.mappedClients.length; i++) {
-        const clientData = result.mappedClients[i];
-        try {
-          console.log(`📝 Guardando cliente ${i + 1}/${result.mappedClients.length}:`, clientData.name);
-          const savedClient = await saveClient(clientData);
-          savedClients.push(savedClient);
-          console.log(`✅ Cliente ${i + 1} guardado exitosamente`);
-        } catch (error) {
-          console.error(`❌ Error guardando cliente ${i + 1}:`, error);
-        }
-      }
-      
-      console.log(`🎯 Guardado completado: ${savedClients.length}/${result.mappedClients.length} clientes`);
-      
-      if (savedClients.length === 0) {
-        throw new Error(`Firebase no disponible. IA procesó ${result.mappedClients.length} clientes pero no se pudieron guardar. Intenta más tarde.`);
-      }
-      
-      if (savedClients.length < result.mappedClients.length) {
-        console.warn(`⚠️ Solo se guardaron ${savedClients.length}/${result.mappedClients.length} clientes por problemas de Firebase`);
-      }
-
       // Actualizar lista de clientes
       queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
 
       toast({
         title: "✨ Importación inteligente completada",
-        description: `Se importaron ${savedClients.length} de ${result.mappedClients.length} clientes usando IA. Formato: ${result.detectedFormat}`,
+        description: `Se importaron ${importedClients.length} clientes usando IA con mapeo inteligente.`,
       });
 
       setShowImportDialog(false);
@@ -531,20 +473,11 @@ export default function NuevoClientes() {
     } catch (error: any) {
       console.error("Error en importación inteligente:", error);
       
-      // Si es un timeout, mostrar mensaje específico
-      if (error.message && error.message.includes('Timeout')) {
-        toast({
-          variant: "destructive",
-          title: "Timeout de IA",
-          description: "La IA está tardando demasiado. Inténtalo de nuevo o usa el método básico.",
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error en importación inteligente",
-          description: error.message || "Error desconocido durante la importación con IA",
-        });
-      }
+      toast({
+        variant: "destructive",
+        title: "Error en importación inteligente",
+        description: error.message || "Error desconocido durante la importación con IA",
+      });
     } finally {
       setIsAiProcessing(false);
     }
