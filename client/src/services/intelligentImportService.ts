@@ -2,6 +2,8 @@
  * Servicio frontend para importación inteligente de clientes con IA
  */
 
+import { apiRequest } from '@/lib/queryClient';
+
 export interface IntelligentImportResult {
   success: boolean;
   mappedClients: any[];
@@ -16,7 +18,7 @@ export class ClientIntelligentImportService {
   /**
    * Procesa un archivo CSV usando IA para mapeo inteligente de columnas
    */
-  async processCSVWithAI(csvFile: File, userId: string): Promise<IntelligentImportResult> {
+  async processCSVWithAI(csvFile: File): Promise<IntelligentImportResult> {
     try {
       console.log('🤖 [CLIENT-INTELLIGENT-IMPORT] Iniciando procesamiento con IA...');
       
@@ -25,23 +27,10 @@ export class ClientIntelligentImportService {
       
       console.log('📊 [CLIENT-INTELLIGENT-IMPORT] Archivo leído, enviando a API...');
       
-      const response = await fetch(`${this.baseUrl}/csv`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          csvContent,
-          userId
-        })
+      // Usar apiRequest que maneja automáticamente la autenticación
+      const result = await apiRequest.post(`${this.baseUrl}/csv`, {
+        csvContent
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP Error: ${response.status}`);
-      }
-
-      const result = await response.json();
       
       console.log('✅ [CLIENT-INTELLIGENT-IMPORT] Procesamiento completado:', {
         success: result.success,
@@ -71,18 +60,8 @@ export class ClientIntelligentImportService {
     try {
       console.log('🧪 [CLIENT-INTELLIGENT-IMPORT] Ejecutando prueba...');
       
-      const response = await fetch(`${this.baseUrl}/test`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP Error: ${response.status}`);
-      }
-
-      const result = await response.json();
+      // Usar apiRequest que maneja automáticamente la autenticación
+      const result = await apiRequest.get(`${this.baseUrl}/test`);
       
       console.log('✅ [CLIENT-INTELLIGENT-IMPORT] Prueba completada:', result);
 

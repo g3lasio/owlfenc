@@ -1,19 +1,36 @@
 import { Router } from 'express';
 import { intelligentImportService } from '../services/intelligentImportService';
-import { requireAuthenticatedUser } from '../middleware/authMiddleware';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { DatabaseStorage } from '../DatabaseStorage';
+import { UserMappingService } from '../services/UserMappingService';
 
 const router = Router();
+
+// Crear instancia del servicio de mapeo de usuarios
+const storage = new DatabaseStorage();
+const userMappingService = UserMappingService.getInstance(storage);
 
 /**
  * POST /api/intelligent-import/csv
  * Procesa un CSV con mapeo inteligente usando IA
  */
-router.post('/csv', async (req, res) => {
+router.post('/csv', verifyFirebaseAuth, async (req, res) => {
   try {
     console.log('🤖 [INTELLIGENT-IMPORT-API] Recibida solicitud de importación CSV inteligente');
     
-    // Obtener el usuario autenticado del middleware
-    const { userId } = requireAuthenticatedUser(req);
+    // Obtener el usuario autenticado del middleware Firebase
+    if (!req.firebaseUser) {
+      return res.status(401).json({
+        success: false,
+        error: 'Usuario no autenticado'
+      });
+    }
+
+    // Mapear Firebase UID a userId de PostgreSQL
+    const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(
+      req.firebaseUser.uid,
+      req.firebaseUser.email
+    );
     const { csvContent } = req.body;
     
     if (!csvContent) {
@@ -64,7 +81,7 @@ router.post('/csv', async (req, res) => {
  * GET /api/intelligent-import/test
  * Endpoint de prueba para verificar que el servicio funciona
  */
-router.get('/test', async (req, res) => {
+router.get('/test', verifyFirebaseAuth, async (req, res) => {
   try {
     // CSV de prueba desordenado
     const testCSV = `Cliente,Tel,Correo Electrónico,Ubicación
