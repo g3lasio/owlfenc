@@ -19,7 +19,7 @@ export const userMonthlyUsage = pgTable('user_monthly_usage', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
-  userMonthIndex: index('user_month_idx').on(table.userId, table.month),
+  userMonthIndex: index('usage_user_month_idx').on(table.userId, table.month),
   userIdIndex: index('user_id_idx').on(table.userId),
 }));
 

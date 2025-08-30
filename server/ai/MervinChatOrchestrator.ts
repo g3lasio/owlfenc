@@ -129,7 +129,7 @@ export class MervinChatOrchestrator {
       const processingType = await this.determineProcessingType(request);
       
       // 🗺️ DETECTAR UBICACIÓN DEL USUARIO (NATIONWIDE)
-      const userLocation = userContext.address || userContext.city || 'USA';
+      const userLocation = userContext.address || 'USA';
       const stateInfo = jurisdictionDetector.detectFromAddress(userLocation);
       const detectedRegion = stateInfo ? stateInfo.name.toLowerCase() : 'nationwide';
       
@@ -324,6 +324,10 @@ export class MervinChatOrchestrator {
     const isQuestionOnly = /\?|diferencia|que es|explica|cuent[ae]|dime/i.test(request.input) && 
                           !/crea|genera|haz|make|create|generate/i.test(request.input);
 
+    // 🗺️ DETECTAR UBICACIÓN DEL USUARIO (NATIONWIDE)
+    const userLocation = userContext.address || 'USA';
+    const stateInfo = jurisdictionDetector.detectFromAddress(userLocation);
+    
     // 🗺️ CONTEXTO GEOGRÁFICO NATIONWIDE
     const stateContext = stateInfo ? `
 UBICACIÓN DETECTADA: ${stateInfo.name} (${stateInfo.region} region)
@@ -458,7 +462,8 @@ INSTRUCCIONES GEOGRÁFICAS:
     } catch (anthropicError) {
       console.error('❌ [MERVIN-ANTHROPIC] Error con Anthropic también:', anthropicError);
       // Si ambas APIs fallan, usar el sistema de conocimiento específico
-      return await this.generateFallbackResponse(request.input, userLocation);
+      const fallbackLocation = userContext.address || 'USA';
+      return await this.generateFallbackResponse(request.input, fallbackLocation);
     }
   }
 
