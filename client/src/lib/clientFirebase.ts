@@ -76,53 +76,30 @@ export const saveClient = async (clientData: Omit<Client, 'id' | 'createdAt' | '
   }
 };
 
-// ✅ FIXED: Obtener todos los clientes con autenticación robusta
+// ✅ FIXED: Obtener todos los clientes usando token del localStorage
 export const getClients = async (userId?: string, filters?: { tag?: string, source?: string }) => {
   try {
     devModeManager.markStart('clients-load');
     
-    // ✅ SOLUTION: Wait for auth state to be completely ready
-    const currentUser = await new Promise<any>((resolve) => {
-      // If already authenticated, return immediately
-      if (auth.currentUser) {
-        debugLog('CLIENTS', 'Auth already ready, user found:', auth.currentUser.uid);
-        resolve(auth.currentUser);
-        return;
-      }
-      
-      debugLog('CLIENTS', 'Waiting for auth state to be ready...');
-      
-      // Wait for auth state with timeout
-      let resolved = false;
-      const timeout = setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          debugLog('CLIENTS', 'Auth timeout - proceeding without user');
-          resolve(null);
-        }
-      }, 3000); // 3 second timeout
-      
-      const unsubscribe = onAuthStateChanged(auth, (user: any) => {
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timeout);
-          unsubscribe();
-          
-          if (user) {
-            debugLog('CLIENTS', 'Auth state restored, user found:', user.uid);
-            resolve(user);
-          } else {
-            debugLog('CLIENTS', 'No authenticated user found');
-            resolve(null);
-          }
-        }
-      });
-    });
+    // ✅ SOLUTION: Usar token del localStorage (como en clientService.ts)
+    const currentUserId = localStorage.getItem('firebase_user_id');
+    const currentUserEmail = localStorage.getItem('firebase_user_email');
     
-    if (!currentUser) {
-      debugLog('CLIENTS', 'No authenticated user - returning empty array');
+    if (!currentUserId) {
+      debugLog('CLIENTS', 'No authenticated user in localStorage - returning empty array');
       return [];
     }
+    
+    debugLog('CLIENTS', 'Usuario autenticado encontrado:', { 
+      uid: currentUserId, 
+      email: currentUserEmail 
+    });
+    
+    // Crear objeto user para compatibilidad con el código existente
+    const currentUser = {
+      uid: currentUserId,
+      email: currentUserEmail
+    };
 
     // ✅ FIXED: Use authenticated user's ID if none provided
     const targetUserId = userId || currentUser.uid;

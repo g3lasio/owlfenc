@@ -156,8 +156,9 @@ const csvImportSchema = z.object({
 
 export default function NuevoClientes() {
   const { profile } = useProfile();
-  // ID por defecto para pruebas, si no hay perfil disponible
-  const userId = profile?.id?.toString() || "1";
+  // ✅ USAR Firebase UID en lugar de profile.id
+  const firebaseUserId = localStorage.getItem('firebase_user_id');
+  const userId = firebaseUserId || profile?.id?.toString() || "1";
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
