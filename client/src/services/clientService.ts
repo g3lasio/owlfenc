@@ -30,50 +30,33 @@ export interface Client {
 export type ClientInput = Omit<Client, 'id' | 'userId' | 'clientId' | 'createdAt' | 'updatedAt'>;
 
 /**
- * Obtener token de autenticación usando el token del login directo
- * SOLUCIÓN: Usar el token guardado por firebase-auth-direct.ts en lugar de auth.currentUser
+ * Obtener token de autenticación usando el sistema robusto
+ * ENTERPRISE: Sistema con múltiples fallbacks y auto-recuperación
  */
 async function getAuthToken(): Promise<string> {
-  console.log('🔐 [AUTH-TOKEN] Obteniendo token del login directo...');
+  console.log('🛡️ [CLIENT-SERVICE] Obteniendo token con sistema robusto...');
   
-  // Obtener token del localStorage (guardado por firebase-auth-direct.ts)
-  const idToken = localStorage.getItem('firebase_id_token');
-  const userId = localStorage.getItem('firebase_user_id');
-  const userEmail = localStorage.getItem('firebase_user_email');
-  
-  if (!idToken) {
-    console.error('❌ [AUTH-TOKEN] No hay token en localStorage');
-    throw new Error('Usuario no autenticado - token no encontrado');
-  }
-  
-  console.log('✅ [AUTH-TOKEN] Token encontrado para usuario:', { 
-    uid: userId, 
-    email: userEmail,
-    tokenLength: idToken.length 
-  });
-  
-  // Verificar que el token no esté expirado (opcional, pero recomendado)
   try {
-    // Decodificar la parte del payload del JWT para verificar expiración
-    const payload = JSON.parse(atob(idToken.split('.')[1]));
-    const currentTime = Math.floor(Date.now() / 1000);
+    // Usar el sistema robusto de autenticación
+    const { robustAuth } = await import('../lib/robust-auth-manager');
+    const token = await robustAuth.getAuthToken();
     
-    if (payload.exp && payload.exp < currentTime) {
-      console.error('❌ [AUTH-TOKEN] Token expirado');
-      // Limpiar tokens expirados
-      localStorage.removeItem('firebase_id_token');
-      localStorage.removeItem('firebase_refresh_token');
-      localStorage.removeItem('firebase_user_id');
-      localStorage.removeItem('firebase_user_email');
-      throw new Error('Token expirado - reloguearse');
+    console.log('✅ [CLIENT-SERVICE] Token obtenido del sistema robusto');
+    return token;
+  } catch (error) {
+    console.error('❌ [CLIENT-SERVICE] Error con sistema robusto, usando fallback:', error);
+    
+    // Fallback al método anterior como último recurso
+    const idToken = localStorage.getItem('firebase_id_token');
+    const userId = localStorage.getItem('firebase_user_id');
+    
+    if (!idToken) {
+      throw new Error('CRÍTICO: Sistema de autenticación completamente fallido - contacta soporte');
     }
     
-    console.log('✅ [AUTH-TOKEN] Token válido, expira en:', new Date(payload.exp * 1000).toLocaleString());
-  } catch (parseError) {
-    console.warn('⚠️ [AUTH-TOKEN] No se pudo verificar expiración del token, continuando...');
+    console.log('⚠️ [CLIENT-SERVICE] Usando fallback de emergencia para:', userId);
+    return idToken;
   }
-  
-  return idToken;
 }
 
 /**

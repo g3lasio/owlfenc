@@ -50,6 +50,34 @@ console.error = (...args) => {
 
 console.log('🔧 [MAIN] Interceptores mínimos activados - permitiendo React normal');
 
+// 🛡️ SISTEMA ROBUSTO DE NIVEL ENTERPRISE
+// Inicialización automática para prevenir pérdida de datos
+(async () => {
+  try {
+    console.log('🚀 [ENTERPRISE] Inicializando sistemas robustos...');
+    
+    // Sistema de autenticación robusto con múltiples fallbacks
+    const { robustAuth } = await import('./lib/robust-auth-manager');
+    await robustAuth.initialize();
+    console.log('✅ [ENTERPRISE] Sistema de autenticación robusto inicializado');
+    
+    // Sistema de monitoreo de integridad de datos  
+    const { dataMonitor } = await import('./lib/data-integrity-monitor');
+    dataMonitor.startMonitoring();
+    console.log('✅ [ENTERPRISE] Monitor de integridad de datos iniciado');
+    
+    // Cleanup al cerrar la aplicación
+    window.addEventListener('beforeunload', () => {
+      robustAuth.destroy();
+      dataMonitor.stopMonitoring();
+    });
+    
+  } catch (error) {
+    console.error('❌ [ENTERPRISE] Error inicializando sistemas robustos:', error);
+    // La aplicación continuará funcionando incluso si falla la inicialización robusta
+  }
+})();
+
 const container = document.getElementById("root");
 if (!container) throw new Error("Root container missing in index.html");
 

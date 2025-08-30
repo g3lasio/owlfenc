@@ -1,0 +1,451 @@
+/**
+ * SISTEMA DE AUTENTICACIÓN ROBUSTO DE NIVEL ENTERPRISE
+ * Previene pérdida de datos y problemas de sincronización
+ * Diseñado para miles de usuarios comerciales
+ */
+
+import { auth } from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+
+interface UserSession {
+  uid: string;
+  email: string;
+  token: string;
+  refreshToken: string;
+  lastVerified: number;
+  deviceFingerprint: string;
+}
+
+class RobustAuthManager {
+  private static instance: RobustAuthManager;
+  private currentSession: UserSession | null = null;
+  private verificationInterval: NodeJS.Timeout | null = null;
+  private failsafeBackup: UserSession[] = [];
+
+  static getInstance(): RobustAuthManager {
+    if (!RobustAuthManager.instance) {
+      RobustAuthManager.instance = new RobustAuthManager();
+    }
+    return RobustAuthManager.instance;
+  }
+
+  /**
+   * INICIALIZACIÓN CON VERIFICACIÓN AUTOMÁTICA
+   */
+  public async initialize(): Promise<void> {
+    console.log('🛡️ [ROBUST-AUTH] Inicializando sistema robusto...');
+
+    // 1. Restaurar sesión del localStorage
+    await this.restoreSession();
+
+    // 2. Verificar estado de Firebase Auth
+    await this.syncWithFirebaseAuth();
+
+    // 3. Iniciar verificación automática cada 30 segundos
+    this.startAutomaticVerification();
+
+    // 4. Crear backup automático cada 5 minutos
+    this.startAutomaticBackup();
+
+    console.log('✅ [ROBUST-AUTH] Sistema robusto inicializado');
+  }
+
+  /**
+   * OBTENER TOKEN CON MÚLTIPLES FALLBACKS
+   */
+  public async getAuthToken(): Promise<string> {
+    console.log('🔐 [ROBUST-AUTH] Obteniendo token con fallbacks...');
+
+    // Fallback 1: Sesión en memoria
+    if (this.currentSession && this.isSessionValid(this.currentSession)) {
+      console.log('✅ [ROBUST-AUTH] Token desde sesión en memoria');
+      return this.currentSession.token;
+    }
+
+    // Fallback 2: localStorage
+    const localToken = localStorage.getItem('firebase_id_token');
+    if (localToken && this.isTokenValid(localToken)) {
+      console.log('✅ [ROBUST-AUTH] Token desde localStorage');
+      await this.rebuildSessionFromLocalStorage();
+      return localToken;
+    }
+
+    // Fallback 3: Firebase Auth
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        const freshToken = await user.getIdToken(true);
+        console.log('✅ [ROBUST-AUTH] Token fresh desde Firebase Auth');
+        await this.updateSession(user, freshToken);
+        return freshToken;
+      }
+    } catch (error) {
+      console.warn('⚠️ [ROBUST-AUTH] Firebase Auth fallback falló:', error);
+    }
+
+    // Fallback 4: Backup automático
+    const backupSession = this.getValidBackupSession();
+    if (backupSession) {
+      console.log('✅ [ROBUST-AUTH] Token desde backup automático');
+      this.currentSession = backupSession;
+      this.saveSessionToLocalStorage(backupSession);
+      return backupSession.token;
+    }
+
+    // Si todo falla, log crítico
+    console.error('🚨 [ROBUST-AUTH] CRÍTICO: Todos los fallbacks fallaron');
+    this.logCriticalFailure();
+    throw new Error('Autenticación crítica fallida - contacta soporte');
+  }
+
+  /**
+   * OBTENER USUARIO ACTUAL CON GARANTÍA
+   */
+  public getCurrentUser(): { uid: string; email: string } | null {
+    // Prioridad 1: Sesión en memoria
+    if (this.currentSession) {
+      return {
+        uid: this.currentSession.uid,
+        email: this.currentSession.email
+      };
+    }
+
+    // Prioridad 2: localStorage
+    const uid = localStorage.getItem('firebase_user_id');
+    const email = localStorage.getItem('firebase_user_email');
+    if (uid && email) {
+      return { uid, email };
+    }
+
+    // Prioridad 3: Firebase Auth
+    if (auth.currentUser) {
+      return {
+        uid: auth.currentUser.uid,
+        email: auth.currentUser.email || ''
+      };
+    }
+
+    console.warn('⚠️ [ROBUST-AUTH] No se encontró usuario en ningún lugar');
+    return null;
+  }
+
+  /**
+   * ACTUALIZAR SESIÓN CON BACKUP AUTOMÁTICO
+   */
+  private async updateSession(user: any, token: string): Promise<void> {
+    const deviceFingerprint = this.generateDeviceFingerprint();
+    
+    const session: UserSession = {
+      uid: user.uid,
+      email: user.email,
+      token: token,
+      refreshToken: user.refreshToken || '',
+      lastVerified: Date.now(),
+      deviceFingerprint
+    };
+
+    // Guardar en memoria
+    this.currentSession = session;
+
+    // Guardar en localStorage
+    this.saveSessionToLocalStorage(session);
+
+    // Backup automático
+    this.addToFailsafeBackup(session);
+
+    console.log('✅ [ROBUST-AUTH] Sesión actualizada y respaldada');
+  }
+
+  /**
+   * VERIFICACIÓN AUTOMÁTICA CADA 30 SEGUNDOS
+   */
+  private startAutomaticVerification(): void {
+    this.verificationInterval = setInterval(async () => {
+      try {
+        await this.verifySessionHealth();
+      } catch (error) {
+        console.error('❌ [ROBUST-AUTH] Error en verificación automática:', error);
+        await this.attemptRecovery();
+      }
+    }, 30000); // 30 segundos
+  }
+
+  /**
+   * BACKUP AUTOMÁTICO CADA 5 MINUTOS
+   */
+  private startAutomaticBackup(): void {
+    setInterval(() => {
+      if (this.currentSession) {
+        this.createSecureBackup();
+        console.log('💾 [ROBUST-AUTH] Backup automático creado');
+      }
+    }, 300000); // 5 minutos
+  }
+
+  /**
+   * VERIFICAR SALUD DE LA SESIÓN
+   */
+  private async verifySessionHealth(): Promise<void> {
+    if (!this.currentSession) return;
+
+    // Verificar expiración del token
+    if (!this.isTokenValid(this.currentSession.token)) {
+      console.log('🔄 [ROBUST-AUTH] Token expirado, renovando...');
+      await this.refreshCurrentSession();
+      return;
+    }
+
+    // Verificar consistencia con localStorage
+    const localUid = localStorage.getItem('firebase_user_id');
+    if (localUid !== this.currentSession.uid) {
+      console.log('🔧 [ROBUST-AUTH] Inconsistencia detectada, sincronizando...');
+      await this.syncAllSources();
+    }
+  }
+
+  /**
+   * RECUPERACIÓN AUTOMÁTICA DE ERRORES
+   */
+  private async attemptRecovery(): Promise<void> {
+    console.log('🚑 [ROBUST-AUTH] Iniciando recuperación automática...');
+
+    // Paso 1: Intentar restaurar desde backup
+    const backup = this.getValidBackupSession();
+    if (backup) {
+      this.currentSession = backup;
+      this.saveSessionToLocalStorage(backup);
+      console.log('✅ [ROBUST-AUTH] Recuperación desde backup exitosa');
+      return;
+    }
+
+    // Paso 2: Forzar re-sync con Firebase
+    await this.forceSyncWithFirebase();
+
+    // Paso 3: Si todo falla, limpiar estado corrupto
+    this.cleanCorruptedState();
+  }
+
+  /**
+   * LOGGING CRÍTICO PARA DEBUGGING PROACTIVO
+   */
+  private logCriticalFailure(): void {
+    const failureReport = {
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      localStorage: {
+        hasToken: !!localStorage.getItem('firebase_id_token'),
+        hasUserId: !!localStorage.getItem('firebase_user_id'),
+        hasEmail: !!localStorage.getItem('firebase_user_email')
+      },
+      firebaseAuth: {
+        initialized: !!auth,
+        currentUser: !!auth.currentUser
+      },
+      sessionState: {
+        hasCurrentSession: !!this.currentSession,
+        backupCount: this.failsafeBackup.length
+      }
+    };
+
+    console.error('🚨 [ROBUST-AUTH] FAILURE REPORT:', JSON.stringify(failureReport, null, 2));
+    
+    // Enviar reporte al backend para análisis
+    this.sendFailureReport(failureReport);
+  }
+
+  // ===============================
+  // MÉTODOS DE UTILIDAD
+  // ===============================
+
+  private isSessionValid(session: UserSession): boolean {
+    if (!session) return false;
+    
+    // Verificar que no haya expirado (1 hora)
+    const oneHour = 60 * 60 * 1000;
+    if (Date.now() - session.lastVerified > oneHour) return false;
+    
+    // Verificar que el token sea válido
+    return this.isTokenValid(session.token);
+  }
+
+  private isTokenValid(token: string): boolean {
+    if (!token) return false;
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+      return payload.exp > currentTime;
+    } catch {
+      return false;
+    }
+  }
+
+  private generateDeviceFingerprint(): string {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx?.fillText('fingerprint', 10, 10);
+    
+    return btoa(JSON.stringify({
+      userAgent: navigator.userAgent,
+      language: navigator.language,
+      platform: navigator.platform,
+      screen: `${screen.width}x${screen.height}`,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      canvas: canvas.toDataURL()
+    })).slice(0, 32);
+  }
+
+  private saveSessionToLocalStorage(session: UserSession): void {
+    localStorage.setItem('firebase_id_token', session.token);
+    localStorage.setItem('firebase_refresh_token', session.refreshToken);
+    localStorage.setItem('firebase_user_id', session.uid);
+    localStorage.setItem('firebase_user_email', session.email);
+    localStorage.setItem('session_device_fingerprint', session.deviceFingerprint);
+    localStorage.setItem('session_last_verified', session.lastVerified.toString());
+  }
+
+  private addToFailsafeBackup(session: UserSession): void {
+    // Mantener solo los últimos 3 backups
+    this.failsafeBackup.unshift(session);
+    if (this.failsafeBackup.length > 3) {
+      this.failsafeBackup = this.failsafeBackup.slice(0, 3);
+    }
+  }
+
+  private getValidBackupSession(): UserSession | null {
+    return this.failsafeBackup.find(session => this.isSessionValid(session)) || null;
+  }
+
+  private async restoreSession(): Promise<void> {
+    const uid = localStorage.getItem('firebase_user_id');
+    const email = localStorage.getItem('firebase_user_email');
+    const token = localStorage.getItem('firebase_id_token');
+    const refreshToken = localStorage.getItem('firebase_refresh_token');
+    const lastVerified = localStorage.getItem('session_last_verified');
+    const deviceFingerprint = localStorage.getItem('session_device_fingerprint');
+
+    if (uid && email && token && this.isTokenValid(token)) {
+      this.currentSession = {
+        uid,
+        email,
+        token,
+        refreshToken: refreshToken || '',
+        lastVerified: lastVerified ? parseInt(lastVerified) : Date.now(),
+        deviceFingerprint: deviceFingerprint || this.generateDeviceFingerprint()
+      };
+      console.log('✅ [ROBUST-AUTH] Sesión restaurada desde localStorage');
+    }
+  }
+
+  private async syncWithFirebaseAuth(): Promise<void> {
+    return new Promise((resolve) => {
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        unsubscribe();
+        if (user) {
+          try {
+            const token = await user.getIdToken();
+            await this.updateSession(user, token);
+            console.log('✅ [ROBUST-AUTH] Sincronizado con Firebase Auth');
+          } catch (error) {
+            console.warn('⚠️ [ROBUST-AUTH] Error en sync Firebase:', error);
+          }
+        }
+        resolve();
+      });
+    });
+  }
+
+  private async rebuildSessionFromLocalStorage(): Promise<void> {
+    await this.restoreSession();
+  }
+
+  private createSecureBackup(): void {
+    if (this.currentSession) {
+      const backup = JSON.stringify(this.currentSession);
+      localStorage.setItem(`auth_backup_${Date.now()}`, backup);
+      
+      // Limpiar backups antiguos (mantener solo los últimos 5)
+      const keys = Object.keys(localStorage).filter(key => key.startsWith('auth_backup_'));
+      if (keys.length > 5) {
+        keys.sort().slice(0, -5).forEach(key => localStorage.removeItem(key));
+      }
+    }
+  }
+
+  private async refreshCurrentSession(): Promise<void> {
+    if (this.currentSession && auth.currentUser) {
+      try {
+        const freshToken = await auth.currentUser.getIdToken(true);
+        this.currentSession.token = freshToken;
+        this.currentSession.lastVerified = Date.now();
+        this.saveSessionToLocalStorage(this.currentSession);
+      } catch (error) {
+        console.error('❌ [ROBUST-AUTH] Error renovando sesión:', error);
+      }
+    }
+  }
+
+  private async syncAllSources(): Promise<void> {
+    // Sincronizar memoria, localStorage y Firebase Auth
+    if (auth.currentUser) {
+      try {
+        const token = await auth.currentUser.getIdToken();
+        await this.updateSession(auth.currentUser, token);
+      } catch (error) {
+        console.error('❌ [ROBUST-AUTH] Error en sync completo:', error);
+      }
+    }
+  }
+
+  private async forceSyncWithFirebase(): Promise<void> {
+    try {
+      if (auth.currentUser) {
+        const token = await auth.currentUser.getIdToken(true);
+        await this.updateSession(auth.currentUser, token);
+        console.log('✅ [ROBUST-AUTH] Sync forzado exitoso');
+      }
+    } catch (error) {
+      console.error('❌ [ROBUST-AUTH] Sync forzado falló:', error);
+    }
+  }
+
+  private cleanCorruptedState(): void {
+    // Limpiar estado potencialmente corrupto
+    const keysToClean = [
+      'firebase_id_token', 'firebase_refresh_token', 
+      'firebase_user_id', 'firebase_user_email',
+      'session_device_fingerprint', 'session_last_verified'
+    ];
+    
+    keysToClean.forEach(key => localStorage.removeItem(key));
+    this.currentSession = null;
+    
+    console.log('🧹 [ROBUST-AUTH] Estado corrupto limpiado');
+  }
+
+  private async sendFailureReport(report: any): Promise<void> {
+    try {
+      // Enviar reporte al backend para análisis proactivo
+      await fetch('/api/auth/failure-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(report)
+      });
+    } catch (error) {
+      console.error('❌ [ROBUST-AUTH] No se pudo enviar reporte:', error);
+    }
+  }
+
+  /**
+   * CLEANUP AL DESTRUIR
+   */
+  public destroy(): void {
+    if (this.verificationInterval) {
+      clearInterval(this.verificationInterval);
+    }
+  }
+}
+
+// Exportar singleton
+export const robustAuth = RobustAuthManager.getInstance();
