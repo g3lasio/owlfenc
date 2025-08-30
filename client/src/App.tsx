@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import AppLayout from "@/components/layout/AppLayout";
 import Home from "@/pages/Home";
-import Projects from "@/pages/Projects";
+import Projects from "@/pages/ProjectsSimple";
 import Clients from "./pages/Clients";
 import NuevoClientes from "./pages/NuevoClientes";
 import Materials from "./pages/Materials";
