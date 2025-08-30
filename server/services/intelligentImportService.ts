@@ -27,6 +27,7 @@ interface MappedClient {
   notes?: string;
   source?: string;
   tags?: string[];
+  [key: string]: any; // Add index signature to allow dynamic field assignment
 }
 
 interface MappingResult {
@@ -79,7 +80,7 @@ export class IntelligentImportService {
       return {
         success: false,
         mappedClients: [],
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         originalHeaders: [],
         detectedFormat: 'Error'
       };
@@ -260,9 +261,9 @@ Ejemplo de respuesta:
           client[field] = fieldMapping.value;
         } else if (fieldMapping.columns && fieldMapping.columns.length > 0) {
           // Mapear desde columnas
-          const values = fieldMapping.columns.map(colIndex => 
+          const values = fieldMapping.columns.map((colIndex: number) => 
             row[colIndex] || ''
-          ).filter(val => val.trim() !== '');
+          ).filter((val: string) => val.trim() !== '');
           
           if (values.length > 0) {
             switch (fieldMapping.combineMethod) {
@@ -279,8 +280,8 @@ Ejemplo de respuesta:
                 if (field === 'tags') {
                   client[field] = values.join(fieldMapping.separator || ',')
                     .split(fieldMapping.separator || ',')
-                    .map(tag => tag.trim())
-                    .filter(tag => tag !== '');
+                    .map((tag: string) => tag.trim())
+                    .filter((tag: string) => tag !== '');
                 }
                 break;
               default:
@@ -299,7 +300,7 @@ Ejemplo de respuesta:
       
       // Limpiar campos vacíos
       Object.keys(client).forEach(key => {
-        if (typeof client[key] === 'string' && client[key].trim() === '') {
+        if (typeof client[key] === 'string' && (client[key] as string).trim() === '') {
           delete client[key];
         }
       });

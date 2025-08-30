@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { intelligentImportService } from '../services/intelligentImportService';
+import { requireAuthenticatedUser } from '../middleware/authMiddleware';
 
 const router = Router();
 
@@ -11,7 +12,9 @@ router.post('/csv', async (req, res) => {
   try {
     console.log('🤖 [INTELLIGENT-IMPORT-API] Recibida solicitud de importación CSV inteligente');
     
-    const { csvContent, userId } = req.body;
+    // Obtener el usuario autenticado del middleware
+    const { userId } = requireAuthenticatedUser(req);
+    const { csvContent } = req.body;
     
     if (!csvContent) {
       return res.status(400).json({
@@ -20,12 +23,7 @@ router.post('/csv', async (req, res) => {
       });
     }
 
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Se requiere el ID del usuario'
-      });
-    }
+    console.log('🔐 [INTELLIGENT-IMPORT-API] Usuario autenticado:', userId);
 
     console.log('📊 [INTELLIGENT-IMPORT-API] Procesando CSV con IA...');
     const result = await intelligentImportService.processCSVWithAI(csvContent);

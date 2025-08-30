@@ -363,6 +363,66 @@ export const updateFirebaseClient = updateClient;
 export const deleteFirebaseClient = deleteClient;
 export const getFirebaseClients = getClients;
 
+/**
+ * Importación CSV usando IA para mapeo inteligente
+ */
+export const importClientsFromCsvWithAI = async (csvContent: string): Promise<Client[]> => {
+  try {
+    console.log('🤖 [CLIENT-SERVICE] Iniciando importación inteligente con IA...');
+    
+    // Obtener el usuario actual
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error('Usuario no autenticado para importación');
+    }
+    
+    const token = await user.getIdToken();
+    
+    // Llamar a la API de importación inteligente del backend
+    const response = await fetch('/api/intelligent-import/csv', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ 
+        csvContent,
+        userId: user.uid 
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
+      throw new Error(errorData.error || `Error HTTP: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Error en el procesamiento de IA');
+    }
+
+    console.log('✅ [CLIENT-SERVICE] IA procesó correctamente:', result.mappedClients.length, 'clientes');
+    console.log('📊 [CLIENT-SERVICE] Formato detectado:', result.detectedFormat);
+
+    // Ahora importar los clientes mapeados por IA
+    if (result.mappedClients && result.mappedClients.length > 0) {
+      await importClients(result.mappedClients);
+      console.log('✅ [CLIENT-SERVICE] Clientes guardados exitosamente en Firebase');
+    }
+    
+    // Recargar clientes para obtener los datos completos con IDs del backend
+    return await getClients();
+    
+  } catch (error) {
+    console.error('❌ [CLIENT-SERVICE] Error en importación inteligente:', error);
+    throw error;
+  }
+};
+
+/**
+ * Importación CSV usando parsing básico (fallback)
+ */
 export const importClientsFromCsv = async (csvData: string): Promise<Client[]> => {
   const clientsInput = parseClientsFromCsv(csvData);
   await importClients(clientsInput);

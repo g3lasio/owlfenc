@@ -623,14 +623,15 @@ function Projects() {
     <div className="flex-1 flex flex-col ">
       <div className="flex-shrink-0 p-6 pb-2">
         <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Proyectos</h1>
-        <div className="flex space-x-2">
-          <Button variant="outline" onClick={() => setViewMode("grid")} className={viewMode === "grid" ? "bg-muted" : ""}>
-            <i className="ri-grid-line"></i>
-          </Button>
-          <Button variant="outline" onClick={() => setViewMode("list")} className={viewMode === "list" ? "bg-muted" : ""}>
-            <i className="ri-list-check"></i>
-          </Button>
+          <h1 className="text-2xl font-bold">Proyectos</h1>
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={() => setViewMode("grid")} className={viewMode === "grid" ? "bg-muted" : ""}>
+              <i className="ri-grid-line"></i>
+            </Button>
+            <Button variant="outline" onClick={() => setViewMode("list")} className={viewMode === "list" ? "bg-muted" : ""}>
+              <i className="ri-list-check"></i>
+            </Button>
+          </div>
         </div>
         
         {/* Search and Filter Controls */}

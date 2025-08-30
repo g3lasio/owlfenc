@@ -10,7 +10,7 @@ import {
   saveClient,
   updateClient as updateFirebaseClient,
   deleteClient as deleteFirebaseClient,
-  importClientsFromCsv,
+  importClientsFromCsvWithAI,
   importClientsFromVcf,
   type Client
 } from "../services/clientService";
@@ -205,16 +205,16 @@ export default function Clients() {
           const csvData = e.target?.result as string;
           console.log("🔄 [CLIENTES] Importando desde CSV...");
           
-          const importedClients = await importClientsFromCsv(csvData);
-          console.log("✅ [CLIENTES] Importación CSV exitosa:", importedClients.length);
+          const importedClients = await importClientsFromCsvWithAI(csvData);
+          console.log("✅ [CLIENTES] Importación CSV inteligente exitosa:", importedClients.length);
           
           const allClients = await getFirebaseClients();
           setClients(allClients);
           setFilteredClients(allClients);
           
           toast({
-            title: "Importación exitosa",
-            description: `Se importaron ${importedClients.length} clientes desde CSV.`
+            title: "Importación inteligente exitosa",
+            description: `Se procesaron ${importedClients.length} clientes usando IA para mapeo inteligente.`
           });
           
           setShowImportDialog(false);
