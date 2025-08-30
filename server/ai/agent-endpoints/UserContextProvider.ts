@@ -69,14 +69,14 @@ export class UserContextProvider {
     console.log(`📋 [USER-CONTEXT] Obteniendo contexto para usuario: ${userId}`);
 
     try {
-      // Obtener información básica del usuario
-      const user = await storage.getUserById(parseInt(userId));
+      // Obtener información básica del usuario usando Firebase UID
+      const user = await storage.getUserByFirebaseUid(userId);
       if (!user) {
         return this.getDefaultContext(userId);
       }
 
-      // Obtener proyectos recientes
-      const recentProjects = await this.getRecentProjects(parseInt(userId));
+      // Obtener proyectos recientes usando el ID numérico del usuario
+      const recentProjects = await this.getRecentProjects(user.id!);
 
       // Obtener preferencias (si existen)
       const preferences = await this.getUserPreferences(userId);
@@ -300,7 +300,13 @@ export class UserContextProvider {
    */
   async getUserStats(userId: string): Promise<{totalProjects: number; completedProjects: number; revenue: number}> {
     try {
-      const projects = await storage.getProjectsByUserId(parseInt(userId));
+      // Obtener usuario por Firebase UID y luego sus proyectos
+      const user = await storage.getUserByFirebaseUid(userId);
+      if (!user) {
+        return { totalProjects: 0, completedProjects: 0, revenue: 0 };
+      }
+      
+      const projects = await storage.getProjectsByUserId(user.id!);
       
       const totalProjects = projects.length;
       const completedProjects = projects.filter(p => p.status === 'completed').length;

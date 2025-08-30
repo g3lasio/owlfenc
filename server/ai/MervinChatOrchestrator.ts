@@ -14,7 +14,7 @@ import { OpenRouterClient } from './OpenRouterClient.js';
 import { ConstructionKnowledgeBase } from './construction-intelligence/ConstructionKnowledgeBase';
 import { WebResearchService } from './unified-chat/WebResearchService';
 import { TaskExecutionCoordinator } from './agent-endpoints/TaskExecutionCoordinator';
-// import { UserContextProvider } from './agent-endpoints/UserContextProvider'; // Temporarily disabled - will implement
+import { UserContextProvider } from './agent-endpoints/UserContextProvider';
 
 /*
 <important_code_snippet_instructions>
@@ -72,7 +72,7 @@ export class MervinChatOrchestrator {
   private constructionKB: ConstructionKnowledgeBase;
   private webResearch: WebResearchService;
   private taskCoordinator: TaskExecutionCoordinator;
-  // private contextProvider: UserContextProvider; // Temporarily disabled
+  private contextProvider: UserContextProvider;
 
   constructor() {
     // Inicializar servicios de IA con roles específicos
@@ -106,7 +106,7 @@ export class MervinChatOrchestrator {
     this.constructionKB = new ConstructionKnowledgeBase(this.anthropic);
     this.webResearch = new WebResearchService(this.anthropic);
     this.taskCoordinator = new TaskExecutionCoordinator();
-    // this.contextProvider = new UserContextProvider(); // Temporarily disabled
+    this.contextProvider = new UserContextProvider();
 
     console.log('🤖 [MERVIN-ORCHESTRATOR] Inicializado con OpenRouter + Anthropic + OpenAI');
   }
@@ -119,12 +119,8 @@ export class MervinChatOrchestrator {
     console.log(`🎯 [MERVIN] Modo: ${request.agentMode}, Input: "${request.input.substring(0, 50)}..."`);
 
     try {
-      // 1. Obtener contexto del usuario (usando contexto básico por ahora)
-      const userContext = {
-        company: 'Mi Compañía de Construcción',
-        ownerName: 'Contratista',
-        specialties: ['Construcción general', 'Cercas']
-      };
+      // 1. Obtener contexto real del usuario usando UserContextProvider
+      const userContext = await this.contextProvider.getUserContext(request.userId);
 
       // 2. Determinar tipo de procesamiento necesario
       const processingType = await this.determineProcessingType(request);
@@ -388,7 +384,7 @@ CONTEXTO USUARIO:
         temperature: 0.7,
       });
 
-      return completion.choices[0]?.message?.content || 'Órale, primo, algo pasó con mi respuesta. ¿Puedes repetir tu pregunta?';
+      return completion.choices[0]?.message?.content || 'Nel, compadre, algo se trabó con mi respuesta. ¿Me puedes repetir qué necesitas?';
     } catch (error) {
       console.error('❌ [MERVIN] Error con OpenAI, intentando con Anthropic...', error);
       // ✅ SOLUCIÓN: Usar Anthropic como respaldo automático cuando OpenAI falle
@@ -446,24 +442,24 @@ CONTEXTO USUARIO:
     // Licencias de contratista (C-13, etc)
     if ((inputLower.includes('licencia') && (inputLower.includes('c-13') || inputLower.includes('c13'))) || 
         (inputLower.includes('license') && (inputLower.includes('c-13') || inputLower.includes('c13')))) {
-      return `¡Órale, primo! Te ayudo con los requisitos para la licencia C-13 de cercas en California:
+      return `¡Órale, primo! Simón, te ayudo con la C-13 - esa licencia está padrísima para el negocio de cercas:
 
-**REQUISITOS PRINCIPALES:**
-🔹 **Experiencia**: 4 años de experiencia en construcción de cercas
-🔹 **Examen**: Aprobar el examen estatal (ley + comercio)
-🔹 **Seguro**: $15,000 en bonos de licencia
-🔹 **Aplicación**: $330 por la aplicación inicial
-🔹 **Fingerprinting**: Huellas digitales y verificación de antecedentes
+**LOS REQUISITOS MERO IMPORTANTES:**
+🔹 **Experiencia**: 4 años construyendo cercas (tiene que estar bien documentadito)
+🔹 **Examen**: El test del estado (ley + comercio) - está medio pesadito pero se puede
+🔹 **Seguro**: $15,000 en bonos - nel, no es opcional
+🔹 **Aplicación**: $330 para la aplicación inicial 
+🔹 **Fingerprinting**: Huellas y background check completo
 
-**CHECKLIST PASO A PASO:**
-✅ Registra tu experiencia laboral (4 años mínimo)
-✅ Estudia el manual del contratista de CSLB
-✅ Programa tu examen en PSI Services  
-✅ Consigue el seguro de responsabilidad civil
-✅ Completa la aplicación en CSLB.ca.gov
-✅ Paga las tarifas correspondientes
+**EL CHECKLIST PARA NO BATALLAR:**
+✅ Junta toda tu experiencia laboral (mínimo 4 años, compadre)
+✅ Estudia el manual del CSLB - tantito pesado pero necesario
+✅ Agenda tu examen en PSI Services cerquita de tu casa
+✅ Consigue el seguro de responsabilidad civil ahoritita
+✅ Llena la aplicación en CSLB.ca.gov bien completita
+✅ Paga todas las tarifas de jalón
 
-¿Necesitas ayuda con algún paso específico, compadre?`;
+¿Con cuál paso necesitas que te eche la mano, primo?`;
     }
     
     // Preguntas sobre contratos (conversacional)
@@ -510,15 +506,15 @@ Dame más detalles y te ayudo con lo que necesites, primo.`;
 
     // Fallback final inteligente cuando TODAS las APIs fallan
     console.log('⚠️ [MERVIN-FALLBACK] Usando respuestas inteligentes sin APIs externas');
-    return `Compadre, tuve un problemita técnico con las conexiones, pero aquí andamos para ayudarte con construcción y cercas.
+    return `Oiga compadre, tuve un problemita técnico con las conexiones, pero nel me rajo - aquí ando para echarte la mano con construcción y cercas.
 
-¿Puedes decirme específicamente qué necesitas? Por ejemplo:
+¿Qué onda? ¿En qué te puedo ayudar? Por ejemplo:
 • Info sobre licencias de contratista (C-13, C-36, etc)
-• Requisitos para permisos de construcción
+• Requisitos para permisos de construcción  
 • Precios de materiales y cercas
 • Códigos de construcción de California
 
-¡Dale, primo! Aunque tenga fallas técnicas, conozco el negocio de construcción.`;
+¡Ándale, primo! Aunque falle tantito la tecnología, me sé el negocio al derecho y al revés.`;
   }
 
   /**
