@@ -30,65 +30,50 @@ export interface Client {
 export type ClientInput = Omit<Client, 'id' | 'userId' | 'clientId' | 'createdAt' | 'updatedAt'>;
 
 /**
- * Obtener token de autenticación para las peticiones al backend
- * Espera hasta que Firebase Auth esté sincronizado
+ * Obtener token de autenticación usando el token del login directo
+ * SOLUCIÓN: Usar el token guardado por firebase-auth-direct.ts en lugar de auth.currentUser
  */
 async function getAuthToken(): Promise<string> {
-  return new Promise((resolve, reject) => {
-    // Verificar primero si ya tenemos un usuario
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      console.log('🔐 [AUTH-TOKEN] Usuario ya disponible:', { 
-        uid: currentUser.uid, 
-        email: currentUser.email 
-      });
-      
-      currentUser.getIdToken(true)
-        .then(token => {
-          console.log('🔐 [AUTH-TOKEN] Token obtenido exitosamente, longitud:', token.length);
-          resolve(token);
-        })
-        .catch(error => {
-          console.error('❌ [AUTH-TOKEN] Error obteniendo token:', error);
-          reject(new Error('Error de autenticación'));
-        });
-      return;
-    }
-
-    console.log('🔐 [AUTH-TOKEN] Esperando sincronización de Firebase Auth...');
-    
-    // Si no hay usuario, esperar a que Firebase Auth se sincronice
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      unsubscribe();
-      
-      if (!user) {
-        console.error('❌ [AUTH-TOKEN] No hay usuario autenticado después de la sincronización');
-        reject(new Error('Usuario no autenticado'));
-        return;
-      }
-
-      console.log('✅ [AUTH-TOKEN] Usuario sincronizado:', { 
-        uid: user.uid, 
-        email: user.email 
-      });
-
-      user.getIdToken(true)
-        .then(token => {
-          console.log('🔐 [AUTH-TOKEN] Token obtenido exitosamente, longitud:', token.length);
-          resolve(token);
-        })
-        .catch(error => {
-          console.error('❌ [AUTH-TOKEN] Error obteniendo token:', error);
-          reject(new Error('Error de autenticación'));
-        });
-    });
-
-    // Timeout de seguridad (10 segundos)
-    setTimeout(() => {
-      unsubscribe();
-      reject(new Error('Timeout esperando autenticación'));
-    }, 10000);
+  console.log('🔐 [AUTH-TOKEN] Obteniendo token del login directo...');
+  
+  // Obtener token del localStorage (guardado por firebase-auth-direct.ts)
+  const idToken = localStorage.getItem('firebase_id_token');
+  const userId = localStorage.getItem('firebase_user_id');
+  const userEmail = localStorage.getItem('firebase_user_email');
+  
+  if (!idToken) {
+    console.error('❌ [AUTH-TOKEN] No hay token en localStorage');
+    throw new Error('Usuario no autenticado - token no encontrado');
+  }
+  
+  console.log('✅ [AUTH-TOKEN] Token encontrado para usuario:', { 
+    uid: userId, 
+    email: userEmail,
+    tokenLength: idToken.length 
   });
+  
+  // Verificar que el token no esté expirado (opcional, pero recomendado)
+  try {
+    // Decodificar la parte del payload del JWT para verificar expiración
+    const payload = JSON.parse(atob(idToken.split('.')[1]));
+    const currentTime = Math.floor(Date.now() / 1000);
+    
+    if (payload.exp && payload.exp < currentTime) {
+      console.error('❌ [AUTH-TOKEN] Token expirado');
+      // Limpiar tokens expirados
+      localStorage.removeItem('firebase_id_token');
+      localStorage.removeItem('firebase_refresh_token');
+      localStorage.removeItem('firebase_user_id');
+      localStorage.removeItem('firebase_user_email');
+      throw new Error('Token expirado - reloguearse');
+    }
+    
+    console.log('✅ [AUTH-TOKEN] Token válido, expira en:', new Date(payload.exp * 1000).toLocaleString());
+  } catch (parseError) {
+    console.warn('⚠️ [AUTH-TOKEN] No se pudo verificar expiración del token, continuando...');
+  }
+  
+  return idToken;
 }
 
 /**

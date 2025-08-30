@@ -184,18 +184,18 @@ export default function NuevoClientes() {
   const [tagInput, setTagInput] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  // Consulta para obtener clientes desde Firebase
+  // Consulta para obtener clientes desde Firebase CON userId correcto
   const {
     data: clients = [],
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["firebaseClients"],
+    queryKey: ["firebaseClients", userId], // Incluir userId en la key
     queryFn: async () => {
       try {
-        console.log("Obteniendo clientes desde Firebase...");
-        const data = await getClients();
+        console.log("Obteniendo clientes desde Firebase para usuario:", userId);
+        const data = await getClients(userId); // ✅ PASAR userId
         console.log("Clientes obtenidos:", data);
         return data;
       } catch (err) {
@@ -203,6 +203,7 @@ export default function NuevoClientes() {
         throw err;
       }
     },
+    enabled: !!userId, // Solo ejecutar si tenemos userId
   });
 
   // Mutation para crear un cliente usando Firebase
