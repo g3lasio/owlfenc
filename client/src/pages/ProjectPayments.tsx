@@ -30,6 +30,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { usePermissions } from "@/contexts/PermissionContext";
+import { UpgradePrompt } from "@/components/permissions/UpgradePrompt";
 import ProjectPaymentWorkflow from "@/components/payments/ProjectPaymentWorkflow";
 import PaymentSettings from "@/components/payments/PaymentSettings";
 import PaymentHistory from "@/components/payments/PaymentHistory";
@@ -103,6 +105,11 @@ const ProjectPayments: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("workflow");
+  
+  // Verificar permisos de payment tracking
+  const { hasAccess, userPlan, showUpgradeModal } = usePermissions();
+  const hasPaymentTrackingAccess = hasAccess('paymentTracking');
+  const canUsePaymentTracking = hasPaymentTrackingAccess;
 
   // Fetch projects data directly from Firebase with authentication check
   const {
@@ -435,6 +442,31 @@ const ProjectPayments: React.FC = () => {
             <p className="text-gray-400 text-lg">
               Simplified payment workflow with guided steps and complete tracking
             </p>
+            
+            {/* Payment Tracking Access Notice */}
+            {!canUsePaymentTracking && (
+              <div className="mt-4 p-4 bg-gradient-to-r from-purple-900/20 to-cyan-900/20 border border-purple-500/30 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-cyan-400 flex items-center justify-center">
+                      <span className="text-sm font-bold text-black">✨</span>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-medium text-white">¡Rastrea todos tus pagos como un Master Contractor!</h3>
+                    <p className="text-xs text-gray-300 mt-1">
+                      Accede a seguimiento de pagos avanzado, reportes detallados y automatización completa
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => showUpgradeModal('paymentTracking', 'Monitorea el estado de tus proyectos y pagos pendientes en tiempo real')}
+                    className="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-400 text-black text-sm font-medium rounded-lg hover:from-purple-600 hover:to-cyan-300 transition-all duration-200"
+                  >
+                    Upgrade ↗
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           <Button
             onClick={refreshData}
@@ -502,32 +534,65 @@ const ProjectPayments: React.FC = () => {
 
           {/* Simplified Payment Workflow Tab */}
           <TabsContent value="workflow" className="space-y-6">
-            <ProjectPaymentWorkflow
-              projects={projects}
-              payments={payments}
-              onCreatePayment={createPaymentMutation.mutate}
-              onSendInvoice={sendInvoiceMutation.mutate}
-              isCreatingPayment={createPaymentMutation.isPending}
-            />
+            {canUsePaymentTracking ? (
+              <ProjectPaymentWorkflow
+                projects={projects}
+                payments={payments}
+                onCreatePayment={createPaymentMutation.mutate}
+                onSendInvoice={sendInvoiceMutation.mutate}
+                isCreatingPayment={createPaymentMutation.isPending}
+              />
+            ) : (
+              <div className="flex items-center justify-center py-12">
+                <UpgradePrompt 
+                  feature="paymentTracking" 
+                  message="Crea workflows de pago profesionales y automatiza tu proceso de cobros"
+                  size="large"
+                  variant="card"
+                />
+              </div>
+            )}
           </TabsContent>
 
           {/* Payment History Tab */}
           <TabsContent value="history" className="space-y-6">
-            <PaymentHistory
-              payments={payments}
-              projects={projects}
-              isLoading={paymentsLoading}
-              onResendPaymentLink={resendPaymentLinkMutation.mutate}
-              onRefresh={refreshData}
-            />
+            {canUsePaymentTracking ? (
+              <PaymentHistory
+                payments={payments}
+                projects={projects}
+                isLoading={paymentsLoading}
+                onResendPaymentLink={resendPaymentLinkMutation.mutate}
+                onRefresh={refreshData}
+              />
+            ) : (
+              <div className="flex items-center justify-center py-12">
+                <UpgradePrompt 
+                  feature="paymentTracking" 
+                  message="Accede al historial completo de pagos y genera reportes avanzados"
+                  size="large"
+                  variant="card"
+                />
+              </div>
+            )}
           </TabsContent>
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-6">
-            <PaymentSettings
-              stripeAccountStatus={stripeAccountStatus}
-              onConnectStripe={connectToStripe}
-            />
+            {canUsePaymentTracking ? (
+              <PaymentSettings
+                stripeAccountStatus={stripeAccountStatus}
+                onConnectStripe={connectToStripe}
+              />
+            ) : (
+              <div className="flex items-center justify-center py-12">
+                <UpgradePrompt 
+                  feature="paymentTracking" 
+                  message="Configura integraciones avanzadas con Stripe y automatiza tus cobros"
+                  size="large"
+                  variant="card"
+                />
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
