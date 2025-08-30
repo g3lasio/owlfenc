@@ -1,5 +1,7 @@
 import { Express, Request, Response } from "express";
 import { propertyService } from "../services/propertyService";
+import { verifyFirebaseAuth as requireAuth } from "../middleware/firebase-auth";
+import { getUserFromFirebaseUser } from "../utils/secureUserHelper";
 
 /**
  * Esta función registra las rutas relacionadas con la obtención
@@ -7,8 +9,7 @@ import { propertyService } from "../services/propertyService";
  */
 export function registerPropertyRoutes(app: Express): void {
   // Endpoint para obtener detalles de una propiedad por dirección
-  // Ruta temporalmente deshabilitada
-  /* app.get('/api/property/details', async (req: Request, res: Response) => {
+  app.get('/api/property/details', requireAuth, async (req: Request, res: Response) => {
     const address = req.query.address as string;
     const useMock = req.query.mock === 'true' || false;
     
@@ -89,5 +90,5 @@ export function registerPropertyRoutes(app: Express): void {
         });
       }
     }
-  }); */
+  });
 }
