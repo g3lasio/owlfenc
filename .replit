@@ -55,4 +55,4 @@ localPort = 24678
 externalPort = 3000
 
 [agent]
-integrations = ["perplexity_v0==1.0.0", "javascript_websocket==1.0.0", "javascript_openai==1.0.0"]
+integrations = ["perplexity_v0==1.0.0", "javascript_openai==1.0.0", "javascript_websocket==1.0.0"]

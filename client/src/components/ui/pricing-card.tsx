@@ -19,6 +19,8 @@ interface PricingCardProps {
   code?: string;
   isActive?: boolean;
   expirationDate?: Date;
+  currentUserPlanId?: number;
+  onManageSubscription?: () => void;
 }
 
 export function PricingCard({
@@ -36,9 +38,21 @@ export function PricingCard({
   code = '',
   isActive = false,
   expirationDate,
+  currentUserPlanId = 1,
+  onManageSubscription,
 }: PricingCardProps) {
   const currentPrice = isYearly ? yearlyPrice / 100 : price / 100;
   const period = isYearly ? "/año" : "/mes";
+  
+  // Determinar el tipo de acción según el plan actual del usuario
+  const getActionType = () => {
+    if (isActive) return 'current'; // Plan actual
+    if (planId > currentUserPlanId) return 'upgrade'; // Plan superior
+    if (planId < currentUserPlanId) return 'downgrade'; // Plan inferior
+    return 'select'; // Caso por defecto
+  };
+  
+  const actionType = getActionType();
 
   // Función para formatear precio en dólares estadounidenses
   const formatPrice = (amount: number): string => {
@@ -144,31 +158,66 @@ export function PricingCard({
         </CardContent>
       </div>
       <CardFooter>
-        {isActive ? (
-          <div className="w-full">
+        <div className="w-full">
+          {actionType === 'current' ? (
+            <>
+              <Button 
+                className="w-full mb-2" 
+                variant="default"
+                disabled
+              >
+                ✓ PLAN ACTUAL
+              </Button>
+              {onManageSubscription && (
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={onManageSubscription}
+                  disabled={isLoading}
+                  size="sm"
+                >
+                  {isLoading ? "Procesando..." : "🔧 Gestionar"}
+                </Button>
+              )}
+              {expirationDate && (
+                <p className="text-xs text-center text-muted-foreground mt-2">
+                  Válido hasta: {expirationDate.toLocaleDateString()}
+                </p>
+              )}
+            </>
+          ) : actionType === 'upgrade' ? (
             <Button 
-              className="w-full mb-2" 
-              variant="default"
-              disabled
+              className="w-full" 
+              variant={isMostPopular ? "default" : "outline"}
+              onClick={() => onSelectPlan(planId)}
+              disabled={isLoading}
             >
-              ✓ ACTIVADO
+              {isLoading ? "Procesando..." : "⬆️ UPGRADE"}
             </Button>
-            {expirationDate && (
-              <p className="text-xs text-center text-muted-foreground">
-                Válido hasta: {expirationDate.toLocaleDateString()}
-              </p>
-            )}
-          </div>
-        ) : (
-          <Button 
-            className="w-full" 
-            variant={isMostPopular ? "default" : "outline"}
-            onClick={() => onSelectPlan(planId)}
-            disabled={isLoading}
-          >
-            {isLoading ? "Procesando..." : "Seleccionar Plan"}
-          </Button>
-        )}
+          ) : actionType === 'downgrade' ? (
+            <Button 
+              className="w-full" 
+              variant="outline"
+              onClick={() => {
+                if (window.confirm(`¿Estás seguro de que quieres cambiar a ${name}? Perderás algunas funciones.`)) {
+                  onSelectPlan(planId);
+                }
+              }}
+              disabled={isLoading}
+            >
+              {isLoading ? "Procesando..." : "⬇️ DOWNGRADE"}
+            </Button>
+          ) : (
+            <Button 
+              className="w-full" 
+              variant={isMostPopular ? "default" : "outline"}
+              onClick={() => onSelectPlan(planId)}
+              disabled={isLoading}
+            >
+              {isLoading ? "Procesando..." : "Seleccionar Plan"}
+            </Button>
+          )}
+        </div>
       </CardFooter>
     </Card>
   );

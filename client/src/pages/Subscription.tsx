@@ -5,6 +5,8 @@ import { PricingCard } from "@/components/ui/pricing-card";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface SubscriptionPlan {
   id: number;
@@ -437,16 +439,21 @@ export default function Subscription() {
 
 
 
-      {/* Mostrar información de la suscripción actual si no es gratuita */}
-      {activePlanId !== 1 && (
+      {/* Mostrar información de la suscripción actual SIEMPRE */}
+      {userSubscription && (
         <div className="bg-muted/50 rounded-lg p-6 mb-10 text-center">
-          <h3 className="text-lg font-medium mb-2">Suscripción Actual</h3>
+          <h3 className="text-lg font-medium mb-2">Tu Plan Actual</h3>
           <p className="mb-4">
             Actualmente tienes el plan{" "}
-            <span className="font-bold">
+            <span className={cn("font-bold", activePlanId === 1 ? "text-muted-foreground" : "text-primary")}>
               {Array.isArray(plans) ? plans.find((p: SubscriptionPlan) => p.id === activePlanId)?.name || "Desconocido" : "Desconocido"}
             </span>
-            {expirationDate && (
+            {activePlanId === 1 && (
+              <span className="text-sm text-muted-foreground block mt-1">
+                (Plan gratuito - considera hacer upgrade para obtener más funciones)
+              </span>
+            )}
+            {expirationDate && activePlanId !== 1 && (
               <>
                 {" "}válido hasta el{" "}
                 <span className="font-bold">
@@ -455,16 +462,50 @@ export default function Subscription() {
               </>
             )}
           </p>
-          <button
-            onClick={createCustomerPortal}
-            disabled={isLoading}
-            className="text-primary hover:underline font-medium"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
-            ) : null}
-            Administrar suscripción
-          </button>
+          {activePlanId === 1 ? (
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button
+                variant="default"
+                onClick={() => {
+                  const targetPlan = plans?.find(p => p.code === 'mero_patron');
+                  if (targetPlan) createCheckoutSession(targetPlan.id);
+                }}
+                disabled={isLoading}
+                className="text-sm"
+              >
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                ⬆️ Hacer Upgrade
+              </Button>
+              <p className="text-xs text-muted-foreground self-center">
+                Recomendado: El Mero Patrón ($29/mes)
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <button
+                onClick={createCustomerPortal}
+                disabled={isLoading}
+                className="text-primary hover:underline font-medium text-sm"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                ) : null}
+                🔧 Administrar Suscripción
+              </button>
+              <button
+                onClick={() => {
+                  const freePlan = plans?.find(p => p.id === 1);
+                  if (freePlan && window.confirm('¿Estás seguro de que quieres hacer downgrade al plan gratuito?')) {
+                    createCheckoutSession(1);
+                  }
+                }}
+                disabled={isLoading}
+                className="text-orange-500 hover:underline font-medium text-sm"
+              >
+                ⬇️ Downgrade a Gratuito
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -489,6 +530,8 @@ export default function Subscription() {
               code={plan.code}
               isActive={plan.id === activePlanId}
               expirationDate={plan.id === activePlanId ? (expirationDate || undefined) : undefined}
+              currentUserPlanId={activePlanId}
+              onManageSubscription={createCustomerPortal}
             />
           ))}
       </div>
