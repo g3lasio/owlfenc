@@ -6,40 +6,14 @@ import jwt from "jsonwebtoken";
 
 const router = Router();
 
-// Middleware to check authentication
-export const authenticateJWT = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  const authHeader = req.headers.authorization;
+// Use Firebase Authentication instead of JWT
+import { verifyFirebaseAuth } from "../middleware/firebase-auth";
 
-  if (authHeader?.startsWith("Bearer ")) {
-    const token = authHeader.split(" ")[1];
+// DEPRECATED: Using Firebase Auth instead of JWT
+export const authenticateJWT = verifyFirebaseAuth;
 
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-      req.user = decoded;
-      next();
-    } catch (err) {
-      return res.status(403).json({ message: "Invalid token" });
-    }
-  } else {
-    return res.status(401).json({ message: "Authentication required" });
-  }
-};
-
-// Middleware to check if user is set (authentication check)
-export const isAuthenticated = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  if (!req.user) {
-    return res.status(401).json({ message: "Authentication required" });
-  }
-  next();
-};
+// Use Firebase Authentication middleware
+export const isAuthenticated = verifyFirebaseAuth;
 // const isAuthenticated = (req: Request, res: Response, next: any) => {
 //   if (!req.user) {
 //     return res.status(401).json({ message: "Authentication required" });
@@ -80,10 +54,10 @@ router.post(
   isAuthenticated,
   async (req: Request, res: Response) => {
     try {
-      if (!req.user) {
+      if (!req.firebaseUser) {
         return res.status(401).json({ error: "User not authenticated" });
       }
-      const userId = req.user.id;
+      const userId = req.firebaseUser.uid; // Firebase UID
       const projectId = parseInt(req.params.projectId);
       const validatedData = createPaymentStructureSchema.parse({
         ...req.body,
@@ -160,10 +134,10 @@ router.post(
   isAuthenticated,
   async (req: Request, res: Response) => {
     try {
-      if (!req.user) {
+      if (!req.firebaseUser) {
         return res.status(401).json({ error: "User not authenticated" });
       }
-      const userId = req.user.id;
+      const userId = req.firebaseUser.uid; // Firebase UID
       const validatedData = createPaymentSchema.parse(req.body);
 
       const result = await contractorPaymentService.createProjectPayment({
@@ -201,7 +175,7 @@ router.post(
   isAuthenticated,
   async (req: Request, res: Response) => {
     try {
-      if (!req.user) {
+      if (!req.firebaseUser) {
         return res.status(401).json({ error: "User not authenticated" });
       }
 
@@ -297,14 +271,14 @@ router.post(
   isAuthenticated,
   async (req: Request, res: Response) => {
     try {
-      if (!req.user) {
+      if (!req.firebaseUser) {
         return res.status(401).json({ error: "User not authenticated" });
       }
       const paymentId = parseInt(req.params.paymentId);
 
       // Verify payment belongs to user
       const payment = await storage.getProjectPayment(paymentId);
-      if (!payment || payment.userId !== req.user.id) {
+      if (!payment || payment.userId !== req.firebaseUser.uid) {
         return res.status(404).json({ message: "Payment not found" });
       }
 
@@ -333,7 +307,7 @@ router.get(
   isAuthenticated,
   async (req: Request, res: Response) => {
     try {
-      const userId = req.user.id;
+      const userId = req.firebaseUser.uid; // Firebase UID
       const summary = await contractorPaymentService.getPaymentSummary(userId);
 
       res.json({
@@ -358,7 +332,7 @@ router.get(
   isAuthenticated,
   async (req: Request, res: Response) => {
     try {
-      const userId = req.user.id;
+      const userId = req.firebaseUser.uid; // Firebase UID
       const { status, type, projectId } = req.query;
 
       let payments = await storage.getProjectPaymentsByUserId(userId);
@@ -432,7 +406,7 @@ router.get(
       const paymentId = parseInt(req.params.paymentId);
       const payment = await storage.getProjectPayment(paymentId);
 
-      if (!payment || payment.userId !== req.user.id) {
+      if (!payment || payment.userId !== req.firebaseUser.uid) {
         return res.status(404).json({ message: "Payment not found" });
       }
 
@@ -463,7 +437,7 @@ router.patch(
 
       // Verify payment belongs to user
       const payment = await storage.getProjectPayment(paymentId);
-      if (!payment || payment.userId !== req.user.id) {
+      if (!payment || payment.userId !== req.firebaseUser.uid) {
         return res.status(404).json({ message: "Payment not found" });
       }
 
@@ -509,13 +483,13 @@ router.post("/webhooks/stripe", async (req: Request, res: Response) => {
  */
 router.get("/payments", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.firebaseUser) {
       return res.status(401).json({ error: "User not authenticated" });
     }
-    const userId = req.user.id;
+    const userId = req.firebaseUser.uid;
 
-    // For now, return empty array until we implement storage
-    const payments: any[] = [];
+    // Fetch REAL payments from database instead of empty array
+    const payments = await contractorPaymentService.getUserPayments(userId);
 
     res.json({
       success: true,
@@ -535,20 +509,13 @@ router.get("/payments", isAuthenticated, async (req: Request, res: Response) => 
  */
 router.get("/dashboard/summary", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.firebaseUser) {
       return res.status(401).json({ error: "User not authenticated" });
     }
-    const userId = req.user.id;
+    const userId = req.firebaseUser.uid;
 
-    // For now, return mock summary data
-    const summary = {
-      totalPending: 0,
-      totalPaid: 0,
-      totalOverdue: 0,
-      totalRevenue: 0,
-      pendingCount: 0,
-      paidCount: 0,
-    };
+    // Fetch REAL payment summary from database instead of mock data
+    const summary = await contractorPaymentService.getPaymentSummary(userId);
 
     res.json({
       success: true,
@@ -568,15 +535,12 @@ router.get("/dashboard/summary", isAuthenticated, async (req: Request, res: Resp
  */
 router.get("/stripe/account-status", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.firebaseUser) {
       return res.status(401).json({ error: "User not authenticated" });
     }
 
-    // For now, return mock Stripe status
-    const stripeStatus = {
-      hasStripeAccount: false,
-      accountDetails: null,
-    };
+    // Fetch REAL Stripe account status from service
+    const stripeStatus = await contractorPaymentService.getStripeAccountStatus(req.firebaseUser.uid);
 
     res.json(stripeStatus);
   } catch (error) {

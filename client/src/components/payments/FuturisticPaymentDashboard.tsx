@@ -52,17 +52,8 @@ export default function FuturisticPaymentDashboard({
   const paidPercentage = calculatePercentage(paymentSummary.paidCount, totalTransactions);
   const pendingPercentage = calculatePercentage(paymentSummary.pendingCount, totalTransactions);
 
-  // Mock data for demonstration if no real data
-  const mockSummary = {
-    totalPending: 475000, // $4,750
-    totalPaid: 1250000, // $12,500
-    totalOverdue: 25000, // $250
-    totalRevenue: 1750000, // $17,500
-    pendingCount: 3,
-    paidCount: 8,
-  };
-
-  const displaySummary = paymentSummary.totalRevenue > 0 ? paymentSummary : mockSummary;
+  // Use only REAL data from Firebase/database - NO MOCK DATA
+  const displaySummary = paymentSummary;
 
   if (isLoading) {
     return (

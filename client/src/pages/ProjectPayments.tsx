@@ -132,11 +132,11 @@ const ProjectPayments: React.FC = () => {
               // Get all projects (not just approved ones for payment processing)
               const firebaseProjects = await getProjects();
 
-              // Convert Firebase projects to our Project type
+              // Convert Firebase projects to our Project type with REAL user mapping
               const convertedProjects = firebaseProjects.map(
                 (project: any) => ({
                   id: project.id || Math.random(),
-                  userId: 1, // Default user ID for now
+                  userId: user.uid, // Use authenticated Firebase UID
                   projectId: project.id || project.projectId || "",
                   clientName:
                     project.clientName ||
@@ -234,14 +234,8 @@ const ProjectPayments: React.FC = () => {
           return data.data;
         } catch (error) {
           console.error("Error fetching payment summary:", error);
-          return {
-            totalPending: 0,
-            totalPaid: 0,
-            totalOverdue: 0,
-            totalRevenue: 0,
-            pendingCount: 0,
-            paidCount: 0,
-          };
+          // Return null for error cases to distinguish from empty state
+          return null;
         }
       },
     });
