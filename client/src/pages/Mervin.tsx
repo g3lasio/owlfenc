@@ -517,7 +517,7 @@ export default function Mervin() {
   
   const getTaskPrompt = (action: string): string => {
     const prompts = {
-      estimates: "Quiero generar un estimado profesional. Inicia el proceso completo de estimación.",
+      estimates: "ESTIMATE_WIZARD_START: Iniciar flujo conversacional de estimado paso a paso empezando por información del cliente",
       contracts: "Necesito generar un contrato. Inicia el flujo completo de creación de contratos.",
       permits: "Quiero analizar permisos municipales. Activa el asesor de permisos.",
       properties: "Necesito verificar la propiedad de un inmueble. Inicia la verificación.",

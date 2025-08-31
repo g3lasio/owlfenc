@@ -285,6 +285,11 @@ export class MervinAgent {
         console.log('🎯 [INTENTION-ANALYSIS]', intention);
       }
 
+      // 🧙‍♂️ FLUJO ESPECIAL: Estimate Wizard Conversacional
+      if (extractedTaskType === 'estimate_wizard_conversational') {
+        return await this.handleEstimateWizardConversational(input, conversationHistory);
+      }
+
       // Actualizar contexto con nueva información
       await this.contextManager.updateContext(input, intention);
 
@@ -419,6 +424,11 @@ export class MervinAgent {
    */
   private extractTaskType(input: string): string {
     const inputLower = input.toLowerCase();
+    
+    // Detectar flujo conversacional especial del Estimate Wizard
+    if (input.includes('ESTIMATE_WIZARD_START')) {
+      return 'estimate_wizard_conversational';
+    }
     
     // Patrones específicos para diferentes tipos de tareas
     if (inputLower.includes('estimado') || inputLower.includes('estimate') || 
@@ -611,6 +621,94 @@ export class MervinAgent {
     }
 
     return { allowed: true, message: '' };
+  }
+
+  /**
+   * 🧙‍♂️ MANEJAR FLUJO CONVERSACIONAL DEL ESTIMATE WIZARD
+   * 
+   * Este método maneja el flujo paso a paso del EstimatesWizard de forma conversacional
+   * usando los endpoints reales sin inventar nada.
+   */
+  private async handleEstimateWizardConversational(input: string, conversationHistory: any[]): Promise<TaskResult> {
+    try {
+      if (this.config.debug) {
+        console.log('🧙‍♂️ [ESTIMATE-WIZARD-CONVERSATIONAL] Iniciando flujo paso a paso');
+      }
+
+      // Respuesta inicial pidiendo información del cliente
+      const stepOneMessage = this.conversationEngine.getCurrentLanguageProfile().language === 'spanish'
+        ? `¡Órale primo! Te voy a ayudar a crear un estimado profesional paso a paso.
+
+📋 **PASO 1: Información del Cliente**
+
+Para empezar necesito los datos del cliente:
+
+• **Nombre del cliente** (requerido)
+• **Email** (opcional)  
+• **Teléfono** (opcional)
+• **Dirección del proyecto** (opcional)
+
+¿Cómo se llama el cliente para este estimado?
+
+*Tip: También puedes decir "usar cliente existente" si ya tienes clientes registrados.*`
+        : `Alright dude! I'll help you create a professional estimate step by step.
+
+📋 **STEP 1: Client Information**
+
+To get started I need the client data:
+
+• **Client name** (required)
+• **Email** (optional)
+• **Phone** (optional)
+• **Project address** (optional)
+
+What's the client's name for this estimate?
+
+*Tip: You can also say "use existing client" if you have registered clients.*`;
+
+      // Actualizar estado del agente
+      this.updateState({ 
+        isActive: true, 
+        currentTask: 'estimate_wizard_step_1',
+        progress: 16, // 1 de 6 pasos = ~16%
+        activeEndpoints: [],
+        canInterrupt: true
+      });
+
+      return {
+        success: true,
+        data: {
+          conversationalResponse: stepOneMessage,
+          languageProfile: this.conversationEngine.getCurrentLanguageProfile(),
+          wizardStep: 1,
+          nextAction: 'capture_client_info',
+          isWizardFlow: true,
+          stepDescription: 'Capturando información del cliente'
+        },
+        executionTime: 100,
+        stepsCompleted: 1,
+        endpointsUsed: []
+      };
+
+    } catch (error) {
+      console.error('❌ [ESTIMATE-WIZARD-CONVERSATIONAL] Error iniciando flujo:', error);
+      
+      const errorMessage = this.conversationEngine.getCurrentLanguageProfile().language === 'spanish'
+        ? 'Lo siento primo, hubo un problema iniciando el estimado. Inténtalo de nuevo.'
+        : 'Sorry dude, there was an issue starting the estimate. Please try again.';
+
+      return {
+        success: false,
+        error: 'Failed to start estimate wizard flow',
+        data: {
+          conversationalResponse: errorMessage,
+          languageProfile: this.conversationEngine.getCurrentLanguageProfile()
+        },
+        executionTime: 0,
+        stepsCompleted: 0,
+        endpointsUsed: []
+      };
+    }
   }
 
   /**

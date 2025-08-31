@@ -382,68 +382,25 @@ export class IntentionEngine {
   }
 
   /**
-   * Generar pasos para estimados usando el flujo del Estimate Wizard
+   * Generar pasos para estimados usando el flujo conversacional del Estimate Wizard
+   * CRÍTICO: No generar estimado completo de una vez - debe ser conversacional paso a paso
    */
   private generateEstimateSteps(intention: UserIntention): TaskStep[] {
     return [
       {
-        id: 'capture_client_info',
-        name: 'Capturar Info Cliente',
-        description: 'Obtener datos del cliente para el estimado',
-        endpoint: '/api/clients',
-        parameters: intention.parameters,
-        estimatedDuration: 2000,
+        id: 'start_estimate_conversation',
+        name: 'Iniciar Estimado Conversacional',
+        description: 'Empezar flujo conversacional pidiendo información del cliente paso a paso',
+        endpoint: 'conversational_flow',
+        parameters: {
+          ...intention.parameters,
+          conversationStep: 'request_client_info',
+          nextStep: 'capture_client_info',
+          useWizardEndpoints: true,
+          stepByStep: true
+        },
+        estimatedDuration: 1000,
         required: true
-      },
-      {
-        id: 'rewrite_description',
-        name: 'Procesar Descripción',
-        description: 'Reescribir descripción del proyecto con IA',
-        endpoint: '/api/anthropic-summarize/enhance-description',
-        parameters: intention.parameters,
-        dependsOn: ['capture_client_info'],
-        estimatedDuration: 4000,
-        required: true
-      },
-      {
-        id: 'search_materials',
-        name: 'Buscar Materiales',
-        description: 'Búsqueda inteligente de materiales necesarios',
-        endpoint: '/api/deepsearch/materials-only',
-        parameters: intention.parameters,
-        dependsOn: ['rewrite_description'],
-        estimatedDuration: 6000,
-        required: true
-      },
-      {
-        id: 'calculate_labor',
-        name: 'Calcular Labor',
-        description: 'Calcular costos de mano de obra',
-        endpoint: '/api/labor-deepsearch/combined',
-        parameters: intention.parameters,
-        dependsOn: ['search_materials'],
-        estimatedDuration: 5000,
-        required: true
-      },
-      {
-        id: 'create_estimate',
-        name: 'Crear Estimado',
-        description: 'Generar estimado completo con totales',
-        endpoint: '/api/estimates',
-        parameters: intention.parameters,
-        dependsOn: ['calculate_labor'],
-        estimatedDuration: 3000,
-        required: true
-      },
-      {
-        id: 'generate_pdf',
-        name: 'Generar PDF',
-        description: 'Crear PDF profesional descargable',
-        endpoint: '/api/pdfmonkey-estimates/generate',
-        parameters: intention.parameters,
-        dependsOn: ['create_estimate'],
-        estimatedDuration: 4000,
-        required: false
       }
     ];
   }
