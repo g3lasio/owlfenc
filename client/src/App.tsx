@@ -36,6 +36,7 @@ import Invoices from "@/pages/Invoices";
 import EstimatesDashboard from "@/pages/EstimatesDashboard";
 import EstimateGenerator from "@/pages/EstimateGenerator";
 import MisEstimados from "@/pages/MisEstimados";
+import EstimateWizardChat from "@/pages/EstimateWizardChat";
 import AuthPage from "@/pages/Login"; // Renombrado el import aunque el archivo sigue siendo Login.tsx
 import RecuperarPassword from "@/pages/RecuperarPassword";
 import ResetPassword from "@/pages/ResetPassword";
@@ -274,6 +275,9 @@ function Router() {
       </Route>
       <Route path="/estimates-legacy">
         {() => <ProtectedRoute component={EstimateGenerator} />}
+      </Route>
+      <Route path="/estimate-wizard-chat">
+        {() => <ProtectedRoute component={EstimateWizardChat} />}
       </Route>
 
 

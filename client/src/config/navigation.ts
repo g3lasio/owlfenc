@@ -61,6 +61,12 @@ export const navigationGroups: NavigationGroup[] = [
         icon: "ri-file-list-3-line"
       },
       {
+        id: "estimate-wizard-chat",
+        label: "AI Estimate Wizard",
+        path: "/estimate-wizard-chat",
+        icon: "ri-robot-2-line"
+      },
+      {
         id: "legal-defense",
         label: "navigation.contractGenerator",
         path: "/legal-defense",
