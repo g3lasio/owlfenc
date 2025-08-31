@@ -342,11 +342,19 @@ So, what can I do for you today, bro?`;
     isSpanish: boolean, 
     inferences: any
   ): string {
+    // 🇲🇽 SIEMPRE RESPONDER EN ESPAÑOL CON CONTEXTO REAL
+    const userContext = this.extractUserContext(message);
     const implicitNeed = inferences.implicit[0] || '';
     
-    return isSpanish
-      ? `Perfecto, primo. ${implicitNeed ? 'Además de lo que me pides, ' + implicitNeed.toLowerCase() + '. ' : ''}Así tenemos todo completo desde el principio.`
-      : `Perfect, dude. ${implicitNeed ? 'Besides what you\'re asking for, ' + implicitNeed.toLowerCase() + '. ' : ''}This way we have everything complete from the start.`;
+    if (topic === 'estimate') {
+      return `¡Órale, primo! Veo que necesitas un estimado${userContext.project ? ` para ${userContext.project}` : ''}. ${implicitNeed ? 'Probablemente también te convenga ' + implicitNeed.toLowerCase() + '. ' : ''}Te hago todo el paquete completo, ¿cómo ves?`;
+    }
+    
+    if (implicitNeed) {
+      return `Simón, compadre. Aparte de ${topic}, te conviene ${implicitNeed.toLowerCase()}. Así no batallamos después.`;
+    }
+    
+    return `Perfecto, primo. ${userContext.details || 'Entiendo lo que necesitas'}. Te ayudo con todo de una vez.`;
   }
 
   private generateAnticipatoryResponse(
@@ -356,11 +364,15 @@ So, what can I do for you today, bro?`;
     isSpanish: boolean, 
     inferences: any
   ): string {
+    // 🇲🇽 RESPUESTA PREDICTIVA EN ESPAÑOL CON CONTEXTO REAL
+    const userContext = this.extractUserContext(message);
     const nextNeed = inferences.anticipated_needs[0] || '';
     
-    return isSpanish
-      ? `Órale sí, primo. Te ayudo con eso ahora, y después probablemente vas a necesitar ${nextNeed.toLowerCase()}. ¿Te preparo todo de una vez?`
-      : `Oh yeah, dude. I'll help you with that now, and then you'll probably need ${nextNeed.toLowerCase()}. Want me to prepare everything at once?`;
+    if (topic === 'estimate') {
+      return `¡Simón, primo! Te armo el estimado${userContext.project ? ` para ${userContext.project}` : ''}. ${nextNeed ? 'Y seguramente después vas a querer ' + nextNeed.toLowerCase() + ', ' : ''}¿te preparo todo de jalón?`;
+    }
+    
+    return `¡Órale, primo! Te resuelvo ${topic}${userContext.details ? ` para ${userContext.details}` : ''}. ${nextNeed ? 'Después probablemente necesites ' + nextNeed.toLowerCase() + '. ' : ''}¿Hacemos todo de una vez?`;
   }
 
   /**
@@ -742,28 +754,28 @@ So, what can I do for you today, bro?`;
     const isSpanish = language === 'spanish';
     const normalizedMessage = userMessage.toLowerCase();
     
-    // 🎯 ANÁLISIS CONTEXTUAL PROFUNDO
+    // 🇲🇽 FORZAR ESPAÑOL SIEMPRE - Eliminar problema de idioma inconsistente
+    const isSpanishUser = true; // SIEMPRE español para usuarios hispanos
+    
+    // 🎯 ANÁLISIS CONTEXTUAL REAL DEL USUARIO
+    const userContext = this.extractUserContext(userMessage);
     const context = this.analyzeDeepContext(normalizedMessage);
     
-    // 🧠 RESPUESTAS SÚPER CONTEXTUALES
-    if (context.contains.license || context.contains.permit || normalizedMessage.includes('c-13') || normalizedMessage.includes('licencia')) {
-      return this.generateLicensePermitResponse(normalizedMessage, isSpanish);
+    // 🧠 RESPUESTAS INTELIGENTES CON CONTEXTO REAL
+    if (context.contains.estimate || topic === 'estimate') {
+      return `¡Órale primo! Necesitas ${userContext.project || 'un estimado'}. Te voy pidiendo la información paso a paso para armarte algo bien professional. ¿Empezamos con los datos del cliente?`;
     }
     
-    if (context.contains.pricing || context.contains.cost || context.contains.estimate) {
-      return this.generatePricingResponse(normalizedMessage, isSpanish);
+    if (context.contains.license || context.contains.permit) {
+      return this.generateLicensePermitResponse(normalizedMessage, true);
     }
     
     if (context.contains.contract || context.contains.agreement) {
-      return this.generateContractResponse(normalizedMessage, isSpanish);
+      return this.generateContractResponse(normalizedMessage, true);
     }
     
-    if (context.contains.business || context.contains.company) {
-      return this.generateBusinessResponse(normalizedMessage, isSpanish);
-    }
-    
-    // 🎭 RESPUESTAS ADAPTADAS POR TIPO DE MENSAJE
-    return this.generateAdaptiveResponse(userMessage, messageType, intent, topic, emotionalContext, isSpanish);
+    // 🎭 RESPUESTA NATURAL Y CONTEXTUAL
+    return this.generateNaturalContextualResponse(userMessage, userContext, topic, intent, emotionalContext);
   }
 
   private generateSpecificResponse(
@@ -845,8 +857,85 @@ So, what can I do for you today, bro?`;
         return this.generateFollowupResponse(topic, language);
 
       default:
-        return this.generateContextualStatement(intent, topic, emotionalContext, language, userMessage);
+        return this.generateContextualStatement(intent, topic, emotionalContext, 'spanish', userMessage); // FORZAR ESPAÑOL
     }
+  }
+
+  /**
+   * Extraer contexto real del usuario (NO hardcoded)
+   */
+  private extractUserContext(message: string): { project?: string, details?: string, urgency?: string } {
+    const normalizedMessage = message.toLowerCase();
+    const context: { project?: string, details?: string, urgency?: string } = {};
+    
+    // Detectar tipo de proyecto específico
+    if (normalizedMessage.includes('cerca') || normalizedMessage.includes('fence')) {
+      context.project = 'cerca';
+    } else if (normalizedMessage.includes('deck') || normalizedMessage.includes('terraza')) {
+      context.project = 'deck/terraza';
+    } else if (normalizedMessage.includes('gate') || normalizedMessage.includes('portón') || normalizedMessage.includes('puerta')) {
+      context.project = 'portón/puerta';
+    } else if (normalizedMessage.includes('pool') || normalizedMessage.includes('alberca') || normalizedMessage.includes('piscina')) {
+      context.project = 'cerca de alberca';
+    } else if (normalizedMessage.includes('commercial') || normalizedMessage.includes('comercial') || normalizedMessage.includes('business')) {
+      context.project = 'proyecto comercial';
+    }
+    
+    // Detectar detalles específicos del usuario
+    if (normalizedMessage.includes('urgente') || normalizedMessage.includes('urgent') || normalizedMessage.includes('rápido')) {
+      context.urgency = 'urgente';
+    }
+    
+    // Extraer detalles mencionados por el usuario
+    const details = [];
+    if (normalizedMessage.includes('pies') || normalizedMessage.includes('feet') || normalizedMessage.includes('linear')) {
+      details.push('medidas específicas');
+    }
+    if (normalizedMessage.includes('madera') || normalizedMessage.includes('wood') || normalizedMessage.includes('vinyl') || normalizedMessage.includes('vinilo')) {
+      details.push('material específico');
+    }
+    if (normalizedMessage.includes('cliente') || normalizedMessage.includes('customer') || normalizedMessage.includes('para')) {
+      details.push('cliente específico');
+    }
+    
+    if (details.length > 0) {
+      context.details = details.join(', ');
+    }
+    
+    return context;
+  }
+  
+  /**
+   * Generar respuesta natural y contextual (NO robótica)
+   */
+  private generateNaturalContextualResponse(
+    userMessage: string,
+    userContext: any,
+    topic: string,
+    intent: string, 
+    emotionalContext: string
+  ): string {
+    const normalizedMessage = userMessage.toLowerCase();
+    
+    // 🎯 RESPUESTAS NATURALES BASADAS EN LO QUE REALMENTE PIDIÓ EL USUARIO
+    if (normalizedMessage.includes('estimado') || normalizedMessage.includes('estimate') || normalizedMessage.includes('presupuesto')) {
+      return `¡Simón, primo! Te ayudo con ese estimado${userContext.project ? ` de ${userContext.project}` : ''}. Para hacértelo bien preciso, vamos paso a paso. ¿Ya tienes la info del cliente o empezamos por ahí?`;
+    }
+    
+    if (normalizedMessage.includes('cliente') && normalizedMessage.includes('existente')) {
+      return `¡Órale! Veo que quieres usar un cliente que ya tienes. Perfecto, eso hace todo más rápido. ¿Cómo se llama el cliente para buscarlo en el sistema?`;
+    }
+    
+    if (intent === 'create') {
+      return `¡Ándale primo! Te ayudo a crear ${topic === 'estimate' ? 'el estimado' : topic}${userContext.project ? ` para ${userContext.project}` : ''}. ${userContext.urgency ? 'Veo que lo necesitas urgente, ' : ''}Vamos directo al grano.`;
+    }
+    
+    if (intent === 'explain') {
+      return `¡Claro, compadre! Te explico todo ${topic === 'general' ? 'paso a paso' : `sobre ${topic}`}. ${userContext.details ? `Como mencionas ${userContext.details}, ` : ''}te doy todos los detalles.`;
+    }
+    
+    // Respuesta natural por defecto
+    return `¡Órale primo! Entiendo que necesitas ayuda con ${topic === 'general' ? 'algo específico' : topic}. ${userContext.details ? `Veo que ya tienes ${userContext.details}, ` : ''}¿Cómo le hacemos?`;
   }
 
   /**

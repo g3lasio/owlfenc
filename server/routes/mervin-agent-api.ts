@@ -25,7 +25,7 @@ const mervinRequestSchema = z.object({
   conversationHistory: z.array(z.any()).default([]),
   agentMode: z.enum(['intelligent', 'executor']).default('intelligent'),
   requiresWebResearch: z.boolean().optional(),
-  taskType: z.enum(['estimate', 'contract', 'permit', 'property', 'general']).optional()
+  taskType: z.enum(['estimate', 'contract', 'permit', 'property', 'general', 'estimate_wizard_conversational']).optional()
 });
 
 // Inicializar el orquestador una sola vez

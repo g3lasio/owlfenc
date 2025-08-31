@@ -246,26 +246,46 @@ export class LanguageDetector {
     let region: 'mexican' | 'californian' | 'neutral' | undefined;
     let personalityStyle: PersonalityStyle;
 
-    if (spanishRatio > englishRatio && spanishRatio > 0.2) {
+    // 🇲🇽 DETECCIÓN MEJORADA DE ESPAÑOL - Threshold más bajo para frases cortas
+    const hasSpanishWords = spanishScore > 0;
+    const hasEnglishWords = englishScore > 0;
+    const hasSpanishAccents = /[áéíóúñ¿¡]/.test(normalizedMessage);
+    const hasSpanishPhrases = mexicanScore > 0;
+    
+    // Si tiene acentos español, automáticamente es español
+    if (hasSpanishAccents || hasSpanishPhrases) {
       language = 'spanish';
-      confidence = Math.min(spanishRatio * 2, 1);
-      region = mexicanScore > 0 ? 'mexican' : 'neutral';
+      confidence = 0.9;
+      region = 'mexican';
       personalityStyle = this.mexicanPersonality;
-    } else if (englishRatio > spanishRatio && englishRatio > 0.2) {
+    }
+    // Si tiene palabras en español y NO es claramente inglés
+    else if (hasSpanishWords && (!hasEnglishWords || spanishScore >= englishScore)) {
+      language = 'spanish';
+      confidence = Math.max(0.7, Math.min(spanishRatio * 3, 1));
+      region = 'mexican';
+      personalityStyle = this.mexicanPersonality;
+    }
+    // Si es claramente inglés
+    else if (englishRatio > spanishRatio && englishRatio > 0.15) {
       language = 'english';
       confidence = Math.min(englishRatio * 2, 1);
       region = californianScore > 0 ? 'californian' : 'neutral';
       personalityStyle = this.californianPersonality;
-    } else if (spanishRatio > 0.1 && englishRatio > 0.1) {
+    }
+    // Si hay mezcla de ambos
+    else if (hasSpanishWords && hasEnglishWords) {
       language = 'mixed';
       confidence = 0.7;
-      region = mexicanScore > californianScore ? 'mexican' : 'californian';
-      personalityStyle = mexicanScore > californianScore ? this.mexicanPersonality : this.californianPersonality;
-    } else {
-      language = 'other';
-      confidence = 0.5;
-      region = 'neutral';
-      personalityStyle = this.mexicanPersonality; // Default a mexicano
+      region = 'mexican'; // Preferir mexicano por defecto
+      personalityStyle = this.mexicanPersonality;
+    }
+    // Default: Siempre español mexicano para usuarios hispanos
+    else {
+      language = 'spanish';
+      confidence = 0.8;
+      region = 'mexican';
+      personalityStyle = this.mexicanPersonality;
     }
 
     return {

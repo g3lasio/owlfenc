@@ -38,7 +38,7 @@ export interface MervinRequest {
   conversationHistory: any[];
   agentMode: 'intelligent' | 'executor';
   requiresWebResearch?: boolean;
-  taskType?: 'estimate' | 'contract' | 'permit' | 'property' | 'general';
+  taskType?: 'estimate' | 'contract' | 'permit' | 'property' | 'general' | 'estimate_wizard_conversational';
 }
 
 export interface MervinResponse {
