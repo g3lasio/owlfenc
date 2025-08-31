@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { auth } from '@/lib/firebase';
 import { 
   Wrench, 
   Brain, 
@@ -73,6 +74,33 @@ export default function LaborDeepSearchButton({
 
   const { toast } = useToast();
 
+  // Helper function to get auth headers
+  const getAuthHeaders = async (): Promise<Record<string, string>> => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Obtener token de Firebase si el usuario está autenticado
+    if (auth.currentUser) {
+      try {
+        const token = await auth.currentUser.getIdToken(false).catch(() => null);
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        } else {
+          // Si falla token normal, intentar refresh
+          const refreshedToken = await auth.currentUser.getIdToken(true).catch(() => null);
+          if (refreshedToken) {
+            headers["Authorization"] = `Bearer ${refreshedToken}`;
+          }
+        }
+      } catch (error) {
+        console.warn('Error obteniendo token de autenticación:', error);
+      }
+    }
+    
+    return headers;
+  };
+
   const generateLaborOnly = async () => {
     try {
       setIsProcessing(true);
@@ -80,11 +108,10 @@ export default function LaborDeepSearchButton({
 
       console.log('🔧 Iniciando Labor DeepSearch...');
 
+      const headers = await getAuthHeaders();
       const response = await fetch('/api/labor-deepsearch/generate-items', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           projectDescription,
           location: 'Estados Unidos',
@@ -138,11 +165,10 @@ export default function LaborDeepSearchButton({
 
       console.log('📦 Iniciando Materials DeepSearch...');
 
+      const headers = await getAuthHeaders();
       const response = await fetch('/api/deepsearch/materials', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           projectDescription,
           location: 'Estados Unidos'
@@ -197,11 +223,10 @@ export default function LaborDeepSearchButton({
 
       console.log('🔧📦 Iniciando Combined DeepSearch...');
 
+      const headers = await getAuthHeaders();
       const response = await fetch('/api/labor-deepsearch/combined', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           projectDescription,
           location: 'Estados Unidos',
