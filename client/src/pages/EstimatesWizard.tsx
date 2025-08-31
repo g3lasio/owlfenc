@@ -44,7 +44,7 @@ import {
   doc,
   setDoc,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import { MaterialInventoryService } from "../services/materialInventoryService";
 import { EmailService } from "../services/emailService";
 import { checkEmailVerification } from "@/lib/firebase";
@@ -1138,6 +1138,33 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     }
   };
 
+  // Helper function to get auth headers for deepsearch
+  const getAuthHeaders = async (): Promise<Record<string, string>> => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Obtener token de Firebase si el usuario está autenticado
+    if (auth.currentUser) {
+      try {
+        const token = await auth.currentUser.getIdToken(false).catch(() => null);
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        } else {
+          // Si falla token normal, intentar refresh
+          const refreshedToken = await auth.currentUser.getIdToken(true).catch(() => null);
+          if (refreshedToken) {
+            headers["Authorization"] = `Bearer ${refreshedToken}`;
+          }
+        }
+      } catch (error) {
+        console.warn('Error obteniendo token de autenticación:', error);
+      }
+    }
+    
+    return headers;
+  };
+
   // Handle Deepsearch Materials button functionality
   const handleDeepsearchToggle = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -1215,11 +1242,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         searchType === "full" ? 120000 : 60000,
       ); // 2 min for full, 1 min for single
 
+      // Get auth headers including Firebase token
+      const authHeaders = await getAuthHeaders();
+      console.log("🔍 NEW DEEPSEARCH - Auth headers:", !!authHeaders.Authorization ? 'Token included' : 'No token');
+
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: authHeaders,
         body: JSON.stringify({
           projectDescription: description,
           includeMaterials: searchType === "materials" || searchType === "full",
