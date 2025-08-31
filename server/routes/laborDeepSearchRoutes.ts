@@ -9,7 +9,7 @@ import { Request, Response, Express } from 'express';
 import { z } from 'zod';
 import { laborDeepSearchService } from '../services/laborDeepSearchService';
 import { aduConstructionExpertService } from '../services/aduConstructionExpertService';
-import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { optionalFirebaseAuth } from '../middleware/firebase-auth';
 import { userMappingService } from '../services/userMappingService';
 
 // Schema para validación de entrada - Labor únicamente
@@ -36,7 +36,7 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
    * POST /api/labor-deepsearch/labor-only
    * LABOR COSTS ONLY: Genera únicamente costos de labor sin materiales
    */
-  app.post('/api/labor-deepsearch/labor-only', verifyFirebaseAuth, async (req: Request, res: Response) => {
+  app.post('/api/labor-deepsearch/labor-only', optionalFirebaseAuth, async (req: Request, res: Response) => {
     try {
       console.log('🔧 LABOR ONLY DeepSearch: Recibiendo solicitud', req.body);
 
@@ -112,7 +112,7 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
    * POST /api/labor-deepsearch/analyze
    * Analiza un proyecto y genera únicamente lista de tareas de labor/servicios
    */
-  app.post('/api/labor-deepsearch/analyze', verifyFirebaseAuth, async (req: Request, res: Response) => {
+  app.post('/api/labor-deepsearch/analyze', optionalFirebaseAuth, async (req: Request, res: Response) => {
     try {
       console.log('🔧 Labor DeepSearch API: Recibiendo solicitud de análisis de labor', req.body);
 
@@ -177,7 +177,7 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
    * POST /api/labor-deepsearch/generate-items
    * Genera lista de items de labor compatible con el sistema de estimados
    */
-  app.post('/api/labor-deepsearch/generate-items', verifyFirebaseAuth, async (req: Request, res: Response) => {
+  app.post('/api/labor-deepsearch/generate-items', optionalFirebaseAuth, async (req: Request, res: Response) => {
     try {
       console.log('🔧 Labor DeepSearch API: Generando items de labor compatibles');
 
@@ -240,7 +240,7 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
    * POST /api/labor-deepsearch/combined
    * Genera análisis combinado de materiales Y labor con especialización ADU
    */
-  app.post('/api/labor-deepsearch/combined', verifyFirebaseAuth, async (req: Request, res: Response) => {
+  app.post('/api/labor-deepsearch/combined', optionalFirebaseAuth, async (req: Request, res: Response) => {
     try {
       console.log('🔧🔨 Combined DeepSearch API: Recibiendo solicitud de análisis combinado', req.body);
 
