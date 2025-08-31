@@ -14,6 +14,11 @@ export function useFeatureAccess() {
     remainingBasicEstimates: () => getRemainingUsage('basicEstimates'),
     remainingAIEstimates: () => getRemainingUsage('aiEstimates'),
     
+    // Deepsearch
+    canUseDeepsearch: () => canUse('deepsearch'),
+    hasDeepsearchAccess: () => hasAccess('deepsearch'),
+    remainingDeepsearch: () => getRemainingUsage('deepsearch'),
+    
     // Contratos
     canCreateContract: () => canUse('contracts'),
     remainingContracts: () => getRemainingUsage('contracts'),
@@ -32,6 +37,7 @@ export function useFeatureAccess() {
     showContractUpgrade: () => showUpgradeModal('contracts', 'Crea contratos profesionales sin límites'),
     showInvoiceUpgrade: () => showUpgradeModal('invoices', 'Gestiona tus pagos como un profesional'),
     showProjectUpgrade: () => showUpgradeModal('projects', 'Administra proyectos con IA avanzada'),
+    showDeepsearchUpgrade: () => showUpgradeModal('deepsearch', '¡Búsquedas súper potentes para estimados perfectos!'),
   };
 }
 

@@ -46,6 +46,11 @@ const featureMessages = {
     title: "¡Asesor de permisos premium!",
     message: "Consultas ilimitadas sobre permisos de construcción.",
     benefits: ["Consultas ilimitadas", "Actualizaciones en tiempo real", "Soporte experto"]
+  },
+  deepsearch: {
+    title: "¡Búsquedas súper potentes desbloqueadas!",
+    message: "IA avanzada que analiza materiales y costos con precisión profesional.",
+    benefits: ["Búsquedas ilimitadas", "Precisión profesional", "Sin errores de presupuesto"]
   }
 };
 

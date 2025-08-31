@@ -23,6 +23,7 @@ export interface UserLimits {
   projects: number;          // 0 = solo demo
   invoices: number;          // 0 = solo demo
   paymentTracking: number;   // 0 = disabled, 1 = basic, 2 = pro
+  deepsearch: number;        // Búsquedas avanzadas con IA por estimado
 }
 
 export interface UserUsage {
@@ -32,6 +33,7 @@ export interface UserUsage {
   propertyVerifications: number;
   permitAdvisor: number;
   projects: number;
+  deepsearch: number;
   month: string; // YYYY-MM format
 }
 
@@ -73,7 +75,8 @@ const PLANS: Plan[] = [
       permitAdvisor: 0,
       projects: 5,
       invoices: 0,
-      paymentTracking: 0
+      paymentTracking: 0,
+      deepsearch: 0  // Free users can see dropdown but not use
     },
     features: [
       "5 estimados básicos/mes (con marca de agua)",
@@ -98,7 +101,8 @@ const PLANS: Plan[] = [
       permitAdvisor: 10,
       projects: 30,
       invoices: -1,
-      paymentTracking: 1
+      paymentTracking: 1,
+      deepsearch: 50  // 50 queries per estimate for Mero Patrón
     },
     features: [
       "50 estimados básicos/mes (sin marca de agua)",
@@ -123,7 +127,8 @@ const PLANS: Plan[] = [
       permitAdvisor: -1,
       projects: -1,
       invoices: -1,
-      paymentTracking: 2
+      paymentTracking: 2,
+      deepsearch: -1  // Unlimited for Master Contractor
     },
     features: [
       "TODO ILIMITADO",
@@ -147,7 +152,8 @@ const PLANS: Plan[] = [
       permitAdvisor: -1,
       projects: -1,
       invoices: -1,
-      paymentTracking: 2
+      paymentTracking: 2,
+      deepsearch: -1  // Unlimited during trial
     },
     features: [
       "ACCESO TOTAL por 21 días",
@@ -288,6 +294,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
             propertyVerifications: 0, // Will be loaded separately if needed
             permitAdvisor: 0, // Will be loaded separately if needed
             projects: 0,
+            deepsearch: 0,
             month: new Date().toISOString().slice(0, 7)
           };
           
@@ -303,6 +310,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
           propertyVerifications: 0,
           permitAdvisor: 0,
           projects: 0,
+          deepsearch: 0,
           month: new Date().toISOString().slice(0, 7)
         });
       }
@@ -315,6 +323,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         propertyVerifications: 0,
         permitAdvisor: 0,
         projects: 0,
+        deepsearch: 0,
         month: new Date().toISOString().slice(0, 7)
       });
     } finally {
