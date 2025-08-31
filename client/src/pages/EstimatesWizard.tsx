@@ -49,6 +49,7 @@ import { db, auth } from "@/lib/firebase";
 import { MaterialInventoryService } from "../services/materialInventoryService";
 import { EmailService } from "../services/emailService";
 import { checkEmailVerification } from "@/lib/firebase";
+import { apiRequest } from "@/lib/queryClient";
 import {
   shareOrDownloadPdf,
   getSharingCapabilities,
@@ -1141,31 +1142,24 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     }
   };
 
-  // Helper function to get auth headers for deepsearch
-  const getAuthHeaders = async (): Promise<Record<string, string>> => {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
+  // Debug de autenticación para DeepSearch
+  const debugAuth = async () => {
+    console.log("🔍 [AUTH-DEBUG] Current user:", !!auth.currentUser);
+    console.log("🔍 [AUTH-DEBUG] User UID:", auth.currentUser?.uid);
+    console.log("🔍 [AUTH-DEBUG] User email:", auth.currentUser?.email);
     
-    // Obtener token de Firebase si el usuario está autenticado
     if (auth.currentUser) {
       try {
-        const token = await auth.currentUser.getIdToken(false).catch(() => null);
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        } else {
-          // Si falla token normal, intentar refresh
-          const refreshedToken = await auth.currentUser.getIdToken(true).catch(() => null);
-          if (refreshedToken) {
-            headers["Authorization"] = `Bearer ${refreshedToken}`;
-          }
-        }
+        const token = await auth.currentUser.getIdToken(false);
+        console.log("🔍 [AUTH-DEBUG] Token length:", token?.length);
+        console.log("🔍 [AUTH-DEBUG] Token prefix:", token?.substring(0, 20) + "...");
+        return token;
       } catch (error) {
-        console.warn('Error obteniendo token de autenticación:', error);
+        console.error("🔍 [AUTH-DEBUG] Error getting token:", error);
+        return null;
       }
     }
-    
-    return headers;
+    return null;
   };
 
   // Handle Deepsearch Materials button functionality
@@ -1247,6 +1241,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       console.log("🔍 NEW DEEPSEARCH - Making request to:", endpoint);
 
+      // Debug autenticación antes de la llamada
+      const tokenDebug = await debugAuth();
+      console.log("🔍 NEW DEEPSEARCH - Token debug result:", !!tokenDebug);
+
       // Enhanced error handling with timeout for large projects
       const controller = new AbortController();
       const timeoutId = setTimeout(
@@ -1256,56 +1254,30 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         searchType === "full" ? 120000 : 60000,
       ); // 2 min for full, 1 min for single
 
-      // Get auth headers including Firebase token
-      const authHeaders = await getAuthHeaders();
-      console.log("🔍 NEW DEEPSEARCH - Auth headers:", !!authHeaders.Authorization ? 'Token included' : 'No token');
+      // Usar apiRequest que maneja autenticación automáticamente
+      const requestData = {
+        projectDescription: description,
+        includeMaterials: searchType === "materials" || searchType === "full",
+        includeLabor: searchType === "labor" || searchType === "full",
+        location: estimate.client?.address || "Estados Unidos",
+        projectType: "construction",
+      };
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: authHeaders,
-        body: JSON.stringify({
-          projectDescription: description,
-          includeMaterials: searchType === "materials" || searchType === "full",
-          includeLabor: searchType === "labor" || searchType === "full",
-          location: estimate.client?.address || "Estados Unidos",
-          projectType: "construction",
-        }),
-        signal: controller.signal,
-      });
+      console.log("🔍 NEW DEEPSEARCH - Request data:", requestData);
+
+      let data;
+      try {
+        const response = await apiRequest("POST", endpoint, requestData);
+        data = await response.json();
+      } catch (error) {
+        clearTimeout(timeoutId);
+        clearInterval(progressInterval);
+        console.error("🔍 NEW DEEPSEARCH - apiRequest error:", error);
+        throw error;
+      }
 
       clearTimeout(timeoutId);
       clearInterval(progressInterval);
-
-      console.log("🔍 NEW DEEPSEARCH - Response status:", response.status);
-      console.log("🔍 NEW DEEPSEARCH - Response ok:", response.ok);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("🔍 NEW DEEPSEARCH - Response error:", errorText);
-        console.error("🔍 NEW DEEPSEARCH - Error details:", {
-          status: response.status,
-          statusText: response.statusText,
-        });
-
-        // Enhanced error messages for common issues
-        let userMessage = "Error generating estimate";
-        if (response.status === 404) {
-          userMessage = "Service temporarily unavailable. Please try again.";
-        } else if (response.status === 500) {
-          userMessage =
-            "Internal server error. The system may be processing a large project.";
-        } else if (response.status === 503) {
-          userMessage =
-            "Service unavailable. AI services may be temporarily down.";
-        } else if (errorText.includes("couldn't reach this app")) {
-          userMessage =
-            "Connection error. Please check your internet connection and try again.";
-        }
-
-        throw new Error(userMessage);
-      }
-
-      const data = await response.json();
       console.log("🔍 NEW DEEPSEARCH - Response data:", data);
       console.log("🔍 NEW DEEPSEARCH - Data.success:", data.success);
       console.log("🔍 NEW DEEPSEARCH - Data.items:", data.items);
