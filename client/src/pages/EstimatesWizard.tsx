@@ -1267,12 +1267,49 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       let data;
       try {
-        const response = await apiRequest("POST", endpoint, requestData);
+        // Probar manualmente con fetch para debugging
+        console.log("🔍 [MANUAL-DEBUG] Testing manual auth headers...");
+        
+        // Obtener headers manualmente
+        const authHeaders: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        
+        if (auth.currentUser) {
+          try {
+            const token = await auth.currentUser.getIdToken(false);
+            authHeaders["Authorization"] = `Bearer ${token}`;
+            console.log("🔍 [MANUAL-DEBUG] Token obtained:", !!token);
+            console.log("🔍 [MANUAL-DEBUG] Token length:", token?.length);
+            console.log("🔍 [MANUAL-DEBUG] Headers:", Object.keys(authHeaders));
+          } catch (error) {
+            console.error("🔍 [MANUAL-DEBUG] Error getting token:", error);
+          }
+        } else {
+          console.log("🔍 [MANUAL-DEBUG] No current user");
+        }
+
+        console.log("🔍 [MANUAL-DEBUG] Making manual fetch to:", endpoint);
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify(requestData),
+        });
+
+        console.log("🔍 [MANUAL-DEBUG] Response status:", response.status);
+        console.log("🔍 [MANUAL-DEBUG] Response headers:", response.headers);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("🔍 [MANUAL-DEBUG] Error response:", errorText);
+          throw new Error(`${response.status}: ${errorText}`);
+        }
+
         data = await response.json();
       } catch (error) {
         clearTimeout(timeoutId);
         clearInterval(progressInterval);
-        console.error("🔍 NEW DEEPSEARCH - apiRequest error:", error);
+        console.error("🔍 NEW DEEPSEARCH - Manual fetch error:", error);
         throw error;
       }
 
