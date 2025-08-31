@@ -177,26 +177,26 @@ export class PermissionValidator {
     const currentPlan = this.userPermissions.planLevel;
 
     // Analizar permisos faltantes
-    for (const [permissionId, permission] of this.permissionDefinitions.entries()) {
-      if (!this.userPermissions.permissions[permissionId]) {
+    Array.from(this.permissionDefinitions.entries()).forEach(([permissionId, permission]) => {
+      if (!this.userPermissions!.permissions[permissionId]) {
         if (this.isPlanUpgrade(currentPlan, permission.requiredPlan)) {
           suggestions.push(`Upgrade a ${permission.requiredPlan} para usar ${permission.name}`);
         }
       }
-    }
+    });
 
     // Analizar límites próximos a agotarse
-    for (const [permissionId, permission] of this.permissionDefinitions.entries()) {
-      if (permission.usageLimit && this.userPermissions.permissions[permissionId]) {
-        const currentUsage = this.userPermissions.currentUsage[permissionId] || 0;
-        const limit = this.userPermissions.usageLimits[permissionId] || permission.usageLimit;
+    Array.from(this.permissionDefinitions.entries()).forEach(([permissionId, permission]) => {
+      if (permission.usageLimit && this.userPermissions!.permissions[permissionId]) {
+        const currentUsage = this.userPermissions!.currentUsage[permissionId] || 0;
+        const limit = this.userPermissions!.usageLimits[permissionId] || permission.usageLimit;
         const percentage = (currentUsage / limit) * 100;
 
         if (percentage >= 80) {
           suggestions.push(`${permission.name}: ${currentUsage}/${limit} usos (${Math.round(percentage)}%)`);
         }
       }
-    }
+    });
 
     return suggestions.slice(0, 5); // Top 5 sugerencias
   }
@@ -208,12 +208,12 @@ export class PermissionValidator {
     if (!this.userPermissions) return;
 
     let resetCount = 0;
-    for (const [permissionId, permission] of this.permissionDefinitions.entries()) {
+    Array.from(this.permissionDefinitions.entries()).forEach(([permissionId, permission]) => {
       if (permission.resetPeriod === resetType) {
-        this.userPermissions.currentUsage[permissionId] = 0;
+        this.userPermissions!.currentUsage[permissionId] = 0;
         resetCount++;
       }
-    }
+    });
 
     if (resetCount > 0) {
       this.savePermissions();

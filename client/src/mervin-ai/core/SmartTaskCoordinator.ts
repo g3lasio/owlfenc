@@ -23,6 +23,7 @@ import { PermitTaskAgent } from '../tasks/PermitTaskAgent';
 import { EndpointCoordinator } from '../services/EndpointCoordinator';
 import { ContextManager } from './ContextManager';
 import { DatabaseAgentMemory as AgentMemory } from '../services/DatabaseAgentMemory';
+import { PermissionValidator } from '../services/PermissionValidator';
 import { TaskResult } from './MervinAgent';
 
 export interface CoordinatorConfig {
@@ -68,6 +69,7 @@ export class SmartTaskCoordinator {
   private permitAgent: PermitTaskAgent;
   private contextManager: ContextManager;
   private agentMemory: any; // Compatible with both AgentMemory and DatabaseAgentMemory
+  private permissionValidator: PermissionValidator;
   private config: any;
   
   // Estado de coordinación
@@ -84,31 +86,41 @@ export class SmartTaskCoordinator {
       config: config.config
     });
 
-    // Inicializar agentes especializados
+    // 🔐 CRITICAL FIX: Inicializar PermissionValidator correctamente
+    this.permissionValidator = new PermissionValidator(
+      config.config.userId,
+      config.config.subscriptionLevel || 'free'
+    );
+
+    // Inicializar agentes especializados con PermissionValidator válido
     this.estimateAgent = new EstimateTaskAgent({
       endpointCoordinator: config.endpointCoordinator,
       contextManager: config.contextManager,
-      permissionValidator: null
+      permissionValidator: this.permissionValidator
     });
     this.contractAgent = new ContractTaskAgent({
       endpointCoordinator: config.endpointCoordinator,
       contextManager: config.contextManager,
-      permissionValidator: null
+      permissionValidator: this.permissionValidator
     });
     this.propertyAgent = new PropertyTaskAgent({
       endpointCoordinator: config.endpointCoordinator,
       contextManager: config.contextManager,
-      permissionValidator: null
+      permissionValidator: this.permissionValidator
     });
     this.permitAgent = new PermitTaskAgent({
       endpointCoordinator: config.endpointCoordinator,
       contextManager: config.contextManager,
-      permissionValidator: null
+      permissionValidator: this.permissionValidator
     });
 
     this.contextManager = config.contextManager;
     this.agentMemory = config.agentMemory;
     this.config = config.config;
+
+    if (config.config.debug) {
+      console.log('🔐 [SMART-COORDINATOR] PermissionValidator inicializado correctamente para usuario:', config.config.userId);
+    }
   }
 
   /**
