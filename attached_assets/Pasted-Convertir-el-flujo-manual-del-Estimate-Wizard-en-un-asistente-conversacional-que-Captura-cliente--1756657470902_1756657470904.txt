@@ -1,0 +1,68 @@
+Convertir el flujo manual del Estimate Wizard en un asistente conversacional que:
+
+Captura cliente → 2) Toma descripción y la reescribe en inglés clara/pro → 3) Obtiene materiales (DeepSearch) → 4) Calcula costos (Full Cost) → 5) Muestra lista completa para confirmación/ajustes → 6) Genera PDF + link de descarga/compartir.
+
+Requisitos funcionales
+Paso 1 — Captura de cliente
+
+Prompt inicial: “¿Cuál es el nombre del cliente?”
+
+Validar no vacío; opcionalmente capturar email y teléfono si el endpoint lo soporta.
+
+Llamar endpoint Create/Upsert Customer.
+
+Guardar customerId en estado del agente.
+
+Paso 2 — Descripción del proyecto (entrada en español → salida en inglés)
+
+Prompt: “Describe el alcance del trabajo.” (usuario puede escribir en español).
+
+El agente reescribe la descripción a inglés, tono profesional, con bullets si aplica (no inventes alcance).
+
+Persistir la versión en inglés vía endpoint Save Project Description (ligado a customerId/estimateId).
+
+Paso 3 — Materiales (DeepSearch)
+
+Llamar DeepSearch Material con los datos disponibles del proyecto.
+
+Recibir lista normalizada de materiales (código, nombre, unidad, qty, precios).
+
+Persistir respuesta en el estado del Wizard/DB (endpoint correspondiente).
+
+Paso 4 — Costos (Full Cost)
+
+Llamar Full Cost para obtener Material Cost, Labor Cost, Subtotals, Taxes, Total.
+
+Manejar reglas existentes (markup, impuestos, mínimos, etc.).
+
+Persistir resultado.
+
+Paso 5 — Revisión y ajustes
+
+Mostrar al usuario un resumen tabular: materiales (qty, unit, unit price, subtotal), labor, impuestos y total.
+
+Preguntar: “¿Deseas ajustar cantidades, precios o agregar/quitar materiales?”
+
+Si sí, aceptar comandos del tipo:
+
+“Cambia cedar plank de 120 a 110”
+
+“Agrega 10 post brackets”
+
+“Elimina ‘old fence removal’”
+
+Aplicar cambios mediante endpoints de Update (no manipules solo en memoria) y recalcular costos (llamar de nuevo Full Cost).
+
+Confirmación final: “¿Generamos el estimado en PDF?”
+
+Paso 6 — Exportar PDF + Link de descarga
+
+Llamar Export/Generate PDF con estimateId.
+
+Debe devolver URL de descarga (formato https://.../exports/{id}.pdf).
+
+Responder con:
+
+Botón “Descargar PDF” (URL).
+
+Botón “Copiar link” (misma URL para compartir).
