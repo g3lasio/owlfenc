@@ -115,3 +115,8 @@ export const optionalFirebaseAuth = async (req: Request, res: Response, next: Ne
     next();
   }
 };
+
+/**
+ * Alias para verifyFirebaseAuth - usado por robust-client-routes
+ */
+export const auth = verifyFirebaseAuth;
