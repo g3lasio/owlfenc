@@ -40,25 +40,25 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
     try {
       console.log('🔧 LABOR ONLY DeepSearch: Recibiendo solicitud', req.body);
 
-      // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar labor analysis costoso
+      // 🎯 PLAN-BASED ACCESS: Verificar plan del usuario
       const firebaseUid = req.firebaseUser?.uid;
-      if (!firebaseUid) {
-        return res.status(401).json({ 
+      let userId = null;
+      
+      if (firebaseUid) {
+        userId = await userMappingService.getInternalUserId(firebaseUid);
+        if (!userId) {
+          userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+        }
+        console.log(`🔐 [SECURITY] Labor analysis for user_id: ${userId}`);
+      } else {
+        // Usuario no autenticado - mostrar mensaje de upgrade
+        return res.status(403).json({
           success: false,
-          error: 'Usuario no autenticado' 
+          error: 'Esta función requiere un plan premium. Upgradea tu cuenta para acceder a DeepSearch.',
+          requiresUpgrade: true,
+          code: 'PREMIUM_FEATURE_REQUIRED'
         });
       }
-      let userId = await userMappingService.getInternalUserId(firebaseUid);
-      if (!userId) {
-        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
-      }
-      if (!userId) {
-        return res.status(500).json({ 
-          success: false,
-          error: 'Error creando mapeo de usuario' 
-        });
-      }
-      console.log(`🔐 [SECURITY] Labor analysis for REAL user_id: ${userId}`);
 
       // Validar entrada
       const validatedData = LaborAnalysisSchema.parse(req.body);
@@ -116,25 +116,25 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
     try {
       console.log('🔧 Labor DeepSearch API: Recibiendo solicitud de análisis de labor', req.body);
 
-      // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar análisis de labor costoso
+      // 🎯 PLAN-BASED ACCESS: Verificar plan del usuario
       const firebaseUid = req.firebaseUser?.uid;
-      if (!firebaseUid) {
-        return res.status(401).json({ 
+      let userId = null;
+      
+      if (firebaseUid) {
+        userId = await userMappingService.getInternalUserId(firebaseUid);
+        if (!userId) {
+          userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+        }
+        console.log(`🔐 [SECURITY] Labor analysis for user_id: ${userId}`);
+      } else {
+        // Usuario no autenticado - mostrar mensaje de upgrade
+        return res.status(403).json({
           success: false,
-          error: 'Usuario no autenticado' 
+          error: 'Esta función requiere un plan premium. Upgradea tu cuenta para acceder a DeepSearch.',
+          requiresUpgrade: true,
+          code: 'PREMIUM_FEATURE_REQUIRED'
         });
       }
-      let userId = await userMappingService.getInternalUserId(firebaseUid);
-      if (!userId) {
-        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
-      }
-      if (!userId) {
-        return res.status(500).json({ 
-          success: false,
-          error: 'Error creando mapeo de usuario' 
-        });
-      }
-      console.log(`🔐 [SECURITY] Labor analysis for REAL user_id: ${userId}`);
 
       // Validar entrada
       const validatedData = LaborAnalysisSchema.parse(req.body);
@@ -181,25 +181,25 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
     try {
       console.log('🔧 Labor DeepSearch API: Generando items de labor compatibles');
 
-      // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar generación de items costoso
+      // 🎯 PLAN-BASED ACCESS: Verificar plan del usuario
       const firebaseUid = req.firebaseUser?.uid;
-      if (!firebaseUid) {
-        return res.status(401).json({ 
+      let userId = null;
+      
+      if (firebaseUid) {
+        userId = await userMappingService.getInternalUserId(firebaseUid);
+        if (!userId) {
+          userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+        }
+        console.log(`🔐 [SECURITY] Labor items generation for user_id: ${userId}`);
+      } else {
+        // Usuario no autenticado - mostrar mensaje de upgrade
+        return res.status(403).json({
           success: false,
-          error: 'Usuario no autenticado' 
+          error: 'Esta función requiere un plan premium. Upgradea tu cuenta para acceder a DeepSearch.',
+          requiresUpgrade: true,
+          code: 'PREMIUM_FEATURE_REQUIRED'
         });
       }
-      let userId = await userMappingService.getInternalUserId(firebaseUid);
-      if (!userId) {
-        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
-      }
-      if (!userId) {
-        return res.status(500).json({ 
-          success: false,
-          error: 'Error creando mapeo de usuario' 
-        });
-      }
-      console.log(`🔐 [SECURITY] Labor items generation for REAL user_id: ${userId}`);
 
       // Validar entrada
       const validatedData = LaborAnalysisSchema.parse(req.body);
@@ -244,25 +244,25 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
     try {
       console.log('🔧🔨 Combined DeepSearch API: Recibiendo solicitud de análisis combinado', req.body);
 
-      // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden usar análisis combinado costoso
+      // 🎯 PLAN-BASED ACCESS: Verificar plan del usuario
       const firebaseUid = req.firebaseUser?.uid;
-      if (!firebaseUid) {
-        return res.status(401).json({ 
+      let userId = null;
+      
+      if (firebaseUid) {
+        userId = await userMappingService.getInternalUserId(firebaseUid);
+        if (!userId) {
+          userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+        }
+        console.log(`🔐 [SECURITY] Combined analysis for user_id: ${userId}`);
+      } else {
+        // Usuario no autenticado - mostrar mensaje de upgrade
+        return res.status(403).json({
           success: false,
-          error: 'Usuario no autenticado' 
+          error: 'Esta función requiere un plan premium. Upgradea tu cuenta para acceder a DeepSearch.',
+          requiresUpgrade: true,
+          code: 'PREMIUM_FEATURE_REQUIRED'
         });
       }
-      let userId = await userMappingService.getInternalUserId(firebaseUid);
-      if (!userId) {
-        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
-      }
-      if (!userId) {
-        return res.status(500).json({ 
-          success: false,
-          error: 'Error creando mapeo de usuario' 
-        });
-      }
-      console.log(`🔐 [SECURITY] Combined analysis for REAL user_id: ${userId}`);
 
       // Validar entrada
       const validatedData = CombinedAnalysisSchema.parse(req.body);
