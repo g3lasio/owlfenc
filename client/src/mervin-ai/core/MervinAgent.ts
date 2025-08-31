@@ -287,6 +287,7 @@ export class MervinAgent {
 
       // 🧙‍♂️ FLUJO ESPECIAL: Estimate Wizard Conversacional
       if (extractedTaskType === 'estimate_wizard_conversational') {
+        this.updateState({ isActive: false, currentTask: null });
         return await this.handleEstimateWizardConversational(input, conversationHistory);
       }
 
@@ -425,15 +426,16 @@ export class MervinAgent {
   private extractTaskType(input: string): string {
     const inputLower = input.toLowerCase();
     
-    // Detectar flujo conversacional especial del Estimate Wizard
-    if (input.includes('ESTIMATE_WIZARD_START')) {
+    // 🧙‍♂️ SIEMPRE activar flujo conversacional para estimados
+    // Ya sea por botón o chat directo
+    if (input.includes('ESTIMATE_WIZARD_START') || 
+        inputLower.includes('estimado') || inputLower.includes('estimate') || 
+        inputLower.includes('cotización') || inputLower.includes('quote') ||
+        (inputLower.includes('hacer') && inputLower.includes('estimado')) ||
+        (inputLower.includes('generar') && inputLower.includes('estimado')) ||
+        (inputLower.includes('crear') && inputLower.includes('estimado')) ||
+        inputLower.includes('presupuesto')) {
       return 'estimate_wizard_conversational';
-    }
-    
-    // Patrones específicos para diferentes tipos de tareas
-    if (inputLower.includes('estimado') || inputLower.includes('estimate') || 
-        inputLower.includes('cotización') || inputLower.includes('quote')) {
-      return 'estimate';
     }
     
     if (inputLower.includes('contrato') || inputLower.includes('contract') ||
@@ -635,36 +637,36 @@ export class MervinAgent {
         console.log('🧙‍♂️ [ESTIMATE-WIZARD-CONVERSATIONAL] Iniciando flujo paso a paso');
       }
 
-      // Respuesta inicial pidiendo información del cliente
+      // Respuesta inicial inteligente pidiendo información del cliente
       const stepOneMessage = this.conversationEngine.getCurrentLanguageProfile().language === 'spanish'
-        ? `¡Órale primo! Te voy a ayudar a crear un estimado profesional paso a paso.
+        ? `¡Órale primo! Perfecto, te voy a ayudar a crear un estimado profesional paso a paso.
 
 📋 **PASO 1: Información del Cliente**
 
 Para empezar necesito los datos del cliente:
 
 • **Nombre del cliente** (requerido)
-• **Email** (opcional)  
+• **Email** (opcional - para enviar el estimado)  
 • **Teléfono** (opcional)
 • **Dirección del proyecto** (opcional)
 
 ¿Cómo se llama el cliente para este estimado?
 
-*Tip: También puedes decir "usar cliente existente" si ya tienes clientes registrados.*`
-        : `Alright dude! I'll help you create a professional estimate step by step.
+💡 *Tip: También puedes decir "usar cliente existente [nombre]" si ya tienes clientes registrados.*`
+        : `Alright dude! Perfect, I'll help you create a professional estimate step by step.
 
 📋 **STEP 1: Client Information**
 
 To get started I need the client data:
 
 • **Client name** (required)
-• **Email** (optional)
+• **Email** (optional - to send the estimate)
 • **Phone** (optional)
 • **Project address** (optional)
 
 What's the client's name for this estimate?
 
-*Tip: You can also say "use existing client" if you have registered clients.*`;
+💡 *Tip: You can also say "use existing client [name]" if you have registered clients.*`;
 
       // Actualizar estado del agente
       this.updateState({ 
