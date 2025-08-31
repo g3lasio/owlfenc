@@ -344,6 +344,48 @@ export class EndpointCoordinator {
         responseType: 'json'
       },
       
+      // Estimate Wizard Endpoints - Endpoints específicos del wizard existente
+      '/api/deepsearch/materials-only': {
+        url: '/api/deepsearch/materials-only',
+        method: 'POST',
+        timeout: 30000,
+        retries: 2,
+        requiresAuth: true,
+        responseType: 'json'
+      },
+      '/api/labor-deepsearch/combined': {
+        url: '/api/labor-deepsearch/combined',
+        method: 'POST',
+        timeout: 25000,
+        retries: 2,
+        requiresAuth: true,
+        responseType: 'json'
+      },
+      '/api/labor-deepsearch/generate-items': {
+        url: '/api/labor-deepsearch/generate-items',
+        method: 'POST',
+        timeout: 20000,
+        retries: 2,
+        requiresAuth: true,
+        responseType: 'json'
+      },
+      '/api/anthropic-summarize/enhance-description': {
+        url: '/api/anthropic-summarize/enhance-description',
+        method: 'POST',
+        timeout: 15000,
+        retries: 2,
+        requiresAuth: true,
+        responseType: 'json'
+      },
+      '/api/pdfmonkey-estimates/generate': {
+        url: '/api/pdfmonkey-estimates/generate',
+        method: 'POST',
+        timeout: 45000,
+        retries: 1,
+        requiresAuth: true,
+        responseType: 'json'
+      },
+      
       // Contracts - Endpoints reales de LegalDefenseProfile.tsx
       '/api/legal-defense/extract-pdf': {
         url: '/api/legal-defense/extract-pdf',

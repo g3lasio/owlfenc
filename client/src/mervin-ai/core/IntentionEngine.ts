@@ -382,38 +382,68 @@ export class IntentionEngine {
   }
 
   /**
-   * Generar pasos para estimados
+   * Generar pasos para estimados usando el flujo del Estimate Wizard
    */
   private generateEstimateSteps(intention: UserIntention): TaskStep[] {
     return [
       {
-        id: 'validate_client',
-        name: 'Validar Cliente',
-        description: 'Verificar información del cliente',
+        id: 'capture_client_info',
+        name: 'Capturar Info Cliente',
+        description: 'Obtener datos del cliente para el estimado',
         endpoint: '/api/clients',
         parameters: intention.parameters,
         estimatedDuration: 2000,
         required: true
       },
       {
-        id: 'analyze_project',
-        name: 'Analizar Proyecto',
-        description: 'Procesar descripción del proyecto',
-        endpoint: '/api/mervin/estimate',
+        id: 'rewrite_description',
+        name: 'Procesar Descripción',
+        description: 'Reescribir descripción del proyecto con IA',
+        endpoint: '/api/anthropic-summarize/enhance-description',
         parameters: intention.parameters,
-        dependsOn: ['validate_client'],
+        dependsOn: ['capture_client_info'],
+        estimatedDuration: 4000,
+        required: true
+      },
+      {
+        id: 'search_materials',
+        name: 'Buscar Materiales',
+        description: 'Búsqueda inteligente de materiales necesarios',
+        endpoint: '/api/deepsearch/materials-only',
+        parameters: intention.parameters,
+        dependsOn: ['rewrite_description'],
+        estimatedDuration: 6000,
+        required: true
+      },
+      {
+        id: 'calculate_labor',
+        name: 'Calcular Labor',
+        description: 'Calcular costos de mano de obra',
+        endpoint: '/api/labor-deepsearch/combined',
+        parameters: intention.parameters,
+        dependsOn: ['search_materials'],
         estimatedDuration: 5000,
         required: true
       },
       {
-        id: 'generate_estimate',
-        name: 'Generar Estimado',
-        description: 'Crear estimado profesional',
+        id: 'create_estimate',
+        name: 'Crear Estimado',
+        description: 'Generar estimado completo con totales',
         endpoint: '/api/estimates',
         parameters: intention.parameters,
-        dependsOn: ['analyze_project'],
+        dependsOn: ['calculate_labor'],
         estimatedDuration: 3000,
         required: true
+      },
+      {
+        id: 'generate_pdf',
+        name: 'Generar PDF',
+        description: 'Crear PDF profesional descargable',
+        endpoint: '/api/pdfmonkey-estimates/generate',
+        parameters: intention.parameters,
+        dependsOn: ['create_estimate'],
+        estimatedDuration: 4000,
+        required: false
       }
     ];
   }

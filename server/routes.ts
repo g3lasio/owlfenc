@@ -110,7 +110,6 @@ import openaiChatRoutes from "./routes/openai-chat-routes"; // Import OpenAI cha
 import contractorPaymentRoutes from "./routes/contractor-payment-routes"; // Import contractor payment routes
 import estimatesRoutes from "./routes/estimates"; // Import new estimates routes
 import anthropicSummarizeRoutes from "./routes/anthropic-summarize"; // Import intelligent description summarizer
-import estimateWizardAutomationRoutes from "./routes/estimate-wizard-automation"; // Import estimate wizard automation routes
 import { invoicePdfService } from "./invoice-pdf-service";
 import { sendInvoiceEmail } from "./services/invoiceEmailService";
 import { puppeteerPdfService } from "./puppeteer-pdf-service";
@@ -1646,7 +1645,6 @@ Output must be between 200-900 characters in English.`;
 
   // Registrar la nueva API REST de estimados renovada
   app.use("/api/estimates", estimatesRoutes);
-  app.use("/api/estimate-wizard", estimateWizardAutomationRoutes);
 
   // PDF generation now handled exclusively by premiumPdfService in contract routes
 
