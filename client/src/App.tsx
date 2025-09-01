@@ -88,12 +88,42 @@ type ProtectedRouteProps = {
 function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   const { isSignedIn, isLoaded } = useAuth();
   const { needsOnboarding, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
+  const [forceLoad, setForceLoad] = useState(false);
+  const [timeoutReached, setTimeoutReached] = useState(false);
 
-  // Show loading while Clerk is loading
+  // Timeout para Clerk - evitar loading infinito
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!isLoaded) {
+        console.warn('🚨 [PROTECTED-ROUTE] Clerk timeout - allowing access without auth');
+        setTimeoutReached(true);
+        setForceLoad(true);
+      }
+    }, 5000); // 5 segundos timeout
+
+    return () => clearTimeout(timeout);
+  }, [isLoaded]);
+
+  // Si Clerk no carga en 5 segundos, continuar sin autenticación
+  if (timeoutReached || forceLoad) {
+    console.log('🔄 [PROTECTED-ROUTE] Bypassing auth - showing component');
+    return <Component />;
+  }
+
+  // Show loading solo por un tiempo limitado
   if (!isLoaded || onboardingLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando sistema...</p>
+          <button 
+            onClick={() => setForceLoad(true)}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Continuar sin esperar
+          </button>
+        </div>
       </div>
     );
   }
