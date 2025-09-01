@@ -5645,26 +5645,24 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
-  // ARQUITECTURA UNIFICADA: Clientes en PostgreSQL únicamente
+  // 🔥 FIREBASE-ONLY: Clientes únicamente en Firebase Firestore
   app.get("/api/clients", requireAuth, async (req: Request, res: Response) => {
     try {
       if (!req.firebaseUser?.uid) {
         return res.status(401).json({ message: "Usuario no autenticado" });
       }
       
-      console.log(`📋 [UNIFIED-CLIENTS] Getting clients for Firebase UID: ${req.firebaseUser.uid}`);
+      console.log(`🔥 [FIREBASE-CLIENTS] Getting clients for Firebase UID: ${req.firebaseUser.uid}`);
       
-      // Direct PostgreSQL access - no Firebase duplication
-      const user = await storage.getUserByFirebaseUid(req.firebaseUser.uid);
-      if (!user) {
-        return res.status(404).json({ message: "Usuario no encontrado en PostgreSQL" });
-      }
+      // Firebase-only access using new architecture
+      const { getFirebaseManager } = await import('./storage-firebase-only');
+      const firebaseManager = getFirebaseManager();
       
-      const clients = await storage.getClientsByUserId(user.id);
-      console.log(`✅ [UNIFIED-CLIENTS] Found ${clients.length} clients in PostgreSQL`);
+      const clients = await firebaseManager.getClients(req.firebaseUser.uid);
+      console.log(`✅ [FIREBASE-CLIENTS] Found ${clients.length} clients in Firebase`);
       res.json(clients);
     } catch (error) {
-      console.error("❌ [UNIFIED-CLIENTS] Error:", error);
+      console.error("❌ [FIREBASE-CLIENTS] Error:", error);
       res.status(500).json({ message: "Error al obtener los clientes" });
     }
   });
@@ -5675,27 +5673,28 @@ Output must be between 200-900 characters in English.`;
         return res.status(401).json({ message: "Usuario no autenticado" });
       }
       
-      console.log(`➕ [UNIFIED-CLIENTS] Creating client for Firebase UID: ${req.firebaseUser.uid}`);
+      console.log(`🔥 [FIREBASE-CLIENTS] Creating client for Firebase UID: ${req.firebaseUser.uid}`);
       
-      // Direct PostgreSQL access only
-      const user = await storage.getUserByFirebaseUid(req.firebaseUser.uid);
-      if (!user) {
-        return res.status(404).json({ message: "Usuario no encontrado en PostgreSQL" });
-      }
+      // Firebase-only access using new architecture
+      const { getFirebaseManager } = await import('./storage-firebase-only');
+      const firebaseManager = getFirebaseManager();
       
       const clientData = {
-        ...req.body,
-        userId: user.id,
-        clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        name: req.body.name || '',
+        email: req.body.email || '',
+        phone: req.body.phone || '',
+        address: req.body.address || '',
+        city: req.body.city || '',
+        state: req.body.state || '',
+        zipCode: req.body.zipCode || '',
+        notes: req.body.notes || ''
       };
 
-      const newClient = await storage.createClient(clientData);
-      console.log(`✅ [UNIFIED-CLIENTS] Client created in PostgreSQL:`, newClient.clientId);
+      const newClient = await firebaseManager.createClient(req.firebaseUser.uid, clientData);
+      console.log(`✅ [FIREBASE-CLIENTS] Client created in Firebase:`, newClient.clientId);
       res.status(201).json(newClient);
     } catch (error) {
-      console.error("❌ [UNIFIED-CLIENTS] Create error:", error);
+      console.error("❌ [FIREBASE-CLIENTS] Create error:", error);
       res.status(400).json({ message: "Error al crear el cliente" });
     }
   });
@@ -5706,13 +5705,12 @@ Output must be between 200-900 characters in English.`;
         return res.status(401).json({ message: "Usuario no autenticado" });
       }
       
-      // Get user ID from Firebase UID
-      const { storage } = await import('./storage');
-      const user = await storage.getUserByFirebaseUid(req.firebaseUser.uid);
-      if (!user) {
-        return res.status(404).json({ message: "Usuario no encontrado" });
-      }
-      const userId = user.id;
+      console.log(`🔥 [FIREBASE-CSV-IMPORT] Importing CSV for Firebase UID: ${req.firebaseUser.uid}`);
+      
+      // Firebase-only access using new architecture
+      const { getFirebaseManager } = await import('./storage-firebase-only');
+      const firebaseManager = getFirebaseManager();
+      
       const { csvData } = req.body;
 
       // Procesar el CSV y crear los clientes
@@ -5723,27 +5721,28 @@ Output must be between 200-900 characters in English.`;
         const [name, email, phone, address] = row.split(",");
         if (name) {
           const clientData = {
-            userId,
-            clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
             name: name.trim(),
-            email: email?.trim(),
-            phone: phone?.trim(),
-            address: address?.trim(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            email: email?.trim() || '',
+            phone: phone?.trim() || '',
+            address: address?.trim() || '',
+            city: '',
+            state: '',
+            zipCode: '',
+            notes: ''
           };
 
-          const newClient = await storage.createClient(clientData);
+          const newClient = await firebaseManager.createClient(req.firebaseUser.uid, clientData);
           clients.push(newClient);
         }
       }
 
+      console.log(`✅ [FIREBASE-CSV-IMPORT] ${clients.length} clients imported to Firebase`);
       res.status(201).json({
         message: `${clients.length} clientes importados exitosamente`,
         clients,
       });
     } catch (error) {
-      console.error("Error importing clients:", error);
+      console.error("❌ [FIREBASE-CSV-IMPORT] Error importing clients:", error);
       res.status(400).json({ message: "Error al importar clientes" });
     }
   });
@@ -5754,13 +5753,12 @@ Output must be between 200-900 characters in English.`;
         return res.status(401).json({ message: "Usuario no autenticado" });
       }
       
-      // Get user ID from Firebase UID
-      const { storage } = await import('./storage');
-      const user = await storage.getUserByFirebaseUid(req.firebaseUser.uid);
-      if (!user) {
-        return res.status(404).json({ message: "Usuario no encontrado" });
-      }
-      const userId = user.id;
+      console.log(`🔥 [FIREBASE-VCF-IMPORT] Importing VCF for Firebase UID: ${req.firebaseUser.uid}`);
+      
+      // Firebase-only access using new architecture
+      const { getFirebaseManager } = await import('./storage-firebase-only');
+      const firebaseManager = getFirebaseManager();
+      
       const { vcfData } = req.body;
 
       // Procesar datos vCard (formato .vcf de contactos de Apple)
@@ -5782,9 +5780,9 @@ Output must be between 200-900 characters in English.`;
           const name = nameMatch ? nameMatch[1].trim() : null;
 
           if (name) {
-            const email = emailMatch ? emailMatch[1].trim() : null;
-            const phone = phoneMatch ? phoneMatch[1].trim() : null;
-            let address = null;
+            const email = emailMatch ? emailMatch[1].trim() : '';
+            const phone = phoneMatch ? phoneMatch[1].trim() : '';
+            let address = '';
 
             if (addressMatch) {
               const addressParts = addressMatch[1].split(";");
@@ -5796,31 +5794,32 @@ Output must be between 200-900 characters in English.`;
             }
 
             const clientData = {
-              userId,
-              clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
               name,
               email,
               phone,
               address,
-              createdAt: new Date(),
-              updatedAt: new Date(),
+              city: '',
+              state: '',
+              zipCode: '',
+              notes: ''
             };
 
-            const newClient = await storage.createClient(clientData);
+            const newClient = await firebaseManager.createClient(req.firebaseUser.uid, clientData);
             clients.push(newClient);
           }
         } catch (cardError) {
-          console.error("Error processing individual vCard:", cardError);
+          console.error("❌ [FIREBASE-VCF-IMPORT] Error processing individual vCard:", cardError);
           // Continuar con la siguiente tarjeta
         }
       }
 
+      console.log(`✅ [FIREBASE-VCF-IMPORT] ${clients.length} contacts imported to Firebase`);
       res.status(201).json({
         message: `${clients.length} contactos importados exitosamente`,
         clients,
       });
     } catch (error) {
-      console.error("Error importing vCard contacts:", error);
+      console.error("❌ [FIREBASE-VCF-IMPORT] Error importing vCard contacts:", error);
       res.status(400).json({ message: "Error al importar contactos de Apple" });
     }
   });
