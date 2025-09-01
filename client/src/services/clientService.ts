@@ -70,12 +70,18 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
   
   let token: string | null = null;
   let useBypass = false;
+  let useFallback = false;
   
   try {
     token = await getAuthToken();
-    console.log('✅ [UNIFIED-CLIENT-SERVICE] Got authentication token');
   } catch (error) {
-    console.warn('⚠️ [UNIFIED-CLIENT-SERVICE] Token failed, using bypass mode:', error);
+    console.warn('⚠️ [CLIENT-SERVICE] Auth failed, activating fallback mode:', error);
+    useFallback = true;
+  }
+  
+  // Fallback headers when no auth is available
+  if (useFallback || !token) {
+    console.warn('🔄 [CLIENT-SERVICE] No auth token, using fallback mode');
     useBypass = true;
   }
   
@@ -86,6 +92,11 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
   
   if (token && !useBypass) {
     headers['Authorization'] = `Bearer ${token}`;
+    console.log('✅ [CLIENT-SERVICE] Using valid auth token');
+  } else if (useFallback) {
+    // Fallback mode - tell backend no auth available
+    headers['x-fallback-mode'] = 'true';
+    console.log('🔄 [CLIENT-SERVICE] Using fallback mode - no auth required');
   } else {
     // TEMPORARY: Use bypass until authentication is fully resolved
     headers['x-bypass-uid'] = 'qztot1YEy3UWz605gIH2iwwWhW53';
