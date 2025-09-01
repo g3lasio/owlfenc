@@ -70,6 +70,7 @@ import MigrationPage from './pages/MigrationPage';
 
 import { Redirect } from "wouter";
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 
 // 🔧 FIX: Global error handler for unhandled promises - DESHABILITADO TEMPORALMENTE
 // setupGlobalErrorHandlers(); // ❌ COMENTADO: Estaba silenciando errores legítimos del agente
@@ -268,7 +269,32 @@ function Router() {
 }
 
 function App() {
+  const [clerkError, setClerkError] = useState<boolean>(false);
+  const [retryCount, setRetryCount] = useState(0);
   const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  
+  // Detectar errores de Clerk
+  useEffect(() => {
+    const handleClerkError = (event: any) => {
+      if (event.error?.message?.includes('ClerkJS') || event.error?.message?.includes('Something went wrong initializing')) {
+        console.error('🚨 [APP] Clerk initialization failed:', event.error);
+        setClerkError(true);
+      }
+    };
+    
+    window.addEventListener('error', handleClerkError);
+    window.addEventListener('unhandledrejection', (event) => {
+      if (event.reason?.message?.includes('ClerkJS')) {
+        console.error('🚨 [APP] Clerk promise rejection:', event.reason);
+        setClerkError(true);
+      }
+    });
+    
+    return () => {
+      window.removeEventListener('error', handleClerkError);
+      window.removeEventListener('unhandledrejection', handleClerkError);
+    };
+  }, []);
   
   if (!clerkPubKey) {
     console.error('❌ [CLERK] Missing Clerk Publishable Key');
@@ -277,6 +303,47 @@ function App() {
         <div className="text-center">
           <h1 className="text-xl font-bold text-red-600 mb-2">Configuration Error</h1>
           <p className="text-red-500">Missing Clerk configuration. Please check environment variables.</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Mostrar fallback si Clerk falla
+  if (clerkError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">
+        <div className="text-center max-w-md">
+          <h1 className="text-xl font-bold text-blue-600 mb-4">🔄 Sistema Alternativo</h1>
+          <p className="text-blue-700 mb-6">
+            El sistema principal de autenticación no está disponible temporalmente. 
+            Puedes continuar usando el sistema básico.
+          </p>
+          <div className="space-y-3">
+            <Button 
+              onClick={() => {
+                setRetryCount(prev => prev + 1);
+                if (retryCount >= 2) {
+                  window.location.reload();
+                } else {
+                  setClerkError(false);
+                }
+              }}
+              className="w-full"
+            >
+              {retryCount >= 2 ? 'Recargar Página Completa' : `Reintentar (${retryCount + 1}/3)`}
+            </Button>
+            <Button 
+              onClick={() => {
+                // Continuar sin Clerk - mostrar interfaz básica
+                console.log('🔄 [APP] Continuing without Clerk authentication');
+                setClerkError(false);
+              }}
+              variant="outline" 
+              className="w-full"
+            >
+              Continuar Sin Autenticación
+            </Button>
+          </div>
         </div>
       </div>
     );

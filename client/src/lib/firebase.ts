@@ -53,6 +53,34 @@ export const getProjects = async (uid: string) => {
   return []; // Return empty projects array for now
 };
 
+// Estimates functions
+export const getEstimates = async (uid: string) => {
+  console.warn('🔄 [FIREBASE-ADAPTER] getEstimates called - implement Clerk estimates handling');
+  return []; // Return empty estimates array for now
+};
+
+export const getEstimateById = async (id: string) => {
+  console.warn('🔄 [FIREBASE-ADAPTER] getEstimateById called - implement Clerk estimate handling');
+  return null; // Return null for now
+};
+
+// Templates functions
+export const getTemplates = async () => {
+  console.warn('🔄 [FIREBASE-ADAPTER] getTemplates called - implement Clerk templates handling');
+  return []; // Return empty templates array for now
+};
+
+// Project update functions
+export const updateProject = async (id: string, data: any) => {
+  console.warn('🔄 [FIREBASE-ADAPTER] updateProject called - implement Clerk project update');
+  return { success: false, message: 'Use Clerk for project updates' };
+};
+
+export const updateProjectProgress = async (id: string, progress: any) => {
+  console.warn('🔄 [FIREBASE-ADAPTER] updateProjectProgress called - implement Clerk progress update');
+  return { success: false, message: 'Use Clerk for progress updates' };
+};
+
 // Additional Firebase exports for compatibility
 export { app };
 export default app;
