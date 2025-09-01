@@ -114,6 +114,8 @@ export default function Settings() {
         title: "Logged Out",
         description: "You have been successfully logged out",
       });
+      // Redirigir a login después del logout exitoso
+      window.location.href = '/login';
     } catch (error) {
       toast({
         title: "Error",

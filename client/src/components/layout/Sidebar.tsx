@@ -308,6 +308,8 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
         title: t("general.success"),
         description: t("auth.logoutSuccess"),
       });
+      // Redirigir a login después del logout exitoso
+      window.location.href = '/login';
     } catch (error) {
       toast({
         title: t("general.error"),
