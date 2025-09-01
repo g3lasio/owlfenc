@@ -4,8 +4,9 @@
  * Usa Circuit Breaker para eliminar fetch requests continuos
  */
 
-import { onAuthStateChanged, User as FirebaseUser, signOut } from "firebase/auth";
-import { auth } from "./firebase";
+// 🚫 FIREBASE AUTH DISABLED - Using Clerk instead
+// import { onAuthStateChanged, User as FirebaseUser, signOut } from "firebase/auth";
+// import { auth } from "./firebase";
 import { circuitBreaker } from "./circuit-breaker";
 
 interface AppUser {
@@ -43,21 +44,20 @@ class UnifiedAuthManager {
   }
 
   private initializeAuth() {
-    console.log('🔐 [UNIFIED-AUTH] Inicializando sistema unificado');
+    console.log('🚫 [UNIFIED-AUTH] Sistema deshabilitado - usando Clerk');
     
-    // UN SOLO listener para toda la aplicación
-    this.unsubscribe = onAuthStateChanged(auth, 
-      (firebaseUser) => {
-        this.handleAuthStateChange(firebaseUser);
-      },
-      (error) => {
-        console.error('❌ [UNIFIED-AUTH] Auth listener error:', error);
-        this.updateState({ error: 'Error de autenticación' });
-      }
-    );
+    // 🚫 FIREBASE AUTH DISABLED - Using Clerk instead
+    // this.unsubscribe = onAuthStateChanged(auth, ...);
+    
+    // Mark as initialized to prevent blocking
+    this.updateState({ 
+      isInitialized: true,
+      loading: false,
+      error: null
+    });
   }
 
-  private async handleAuthStateChange(firebaseUser: FirebaseUser | null) {
+  private async handleAuthStateChange(firebaseUser: any | null) {
     try {
       if (firebaseUser) {
         console.log('✅ [UNIFIED-AUTH] Usuario detectado:', firebaseUser.uid);

@@ -14,38 +14,9 @@ import {
   limit
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
-  confirmPasswordReset,
-  signInWithPhoneNumber,
-  RecaptchaVerifier,
-  sendSignInLinkToEmail,
-  isSignInWithEmailLink,
-  signInWithEmailLink,
-  signOut,
-  onAuthStateChanged,
-  updateProfile,
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-  updatePassword,
-  updateEmail,
-  verifyBeforeUpdateEmail,
-  linkWithPopup,
-  unlink,
-  deleteUser,
-  multiFactor,
-  PhoneAuthProvider,
-  PhoneMultiFactorGenerator,
-  sendEmailVerification,
-  reload,
-  signInWithCredential,
-  setPersistence,
-  browserLocalPersistence,
-  browserSessionPersistence
-} from "firebase/auth";
+// 🚫 FIREBASE AUTH DISABLED - Using Clerk instead
+// All Firebase Auth imports removed to prevent conflicts with Clerk
+// import { getAuth, ... } from "firebase/auth";
 
 // Verificamos si estamos en modo de desarrollo en Replit
 const isReplitDev = (window.location.hostname.includes('.replit.dev') || 
@@ -144,78 +115,26 @@ console.log("🔧 [OAUTH-DEBUG] Dominios autorizados:", authorizedDomains);
 // Initialize Firebase with STABLE CONFIGURATION
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
-export const auth = getAuth(app);
+// 🚫 FIREBASE AUTH DISABLED - Using Clerk instead
+// export const auth = getAuth(app);
+export const auth = null as any; // Disabled for Clerk migration
 export const storage = getStorage(app);
 
-// 🔧 SOLUCIÓN DEFINITIVA: Configurar Firebase Auth para evitar token refreshes problemáticos
-if (typeof window !== 'undefined') {
-  // Configurar persistencia estable sin auto-refresh
-  setPersistence(auth, browserLocalPersistence).catch(() => {
-    console.debug('🔧 [FIREBASE-CONFIG] Persistence fallback applied');
-  });
-  
-  // CRÍTICO: Deshabilitar verificación automática para evitar STS token requests
-  try {
-    // Configuración específica para development/testing
-    if (window.location.hostname.includes('replit') || 
-        window.location.hostname === 'localhost') {
-      // @ts-ignore - Configuración interna de Firebase para development
-      if (auth.settings && typeof auth.settings === 'object') {
-        Object.defineProperty(auth.settings, 'appVerificationDisabledForTesting', {
-          value: true,
-          writable: true
-        });
-      }
-    }
-  } catch (configError) {
-    console.debug('🔧 [FIREBASE-CONFIG] Settings config applied via fallback');
-  }
-  
-  console.log('🔧 [FIREBASE-CONFIG] Auth configurado con refreshes mínimos');
-}
+// 🚫 FIREBASE AUTH CONFIG DISABLED - Using Clerk instead
+console.log('🔧 [FIREBASE-CONFIG] Auth disabled - using Clerk for authentication');
 
 
 // Email verification functions
+// 🚫 FIREBASE AUTH FUNCTION DISABLED - Using Clerk instead
 export const sendVerificationEmail = async () => {
-  try {
-    const user = auth.currentUser;
-    if (!user) {
-      throw new Error('No hay usuario autenticado');
-    }
-    
-    if (user.emailVerified) {
-      console.log('Email ya está verificado');
-      return { success: true, message: 'Email ya está verificado' };
-    }
-    
-    await sendEmailVerification(user);
-    console.log('Email de verificación enviado');
-    return { success: true, message: 'Email de verificación enviado' };
-  } catch (error: any) {
-    console.error('Error enviando email de verificación:', error);
-    return { success: false, message: error.message };
-  }
+  console.warn('🔄 MIGRATION: sendVerificationEmail disabled - use Clerk verification');
+  return { success: false, message: 'Function disabled - use Clerk for email verification' };
 };
 
+// 🚫 FIREBASE AUTH FUNCTION DISABLED - Using Clerk instead
 export const checkEmailVerification = async () => {
-  try {
-    const user = auth.currentUser;
-    if (!user) {
-      return { verified: false, message: 'No hay usuario autenticado' };
-    }
-    
-    // Recargar el usuario para obtener el estado más reciente
-    await reload(user);
-    
-    return { 
-      verified: user.emailVerified, 
-      email: user.email,
-      message: user.emailVerified ? 'Email verificado' : 'Email no verificado'
-    };
-  } catch (error: any) {
-    console.error('Error verificando email:', error);
-    return { verified: false, message: error.message };
-  }
+  console.warn('🔄 MIGRATION: checkEmailVerification disabled - use Clerk verification');
+  return { verified: false, message: 'Function disabled - use Clerk for email verification' };
 };
 
 
