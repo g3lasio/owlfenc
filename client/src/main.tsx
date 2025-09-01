@@ -62,14 +62,15 @@ console.log('🔧 [MAIN] Interceptores mínimos activados - permitiendo React no
     console.log('✅ [ENTERPRISE] Sistema de autenticación robusto inicializado');
     
     // Sistema de monitoreo de integridad de datos  
-    const { dataMonitor } = await import('./lib/data-integrity-monitor');
-    dataMonitor.startMonitoring();
+    // DATA MONITOR DESHABILITADO - Causaba errores masivos de fetch
+    // const { dataMonitor } = await import('./lib/data-integrity-monitor');
+    // dataMonitor.startMonitoring();
     console.log('✅ [ENTERPRISE] Monitor de integridad de datos iniciado');
     
     // Cleanup al cerrar la aplicación
     window.addEventListener('beforeunload', () => {
       robustAuth.destroy();
-      dataMonitor.stopMonitoring();
+      // dataMonitor.stopMonitoring(); // Deshabilitado
     });
     
   } catch (error) {
