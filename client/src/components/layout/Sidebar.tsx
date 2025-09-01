@@ -35,6 +35,7 @@ import {
   Archive,
   FileText,
   Shield,
+  Home,
   DollarSign,
   FileCheck,
   Bot,
@@ -481,7 +482,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                                   case "materials": return <Archive className="h-4 w-4 mr-3" />;
                                   case "estimates": return <FileText className="h-4 w-4 mr-3" />;
                                   case "legal-defense": return <Shield className="h-4 w-4 mr-3" />;
-                                  case "property-verifier": return <Shield className="h-4 w-4 mr-3" />;
+                                  case "property-verifier": return <Home className="h-4 w-4 mr-3" />;
                                   case "project-payments": return <DollarSign className="h-4 w-4 mr-3" />;
                                   case "invoices": return <FileCheck className="h-4 w-4 mr-3" />;
                                   case "permit-advisor": return <Bot className="h-4 w-4 mr-3" />;
@@ -563,7 +564,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                                     case "materials": return <Archive className="h-4 w-4" />;
                                     case "estimates": return <FileText className="h-4 w-4" />;
                                     case "legal-defense": return <Shield className="h-4 w-4" />;
-                                    case "property-verifier": return <Shield className="h-4 w-4" />;
+                                    case "property-verifier": return <Home className="h-4 w-4" />;
                                     case "project-payments": return <DollarSign className="h-4 w-4" />;
                                     case "invoices": return <FileCheck className="h-4 w-4" />;
                                     case "permit-advisor": return <Bot className="h-4 w-4" />;
