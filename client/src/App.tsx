@@ -52,17 +52,13 @@ import AITestingPage from "@/pages/AITestingPage";
 import DeepSearchDemo from "@/pages/DeepSearchDemo";
 import PermissionsDemo from "@/pages/PermissionsDemo";
 import { AuthTest } from "@/pages/AuthTest";
-import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
 import ChatOnboarding from "@/components/onboarding/ChatOnboarding";
-import EnhancedClerkAuthPage from "@/components/auth/EnhancedClerkAuthPage";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import AuthDiagnostic from './pages/AuthDiagnostic';
-import ClerkErrorBoundary from '@/components/ClerkErrorBoundary';
-import ClerkLoadingWrapper from '@/components/ClerkLoadingWrapper';
 import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
 import SimpleContractGenerator from './pages/SimpleContractGenerator';
@@ -118,8 +114,8 @@ function Router() {
   return (
     <Switch>
       {/* Rutas públicas */}
-      <Route path="/login" component={() => <EnhancedClerkAuthPage initialMode="signin" />} />
-      <Route path="/signup" component={() => <EnhancedClerkAuthPage initialMode="signup" />} />
+      <Route path="/login" component={AuthPage} />
+      <Route path="/signup" component={AuthPage} />
       <Route path="/recuperar-password" component={RecuperarPassword} />
       <Route path="/forgot-password" component={RecuperarPassword} />
       <Route path="/reset-password" component={ResetPassword} />
@@ -270,53 +266,21 @@ function Router() {
 }
 
 function App() {
-  const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-  
-  if (!clerkPubKey) {
-    console.error('❌ [CLERK] Missing Clerk Publishable Key');
-    // En lugar de tirar error, mostrar mensaje de fallback
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-red-50 p-4">
-        <div className="text-center">
-          <h1 className="text-xl font-bold text-red-600 mb-2">Configuration Error</h1>
-          <p className="text-red-500">Missing Clerk configuration. Please check environment variables.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <ClerkErrorBoundary>
-      <ClerkProvider 
-        publishableKey={clerkPubKey}
-        afterSignOutUrl="/"
-        signInUrl="/login"
-        signUpUrl="/signup"
-        appearance={{
-          baseTheme: undefined,
-          variables: {
-            colorPrimary: '#0ea5e9'
-          }
-        }}
-      >
-        <ClerkLoadingWrapper timeout={25000}>
-          <AuthProvider>
-            <QueryClientProvider client={queryClient}>
-              <LanguageProvider>
-                <PermissionProvider>
-                  <SidebarProvider>
-                    <AppLayout>
-                      <Router />
-                    </AppLayout>
-                    <Toaster />
-                  </SidebarProvider>
-                </PermissionProvider>
-              </LanguageProvider>
-            </QueryClientProvider>
-          </AuthProvider>
-        </ClerkLoadingWrapper>
-      </ClerkProvider>
-    </ClerkErrorBoundary>
+    <AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <LanguageProvider>
+          <PermissionProvider>
+            <SidebarProvider>
+              <AppLayout>
+                <Router />
+              </AppLayout>
+              <Toaster />
+            </SidebarProvider>
+          </PermissionProvider>
+        </LanguageProvider>
+      </QueryClientProvider>
+    </AuthProvider>
   );
 }
 

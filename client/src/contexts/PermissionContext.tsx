@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { smartPermissionLoader } from '@/services/smartPermissionLoader';
 import { devModeManager, debugLog } from '@/utils/devModeUtils';
 
@@ -171,8 +171,7 @@ interface PermissionProviderProps {
 }
 
 export function PermissionProvider({ children }: PermissionProviderProps) {
-  const { user } = useAuth();
-  const currentUser = user;
+  const { currentUser } = useAuth();
   const [userPlan, setUserPlan] = useState<Plan | null>(null);
   const [userUsage, setUserUsage] = useState<UserUsage | null>(null);
   const [loading, setLoading] = useState(false); // ✅ FIXED: Start with false for better UX
