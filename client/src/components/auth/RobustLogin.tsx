@@ -4,10 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../lib/firebase';
-import { robustAuth } from '../../lib/robust-auth';
-import { safeFirebaseError, getErrorMessage } from '../../lib/firebase-error-fix';
+import { useSignIn, useSignUp } from '@clerk/clerk-react';
+import { safeFirebaseError, getErrorMessage } from '@/lib/firebase-error-fix';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
@@ -22,19 +20,9 @@ export function RobustLogin({ onSuccess }: RobustLoginProps) {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    // Escuchar cambios de autenticación robusta
-    const unsubscribe = robustAuth.onAuthStateChanged((userData) => {
-      setUser(userData);
-      if (userData && onSuccess) {
-        onSuccess();
-      }
-    });
-
-    return unsubscribe;
-  }, [onSuccess]);
+  
+  const { signIn, isLoaded: signInLoaded } = useSignIn();
+  const { signUp, isLoaded: signUpLoaded } = useSignUp();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,66 +30,46 @@ export function RobustLogin({ onSuccess }: RobustLoginProps) {
     setError('');
 
     try {
-      let result;
-      
       if (isLogin) {
-        // Iniciar sesión
-        result = await signInWithEmailAndPassword(auth, email, password);
-        console.log('✅ [ROBUST-LOGIN] Firebase login successful');
+        if (!signInLoaded) throw new Error('Sign in not ready');
+        
+        const result = await signIn.create({
+          identifier: email,
+          password,
+        });
+
+        if (result.status === 'complete') {
+          console.log('✅ [ROBUST-LOGIN] Clerk login successful');
+          if (onSuccess) onSuccess();
+        }
       } else {
-        // Registrar nuevo usuario
-        result = await createUserWithEmailAndPassword(auth, email, password);
-        console.log('✅ [ROBUST-LOGIN] Firebase registration successful');
+        if (!signUpLoaded) throw new Error('Sign up not ready');
+        
+        const result = await signUp.create({
+          emailAddress: email,
+          password,
+        });
+
+        if (result.status === 'complete') {
+          console.log('✅ [ROBUST-LOGIN] Clerk registration successful');
+          if (onSuccess) onSuccess();
+        } else if (result.status === 'missing_requirements') {
+          // Handle email verification
+          await result.prepareEmailAddressVerification({ strategy: 'email_code' });
+          setError('Por favor verifica tu email para completar el registro');
+        }
       }
 
-      // El sistema robusto se encargará automáticamente del mapeo
-      console.log('🔄 [ROBUST-LOGIN] Waiting for robust system to process...');
-
     } catch (error: any) {
-      console.error('❌ [ROBUST-LOGIN] Authentication failed:', error);
-      
-      // Usar nuestro sistema robusto de manejo de errores
-      const safeError = safeFirebaseError(error);
+      console.error('❌ [ROBUST-LOGIN] Clerk authentication failed:', error);
       const userMessage = getErrorMessage(error);
-      
       setError(userMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Si el usuario ya está autenticado, mostrar estado
-  if (user) {
-    return (
-      <Card className="w-full max-w-md mx-auto">
-        <CardHeader>
-          <CardTitle className="text-green-600">✅ Authenticated</CardTitle>
-          <CardDescription>
-            Welcome back, {user.user.email}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-sm text-gray-600">
-            <p><strong>Status:</strong> {user.subscription.status}</p>
-            <p><strong>Plan:</strong> {user.subscription.planName || 'None'}</p>
-            <p><strong>Active:</strong> {user.subscription.active ? 'Yes' : 'No'}</p>
-            <p><strong>Days Remaining:</strong> {user.subscription.daysRemaining}</p>
-          </div>
-          <div className="text-xs text-gray-500">
-            <p><strong>System:</strong> {user.systemInfo.dataSource}</p>
-            <p><strong>User ID:</strong> {user.user.internalUserId}</p>
-          </div>
-          <Button 
-            onClick={() => auth.signOut()}
-            variant="outline"
-            className="w-full"
-          >
-            Sign Out
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Clerk handles authentication state - component always shows login form
 
   return (
     <Card className="w-full max-w-md mx-auto">
