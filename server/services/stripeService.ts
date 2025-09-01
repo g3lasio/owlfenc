@@ -434,14 +434,14 @@ class StripeService {
         return;
       }
 
-      // NOTA: Stripe webhook no tiene acceso directo a Firebase UID
-      // Por ahora mantenemos email-based ID para webhooks de Stripe
-      // TODO: Implementar mapeo de email a Firebase UID en webhooks
+      // STRIPE WEBHOOK LIMITATION: No tiene acceso directo a Firebase UID
+      // SISTEMA UNIFICADO: Usar servicio de identidad para mapeo consistente  
       const userId = `user_${userEmail.replace(/[@.]/g, '_')}`;
       
       console.log(
-        `[${new Date().toISOString()}] Processing Stripe webhook for user: ${userId} (email: ${userEmail}), plan: ${planId}`,
+        `[${new Date().toISOString()}] Processing Stripe webhook - LEGACY ID TEMPORAL: ${userId} (email: ${userEmail}), plan: ${planId}`,
       );
+      console.warn(`⚠️ [STRIPE-WEBHOOK] TEMPORAL: Usando email-based ID hasta implementar mapeo Firebase UID`);
 
       // Get subscription details from Stripe
       const subscription = await stripe.subscriptions.retrieve(

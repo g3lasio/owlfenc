@@ -4,6 +4,7 @@
  */
 
 import { auth } from '@/lib/firebase';
+import { getAuth } from 'firebase/auth';
 
 // Interfaz unificada para clientes
 export interface Client {
@@ -48,7 +49,9 @@ async function getAuthToken(): Promise<string> {
     
     // Fallback al método anterior como último recurso
     const idToken = localStorage.getItem('firebase_id_token');
-    const userId = localStorage.getItem('firebase_user_id');
+    // SISTEMA UNIFICADO: Usar Firebase UID directamente desde contexto de autenticación
+    const auth = getAuth();
+    const userId = auth.currentUser?.uid;
     
     if (!idToken) {
       throw new Error('CRÍTICO: Sistema de autenticación completamente fallido - contacta soporte');

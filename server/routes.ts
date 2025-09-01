@@ -5365,17 +5365,25 @@ Output must be between 200-900 characters in English.`;
     },
   );
 
-  // LEGACY ENDPOINT - REEMPLAZADO POR /api/subscription/user-subscription
+  // LEGACY ENDPOINT - MIGRADO AL SISTEMA UNIFICADO
   app.get("/api/user/subscription", async (req: Request, res: Response) => {
     try {
-      // TEMPORAL: Este endpoint está siendo reemplazado por el sistema robusto
-      console.warn("⚠️ [LEGACY] Endpoint /api/user/subscription usado - usar /api/subscription/user-subscription");
+      console.warn("⚠️ [LEGACY] Endpoint /api/user/subscription - MIGRANDO a sistema unificado");
       
-      // Fallback básico para compatibilidad temporal
-      const email = (req.query.email as string) || "shkwahab60@gmail.com";
-      const userId = `user_${email.replace(/[@.]/g, "_")}`;
-
-      console.log(`👤 [USER-SUBSCRIPTION-LEGACY] Getting subscription for: ${userId}`);
+      // SISTEMA UNIFICADO: Obtener identidad usando servicio unificado
+      if (req.firebaseUser?.uid) {
+        // Usuario autenticado - usar Firebase UID
+        const unifiedUserId = req.firebaseUser.uid;
+        console.log(`👤 [USER-SUBSCRIPTION-UNIFIED] Getting subscription for Firebase UID: ${unifiedUserId}`);
+      } else {
+        // Fallback para compatibilidad temporal (será removido)
+        const email = (req.query.email as string) || "shkwahab60@gmail.com";
+        const legacyUserId = `user_${email.replace(/[@.]/g, "_")}`;
+        console.warn(`⚠️ [USER-SUBSCRIPTION-LEGACY] Usando ID legacy: ${legacyUserId}`);
+      }
+      
+      const userId = req.firebaseUser?.uid || `user_${((req.query.email as string) || "shkwahab60@gmail.com").replace(/[@.]/g, "_")}`;
+      console.log(`👤 [USER-SUBSCRIPTION] Getting subscription for: ${userId}`);
 
       // Get subscription from Firebase
       const subscription =
