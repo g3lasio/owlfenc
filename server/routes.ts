@@ -5382,8 +5382,17 @@ Output must be between 200-900 characters in English.`;
         console.warn(`⚠️ [USER-SUBSCRIPTION-LEGACY] Usando ID legacy: ${legacyUserId}`);
       }
       
-      const userId = req.firebaseUser?.uid || `user_${((req.query.email as string) || "shkwahab60@gmail.com").replace(/[@.]/g, "_")}`;
-      console.log(`👤 [USER-SUBSCRIPTION] Getting subscription for: ${userId}`);
+      // SISTEMA UNIFICADO ROBUSTO: SOLO Firebase UID permitido
+      if (!req.firebaseUser?.uid) {
+        return res.status(401).json({
+          success: false,
+          error: "Firebase authentication required",
+          message: "Por favor inicia sesión para acceder a tu suscripción"
+        });
+      }
+      
+      const userId = req.firebaseUser.uid; // ÚNICA fuente de identidad
+      console.log(`👤 [USER-SUBSCRIPTION-UNIFIED] Getting subscription for Firebase UID: ${userId}`);
 
       // Get subscription from Firebase
       const subscription =

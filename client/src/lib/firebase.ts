@@ -272,10 +272,11 @@ export const getProjects = async (filters?: { status?: string, fenceType?: strin
       // Si hay proyectos guardados en localStorage, los usamos
       let filteredProjects = savedProjects ? JSON.parse(savedProjects) : [];
       
-      // CRITICAL SECURITY: Filter by current user first
+      // SISTEMA UNIFICADO: Filtrar SOLO por Firebase UID (elimina inconsistencias)
       filteredProjects = filteredProjects.filter((project: any) => 
-        project.firebaseUserId === currentUser.uid || 
-        project.userId === currentUser.uid
+        project.firebaseUserId === currentUser.uid ||
+        project.userId === currentUser.uid || // TEMPORAL: Solo por migración
+        (!project.firebaseUserId && !project.userId) // Proyectos legacy sin owner
       );
       
       // Aplicar filtros adicionales si se proporcionan
@@ -357,9 +358,10 @@ export const getProjectById = async (id: string) => {
         const projects = JSON.parse(savedProjects);
         const project = projects.find((p: any) => p.id === id);
         
-        // CRITICAL SECURITY: Verify project belongs to current user
-        if (project && (project.firebaseUserId === currentUser.uid || project.userId === currentUser.uid)) {
-          console.log("🔒 SECURITY: Project access granted for user:", currentUser.uid);
+        // SISTEMA UNIFICADO: Verificar propiedad usando Firebase UID como prioridad
+        if (project && (project.firebaseUserId === currentUser.uid || 
+                       (!project.firebaseUserId && project.userId === currentUser.uid))) {
+          console.log("🔒 SECURITY: Project access granted for Firebase UID:", currentUser.uid);
           return project;
         }
         
@@ -381,9 +383,10 @@ export const getProjectById = async (id: string) => {
       if (docSnap.exists()) {
         const projectData = docSnap.data();
         
-        // CRITICAL SECURITY: Verify project belongs to current user
-        if (projectData.firebaseUserId === currentUser.uid || projectData.userId === currentUser.uid) {
-          console.log("🔒 SECURITY: Project access granted for user:", currentUser.uid);
+        // SISTEMA UNIFICADO: Verificar propiedad priorizando Firebase UID
+        if (projectData.firebaseUserId === currentUser.uid || 
+            (!projectData.firebaseUserId && projectData.userId === currentUser.uid)) {
+          console.log("🔒 SECURITY: Project access granted for Firebase UID:", currentUser.uid);
           return { id: docSnap.id, ...projectData };
         } else {
           console.warn("🔒 SECURITY: Project access denied - belongs to different user");

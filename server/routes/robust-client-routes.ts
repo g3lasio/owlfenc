@@ -13,19 +13,19 @@ const router = Router();
  */
 router.get('/count', auth, async (req, res) => {
   try {
-    console.log('📊 [ROBUST-CLIENTS] Obteniendo conteo para verificación:', req.user?.uid);
+    console.log('📊 [ROBUST-CLIENTS] Obteniendo conteo para Firebase UID:', req.user?.uid);
     
     const { storage } = await import('../storage');
     const clients = await storage.listClients();
     
-    // Filtrar por usuario autenticado
+    // SISTEMA UNIFICADO: Filtrar por Firebase UID del usuario autenticado
     const userClients = clients.filter(client => client.userId === req.user?.uid);
     
     res.json({ 
       success: true,
       count: userClients.length,
       timestamp: new Date().toISOString(),
-      userId: req.user?.uid
+      firebaseUid: req.user?.uid
     });
     
   } catch (error: any) {
@@ -43,12 +43,12 @@ router.get('/count', auth, async (req, res) => {
  */
 router.get('/integrity-check', auth, async (req, res) => {
   try {
-    console.log('🔍 [ROBUST-CLIENTS] Verificación de integridad para:', req.user?.uid);
+    console.log('🔍 [ROBUST-CLIENTS] Verificación de integridad para Firebase UID:', req.user?.uid);
     
     const { storage } = await import('../storage');
     const clients = await storage.listClients();
     
-    // Filtrar por usuario autenticado
+    // SISTEMA UNIFICADO: Filtrar por Firebase UID del usuario autenticado
     const userClients = clients.filter(client => client.userId === req.user?.uid);
     
     const issues: string[] = [];
@@ -88,7 +88,7 @@ router.get('/integrity-check', auth, async (req, res) => {
     
     res.json({
       success: true,
-      userId: req.user?.uid,
+      firebaseUid: req.user?.uid,
       totalClients: userClients.length,
       issues: issues,
       timestamp: new Date().toISOString()
@@ -114,7 +114,7 @@ router.post('/force-sync', auth, async (req, res) => {
     const { storage } = await import('../storage');
     const clients = await storage.listClients();
     
-    // Filtrar por usuario autenticado
+    // SISTEMA UNIFICADO: Filtrar por Firebase UID del usuario autenticado
     const userClients = clients.filter(client => client.userId === req.user?.uid);
     
     // Simular sincronización (en una implementación real, esto haría sync con Firebase)
@@ -128,7 +128,7 @@ router.post('/force-sync', auth, async (req, res) => {
       success: true,
       message: 'Sincronización forzada completada',
       result: syncResult,
-      userId: req.user?.uid
+      firebaseUid: req.user?.uid
     });
     
   } catch (error: any) {
@@ -151,7 +151,7 @@ router.post('/repair-consistency', auth, async (req, res) => {
     const { storage } = await import('../storage');
     const clients = await storage.listClients();
     
-    // Filtrar por usuario autenticado
+    // SISTEMA UNIFICADO: Filtrar por Firebase UID del usuario autenticado
     const userClients = clients.filter(client => client.userId === req.user?.uid);
     
     let repaired = 0;
@@ -170,7 +170,7 @@ router.post('/repair-consistency', auth, async (req, res) => {
       message: 'Consistencia de datos reparada',
       repaired: repaired,
       totalClients: userClients.length,
-      userId: req.user?.uid,
+      firebaseUid: req.user?.uid,
       timestamp: new Date().toISOString()
     });
     
@@ -194,11 +194,11 @@ router.post('/create-backup', auth, async (req, res) => {
     const { storage } = await import('../storage');
     const clients = await storage.listClients();
     
-    // Filtrar por usuario autenticado
+    // SISTEMA UNIFICADO: Filtrar por Firebase UID del usuario autenticado
     const userClients = clients.filter(client => client.userId === req.user?.uid);
     
     const backupData = {
-      userId: req.user?.uid,
+      firebaseUid: req.user?.uid,
       timestamp: new Date().toISOString(),
       clientCount: userClients.length,
       clients: userClients,
@@ -219,7 +219,7 @@ router.post('/create-backup', auth, async (req, res) => {
       backupId: backupId,
       clientCount: userClients.length,
       timestamp: backupData.timestamp,
-      userId: req.user?.uid
+      firebaseUid: req.user?.uid
     });
     
   } catch (error: any) {
