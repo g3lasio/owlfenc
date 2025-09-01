@@ -52,7 +52,7 @@ import AITestingPage from "@/pages/AITestingPage";
 import DeepSearchDemo from "@/pages/DeepSearchDemo";
 import PermissionsDemo from "@/pages/PermissionsDemo";
 import { AuthTest } from "@/pages/AuthTest";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { useUnifiedAuth } from "@/hooks/use-unified-auth";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
@@ -82,7 +82,7 @@ type ProtectedRouteProps = {
 };
 
 function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
-  const { currentUser, loading } = useAuth();
+  const { user: currentUser, loading } = useUnifiedAuth();
   const { needsOnboarding, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
   const [authStable, setAuthStable] = useState(false);
 
@@ -287,16 +287,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
-        <AuthProvider>
-          <PermissionProvider>
-            <SidebarProvider>
-              <AppLayout>
-                <Router />
-              </AppLayout>
-              <Toaster />
-            </SidebarProvider>
-          </PermissionProvider>
-        </AuthProvider>
+        <PermissionProvider>
+          <SidebarProvider>
+            <AppLayout>
+              <Router />
+            </AppLayout>
+            <Toaster />
+          </SidebarProvider>
+        </PermissionProvider>
       </LanguageProvider>
     </QueryClientProvider>
   );
