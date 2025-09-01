@@ -61,7 +61,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import AuthDiagnostic from './pages/AuthDiagnostic';
 import ClerkErrorBoundary from '@/components/ClerkErrorBoundary';
-import ClerkLoadingWrapper from '@/components/ClerkLoadingWrapper';
 import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
 import SimpleContractGenerator from './pages/SimpleContractGenerator';
@@ -297,22 +296,20 @@ function App() {
           }
         }}
       >
-        <ClerkLoadingWrapper timeout={8000}>
-          <AuthProvider>
-            <QueryClientProvider client={queryClient}>
-              <LanguageProvider>
-                <PermissionProvider>
+        <AuthProvider>
+          <QueryClientProvider client={queryClient}>
+            <LanguageProvider>
+              <PermissionProvider>
                   <SidebarProvider>
                     <AppLayout>
                       <Router />
                     </AppLayout>
                     <Toaster />
                   </SidebarProvider>
-                </PermissionProvider>
-              </LanguageProvider>
-            </QueryClientProvider>
-          </AuthProvider>
-        </ClerkLoadingWrapper>
+              </PermissionProvider>
+            </LanguageProvider>
+          </QueryClientProvider>
+        </AuthProvider>
       </ClerkProvider>
     </ClerkErrorBoundary>
   );

@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 // import { Badge } from '@/components/ui/badge'; // TODO: Create Badge component
 import { useMigrationFromFirebase } from '@/lib/migration-clerk';
-import { detectMigrationNeeded, autoMigrateOnLogin } from '@/lib/firebase-clerk-transition';
+// Firebase transition imports removed - using Clerk now
 
 interface MigrationStatus {
   needed: boolean;

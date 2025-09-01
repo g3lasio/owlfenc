@@ -4,7 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Spinner } from '@/components/ui/spinner';
 import { useToast } from '@/hooks/use-toast';
-import { Client } from '@/lib/clientFirebase';
+// Firebase imports removed - using simple Client interface
+interface Client {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+}
 import { analyzeCSVWithIA, analyzeVCFWithIA, mapCSVToClients, normalizeClientData, enhanceContactsWithAI, CSVAnalysisResult, ColumnMapping, CLIENT_FIELD_OPTIONS } from '@/lib/intelligentImport';
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

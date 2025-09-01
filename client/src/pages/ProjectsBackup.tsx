@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 // 🔄 MIGRACIÓN: Usando sistema de transición Firebase -> Clerk
-import { useProjectsTransition } from "@/lib/firebase-clerk-transition";
+// Firebase transition imports removed - using Clerk now
 // Mantener imports temporales para funciones que aún no están migradas
-import { getProjectById, updateProject } from "@/lib/firebase";
+// Firebase imports removed - using Clerk now
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";

@@ -57,20 +57,12 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  orderBy,
-  getDocs,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+// Firestore and Firebase imports removed - using Clerk now
 import {
   contractHistoryService,
   ContractHistoryEntry,
 } from "@/services/contractHistoryService";
-import { getClients as getFirebaseClients } from "@/lib/clientFirebase";
+// Firebase imports removed - using Clerk now
 
 // Interface for completed contracts
 interface CompletedContract {

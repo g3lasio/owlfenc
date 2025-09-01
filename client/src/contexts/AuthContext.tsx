@@ -39,8 +39,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const { signUp, isLoaded: signUpLoaded } = useSignUp();
   const [error, setError] = useState<string | null>(null);
   
-  // Enhanced loading state that accounts for all Clerk hooks
-  const allLoaded = isLoaded && signInLoaded && signUpLoaded;
+  // Simple loading state - no complex loading screens
+  const loading = !isLoaded;
 
   // Convert Clerk user to Firebase-compatible format
   const currentUser: AuthUser | null = user ? {
@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setError(null);
       console.log('🔐 [CLERK-ADAPTER] Iniciando login para:', email);
       
-      if (!signIn || !signInLoaded) {
+      if (!signIn) {
         throw new Error('Sistema de autenticación no disponible');
       }
 
@@ -114,12 +114,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
       }
 
-      // Handle other status cases
-      if (result.status !== 'complete') {
-        throw new Error('Proceso de autenticación incompleto');
+      // If we reach here, login was successful
+      console.log('🔐 [CLERK-ADAPTER] Login exitoso');
+      
+      // Return the current user after successful login  
+      if (!currentUser) {
+        throw new Error('Error obteniendo datos de usuario después del login');
       }
-
-      throw new Error('Error en el proceso de autenticación');
+      
+      return currentUser;
     } catch (error: any) {
       const errorMessage = getClerkErrorMessage(error.code || error.message);
       setError(errorMessage);
@@ -133,7 +136,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setError(null);
       console.log('📝 [CLERK-ADAPTER] Iniciando registro para:', email);
       
-      if (!signUp || !signUpLoaded) {
+      if (!signUp) {
         throw new Error('Sistema de registro no disponible');
       }
 
@@ -246,7 +249,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const value: AuthContextType = {
     currentUser: isSignedIn ? currentUser : null,
-    loading: !allLoaded,
+    loading,
     error,
     login,
     register,

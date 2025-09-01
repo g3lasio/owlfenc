@@ -31,24 +31,12 @@ import { DeepSearchChat } from "@/components/DeepSearchChat";
 // Usar el logo correcto de OWL FENCE
 const mervinLogoUrl =
   "https://ik.imagekit.io/lp5czyx2a/ChatGPT%20Image%20May%2010,%202025,%2005_35_38%20PM.png?updatedAt=1748157114019";
-import {
-  getClients as getFirebaseClients,
-  saveClient,
-} from "@/lib/clientFirebase";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
-  Timestamp,
-  doc,
-  setDoc,
-} from "firebase/firestore";
-import { db, auth } from "@/lib/firebase";
+// Firebase imports removed - using Clerk now
+// Firestore imports removed - using Clerk now
+// Firebase imports removed - using Clerk now
 import { MaterialInventoryService } from "../services/materialInventoryService";
 import { EmailService } from "../services/emailService";
-import { checkEmailVerification } from "@/lib/firebase";
+// Firebase imports removed - using Clerk now
 import { apiRequest } from "@/lib/queryClient";
 import {
   shareOrDownloadPdf,

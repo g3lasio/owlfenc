@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
-import { auth, toggleFirebaseMode, devMode } from "@/lib/firebase";
+// Firebase imports removed - using Clerk now
 import { AlertCircle, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AuthDiagnostic() {
-  const { currentUser, login, register, logout, loginWithGoogle } = useAuth();
-  const [firebaseConfig, setFirebaseConfig] = useState<any>(null);
+  const { currentUser, login, register, logout } = useAuth();
+  // Firebase config removed - using Clerk now
   const [testEmail, setTestEmail] = useState("test@example.com");
   const [testPassword, setTestPassword] = useState("password123");
   const [testName, setTestName] = useState("Usuario Prueba");
@@ -19,19 +19,11 @@ export default function AuthDiagnostic() {
   const [isLoading, setIsLoading] = useState(false);
   const [authStatus, setAuthStatus] = useState<"success" | "error" | "pending">("pending");
   const [errorMessage, setErrorMessage] = useState("");
-  const [usingRealFirebase, setUsingRealFirebase] = useState(!devMode);
+  // Firebase mode removed - using Clerk now
   const { toast } = useToast();
 
   useEffect(() => {
-    // Obtener configuración actual de Firebase
-    const config = {
-      apiKey: auth.app.options.apiKey || "No configurado",
-      authDomain: auth.app.options.authDomain || "No configurado",
-      projectId: auth.app.options.projectId || "No configurado",
-    };
-    setFirebaseConfig(config);
-    
-    // Verificar si el usuario está autenticado
+    // Clerk auth status
     setIsAuthenticated(!!currentUser);
   }, [currentUser]);
 
@@ -165,15 +157,15 @@ export default function AuthDiagnostic() {
               </div>
               <div className="flex justify-between">
                 <span className="font-medium">API Key:</span>
-                <span className="text-muted-foreground">{firebaseConfig?.apiKey}</span>
+                <span className="text-muted-foreground">Clerk (Firebase disabled)</span>
               </div>
               <div className="flex justify-between">
                 <span className="font-medium">Auth Domain:</span>
-                <span className="text-muted-foreground">{firebaseConfig?.authDomain}</span>
+                <span className="text-muted-foreground">Clerk (Firebase disabled)</span>
               </div>
               <div className="flex justify-between">
                 <span className="font-medium">Project ID:</span>
-                <span className="text-muted-foreground">{firebaseConfig?.projectId}</span>
+                <span className="text-muted-foreground">Clerk (Firebase disabled)</span>
               </div>
               <div className="flex justify-between">
                 <span className="font-medium">Usuario actual:</span>
