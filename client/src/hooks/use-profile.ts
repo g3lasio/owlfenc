@@ -34,6 +34,25 @@ export interface UserProfile {
 export function useProfile() {
   const queryClient = useQueryClient();
   const { currentUser } = useAuth();
+  
+  // 🔧 FIREBASE UID RECOVERY: Support owner bypass authentication
+  const getEffectiveUserId = () => {
+    // First try currentUser from auth
+    if (currentUser?.uid) {
+      return currentUser.uid;
+    }
+    
+    // Fallback: Check localStorage for bypass user
+    const bypassFirebaseUid = localStorage.getItem('firebase_user_id');
+    if (bypassFirebaseUid) {
+      return bypassFirebaseUid;
+    }
+    
+    return null;
+  };
+  
+  const effectiveUserId = getEffectiveUserId();
+  
   // Verificar si estamos en modo desarrollo
   const isDevMode = (window.location.hostname.includes('.replit.dev') || 
                     window.location.hostname.includes('.id.repl.co') ||
@@ -43,17 +62,19 @@ export function useProfile() {
   
   // Consulta para obtener el perfil de usuario (primero localStorage en dev, Firebase en prod, API como respaldo)
   const { data: profile, isLoading, error } = useQuery<UserProfile>({
-    queryKey: ["userProfile", currentUser?.uid],
+    queryKey: ["userProfile", effectiveUserId],
     queryFn: async () => {
       // En modo desarrollo, verificar localStorage primero con clave específica del usuario
       if (isDevMode) {
         try {
-          const userId = currentUser?.uid;
-          const profileKey = `userProfile_${userId}`;
+          const profileKey = `userProfile_${effectiveUserId}`;
           const localProfile = localStorage.getItem(profileKey);
           if (localProfile) {
             console.log("Perfil cargado desde localStorage con clave:", profileKey);
-            return JSON.parse(localProfile) as UserProfile;
+            const parsedProfile = JSON.parse(localProfile) as UserProfile;
+            // 🔧 ENSURE ID MAPPING: Set ID to Firebase UID for compatibility
+            parsedProfile.id = effectiveUserId || '1';
+            return parsedProfile;
           }
         } catch (localErr) {
           console.error("Error cargando perfil desde localStorage:", localErr);
@@ -101,14 +122,14 @@ export function useProfile() {
         
         // Si todo falla y estamos en modo desarrollo, devolver un perfil vacío
         if (isDevMode) {
-          const userId = currentUser?.uid;
-          const profileKey = `userProfile_${userId}`;
+          const profileKey = `userProfile_${effectiveUserId}`;
           
           const emptyProfile = {
+            id: effectiveUserId || '1', // 🔧 CRITICAL: Set ID for user mapping
             company: "",
             ownerName: "",
-            role: "",
-            email: currentUser?.email || "",
+            role: "Owner", // 🔧 Set default role for owners
+            email: currentUser?.email || localStorage.getItem('firebase_user_email') || "",
             phone: "",
             mobilePhone: "",
             address: "",

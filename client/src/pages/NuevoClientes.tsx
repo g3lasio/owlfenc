@@ -155,9 +155,28 @@ const csvImportSchema = z.object({
 
 export default function NuevoClientes() {
   const { profile } = useProfile();
-  // ✅ USAR Firebase UID en lugar de profile.id
-  // Using Clerk user ID instead of Firebase
-  const userId = profile?.id?.toString() || "1";
+  
+  // 🔧 BULLETPROOF USER MAPPING: Support owner bypass + future commercial users
+  const getUserId = () => {
+    // Priority 1: Profile ID (Firebase UID or PostgreSQL user_id)
+    if (profile?.id) {
+      console.log('🔧 [USER-MAPPING] Using profile.id:', profile.id);
+      return profile.id.toString();
+    }
+    
+    // Priority 2: Bypass Firebase UID for owners
+    const bypassFirebaseUid = localStorage.getItem('firebase_user_id');
+    if (bypassFirebaseUid) {
+      console.log('🔧 [USER-MAPPING] Using bypass Firebase UID:', bypassFirebaseUid);
+      return bypassFirebaseUid;
+    }
+    
+    // Priority 3: Legacy fallback for existing systems 
+    console.log('🔧 [USER-MAPPING] Using legacy fallback: 1');
+    return "1";
+  };
+  
+  const userId = getUserId();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
