@@ -16,7 +16,7 @@ router.get('/current', verifyFirebaseAuth, async (req: Request, res: Response) =
       return res.status(401).json({ error: 'Autenticación requerida' });
     }
 
-    const userId = `user_${req.firebaseUser.email?.replace(/[@.]/g, '_')}`;
+    const userId = req.firebaseUser.uid; // USAR Firebase UID directamente
     const subscription = await firebaseSubscriptionService.getUserSubscription(userId);
     
     if (!subscription) {
@@ -94,7 +94,7 @@ router.post('/reset', verifyFirebaseAuth, async (req: Request, res: Response) =>
       return res.status(401).json({ error: 'Autenticación requerida' });
     }
 
-    const userId = `user_${req.firebaseUser.email?.replace(/[@.]/g, '_')}`;
+    const userId = req.firebaseUser.uid; // USAR Firebase UID directamente
     
     // Solo permitir reseteo para administradores o en modo desarrollo
     const isAdmin = req.firebaseUser.email?.includes('shkwahab60') || req.firebaseUser.email?.includes('marcos@ruiz.com');

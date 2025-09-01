@@ -434,11 +434,13 @@ class StripeService {
         return;
       }
 
-      // Convert email to Firebase user ID format for consistency
+      // NOTA: Stripe webhook no tiene acceso directo a Firebase UID
+      // Por ahora mantenemos email-based ID para webhooks de Stripe
+      // TODO: Implementar mapeo de email a Firebase UID en webhooks
       const userId = `user_${userEmail.replace(/[@.]/g, '_')}`;
       
       console.log(
-        `[${new Date().toISOString()}] Processing for user: ${userId} (email: ${userEmail}), plan: ${planId}`,
+        `[${new Date().toISOString()}] Processing Stripe webhook for user: ${userId} (email: ${userEmail}), plan: ${planId}`,
       );
 
       // Get subscription details from Stripe

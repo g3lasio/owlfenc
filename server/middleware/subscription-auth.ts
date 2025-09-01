@@ -124,7 +124,7 @@ export const requireSubscriptionLevel = (requiredLevel: PermissionLevel) => {
         });
       }
 
-      const userId = `user_${req.firebaseUser.email?.replace(/[@.]/g, '_')}`;
+      const userId = req.firebaseUser.uid; // USAR Firebase UID directamente
       const subscription = await getUserActiveSubscription(userId);
 
       let userSubscription = subscription;

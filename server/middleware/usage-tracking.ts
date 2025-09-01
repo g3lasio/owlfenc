@@ -71,7 +71,7 @@ export const trackAndValidateUsage = (feature: string, limitKey: string) => {
         });
       }
 
-      const userId = `user_${req.firebaseUser.email?.replace(/[@.]/g, '_')}`;
+      const userId = req.firebaseUser.uid; // USAR Firebase UID directamente
       const limits = req.userSubscription.limits;
       const featureLimit = limits[limitKey as keyof typeof limits];
 

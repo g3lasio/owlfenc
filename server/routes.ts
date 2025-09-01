@@ -4255,7 +4255,7 @@ Output must be between 200-900 characters in English.`;
     "/api/subscription/user-subscription",
     async (req: Request, res: Response) => {
       try {
-        // Try to get Firebase UID from auth header first
+        // SISTEMA ROBUSTO: Obtener Firebase UID correctamente
         let firebaseUserId;
         const authHeader = req.headers.authorization;
         
@@ -4264,24 +4264,30 @@ Output must be between 200-900 characters in English.`;
             const token = authHeader.substring(7);
             const decodedToken = await admin.auth().verifyIdToken(token);
             firebaseUserId = decodedToken.uid;
-            console.log(`🔐 [SUBSCRIPTION-USER] Firebase UID from token: ${firebaseUserId}`);
+            console.log(`🔐 [SUBSCRIPTION-USER] Firebase UID verified: ${firebaseUserId}`);
           } catch (authError) {
-            console.warn("⚠️ [SUBSCRIPTION-USER] Could not verify Firebase token");
+            console.warn("⚠️ [SUBSCRIPTION-USER] Token verification failed, but continuing with graceful degradation");
+            console.debug("🔧 [SUBSCRIPTION-USER] Auth error details silenced to prevent spam");
           }
         }
 
-        // Fallback to email-based ID for legacy support
-        const email = (req.query.email as string) || "shkwahab60@gmail.com";
-        const legacyUserId = `user_${email.replace(/[@.]/g, "_")}`;
-        
-        // Use Firebase UID if available, otherwise use legacy email-based ID
-        const userId = firebaseUserId || legacyUserId;
+        if (!firebaseUserId) {
+          console.warn("❌ [SUBSCRIPTION-USER] No valid Firebase UID available");
+          return res.status(401).json({
+            success: false,
+            error: "Authentication required",
+            message: "Token de autenticación requerido - Por favor inicia sesión nuevamente"
+          });
+        }
+
+        // USAR SISTEMA ROBUSTO DE MAPEO
+        const userId = firebaseUserId; // SIEMPRE usar Firebase UID como ID principal
 
         console.log(
-          `👤 [SUBSCRIPTION-USER] Getting subscription for: ${userId} (Firebase UID: ${!!firebaseUserId})`,
+          `👤 [SUBSCRIPTION-USER] Getting subscription for: ${userId} (Firebase UID: ${firebaseUserId})`,
         );
 
-        // Get subscription from Firebase
+        // SISTEMA UNIFICADO: Obtener suscripción usando Firebase UID
         const subscription =
           await firebaseSubscriptionService.getUserSubscription(userId);
 
@@ -4446,7 +4452,7 @@ Output must be between 200-900 characters in English.`;
           return res.status(401).json({ error: "Autenticación requerida" });
         }
 
-        const userId = `user_${req.firebaseUser.email?.replace(/[@.]/g, '_')}`;
+        const userId = req.firebaseUser.uid; // USAR Firebase UID directamente
         
         // Verificar que el usuario no tenga ya una suscripción premium
         const existingSubscription = await firebaseSubscriptionService.getUserSubscription(userId);
@@ -5359,14 +5365,17 @@ Output must be between 200-900 characters in English.`;
     },
   );
 
-  // Add the missing /api/user/subscription endpoint
+  // LEGACY ENDPOINT - REEMPLAZADO POR /api/subscription/user-subscription
   app.get("/api/user/subscription", async (req: Request, res: Response) => {
     try {
-      // Get email from query parameter or use default for testing
+      // TEMPORAL: Este endpoint está siendo reemplazado por el sistema robusto
+      console.warn("⚠️ [LEGACY] Endpoint /api/user/subscription usado - usar /api/subscription/user-subscription");
+      
+      // Fallback básico para compatibilidad temporal
       const email = (req.query.email as string) || "shkwahab60@gmail.com";
       const userId = `user_${email.replace(/[@.]/g, "_")}`;
 
-      console.log(`👤 [USER-SUBSCRIPTION] Getting subscription for: ${userId}`);
+      console.log(`👤 [USER-SUBSCRIPTION-LEGACY] Getting subscription for: ${userId}`);
 
       // Get subscription from Firebase
       const subscription =
