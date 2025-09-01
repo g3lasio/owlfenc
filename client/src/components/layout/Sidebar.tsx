@@ -37,6 +37,7 @@ import {
   Shield,
   Home,
   DollarSign,
+  TrendingUp,
   FileCheck,
   Bot,
   Crown,
@@ -487,7 +488,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                                   case "invoices": return <FileCheck className="h-4 w-4 mr-3" />;
                                   case "permit-advisor": return <Bot className="h-4 w-4 mr-3" />;
                                   case "ai-project-manager": return <BrainIcon className="h-4 w-4 mr-3" />;
-                                  case "owl-funding": return <DollarSign className="h-4 w-4 mr-3" />;
+                                  case "owl-funding": return <TrendingUp className="h-4 w-4 mr-3" />;
                                   case "profile": return <Building className="h-4 w-4 mr-3" />;
                                   case "settings": return <Settings className="h-4 w-4 mr-3" />;
                                   case "billing": return <CreditCard className="h-4 w-4 mr-3" />;
@@ -569,7 +570,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                                     case "invoices": return <FileCheck className="h-4 w-4" />;
                                     case "permit-advisor": return <Bot className="h-4 w-4" />;
                                     case "ai-project-manager": return <BrainIcon className="h-4 w-4" />;
-                                    case "owl-funding": return <DollarSign className="h-4 w-4" />;
+                                    case "owl-funding": return <TrendingUp className="h-4 w-4" />;
                                     case "profile": return <Building className="h-4 w-4" />;
                                     case "settings": return <Settings className="h-4 w-4" />;
                                     case "billing": return <CreditCard className="h-4 w-4" />;
