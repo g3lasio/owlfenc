@@ -67,6 +67,7 @@ import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
 import SimpleContractGenerator from './pages/SimpleContractGenerator';
 import ContractSignature from './pages/ContractSignature';
+import MigrationPage from './pages/MigrationPage';
 
 
 import { Redirect } from "wouter";
@@ -201,6 +202,9 @@ function Router() {
       <Route path="/security">
         {() => <ProtectedRoute component={SecuritySettings} />}
       </Route>
+      <Route path="/migration">
+        {() => <ProtectedRoute component={MigrationPage} />}
+      </Route>
 
       <Route path="/smart-contract-wizard">
         {() => <ProtectedRoute component={SmartContractWizard} />}
@@ -269,7 +273,16 @@ function App() {
   const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
   
   if (!clerkPubKey) {
-    throw new Error("Missing Clerk Publishable Key");
+    console.error('❌ [CLERK] Missing Clerk Publishable Key');
+    // En lugar de tirar error, mostrar mensaje de fallback
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-red-50 p-4">
+        <div className="text-center">
+          <h1 className="text-xl font-bold text-red-600 mb-2">Configuration Error</h1>
+          <p className="text-red-500">Missing Clerk configuration. Please check environment variables.</p>
+        </div>
+      </div>
+    );
   }
 
   return (

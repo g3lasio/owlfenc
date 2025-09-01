@@ -160,6 +160,9 @@ export const saveProject = async (projectData: any) => {
 
 export const getProjects = async (filters?: { status?: string, fenceType?: string }) => {
   try {
+    // 🔄 MIGRATION NOTICE: Esta función está siendo migrada a Clerk
+    console.warn("🔄 [MIGRATION] getProjects de Firebase está deprecated - usar firebase-clerk-transition.ts");
+    
     // CRITICAL SECURITY: Get current authenticated user
     const currentUser = auth.currentUser;
     if (!currentUser) {

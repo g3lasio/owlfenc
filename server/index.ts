@@ -8,6 +8,7 @@ import centralizedEmailRoutes from "./routes/centralized-email-routes-fix";
 import otpRoutes from "./routes/otp-routes";
 import oauthConfigRoutes from "./routes/oauth-config";
 import webauthnRoutes from "./routes/webauthn";
+import migrationRoutes from "./routes/migration";
 import { setupProductionRoutes, setupProductionErrorHandlers } from "./production-setup";
 
 // 🛡️ SECURITY MIDDLEWARE - Applied immediately for maximum protection
@@ -186,6 +187,10 @@ console.log('🔐 [PASSWORD-RESET] Sistema de restablecimiento registrado en /ap
 // 🧠 Registrar sistema de memoria y aprendizaje
 app.use('/api/memory', memoryRoutes);
 console.log('🧠 [MEMORY-SYSTEM] Sistema de memoria y aprendizaje registrado en /api/memory');
+
+// 🔄 Registrar sistema de migración Firebase -> Clerk
+app.use('/api/migration', migrationRoutes);
+console.log('🔄 [MIGRATION] Sistema de migración Firebase -> Clerk registrado en /api/migration');
 // Add logging middleware only for API routes
 app.use('/api', (req, res, next) => {
   const start = Date.now();

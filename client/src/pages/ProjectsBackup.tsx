@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { getProjects, getProjectById, updateProject } from "@/lib/firebase";
+// 🔄 MIGRACIÓN: Usando sistema de transición Firebase -> Clerk
+import { useProjectsTransition } from "@/lib/firebase-clerk-transition";
+// Mantener imports temporales para funciones que aún no están migradas
+import { getProjectById, updateProject } from "@/lib/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -244,6 +247,9 @@ const projectProgressStages = [
 ];
 
 function Projects() {
+  // 🔄 MIGRACIÓN: Hook de transición para usar Clerk
+  const { getProjects } = useProjectsTransition();
+  
   // Asegurarse de que la página tenga scroll en móviles
   useEffect(() => {
     // Forzar el reflow para activar el scrolling
