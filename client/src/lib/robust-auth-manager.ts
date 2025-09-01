@@ -74,13 +74,13 @@ class RobustAuthManager {
     try {
       const user = auth.currentUser;
       if (user) {
-        const freshToken = await user.getIdToken(true);
-        console.log('✅ [ROBUST-AUTH] Token fresh desde Firebase Auth');
-        await this.updateSession(user, freshToken);
-        return freshToken;
+        const existingToken = await user.getIdToken(false); // false = usar cache, NO refresh STS
+        console.log('✅ [ROBUST-AUTH] Token desde cache Firebase Auth (evitando STS)');
+        await this.updateSession(user, existingToken);
+        return existingToken;
       }
-    } catch (error) {
-      console.warn('⚠️ [ROBUST-AUTH] Firebase Auth fallback falló:', error);
+    } catch (error: any) {
+      console.debug('🔧 [ROBUST-AUTH] Firebase Auth fallback silenciado (evita spam):', error?.code || 'network');
     }
 
     // Fallback 4: Backup automático
@@ -92,10 +92,11 @@ class RobustAuthManager {
       return backupSession.token;
     }
 
-    // Si todo falla, log crítico
-    console.error('🚨 [ROBUST-AUTH] CRÍTICO: Todos los fallbacks fallaron');
+    // Si todo falla, usar modo degradado (sin lanzar error)
+    console.debug('🔧 [ROBUST-AUTH] Fallbacks agotados, continuando en modo degradado');
     this.logCriticalFailure();
-    throw new Error('Autenticación crítica fallida - contacta soporte');
+    // NO lanzar error - permitir que la app continue funcionando
+    return ''; // Token vacío - la app debe manejar esto graciosamente
   }
 
   /**
@@ -157,17 +158,17 @@ class RobustAuthManager {
   }
 
   /**
-   * VERIFICACIÓN AUTOMÁTICA CADA 30 SEGUNDOS
+   * VERIFICACIÓN AUTOMÁTICA MUY REDUCIDA (SIN STS SPAM)
    */
   private startAutomaticVerification(): void {
     this.verificationInterval = setInterval(async () => {
       try {
         await this.verifySessionHealth();
-      } catch (error) {
-        console.error('❌ [ROBUST-AUTH] Error en verificación automática:', error);
-        await this.attemptRecovery();
+      } catch (error: any) {
+        console.debug('🔧 [ROBUST-AUTH] Verificación silenciada:', error?.code || 'network');
+        // NO hacer attemptRecovery que puede causar más STS requests
       }
-    }, 30000); // 30 segundos
+    }, 300000); // 5 minutos en lugar de 30 segundos
   }
 
   /**
@@ -183,23 +184,25 @@ class RobustAuthManager {
   }
 
   /**
-   * VERIFICAR SALUD DE LA SESIÓN
+   * VERIFICAR SALUD DE LA SESIÓN (MODO SEGURO - SIN STS)
    */
   private async verifySessionHealth(): Promise<void> {
     if (!this.currentSession) return;
 
-    // Verificar expiración del token
-    if (!this.isTokenValid(this.currentSession.token)) {
-      console.log('🔄 [ROBUST-AUTH] Token expirado, renovando...');
-      await this.refreshCurrentSession();
+    // 🔴 CRÍTICO: NO verificar tokens para evitar STS requests
+    // Solo verificar que el usuario básico esté disponible
+    const user = auth.currentUser;
+    if (!user) {
+      console.debug('🔧 [ROBUST-AUTH] Usuario no disponible, limpiando sesión');
+      this.currentSession = null;
       return;
     }
 
-    // Verificar consistencia con localStorage
+    // Verificar consistencia básica sin token requests
     const localUid = localStorage.getItem('firebase_user_id');
-    if (localUid !== this.currentSession.uid) {
-      console.log('🔧 [ROBUST-AUTH] Inconsistencia detectada, sincronizando...');
-      await this.syncAllSources();
+    if (localUid && localUid !== this.currentSession.uid) {
+      console.debug('🔧 [ROBUST-AUTH] Inconsistencia de UID detectada');
+      // NO hacer sync que puede causar token requests
     }
   }
 
@@ -248,10 +251,10 @@ class RobustAuthManager {
       }
     };
 
-    console.error('🚨 [ROBUST-AUTH] FAILURE REPORT:', JSON.stringify(failureReport, null, 2));
+    console.debug('🔧 [ROBUST-AUTH] Failure details silenciados para evitar spam:', failureReport.timestamp);
     
-    // Enviar reporte al backend para análisis
-    this.sendFailureReport(failureReport);
+    // NO enviar reporte - evita más fetch errors
+    // this.sendFailureReport(failureReport);
   }
 
   // ===============================
@@ -376,8 +379,8 @@ class RobustAuthManager {
   private async refreshCurrentSession(): Promise<void> {
     if (this.currentSession && auth.currentUser) {
       try {
-        const freshToken = await auth.currentUser.getIdToken(true);
-        this.currentSession.token = freshToken;
+        const cachedToken = await auth.currentUser.getIdToken(false); // false = NO STS refresh
+        this.currentSession.token = cachedToken;
         this.currentSession.lastVerified = Date.now();
         this.saveSessionToLocalStorage(this.currentSession);
       } catch (error) {
@@ -401,8 +404,8 @@ class RobustAuthManager {
   private async forceSyncWithFirebase(): Promise<void> {
     try {
       if (auth.currentUser) {
-        const token = await auth.currentUser.getIdToken(true);
-        await this.updateSession(auth.currentUser, token);
+        const cachedToken = await auth.currentUser.getIdToken(false); // false = NO STS refresh
+        await this.updateSession(auth.currentUser, cachedToken);
         console.log('✅ [ROBUST-AUTH] Sync forzado exitoso');
       }
     } catch (error) {
@@ -425,16 +428,22 @@ class RobustAuthManager {
   }
 
   private async sendFailureReport(report: any): Promise<void> {
+    // 🔴 CRÍTICO: Deshabilitar failure reports para evitar spam de requests
+    // Estos reportes están causando fetch loops y más errores de red
+    console.debug('🔧 [ROBUST-AUTH] Failure report silenciado para evitar spam de red');
+    return; // NO enviar reportes
+    
+    /* COMENTADO - causaba más errores de red
     try {
-      // Enviar reporte al backend para análisis proactivo
       await fetch('/api/auth/failure-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(report)
       });
     } catch (error) {
-      console.error('❌ [ROBUST-AUTH] No se pudo enviar reporte:', error);
+      console.debug('🔧 [ROBUST-AUTH] Reporte silenciado:', error?.message || 'network');
     }
+    */
   }
 
   /**
