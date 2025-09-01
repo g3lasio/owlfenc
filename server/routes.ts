@@ -5645,24 +5645,26 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
-  // Rutas para clientes - SECURED with Firebase Authentication
+  // ARQUITECTURA UNIFICADA: Clientes en PostgreSQL únicamente
   app.get("/api/clients", requireAuth, async (req: Request, res: Response) => {
     try {
       if (!req.firebaseUser?.uid) {
         return res.status(401).json({ message: "Usuario no autenticado" });
       }
       
-      // Get user ID from Firebase UID - need to map to internal user ID
-      const { storage } = await import('./storage');
+      console.log(`📋 [UNIFIED-CLIENTS] Getting clients for Firebase UID: ${req.firebaseUser.uid}`);
+      
+      // Direct PostgreSQL access - no Firebase duplication
       const user = await storage.getUserByFirebaseUid(req.firebaseUser.uid);
       if (!user) {
-        return res.status(404).json({ message: "Usuario no encontrado" });
+        return res.status(404).json({ message: "Usuario no encontrado en PostgreSQL" });
       }
       
       const clients = await storage.getClientsByUserId(user.id);
+      console.log(`✅ [UNIFIED-CLIENTS] Found ${clients.length} clients in PostgreSQL`);
       res.json(clients);
     } catch (error) {
-      console.error("Error fetching clients:", error);
+      console.error("❌ [UNIFIED-CLIENTS] Error:", error);
       res.status(500).json({ message: "Error al obtener los clientes" });
     }
   });
@@ -5673,11 +5675,12 @@ Output must be between 200-900 characters in English.`;
         return res.status(401).json({ message: "Usuario no autenticado" });
       }
       
-      // Get user ID from Firebase UID
-      const { storage } = await import('./storage');
+      console.log(`➕ [UNIFIED-CLIENTS] Creating client for Firebase UID: ${req.firebaseUser.uid}`);
+      
+      // Direct PostgreSQL access only
       const user = await storage.getUserByFirebaseUid(req.firebaseUser.uid);
       if (!user) {
-        return res.status(404).json({ message: "Usuario no encontrado" });
+        return res.status(404).json({ message: "Usuario no encontrado en PostgreSQL" });
       }
       
       const clientData = {
@@ -5689,9 +5692,10 @@ Output must be between 200-900 characters in English.`;
       };
 
       const newClient = await storage.createClient(clientData);
+      console.log(`✅ [UNIFIED-CLIENTS] Client created in PostgreSQL:`, newClient.clientId);
       res.status(201).json(newClient);
     } catch (error) {
-      console.error("Error creating client:", error);
+      console.error("❌ [UNIFIED-CLIENTS] Create error:", error);
       res.status(400).json({ message: "Error al crear el cliente" });
     }
   });

@@ -36,7 +36,7 @@ import {
 } from "@shared/schema";
 
 import { DatabaseStorage } from './DatabaseStorage';
-import { FirebaseStorage } from './FirebaseStorage';
+// ARQUITECTURA UNIFICADA: Solo PostgreSQL - eliminando FirebaseStorage duplicado
 
 // Interfaz principal para todas las operaciones de almacenamiento
 export interface IStorage {
@@ -1060,11 +1060,9 @@ export class StorageManager implements IStorage {
   }
 }
 
-// Usar PostgreSQL como almacenamiento principal
+// ARQUITECTURA UNIFICADA: Solo PostgreSQL
 const databaseStorage = new DatabaseStorage();
 
-// Firebase como respaldo (opcional)
-const firebaseStorage = new FirebaseStorage();
-
-// Usar PostgreSQL como principal con Firebase como respaldo
-export const storage = new StorageManager(databaseStorage, firebaseStorage);
+// ELIMINADO: FirebaseStorage duplicado para evitar conflictos
+// Usar solo PostgreSQL como almacenamiento único y confiable
+export const storage = databaseStorage;

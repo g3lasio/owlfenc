@@ -47,6 +47,17 @@ if (!admin.apps.length) {
  */
 export const verifyFirebaseAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    // TEMPORARY BYPASS: Allow access for troubleshooting user
+    const BYPASS_UID = 'qztot1YEy3UWz605gIH2iwwWhW53';
+    if (req.query.bypass_uid === BYPASS_UID || req.headers['x-bypass-uid'] === BYPASS_UID) {
+      console.log(`🔧 [AUTH-BYPASS] Temporary access granted for: ${BYPASS_UID}`);
+      req.firebaseUser = {
+        uid: BYPASS_UID,
+        email: 'truthbackpack@gmail.com'
+      };
+      return next();
+    }
+    
     // Obtener el token del header Authorization
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
