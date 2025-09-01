@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { useAuth } from './AuthContext';
+import { useAuth } from '@clerk/clerk-react';
 import { smartPermissionLoader } from '@/services/smartPermissionLoader';
 import { devModeManager, debugLog } from '@/utils/devModeUtils';
 
@@ -171,7 +171,8 @@ interface PermissionProviderProps {
 }
 
 export function PermissionProvider({ children }: PermissionProviderProps) {
-  const { currentUser } = useAuth();
+  const { user } = useAuth();
+  const currentUser = user;
   const [userPlan, setUserPlan] = useState<Plan | null>(null);
   const [userUsage, setUserUsage] = useState<UserUsage | null>(null);
   const [loading, setLoading] = useState(false); // ✅ FIXED: Start with false for better UX
@@ -271,6 +272,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         propertyVerifications: 0,
         permitAdvisor: 0,
         projects: 0,
+        deepsearch: 0,
         month: new Date().toISOString().slice(0, 7)
       });
       setLoading(false);
@@ -348,6 +350,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         propertyVerifications: 0,
         permitAdvisor: 0,
         projects: 0,
+        deepsearch: 0,
         month: new Date().toISOString().slice(0, 7)
       });
       setLoading(false);

@@ -3,7 +3,7 @@ import Header from "./Header";
 
 import Sidebar from "./Sidebar";
 import { Route, Switch, useLocation, Link } from "wouter";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@clerk/clerk-react";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -20,7 +20,8 @@ const Profile = () => {
 };
 
 export default function AppLayout({ children }: AppLayoutProps) {
-  const { currentUser } = useAuth();
+  const { user } = useAuth();
+  const currentUser = user;
   const [location] = useLocation();
   const [sidebarWidth, setSidebarWidth] = useState(64);
 

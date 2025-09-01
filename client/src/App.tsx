@@ -52,11 +52,13 @@ import AITestingPage from "@/pages/AITestingPage";
 import DeepSearchDemo from "@/pages/DeepSearchDemo";
 import PermissionsDemo from "@/pages/PermissionsDemo";
 import { AuthTest } from "@/pages/AuthTest";
-import { useUnifiedAuth } from "@/hooks/use-unified-auth";
+import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
 import ChatOnboarding from "@/components/onboarding/ChatOnboarding";
+import ClerkAuthPage from "@/components/auth/ClerkAuthPage";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import AuthDiagnostic from './pages/AuthDiagnostic';
 import { lazy } from 'react';
@@ -82,33 +84,11 @@ type ProtectedRouteProps = {
 };
 
 function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
-  const { user: currentUser, loading } = useUnifiedAuth();
+  const { isSignedIn, isLoaded } = useAuth();
   const { needsOnboarding, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
-  const [authStable, setAuthStable] = useState(false);
 
-  // Estabilizar el estado de auth para evitar redirecciones por cambios temporales
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout>;
-    
-    if (!loading && !onboardingLoading) {
-      if (currentUser) {
-        // Si hay usuario, marcar como estable inmediatamente
-        setAuthStable(true);
-      } else {
-        // Si no hay usuario, esperar un poco antes de redirigir (evitar redirecciones por estado temporal)
-        timeoutId = setTimeout(() => {
-          setAuthStable(true);
-        }, 1500); // Esperar 1.5 segundos antes de considerar la pérdida de auth como real
-      }
-    }
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [currentUser, loading, onboardingLoading]);
-
-  // Muestra un indicador de carga mientras se verifica la autenticación o onboarding
-  if (loading || onboardingLoading || !authStable) {
+  // Show loading while Clerk is loading
+  if (!isLoaded || onboardingLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -116,8 +96,8 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     );
   }
 
-  // Redirige a login solo después de que el estado sea estable y realmente no hay usuario
-  if (!currentUser) {
+  // Redirect to login if user is not signed in
+  if (!isSignedIn) {
     return <Redirect to="/login" />;
   }
 
@@ -135,8 +115,8 @@ function Router() {
   return (
     <Switch>
       {/* Rutas públicas */}
-      <Route path="/login" component={() => <AuthPage />} />
-      <Route path="/signup" component={() => <AuthPage />} /> {/* Mantiene la misma ruta pero usa AuthPage */}
+      <Route path="/login" component={() => <ClerkAuthPage />} />
+      <Route path="/signup" component={() => <ClerkAuthPage />} />
       <Route path="/recuperar-password" component={RecuperarPassword} />
       <Route path="/forgot-password" component={RecuperarPassword} />
       <Route path="/reset-password" component={ResetPassword} />
@@ -284,19 +264,29 @@ function Router() {
 }
 
 function App() {
+  const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  
+  if (!clerkPubKey) {
+    throw new Error("Missing Clerk Publishable Key");
+  }
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <PermissionProvider>
-          <SidebarProvider>
-            <AppLayout>
-              <Router />
-            </AppLayout>
-            <Toaster />
-          </SidebarProvider>
-        </PermissionProvider>
-      </LanguageProvider>
-    </QueryClientProvider>
+    <ClerkProvider publishableKey={clerkPubKey}>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <LanguageProvider>
+            <PermissionProvider>
+              <SidebarProvider>
+                <AppLayout>
+                  <Router />
+                </AppLayout>
+                <Toaster />
+              </SidebarProvider>
+            </PermissionProvider>
+          </LanguageProvider>
+        </QueryClientProvider>
+      </AuthProvider>
+    </ClerkProvider>
   );
 }
 
