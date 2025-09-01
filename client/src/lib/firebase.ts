@@ -116,47 +116,24 @@ console.log("🔧 [OAUTH-DEBUG] Dominios autorizados:", authorizedDomains);
 // Initialize Firebase with STABLE CONFIGURATION
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
-// ✅ FIREBASE AUTH RE-ENABLED for original interface compatibility
-export const auth = getAuth(app);
+// 🚫 FIREBASE AUTH DISABLED - Using Clerk as backend for original interfaces
+// export const auth = getAuth(app);
+export const auth = null as any; // Disabled - using Clerk backend
 export const storage = getStorage(app);
 
-// ✅ FIREBASE AUTH RESTORED - Original system reactivated  
-console.log('🔥 [FIREBASE-CONFIG] Firebase Auth restored - original authentication system active');
+// 🔄 CLERK BACKEND WITH ORIGINAL INTERFACES  
+console.log('🔄 [FIREBASE-CONFIG] Using Clerk backend with original login interfaces');
 
 
-// Email verification functions - RESTORED
+// Email verification functions - DISABLED (using Clerk)
 export const sendVerificationEmail = async () => {
-  try {
-    if (!auth.currentUser) {
-      throw new Error('No hay usuario autenticado');
-    }
-    
-    await auth.currentUser.sendEmailVerification();
-    console.log('✅ [FIREBASE-AUTH] Email de verificación enviado');
-    return { success: true, message: 'Email de verificación enviado' };
-  } catch (error: any) {
-    console.error('❌ [FIREBASE-AUTH] Error enviando verificación:', error);
-    return { success: false, message: error.message };
-  }
+  console.warn('🔄 [CLERK-ADAPTER] sendVerificationEmail disabled - use Clerk verification');
+  return { success: false, message: 'Function disabled - use Clerk for email verification' };
 };
 
 export const checkEmailVerification = async () => {
-  try {
-    if (!auth.currentUser) {
-      return { verified: false, message: 'No hay usuario autenticado' };
-    }
-    
-    // Refresh user to get latest verification status
-    await auth.currentUser.reload();
-    
-    return { 
-      verified: auth.currentUser.emailVerified, 
-      message: auth.currentUser.emailVerified ? 'Email verificado' : 'Email no verificado' 
-    };
-  } catch (error: any) {
-    console.error('❌ [FIREBASE-AUTH] Error verificando email:', error);
-    return { verified: false, message: error.message };
-  }
+  console.warn('🔄 [CLERK-ADAPTER] checkEmailVerification disabled - use Clerk verification');
+  return { verified: false, message: 'Function disabled - use Clerk for email verification' };
 };
 
 

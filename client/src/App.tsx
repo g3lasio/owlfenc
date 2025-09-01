@@ -52,6 +52,7 @@ import AITestingPage from "@/pages/AITestingPage";
 import DeepSearchDemo from "@/pages/DeepSearchDemo";
 import PermissionsDemo from "@/pages/PermissionsDemo";
 import { AuthTest } from "@/pages/AuthTest";
+import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
@@ -59,6 +60,8 @@ import ChatOnboarding from "@/components/onboarding/ChatOnboarding";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import AuthDiagnostic from './pages/AuthDiagnostic';
+import ClerkErrorBoundary from '@/components/ClerkErrorBoundary';
+import ClerkLoadingWrapper from '@/components/ClerkLoadingWrapper';
 import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
 import SimpleContractGenerator from './pages/SimpleContractGenerator';
@@ -266,21 +269,52 @@ function Router() {
 }
 
 function App() {
+  const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  
+  if (!clerkPubKey) {
+    console.error('❌ [CLERK] Missing Clerk Publishable Key');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-red-50 p-4">
+        <div className="text-center">
+          <h1 className="text-xl font-bold text-red-600 mb-2">Configuration Error</h1>
+          <p className="text-red-500">Missing Clerk configuration. Please check environment variables.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
-        <LanguageProvider>
-          <PermissionProvider>
-            <SidebarProvider>
-              <AppLayout>
-                <Router />
-              </AppLayout>
-              <Toaster />
-            </SidebarProvider>
-          </PermissionProvider>
-        </LanguageProvider>
-      </QueryClientProvider>
-    </AuthProvider>
+    <ClerkErrorBoundary>
+      <ClerkProvider 
+        publishableKey={clerkPubKey}
+        afterSignOutUrl="/"
+        signInUrl="/login"
+        signUpUrl="/signup"
+        appearance={{
+          baseTheme: undefined,
+          variables: {
+            colorPrimary: '#0ea5e9'
+          }
+        }}
+      >
+        <ClerkLoadingWrapper timeout={8000}>
+          <AuthProvider>
+            <QueryClientProvider client={queryClient}>
+              <LanguageProvider>
+                <PermissionProvider>
+                  <SidebarProvider>
+                    <AppLayout>
+                      <Router />
+                    </AppLayout>
+                    <Toaster />
+                  </SidebarProvider>
+                </PermissionProvider>
+              </LanguageProvider>
+            </QueryClientProvider>
+          </AuthProvider>
+        </ClerkLoadingWrapper>
+      </ClerkProvider>
+    </ClerkErrorBoundary>
   );
 }
 

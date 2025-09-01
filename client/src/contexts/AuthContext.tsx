@@ -1,20 +1,11 @@
 /**
- * 🔥 FIREBASE AUTH CONTEXT - RESTORED ORIGINAL
- * Sistema de autenticación original con Firebase Auth completamente funcional
+ * 🔄 CLERK ADAPTER WITH ORIGINAL INTERFACES
+ * Este AuthContext usa Clerk como backend pero mantiene la API original
+ * para que las interfaces de login/signup funcionen sin cambios
  */
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { 
-  User,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  sendPasswordResetEmail,
-  sendSignInLinkToEmail,
-  updateProfile,
-  onAuthStateChanged
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import React, { createContext, useContext, ReactNode, useState } from 'react';
+import { useAuth as useClerkAuth, useUser, useSignIn, useSignUp } from '@clerk/clerk-react';
 
 interface AuthUser {
   uid: string;
@@ -42,41 +33,33 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { isSignedIn, isLoaded } = useClerkAuth();
+  const { user } = useUser();
+  const { signIn, isLoaded: signInLoaded } = useSignIn();
+  const { signUp, isLoaded: signUpLoaded } = useSignUp();
   const [error, setError] = useState<string | null>(null);
+  
+  // Enhanced loading state that accounts for all Clerk hooks
+  const allLoaded = isLoaded && signInLoaded && signUpLoaded;
 
-  // Convert Firebase User to AuthUser
-  const convertFirebaseUser = (firebaseUser: User): AuthUser => ({
-    uid: firebaseUser.uid,
-    email: firebaseUser.email,
-    displayName: firebaseUser.displayName,
-    photoURL: firebaseUser.photoURL,
-    phoneNumber: firebaseUser.phoneNumber,
-    emailVerified: firebaseUser.emailVerified,
-    getIdToken: () => firebaseUser.getIdToken()
-  });
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+  // Convert Clerk user to Firebase-compatible format
+  const currentUser: AuthUser | null = user ? {
+    uid: user.id,
+    email: user.primaryEmailAddress?.emailAddress || null,
+    displayName: user.fullName || user.firstName || null,
+    photoURL: user.imageUrl || null,
+    phoneNumber: user.primaryPhoneNumber?.phoneNumber || null,
+    emailVerified: user.primaryEmailAddress?.verification?.status === 'verified',
+    getIdToken: async () => {
       try {
-        if (firebaseUser) {
-          console.log('✅ [FIREBASE-AUTH] Usuario autenticado:', firebaseUser.uid);
-          setCurrentUser(convertFirebaseUser(firebaseUser));
-        } else {
-          console.log('🔒 [FIREBASE-AUTH] Usuario no autenticado');
-          setCurrentUser(null);
-        }
+        // Use session token from Clerk
+        return user.id; // For now, use user ID as token
       } catch (error) {
-        console.error('❌ [FIREBASE-AUTH] Error en estado de auth:', error);
-        setCurrentUser(null);
-      } finally {
-        setLoading(false);
+        console.warn('Error getting token, using user ID as fallback');
+        return user.id;
       }
-    });
-
-    return unsubscribe;
-  }, []);
+    }
+  } : null;
 
   const clearError = () => {
     setError(null);
@@ -84,96 +67,150 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (email: string, password: string, rememberMe?: boolean): Promise<AuthUser> => {
     try {
-      setLoading(true);
       setError(null);
+      console.log('🔐 [CLERK-ADAPTER] Iniciando login para:', email);
       
-      console.log('🔐 [FIREBASE-AUTH] Iniciando login para:', email);
-      
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      const authUser = convertFirebaseUser(result.user);
-      
-      if (rememberMe) {
-        // Store user preference for remember me
-        localStorage.setItem('rememberMe', 'true');
-        localStorage.setItem('lastLoginEmail', email);
+      if (!signIn || !signInLoaded) {
+        throw new Error('Sistema de autenticación no disponible');
       }
-      
-      console.log('✅ [FIREBASE-AUTH] Login exitoso');
-      return authUser;
+
+      const result = await signIn.create({
+        identifier: email,
+        password: password
+      });
+
+      if (result.status === 'complete') {
+        console.log('✅ [CLERK-ADAPTER] Login exitoso');
+        
+        // Wait for user state to update
+        const checkUser = () => new Promise((resolve) => {
+          const interval = setInterval(() => {
+            if (user) {
+              clearInterval(interval);
+              resolve(user);
+            }
+          }, 100);
+          
+          setTimeout(() => {
+            clearInterval(interval);
+            resolve(user);
+          }, 3000);
+        });
+        
+        await checkUser();
+        
+        if (!user) {
+          throw new Error('Error obteniendo datos de usuario');
+        }
+
+        return {
+          uid: user.id,
+          email: user.primaryEmailAddress?.emailAddress || null,
+          displayName: user.fullName || user.firstName || null,
+          photoURL: user.imageUrl || null,
+          phoneNumber: user.primaryPhoneNumber?.phoneNumber || null,
+          emailVerified: user.primaryEmailAddress?.verification?.status === 'verified',
+          getIdToken: async () => user.id
+        };
+      }
+
+      // Handle other status cases
+      if (result.status !== 'complete') {
+        throw new Error('Proceso de autenticación incompleto');
+      }
+
+      throw new Error('Error en el proceso de autenticación');
     } catch (error: any) {
-      const errorMessage = getFirebaseErrorMessage(error.code);
+      const errorMessage = getClerkErrorMessage(error.code || error.message);
       setError(errorMessage);
-      console.error('❌ [FIREBASE-AUTH] Error en login:', error);
+      console.error('❌ [CLERK-ADAPTER] Error en login:', error);
       throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
     }
   };
 
   const register = async (email: string, password: string, displayName: string): Promise<AuthUser> => {
     try {
-      setLoading(true);
       setError(null);
+      console.log('📝 [CLERK-ADAPTER] Iniciando registro para:', email);
       
-      console.log('📝 [FIREBASE-AUTH] Iniciando registro para:', email);
-      
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Update profile with display name
-      await updateProfile(result.user, {
-        displayName: displayName
+      if (!signUp || !signUpLoaded) {
+        throw new Error('Sistema de registro no disponible');
+      }
+
+      const [firstName, ...lastNameParts] = displayName.trim().split(' ');
+      const lastName = lastNameParts.join(' ') || '';
+
+      await signUp.create({
+        emailAddress: email,
+        password: password,
+        firstName: firstName,
+        lastName: lastName
       });
-      
-      const authUser = convertFirebaseUser(result.user);
-      
-      console.log('✅ [FIREBASE-AUTH] Registro exitoso');
-      return authUser;
+
+      // Send verification email
+      await signUp.prepareEmailAddressVerification({
+        strategy: 'email_code'
+      });
+
+      console.log('✅ [CLERK-ADAPTER] Registro exitoso, verificación enviada');
+
+      // Return temporary user object
+      return {
+        uid: signUp.id || 'pending',
+        email: email,
+        displayName: displayName,
+        photoURL: null,
+        phoneNumber: null,
+        emailVerified: false,
+        getIdToken: async () => signUp.id || 'pending'
+      };
     } catch (error: any) {
-      const errorMessage = getFirebaseErrorMessage(error.code);
+      const errorMessage = getClerkErrorMessage(error.code || error.message);
       setError(errorMessage);
-      console.error('❌ [FIREBASE-AUTH] Error en registro:', error);
+      console.error('❌ [CLERK-ADAPTER] Error en registro:', error);
       throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
     }
   };
 
   const logout = async (): Promise<boolean> => {
     try {
-      setLoading(true);
-      console.log('🚪 [FIREBASE-AUTH] Cerrando sesión');
+      console.log('🚪 [CLERK-ADAPTER] Cerrando sesión');
       
-      await signOut(auth);
+      // Clerk handles logout via signOut
+      if ((window as any).Clerk) {
+        await (window as any).Clerk.signOut();
+      }
       
-      // Clear remember me data
-      localStorage.removeItem('rememberMe');
-      localStorage.removeItem('lastLoginEmail');
-      
-      console.log('✅ [FIREBASE-AUTH] Logout exitoso');
+      console.log('✅ [CLERK-ADAPTER] Logout exitoso');
       return true;
     } catch (error: any) {
-      const errorMessage = getFirebaseErrorMessage(error.code);
+      const errorMessage = getClerkErrorMessage(error.code || error.message);
       setError(errorMessage);
-      console.error('❌ [FIREBASE-AUTH] Error en logout:', error);
+      console.error('❌ [CLERK-ADAPTER] Error en logout:', error);
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
-  const sendPasswordResetEmailFunc = async (email: string): Promise<boolean> => {
+  const sendPasswordResetEmail = async (email: string): Promise<boolean> => {
     try {
       setError(null);
-      console.log('📧 [FIREBASE-AUTH] Enviando email de reset para:', email);
+      console.log('📧 [CLERK-ADAPTER] Enviando email de reset para:', email);
       
-      await sendPasswordResetEmail(auth, email);
+      if (!signIn || !signInLoaded) {
+        throw new Error('Sistema de reset no disponible');
+      }
+
+      await signIn.create({
+        identifier: email,
+        strategy: 'reset_password_email_code'
+      });
       
-      console.log('✅ [FIREBASE-AUTH] Email de reset enviado');
+      console.log('✅ [CLERK-ADAPTER] Email de reset enviado');
       return true;
     } catch (error: any) {
-      const errorMessage = getFirebaseErrorMessage(error.code);
+      const errorMessage = getClerkErrorMessage(error.code || error.message);
       setError(errorMessage);
-      console.error('❌ [FIREBASE-AUTH] Error enviando reset email:', error);
+      console.error('❌ [CLERK-ADAPTER] Error enviando reset email:', error);
       return false;
     }
   };
@@ -181,41 +218,40 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const sendEmailLoginLink = async (email: string): Promise<boolean> => {
     try {
       setError(null);
-      console.log('🔗 [FIREBASE-AUTH] Enviando link de login para:', email);
+      console.log('🔗 [CLERK-ADAPTER] Enviando link de login para:', email);
       
-      const actionCodeSettings = {
-        url: `${window.location.origin}/login/email-link-callback`,
-        handleCodeInApp: true,
-      };
+      if (!signIn || !signInLoaded) {
+        throw new Error('Sistema de magic link no disponible');
+      }
+
+      await signIn.create({
+        identifier: email,
+        strategy: 'email_link'
+      });
       
-      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-      
-      // Store email for verification
-      localStorage.setItem('emailForSignIn', email);
-      
-      console.log('✅ [FIREBASE-AUTH] Link de login enviado');
+      console.log('✅ [CLERK-ADAPTER] Link de login enviado');
       return true;
     } catch (error: any) {
-      const errorMessage = getFirebaseErrorMessage(error.code);
+      const errorMessage = getClerkErrorMessage(error.code || error.message);
       setError(errorMessage);
-      console.error('❌ [FIREBASE-AUTH] Error enviando login link:', error);
+      console.error('❌ [CLERK-ADAPTER] Error enviando login link:', error);
       return false;
     }
   };
 
   const registerBiometricCredential = async (): Promise<boolean> => {
-    console.warn('🔧 [FIREBASE-AUTH] Biometric auth not implemented yet');
+    console.warn('🔧 [CLERK-ADAPTER] Biometric auth not implemented yet with Clerk');
     return false;
   };
 
   const value: AuthContextType = {
-    currentUser,
-    loading,
+    currentUser: isSignedIn ? currentUser : null,
+    loading: !allLoaded,
     error,
     login,
     register,
     logout,
-    sendPasswordResetEmail: sendPasswordResetEmailFunc,
+    sendPasswordResetEmail,
     sendEmailLoginLink,
     registerBiometricCredential,
     clearError
@@ -232,30 +268,33 @@ export const useAuth = () => {
   return context;
 };
 
-// Helper function to get user-friendly error messages
-const getFirebaseErrorMessage = (errorCode: string): string => {
-  switch (errorCode) {
-    case 'auth/user-not-found':
-      return 'No existe una cuenta con este email';
-    case 'auth/wrong-password':
-      return 'Contraseña incorrecta';
-    case 'auth/email-already-in-use':
-      return 'Ya existe una cuenta con este email';
-    case 'auth/weak-password':
-      return 'La contraseña debe tener al menos 6 caracteres';
-    case 'auth/invalid-email':
-      return 'Email inválido';
-    case 'auth/too-many-requests':
-      return 'Demasiados intentos. Intenta más tarde';
-    case 'auth/network-request-failed':
-      return 'Error de conexión. Verifica tu internet';
-    case 'auth/user-disabled':
-      return 'Esta cuenta ha sido deshabilitada';
-    case 'auth/invalid-credential':
-      return 'Credenciales inválidas';
-    default:
-      return 'Error de autenticación. Intenta nuevamente';
+// Helper function to get user-friendly error messages from Clerk errors
+const getClerkErrorMessage = (errorCode: string): string => {
+  if (typeof errorCode !== 'string') errorCode = String(errorCode);
+  
+  if (errorCode.includes('identifier_exists') || errorCode.includes('email_address_exists')) {
+    return 'Ya existe una cuenta con este email';
   }
+  if (errorCode.includes('incorrect_password') || errorCode.includes('invalid_credentials')) {
+    return 'Email o contraseña incorrectos';
+  }
+  if (errorCode.includes('weak_password') || errorCode.includes('password_weak')) {
+    return 'La contraseña debe tener al menos 6 caracteres';
+  }
+  if (errorCode.includes('invalid_email_address')) {
+    return 'Email inválido';
+  }
+  if (errorCode.includes('too_many_requests')) {
+    return 'Demasiados intentos. Intenta más tarde';
+  }
+  if (errorCode.includes('network') || errorCode.includes('connection')) {
+    return 'Error de conexión. Verifica tu internet';
+  }
+  if (errorCode.includes('verification_required')) {
+    return 'Por favor verifica tu email antes de continuar';
+  }
+  
+  return 'Error de autenticación. Intenta nuevamente';
 };
 
 export default AuthContext;
