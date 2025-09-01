@@ -57,10 +57,12 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
 import ChatOnboarding from "@/components/onboarding/ChatOnboarding";
-import ClerkAuthPage from "@/components/auth/ClerkAuthPage";
+import EnhancedClerkAuthPage from "@/components/auth/EnhancedClerkAuthPage";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import AuthDiagnostic from './pages/AuthDiagnostic';
+import ClerkErrorBoundary from '@/components/ClerkErrorBoundary';
+import ClerkLoadingWrapper from '@/components/ClerkLoadingWrapper';
 import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
 import SimpleContractGenerator from './pages/SimpleContractGenerator';
@@ -115,8 +117,8 @@ function Router() {
   return (
     <Switch>
       {/* Rutas públicas */}
-      <Route path="/login" component={() => <ClerkAuthPage />} />
-      <Route path="/signup" component={() => <ClerkAuthPage />} />
+      <Route path="/login" component={() => <EnhancedClerkAuthPage initialMode="signin" />} />
+      <Route path="/signup" component={() => <EnhancedClerkAuthPage initialMode="signup" />} />
       <Route path="/recuperar-password" component={RecuperarPassword} />
       <Route path="/forgot-password" component={RecuperarPassword} />
       <Route path="/reset-password" component={ResetPassword} />
@@ -271,22 +273,37 @@ function App() {
   }
 
   return (
-    <ClerkProvider publishableKey={clerkPubKey}>
-      <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-          <LanguageProvider>
-            <PermissionProvider>
-              <SidebarProvider>
-                <AppLayout>
-                  <Router />
-                </AppLayout>
-                <Toaster />
-              </SidebarProvider>
-            </PermissionProvider>
-          </LanguageProvider>
-        </QueryClientProvider>
-      </AuthProvider>
-    </ClerkProvider>
+    <ClerkErrorBoundary>
+      <ClerkProvider 
+        publishableKey={clerkPubKey}
+        afterSignOutUrl="/"
+        signInUrl="/login"
+        signUpUrl="/signup"
+        appearance={{
+          baseTheme: undefined,
+          variables: {
+            colorPrimary: '#0ea5e9'
+          }
+        }}
+      >
+        <ClerkLoadingWrapper timeout={25000}>
+          <AuthProvider>
+            <QueryClientProvider client={queryClient}>
+              <LanguageProvider>
+                <PermissionProvider>
+                  <SidebarProvider>
+                    <AppLayout>
+                      <Router />
+                    </AppLayout>
+                    <Toaster />
+                  </SidebarProvider>
+                </PermissionProvider>
+              </LanguageProvider>
+            </QueryClientProvider>
+          </AuthProvider>
+        </ClerkLoadingWrapper>
+      </ClerkProvider>
+    </ClerkErrorBoundary>
   );
 }
 

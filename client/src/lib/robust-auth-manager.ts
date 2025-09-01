@@ -4,8 +4,9 @@
  * Diseñado para miles de usuarios comerciales
  */
 
-import { auth } from './firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+// 🚫 FIREBASE AUTH DISABLED - Using Clerk instead
+// import { auth } from './firebase';
+// import { onAuthStateChanged } from 'firebase/auth';
 
 interface UserSession {
   uid: string;
@@ -30,24 +31,14 @@ class RobustAuthManager {
   }
 
   /**
-   * INICIALIZACIÓN CON VERIFICACIÓN AUTOMÁTICA
+   * INICIALIZACIÓN DESHABILITADA - USANDO CLERK
    */
   public async initialize(): Promise<void> {
-    console.log('🛡️ [ROBUST-AUTH] Inicializando sistema robusto...');
-
-    // 1. Restaurar sesión del localStorage
-    await this.restoreSession();
-
-    // 2. Verificar estado de Firebase Auth
-    await this.syncWithFirebaseAuth();
-
-    // 3. Iniciar verificación automática cada 30 segundos
-    this.startAutomaticVerification();
-
-    // 4. Crear backup automático cada 5 minutos
-    this.startAutomaticBackup();
-
-    console.log('✅ [ROBUST-AUTH] Sistema robusto inicializado');
+    console.log('🚫 [ROBUST-AUTH] Sistema deshabilitado - usando Clerk');
+    
+    // 🚫 FIREBASE AUTH DISABLED - Using Clerk instead
+    // Sistema legacy deshabilitado para usar Clerk
+    return Promise.resolve();
   }
 
   /**
@@ -70,18 +61,13 @@ class RobustAuthManager {
       return localToken;
     }
 
-    // Fallback 3: Firebase Auth
-    try {
-      const user = auth.currentUser;
-      if (user) {
-        const existingToken = await user.getIdToken(false); // false = usar cache, NO refresh STS
-        console.log('✅ [ROBUST-AUTH] Token desde cache Firebase Auth (evitando STS)');
-        await this.updateSession(user, existingToken);
-        return existingToken;
-      }
-    } catch (error: any) {
-      console.debug('🔧 [ROBUST-AUTH] Firebase Auth fallback silenciado (evita spam):', error?.code || 'network');
-    }
+    // 🚫 Fallback 3: Firebase Auth DISABLED - Using Clerk instead
+    // try {
+    //   const user = auth.currentUser;
+    //   ...
+    // } catch (error: any) {
+    //   console.debug('🔧 [ROBUST-AUTH] Firebase Auth fallback silenciado');
+    // }
 
     // Fallback 4: Backup automático
     const backupSession = this.getValidBackupSession();
@@ -118,13 +104,13 @@ class RobustAuthManager {
       return { uid, email };
     }
 
-    // Prioridad 3: Firebase Auth
-    if (auth.currentUser) {
-      return {
-        uid: auth.currentUser.uid,
-        email: auth.currentUser.email || ''
-      };
-    }
+    // 🚫 Prioridad 3: Firebase Auth DISABLED - Using Clerk instead
+    // if (auth.currentUser) {
+    //   return {
+    //     uid: auth.currentUser.uid,
+    //     email: auth.currentUser.email || ''
+    //   };
+    // }
 
     console.warn('⚠️ [ROBUST-AUTH] No se encontró usuario en ningún lugar');
     return null;
@@ -342,21 +328,9 @@ class RobustAuthManager {
   }
 
   private async syncWithFirebaseAuth(): Promise<void> {
-    return new Promise((resolve) => {
-      const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        unsubscribe();
-        if (user) {
-          try {
-            const token = await user.getIdToken();
-            await this.updateSession(user, token);
-            console.log('✅ [ROBUST-AUTH] Sincronizado con Firebase Auth');
-          } catch (error) {
-            console.warn('⚠️ [ROBUST-AUTH] Error en sync Firebase:', error);
-          }
-        }
-        resolve();
-      });
-    });
+    // 🚫 FIREBASE AUTH DISABLED - Using Clerk instead
+    console.log('🚫 [ROBUST-AUTH] syncWithFirebaseAuth deshabilitado');
+    return Promise.resolve();
   }
 
   private async rebuildSessionFromLocalStorage(): Promise<void> {
@@ -377,40 +351,21 @@ class RobustAuthManager {
   }
 
   private async refreshCurrentSession(): Promise<void> {
-    if (this.currentSession && auth.currentUser) {
-      try {
-        const cachedToken = await auth.currentUser.getIdToken(false); // false = NO STS refresh
-        this.currentSession.token = cachedToken;
-        this.currentSession.lastVerified = Date.now();
-        this.saveSessionToLocalStorage(this.currentSession);
-      } catch (error) {
-        console.error('❌ [ROBUST-AUTH] Error renovando sesión:', error);
-      }
-    }
+    // 🚫 FIREBASE AUTH DISABLED - Using Clerk instead
+    console.log('🚫 [ROBUST-AUTH] refreshCurrentSession deshabilitado');
+    return Promise.resolve();
   }
 
   private async syncAllSources(): Promise<void> {
-    // Sincronizar memoria, localStorage y Firebase Auth
-    if (auth.currentUser) {
-      try {
-        const token = await auth.currentUser.getIdToken();
-        await this.updateSession(auth.currentUser, token);
-      } catch (error) {
-        console.error('❌ [ROBUST-AUTH] Error en sync completo:', error);
-      }
-    }
+    // 🚫 FIREBASE AUTH DISABLED - Using Clerk instead
+    console.log('🚫 [ROBUST-AUTH] syncAllSources deshabilitado');
+    return Promise.resolve();
   }
 
   private async forceSyncWithFirebase(): Promise<void> {
-    try {
-      if (auth.currentUser) {
-        const cachedToken = await auth.currentUser.getIdToken(false); // false = NO STS refresh
-        await this.updateSession(auth.currentUser, cachedToken);
-        console.log('✅ [ROBUST-AUTH] Sync forzado exitoso');
-      }
-    } catch (error) {
-      console.error('❌ [ROBUST-AUTH] Sync forzado falló:', error);
-    }
+    // 🚫 FIREBASE AUTH DISABLED - Using Clerk instead
+    console.log('🚫 [ROBUST-AUTH] forceSyncWithFirebase deshabilitado');
+    return Promise.resolve();
   }
 
   private cleanCorruptedState(): void {

@@ -38,24 +38,10 @@ class RobustAuthService {
   }
 
   private initializeAuthListener() {
-    onAuthStateChanged(auth, async (firebaseUser: User | null) => {
-      if (firebaseUser) {
-        console.log('🔐 [ROBUST-AUTH] Firebase user signed in, getting complete data...');
-        try {
-          const userData = await this.getUserData(firebaseUser.uid, firebaseUser.email!);
-          this.currentUser = userData;
-          this.notifyListeners(userData);
-        } catch (error) {
-          console.error('❌ [ROBUST-AUTH] Error getting user data:', error);
-          this.currentUser = null;
-          this.notifyListeners(null);
-        }
-      } else {
-        console.log('🔓 [ROBUST-AUTH] User signed out');
-        this.currentUser = null;
-        this.notifyListeners(null);
-      }
-    });
+    // 🚫 FIREBASE AUTH DISABLED - Using Clerk instead
+    console.log('🚫 [ROBUST-AUTH] Auth listener disabled - using Clerk');
+    this.currentUser = null;
+    this.notifyListeners(null);
   }
 
   private async getUserData(firebaseUid: string, email: string): Promise<RobustUserData> {

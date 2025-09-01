@@ -58,23 +58,8 @@ export class EnhancedFirebaseAuth {
 
   // 📊 Security monitoring - OPTIMIZADO para evitar fetch errors
   private setupSecurityMonitoring() {
-    onAuthStateChanged(this.auth, (user) => {
-      if (user) {
-        this.logSecurityEvent('USER_SIGNED_IN', { uid: user.uid, method: 'state_change' });
-        
-        // CRÍTICO: Solo validar tokens si está explícitamente habilitado
-        if (!SECURITY_CONFIG.disableTokenValidation) {
-          // Token validation completamente deshabilitada para evitar STS requests
-          setTimeout(() => {
-            this.validateTokenSecurity(user).catch((error) => {
-              console.debug('🔧 [AUTH-SECURITY] Token validation silenced:', error?.code || 'network');
-            });
-          }, 10000); // Delay de 10 segundos para evitar requests inmediatos
-        }
-      } else {
-        this.logSecurityEvent('USER_SIGNED_OUT', {});
-      }
-    });
+    // 🚫 FIREBASE AUTH DISABLED - Using Clerk instead
+    console.log('🚫 [AUTH-SECURITY] Security monitoring disabled - using Clerk');
   }
 
   private logSecurityEvent(event: string, data: any) {
