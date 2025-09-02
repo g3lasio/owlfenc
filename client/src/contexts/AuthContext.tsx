@@ -21,6 +21,7 @@ interface AuthContextType {
   currentUser: AuthUser | null;
   loading: boolean;
   error: string | null;
+  emergencyMode: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<AuthUser>;
   register: (email: string, password: string, displayName: string) => Promise<AuthUser>;
   logout: () => Promise<boolean>;
@@ -274,6 +275,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     currentUser: isSignedIn ? currentUser : null,
     loading,
     error,
+    emergencyMode,
     login,
     register,
     logout,

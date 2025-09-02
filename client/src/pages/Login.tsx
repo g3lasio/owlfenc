@@ -36,6 +36,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 
 import OTPAuth from "@/components/auth/OTPAuth";
+import OTPAuthSignup from "@/components/auth/OTPAuthSignup";
 import SessionUnlockPrompt from "@/components/auth/SessionUnlockPrompt";
 import BiometricSetupButton from "@/components/auth/BiometricSetupButton";
 import { sessionUnlockService } from "@/lib/session-unlock-service";
@@ -66,6 +67,7 @@ export default function AuthPage() {
     clearError,
     currentUser,
     loading: authLoading,
+    emergencyMode,
   } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -683,6 +685,53 @@ export default function AuthPage() {
                     onBack={() => setLoginMethod("email")}
                   />
                 )
+              ) : emergencyMode ? (
+                // 🚨 MODO DE EMERGENCIA: Registro vía OTP independiente cuando Clerk falla
+                <OTPAuthSignup 
+                  onSuccess={async (userId) => {
+                    console.log('✅ [EMERGENCY-SIGNUP] OTP Registration successful:', userId);
+                    
+                    try {
+                      // Crear datos de usuario para emergencia
+                      const userData = {
+                        uid: userId,
+                        email: userId,
+                        displayName: 'New User',
+                        photoURL: null,
+                        phoneNumber: null,
+                        emailVerified: true,
+                        getIdToken: () => Promise.resolve('emergency-signup-' + Date.now())
+                      };
+                      
+                      // Persistir en localStorage
+                      localStorage.setItem('emergency-auth', JSON.stringify({
+                        user: userData,
+                        timestamp: Date.now(),
+                        method: 'emergency-signup'
+                      }));
+                      
+                      showSuccessEffect();
+                      
+                      toast({
+                        title: "¡Cuenta creada exitosamente!",
+                        description: "Bienvenido a Owl Fenc AI Platform",
+                      });
+                      
+                      setTimeout(() => {
+                        window.location.href = '/';
+                      }, 1500);
+                      
+                    } catch (error: any) {
+                      console.error('❌ [EMERGENCY-SIGNUP] Error:', error);
+                      toast({
+                        title: "Error en registro",
+                        description: "Hubo un problema. Intenta de nuevo.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  onBack={() => setAuthMode("login")}
+                />
               ) : (
                 <div className="space-y-4">
                   {/* Nombre */}

@@ -8,6 +8,8 @@ import { db } from '../db';
 import { otpCodes, type InsertOtpCode } from '@shared/schema';
 import { eq, and, gt, lt } from 'drizzle-orm';
 import { getAuth } from 'firebase-admin/auth';
+import { UserMappingService } from './UserMappingService';
+import { DatabaseStorage } from '../DatabaseStorage';
 
 if (!process.env.RESEND_API_KEY) {
   throw new Error("RESEND_API_KEY environment variable must be set");
@@ -25,28 +27,33 @@ export class OTPService {
   }
 
   /**
-   * Send OTP code via email using Resend - ONLY to registered users
+   * Send OTP code via email using Resend - Para usuarios existentes y nuevos registros
    */
-  async sendOTP(email: string): Promise<{ success: boolean; message: string }> {
+  async sendOTP(email: string, isNewUser: boolean = false): Promise<{ success: boolean; message: string }> {
     try {
-      console.log(`🔐 [OTP-SERVICE] Checking if user exists: ${email}`);
+      console.log(`🔐 [OTP-SERVICE] Processing OTP request for: ${email} (New user: ${isNewUser})`);
 
-      // 🚨 SECURITY: Verify user exists in Firebase before sending OTP
-      try {
-        await getAuth().getUserByEmail(email);
-        console.log(`✅ [OTP-SERVICE] User verified in Firebase: ${email}`);
-      } catch (firebaseError: any) {
-        if (firebaseError.code === 'auth/user-not-found') {
-          console.log(`❌ [OTP-SERVICE] User not found in Firebase: ${email}`);
-          return {
-            success: false,
-            message: 'Este correo no está registrado. Por favor, regístrate primero o usa tu contraseña.'
-          };
+      // Para usuarios nuevos, permitir el OTP sin verificar Firebase
+      if (!isNewUser) {
+        // 🚨 SECURITY: Para login, verificar que el usuario existe en Firebase
+        try {
+          await getAuth().getUserByEmail(email);
+          console.log(`✅ [OTP-SERVICE] Existing user verified in Firebase: ${email}`);
+        } catch (firebaseError: any) {
+          if (firebaseError.code === 'auth/user-not-found') {
+            console.log(`❌ [OTP-SERVICE] User not found in Firebase: ${email}`);
+            return {
+              success: false,
+              message: 'Este correo no está registrado. Por favor, regístrate primero o usa tu contraseña.'
+            };
+          }
+          throw firebaseError; // Re-throw other Firebase errors
         }
-        throw firebaseError; // Re-throw other Firebase errors
+      } else {
+        console.log(`🆕 [OTP-SERVICE] Processing OTP for new user registration: ${email}`);
       }
 
-      console.log(`🔐 [OTP-SERVICE] Generating OTP for registered user: ${email}`);
+      console.log(`🔐 [OTP-SERVICE] Generating OTP for: ${email}`);
 
       if (!db) {
         throw new Error('Database connection not available');
@@ -90,9 +97,13 @@ export class OTPService {
 
       console.log(`✅ [OTP-SERVICE] OTP sent successfully to: ${email}`);
 
+      const message = isNewUser 
+        ? 'Código de registro enviado. Úsalo para completar tu cuenta.'
+        : 'Código enviado correctamente a tu correo electrónico';
+
       return {
         success: true,
-        message: 'Código enviado correctamente a tu correo electrónico'
+        message: message
       };
 
     } catch (error) {
@@ -105,9 +116,9 @@ export class OTPService {
   }
 
   /**
-   * Verify OTP code
+   * Verify OTP code - Updated to support new user creation
    */
-  async verifyOTP(email: string, code: string): Promise<{ success: boolean; message: string; userId?: string }> {
+  async verifyOTP(email: string, code: string, createNewUser: boolean = false): Promise<{ success: boolean; message: string; userId?: string; newUser?: boolean }> {
     try {
       console.log(`🔐 [OTP-SERVICE] Verifying OTP for: ${email}`);
 
@@ -175,10 +186,58 @@ export class OTPService {
 
       console.log(`✅ [OTP-SERVICE] OTP verified successfully for: ${email}`);
 
+      // If this is for a new user, create them in Firebase and PostgreSQL
+      if (createNewUser) {
+        try {
+          console.log(`🆕 [OTP-SERVICE] Creating new user in Firebase: ${email}`);
+          
+          // Create user in Firebase Auth
+          const userRecord = await getAuth().createUser({
+            email: email,
+            emailVerified: true, // Since they verified via OTP
+            displayName: email.split('@')[0] // Use email prefix as display name
+          });
+
+          console.log(`✅ [OTP-SERVICE] User created in Firebase with UID: ${userRecord.uid}`);
+
+          // Create user in PostgreSQL using UserMappingService
+          const storage = new DatabaseStorage();
+          const userMappingService = UserMappingService.getInstance(storage);
+          const postgresUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(userRecord.uid, email);
+
+          console.log(`✅ [OTP-SERVICE] User created in PostgreSQL with ID: ${postgresUserId}`);
+
+          return {
+            success: true,
+            message: 'Cuenta creada exitosamente. ¡Bienvenido!',
+            userId: userRecord.uid,
+            newUser: true
+          };
+
+        } catch (userCreationError: any) {
+          console.error('❌ [OTP-SERVICE] Error creating new user:', userCreationError);
+          
+          // If user already exists in Firebase, that's actually okay
+          if (userCreationError.code === 'auth/email-already-exists') {
+            console.log(`⚠️ [OTP-SERVICE] User already exists in Firebase: ${email}`);
+            return {
+              success: true,
+              message: 'Verificación exitosa. Sesión iniciada.',
+              userId: email
+            };
+          }
+          
+          return {
+            success: false,
+            message: 'Error al crear la cuenta. Intenta de nuevo.'
+          };
+        }
+      }
+
       return {
         success: true,
         message: 'Código verificado correctamente',
-        userId: email // In a real system, you'd return the actual user ID
+        userId: email // For existing users, return email as identifier
       };
 
     } catch (error) {
