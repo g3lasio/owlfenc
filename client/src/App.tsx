@@ -58,6 +58,7 @@ import { SidebarProvider } from "@/contexts/SidebarContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
 import ChatOnboarding from "@/components/onboarding/ChatOnboarding";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ProfileCompletionGuard from "@/components/auth/ProfileCompletionGuard";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import AuthDiagnostic from './pages/AuthDiagnostic';
 import ClerkErrorBoundary from '@/components/ClerkErrorBoundary';
@@ -336,12 +337,14 @@ function App() {
           <QueryClientProvider client={queryClient}>
             <LanguageProvider>
               <PermissionProvider>
+                <ProfileCompletionGuard>
                   <SidebarProvider>
                     <AppLayout>
                       <Router />
                     </AppLayout>
                     <Toaster />
                   </SidebarProvider>
+                </ProfileCompletionGuard>
               </PermissionProvider>
             </LanguageProvider>
           </QueryClientProvider>

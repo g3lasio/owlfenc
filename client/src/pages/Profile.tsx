@@ -58,7 +58,11 @@ import { UserProfile } from "@/hooks/use-profile";
 type CompanyInfoType = UserProfile;
 
 export default function Profile() {
+  // Detectar si viene de registro incompleto
+  const urlParams = new URLSearchParams(window.location.search);
+  const isCompletingProfile = urlParams.get('complete') === 'true';
   const { toast } = useToast();
+  const [location, setLocation] = useState(window.location.pathname);
   const { currentUser } = useAuth();
   const { userPlan, loading: permissionsLoading } = usePermissions();
   const {

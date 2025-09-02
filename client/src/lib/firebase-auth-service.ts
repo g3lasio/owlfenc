@@ -50,7 +50,8 @@ export class FirebaseAuthService {
         subscription: {
           plan: 'free',
           status: 'active'
-        }
+        },
+        profileComplete: true // Email/password sí tiene nombre
       });
       
       console.log('✅ [FIREBASE-AUTH] User registered successfully');
@@ -138,7 +139,13 @@ export class FirebaseAuthService {
           email: result.user.email,
           emailVerified: true,
           createdAt: new Date(),
-          authProvider: 'magic-link'
+          authProvider: 'magic-link',
+          subscription: {
+            plan: 'free',
+            status: 'active'
+          },
+          // Marcamos que necesita completar perfil
+          profileComplete: false
         });
       }
       
