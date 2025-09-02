@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import {
   Card,
@@ -30,6 +30,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/use-profile";
+import { db } from '@/lib/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import {
   Bell,
   Shield,
@@ -41,11 +44,13 @@ import {
   CreditCard,
   Mail,
   Edit3,
+  Loader2,
 } from "lucide-react";
 
 export default function Settings() {
   const { toast } = useToast();
   const { logout, currentUser } = useAuth();
+  const { profile, updateProfile } = useProfile();
   
   // Simplified state management
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -54,6 +59,19 @@ export default function Settings() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  
+  // Company info from profile
+  const [companyName, setCompanyName] = useState(profile?.company || '');
+  const [phoneNumber, setPhoneNumber] = useState(profile?.phone || profile?.mobilePhone || '');
+  const [isUpdatingInfo, setIsUpdatingInfo] = useState(false);
+  
+  // Update local state when profile loads
+  useEffect(() => {
+    if (profile) {
+      setCompanyName(profile.company || '');
+      setPhoneNumber(profile.phone || profile.mobilePhone || '');
+    }
+  }, [profile]);
   
   // Email change functionality
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
@@ -313,6 +331,73 @@ export default function Settings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Company and Phone Information */}
+                <div className="space-y-4 mb-6">
+                  <h3 className="text-lg font-semibold">Business Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="company">Company Name</Label>
+                      <Input
+                        id="company"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        placeholder="Your company name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input
+                        id="phone"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        placeholder="(555) 123-4567"
+                      />
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={async () => {
+                      setIsUpdatingInfo(true);
+                      try {
+                        if (currentUser) {
+                          const userRef = doc(db, 'users', currentUser.uid);
+                          await updateDoc(userRef, {
+                            company: companyName,
+                            phone: phoneNumber,
+                            mobilePhone: phoneNumber,
+                            profileComplete: true
+                          });
+                          
+                          // updateProfile se maneja automáticamente por useProfile hook
+                          
+                          toast({
+                            title: "Information Updated",
+                            description: "Your business information has been saved."
+                          });
+                        }
+                      } catch (error) {
+                        console.error('Error updating info:', error);
+                        toast({
+                          title: "Error",
+                          description: "Failed to update information.",
+                          variant: "destructive"
+                        });
+                      } finally {
+                        setIsUpdatingInfo(false);
+                      }
+                    }}
+                    disabled={isUpdatingInfo}
+                    className="w-full md:w-auto"
+                  >
+                    {isUpdatingInfo ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+                    ) : (
+                      "Save Business Information"
+                    )}
+                  </Button>
+                </div>
+
+                <Separator />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="language">Language</Label>

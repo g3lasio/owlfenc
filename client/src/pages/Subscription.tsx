@@ -5,6 +5,7 @@ import { PricingCard } from "@/components/ui/pricing-card";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/use-profile";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +27,10 @@ export default function Subscription() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { currentUser } = useAuth();
+  const { profile } = useProfile();
   const userEmail = currentUser?.email || "";
+  const companyName = profile?.company || "";
+  const phoneNumber = profile?.phone || profile?.mobilePhone || "";
 
   // Check for successful payment and refresh subscription status
   useEffect(() => {
