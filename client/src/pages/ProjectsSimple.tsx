@@ -68,7 +68,7 @@ function ProjectsSimple() {
 
       // Cargar estimados
       const estimatesRef = collection(db, "estimates");
-      const estimatesQuery = query(estimatesRef, where("userId", "==", user.uid));
+      const estimatesQuery = query(estimatesRef, where("userId", "==", currentUser.uid));
       const estimatesSnapshot = await getDocs(estimatesQuery);
 
       estimatesSnapshot.forEach((doc) => {
@@ -87,7 +87,7 @@ function ProjectsSimple() {
 
       // Cargar proyectos
       const projectsRef = collection(db, "projects");
-      const projectsQuery = query(projectsRef, where("userId", "==", user.uid));
+      const projectsQuery = query(projectsRef, where("userId", "==", currentUser.uid));
       const projectsSnapshot = await getDocs(projectsQuery);
 
       projectsSnapshot.forEach((doc) => {

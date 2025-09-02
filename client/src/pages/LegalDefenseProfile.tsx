@@ -98,7 +98,7 @@ export default function LegalDefenseProfile() {
 
   // 🛡️ Verificación de acceso - Solo usuarios autenticados con planes apropiados
   const checkLegalDefenseAccess = () => {
-    if (!user) {
+    if (!currentUser) {
       toast({
         title: "🔐 Acceso Restringido",
         description: "Debes iniciar sesión para acceder al perfil de defensa legal",
@@ -237,7 +237,7 @@ export default function LegalDefenseProfile() {
   };
 
   // 🛡️ Renderizado condicional basado en autenticación
-  if (!user) {
+  if (!currentUser) {
     return (
       <div className="flex-1 p-6 flex items-center justify-center">
         <Card className="max-w-md">
@@ -291,7 +291,7 @@ export default function LegalDefenseProfile() {
         <Button 
           onClick={saveLegalProfile} 
           size="lg"
-          disabled={isLoading || !user}
+          disabled={isLoading || !currentUser}
         >
           {isLoading ? (
             <>

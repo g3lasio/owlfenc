@@ -71,7 +71,7 @@ export default function OptimizedLegalDefenseWorkflow() {
 
   // 🛡️ Verificación de acceso - Solo usuarios autenticados
   const checkWorkflowAccess = () => {
-    if (!user) {
+    if (!currentUser) {
       toast({
         title: "🔐 Acceso Restringido",
         description: "Debes iniciar sesión para usar el workflow de defensa legal",
@@ -445,7 +445,7 @@ export default function OptimizedLegalDefenseWorkflow() {
   };
 
   // 🛡️ Renderizado condicional basado en autenticación
-  if (!user) {
+  if (!currentUser) {
     return (
       <div className="flex-1 p-6 flex items-center justify-center">
         <Card className="max-w-md">
