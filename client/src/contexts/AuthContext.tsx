@@ -66,10 +66,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (email: string, password: string, rememberMe?: boolean): Promise<AuthUser> => {
     try {
       setError(null);
-      console.log('🔐 [CLERK-ADAPTER] Iniciando login para:', email);
+      console.log('🔐 [AUTH] Iniciando login para:', email);
       
-      if (!signIn) {
-        throw new Error('Sistema de autenticación no disponible');
+      // USAR FIREBASE AUTH SI CLERK NO ESTÁ DISPONIBLE
+      if (!signIn || !isLoaded) {
+        console.log('🔥 [AUTH] Usando Firebase Auth para login');
+        const { FirebaseAuthService } = await import('@/lib/firebase-auth-service');
+        
+        const result = await FirebaseAuthService.loginWithPassword(email, password);
+        
+        if (result.success && result.user) {
+          console.log('✅ [AUTH] Login exitoso con Firebase');
+          return {
+            uid: result.user.uid,
+            email: result.user.email,
+            displayName: result.user.displayName,
+            photoURL: result.user.photoURL,
+            phoneNumber: result.user.phoneNumber,
+            emailVerified: result.user.emailVerified,
+            getIdToken: async () => result.user.getIdToken()
+          };
+        } else {
+          throw new Error(result.error || 'Error en login');
+        }
       }
 
       const result = await signIn.create({
@@ -132,10 +151,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const register = async (email: string, password: string, displayName: string): Promise<AuthUser> => {
     try {
       setError(null);
-      console.log('📝 [CLERK-ADAPTER] Iniciando registro para:', email);
+      console.log('📝 [AUTH] Iniciando registro para:', email);
       
-      if (!signUp) {
-        throw new Error('Sistema de registro no disponible');
+      // USAR FIREBASE AUTH DIRECTAMENTE SI CLERK NO ESTÁ DISPONIBLE
+      if (!signUp || !isLoaded) {
+        console.log('🔥 [AUTH] Usando Firebase Auth directamente');
+        const { FirebaseAuthService } = await import('@/lib/firebase-auth-service');
+        
+        const result = await FirebaseAuthService.registerWithPassword(email, password, displayName);
+        
+        if (result.success && result.user) {
+          console.log('✅ [AUTH] Registro exitoso con Firebase');
+          // Convertir usuario de Firebase a formato AuthUser
+          return {
+            uid: result.user.uid,
+            email: result.user.email,
+            displayName: result.user.displayName,
+            photoURL: result.user.photoURL,
+            phoneNumber: result.user.phoneNumber,
+            emailVerified: result.user.emailVerified,
+            getIdToken: async () => result.user.getIdToken()
+          };
+        } else {
+          throw new Error(result.error || 'Error en registro');
+        }
       }
 
       const [firstName, ...lastNameParts] = displayName.trim().split(' ');
@@ -168,7 +207,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error: any) {
       const errorMessage = getClerkErrorMessage(error.code || error.message);
       setError(errorMessage);
-      console.error('❌ [CLERK-ADAPTER] Error en registro:', error);
+      console.error('❌ [AUTH] Error en registro:', error);
       throw new Error(errorMessage);
     }
   };
