@@ -91,6 +91,8 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   const { needsOnboarding, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
   const [emergencyBypass, setEmergencyBypass] = useState(false);
   const [loadingStartTime] = useState(Date.now());
+  const [firebaseUser, setFirebaseUser] = useState<any>(null);
+  const [checkingAuth, setCheckingAuth] = useState(false);
 
   // 🚨 EMERGENCY: Fallback para Clerk que no inicializa
   useEffect(() => {
@@ -104,9 +106,56 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     return () => clearTimeout(emergencyTimer);
   }, [isLoaded, emergencyBypass]);
 
-  // 🚨 EMERGENCY BYPASS: Si Clerk falla, permitir acceso
+  // Check Firebase auth when emergency bypass is activated
+  useEffect(() => {
+    if (emergencyBypass && !checkingAuth) {
+      console.log('🔄 [EMERGENCY] Using Firebase Auth fallback');
+      setCheckingAuth(true);
+      
+      const checkFirebaseAuth = async () => {
+        try {
+          const { auth } = await import('@/lib/firebase');
+          const { onAuthStateChanged } = await import('firebase/auth');
+          
+          return new Promise((resolve) => {
+            const unsubscribe = onAuthStateChanged(auth, (user) => {
+              unsubscribe();
+              resolve(user);
+            });
+          });
+        } catch (error) {
+          console.error('❌ [EMERGENCY] Firebase Auth check failed:', error);
+          return null;
+        }
+      };
+      
+      checkFirebaseAuth().then((user) => {
+        setFirebaseUser(user);
+        setCheckingAuth(false);
+      });
+    }
+  }, [emergencyBypass, checkingAuth]);
+
+  // 🚨 EMERGENCY BYPASS: Si Clerk falla, usar Firebase Auth
   if (emergencyBypass) {
-    console.log('🔄 [EMERGENCY] Using fallback system - bypassing Clerk');
+    if (checkingAuth) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center max-w-md">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500 mx-auto mb-4"></div>
+            <p className="text-orange-600 font-semibold">Sistema de Emergencia Activo</p>
+            <p className="text-sm text-gray-500">Verificando autenticación...</p>
+          </div>
+        </div>
+      );
+    }
+    
+    // If no Firebase user, redirect to login
+    if (!firebaseUser) {
+      return <Redirect to="/login" />;
+    }
+    
+    // User is authenticated via Firebase
     return <Component />;
   }
 
@@ -136,6 +185,7 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
 
   // Redirect to login if user is not signed in
   if (!isSignedIn) {
+    console.log('🔒 [AUTH] Usuario no autenticado, redirigiendo a login');
     return <Redirect to="/login" />;
   }
 

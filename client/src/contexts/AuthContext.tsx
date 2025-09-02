@@ -214,14 +214,46 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = async (): Promise<boolean> => {
     try {
-      console.log('🚪 [CLERK-ADAPTER] Cerrando sesión');
+      console.log('🚪 [AUTH] Cerrando sesión');
       
-      // Clerk handles logout via signOut
-      if ((window as any).Clerk) {
-        await (window as any).Clerk.signOut();
+      // Try Clerk logout first
+      if ((window as any).Clerk && (window as any).Clerk.signOut) {
+        try {
+          console.log('🔐 [AUTH] Intentando logout con Clerk');
+          await (window as any).Clerk.signOut();
+          console.log('✅ [AUTH] Logout exitoso con Clerk');
+        } catch (clerkError) {
+          console.warn('⚠️ [AUTH] Clerk logout falló, usando Firebase fallback:', clerkError);
+        }
       }
       
-      console.log('✅ [CLERK-ADAPTER] Logout exitoso');
+      // Firebase Auth fallback
+      try {
+        const { auth } = await import('@/lib/firebase');
+        const { signOut } = await import('firebase/auth');
+        
+        if (auth.currentUser) {
+          console.log('🔥 [AUTH] Cerrando sesión en Firebase');
+          await signOut(auth);
+          console.log('✅ [AUTH] Logout exitoso con Firebase');
+        }
+      } catch (firebaseError) {
+        console.warn('⚠️ [AUTH] Firebase logout error:', firebaseError);
+      }
+      
+      // Clear local storage and session storage
+      console.log('🧹 [AUTH] Limpiando almacenamiento local');
+      localStorage.removeItem('clerk-auth-token');
+      localStorage.removeItem('firebase-auth-token');
+      localStorage.removeItem('profile-completion-required');
+      sessionStorage.clear();
+      
+      // Clear any emergency bypass flags
+      if (typeof window !== 'undefined') {
+        (window as any).__emergencyBypass = false;
+      }
+      
+      console.log('✅ [AUTH] Logout completado exitosamente');
       return true;
     } catch (error: any) {
       const errorMessage = getClerkErrorMessage(error.code || error.message);

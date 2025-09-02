@@ -127,19 +127,37 @@ export default function Settings() {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      await logout();
-      toast({
-        title: "Logged Out",
-        description: "You have been successfully logged out",
-      });
-      // Redirigir a login después del logout exitoso
-      window.location.href = '/login';
+      console.log('🚪 [SETTINGS] Iniciando proceso de logout');
+      const success = await logout();
+      
+      if (success) {
+        toast({
+          title: "Sesión Cerrada",
+          description: "Has cerrado sesión exitosamente",
+        });
+        
+        // Forzar recarga completa para limpiar estado
+        console.log('🔄 [SETTINGS] Redirigiendo y recargando...');
+        setTimeout(() => {
+          window.location.replace('/login');
+        }, 500);
+      } else {
+        throw new Error('Logout returned false');
+      }
     } catch (error) {
+      console.error('❌ [SETTINGS] Error en logout:', error);
       toast({
         title: "Error",
-        description: "Failed to log out. Please try again.",
+        description: "No se pudo cerrar sesión. Intenta de nuevo.",
         variant: "destructive",
       });
+      
+      // Intento de emergencia: limpiar y redirigir de todos modos
+      localStorage.clear();
+      sessionStorage.clear();
+      setTimeout(() => {
+        window.location.replace('/login');
+      }, 1000);
     } finally {
       setIsLoggingOut(false);
     }
