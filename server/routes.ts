@@ -109,6 +109,10 @@ import userProfileRoutes from "./routes/user-profile-routes"; // Import user pro
 import openaiChatRoutes from "./routes/openai-chat-routes"; // Import OpenAI chat routes
 import contractorPaymentRoutes from "./routes/contractor-payment-routes"; // Import contractor payment routes
 import estimatesRoutes from "./routes/estimates"; // Import new estimates routes
+import estimatesFirebaseRoutes from "./routes/estimates-firebase"; // Import Firebase estimates routes
+import contractsFirebaseRoutes from "./routes/contracts-firebase"; // Import Firebase contracts routes
+import searchFirebaseRoutes from "./routes/search-firebase"; // Import Firebase search routes
+import settingsFirebaseRoutes from "./routes/settings-firebase"; // Import Firebase settings routes
 import anthropicSummarizeRoutes from "./routes/anthropic-summarize"; // Import intelligent description summarizer
 import { invoicePdfService } from "./invoice-pdf-service";
 import { sendInvoiceEmail } from "./services/invoiceEmailService";
@@ -1643,16 +1647,18 @@ Output must be between 200-900 characters in English.`;
   const invoiceRoutes = await import("./routes/invoice-routes");
   app.use("/api/invoices", invoiceRoutes.default);
 
-  // Registrar la nueva API REST de estimados renovada
-  app.use("/api/estimates", estimatesRoutes);
+  // MIGRATION: Using Firebase-only routes instead of PostgreSQL
+  // app.use("/api/estimates", estimatesRoutes); // OLD PostgreSQL routes - DISABLED
+  app.use("/api/estimates", estimatesFirebaseRoutes); // NEW Firebase-only routes
 
   // PDF generation now handled exclusively by premiumPdfService in contract routes
 
   // Registrar rutas del procesador de contratos PDF
   app.use("/api/pdf-contract-processor", pdfContractProcessorRoutes);
 
-  // Registrar rutas de contratos
-  app.use("/api/contracts", contractRoutes);
+  // MIGRATION: Using Firebase-only routes instead of PostgreSQL
+  // app.use("/api/contracts", contractRoutes); // OLD PostgreSQL routes - DISABLED
+  app.use("/api/contracts", contractsFirebaseRoutes); // NEW Firebase-only routes
 
   // Registrar rutas de clientes
   app.use("/api/clients", clientRoutes);
@@ -1704,6 +1710,10 @@ Output must be between 200-900 characters in English.`;
 
   // Registrar rutas de perfil de usuario y onboarding
   app.use("/api/user", userProfileRoutes);
+  
+  // NEW Firebase routes for search and settings
+  app.use("/api/search", searchFirebaseRoutes); // Firebase search routes
+  app.use("/api/settings", settingsFirebaseRoutes); // Firebase settings routes
 
   // Registrar rutas de OpenAI chat para onboarding inteligente
   app.use("/api/openai", openaiChatRoutes);

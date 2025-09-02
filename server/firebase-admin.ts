@@ -32,8 +32,9 @@ if (getApps().length === 0) {
   adminApp = getApps()[0];
 }
 
-// Exportar instancia de Auth para uso en otros módulos
+// Exportar instancias para uso en otros módulos
 export const adminAuth = getAuth(adminApp);
+export const db = getFirestore(adminApp);
 
 // Obtener proyectos desde Firestore usando Admin SDK
 export async function getProjectsFromFirestore() {
