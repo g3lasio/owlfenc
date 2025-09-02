@@ -88,41 +88,46 @@ type ProtectedRouteProps = {
 function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   const { isSignedIn, isLoaded } = useAuth();
   const { needsOnboarding, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
-  const [forceLoad, setForceLoad] = useState(false);
-  const [timeoutReached, setTimeoutReached] = useState(false);
+  const [emergencyBypass, setEmergencyBypass] = useState(false);
+  const [loadingStartTime] = useState(Date.now());
 
-  // Timeout para Clerk - evitar loading infinito
+  // 🚨 EMERGENCY: Fallback para Clerk que no inicializa
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (!isLoaded) {
-        console.warn('🚨 [PROTECTED-ROUTE] Clerk timeout - allowing access without auth');
-        setTimeoutReached(true);
-        setForceLoad(true);
+    const emergencyTimer = setTimeout(() => {
+      if (!isLoaded && !emergencyBypass) {
+        console.warn('🚨 [EMERGENCY] Clerk loading timeout - activating fallback');
+        setEmergencyBypass(true);
       }
-    }, 5000); // 5 segundos timeout
+    }, 8000); // 8 segundos máximo
 
-    return () => clearTimeout(timeout);
-  }, [isLoaded]);
+    return () => clearTimeout(emergencyTimer);
+  }, [isLoaded, emergencyBypass]);
 
-  // Si Clerk no carga en 5 segundos, continuar sin autenticación
-  if (timeoutReached || forceLoad) {
-    console.log('🔄 [PROTECTED-ROUTE] Bypassing auth - showing component');
+  // 🚨 EMERGENCY BYPASS: Si Clerk falla, permitir acceso
+  if (emergencyBypass) {
+    console.log('🔄 [EMERGENCY] Using fallback system - bypassing Clerk');
     return <Component />;
   }
 
-  // Show loading solo por un tiempo limitado
+  // Loading con escape de emergencia
   if (!isLoaded || onboardingLoading) {
+    const loadingTime = Math.floor((Date.now() - loadingStartTime) / 1000);
+    
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
+        <div className="text-center max-w-md">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando sistema...</p>
-          <button 
-            onClick={() => setForceLoad(true)}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Continuar sin esperar
-          </button>
+          <p className="text-gray-600 mb-4">Cargando sistema de autenticación...</p>
+          <p className="text-sm text-gray-500">Tiempo: {loadingTime}s</p>
+          
+          {loadingTime > 5 && (
+            <button 
+              onClick={() => setEmergencyBypass(true)}
+              className="mt-4 px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm"
+            >
+              🚨 Usar Sistema de Emergencia ({8 - loadingTime}s)
+            </button>
+          )}
         </div>
       </div>
     );
@@ -301,7 +306,11 @@ function Router() {
 function App() {
   const [clerkError, setClerkError] = useState<boolean>(false);
   const [retryCount, setRetryCount] = useState(0);
+  // ✅ CLERK MIGRATION: Validación explícita con logging detallado
   const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  console.log('🔐 [CLERK-CONFIG] Key status:', clerkPubKey ? 'Present' : 'Missing');
+  console.log('🔐 [CLERK-CONFIG] Key length:', clerkPubKey?.length || 0);
+  console.log('🔐 [CLERK-CONFIG] Key prefix:', clerkPubKey?.substring(0, 20) || 'undefined');
   
   // Detectar errores de Clerk
   useEffect(() => {

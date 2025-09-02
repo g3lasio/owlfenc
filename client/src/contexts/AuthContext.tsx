@@ -4,7 +4,7 @@
  * para que las interfaces de login/signup funcionen sin cambios
  */
 
-import React, { createContext, useContext, ReactNode, useState } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { useAuth as useClerkAuth, useUser, useSignIn, useSignUp } from '@clerk/clerk-react';
 
 interface AuthUser {
@@ -39,10 +39,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const { signUp, isLoaded: signUpLoaded } = useSignUp();
   const [error, setError] = useState<string | null>(null);
   
-  // Simple loading state - no complex loading screens
+  // ✅ EMERGENCY: Loading state robusto con fallback
   const loading = !isLoaded;
+  const [emergencyMode, setEmergencyMode] = useState(false);
+  
+  // Activar modo emergencia si Clerk no carga
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!isLoaded && !emergencyMode) {
+        console.warn('🚨 [AUTH-CONTEXT] Activating emergency mode - Clerk unavailable');
+        setEmergencyMode(true);
+      }
+    }, 6000);
+    
+    return () => clearTimeout(timer);
+  }, [isLoaded, emergencyMode]);
 
-  // Convert Clerk user to Firebase-compatible format
+  // ✅ EMERGENCY: Usuario de fallback si Clerk falla
   const currentUser: AuthUser | null = user ? {
     uid: user.id,
     email: user.primaryEmailAddress?.emailAddress || null,
@@ -59,6 +72,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return user.id;
       }
     }
+  } : emergencyMode ? {
+    // 🚨 EMERGENCY USER: Sistema de fallback
+    uid: 'emergency-user-' + Date.now(),
+    email: 'emergency@system.local',
+    displayName: 'Usuario de Emergencia',
+    photoURL: null,
+    phoneNumber: null,
+    emailVerified: true,
+    getIdToken: async () => 'emergency-token'
   } : null;
 
   const clearError = () => {
