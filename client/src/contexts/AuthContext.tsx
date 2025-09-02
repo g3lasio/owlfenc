@@ -43,14 +43,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const loading = !isLoaded;
   const [emergencyMode, setEmergencyMode] = useState(false);
   
-  // Activar modo emergencia si Clerk no carga
+  // Activar modo emergencia si Clerk no carga - SIN RECARGA AUTOMÁTICA
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!isLoaded && !emergencyMode) {
-        console.warn('🚨 [AUTH-CONTEXT] Activating emergency mode - Clerk unavailable');
+        console.warn('🚨 [AUTH-CONTEXT] Clerk loading failed - Activating emergency mode');
+        console.log('🔧 [AUTH-CONTEXT] Emergency mode provides fallback authentication');
         setEmergencyMode(true);
       }
-    }, 6000);
+    }, 10000); // Más tiempo para permitir carga completa
     
     return () => clearTimeout(timer);
   }, [isLoaded, emergencyMode]);

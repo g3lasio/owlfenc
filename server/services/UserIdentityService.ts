@@ -18,9 +18,7 @@ interface UserIdentity {
 
 class UserIdentityService {
   private readonly ADMIN_EMAILS = [
-    'shkwahab60@gmail.com',
-    'marcos@ruiz.com',
-    'truthbackpack@gmail.com'
+    'admin@owldev.local'
   ];
 
   /**

@@ -53,7 +53,7 @@ export const verifyFirebaseAuth = async (req: Request, res: Response, next: Next
       console.log(`🔧 [AUTH-BYPASS] Temporary access granted for: ${BYPASS_UID}`);
       req.firebaseUser = {
         uid: BYPASS_UID,
-        email: 'truthbackpack@gmail.com'
+        email: 'admin@owldev.local'
       };
       return next();
     }
