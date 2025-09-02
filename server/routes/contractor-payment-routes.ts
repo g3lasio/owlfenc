@@ -8,6 +8,7 @@ const router = Router();
 
 // Use Firebase Authentication instead of JWT
 import { verifyFirebaseAuth } from "../middleware/firebase-auth";
+import { requireSubscriptionLevel, PermissionLevel } from "../middleware/subscription-auth";
 
 // DEPRECATED: Using Firebase Auth instead of JWT
 export const authenticateJWT = verifyFirebaseAuth;
@@ -52,6 +53,7 @@ const quickPaymentSchema = z.object({
 router.post(
   "/projects/:projectId/payment-structure",
   isAuthenticated,
+  requireSubscriptionLevel(PermissionLevel.BASIC),
   async (req: Request, res: Response) => {
     try {
       if (!req.firebaseUser) {
@@ -92,7 +94,7 @@ router.post(
 /**
  * Create individual payment and payment link
  */
-router.post("/create", isAuthenticated, async (req: Request, res: Response) => {
+router.post("/create", isAuthenticated, requireSubscriptionLevel(PermissionLevel.BASIC), async (req: Request, res: Response) => {
   try {
     if (!req.firebaseUser) {
       return res.status(401).json({ error: "User not authenticated" });
@@ -132,6 +134,7 @@ router.post("/create", isAuthenticated, async (req: Request, res: Response) => {
 router.post(
   "/payments",
   isAuthenticated,
+  requireSubscriptionLevel(PermissionLevel.BASIC),
   async (req: Request, res: Response) => {
     try {
       if (!req.firebaseUser) {
@@ -173,6 +176,7 @@ router.post(
 router.post(
   "/send-invoice",
   isAuthenticated,
+  requireSubscriptionLevel(PermissionLevel.BASIC),
   async (req: Request, res: Response) => {
     try {
       if (!req.firebaseUser) {
@@ -517,7 +521,7 @@ router.post("/webhooks/stripe", async (req: Request, res: Response) => {
 /**
  * Get all payments for the authenticated user
  */
-router.get("/payments", isAuthenticated, async (req: Request, res: Response) => {
+router.get("/payments", isAuthenticated, requireSubscriptionLevel(PermissionLevel.BASIC), async (req: Request, res: Response) => {
   try {
     if (!req.firebaseUser) {
       return res.status(401).json({ error: "User not authenticated" });
@@ -543,7 +547,7 @@ router.get("/payments", isAuthenticated, async (req: Request, res: Response) => 
 /**
  * Get payment dashboard summary
  */
-router.get("/dashboard/summary", isAuthenticated, async (req: Request, res: Response) => {
+router.get("/dashboard/summary", isAuthenticated, requireSubscriptionLevel(PermissionLevel.BASIC), async (req: Request, res: Response) => {
   try {
     if (!req.firebaseUser) {
       return res.status(401).json({ error: "User not authenticated" });

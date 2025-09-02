@@ -6,9 +6,102 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { BrainIcon } from "lucide-react";
+import { BrainIcon, Lock, Sparkles, CreditCard } from "lucide-react";
+import { usePermissions } from "@/contexts/PermissionContext";
+import { useLocation } from "wouter";
 
 export default function AIProjectManager() {
+  const { hasAccess, userPlan, showUpgradeModal } = usePermissions();
+  const [, navigate] = useLocation();
+  const hasAIProjectManagerAccess = hasAccess('projects') && userPlan?.id !== 1;
+  
+  // Si el usuario no tiene acceso, mostrar mensaje de upgrade
+  if (!hasAIProjectManagerAccess) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="max-w-4xl mx-auto">
+          <Card className="border-red-900/50 bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+            <CardHeader className="text-center pb-8">
+              <div className="mx-auto mb-4 relative">
+                <div className="w-20 h-20 rounded-full bg-red-900/20 flex items-center justify-center">
+                  <Lock className="w-10 h-10 text-red-400" />
+                </div>
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+              </div>
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
+                AI Project Manager
+              </CardTitle>
+              <CardDescription className="text-lg text-gray-400 mt-2">
+                Función Premium - Requiere Plan Pagado
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="bg-gradient-to-r from-red-900/10 to-orange-900/10 border border-red-900/30 rounded-lg p-6">
+                <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                  <BrainIcon className="w-6 h-6 text-cyan-400" />
+                  ¿Qué incluye AI Project Manager?
+                </h3>
+                <ul className="space-y-3 text-gray-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Gestión inteligente de proyectos con IA que organiza y prioriza automáticamente</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Recordatorios automáticos para tareas, deadlines y pagos pendientes</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Seguimiento de estimados enviados y contratos aprobados</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Alertas inteligentes para prevenir retrasos o errores</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Optimización de agenda y coordinación de equipo con IA</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="text-center space-y-4">
+                <p className="text-gray-400">
+                  Tu plan actual: <span className="font-semibold text-white">{userPlan?.name || 'Primo Chambeador'}</span>
+                </p>
+                <p className="text-sm text-gray-500">
+                  Actualiza a <span className="text-cyan-400 font-semibold">Mero Patrón</span> o <span className="text-purple-400 font-semibold">Master Contractor</span> para acceder a esta función
+                </p>
+              </div>
+              
+              <div className="flex gap-4 justify-center pt-4">
+                <Button
+                  onClick={() => navigate('/subscription')}
+                  className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white font-semibold px-6 py-3"
+                  size="lg"
+                >
+                  <CreditCard className="w-5 h-5 mr-2" />
+                  Ver Planes y Precios
+                </Button>
+                <Button
+                  onClick={() => showUpgradeModal('projects', 'Gestiona todos tus proyectos con inteligencia artificial avanzada')}
+                  variant="outline"
+                  className="border-gray-700 hover:bg-gray-800"
+                  size="lg"
+                >
+                  Más Información
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+  
+  // Si tiene acceso, mostrar la página normal
   return (
     <div className="container mx-auto mb-40 p-6">
       <div className="flex items-center gap-3 mb-6">

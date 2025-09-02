@@ -10,13 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { usePermissions } from "@/hooks/usePermissions";
-import { UpgradePrompt } from "@/components/permissions/UpgradePrompt";
-import { Lock } from "lucide-react";
+import { usePermissions } from "@/contexts/PermissionContext";
+import { useLocation } from "wouter";
+import { Lock, Sparkles, CreditCard, DollarSign, PiggyBank, ChartBar } from "lucide-react";
 
 export default function OwlFunding() {
   const { toast } = useToast();
-  const { userPlan } = usePermissions();
+  const { hasAccess, userPlan, showUpgradeModal } = usePermissions();
+  const [, navigate] = useLocation();
   
   const [contactFormData, setContactFormData] = useState({
     name: "",
@@ -24,12 +25,115 @@ export default function OwlFunding() {
     message: "",
   });
 
-  // Verificar si es plan básico (Primo Chambeador)
-  const isPrimoChambeador = userPlan?.id === 1; // Plan ID 1 = Primo Chambeador
-  const isFreeTrial = userPlan?.id === 4; // Plan ID 4 = Trial
+  // Verificar si tiene acceso a Owl Funding (solo planes pagados)
+  const hasOwlFundingAccess = userPlan?.id !== 1; // Todos excepto Primo Chambeador
   
-  // Los usuarios pagados (no primo chambeador) o en prueba gratis tienen acceso completo
-  const hasFullAccess = !isPrimoChambeador;
+  // Si el usuario no tiene acceso, mostrar mensaje de upgrade
+  if (!hasOwlFundingAccess) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="max-w-4xl mx-auto">
+          <Card className="border-red-900/50 bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+            <CardHeader className="text-center pb-8">
+              <div className="mx-auto mb-4 relative">
+                <div className="w-20 h-20 rounded-full bg-red-900/20 flex items-center justify-center">
+                  <Lock className="w-10 h-10 text-red-400" />
+                </div>
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+              </div>
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
+                Owl Funding
+              </CardTitle>
+              <CardDescription className="text-lg text-gray-400 mt-2">
+                Financiamiento Premium - Requiere Plan Pagado
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="bg-gradient-to-r from-red-900/10 to-orange-900/10 border border-red-900/30 rounded-lg p-6">
+                <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                  <DollarSign className="w-6 h-6 text-green-400" />
+                  ¿Qué incluye Owl Funding?
+                </h3>
+                <ul className="space-y-3 text-gray-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Financiamiento empresarial exclusivo para contratistas con tasas preferenciales</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Préstamos para equipos y maquinaria con aprobación rápida</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Financiamiento por proyecto con términos flexibles</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Líneas de crédito rotativas para capital de trabajo</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Asesoría financiera personalizada y planificación fiscal</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                  <PiggyBank className="w-8 h-8 mx-auto mb-2 text-cyan-400" />
+                  <p className="text-sm text-gray-400">Hasta</p>
+                  <p className="text-2xl font-bold text-white">$500K</p>
+                  <p className="text-xs text-gray-500">En financiamiento</p>
+                </div>
+                <div className="text-center p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                  <ChartBar className="w-8 h-8 mx-auto mb-2 text-purple-400" />
+                  <p className="text-sm text-gray-400">Desde</p>
+                  <p className="text-2xl font-bold text-white">4.9%</p>
+                  <p className="text-xs text-gray-500">Tasa de interés</p>
+                </div>
+                <div className="text-center p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                  <Sparkles className="w-8 h-8 mx-auto mb-2 text-yellow-400" />
+                  <p className="text-sm text-gray-400">Hasta</p>
+                  <p className="text-2xl font-bold text-white">24h</p>
+                  <p className="text-xs text-gray-500">Aprobación</p>
+                </div>
+              </div>
+              
+              <div className="text-center space-y-4">
+                <p className="text-gray-400">
+                  Tu plan actual: <span className="font-semibold text-white">{userPlan?.name || 'Primo Chambeador'}</span>
+                </p>
+                <p className="text-sm text-gray-500">
+                  Actualiza a <span className="text-cyan-400 font-semibold">Mero Patrón</span> o <span className="text-purple-400 font-semibold">Master Contractor</span> para acceder a financiamiento exclusivo
+                </p>
+              </div>
+              
+              <div className="flex gap-4 justify-center pt-4">
+                <Button
+                  onClick={() => navigate('/subscription')}
+                  className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white font-semibold px-6 py-3"
+                  size="lg"
+                >
+                  <CreditCard className="w-5 h-5 mr-2" />
+                  Ver Planes y Precios
+                </Button>
+                <Button
+                  onClick={() => showUpgradeModal('owlFunding', 'Accede a financiamiento exclusivo para hacer crecer tu negocio')}
+                  variant="outline"
+                  className="border-gray-700 hover:bg-gray-800"
+                  size="lg"
+                >
+                  Más Información
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -219,159 +323,101 @@ export default function OwlFunding() {
 
               <Button
                 className="flex items-center gap-2"
-                disabled={isPrimoChambeador}
                 onClick={() => {
-                  if (isPrimoChambeador) {
-                    toast({
-                      title: "Acceso Restringido",
-                      description: "Actualiza tu plan para acceder al proceso de solicitud de financiamiento.",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
                   window.open("https://apply.0wlfunding.com/", "_blank");
                 }}
               >
                 <i className="ri-check-double-line"></i>
                 Apply Now
-                {isPrimoChambeador && <Lock className="h-4 w-4 ml-1" />}
               </Button>
             </div>
           </CardContent>
         </Card>
 
-{/* Formulario de contacto - Solo para usuarios con acceso completo */}
-        {hasFullAccess ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Contacta con Nuestro Equipo</CardTitle>
-              <CardDescription>
-                ¿Tienes preguntas específicas? Nuestro equipo está aquí para
-                ayudarte
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleContactSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="name" className="text-sm font-medium">
-                    Nombre
-                  </label>
-                  <Input
-                    id="name"
-                    name="name"
-                    placeholder="Tu nombre"
-                    value={contactFormData.name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">
-                    Email
-                  </label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="tu@email.com"
-                    value={contactFormData.email}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="message" className="text-sm font-medium">
-                    Mensaje
-                  </label>
-                  <Textarea
-                    id="message"
-                    name="message"
-                    placeholder="Describe tu necesidad de financiamiento..."
-                    rows={4}
-                    value={contactFormData.message}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? "Enviando..." : "Enviar Consulta"}
-                </Button>
-              </form>
-
-              <div className="mt-6 pt-6 border-t border-border">
-                <h3 className="font-medium mb-2">
-                  También puedes contactarnos directamente:
-                </h3>
-                <div className="space-y-2">
-                  <p className="text-sm flex items-center gap-2">
-                    <i className="ri-mail-line text-primary"></i>
-                    <a
-                      href="mailto:info@0wlfunding.com"
-                      className="hover:underline"
-                    >
-                      info@0wlfunding.com
-                    </a>
-                  </p>
-                  <p className="text-sm flex items-center gap-2">
-                    <i className="ri-phone-line text-primary"></i>
-                    <a href="tel:+12025493519" className="hover:underline">
-                      (202) 549-3519
-                    </a>
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          // Card de acceso restringido para Primo Chambeador
-          <Card className="border-orange-200 bg-orange-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-orange-800">
-                <Lock className="h-5 w-5" />
-                Información de Contacto Restringida
-              </CardTitle>
-              <CardDescription className="text-orange-700">
-                Actualiza tu plan para acceder a la información de contacto directo
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-6">
-                <p className="text-sm text-orange-700 mb-4">
-                  Para mayor seguridad, la información de contacto está disponible solo para usuarios de planes superiores.
-                </p>
-                <UpgradePrompt 
-                  feature="owlFundingContact"
-                  size="small"
+        <Card>
+          <CardHeader>
+            <CardTitle>Contacta con Nuestro Equipo</CardTitle>
+            <CardDescription>
+              ¿Tienes preguntas específicas? Nuestro equipo está aquí para
+              ayudarte
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleContactSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-sm font-medium">
+                  Nombre
+                </label>
+                <Input
+                  id="name"
+                  name="name"
+                  placeholder="Tu nombre"
+                  value={contactFormData.name}
+                  onChange={handleInputChange}
+                  required
                 />
               </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
 
-      {/* Mensaje de acceso restringido para Primo Chambeador */}
-      {isPrimoChambeador && (
-        <div className="max-w-4xl w-full mt-6">
-          <Card className="border-orange-200 bg-orange-50">
-            <CardContent className="text-center py-6">
-              <Lock className="h-8 w-8 mx-auto mb-3 text-orange-600" />
-              <h3 className="font-semibold text-orange-800 mb-2">
-                Funcionalidad de Solicitud Restringida
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium">
+                  Email
+                </label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  value={contactFormData.email}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="message" className="text-sm font-medium">
+                  Mensaje
+                </label>
+                <Textarea
+                  id="message"
+                  name="message"
+                  placeholder="Describe tu necesidad de financiamiento..."
+                  rows={4}
+                  value={contactFormData.message}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? "Enviando..." : "Enviar Consulta"}
+              </Button>
+            </form>
+
+            <div className="mt-6 pt-6 border-t border-border">
+              <h3 className="font-medium mb-2">
+                También puedes contactarnos directamente:
               </h3>
-              <p className="text-sm text-orange-700 mb-4">
-                Actualiza tu plan para acceder al proceso completo de solicitud de financiamiento y información de contacto directo.
-              </p>
-              <UpgradePrompt 
-                feature="owlFundingAccess"
-                size="small"
-              />
-            </CardContent>
-          </Card>
-        </div>
-      )}
+              <div className="space-y-2">
+                <p className="text-sm flex items-center gap-2">
+                  <i className="ri-mail-line text-primary"></i>
+                  <a
+                    href="mailto:info@0wlfunding.com"
+                    className="hover:underline"
+                  >
+                    info@0wlfunding.com
+                  </a>
+                </p>
+                <p className="text-sm flex items-center gap-2">
+                  <i className="ri-phone-line text-primary"></i>
+                  <a href="tel:+12025493519" className="hover:underline">
+                    (202) 549-3519
+                  </a>
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
