@@ -38,9 +38,51 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const { signIn, isLoaded: signInLoaded } = useSignIn();
   const { signUp, isLoaded: signUpLoaded } = useSignUp();
   const [error, setError] = useState<string | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<any>(null);
+  const [firebaseLoading, setFirebaseLoading] = useState(true);
   
-  const loading = !isLoaded;
+  // 🔥 CRITICAL: Initialize Firebase Auth state
+  useEffect(() => {
+    const initializeFirebaseAuth = async () => {
+      try {
+        if (!isLoaded) {
+          console.log('🔥 [AUTH-CONTEXT] Initializing Firebase Auth fallback...');
+          const { auth } = await import('@/lib/firebase');
+          const { onAuthStateChanged } = await import('firebase/auth');
+          
+          const unsubscribe = onAuthStateChanged(auth, (firebaseUserState) => {
+            console.log('🔥 [AUTH-CONTEXT] Firebase auth state:', firebaseUserState ? 'Authenticated' : 'Not authenticated');
+            console.log('🔥 [AUTH-CONTEXT] Firebase user email:', firebaseUserState?.email || 'No email');
+            setFirebaseUser(firebaseUserState);
+            
+            // 🚨 CRITICAL: Give React time to re-render with the new user before setting loading to false
+            setTimeout(() => {
+              setFirebaseLoading(false);
+              console.log('🔥 [AUTH-CONTEXT] Firebase loading set to false, currentUser should be synced');
+            }, 100);
+          });
+          
+          return unsubscribe;
+        } else {
+          setFirebaseLoading(false);
+        }
+      } catch (error) {
+        console.error('❌ [AUTH-CONTEXT] Firebase initialization error:', error);
+        setFirebaseLoading(false);
+      }
+    };
+    
+    initializeFirebaseAuth();
+  }, [isLoaded]);
 
+  // 🔥 CRITICAL: Use Firebase loading when Clerk is not available  
+  const loading = isLoaded ? false : firebaseLoading;
+
+  // 🔥 CRITICAL: Debug user states
+  console.log('🔍 [AUTH-CONTEXT] user (Clerk):', user ? 'exists' : 'null/undefined');
+  console.log('🔍 [AUTH-CONTEXT] firebaseUser:', firebaseUser ? `exists: ${firebaseUser.email}` : 'null/undefined');
+  
+  // 🔥 CRITICAL: Use Firebase user when Clerk is not available
   const currentUser: AuthUser | null = user ? {
     uid: user.id,
     email: user.primaryEmailAddress?.emailAddress || null,
@@ -57,6 +99,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return user.id;
       }
     }
+  } : firebaseUser ? {
+    uid: firebaseUser.uid,
+    email: firebaseUser.email,
+    displayName: firebaseUser.displayName,
+    photoURL: firebaseUser.photoURL,
+    phoneNumber: firebaseUser.phoneNumber,
+    emailVerified: firebaseUser.emailVerified,
+    getIdToken: async () => firebaseUser.getIdToken()
   } : null;
 
   const clearError = () => {

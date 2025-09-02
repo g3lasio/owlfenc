@@ -52,12 +52,12 @@ import AITestingPage from "@/pages/AITestingPage";
 import DeepSearchDemo from "@/pages/DeepSearchDemo";
 import PermissionsDemo from "@/pages/PermissionsDemo";
 import { AuthTest } from "@/pages/AuthTest";
-import { ClerkProvider, useAuth } from "@clerk/clerk-react";
+import { ClerkProvider, useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
 import ChatOnboarding from "@/components/onboarding/ChatOnboarding";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import ProfileCompletionGuard from "@/components/auth/ProfileCompletionGuard";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import AuthDiagnostic from './pages/AuthDiagnostic';
@@ -87,7 +87,8 @@ type ProtectedRouteProps = {
 };
 
 function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isSignedIn, isLoaded } = useClerkAuth();
+  const { currentUser, loading: authLoading } = useAuth(); // 🔥 USE AUTH CONTEXT INSTEAD
   const { needsOnboarding, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
   const [emergencyBypass, setEmergencyBypass] = useState(false);
   const [loadingStartTime] = useState(Date.now());
@@ -159,8 +160,8 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     return <Component />;
   }
 
-  // Loading con escape de emergencia
-  if (!isLoaded || onboardingLoading) {
+  // 🔎 CRITICAL FIX: Wait for auth initialization before making decisions
+  if (authLoading || onboardingLoading) {
     const loadingTime = Math.floor((Date.now() - loadingStartTime) / 1000);
     
     return (
@@ -183,8 +184,12 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     );
   }
 
-  // Redirect to login if user is not signed in
-  if (!isSignedIn) {
+  // 🔎 CRITICAL FIX: Use AuthContext currentUser instead of Clerk isSignedIn
+  console.log('🔍 [PROTECTED-ROUTE] currentUser:', currentUser ? `${currentUser.email} (${currentUser.uid})` : 'null');
+  console.log('🔍 [PROTECTED-ROUTE] authLoading:', authLoading);
+  
+  // 🚨 CRITICAL: Don't redirect immediately - give Firebase Auth time to initialize
+  if (!authLoading && !currentUser) {
     console.log('🔒 [AUTH] Usuario no autenticado, redirigiendo a login');
     return <Redirect to="/login" />;
   }
