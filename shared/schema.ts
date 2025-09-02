@@ -413,6 +413,7 @@ export const otpCodes = pgTable('otp_codes', {
   verified: boolean('verified').notNull().default(false),
   attempts: integer('attempts').notNull().default(0),
   maxAttempts: integer('max_attempts').notNull().default(3),
+  isRegistration: boolean('is_registration').notNull().default(false), // New field for registration OTPs
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
   emailIdx: index('email_idx').on(table.email),

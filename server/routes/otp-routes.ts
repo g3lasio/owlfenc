@@ -41,6 +41,17 @@ const verifyOTPSchema = z.object({
   code: z.string().length(6, 'El código debe tener 6 dígitos').regex(/^\d{6}$/, 'El código debe ser numérico'),
 });
 
+const registrationOTPSchema = z.object({
+  email: z.string().email('Email inválido').min(1, 'Email requerido'),
+  name: z.string().optional(),
+});
+
+const verifyRegistrationOTPSchema = z.object({
+  email: z.string().email('Email inválido').min(1, 'Email requerido'),
+  code: z.string().length(6, 'El código debe tener 6 dígitos').regex(/^\d{6}$/, 'El código debe ser numérico'),
+  name: z.string().optional(),
+});
+
 /**
  * POST /api/otp/send
  * Send OTP code to email
@@ -131,6 +142,104 @@ router.post('/verify', verifyRateLimit, async (req, res) => {
 
   } catch (error) {
     console.error('❌ [OTP-ROUTES] Error in POST /verify:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor. Intenta de nuevo.'
+    });
+  }
+});
+
+/**
+ * POST /api/otp/send-registration
+ * Send OTP code for new user registration
+ */
+router.post('/send-registration', otpRateLimit, async (req, res) => {
+  try {
+    console.log('🔐 [OTP-ROUTES] POST /send-registration - Request received');
+    
+    // Validate request body
+    const validation = registrationOTPSchema.safeParse(req.body);
+    if (!validation.success) {
+      console.log('❌ [OTP-ROUTES] Validation failed:', validation.error.issues);
+      return res.status(400).json({
+        success: false,
+        message: 'Datos inválidos',
+        errors: validation.error.issues.map(issue => issue.message)
+      });
+    }
+
+    const { email } = validation.data;
+    console.log(`🔐 [OTP-ROUTES] Sending registration OTP to: ${email}`);
+
+    // Send registration OTP
+    const result = await otpService.sendRegistrationOTP(email);
+    
+    console.log(`🔐 [OTP-ROUTES] Registration OTP send result:`, result);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ [OTP-ROUTES] Error in POST /send-registration:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor. Intenta de nuevo.'
+    });
+  }
+});
+
+/**
+ * POST /api/otp/verify-registration
+ * Verify OTP code and create new user
+ */
+router.post('/verify-registration', verifyRateLimit, async (req, res) => {
+  try {
+    console.log('🔐 [OTP-ROUTES] POST /verify-registration - Request received');
+    
+    // Validate request body
+    const validation = verifyRegistrationOTPSchema.safeParse(req.body);
+    if (!validation.success) {
+      console.log('❌ [OTP-ROUTES] Validation failed:', validation.error.issues);
+      return res.status(400).json({
+        success: false,
+        message: 'Datos inválidos',
+        errors: validation.error.issues.map(issue => issue.message)
+      });
+    }
+
+    const { email, code, name } = validation.data;
+    console.log(`🔐 [OTP-ROUTES] Verifying registration OTP for: ${email}`);
+
+    // Verify registration OTP and create user
+    const result = await otpService.verifyRegistrationOTP(email, code, name);
+    
+    console.log(`🔐 [OTP-ROUTES] Registration verify result:`, result);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message,
+        userId: result.userId,
+        firebaseUser: result.firebaseUser
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ [OTP-ROUTES] Error in POST /verify-registration:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor. Intenta de nuevo.'
