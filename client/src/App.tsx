@@ -304,36 +304,7 @@ function Router() {
 }
 
 function App() {
-  const [clerkError, setClerkError] = useState<boolean>(false);
-  const [retryCount, setRetryCount] = useState(0);
-  // ✅ CLERK MIGRATION: Validación explícita con logging detallado
   const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-  console.log('🔐 [CLERK-CONFIG] Key status:', clerkPubKey ? 'Present' : 'Missing');
-  console.log('🔐 [CLERK-CONFIG] Key length:', clerkPubKey?.length || 0);
-  console.log('🔐 [CLERK-CONFIG] Key prefix:', clerkPubKey?.substring(0, 20) || 'undefined');
-  
-  // Detectar errores de Clerk
-  useEffect(() => {
-    const handleClerkError = (event: any) => {
-      if (event.error?.message?.includes('ClerkJS') || event.error?.message?.includes('Something went wrong initializing')) {
-        console.error('🚨 [APP] Clerk initialization failed:', event.error);
-        setClerkError(true);
-      }
-    };
-    
-    window.addEventListener('error', handleClerkError);
-    window.addEventListener('unhandledrejection', (event) => {
-      if (event.reason?.message?.includes('ClerkJS')) {
-        console.error('🚨 [APP] Clerk promise rejection:', event.reason);
-        setClerkError(true);
-      }
-    });
-    
-    return () => {
-      window.removeEventListener('error', handleClerkError);
-      window.removeEventListener('unhandledrejection', handleClerkError);
-    };
-  }, []);
   
   if (!clerkPubKey) {
     console.error('❌ [CLERK] Missing Clerk Publishable Key');
@@ -346,47 +317,6 @@ function App() {
       </div>
     );
   }
-  
-  // Mostrar fallback si Clerk falla
-  if (clerkError) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">
-        <div className="text-center max-w-md">
-          <h1 className="text-xl font-bold text-blue-600 mb-4">🔄 Sistema Alternativo</h1>
-          <p className="text-blue-700 mb-6">
-            El sistema principal de autenticación no está disponible temporalmente. 
-            Puedes continuar usando el sistema básico.
-          </p>
-          <div className="space-y-3">
-            <Button 
-              onClick={() => {
-                setRetryCount(prev => prev + 1);
-                if (retryCount >= 2) {
-                  window.location.reload();
-                } else {
-                  setClerkError(false);
-                }
-              }}
-              className="w-full"
-            >
-              {retryCount >= 2 ? 'Recargar Página Completa' : `Reintentar (${retryCount + 1}/3)`}
-            </Button>
-            <Button 
-              onClick={() => {
-                // Continuar sin Clerk - mostrar interfaz básica
-                console.log('🔄 [APP] Continuing without Clerk authentication');
-                setClerkError(false);
-              }}
-              variant="outline" 
-              className="w-full"
-            >
-              Continuar Sin Autenticación
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <ClerkErrorBoundary>
@@ -394,7 +324,7 @@ function App() {
         publishableKey={clerkPubKey}
         afterSignOutUrl="/"
         signInUrl="/login"
-        signUpUrl="/signup"
+        signUpUrl="/login"
         appearance={{
           baseTheme: undefined,
           variables: {

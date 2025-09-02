@@ -21,7 +21,6 @@ interface AuthContextType {
   currentUser: AuthUser | null;
   loading: boolean;
   error: string | null;
-  emergencyMode: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<AuthUser>;
   register: (email: string, password: string, displayName: string) => Promise<AuthUser>;
   logout: () => Promise<boolean>;
@@ -40,24 +39,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const { signUp, isLoaded: signUpLoaded } = useSignUp();
   const [error, setError] = useState<string | null>(null);
   
-  // ✅ EMERGENCY: Loading state robusto con fallback
   const loading = !isLoaded;
-  const [emergencyMode, setEmergencyMode] = useState(false);
-  
-  // Activar modo emergencia si Clerk no carga - SIN RECARGA AUTOMÁTICA
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!isLoaded && !emergencyMode) {
-        console.warn('🚨 [AUTH-CONTEXT] Clerk loading failed - Activating emergency mode');
-        console.log('🔧 [AUTH-CONTEXT] Emergency mode provides fallback authentication');
-        setEmergencyMode(true);
-      }
-    }, 10000); // Más tiempo para permitir carga completa
-    
-    return () => clearTimeout(timer);
-  }, [isLoaded, emergencyMode]);
 
-  // ✅ EMERGENCY: Usuario de fallback si Clerk falla
   const currentUser: AuthUser | null = user ? {
     uid: user.id,
     email: user.primaryEmailAddress?.emailAddress || null,
@@ -68,21 +51,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     getIdToken: async () => {
       try {
         // Use session token from Clerk
-        return user.id; // For now, use user ID as token
+        return user.id;
       } catch (error) {
         console.warn('Error getting token, using user ID as fallback');
         return user.id;
       }
     }
-  } : emergencyMode ? {
-    // 🚨 EMERGENCY USER: Sistema de fallback
-    uid: 'emergency-user-' + Date.now(),
-    email: 'emergency@system.local',
-    displayName: 'Usuario de Emergencia',
-    photoURL: null,
-    phoneNumber: null,
-    emailVerified: true,
-    getIdToken: async () => 'emergency-token'
   } : null;
 
   const clearError = () => {
@@ -275,7 +249,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     currentUser: isSignedIn ? currentUser : null,
     loading,
     error,
-    emergencyMode,
     login,
     register,
     logout,
