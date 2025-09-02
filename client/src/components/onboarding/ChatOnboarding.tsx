@@ -340,9 +340,18 @@ INSTRUCCIONES:
   const activateTrial = async () => {
     try {
       // Activar trial automáticamente
-      const response = await fetch('/api/subscription/create-trial', {
+      const token = await currentUser?.getIdToken();
+      if (!token) {
+        console.error('No auth token available');
+        return;
+      }
+      
+      const response = await fetch('/api/subscription/activate-trial', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ 
           userId: currentUser?.uid,
           email: currentUser?.email 

@@ -1,8 +1,9 @@
-// Simple in-memory storage for development
-// In production, this would use Firebase Admin SDK with proper credentials
-const subscriptionStorage = new Map<string, any>();
+import { db } from '../db';
+import { userSubscriptions, subscriptionPlans } from '@shared/schema';
+import { eq, and, desc } from 'drizzle-orm';
+import { userMappingService } from './userMappingService';
 
-// Default subscription storage - will be updated via API
+// IMPORTANT: Using PostgreSQL database for persistent storage across devices
 
 export interface SubscriptionData {
   id: string;
@@ -71,17 +72,55 @@ export class FirebaseSubscriptionService {
     try {
       console.log(`📧 [FIREBASE-SUBSCRIPTION] Creando/actualizando suscripción para usuario: ${userId}`);
       
-      const existing = subscriptionStorage.get(userId) || {};
-      const dataToSave = {
-        ...existing,
-        ...subscriptionData,
-        updatedAt: new Date(),
-        ...(subscriptionData.id ? {} : { createdAt: new Date() })
-      };
-
-      subscriptionStorage.set(userId, dataToSave);
+      // Obtener el user_id interno desde Firebase UID
+      const internalUserId = await userMappingService.getInternalUserId(userId);
+      if (!internalUserId) {
+        throw new Error(`No internal user ID found for Firebase UID: ${userId}`);
+      }
       
-      console.log(`✅ [FIREBASE-SUBSCRIPTION] Suscripción guardada exitosamente`);
+      // Verificar si ya existe una suscripción
+      const existing = await db!
+        .select()
+        .from(userSubscriptions)
+        .where(eq(userSubscriptions.userId, internalUserId))
+        .limit(1);
+      
+      if (existing.length > 0) {
+        // Actualizar suscripción existente
+        await db!
+          .update(userSubscriptions)
+          .set({
+            planId: subscriptionData.planId || existing[0].planId,
+            status: subscriptionData.status || existing[0].status,
+            stripeSubscriptionId: subscriptionData.stripeSubscriptionId || existing[0].stripeSubscriptionId,
+            stripeCustomerId: subscriptionData.stripeCustomerId || existing[0].stripeCustomerId,
+            currentPeriodStart: subscriptionData.currentPeriodStart || existing[0].currentPeriodStart,
+            currentPeriodEnd: subscriptionData.currentPeriodEnd || existing[0].currentPeriodEnd,
+            cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd ?? existing[0].cancelAtPeriodEnd,
+            billingCycle: subscriptionData.billingCycle || existing[0].billingCycle,
+            updatedAt: new Date()
+          })
+          .where(eq(userSubscriptions.userId, internalUserId));
+      } else {
+        // Crear nueva suscripción
+        await db!
+          .insert(userSubscriptions)
+          .values({
+            userId: internalUserId,
+            planId: subscriptionData.planId || 1,
+            status: subscriptionData.status || 'active',
+            stripeSubscriptionId: subscriptionData.stripeSubscriptionId,
+            stripeCustomerId: subscriptionData.stripeCustomerId,
+            currentPeriodStart: subscriptionData.currentPeriodStart || new Date(),
+            currentPeriodEnd: subscriptionData.currentPeriodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd || false,
+            billingCycle: subscriptionData.billingCycle || 'monthly',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+      }
+      
+      console.log(`✅ [FIREBASE-SUBSCRIPTION] Suscripción guardada exitosamente en PostgreSQL`);
     } catch (error) {
       console.error('❌ [FIREBASE-SUBSCRIPTION] Error creando/actualizando suscripción:', error);
       throw error;
@@ -101,16 +140,43 @@ export class FirebaseSubscriptionService {
         return this.createOwnerSubscription();
       }
       
-      const data = subscriptionStorage.get(userId);
+      // Obtener el user_id interno desde Firebase UID
+      const internalUserId = await userMappingService.getInternalUserId(userId);
+      if (!internalUserId) {
+        console.log(`📭 [FIREBASE-SUBSCRIPTION] No internal user ID found for Firebase UID: ${userId}`);
+        return null;
+      }
       
-      if (!data) {
+      // Buscar en la base de datos real
+      const result = await db!
+        .select()
+        .from(userSubscriptions)
+        .where(eq(userSubscriptions.userId, internalUserId))
+        .orderBy(desc(userSubscriptions.createdAt))
+        .limit(1);
+      
+      if (result.length === 0) {
         console.log(`📭 [FIREBASE-SUBSCRIPTION] No se encontró suscripción para usuario: ${userId}`);
         return null;
       }
-
-      console.log(`✅ [FIREBASE-SUBSCRIPTION] Suscripción encontrada:`, data.status);
       
-      return data as SubscriptionData;
+      const subscription = result[0];
+      console.log(`✅ [FIREBASE-SUBSCRIPTION] Suscripción encontrada:`, subscription.status);
+      
+      // Convertir al formato esperado
+      return {
+        id: subscription.stripeSubscriptionId || `sub_${subscription.id}`,
+        status: subscription.status as 'active' | 'inactive' | 'canceled' | 'trialing',
+        planId: subscription.planId,
+        stripeSubscriptionId: subscription.stripeSubscriptionId || undefined,
+        stripeCustomerId: subscription.stripeCustomerId || undefined,
+        currentPeriodStart: subscription.currentPeriodStart || new Date(),
+        currentPeriodEnd: subscription.currentPeriodEnd || new Date(),
+        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
+        billingCycle: subscription.billingCycle as 'monthly' | 'yearly',
+        createdAt: subscription.createdAt,
+        updatedAt: subscription.updatedAt
+      };
     } catch (error) {
       console.error('❌ [FIREBASE-SUBSCRIPTION] Error obteniendo suscripción:', error);
       throw error;
@@ -262,30 +328,87 @@ export class FirebaseSubscriptionService {
     try {
       console.log(`🧪 [FIREBASE-SUBSCRIPTION] Creating 21-day Trial Master for user: ${userId}`);
       
+      // Obtener el user_id interno desde Firebase UID
+      const internalUserId = await userMappingService.getInternalUserId(userId);
+      if (!internalUserId) {
+        // Si no existe, crear el mapeo primero
+        const userEmail = await this.getUserEmailFromFirebase(userId);
+        await userMappingService.createMapping(userId, userEmail || '');
+        const newInternalUserId = await userMappingService.getInternalUserId(userId);
+        if (!newInternalUserId) {
+          throw new Error(`Cannot create internal user ID for Firebase UID: ${userId}`);
+        }
+      }
+      
+      // Verificar si ya tiene una suscripción trial activa
+      const existing = await db!
+        .select()
+        .from(userSubscriptions)
+        .where(and(
+          eq(userSubscriptions.userId, internalUserId!),
+          eq(userSubscriptions.planId, 4) // Trial plan
+        ))
+        .limit(1);
+      
+      if (existing.length > 0) {
+        const existingTrial = existing[0];
+        // Si ya tiene trial, verificar si aún está vigente
+        if (existingTrial.currentPeriodEnd && new Date(existingTrial.currentPeriodEnd) > new Date()) {
+          console.log(`⚠️ [FIREBASE-SUBSCRIPTION] User already has active trial until ${existingTrial.currentPeriodEnd}`);
+          return; // No crear nuevo trial si ya tiene uno activo
+        }
+      }
+      
       const currentDate = new Date();
       const trialEndDate = new Date(currentDate);
       trialEndDate.setDate(currentDate.getDate() + 21); // 21 days trial
       
-      const subscriptionData = {
-        id: `trial_${Date.now()}`,
-        status: 'trialing' as const,
-        planId: 4, // Trial Master plan
-        stripeSubscriptionId: `trial_prod_${Date.now()}`,
-        stripeCustomerId: `cus_trial_${Date.now()}`,
-        currentPeriodStart: currentDate,
-        currentPeriodEnd: trialEndDate,
-        cancelAtPeriodEnd: true, // Automatically cancel after trial
-        billingCycle: 'monthly' as const,
-        createdAt: currentDate,
-        updatedAt: currentDate
-      };
-
-      subscriptionStorage.set(userId, subscriptionData);
+      // Crear o actualizar suscripción en la base de datos
+      await db!
+        .insert(userSubscriptions)
+        .values({
+          userId: internalUserId!,
+          planId: 4, // Trial Master plan
+          status: 'trialing',
+          stripeSubscriptionId: `trial_prod_${Date.now()}`,
+          stripeCustomerId: `cus_trial_${Date.now()}`,
+          currentPeriodStart: currentDate,
+          currentPeriodEnd: trialEndDate,
+          cancelAtPeriodEnd: true, // Automatically cancel after trial
+          billingCycle: 'monthly',
+          createdAt: currentDate,
+          updatedAt: currentDate
+        })
+        .onConflictDoUpdate({
+          target: [userSubscriptions.userId],
+          set: {
+            planId: 4,
+            status: 'trialing',
+            currentPeriodStart: currentDate,
+            currentPeriodEnd: trialEndDate,
+            cancelAtPeriodEnd: true,
+            updatedAt: currentDate
+          }
+        });
       
-      console.log(`✅ [FIREBASE-SUBSCRIPTION] Trial Master created - expires: ${trialEndDate.toISOString()}`);
+      console.log(`✅ [FIREBASE-SUBSCRIPTION] Trial Master created in PostgreSQL - expires: ${trialEndDate.toISOString()}`);
     } catch (error) {
       console.error('❌ [FIREBASE-SUBSCRIPTION] Error creating trial subscription:', error);
       throw error;
+    }
+  }
+  
+  /**
+   * Helper method to get user email from Firebase
+   */
+  private async getUserEmailFromFirebase(userId: string): Promise<string | null> {
+    try {
+      // This would normally use Firebase Admin SDK
+      // For now, return null and let the caller handle it
+      return null;
+    } catch (error) {
+      console.error('❌ [FIREBASE-SUBSCRIPTION] Error getting user email:', error);
+      return null;
     }
   }
 
@@ -301,7 +424,6 @@ export class FirebaseSubscriptionService {
       nextMonth.setMonth(currentDate.getMonth() + 1); // Same day next month
       
       const subscriptionData = {
-        id: `sub_${Date.now()}`,
         status: 'active' as const,
         planId: planId,
         stripeSubscriptionId: `sub_prod_${Date.now()}`,
@@ -309,14 +431,12 @@ export class FirebaseSubscriptionService {
         currentPeriodStart: currentDate,
         currentPeriodEnd: nextMonth,
         cancelAtPeriodEnd: false,
-        billingCycle: 'monthly' as const,
-        createdAt: currentDate,
-        updatedAt: currentDate
+        billingCycle: 'monthly' as const
       };
 
-      subscriptionStorage.set(userId, subscriptionData);
+      await this.createOrUpdateSubscription(userId, subscriptionData);
       
-      console.log(`✅ [FIREBASE-SUBSCRIPTION] Current subscription created - expires: ${nextMonth.toISOString()}`);
+      console.log(`✅ [FIREBASE-SUBSCRIPTION] Current subscription created in PostgreSQL - expires: ${nextMonth.toISOString()}`);
     } catch (error) {
       console.error('❌ [FIREBASE-SUBSCRIPTION] Error creating current subscription:', error);
       throw error;
@@ -385,7 +505,6 @@ export class FirebaseSubscriptionService {
       console.log(`⬇️ [FIREBASE-SUBSCRIPTION] Degradando usuario ${userId} a plan gratuito`);
       
       const freePlanData = {
-        id: `free_${Date.now()}`,
         status: 'active' as const,
         planId: 1, // primo_chambeador (plan gratuito)
         stripeSubscriptionId: `free_prod_${Date.now()}`,
@@ -393,13 +512,11 @@ export class FirebaseSubscriptionService {
         currentPeriodStart: new Date(),
         currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 año de validez
         cancelAtPeriodEnd: false,
-        billingCycle: 'none' as const,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        billingCycle: 'monthly' as const
       };
 
-      subscriptionStorage.set(userId, freePlanData);
-      console.log(`✅ [FIREBASE-SUBSCRIPTION] Usuario degradado a plan gratuito exitosamente`);
+      await this.createOrUpdateSubscription(userId, freePlanData);
+      console.log(`✅ [FIREBASE-SUBSCRIPTION] Usuario degradado a plan gratuito exitosamente en PostgreSQL`);
     } catch (error) {
       console.error('❌ [FIREBASE-SUBSCRIPTION] Error degradando a plan gratuito:', error);
       throw error;
@@ -414,7 +531,6 @@ export class FirebaseSubscriptionService {
       console.log(`🆓 [FIREBASE-SUBSCRIPTION] Creando plan gratuito por defecto para usuario: ${userId}`);
       
       const freePlanData = {
-        id: `free_${Date.now()}`,
         status: 'active' as const,
         planId: 1, // primo_chambeador (plan gratuito)
         stripeSubscriptionId: `free_prod_${Date.now()}`,
@@ -422,13 +538,11 @@ export class FirebaseSubscriptionService {
         currentPeriodStart: new Date(),
         currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 año de validez
         cancelAtPeriodEnd: false,
-        billingCycle: 'none' as const,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        billingCycle: 'monthly' as const
       };
 
-      subscriptionStorage.set(userId, freePlanData);
-      console.log(`✅ [FIREBASE-SUBSCRIPTION] Plan gratuito creado exitosamente`);
+      await this.createOrUpdateSubscription(userId, freePlanData);
+      console.log(`✅ [FIREBASE-SUBSCRIPTION] Plan gratuito creado exitosamente en PostgreSQL`);
     } catch (error) {
       console.error('❌ [FIREBASE-SUBSCRIPTION] Error creando plan gratuito:', error);
       throw error;
