@@ -36,14 +36,13 @@ import Invoices from "@/pages/Invoices";
 import EstimatesDashboard from "@/pages/EstimatesDashboard";
 import EstimateGenerator from "@/pages/EstimateGenerator";
 import MisEstimados from "@/pages/MisEstimados";
-import AuthPage from "@/pages/Login"; // Renombrado el import aunque el archivo sigue siendo Login.tsx
+import AuthPage from "@/pages/Login";
 import RecuperarPassword from "@/pages/RecuperarPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import EmailLinkCallback from "@/pages/EmailLinkCallback";
 import SecuritySettings from "@/pages/SecuritySettings";
 import CyberpunkContractGenerator from "@/pages/CyberpunkContractGenerator";
 import { setupGlobalErrorHandlers } from "@/lib/error-handlers";
-
 
 import LegalContractEngineFixed from "@/pages/LegalContractEngineFixed";
 import UnifiedContractManager from "@/pages/UnifiedContractManager";
@@ -57,7 +56,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
 import ChatOnboarding from "@/components/onboarding/ChatOnboarding";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import ProfileCompletionGuard from "@/components/auth/ProfileCompletionGuard";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import AuthDiagnostic from './pages/AuthDiagnostic';
@@ -68,129 +67,39 @@ import SimpleContractGenerator from './pages/SimpleContractGenerator';
 import ContractSignature from './pages/ContractSignature';
 import MigrationPage from './pages/MigrationPage';
 
-
 import { Redirect } from "wouter";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-
-// 🔧 FIX: Global error handler for unhandled promises - DESHABILITADO TEMPORALMENTE
-// setupGlobalErrorHandlers(); // ❌ COMENTADO: Estaba silenciando errores legítimos del agente
 
 // 🔧 STRIPE ERROR HANDLER
 window.addEventListener('stripe-load-error', (event: any) => {
   console.warn('🔧 [STRIPE-ERROR] Stripe loading failed, payments disabled:', event.detail?.error);
 });
 
-// Componente para páginas protegidas
+// Componente para páginas protegidas - USANDO SOLO CLERK
 type ProtectedRouteProps = {
   component: React.ComponentType<any>;
 };
 
 function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   const { isSignedIn, isLoaded } = useClerkAuth();
-  const { currentUser, loading: authLoading } = useAuth(); // 🔥 USE AUTH CONTEXT INSTEAD
   const { needsOnboarding, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
-  const [emergencyBypass, setEmergencyBypass] = useState(false);
-  const [loadingStartTime] = useState(Date.now());
-  const [firebaseUser, setFirebaseUser] = useState<any>(null);
-  const [checkingAuth, setCheckingAuth] = useState(false);
 
-  // 🚨 EMERGENCY: Fallback para Clerk que no inicializa
-  useEffect(() => {
-    const emergencyTimer = setTimeout(() => {
-      if (!isLoaded && !emergencyBypass) {
-        console.warn('🚨 [EMERGENCY] Clerk loading timeout - activating fallback');
-        setEmergencyBypass(true);
-      }
-    }, 8000); // 8 segundos máximo
-
-    return () => clearTimeout(emergencyTimer);
-  }, [isLoaded, emergencyBypass]);
-
-  // Check Firebase auth when emergency bypass is activated
-  useEffect(() => {
-    if (emergencyBypass && !checkingAuth) {
-      console.log('🔄 [EMERGENCY] Using Firebase Auth fallback');
-      setCheckingAuth(true);
-      
-      const checkFirebaseAuth = async () => {
-        try {
-          const { auth } = await import('@/lib/firebase');
-          const { onAuthStateChanged } = await import('firebase/auth');
-          
-          return new Promise((resolve) => {
-            const unsubscribe = onAuthStateChanged(auth, (user) => {
-              unsubscribe();
-              resolve(user);
-            });
-          });
-        } catch (error) {
-          console.error('❌ [EMERGENCY] Firebase Auth check failed:', error);
-          return null;
-        }
-      };
-      
-      checkFirebaseAuth().then((user) => {
-        setFirebaseUser(user);
-        setCheckingAuth(false);
-      });
-    }
-  }, [emergencyBypass, checkingAuth]);
-
-  // 🚨 EMERGENCY BYPASS: Si Clerk falla, usar Firebase Auth
-  if (emergencyBypass) {
-    if (checkingAuth) {
-      return (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center max-w-md">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500 mx-auto mb-4"></div>
-            <p className="text-orange-600 font-semibold">Sistema de Emergencia Activo</p>
-            <p className="text-sm text-gray-500">Verificando autenticación...</p>
-          </div>
-        </div>
-      );
-    }
-    
-    // If no Firebase user, redirect to login
-    if (!firebaseUser) {
-      return <Redirect to="/login" />;
-    }
-    
-    // User is authenticated via Firebase
-    return <Component />;
-  }
-
-  // 🔎 CRITICAL FIX: Wait for auth initialization before making decisions
-  if (authLoading || onboardingLoading) {
-    const loadingTime = Math.floor((Date.now() - loadingStartTime) / 1000);
-    
+  // Loading state - wait for Clerk to initialize
+  if (!isLoaded || onboardingLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center max-w-md">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600 mb-4">Cargando sistema de autenticación...</p>
-          <p className="text-sm text-gray-500">Tiempo: {loadingTime}s</p>
-          
-          {loadingTime > 5 && (
-            <button 
-              onClick={() => setEmergencyBypass(true)}
-              className="mt-4 px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm"
-            >
-              🚨 Usar Sistema de Emergencia ({8 - loadingTime}s)
-            </button>
-          )}
         </div>
       </div>
     );
   }
 
-  // 🔎 CRITICAL FIX: Use AuthContext currentUser instead of Clerk isSignedIn
-  console.log('🔍 [PROTECTED-ROUTE] currentUser:', currentUser ? `${currentUser.email} (${currentUser.uid})` : 'null');
-  console.log('🔍 [PROTECTED-ROUTE] authLoading:', authLoading);
-  
-  // 🚨 CRITICAL: Don't redirect immediately - give Firebase Auth time to initialize
-  if (!authLoading && !currentUser) {
-    console.log('🔒 [AUTH] Usuario no autenticado, redirigiendo a login');
+  // Check if user is signed in with Clerk
+  if (!isSignedIn) {
+    console.log('🔒 [AUTH] Usuario no autenticado con Clerk, redirigiendo a login');
     return <Redirect to="/login" />;
   }
 
@@ -282,62 +191,14 @@ function Router() {
       <Route path="/subscription-test">
         {() => <ProtectedRoute component={SubscriptionTest} />}
       </Route>
-
       <Route path="/billing">
         {() => <ProtectedRoute component={Billing} />}
       </Route>
       <Route path="/history">
         {() => <ProtectedRoute component={History} />}
       </Route>
-      <Route path="/security">
-        {() => <ProtectedRoute component={SecuritySettings} />}
-      </Route>
-      <Route path="/migration">
-        {() => <ProtectedRoute component={MigrationPage} />}
-      </Route>
-
-      <Route path="/smart-contract-wizard">
-        {() => <ProtectedRoute component={SmartContractWizard} />}
-      </Route>
-      <Route path="/contract-generator">
-        {() => <ProtectedRoute component={LegalContractEngineFixed} />}
-      </Route>
-      <Route path="/legal-contract-engine">
-        {() => <ProtectedRoute component={LegalContractEngineFixed} />}
-      </Route>
-      <Route path="/legal-defense">
-        {() => <ProtectedRoute component={SimpleContractGenerator} />}
-      </Route>
-      <Route path="/cyberpunk-legal-defense">
-        {() => <ProtectedRoute component={CyberpunkLegalDefense} />}
-      </Route>
-      <Route path="/simple-contracts">
-        {() => <ProtectedRoute component={SimpleContractGenerator} />}
-      </Route>
-      <Route path="/simple-contract-generator">
-        {() => <ProtectedRoute component={SimpleContractGenerator} />}
-      </Route>
-
-      <Route path="/unified-contracts">
-        {() => <ProtectedRoute component={UnifiedContractManager} />}
-      </Route>
-      <Route path="/cyberpunk-contracts">
-        {() => <ProtectedRoute component={CyberpunkContractGenerator} />}
-      </Route>
-      <Route path="/ai-testing">
-        {() => <ProtectedRoute component={AITestingPage} />}
-      </Route>
-      <Route path="/deepsearch-demo">
-        {() => <ProtectedRoute component={DeepSearchDemo} />}
-      </Route>
-      <Route path="/permissions-demo">
-        {() => <ProtectedRoute component={PermissionsDemo} />}
-      </Route>
-      <Route path="/estimates">
-        {() => <ProtectedRoute component={EstimatesWizard} />}
-      </Route>
-      <Route path="/estimates-wizard">
-        {() => <ProtectedRoute component={EstimatesWizard} />}
+      <Route path="/estimates-dashboard">
+        {() => <ProtectedRoute component={EstimatesDashboard} />}
       </Route>
       <Route path="/estimate-generator">
         {() => <ProtectedRoute component={EstimateGenerator} />}
@@ -345,17 +206,84 @@ function Router() {
       <Route path="/mis-estimados">
         {() => <ProtectedRoute component={MisEstimados} />}
       </Route>
-      <Route path="/estimates-dashboard">
-        {() => <ProtectedRoute component={EstimatesDashboard} />}
+      <Route path="/estimates-wizard">
+        {() => <ProtectedRoute component={EstimatesWizard} />}
       </Route>
-      <Route path="/estimates-legacy">
-        {() => <ProtectedRoute component={EstimateGenerator} />}
+      <Route path="/wizard-estimate">
+        {() => <ProtectedRoute component={EstimatesWizard} />}
+      </Route>
+      <Route path="/wizard">
+        {() => <ProtectedRoute component={EstimatesWizard} />}
+      </Route>
+      <Route path="/security-settings">
+        {() => <ProtectedRoute component={SecuritySettings} />}
+      </Route>
+      <Route path="/contract-generator">
+        {() => <ProtectedRoute component={CyberpunkContractGenerator} />}
+      </Route>
+      <Route path="/cyberpunk-contract-generator">
+        {() => <ProtectedRoute component={CyberpunkContractGenerator} />}
+      </Route>
+      <Route path="/simple-contract-generator">
+        {() => <ProtectedRoute component={SimpleContractGenerator} />}
+      </Route>
+      <Route path="/legal-defense">
+        {() => <ProtectedRoute component={CyberpunkLegalDefense} />}
+      </Route>
+      <Route path="/cyberpunk-legal-defense">
+        {() => <ProtectedRoute component={CyberpunkLegalDefense} />}
+      </Route>
+      <Route path="/contract-engine">
+        {() => <ProtectedRoute component={LegalContractEngineFixed} />}
+      </Route>
+      <Route path="/contract-manager">
+        {() => <ProtectedRoute component={UnifiedContractManager} />}
+      </Route>
+      <Route path="/unified-contract-manager">
+        {() => <ProtectedRoute component={UnifiedContractManager} />}
+      </Route>
+      <Route path="/smart-contract-wizard">
+        {() => <ProtectedRoute component={SmartContractWizard} />}
+      </Route>
+      <Route path="/ai-testing">
+        {() => <ProtectedRoute component={AITestingPage} />}
+      </Route>
+      <Route path="/deep-search-demo">
+        {() => <ProtectedRoute component={DeepSearchDemo} />}
+      </Route>
+      <Route path="/permissions-demo">
+        {() => <ProtectedRoute component={PermissionsDemo} />}
+      </Route>
+      <Route path="/auth-test">
+        {() => <ProtectedRoute component={AuthTest} />}
+      </Route>
+      <Route path="/migration">
+        {() => <ProtectedRoute component={MigrationPage} />}
       </Route>
 
-
-      {/* Página no encontrada */}
+      {/* 404 - Esta debe ser la última ruta */}
       <Route component={NotFound} />
     </Switch>
+  );
+}
+
+// Componente Wrapper con todos los providers necesarios
+function AppWithClerk() {
+  return (
+    <AuthProvider>
+      <LanguageProvider>
+        <SidebarProvider>
+          <PermissionProvider>
+            <ProfileCompletionGuard>
+              <AppLayout>
+                <Router />
+              </AppLayout>
+            </ProfileCompletionGuard>
+            <Toaster />
+          </PermissionProvider>
+        </SidebarProvider>
+      </LanguageProvider>
+    </AuthProvider>
   );
 }
 
@@ -363,12 +291,17 @@ function App() {
   const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
   
   if (!clerkPubKey) {
-    console.error('❌ [CLERK] Missing Clerk Publishable Key');
+    console.error('❌ [CLERK] VITE_CLERK_PUBLISHABLE_KEY no está configurada');
     return (
-      <div className="min-h-screen flex items-center justify-center bg-red-50 p-4">
-        <div className="text-center">
-          <h1 className="text-xl font-bold text-red-600 mb-2">Configuration Error</h1>
-          <p className="text-red-500">Missing Clerk configuration. Please check environment variables.</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Error de Configuración</h1>
+          <p className="text-gray-700 mb-4">
+            La clave de Clerk no está configurada. Por favor, agrega la variable de entorno:
+          </p>
+          <code className="block bg-gray-100 p-3 rounded text-sm">
+            VITE_CLERK_PUBLISHABLE_KEY=tu_clave_aquí
+          </code>
         </div>
       </div>
     );
@@ -380,30 +313,11 @@ function App() {
         publishableKey={clerkPubKey}
         afterSignOutUrl="/"
         signInUrl="/login"
-        signUpUrl="/login"
-        appearance={{
-          baseTheme: undefined,
-          variables: {
-            colorPrimary: '#0ea5e9'
-          }
-        }}
+        signUpUrl="/signup"
       >
-        <AuthProvider>
-          <QueryClientProvider client={queryClient}>
-            <LanguageProvider>
-              <PermissionProvider>
-                <ProfileCompletionGuard>
-                  <SidebarProvider>
-                    <AppLayout>
-                      <Router />
-                    </AppLayout>
-                    <Toaster />
-                  </SidebarProvider>
-                </ProfileCompletionGuard>
-              </PermissionProvider>
-            </LanguageProvider>
-          </QueryClientProvider>
-        </AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <AppWithClerk />
+        </QueryClientProvider>
       </ClerkProvider>
     </ClerkErrorBoundary>
   );
