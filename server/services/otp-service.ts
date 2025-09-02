@@ -33,24 +33,39 @@ export class OTPService {
     try {
       console.log(`🔐 [OTP-SERVICE] Processing OTP request for: ${email} (New user: ${isNewUser})`);
 
-      // Para usuarios nuevos, permitir el OTP sin verificar Firebase
+      // 🔐 CRITICAL SECURITY: Validar usuario existente vs nuevo registro
       if (!isNewUser) {
-        // 🚨 SECURITY: Para login, verificar que el usuario existe en Firebase
+        // Para LOGIN: verificar que el usuario EXISTE en Firebase
         try {
           await getAuth().getUserByEmail(email);
-          console.log(`✅ [OTP-SERVICE] Existing user verified in Firebase: ${email}`);
+          console.log(`✅ [OTP-SERVICE] Existing user verified for LOGIN: ${email}`);
         } catch (firebaseError: any) {
           if (firebaseError.code === 'auth/user-not-found') {
-            console.log(`❌ [OTP-SERVICE] User not found in Firebase: ${email}`);
+            console.log(`❌ [OTP-SERVICE] User not found - LOGIN DENIED: ${email}`);
             return {
               success: false,
-              message: 'Este correo no está registrado. Por favor, regístrate primero o usa tu contraseña.'
+              message: 'Este correo no está registrado. Por favor, regístrate primero.'
             };
           }
-          throw firebaseError; // Re-throw other Firebase errors
+          throw firebaseError;
         }
       } else {
-        console.log(`🆕 [OTP-SERVICE] Processing OTP for new user registration: ${email}`);
+        // Para REGISTRO: verificar que el usuario NO existe aún
+        try {
+          await getAuth().getUserByEmail(email);
+          console.log(`⚠️ [OTP-SERVICE] User already exists - REGISTRATION DENIED: ${email}`);
+          return {
+            success: false,
+            message: 'Este correo ya está registrado. Por favor, inicia sesión.'
+          };
+        } catch (firebaseError: any) {
+          if (firebaseError.code === 'auth/user-not-found') {
+            console.log(`🆕 [OTP-SERVICE] New user verified for REGISTRATION: ${email}`);
+            // User doesn't exist, can proceed with registration
+          } else {
+            throw firebaseError;
+          }
+        }
       }
 
       console.log(`🔐 [OTP-SERVICE] Generating OTP for: ${email}`);

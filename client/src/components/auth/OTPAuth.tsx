@@ -110,7 +110,10 @@ const OTPAuth: React.FC<OTPAuthProps> = ({ onSuccess, onBack }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ 
+          email,
+          isNewUser: false // 🔐 SECURITY: Explicitly mark as login, not registration
+        }),
       });
 
       const result = await response.json();
@@ -171,7 +174,11 @@ const OTPAuth: React.FC<OTPAuthProps> = ({ onSuccess, onBack }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, code: otpCode }),
+        body: JSON.stringify({ 
+          email, 
+          code: otpCode,
+          createNewUser: false // 🔐 SECURITY: This is login, not registration
+        }),
       });
 
       const result = await response.json();
