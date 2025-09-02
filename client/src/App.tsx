@@ -76,7 +76,7 @@ window.addEventListener('stripe-load-error', (event: any) => {
   console.warn('🔧 [STRIPE-ERROR] Stripe loading failed, payments disabled:', event.detail?.error);
 });
 
-// Componente para páginas protegidas - USANDO SOLO CLERK
+// Componente para páginas protegidas con Clerk
 type ProtectedRouteProps = {
   component: React.ComponentType<any>;
 };
@@ -308,18 +308,22 @@ function App() {
   }
 
   return (
-    <ClerkErrorBoundary>
-      <ClerkProvider 
-        publishableKey={clerkPubKey}
-        afterSignOutUrl="/"
-        signInUrl="/login"
-        signUpUrl="/signup"
-      >
-        <QueryClientProvider client={queryClient}>
-          <AppWithClerk />
-        </QueryClientProvider>
-      </ClerkProvider>
-    </ClerkErrorBoundary>
+    <ClerkProvider 
+      publishableKey={clerkPubKey}
+      afterSignOutUrl="/"
+      signInUrl="/login"
+      signUpUrl="/signup"
+      appearance={{
+        elements: {
+          rootBox: "w-full",
+          card: "shadow-none",
+        }
+      }}
+    >
+      <QueryClientProvider client={queryClient}>
+        <AppWithClerk />
+      </QueryClientProvider>
+    </ClerkProvider>
   );
 }
 
