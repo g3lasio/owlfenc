@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { Plus, Shield, AlertTriangle, FileText, Scale, Lock } from "lucide-react";
 
@@ -57,7 +57,7 @@ interface LegalDefenseProfile {
 
 export default function LegalDefenseProfile() {
   // 🛡️ CRITICAL: Sistema de autenticación y permisos integrado
-  const { currentUser } = useAuth();
+  const { user } = useAuth();
   const { 
     userPlan,
     hasAccess,
@@ -98,7 +98,7 @@ export default function LegalDefenseProfile() {
 
   // 🛡️ Verificación de acceso - Solo usuarios autenticados con planes apropiados
   const checkLegalDefenseAccess = () => {
-    if (!currentUser) {
+    if (!user) {
       toast({
         title: "🔐 Acceso Restringido",
         description: "Debes iniciar sesión para acceder al perfil de defensa legal",
@@ -184,7 +184,7 @@ export default function LegalDefenseProfile() {
         },
         body: JSON.stringify({
           ...profile,
-          userId: currentUser?.uid, // Asegurar que se guarde para el usuario correcto
+          userId: user?.uid, // Asegurar que se guarde para el usuario correcto
           lastUpdated: new Date().toISOString()
         })
       });
@@ -237,7 +237,7 @@ export default function LegalDefenseProfile() {
   };
 
   // 🛡️ Renderizado condicional basado en autenticación
-  if (!currentUser) {
+  if (!user) {
     return (
       <div className="flex-1 p-6 flex items-center justify-center">
         <Card className="max-w-md">
@@ -291,7 +291,7 @@ export default function LegalDefenseProfile() {
         <Button 
           onClick={saveLegalProfile} 
           size="lg"
-          disabled={isLoading || !currentUser}
+          disabled={isLoading || !user}
         >
           {isLoading ? (
             <>

@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { ProjectDescriptionEnhancer } from '@/components/ui/project-description-enhancer';
-// Firebase imports removed - using Clerk now
+import { getClients } from '@/lib/clientFirebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionContext';
 import { UpgradePrompt } from '@/components/permissions/UpgradePrompt';

@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/use-auth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -23,12 +23,12 @@ interface PermitSearchHistoryProps {
 
 export default function PermitSearchHistory({ onSelectHistory }: PermitSearchHistoryProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { currentUser } = useAuth();
+  const { user } = useAuth();
 
   const { data: history = [], isLoading } = useQuery({
-    queryKey: ['permitHistory', currentUser?.uid],
-    queryFn: () => currentUser?.uid ? getPermitSearchHistory(currentUser.uid) : [],
-    enabled: !!currentUser?.uid && isOpen,
+    queryKey: ['permitHistory', user?.uid],
+    queryFn: () => user?.uid ? getPermitSearchHistory(user.uid) : [],
+    enabled: !!user?.uid && isOpen,
   });
 
   const handleSelectHistory = (item: PermitSearchHistoryItem) => {

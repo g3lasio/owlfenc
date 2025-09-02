@@ -43,7 +43,7 @@ if (!admin.apps.length) {
 
 /**
  * Middleware para verificar autenticación con Firebase
- * Incluye modo fallback para acceso sin autenticación cuando Clerk falla
+ * ALWAYS requires real Firebase authentication for multi-tenant security
  */
 export const verifyFirebaseAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -53,17 +53,7 @@ export const verifyFirebaseAuth = async (req: Request, res: Response, next: Next
       console.log(`🔧 [AUTH-BYPASS] Temporary access granted for: ${BYPASS_UID}`);
       req.firebaseUser = {
         uid: BYPASS_UID,
-        email: 'admin@owldev.local'
-      };
-      return next();
-    }
-    
-    // 🚨 FALLBACK MODE: Allow access without auth when Clerk fails
-    if (req.headers['x-fallback-mode'] === 'true' || req.query.fallback === 'true') {
-      console.warn('⚠️ [AUTH-FALLBACK] Allowing access without authentication - Clerk failure mode');
-      req.firebaseUser = {
-        uid: 'fallback-user-' + Date.now(),
-        email: 'fallback@system.local'
+        email: 'truthbackpack@gmail.com'
       };
       return next();
     }
@@ -72,14 +62,10 @@ export const verifyFirebaseAuth = async (req: Request, res: Response, next: Next
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.log('❌ [AUTH] Missing or invalid Authorization header');
-      console.warn('⚠️ No Firebase UID available, skipping Firebase Auth lookup');
-      
-      // En lugar de rechazar, permite acceso con usuario por defecto
-      req.firebaseUser = {
-        uid: 'no-auth-user-' + Date.now(),
-        email: 'no-auth@system.local'
-      };
-      return next();
+      return res.status(401).json({ 
+        error: 'Token de autenticación requerido - Por favor inicia sesión',
+        code: 'AUTH_TOKEN_MISSING'
+      });
     }
 
     const token = authHeader.substring(7); // Remover "Bearer "

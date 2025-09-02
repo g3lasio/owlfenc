@@ -31,16 +31,14 @@ const verifyRateLimit = rateLimit({
   legacyHeaders: false,
 });
 
-// Schema for request validation - Updated to support new user registration
+// Schema for request validation
 const sendOTPSchema = z.object({
   email: z.string().email('Email inválido').min(1, 'Email requerido'),
-  isNewUser: z.boolean().optional().default(false),
 });
 
 const verifyOTPSchema = z.object({
   email: z.string().email('Email inválido').min(1, 'Email requerido'),
   code: z.string().length(6, 'El código debe tener 6 dígitos').regex(/^\d{6}$/, 'El código debe ser numérico'),
-  createNewUser: z.boolean().optional().default(false),
 });
 
 /**
@@ -62,11 +60,11 @@ router.post('/send', otpRateLimit, async (req, res) => {
       });
     }
 
-    const { email, isNewUser } = validation.data;
-    console.log(`🔐 [OTP-ROUTES] Sending OTP to: ${email} (New user: ${isNewUser})`);
+    const { email } = validation.data;
+    console.log(`🔐 [OTP-ROUTES] Sending OTP to: ${email}`);
 
-    // Send OTP - Updated to support new user registration
-    const result = await otpService.sendOTP(email, isNewUser);
+    // Send OTP
+    const result = await otpService.sendOTP(email);
     
     console.log(`🔐 [OTP-ROUTES] OTP send result:`, result);
 
@@ -110,11 +108,11 @@ router.post('/verify', verifyRateLimit, async (req, res) => {
       });
     }
 
-    const { email, code, createNewUser } = validation.data;
-    console.log(`🔐 [OTP-ROUTES] Verifying OTP for: ${email} (Create new user: ${createNewUser})`);
+    const { email, code } = validation.data;
+    console.log(`🔐 [OTP-ROUTES] Verifying OTP for: ${email}`);
 
-    // Verify OTP - Updated to support new user creation
-    const result = await otpService.verifyOTP(email, code, createNewUser);
+    // Verify OTP
+    const result = await otpService.verifyOTP(email, code);
     
     console.log(`🔐 [OTP-ROUTES] OTP verify result:`, result);
 
@@ -122,8 +120,7 @@ router.post('/verify', verifyRateLimit, async (req, res) => {
       res.json({
         success: true,
         message: result.message,
-        userId: result.userId,
-        newUser: result.newUser
+        userId: result.userId
       });
     } else {
       res.status(400).json({

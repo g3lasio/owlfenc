@@ -8,8 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-// Firebase imports removed - using Clerk now
-// Firestore imports removed - using Clerk now
+import { getClients as getFirebaseClients, saveClient } from '@/lib/clientFirebase';
+import { collection, query, where, getDocs, addDoc, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { 
   Search, 
   Plus, 
@@ -33,7 +34,7 @@ import {
   RefreshCw,
   AlertCircle
 } from 'lucide-react';
-// Firebase imports removed - using Clerk now
+import { saveEstimate } from '@/lib/firebase';
 
 // Types
 interface Client {

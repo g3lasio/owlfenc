@@ -22,7 +22,7 @@ export class FirebaseSubscriptionService {
   
   // OWNER PRIVILEGES: Platform owner gets unlimited Master Contractor access
   // SISTEMA UNIFICADO: Owner identificado por Firebase UID, no email-based ID
-  private readonly OWNER_EMAILS = ['admin@owldev.local'];
+  private readonly OWNER_EMAILS = ['shkwahab60@gmail.com', 'truthbackpack@gmail.com'];
   
   private isOwnerUser(userId: string, email?: string): boolean {
     // Verificar si el usuario es owner por email si está disponible

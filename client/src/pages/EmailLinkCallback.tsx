@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-// Firebase imports removed - using Clerk now
+import { isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 export default function EmailLinkCallback() {
   const [, navigate] = useLocation();
@@ -23,8 +24,8 @@ export default function EmailLinkCallback() {
 
     const processEmailLink = async () => {
       try {
-        // Email link login disabled - using Clerk now
-        if (false) {
+        // Verificar si la URL actual es un enlace de inicio de sesión de Firebase
+        if (isSignInWithEmailLink(auth, window.location.href)) {
           // Obtener el correo electrónico del localStorage (guardado al enviar el enlace)
           let email = localStorage.getItem("emailForSignIn");
           
@@ -36,8 +37,8 @@ export default function EmailLinkCallback() {
             }
           }
           
-          // Email link signin disabled with Clerk
-          throw new Error("Email link signin not supported with Clerk");
+          // Iniciar sesión con el enlace
+          await signInWithEmailLink(auth, email, window.location.href);
           
           // Limpiar el email del localStorage
           localStorage.removeItem("emailForSignIn");

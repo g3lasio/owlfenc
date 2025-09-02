@@ -71,15 +71,16 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProfile } from "@/hooks/use-profile";
 import { apiRequest } from "@/lib/queryClient";
-// Client functions - using API calls instead of Firebase
-const getClients = async (userId: string) => { return []; };
-const saveClient = async (client: any, userId: string) => { return client; };
-const updateClient = async (client: any, userId: string) => { return client; };
-const deleteClient = async (clientId: string, userId: string) => { return true; };
-const importClientsFromCsv = async (file: File, userId: string) => { return { success: true, count: 0 }; };
-const importClientsFromVcf = async (file: File, userId: string) => { return { success: true, count: 0 }; };
-// Firebase imports removed - using Clerk now  
-// Import service removed - using direct API calls
+// Importaciones de Firebase
+import {
+  getClients,
+  saveClient,
+  updateClient,
+  deleteClient,
+  importClientsFromCsv,
+  importClientsFromVcf,
+} from "../lib/clientFirebase";
+import { importClientsFromCsvWithAI } from "../services/clientService";
 
 
 // Interfaces
@@ -155,28 +156,9 @@ const csvImportSchema = z.object({
 
 export default function NuevoClientes() {
   const { profile } = useProfile();
-  
-  // 🔧 BULLETPROOF USER MAPPING: Support owner bypass + future commercial users
-  const getUserId = () => {
-    // Priority 1: Profile ID (Firebase UID or PostgreSQL user_id)
-    if (profile?.id) {
-      console.log('🔧 [USER-MAPPING] Using profile.id:', profile.id);
-      return profile.id.toString();
-    }
-    
-    // Priority 2: Bypass Firebase UID for owners
-    const bypassFirebaseUid = localStorage.getItem('firebase_user_id');
-    if (bypassFirebaseUid) {
-      console.log('🔧 [USER-MAPPING] Using bypass Firebase UID:', bypassFirebaseUid);
-      return bypassFirebaseUid;
-    }
-    
-    // Priority 3: Legacy fallback for existing systems 
-    console.log('🔧 [USER-MAPPING] Using legacy fallback: 1');
-    return "1";
-  };
-  
-  const userId = getUserId();
+  // ✅ USAR Firebase UID en lugar de profile.id
+  const firebaseUserId = localStorage.getItem('firebase_user_id');
+  const userId = firebaseUserId || profile?.id?.toString() || "1";
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -210,7 +192,7 @@ export default function NuevoClientes() {
     isError,
     error,
   } = useQuery({
-    queryKey: ["clients", userId], // Incluir userId en la key
+    queryKey: ["firebaseClients", userId], // Incluir userId en la key
     queryFn: async () => {
       try {
         console.log("Obteniendo clientes desde Firebase para usuario:", userId);
@@ -233,7 +215,7 @@ export default function NuevoClientes() {
         title: "Cliente añadido",
         description: "El cliente ha sido añadido correctamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
       setShowAddClientDialog(false);
       clientForm.reset();
     },
@@ -267,7 +249,7 @@ export default function NuevoClientes() {
         title: "Cliente actualizado",
         description: "El cliente ha sido actualizado correctamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
       setShowEditClientDialog(false);
       setCurrentClient(null);
     },
@@ -290,7 +272,7 @@ export default function NuevoClientes() {
         title: "Cliente eliminado",
         description: "El cliente ha sido eliminado correctamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
       setShowDeleteDialog(false);
       setCurrentClient(null);
     },
@@ -476,11 +458,11 @@ export default function NuevoClientes() {
       });
       
       // Usar la función de importación con IA que incluye autenticación
-      const importedClients = await importClientsFromCsv(file, userId);
+      const importedClients = await importClientsFromCsvWithAI(csvContent);
       console.log("✅ [CLIENTES] Importación CSV inteligente exitosa:", importedClients.length);
       
       // Actualizar lista de clientes
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
 
       toast({
         title: "✨ Importación inteligente completada",
@@ -726,7 +708,7 @@ export default function NuevoClientes() {
       }
 
       // Actualizar lista de clientes
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
 
       toast({
         title: "Eliminación exitosa",

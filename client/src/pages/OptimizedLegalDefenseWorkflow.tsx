@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/use-auth';
 import { usePermissions } from '@/contexts/PermissionContext';
 import { 
   Upload,
@@ -58,7 +58,7 @@ interface ContractAnalysis {
 
 export default function OptimizedLegalDefenseWorkflow() {
   // 🛡️ CRITICAL: Sistema de autenticación y permisos integrado
-  const { currentUser } = useAuth();
+  const { user } = useAuth();
   const { 
     userPlan,
     hasAccess,
@@ -71,7 +71,7 @@ export default function OptimizedLegalDefenseWorkflow() {
 
   // 🛡️ Verificación de acceso - Solo usuarios autenticados
   const checkWorkflowAccess = () => {
-    if (!currentUser) {
+    if (!user) {
       toast({
         title: "🔐 Acceso Restringido",
         description: "Debes iniciar sesión para usar el workflow de defensa legal",
@@ -303,7 +303,7 @@ export default function OptimizedLegalDefenseWorkflow() {
       },
       body: JSON.stringify({
         projectData,
-        userId: currentUser?.uid,
+        userId: user?.uid,
         includeStateCompliance: true,
         industrySpecificAnalysis: true,
         veteranProtections: true
@@ -331,7 +331,7 @@ export default function OptimizedLegalDefenseWorkflow() {
       },
       body: JSON.stringify({
         projectData,
-        userId: currentUser?.uid,
+        userId: user?.uid,
         riskAnalysis: analysis,
         enhancementLevel: 'maximum_protection',
         includeVeteranClauses: true,
@@ -445,7 +445,7 @@ export default function OptimizedLegalDefenseWorkflow() {
   };
 
   // 🛡️ Renderizado condicional basado en autenticación
-  if (!currentUser) {
+  if (!user) {
     return (
       <div className="flex-1 p-6 flex items-center justify-center">
         <Card className="max-w-md">

@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,10 +40,16 @@ const InvoiceSettings: React.FC = () => {
   const { data: userProfile, isLoading } = useQuery({
     queryKey: ['/api/profile', currentUser?.uid],
     queryFn: async () => {
-      const response = await fetch('/api/profile');
-      return response.json();
+      const response = await apiRequest('/api/profile');
+      return response;
     },
     enabled: !!currentUser,
+    onSettled: (data: UserProfile) => {
+      if (data) {
+        setPaymentTerms(data.defaultPaymentTerms || 30);
+        setMessageTemplate(data.invoiceMessageTemplate || '');
+      }
+    }
   });
 
   // Mutation para guardar configuración
@@ -52,12 +58,10 @@ const InvoiceSettings: React.FC = () => {
       defaultPaymentTerms: number;
       invoiceMessageTemplate: string;
     }) => {
-      const response = await fetch('/api/profile', {
+      return apiRequest('/api/profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)
       });
-      return response.json();
     },
     onSuccess: () => {
       toast({

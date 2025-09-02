@@ -4,8 +4,8 @@
  */
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-// Firebase auth imports removed - using Clerk User type now
-// Firebase imports removed - using Clerk now
+import { User } from 'firebase/auth';
+import { enhancedAuth } from '@/lib/firebase-auth-enhanced';
 import { useToast } from '@/hooks/use-toast';
 
 // 🏷️ AUTHENTICATION CONTEXT TYPES

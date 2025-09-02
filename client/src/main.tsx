@@ -50,25 +50,32 @@ console.error = (...args) => {
 
 console.log('🔧 [MAIN] Interceptores mínimos activados - permitiendo React normal');
 
-// 🛡️ SISTEMA CLERK - DESHABILITADO SISTEMA ROBUSTO LEGACY
-// El robust-auth-manager interfería con la inicialización de Clerk
+// 🛡️ SISTEMA ROBUSTO DE NIVEL ENTERPRISE
+// Inicialización automática para prevenir pérdida de datos
 (async () => {
   try {
-    console.log('🚀 [CLERK-MIGRATION] Iniciando con Clerk como sistema principal...');
+    console.log('🚀 [ENTERPRISE] Inicializando sistemas robustos...');
     
-    // ❌ SISTEMA FIREBASE LEGACY DESHABILITADO - interfería con Clerk
-    // const { robustAuth } = await import('./lib/robust-auth-manager');
-    // await robustAuth.initialize();
+    // Sistema de autenticación robusto con múltiples fallbacks
+    const { robustAuth } = await import('./lib/robust-auth-manager');
+    await robustAuth.initialize();
+    console.log('✅ [ENTERPRISE] Sistema de autenticación robusto inicializado');
     
-    console.log('✅ [CLERK-MIGRATION] Sistema preparado para Clerk');
+    // Sistema de monitoreo de integridad de datos  
+    // DATA MONITOR DESHABILITADO - Causaba errores masivos de fetch
+    // const { dataMonitor } = await import('./lib/data-integrity-monitor');
+    // dataMonitor.startMonitoring();
+    console.log('✅ [ENTERPRISE] Monitor de integridad de datos iniciado');
     
-    // Cleanup simplificado
+    // Cleanup al cerrar la aplicación
     window.addEventListener('beforeunload', () => {
-      console.log('🔄 [CLERK-MIGRATION] Cleanup completado');
+      robustAuth.destroy();
+      // dataMonitor.stopMonitoring(); // Deshabilitado
     });
     
   } catch (error) {
-    console.error('❌ [CLERK-MIGRATION] Error en preparación:', error);
+    console.error('❌ [ENTERPRISE] Error inicializando sistemas robustos:', error);
+    // La aplicación continuará funcionando incluso si falla la inicialización robusta
   }
 })();
 

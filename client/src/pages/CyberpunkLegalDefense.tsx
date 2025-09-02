@@ -13,7 +13,7 @@ import {
   ContractData,
 } from "@/services/professionalContractGenerator";
 import { contractHistoryService } from "@/services/contractHistoryService";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/contexts/PermissionContext";
 import {
   legalDefenseEngine,
@@ -278,7 +278,8 @@ export default function CyberpunkLegalDefense() {
   const [estimatedDuration, setEstimatedDuration] = useState<string>("");
 
   // Simplified authentication - using only useAuth for consistency
-  const { currentUser } = useAuth();
+  const { user } = useAuth();
+  const currentUser = user;
 
   // Simplified contractor data handling - removed complex auto-population
 
@@ -342,7 +343,7 @@ export default function CyberpunkLegalDefense() {
 
   // Sistema de autoguardado en tiempo real
   const performAutoSave = useCallback(async () => {
-    if (!autoSaveEnabled || !currentUser?.uid || !extractedData) return;
+    if (!autoSaveEnabled || !user?.uid || !extractedData) return;
 
     try {
       // Autoguardando cambios del contrato
@@ -355,10 +356,10 @@ export default function CyberpunkLegalDefense() {
         "Proyecto";
 
       const contractData = {
-        userId: currentUser.uid,
+        userId: user.uid,
         contractId:
           currentContractId ||
-          `${clientName.replace(/\s+/g, "_")}_${projectType.replace(/\s+/g, "_")}_${currentUser.uid.slice(-6)}`,
+          `${clientName.replace(/\s+/g, "_")}_${projectType.replace(/\s+/g, "_")}_${user.uid.slice(-6)}`,
         clientName,
         projectType,
         status: "draft" as const,
@@ -456,7 +457,7 @@ export default function CyberpunkLegalDefense() {
     }
   }, [
     autoSaveEnabled,
-    currentUser?.uid,
+    user?.uid,
     extractedData,
     totalCost,
     intelligentClauses,
@@ -862,7 +863,7 @@ export default function CyberpunkLegalDefense() {
     setLoadingProjects(true);
     try {
       // SECURITY FIX: Verificar autenticación primero
-      if (!currentUser?.uid) {
+      if (!user?.uid) {
         toast({
           title: "⚡ AUTHENTICATION REQUIRED",
           description: "Please login to access your saved projects",
@@ -1170,7 +1171,7 @@ export default function CyberpunkLegalDefense() {
 
       try {
         // SECURITY FIX: Use authenticated user's ID
-        if (!currentUser?.uid) {
+        if (!user?.uid) {
           throw new Error("User authentication required");
         }
 
@@ -1698,7 +1699,7 @@ export default function CyberpunkLegalDefense() {
         setPdfGenerationTime(Date.now());
 
         // Save contract to Firebase history
-        if (currentUser?.uid) {
+        if (user?.uid) {
           try {
             // Enhanced contract data preservation for complete Firebase storage
             const contractHistoryEntry = {

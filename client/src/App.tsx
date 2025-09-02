@@ -36,13 +36,14 @@ import Invoices from "@/pages/Invoices";
 import EstimatesDashboard from "@/pages/EstimatesDashboard";
 import EstimateGenerator from "@/pages/EstimateGenerator";
 import MisEstimados from "@/pages/MisEstimados";
-import AuthPage from "@/pages/Login";
+import AuthPage from "@/pages/Login"; // Renombrado el import aunque el archivo sigue siendo Login.tsx
 import RecuperarPassword from "@/pages/RecuperarPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import EmailLinkCallback from "@/pages/EmailLinkCallback";
 import SecuritySettings from "@/pages/SecuritySettings";
 import CyberpunkContractGenerator from "@/pages/CyberpunkContractGenerator";
 import { setupGlobalErrorHandlers } from "@/lib/error-handlers";
+
 
 import LegalContractEngineFixed from "@/pages/LegalContractEngineFixed";
 import UnifiedContractManager from "@/pages/UnifiedContractManager";
@@ -51,55 +52,72 @@ import AITestingPage from "@/pages/AITestingPage";
 import DeepSearchDemo from "@/pages/DeepSearchDemo";
 import PermissionsDemo from "@/pages/PermissionsDemo";
 import { AuthTest } from "@/pages/AuthTest";
-import { ClerkProvider, useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
 import ChatOnboarding from "@/components/onboarding/ChatOnboarding";
-import { AuthProvider } from "@/contexts/AuthContext";
-import ProfileCompletionGuard from "@/components/auth/ProfileCompletionGuard";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import AuthDiagnostic from './pages/AuthDiagnostic';
-import ClerkErrorBoundary from '@/components/ClerkErrorBoundary';
 import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
 import SimpleContractGenerator from './pages/SimpleContractGenerator';
 import ContractSignature from './pages/ContractSignature';
-import MigrationPage from './pages/MigrationPage';
+
 
 import { Redirect } from "wouter";
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+
+// 🔧 FIX: Global error handler for unhandled promises - DESHABILITADO TEMPORALMENTE
+// setupGlobalErrorHandlers(); // ❌ COMENTADO: Estaba silenciando errores legítimos del agente
 
 // 🔧 STRIPE ERROR HANDLER
 window.addEventListener('stripe-load-error', (event: any) => {
   console.warn('🔧 [STRIPE-ERROR] Stripe loading failed, payments disabled:', event.detail?.error);
 });
 
-// Componente para páginas protegidas con Clerk
+// Componente para páginas protegidas
 type ProtectedRouteProps = {
   component: React.ComponentType<any>;
 };
 
 function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
-  const { isSignedIn, isLoaded } = useClerkAuth();
+  const { currentUser, loading } = useAuth();
   const { needsOnboarding, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
+  const [authStable, setAuthStable] = useState(false);
 
-  // Loading state - wait for Clerk to initialize
-  if (!isLoaded || onboardingLoading) {
+  // Estabilizar el estado de auth para evitar redirecciones por cambios temporales
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    
+    if (!loading && !onboardingLoading) {
+      if (currentUser) {
+        // Si hay usuario, marcar como estable inmediatamente
+        setAuthStable(true);
+      } else {
+        // Si no hay usuario, esperar un poco antes de redirigir (evitar redirecciones por estado temporal)
+        timeoutId = setTimeout(() => {
+          setAuthStable(true);
+        }, 1500); // Esperar 1.5 segundos antes de considerar la pérdida de auth como real
+      }
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [currentUser, loading, onboardingLoading]);
+
+  // Muestra un indicador de carga mientras se verifica la autenticación o onboarding
+  if (loading || onboardingLoading || !authStable) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center max-w-md">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600 mb-4">Cargando sistema de autenticación...</p>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-  // Check if user is signed in with Clerk
-  if (!isSignedIn) {
-    console.log('🔒 [AUTH] Usuario no autenticado con Clerk, redirigiendo a login');
+  // Redirige a login solo después de que el estado sea estable y realmente no hay usuario
+  if (!currentUser) {
     return <Redirect to="/login" />;
   }
 
@@ -117,8 +135,8 @@ function Router() {
   return (
     <Switch>
       {/* Rutas públicas */}
-      <Route path="/login" component={AuthPage} />
-      <Route path="/signup" component={AuthPage} />
+      <Route path="/login" component={() => <AuthPage />} />
+      <Route path="/signup" component={() => <AuthPage />} /> {/* Mantiene la misma ruta pero usa AuthPage */}
       <Route path="/recuperar-password" component={RecuperarPassword} />
       <Route path="/forgot-password" component={RecuperarPassword} />
       <Route path="/reset-password" component={ResetPassword} />
@@ -191,14 +209,59 @@ function Router() {
       <Route path="/subscription-test">
         {() => <ProtectedRoute component={SubscriptionTest} />}
       </Route>
+
       <Route path="/billing">
         {() => <ProtectedRoute component={Billing} />}
       </Route>
       <Route path="/history">
         {() => <ProtectedRoute component={History} />}
       </Route>
-      <Route path="/estimates-dashboard">
-        {() => <ProtectedRoute component={EstimatesDashboard} />}
+      <Route path="/security">
+        {() => <ProtectedRoute component={SecuritySettings} />}
+      </Route>
+
+      <Route path="/smart-contract-wizard">
+        {() => <ProtectedRoute component={SmartContractWizard} />}
+      </Route>
+      <Route path="/contract-generator">
+        {() => <ProtectedRoute component={LegalContractEngineFixed} />}
+      </Route>
+      <Route path="/legal-contract-engine">
+        {() => <ProtectedRoute component={LegalContractEngineFixed} />}
+      </Route>
+      <Route path="/legal-defense">
+        {() => <ProtectedRoute component={SimpleContractGenerator} />}
+      </Route>
+      <Route path="/cyberpunk-legal-defense">
+        {() => <ProtectedRoute component={CyberpunkLegalDefense} />}
+      </Route>
+      <Route path="/simple-contracts">
+        {() => <ProtectedRoute component={SimpleContractGenerator} />}
+      </Route>
+      <Route path="/simple-contract-generator">
+        {() => <ProtectedRoute component={SimpleContractGenerator} />}
+      </Route>
+
+      <Route path="/unified-contracts">
+        {() => <ProtectedRoute component={UnifiedContractManager} />}
+      </Route>
+      <Route path="/cyberpunk-contracts">
+        {() => <ProtectedRoute component={CyberpunkContractGenerator} />}
+      </Route>
+      <Route path="/ai-testing">
+        {() => <ProtectedRoute component={AITestingPage} />}
+      </Route>
+      <Route path="/deepsearch-demo">
+        {() => <ProtectedRoute component={DeepSearchDemo} />}
+      </Route>
+      <Route path="/permissions-demo">
+        {() => <ProtectedRoute component={PermissionsDemo} />}
+      </Route>
+      <Route path="/estimates">
+        {() => <ProtectedRoute component={EstimatesWizard} />}
+      </Route>
+      <Route path="/estimates-wizard">
+        {() => <ProtectedRoute component={EstimatesWizard} />}
       </Route>
       <Route path="/estimate-generator">
         {() => <ProtectedRoute component={EstimateGenerator} />}
@@ -206,124 +269,36 @@ function Router() {
       <Route path="/mis-estimados">
         {() => <ProtectedRoute component={MisEstimados} />}
       </Route>
-      <Route path="/estimates-wizard">
-        {() => <ProtectedRoute component={EstimatesWizard} />}
+      <Route path="/estimates-dashboard">
+        {() => <ProtectedRoute component={EstimatesDashboard} />}
       </Route>
-      <Route path="/wizard-estimate">
-        {() => <ProtectedRoute component={EstimatesWizard} />}
-      </Route>
-      <Route path="/wizard">
-        {() => <ProtectedRoute component={EstimatesWizard} />}
-      </Route>
-      <Route path="/security-settings">
-        {() => <ProtectedRoute component={SecuritySettings} />}
-      </Route>
-      <Route path="/contract-generator">
-        {() => <ProtectedRoute component={CyberpunkContractGenerator} />}
-      </Route>
-      <Route path="/cyberpunk-contract-generator">
-        {() => <ProtectedRoute component={CyberpunkContractGenerator} />}
-      </Route>
-      <Route path="/simple-contract-generator">
-        {() => <ProtectedRoute component={SimpleContractGenerator} />}
-      </Route>
-      <Route path="/legal-defense">
-        {() => <ProtectedRoute component={CyberpunkLegalDefense} />}
-      </Route>
-      <Route path="/cyberpunk-legal-defense">
-        {() => <ProtectedRoute component={CyberpunkLegalDefense} />}
-      </Route>
-      <Route path="/contract-engine">
-        {() => <ProtectedRoute component={LegalContractEngineFixed} />}
-      </Route>
-      <Route path="/contract-manager">
-        {() => <ProtectedRoute component={UnifiedContractManager} />}
-      </Route>
-      <Route path="/unified-contract-manager">
-        {() => <ProtectedRoute component={UnifiedContractManager} />}
-      </Route>
-      <Route path="/smart-contract-wizard">
-        {() => <ProtectedRoute component={SmartContractWizard} />}
-      </Route>
-      <Route path="/ai-testing">
-        {() => <ProtectedRoute component={AITestingPage} />}
-      </Route>
-      <Route path="/deep-search-demo">
-        {() => <ProtectedRoute component={DeepSearchDemo} />}
-      </Route>
-      <Route path="/permissions-demo">
-        {() => <ProtectedRoute component={PermissionsDemo} />}
-      </Route>
-      <Route path="/auth-test">
-        {() => <ProtectedRoute component={AuthTest} />}
-      </Route>
-      <Route path="/migration">
-        {() => <ProtectedRoute component={MigrationPage} />}
+      <Route path="/estimates-legacy">
+        {() => <ProtectedRoute component={EstimateGenerator} />}
       </Route>
 
-      {/* 404 - Esta debe ser la última ruta */}
+
+      {/* Página no encontrada */}
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-// Componente Wrapper con todos los providers necesarios
-function AppWithClerk() {
+function App() {
   return (
-    <AuthProvider>
+    <QueryClientProvider client={queryClient}>
       <LanguageProvider>
-        <SidebarProvider>
+        <AuthProvider>
           <PermissionProvider>
-            <ProfileCompletionGuard>
+            <SidebarProvider>
               <AppLayout>
                 <Router />
               </AppLayout>
-            </ProfileCompletionGuard>
-            <Toaster />
+              <Toaster />
+            </SidebarProvider>
           </PermissionProvider>
-        </SidebarProvider>
+        </AuthProvider>
       </LanguageProvider>
-    </AuthProvider>
-  );
-}
-
-function App() {
-  const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-  
-  if (!clerkPubKey) {
-    console.error('❌ [CLERK] VITE_CLERK_PUBLISHABLE_KEY no está configurada');
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Error de Configuración</h1>
-          <p className="text-gray-700 mb-4">
-            La clave de Clerk no está configurada. Por favor, agrega la variable de entorno:
-          </p>
-          <code className="block bg-gray-100 p-3 rounded text-sm">
-            VITE_CLERK_PUBLISHABLE_KEY=tu_clave_aquí
-          </code>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <ClerkProvider 
-      publishableKey={clerkPubKey}
-      afterSignOutUrl="/"
-      signInUrl="/login"
-      signUpUrl="/signup"
-      appearance={{
-        elements: {
-          rootBox: "w-full",
-          card: "shadow-none",
-        }
-      }}
-    >
-      <QueryClientProvider client={queryClient}>
-        <AppWithClerk />
-      </QueryClientProvider>
-    </ClerkProvider>
+    </QueryClientProvider>
   );
 }
 

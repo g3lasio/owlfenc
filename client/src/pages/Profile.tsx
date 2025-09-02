@@ -58,28 +58,8 @@ import { UserProfile } from "@/hooks/use-profile";
 type CompanyInfoType = UserProfile;
 
 export default function Profile() {
-  // Detectar si viene de registro incompleto
-  const urlParams = new URLSearchParams(window.location.search);
-  const isCompletingProfile = urlParams.get('complete') === 'true';
   const { toast } = useToast();
-  const [location, setLocation] = useState(window.location.pathname);
   const { currentUser } = useAuth();
-  const [isNewUserSetup, setIsNewUserSetup] = useState(false);
-  
-  // Check if user needs to complete profile on mount
-  useEffect(() => {
-    const checkProfileStatus = async () => {
-      if (isCompletingProfile && currentUser) {
-        setIsNewUserSetup(true);
-        toast({
-          title: "Complete Your Profile",
-          description: "Please fill in your business information to continue.",
-          variant: "default"
-        });
-      }
-    };
-    checkProfileStatus();
-  }, [isCompletingProfile, currentUser, toast]);
   const { userPlan, loading: permissionsLoading } = usePermissions();
   const {
     profile,
@@ -343,38 +323,10 @@ export default function Profile() {
     setLoading(true);
     try {
       console.log("💾 Guardando perfil de empresa...");
-      
-      // Validate required fields for new users
-      if (isNewUserSetup) {
-        if (!companyInfo.company || !companyInfo.phone || !companyInfo.ownerName) {
-          toast({
-            title: "Incomplete Information",
-            description: "Please fill in Company Name, Owner Name, and Phone Number.",
-            variant: "destructive"
-          });
-          setLoading(false);
-          return;
-        }
-      }
 
       // Usar ID fijo para desarrollo
       const userId = currentUser?.uid;
       console.log(`👤 Guardando para usuario: ${userId}`);
-      
-      // Update Firebase directly for new users to mark profile as complete
-      if (isNewUserSetup && currentUser) {
-        const { db } = await import('@/lib/firebase');
-        const { doc, updateDoc } = await import('firebase/firestore');
-        
-        const userRef = doc(db, 'users', currentUser.uid);
-        await updateDoc(userRef, {
-          ...companyInfo,
-          profileComplete: true,
-          updatedAt: new Date().toISOString()
-        });
-        
-        console.log("✅ Perfil marcado como completo en Firebase");
-      }
 
       // Asegurarnos de que cualquier valor undefined se convierta en cadena vacía
       const safeCompanyInfo = Object.fromEntries(

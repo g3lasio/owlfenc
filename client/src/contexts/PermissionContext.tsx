@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from './AuthContext';
 import { smartPermissionLoader } from '@/services/smartPermissionLoader';
 import { devModeManager, debugLog } from '@/utils/devModeUtils';
 
@@ -271,7 +271,6 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         propertyVerifications: 0,
         permitAdvisor: 0,
         projects: 0,
-        deepsearch: 0,
         month: new Date().toISOString().slice(0, 7)
       });
       setLoading(false);
@@ -349,7 +348,6 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         propertyVerifications: 0,
         permitAdvisor: 0,
         projects: 0,
-        deepsearch: 0,
         month: new Date().toISOString().slice(0, 7)
       });
       setLoading(false);

@@ -16,10 +16,7 @@
     'getIdToken',
     'auth/network-request-failed',
     'chunk-7FXTVMOG.js', // Bundle de Firebase específico
-    'Failed to fetch',
-    'ClerkJS: Something went wrong',
-    'engaging-eagle-59.clerk.accounts.dev',
-    'clerk.browser.js'
+    'Failed to fetch'
   ];
 
   // Interceptor de máxima prioridad para unhandledrejection

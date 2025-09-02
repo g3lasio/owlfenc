@@ -36,9 +36,6 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 
 import OTPAuth from "@/components/auth/OTPAuth";
-import OTPAuthSignup from "@/components/auth/OTPAuthSignup";
-import MagicLinkAuth from "@/components/auth/MagicLinkAuth";
-import { useUnifiedRegistration } from "@/lib/unified-registration";
 import SessionUnlockPrompt from "@/components/auth/SessionUnlockPrompt";
 import BiometricSetupButton from "@/components/auth/BiometricSetupButton";
 import { sessionUnlockService } from "@/lib/session-unlock-service";
@@ -70,14 +67,11 @@ export default function AuthPage() {
     currentUser,
     loading: authLoading,
   } = useAuth();
-  
-  // 🎯 UNIFIED REGISTRATION: Hook para registro profesional
-  const { registerUser, verifyEmail, isLoaded: regLoaded } = useUnifiedRegistration();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const [loginMethod, setLoginMethod] = useState<"email" | "otp" | "magic-link">(
+  const [loginMethod, setLoginMethod] = useState<"email" | "otp">(
     "email",
   );
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -216,7 +210,6 @@ export default function AuthPage() {
       clearError();
       if (loginMethod === "email") {
         console.log("Intentando iniciar sesión con:", data.email);
-        
 
         // Verificar que los campos no estén vacíos antes de intentar login
         if (!data.email.trim() || !data.password.trim()) {
@@ -452,7 +445,6 @@ export default function AuthPage() {
         </div>
 
         {/* Tarjeta principal con estilo Stark Industries/Iron Man */}
-
         <Card
           ref={cardRef}
           className={`relative border border-primary/20 shadow-xl  rounded-xl backdrop-blur-sm bg-card/80 transition-all duration-500 ${
@@ -497,39 +489,6 @@ export default function AuthPage() {
                 />
               ) : (
                 <>
-                  {/* Selector de método de autenticación */}
-                  {authMode === "login" && (
-                    <div className="flex gap-2 mb-4 flex-wrap">
-                      <Button
-                        type="button"
-                        variant={loginMethod === "email" ? "default" : "outline"}
-                        onClick={() => setLoginMethod("email")}
-                        className="flex-1 min-w-[90px]"
-                        size="sm"
-                      >
-                        Email
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={loginMethod === "otp" ? "default" : "outline"}
-                        onClick={() => setLoginMethod("otp")}
-                        className="flex-1 min-w-[90px]"
-                        size="sm"
-                      >
-                        OTP
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={loginMethod === "magic-link" ? "default" : "outline"}
-                        onClick={() => setLoginMethod("magic-link")}
-                        className="flex-1 min-w-[90px]"
-                        size="sm"
-                      >
-                        Magic Link
-                      </Button>
-                    </div>
-                  )}
-                  
                   {/* Formulario de login/signup normal */}
                   {authMode === "login" ? (
                 loginMethod === "email" ? (
@@ -638,7 +597,7 @@ export default function AuthPage() {
                       </div>
                     </form>
                   </Form>
-                ) : loginMethod === "otp" ? (
+                ) : (
                   <OTPAuth 
                     onSuccess={async (userId) => {
                       console.log('OTP Authentication successful:', userId);
@@ -721,9 +680,7 @@ export default function AuthPage() {
                     }}
                     onBack={() => setLoginMethod("email")}
                   />
-                ) : loginMethod === "magic-link" ? (
-                  <MagicLinkAuth mode="login" onSuccess={() => navigate("/")} />
-                ) : null
+                )
               ) : (
                 <div className="space-y-4">
                   {/* Nombre */}

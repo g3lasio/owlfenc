@@ -13,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CreditCard, Info, AlertCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import { useProfile } from "@/hooks/use-profile";
 import { CardForm } from "@/components/payments/CardForm";
 import { Link } from "wouter";
 import { BenefitsTracker } from "@/components/ui/benefits-tracker";
@@ -63,15 +62,10 @@ interface SubscriptionPlan {
 export default function Billing() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { profile } = useProfile();
   const [activePaymentMethodId, setActivePaymentMethodId] = useState<
     string | null
   >(null);
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Company info from profile
-  const companyName = profile?.company || '';
-  const phoneNumber = profile?.phone || profile?.mobilePhone || '';
 
   // Obtener métodos de pago
   const { data: paymentMethods, isLoading: isLoadingPaymentMethods } = useQuery<
