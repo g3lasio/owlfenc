@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useProfile } from "@/hooks/use-profile";
 import { usePermissions } from "@/contexts/PermissionContext";
@@ -101,7 +101,7 @@ const WIZARD_STEPS = [
 ];
 
 const Invoices: React.FC = () => {
-  const { user: currentUser } = useAuth();
+  const { currentUser } = useAuth();
   const { toast } = useToast();
   const { profile, isLoading: profileLoading } = useProfile();
   const { hasAccess, userPlan, showUpgradeModal } = usePermissions();

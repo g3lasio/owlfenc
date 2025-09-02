@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionContext';
 import { 
   Upload,
@@ -58,7 +58,7 @@ interface ContractAnalysis {
 
 export default function OptimizedLegalDefenseWorkflow() {
   // 🛡️ CRITICAL: Sistema de autenticación y permisos integrado
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const { 
     userPlan,
     hasAccess,
@@ -303,7 +303,7 @@ export default function OptimizedLegalDefenseWorkflow() {
       },
       body: JSON.stringify({
         projectData,
-        userId: user?.uid,
+        userId: currentUser?.uid,
         includeStateCompliance: true,
         industrySpecificAnalysis: true,
         veteranProtections: true
@@ -331,7 +331,7 @@ export default function OptimizedLegalDefenseWorkflow() {
       },
       body: JSON.stringify({
         projectData,
-        userId: user?.uid,
+        userId: currentUser?.uid,
         riskAnalysis: analysis,
         enhancementLevel: 'maximum_protection',
         includeVeteranClauses: true,

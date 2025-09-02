@@ -51,7 +51,7 @@ import {
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { useProfile } from "@/hooks/use-profile";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/contexts/AuthContext";
 import { generatePermitReportHTML, generatePDFReport, downloadPDFReport } from "@/utils/permitReportGenerator";
 
 interface Project {
@@ -140,14 +140,13 @@ export default function PermitAdvisor() {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("permits");
   const [showHistory, setShowHistory] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [searchFilter, setSearchFilter] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const { toast } = useToast();
   const { profile } = useProfile();
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const { 
     userPlan, 
     canUse, 
@@ -162,23 +161,16 @@ export default function PermitAdvisor() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [loadingProjects, setLoadingProjects] = useState(false);
 
-  // Monitor auth state
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-    });
-    return () => unsubscribe();
-  }, []);
 
   // Load existing projects when user changes to existing mode
   useEffect(() => {
-    if (selectionMode === "existing" && user?.uid) {
+    if (selectionMode === "existing" && currentUser?.uid) {
       loadExistingProjects();
     }
-  }, [selectionMode, user?.uid]);
+  }, [selectionMode, currentUser?.uid]);
 
   const loadExistingProjects = async () => {
-    if (!user?.uid) {
+    if (!currentUser?.uid) {
       toast({
         title: "Authentication Required",
         description: "Please log in to view your projects",

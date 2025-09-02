@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { Plus, Shield, AlertTriangle, FileText, Scale, Lock } from "lucide-react";
 
@@ -57,7 +57,7 @@ interface LegalDefenseProfile {
 
 export default function LegalDefenseProfile() {
   // 🛡️ CRITICAL: Sistema de autenticación y permisos integrado
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const { 
     userPlan,
     hasAccess,
@@ -184,7 +184,7 @@ export default function LegalDefenseProfile() {
         },
         body: JSON.stringify({
           ...profile,
-          userId: user?.uid, // Asegurar que se guarde para el usuario correcto
+          userId: currentUser?.uid, // Asegurar que se guarde para el usuario correcto
           lastUpdated: new Date().toISOString()
         })
       });

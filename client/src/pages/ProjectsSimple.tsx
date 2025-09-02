@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,20 +28,20 @@ function ProjectsSimple() {
   const [statusFilter, setStatusFilter] = useState("all");
   
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const { hasAccess, showUpgradeModal } = usePermissions();
 
   useEffect(() => {
-    if (user?.uid) {
+    if (currentUser?.uid) {
       loadProjects();
     }
-  }, [user?.uid]);
+  }, [currentUser?.uid]);
 
   const loadProjects = async () => {
     try {
       setIsLoading(true);
 
-      if (!user?.uid) {
+      if (!currentUser?.uid) {
         toast({
           title: "Autenticación requerida",
           description: "Por favor inicia sesión para ver tus proyectos",
