@@ -37,6 +37,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 import OTPAuth from "@/components/auth/OTPAuth";
 import OTPAuthSignup from "@/components/auth/OTPAuthSignup";
+import { useUnifiedRegistration } from "@/lib/unified-registration";
 import SessionUnlockPrompt from "@/components/auth/SessionUnlockPrompt";
 import BiometricSetupButton from "@/components/auth/BiometricSetupButton";
 import { sessionUnlockService } from "@/lib/session-unlock-service";
@@ -68,6 +69,9 @@ export default function AuthPage() {
     currentUser,
     loading: authLoading,
   } = useAuth();
+  
+  // 🎯 UNIFIED REGISTRATION: Hook para registro profesional
+  const { registerUser, verifyEmail, isLoaded: regLoaded } = useUnifiedRegistration();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
