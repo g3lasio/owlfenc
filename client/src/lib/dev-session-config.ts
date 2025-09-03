@@ -38,11 +38,29 @@ export const setupDevPersistence = () => {
     const originalRemoveItem = localStorage.removeItem;
     
     // Interceptar eliminaciones accidentales en desarrollo
+    // PERO permitir logout explícito
+    let allowLogout = false;
+    
+    // Exponer función global para permitir logout
+    (window as any).__allowDevLogout = () => {
+      allowLogout = true;
+      setTimeout(() => { allowLogout = false; }, 1000); // Reset después de 1 segundo
+    };
+    
     localStorage.removeItem = function(key: string) {
-      if (key.includes('persistent_session') || key.includes('otp-auth') || key.includes('firebase')) {
-        devLog(`Previniendo eliminación de ${key} en desarrollo`);
+      // Durante el logout, permitir eliminar todo
+      if (allowLogout) {
+        devLog(`Permitiendo eliminación durante logout: ${key}`);
+        return originalRemoveItem.call(this, key);
+      }
+      
+      // Solo prevenir eliminaciones accidentales (no durante logout)
+      if (key.includes('persistent_session') || key.includes('otp-auth')) {
+        devLog(`Previniendo eliminación accidental de ${key} en desarrollo`);
         return; // No eliminar en desarrollo
       }
+      
+      // SIEMPRE permitir eliminar claves de Firebase para que el logout funcione
       return originalRemoveItem.call(this, key);
     };
     

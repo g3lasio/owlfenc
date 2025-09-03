@@ -412,6 +412,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setError(null);
       console.log("🔓 [AUTH-CONTEXT] Iniciando proceso de signOut");
       
+      // Permitir logout en desarrollo
+      if (typeof window !== 'undefined' && (window as any).__allowDevLogout) {
+        (window as any).__allowDevLogout();
+      }
+      
       // Limpiar sesión persistente antes del logout
       try {
         const { enhancedPersistenceService } = await import('../lib/enhanced-persistence');
@@ -421,14 +426,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.warn("⚠️ [AUTH-CONTEXT] Error limpiando persistencia:", persistenceError);
       }
       
+      // Limpiar el estado del usuario inmediatamente
+      setCurrentUser(null);
+      setLastValidUser(null);
+      
+      // Ejecutar logout de Firebase
       await logoutUser();
       console.log("✅ [AUTH-CONTEXT] SignOut completado exitosamente");
+      
+      // Limpiar cualquier dato de sesión adicional
+      if (typeof window !== 'undefined') {
+        // Limpiar tokens almacenados
+        localStorage.removeItem('authToken');
+        sessionStorage.clear();
+        
+        // Forzar actualización del estado de autenticación
+        setTimeout(() => {
+          setCurrentUser(null);
+        }, 100);
+      }
+      
       return true;
     } catch (error: any) {
       console.error("❌ [AUTH-CONTEXT] Error detallado en logout:", error);
       console.log("AuthContext: Tipo de error:", error.name);
       console.log("AuthContext: Mensaje de error:", error.message);
       console.log("AuthContext: Stack trace:", error.stack);
+      
+      // Aún así intentar limpiar el estado local en caso de error
+      setCurrentUser(null);
+      setLastValidUser(null);
+      
       setError(error.message || "Error al cerrar sesión");
       throw error;
     } finally {

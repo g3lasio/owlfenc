@@ -254,7 +254,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ onWidthChange }: SidebarProps) {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const { currentUser, logout } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -304,11 +304,18 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
     setLoading(true);
     try {
       await logout();
+      // Cerrar menú móvil si está abierto
+      if (isMobileMenuOpen) {
+        setMobileMenuOpen(false);
+      }
+      // Navegar a login inmediatamente después del logout exitoso
+      navigate("/login");
       toast({
         title: t("general.success"),
         description: t("auth.logoutSuccess"),
       });
     } catch (error) {
+      console.error("Error during logout:", error);
       toast({
         title: t("general.error"),
         description: t("auth.logoutError"),
