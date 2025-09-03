@@ -275,7 +275,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
           photoURL: user.photoURL,
           phoneNumber: user.phoneNumber,
           emailVerified: user.emailVerified,
-          getIdToken: () => user.getIdToken(),
+          getIdToken: async () => {
+          try {
+            // Implementar timeout para evitar cuelgues
+            const tokenPromise = user.getIdToken();
+            const timeoutPromise = new Promise<string>((_, reject) => 
+              setTimeout(() => reject(new Error('Token timeout')), 5000)
+            );
+            
+            return await Promise.race([tokenPromise, timeoutPromise]);
+          } catch (error) {
+            console.warn('⚠️ [AUTH] getIdToken failed, trying cached:', error);
+            // Intentar con token en caché
+            try {
+              return await user.getIdToken();
+            } catch (cacheError) {
+              console.error('❌ [AUTH] Token retrieval failed completely');
+              return '';
+            }
+          }
+        },
         };
         setCurrentUser(appUser);
         
@@ -320,7 +339,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
         photoURL: (user as any).photoURL || null,
         phoneNumber: (user as any).phoneNumber || null,
         emailVerified: (user as any).emailVerified || false,
-        getIdToken: () => user.getIdToken(),
+        getIdToken: async () => {
+          try {
+            // Implementar timeout para evitar cuelgues
+            const tokenPromise = user.getIdToken();
+            const timeoutPromise = new Promise<string>((_, reject) => 
+              setTimeout(() => reject(new Error('Token timeout')), 5000)
+            );
+            
+            return await Promise.race([tokenPromise, timeoutPromise]);
+          } catch (error) {
+            console.warn('⚠️ [AUTH] getIdToken failed, trying cached:', error);
+            // Intentar con token en caché
+            try {
+              return await user.getIdToken();
+            } catch (cacheError) {
+              console.error('❌ [AUTH] Token retrieval failed completely');
+              return '';
+            }
+          }
+        },
       };
 
       // 🔧 CRÍTICO: Actualizar inmediatamente el estado del usuario 
@@ -378,7 +416,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
         photoURL: user.photoURL || null,
         phoneNumber: user.phoneNumber || null,
         emailVerified: user.emailVerified || false,
-        getIdToken: () => user.getIdToken(),
+        getIdToken: async () => {
+          try {
+            // Implementar timeout para evitar cuelgues
+            const tokenPromise = user.getIdToken();
+            const timeoutPromise = new Promise<string>((_, reject) => 
+              setTimeout(() => reject(new Error('Token timeout')), 5000)
+            );
+            
+            return await Promise.race([tokenPromise, timeoutPromise]);
+          } catch (error) {
+            console.warn('⚠️ [AUTH] getIdToken failed, trying cached:', error);
+            // Intentar con token en caché
+            try {
+              return await user.getIdToken();
+            } catch (cacheError) {
+              console.error('❌ [AUTH] Token retrieval failed completely');
+              return '';
+            }
+          }
+        },
       };
 
       // 🔧 CRÍTICO: Actualizar inmediatamente el estado del usuario 

@@ -74,12 +74,25 @@ class RobustAuthManager {
     try {
       const user = auth.currentUser;
       if (user) {
-        const existingToken = await user.getIdToken(false); // false = usar cache, NO refresh STS
-        console.log('✅ [ROBUST-AUTH] Token desde cache Firebase Auth (evitando STS)');
-        await this.updateSession(user, existingToken);
-        return existingToken;
+        // Implementar timeout para evitar cuelgues
+        const tokenPromise = user.getIdToken(false); // false = usar cache, NO refresh STS
+        const timeoutPromise = new Promise<string>((_, reject) => 
+          setTimeout(() => reject(new Error('Token timeout')), 3000)
+        );
+        
+        const existingToken = await Promise.race([tokenPromise, timeoutPromise]).catch(() => {
+          // Si falla, intentar obtener de la sesión actual
+          return this.currentSession?.token || '';
+        });
+        
+        if (existingToken) {
+          console.log('✅ [ROBUST-AUTH] Token desde cache Firebase Auth (evitando STS)');
+          await this.updateSession(user, existingToken);
+          return existingToken;
+        }
       }
     } catch (error: any) {
+      // Solo debug, no error para evitar spam
       console.debug('🔧 [ROBUST-AUTH] Firebase Auth fallback silenciado (evita spam):', error?.code || 'network');
     }
 
@@ -347,11 +360,31 @@ class RobustAuthManager {
         unsubscribe();
         if (user) {
           try {
-            const token = await user.getIdToken();
-            await this.updateSession(user, token);
-            console.log('✅ [ROBUST-AUTH] Sincronizado con Firebase Auth');
-          } catch (error) {
-            console.warn('⚠️ [ROBUST-AUTH] Error en sync Firebase:', error);
+            // Implementar timeout para getIdToken
+            const tokenPromise = user.getIdToken();
+            const timeoutPromise = new Promise<string>((_, reject) => 
+              setTimeout(() => reject(new Error('Token request timeout')), 5000)
+            );
+            
+            const token = await Promise.race([tokenPromise, timeoutPromise]).catch((error) => {
+              // Si falla, intentar obtener token en caché sin forzar refresh
+              console.warn('⚠️ [ROBUST-AUTH] getIdToken failed, trying cached:', error?.message);
+              return user.getIdToken(false); // false = no force refresh
+            });
+            
+            if (token) {
+              await this.updateSession(user, token);
+              console.log('✅ [ROBUST-AUTH] Sincronizado con Firebase Auth');
+            }
+          } catch (error: any) {
+            // Solo loguear, no lanzar el error para evitar popups molestos
+            if (error?.code !== 'auth/network-request-failed') {
+              console.warn('⚠️ [ROBUST-AUTH] Error en sync Firebase:', error);
+            }
+            // Continuar con datos en caché si existen
+            if (this.currentSession?.uid === user.uid) {
+              console.log('📦 [ROBUST-AUTH] Usando sesión en caché');
+            }
           }
         }
         resolve();
@@ -379,12 +412,28 @@ class RobustAuthManager {
   private async refreshCurrentSession(): Promise<void> {
     if (this.currentSession && auth.currentUser) {
       try {
-        const cachedToken = await auth.currentUser.getIdToken(false); // false = NO STS refresh
-        this.currentSession.token = cachedToken;
-        this.currentSession.lastVerified = Date.now();
-        this.saveSessionToLocalStorage(this.currentSession);
-      } catch (error) {
-        console.error('❌ [ROBUST-AUTH] Error renovando sesión:', error);
+        // Usar timeout para evitar cuelgues
+        const tokenPromise = auth.currentUser.getIdToken(false); // false = NO STS refresh
+        const timeoutPromise = new Promise<string>((_, reject) => 
+          setTimeout(() => reject(new Error('Refresh timeout')), 3000)
+        );
+        
+        const cachedToken = await Promise.race([tokenPromise, timeoutPromise]).catch(() => {
+          // Si falla, mantener token actual
+          console.log('⚠️ [ROBUST-AUTH] Refresh failed, keeping current token');
+          return this.currentSession?.token;
+        });
+        
+        if (cachedToken) {
+          this.currentSession.token = cachedToken;
+          this.currentSession.lastVerified = Date.now();
+          this.saveSessionToLocalStorage(this.currentSession);
+        }
+      } catch (error: any) {
+        // Solo loguear si no es error de red común
+        if (error?.code !== 'auth/network-request-failed' && error?.message !== 'Refresh timeout') {
+          console.error('❌ [ROBUST-AUTH] Error renovando sesión:', error);
+        }
       }
     }
   }
@@ -393,10 +442,39 @@ class RobustAuthManager {
     // Sincronizar memoria, localStorage y Firebase Auth
     if (auth.currentUser) {
       try {
-        const token = await auth.currentUser.getIdToken();
-        await this.updateSession(auth.currentUser, token);
-      } catch (error) {
-        console.error('❌ [ROBUST-AUTH] Error en sync completo:', error);
+        // Implementar timeout con retry
+        let token: string | undefined;
+        let retries = 0;
+        const maxRetries = 2;
+        
+        while (!token && retries < maxRetries) {
+          try {
+            const tokenPromise = auth.currentUser.getIdToken();
+            const timeoutPromise = new Promise<string>((_, reject) => 
+              setTimeout(() => reject(new Error('Sync timeout')), 3000)
+            );
+            
+            token = await Promise.race([tokenPromise, timeoutPromise]);
+          } catch (error) {
+            retries++;
+            if (retries >= maxRetries) {
+              // Usar token en caché como fallback
+              token = this.currentSession?.token;
+              console.log('📦 [ROBUST-AUTH] Usando token en caché después de reintentos');
+            } else {
+              // Esperar antes de reintentar
+              await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+            }
+          }
+        }
+        
+        if (token) {
+          await this.updateSession(auth.currentUser, token);
+        }
+      } catch (error: any) {
+        if (error?.code !== 'auth/network-request-failed') {
+          console.error('❌ [ROBUST-AUTH] Error en sync completo:', error);
+        }
       }
     }
   }
@@ -404,12 +482,26 @@ class RobustAuthManager {
   private async forceSyncWithFirebase(): Promise<void> {
     try {
       if (auth.currentUser) {
-        const cachedToken = await auth.currentUser.getIdToken(false); // false = NO STS refresh
-        await this.updateSession(auth.currentUser, cachedToken);
-        console.log('✅ [ROBUST-AUTH] Sync forzado exitoso');
+        // No forzar refresh, usar caché para evitar errores de red
+        const tokenPromise = auth.currentUser.getIdToken(false); // false = NO STS refresh
+        const timeoutPromise = new Promise<string>((_, reject) => 
+          setTimeout(() => reject(new Error('Force sync timeout')), 3000)
+        );
+        
+        const cachedToken = await Promise.race([tokenPromise, timeoutPromise]).catch(() => {
+          console.log('⚠️ [ROBUST-AUTH] Force sync timeout, usando caché');
+          return this.currentSession?.token;
+        });
+        
+        if (cachedToken) {
+          await this.updateSession(auth.currentUser, cachedToken);
+          console.log('✅ [ROBUST-AUTH] Sync forzado exitoso');
+        }
       }
-    } catch (error) {
-      console.error('❌ [ROBUST-AUTH] Sync forzado falló:', error);
+    } catch (error: any) {
+      if (error?.code !== 'auth/network-request-failed') {
+        console.error('❌ [ROBUST-AUTH] Sync forzado falló:', error);
+      }
     }
   }
 

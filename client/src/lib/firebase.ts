@@ -1183,6 +1183,10 @@ export const linkWithGoogle = async () => {
     const user = auth.currentUser;
     if (!user) throw new Error("No hay usuario autenticado");
 
+    // Importar GoogleAuthProvider dinámicamente
+    const { GoogleAuthProvider } = await import("firebase/auth");
+    const googleProvider = new GoogleAuthProvider();
+    
     const result = await linkWithPopup(user, googleProvider);
     return result.user;
   } catch (error) {
