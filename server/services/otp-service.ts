@@ -262,6 +262,7 @@ export class OTPService {
           verified: false,
           attempts: 0,
           maxAttempts: 3,
+          isRegistration: false, // This is for login, not registration
         })
         .returning();
 
