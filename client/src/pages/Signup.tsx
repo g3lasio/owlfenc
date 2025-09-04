@@ -25,7 +25,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { RiEyeLine, RiEyeOffLine, RiMailLine, RiLockPasswordLine } from "react-icons/ri";
-import { auth } from "@/lib/clientFirebase";
+import { auth } from "@/lib/firebase";
 import { signInWithCustomToken } from "firebase/auth";
 // Esquema de validación para el formulario
 const signupSchema = z
@@ -90,6 +90,15 @@ export default function Signup() {
       clearError();
       
       if (registrationMethod === "password") {
+        if (!data.password) {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Por favor ingresa una contraseña.",
+          });
+          setIsLoading(false);
+          return;
+        }
         await register(data.email, data.password, data.name);
         toast({
           title: "Registro exitoso",
