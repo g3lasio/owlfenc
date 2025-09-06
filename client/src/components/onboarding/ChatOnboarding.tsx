@@ -76,21 +76,24 @@ const ChatOnboarding: React.FC<{ onComplete: () => void }> = ({ onComplete }) =>
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 p-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <Card className="mb-6 border-cyan-200 bg-white/90 backdrop-blur">
-          <CardHeader className="pb-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 p-3">
+      <div className="max-w-5xl mx-auto">
+        {/* Compact Header */}
+        <Card className="mb-4 border-cyan-200 bg-white/90 backdrop-blur">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16 bg-gradient-to-r from-cyan-500 to-blue-600">
-                  <AvatarFallback className="text-white font-bold text-xl">🦉</AvatarFallback>
+              <div className="flex items-center gap-3">
+                <Avatar className="h-12 w-12 bg-gradient-to-r from-cyan-500 to-blue-600">
+                  <AvatarFallback className="text-white font-bold">🦉</AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                    ¡Hola {userName}!
-                  </CardTitle>
-                  <p className="text-gray-600 text-lg">Soy Mervin, tu asistente de Owl Fenc</p>
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+                    ¡Hola {userName}! Soy Mervin
+                  </h1>
+                  <Badge className="bg-green-100 text-green-700 border-green-300 text-xs px-2 py-1">
+                    <Zap className="h-3 w-3 mr-1" />
+                    Trial Master - 21 Días Gratis
+                  </Badge>
                 </div>
               </div>
               
@@ -100,102 +103,93 @@ const ChatOnboarding: React.FC<{ onComplete: () => void }> = ({ onComplete }) =>
                 onClick={handleSkip}
                 className="text-gray-500 hover:text-gray-700"
               >
-                <X className="h-4 w-4 mr-2" />
-                Saltear
+                <X className="h-4 w-4 mr-1" />
+                Skip
               </Button>
             </div>
-          </CardHeader>
+          </CardContent>
         </Card>
 
-        {/* Main Content */}
+        {/* Main Content - Compact */}
         <Card className="border-cyan-200 bg-white/90 backdrop-blur">
-          <CardContent className="p-8">
-            {/* Welcome Message */}
-            <div className="text-center mb-8">
-              <Badge className="mb-4 bg-green-100 text-green-700 border-green-300 px-4 py-2">
-                <Zap className="h-4 w-4 mr-2" />
-                Trial Master Activado - 21 Días Gratis
-              </Badge>
-              
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+          <CardContent className="p-5">
+            {/* Compact Welcome */}
+            <div className="text-center mb-5">
+              <h2 className="text-lg font-bold text-gray-800 mb-2">
                 Tienes acceso completo a la plataforma más avanzada para contratistas
               </h2>
-              
-              <p className="text-gray-600 text-lg leading-relaxed max-w-3xl mx-auto">
-                Te he activado un trial completo. Estas son las funciones principales que te ayudarán a ganar más proyectos:
+              <p className="text-gray-600 text-sm max-w-2xl mx-auto">
+                Te activé un trial completo. Estas son las funciones principales:
               </p>
             </div>
 
-            {/* Features Grid */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              <div className="bg-gradient-to-br from-cyan-50 to-blue-50 p-6 rounded-xl border border-cyan-200">
-                <FileText className="h-8 w-8 text-cyan-600 mb-3" />
-                <h3 className="font-semibold text-gray-800 mb-2">Estimados con IA</h3>
-                <p className="text-gray-600 text-sm">Estimados profesionales en 60 segundos con precios automáticos</p>
+            {/* Compact Features Grid - 6 in 2 rows */}
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              <div className="bg-gradient-to-br from-cyan-50 to-blue-50 p-3 rounded-lg border border-cyan-200 text-center">
+                <FileText className="h-6 w-6 text-cyan-600 mx-auto mb-2" />
+                <h3 className="font-semibold text-gray-800 text-xs mb-1">Estimados IA</h3>
+                <p className="text-gray-600 text-xs">60 segundos, precios automáticos</p>
               </div>
               
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
-                <DollarSign className="h-8 w-8 text-green-600 mb-3" />
-                <h3 className="font-semibold text-gray-800 mb-2">Contratos Legales</h3>
-                <p className="text-gray-600 text-sm">Contratos profesionales que te protegen legalmente</p>
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-3 rounded-lg border border-green-200 text-center">
+                <DollarSign className="h-6 w-6 text-green-600 mx-auto mb-2" />
+                <h3 className="font-semibold text-gray-800 text-xs mb-1">Contratos Legales</h3>
+                <p className="text-gray-600 text-xs">Protección profesional</p>
               </div>
               
-              <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-6 rounded-xl border border-purple-200">
-                <Smartphone className="h-8 w-8 text-purple-600 mb-3" />
-                <h3 className="font-semibold text-gray-800 mb-2">Mervin AI</h3>
-                <p className="text-gray-600 text-sm">Asistente inteligente que responde cualquier pregunta</p>
+              <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-3 rounded-lg border border-purple-200 text-center">
+                <Smartphone className="h-6 w-6 text-purple-600 mx-auto mb-2" />
+                <h3 className="font-semibold text-gray-800 text-xs mb-1">Mervin AI</h3>
+                <p className="text-gray-600 text-xs">Asistente inteligente</p>
               </div>
               
-              <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-6 rounded-xl border border-orange-200">
-                <Users className="h-8 w-8 text-orange-600 mb-3" />
-                <h3 className="font-semibold text-gray-800 mb-2">Gestión de Clientes</h3>
-                <p className="text-gray-600 text-sm">Organiza todos tus clientes y proyectos en un solo lugar</p>
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-3 rounded-lg border border-orange-200 text-center">
+                <Users className="h-6 w-6 text-orange-600 mx-auto mb-2" />
+                <h3 className="font-semibold text-gray-800 text-xs mb-1">Gestión Clientes</h3>
+                <p className="text-gray-600 text-xs">Organiza proyectos</p>
               </div>
               
-              <div className="bg-gradient-to-br from-pink-50 to-rose-50 p-6 rounded-xl border border-pink-200">
-                <Clock className="h-8 w-8 text-pink-600 mb-3" />
-                <h3 className="font-semibold text-gray-800 mb-2">Sin Marcas de Agua</h3>
-                <p className="text-gray-600 text-sm">Documentos 100% profesionales con tu marca</p>
+              <div className="bg-gradient-to-br from-pink-50 to-rose-50 p-3 rounded-lg border border-pink-200 text-center">
+                <Clock className="h-6 w-6 text-pink-600 mx-auto mb-2" />
+                <h3 className="font-semibold text-gray-800 text-xs mb-1">Sin Marcas</h3>
+                <p className="text-gray-600 text-xs">100% profesional</p>
               </div>
               
-              <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-6 rounded-xl border border-indigo-200">
-                <Upload className="h-8 w-8 text-indigo-600 mb-3" />
-                <h3 className="font-semibold text-gray-800 mb-2">Importar CRM</h3>
-                <p className="text-gray-600 text-sm">Sube tus clientes existentes desde Excel u otro CRM</p>
+              <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-3 rounded-lg border border-indigo-200 text-center">
+                <Upload className="h-6 w-6 text-indigo-600 mx-auto mb-2" />
+                <h3 className="font-semibold text-gray-800 text-xs mb-1">Importar CRM</h3>
+                <p className="text-gray-600 text-xs">Excel/otros CRM</p>
               </div>
             </div>
 
-            {/* Important Setup Info */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-8">
+            {/* Compact Setup Info */}
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-5">
               <div className="flex items-start gap-3">
-                <CheckCircle className="h-6 w-6 text-amber-600 mt-1 flex-shrink-0" />
+                <CheckCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-amber-800 mb-2">
-                    ⚡ Importante: Configura tu información empresarial
+                  <h4 className="font-semibold text-amber-800 text-sm mb-2">
+                    ⚡ Configura tu información para documentos profesionales
                   </h4>
-                  <p className="text-amber-700 mb-3">
-                    Para que tus estimados y contratos se vean profesionales, necesitas configurar:
-                  </p>
-                  <ul className="text-amber-700 text-sm space-y-1">
-                    <li>• <strong>Datos de tu empresa</strong> (nombre, dirección, teléfono)</li>
-                    <li>• <strong>Logo empresarial</strong> (aparece en todos los documentos)</li>
-                    <li>• <strong>Subir clientes existentes</strong> (importar desde Excel/CRM)</li>
-                  </ul>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-amber-700 text-xs">
+                    <span>• <strong>Datos empresa</strong> (nombre, dirección)</span>
+                    <span>• <strong>Logo</strong> (en documentos)</span>
+                    <span>• <strong>Clientes</strong> (importar Excel/CRM)</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="grid md:grid-cols-3 gap-4">
+            {/* Compact Action Buttons */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
               <Button 
                 onClick={() => handleNavigation('/profile')}
                 disabled={isActivating}
-                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 h-16 text-lg"
+                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 h-12"
               >
-                <Building2 className="h-5 w-5 mr-3" />
+                <Building2 className="h-4 w-4 mr-2" />
                 <div className="text-left">
-                  <div className="font-semibold">Configurar Empresa</div>
-                  <div className="text-xs opacity-90">Logo, datos, contacto</div>
+                  <div className="font-semibold text-sm">Empresa</div>
+                  <div className="text-xs opacity-90">Logo, datos</div>
                 </div>
               </Button>
               
@@ -203,12 +197,12 @@ const ChatOnboarding: React.FC<{ onComplete: () => void }> = ({ onComplete }) =>
                 onClick={() => handleNavigation('/clients')}
                 disabled={isActivating}
                 variant="outline"
-                className="border-2 border-cyan-200 hover:bg-cyan-50 h-16 text-lg"
+                className="border-2 border-cyan-200 hover:bg-cyan-50 h-12"
               >
-                <Users className="h-5 w-5 mr-3" />
+                <Users className="h-4 w-4 mr-2" />
                 <div className="text-left">
-                  <div className="font-semibold">Subir Clientes</div>
-                  <div className="text-xs text-gray-600">Importar desde CRM</div>
+                  <div className="font-semibold text-sm">Clientes</div>
+                  <div className="text-xs text-gray-600">Importar</div>
                 </div>
               </Button>
               
@@ -216,30 +210,27 @@ const ChatOnboarding: React.FC<{ onComplete: () => void }> = ({ onComplete }) =>
                 onClick={() => handleNavigation('/settings')}
                 disabled={isActivating}
                 variant="outline"
-                className="border-2 border-gray-200 hover:bg-gray-50 h-16 text-lg"
+                className="border-2 border-gray-200 hover:bg-gray-50 h-12"
               >
-                <Settings className="h-5 w-5 mr-3" />
+                <Settings className="h-4 w-4 mr-2" />
                 <div className="text-left">
-                  <div className="font-semibold">Configuración</div>
-                  <div className="text-xs text-gray-600">Ajustes avanzados</div>
+                  <div className="font-semibold text-sm">Config</div>
+                  <div className="text-xs text-gray-600">Ajustes</div>
                 </div>
               </Button>
             </div>
 
-            {/* Skip Option */}
-            <div className="text-center mt-8">
+            {/* Compact Skip Option */}
+            <div className="text-center">
               <Button 
                 variant="ghost" 
                 onClick={handleSkip}
                 disabled={isActivating}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 text-sm"
               >
                 <ArrowRight className="h-4 w-4 mr-2" />
-                {isActivating ? 'Activando trial...' : 'Empezar a usar la plataforma'}
+                {isActivating ? 'Activando...' : 'Empezar a usar ahora'}
               </Button>
-              <p className="text-xs text-gray-500 mt-2">
-                Puedes configurar todo después en cualquier momento
-              </p>
             </div>
           </CardContent>
         </Card>
