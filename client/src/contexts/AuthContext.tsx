@@ -193,8 +193,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
               phoneNumber: user.phoneNumber,
               emailVerified: user.emailVerified,
               getIdToken: async () => {
-                // SOLUCIÓN DEFINITIVA: No hacer fetch, retornar token local
-                return `local_${user.uid}_${Date.now()}`;
+                try {
+                  // ARREGLADO: Usar token real de Firebase
+                  return await user.getIdToken();
+                } catch (error) {
+                  console.error("❌ Error obteniendo token Firebase:", error);
+                  throw error;
+                }
               },
             };
             setCurrentUser(appUser);
@@ -259,9 +264,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
           phoneNumber: user.phoneNumber,
           emailVerified: user.emailVerified,
           getIdToken: async () => {
-          // SOLUCIÓN DEFINITIVA: No hacer fetch, retornar token local
-          return `local_${user.uid}_${Date.now()}`;
-        },
+            try {
+              // Para usuarios OTP, usar un token especial
+              return `otp_${user.uid}_${Date.now()}`;
+            } catch (error) {
+              console.error("❌ Error obteniendo token OTP:", error);
+              throw error;
+            }
+          },
         };
         setCurrentUser(appUser);
         
