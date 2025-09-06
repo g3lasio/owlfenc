@@ -842,10 +842,23 @@ export class FirebaseStorage implements IStorage {
       );
       
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
-        ...convertTimestampToDate(doc.data()),
-        id: parseInt(doc.id, 10)
-      })) as SubscriptionPlan[];
+      return querySnapshot.docs.map((doc, index) => {
+        const planData = convertTimestampToDate(doc.data());
+        
+        // Usar el ID del campo en los datos, o generar uno válido
+        let planId = planData.id;
+        if (!planId || isNaN(Number(planId))) {
+          // Si no hay ID válido, usar el orden + 1 como ID temporal
+          planId = index + 1;
+        }
+        
+        console.log(`📋 [FIREBASE-PLAN] Plan ${planData.name}: docId=${doc.id}, planId=${planId}`);
+        
+        return {
+          ...planData,
+          id: Number(planId)
+        };
+      }) as SubscriptionPlan[];
     } catch (error) {
       console.error('Error fetching all subscription plans:', error);
       return [];
