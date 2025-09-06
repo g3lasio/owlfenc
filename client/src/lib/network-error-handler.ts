@@ -202,7 +202,9 @@ class NetworkErrorHandler {
 // Crear instancia global
 export const networkErrorHandler = new NetworkErrorHandler();
 
+// DESHABILITADO - REEMPLAZADO POR SISTEMA UNIFICADO
 // INTERCEPTOR CRÍTICO para runtime-error-plugin antes de inicialización
+/*
 if (typeof window !== 'undefined') {
   // Interceptar INMEDIATAMENTE antes de que cargue el runtime-error-plugin
   const immediateInterceptor = (e: PromiseRejectionEvent) => {
@@ -231,6 +233,11 @@ if (typeof window !== 'undefined') {
     networkErrorHandler.init();
     networkErrorHandler.logSilently('INIT', 'Sistema DEFINITIVO anti-runtime-error-plugin activado', '');
   }, 50);
+}
+*/
+
+if (typeof window !== 'undefined') {
+  console.log('⚠️ [NETWORK-ERROR-HANDLER] DESHABILITADO - Usando sistema unificado');
 }
 
 export default networkErrorHandler;
