@@ -69,6 +69,11 @@ export const verifyFirebaseAuth = async (req: Request, res: Response, next: Next
     }
 
     const token = authHeader.substring(7); // Remover "Bearer "
+    
+    // DEBUGGING TEMPORAL: Log del token para diagnóstico
+    console.log(`🔍 [AUTH-DEBUG] Token length: ${token.length}`);
+    console.log(`🔍 [AUTH-DEBUG] Token preview: ${token.substring(0, 50)}...`);
+    console.log(`🔍 [AUTH-DEBUG] Full auth header: ${authHeader.substring(0, 100)}...`);
 
     try {
       // Verificar el token con Firebase Admin
