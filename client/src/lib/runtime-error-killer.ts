@@ -1,9 +1,11 @@
 /**
- * SOLUCIÓN DEFINITIVA PARA RUNTIME-ERROR-PLUGIN
- * Intercepta específicamente errores de Firebase Auth que causan overlays molestos
+ * DESHABILITADO: SOLUCIÓN DEFINITIVA PARA RUNTIME-ERROR-PLUGIN
+ * Este archivo ha sido reemplazado por unified-error-handler.ts
  */
 
+// DESHABILITADO - REEMPLAZADO POR SISTEMA UNIFICADO
 // INTERCEPTOR CRÍTICO - Se ejecuta inmediatamente
+/*
 (function() {
   'use strict';
   
@@ -74,3 +76,6 @@
 
   console.debug('🛡️ [RUNTIME-ERROR-KILLER] Sistema crítico activado contra Firebase Auth overlays');
 })();
+*/
+
+console.log('⚠️ [RUNTIME-ERROR-KILLER] DESHABILITADO - Usando sistema unificado');

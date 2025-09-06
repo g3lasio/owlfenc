@@ -1,6 +1,6 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { auth } from "@/lib/firebase";
-import { networkErrorHandler } from "./network-error-handler";
+import { unifiedErrorHandler } from "./unified-error-handler";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -116,8 +116,8 @@ export async function apiRequest(
     await throwIfResNotOk(res);
     return res;
   } catch (error: any) {
-    // Usar el manejador de errores antes de hacer log o lanzar
-    const handledError = networkErrorHandler.handleQueryError(error, { queryKey: [url] });
+    // Usar el manejador de errores unificado
+    const handledError = unifiedErrorHandler.handleError(error, `API ${method} ${url}`);
     if (!handledError) {
       // Error fue silenciado, retornar respuesta mock
       return new Response('{"error": "Network error handled silently", "offline": true}', { 
@@ -175,8 +175,8 @@ export const getQueryFn: <T>(options: {
       await throwIfResNotOk(res);
       return await res.json();
     } catch (error: any) {
-      // Usar el manejador de errores para queries
-      const handledError = networkErrorHandler.handleQueryError(error, { queryKey });
+      // Usar el manejador de errores unificado para queries
+      const handledError = unifiedErrorHandler.handleError(error, `Query ${queryKey[0]}`);
       if (!handledError) {
         // Error fue silenciado
         if (unauthorizedBehavior === "returnNull") {

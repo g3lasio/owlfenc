@@ -55,4 +55,3 @@ localPort = 24678
 externalPort = 3000
 
 [agent]
-integrations = ["firebase_barebones_javascript==1.0.0"]
