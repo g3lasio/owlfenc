@@ -4263,25 +4263,11 @@ Output must be between 200-900 characters in English.`;
 
   app.get(
     "/api/subscription/user-subscription",
+    requireAuth,
     async (req: Request, res: Response) => {
       try {
-        // SISTEMA ROBUSTO: Obtener Firebase UID correctamente
-        let firebaseUserId;
-        const authHeader = req.headers.authorization;
-        
-        if (authHeader && authHeader.startsWith("Bearer ")) {
-          try {
-            const token = authHeader.substring(7);
-            const decodedToken = await admin.auth().verifyIdToken(token);
-            firebaseUserId = decodedToken.uid;
-            console.log(`🔐 [SUBSCRIPTION-USER] Firebase UID verified: ${firebaseUserId}`);
-          } catch (authError) {
-            console.warn("⚠️ [SUBSCRIPTION-USER] Token verification failed, but continuing with graceful degradation");
-            console.debug("🔧 [SUBSCRIPTION-USER] Auth error details silenced to prevent spam");
-          }
-        }
-
-        if (!firebaseUserId) {
+        // USAR AUTENTICACIÓN FIREBASE ROBUSTA IGUAL QUE CREATE-CHECKOUT
+        if (!req.firebaseUser?.uid || !req.firebaseUser?.email) {
           console.warn("❌ [SUBSCRIPTION-USER] No valid Firebase UID available");
           return res.status(401).json({
             success: false,
@@ -4289,6 +4275,9 @@ Output must be between 200-900 characters in English.`;
             message: "Token de autenticación requerido - Por favor inicia sesión nuevamente"
           });
         }
+
+        const firebaseUserId = req.firebaseUser.uid;
+        console.log(`🔐 [SUBSCRIPTION-USER] Firebase UID verified: ${firebaseUserId}`);
 
         // USAR SISTEMA ROBUSTO DE MAPEO
         const userId = firebaseUserId; // SIEMPRE usar Firebase UID como ID principal

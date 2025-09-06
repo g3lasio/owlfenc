@@ -450,9 +450,9 @@ class StripeService {
 
       // Convert Unix timestamps to Date objects
       const currentPeriodStart = new Date(
-        subscription.current_period_start * 1000,
+        (subscription as any).current_period_start * 1000,
       );
-      const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+      const currentPeriodEnd = new Date((subscription as any).current_period_end * 1000);
 
       // Create subscription data for Firebase
       const subscriptionData = {
