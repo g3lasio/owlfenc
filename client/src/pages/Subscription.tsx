@@ -104,12 +104,24 @@ export default function Subscription() {
     useQuery({
       queryKey: ["/api/subscription/user-subscription", userEmail],
       queryFn: async () => {
-        if (!userEmail) throw new Error("User email is required");
-        const response = await fetch(`/api/subscription/user-subscription?email=${encodeURIComponent(userEmail)}`);
+        if (!currentUser) throw new Error("User authentication required");
+        
+        // Obtener token de autenticación de Firebase
+        const token = await currentUser.getIdToken();
+        if (!token) throw new Error("No se pudo obtener token de autenticación");
+        
+        const response = await fetch("/api/subscription/user-subscription", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+        
         if (!response.ok) throw new Error("Failed to fetch subscription");
         return response.json();
       },
-      enabled: !!userEmail,
+      enabled: !!currentUser,
       throwOnError: false,
     });
 
