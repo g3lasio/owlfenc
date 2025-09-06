@@ -512,10 +512,10 @@ export default function Subscription() {
       {/* Mostrar las tarjetas de planes */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-10">
         {Array.isArray(plans) && plans
-          .filter((plan: SubscriptionPlan) => plan.isActive)
-          .map((plan: SubscriptionPlan) => (
+          .filter((plan: SubscriptionPlan) => plan.isActive && plan.id != null)
+          .map((plan: SubscriptionPlan, index) => (
             <PricingCard
-              key={plan.id}
+              key={plan.id || `plan-${index}`}
               name={plan.name}
               description={plan.description}
               price={plan.price}
