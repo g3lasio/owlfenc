@@ -13,11 +13,11 @@ import { adminAuth } from '../firebase-admin';
 import { UserMappingService } from '../services/UserMappingService';
 import { storage } from '../storage';
 
-// Extended Request interface with user data
+// Extended Request interface with auth data
 declare global {
   namespace Express {
     interface Request {
-      user?: {
+      authUser?: {
         uid: string;
         email?: string;
         name?: string;
@@ -180,12 +180,12 @@ export const unifiedSessionAuth = (options: AuthOptions = { requireAuth: true })
       }
 
       // STEP 6: Attach user data to request
-      req.user = {
+      req.authUser = {
         uid: decodedClaims.uid,
         email: decodedClaims.email,
         name: decodedClaims.name,
         claims: decodedClaims,
-        internalUserId,
+        internalUserId: internalUserId || undefined,
         subscription: subscriptionInfo ? {
           planName: subscriptionInfo.plan?.name,
           status: subscriptionInfo.subscription?.status,
@@ -257,15 +257,15 @@ export const requirePlanAndFeature = (plans: string[], feature: string) => unifi
 /**
  * Helper function to get authenticated user from request
  */
-export function getAuthenticatedUser(req: Request): NonNullable<Request['user']> | null {
-  return req.user || null;
+export function getAuthenticatedUser(req: Request): NonNullable<Request['authUser']> | null {
+  return req.authUser || null;
 }
 
 /**
  * Helper function to require authenticated user (throws if not authenticated)
  */
-export function requireAuthenticatedUser(req: Request): NonNullable<Request['user']> {
-  const user = req.user;
+export function requireAuthenticatedUser(req: Request): NonNullable<Request['authUser']> {
+  const user = req.authUser;
   
   if (!user) {
     throw new Error("Authentication required - user not found in request");

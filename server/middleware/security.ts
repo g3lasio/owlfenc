@@ -132,7 +132,13 @@ export const corsConfig = {
   origin: process.env.NODE_ENV === 'production' 
     ? [process.env.ALLOWED_ORIGINS?.split(',') || []].flat().filter(Boolean)
     : true, // Allow all origins in development
-  credentials: true,
+  credentials: true, // CRITICAL: Required for session cookies
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', // Fallback support for mobile/CLI
+    'X-Requested-With',
+    'X-Firebase-UID', // Legacy header support
+    'X-User-Email'    // Legacy header support
+  ]
 };

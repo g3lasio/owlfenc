@@ -4,10 +4,12 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import multer from "multer";
 import pdfParse from "pdf-parse";
+import cookieParser from "cookie-parser";
 import centralizedEmailRoutes from "./routes/centralized-email-routes-fix";
 import otpRoutes from "./routes/otp-routes";
 import oauthConfigRoutes from "./routes/oauth-config";
 import webauthnRoutes from "./routes/webauthn";
+import sessionAuthRoutes from "./routes/session-auth";
 import { setupProductionRoutes, setupProductionErrorHandlers } from "./production-setup";
 
 // 🛡️ SECURITY MIDDLEWARE - Applied immediately for maximum protection
@@ -77,6 +79,9 @@ app.use(apiLimiter);
 // Increased limits to handle large contract data and PDFs
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true, parameterLimit: 50000 }));
+
+// 🍪 COOKIE PARSER CONFIGURATION - Required for session cookies
+app.use(cookieParser());
 
 
 
@@ -402,6 +407,10 @@ console.log('📧 [CENTRALIZED-EMAIL] Rutas registradas en /api/centralized-emai
 // 🔐 Registrar rutas de autenticación OTP
 app.use("/api/otp", otpRoutes);
 console.log('🔐 [OTP-AUTH] Rutas de autenticación OTP registradas en /api/otp');
+
+// 🍪 REGISTRAR RUTAS DE SESSION AUTHENTICATION - Firebase Session Cookies
+app.use("/api", sessionAuthRoutes);
+console.log('🍪 [SESSION-AUTH] Sistema de Firebase Session Cookies registrado en /api/sessionLogin');
 
 // 🔐 Registrar rutas de autenticación WebAuthn (biométrica)
 app.use("/api/webauthn", webauthnRoutes);
