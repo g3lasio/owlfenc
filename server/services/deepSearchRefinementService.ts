@@ -613,6 +613,185 @@ Ayuda al contratista de manera práctica y eficiente.`;
   }
 
   /**
+   * Analiza y remueve materiales específicos basado en la solicitud
+   */
+  private analyzeAndRemoveMaterials(request: RefinementRequest): {
+    updatedResult?: DeepSearchResult;
+    removedMaterials: any[];
+    totalSavings: number;
+  } {
+    const userRequest = request.userRequest.toLowerCase();
+    let updatedResult = { ...request.currentResult };
+    const removedMaterials: any[] = [];
+    let totalSavings = 0;
+
+    // Palabras clave para identificar materiales a quitar
+    const removalKeywords = ['quitar', 'remover', 'eliminar', 'no necesito', 'sobra', 'delete', 'remove'];
+    const isRemovalRequest = removalKeywords.some(keyword => userRequest.includes(keyword));
+
+    if (isRemovalRequest) {
+      // Buscar materiales específicos mencionados en la solicitud
+      const materialsToCheck = [
+        { keywords: ['concreto', 'concrete', 'cemento'], category: 'concrete' },
+        { keywords: ['pintura', 'paint'], category: 'paint' },
+        { keywords: ['labor', 'mano de obra', 'trabajadores'], category: 'labor' },
+        { keywords: ['hardware', 'tornillos', 'clavos'], category: 'hardware' },
+        { keywords: ['grava', 'arena', 'gravel', 'sand'], category: 'base_materials' },
+        { keywords: ['postes', 'posts'], category: 'posts' }
+      ];
+
+      for (const materialGroup of materialsToCheck) {
+        const isMatched = materialGroup.keywords.some(keyword => userRequest.includes(keyword));
+        
+        if (isMatched) {
+          // Encontrar y remover materiales de esta categoría
+          const materialsToRemove = updatedResult.materials.filter(material => 
+            material.category.toLowerCase().includes(materialGroup.category.toLowerCase()) ||
+            materialGroup.keywords.some(keyword => 
+              material.name.toLowerCase().includes(keyword) ||
+              material.description.toLowerCase().includes(keyword)
+            )
+          );
+
+          materialsToRemove.forEach(material => {
+            removedMaterials.push(material);
+            totalSavings += material.totalPrice;
+            
+            // Remover del array
+            updatedResult.materials = updatedResult.materials.filter(m => m.id !== material.id);
+          });
+        }
+      }
+
+      // Remover materiales redundantes o opcionales si se solicita optimización
+      if (userRequest.includes('optimizar') || userRequest.includes('simplificar')) {
+        // Identificar materiales opcionales o duplicados
+        const optionalMaterials = updatedResult.materials.filter(material => 
+          material.name.toLowerCase().includes('premium') ||
+          material.name.toLowerCase().includes('decorativo') ||
+          material.name.toLowerCase().includes('adicional') ||
+          material.description.toLowerCase().includes('opcional')
+        );
+
+        optionalMaterials.forEach(material => {
+          if (material.totalPrice < (updatedResult.grandTotal * 0.1)) { // Solo quitar si es menos del 10% del total
+            removedMaterials.push(material);
+            totalSavings += material.totalPrice;
+            updatedResult.materials = updatedResult.materials.filter(m => m.id !== material.id);
+          }
+        });
+      }
+    }
+
+    // Recalcular totales si se removieron materiales
+    if (removedMaterials.length > 0) {
+      updatedResult.totalMaterialsCost = updatedResult.materials.reduce((sum, m) => sum + m.totalPrice, 0);
+      updatedResult.grandTotal = updatedResult.totalMaterialsCost + updatedResult.totalLaborCost;
+    }
+
+    return {
+      updatedResult: removedMaterials.length > 0 ? updatedResult : undefined,
+      removedMaterials,
+      totalSavings
+    };
+  }
+
+  /**
+   * Analiza ajustes de mano de obra específicos
+   */
+  private analyzeLaborAdjustment(request: RefinementRequest): {
+    hasChanges: boolean;
+    updatedResult?: DeepSearchResult;
+    appliedChanges: string[];
+  } {
+    const userRequest = request.userRequest.toLowerCase();
+    let updatedResult = { ...request.currentResult };
+    let hasChanges = false;
+    const appliedChanges: string[] = [];
+
+    // Detectar tipos de ajustes de labor
+    if (userRequest.includes('reducir labor') || userRequest.includes('menos horas') || userRequest.includes('barato')) {
+      const reductionFactor = 0.80; // 20% de reducción
+      
+      updatedResult.laborCosts = updatedResult.laborCosts.map(labor => ({
+        ...labor,
+        rate: Math.round(labor.rate * reductionFactor * 100) / 100,
+        total: Math.round(labor.hours * labor.rate * reductionFactor * 100) / 100
+      }));
+
+      hasChanges = true;
+      appliedChanges.push('• Reduje las tarifas de mano de obra en un 20%');
+      appliedChanges.push('• Optimización para presupuesto ajustado');
+    }
+
+    if (userRequest.includes('aumentar labor') || userRequest.includes('más horas') || userRequest.includes('premium')) {
+      const increaseFactor = 1.25; // 25% de incremento
+      
+      updatedResult.laborCosts = updatedResult.laborCosts.map(labor => ({
+        ...labor,
+        rate: Math.round(labor.rate * increaseFactor * 100) / 100,
+        total: Math.round(labor.hours * labor.rate * increaseFactor * 100) / 100
+      }));
+
+      hasChanges = true;
+      appliedChanges.push('• Incrementé las tarifas de mano de obra en un 25%');
+      appliedChanges.push('• Trabajo premium con especialistas');
+    }
+
+    if (userRequest.includes('sin labor') || userRequest.includes('solo materiales') || userRequest.includes('diy')) {
+      updatedResult.laborCosts = [];
+      hasChanges = true;
+      appliedChanges.push('• Eliminé todos los costos de mano de obra');
+      appliedChanges.push('• Presupuesto solo para materiales (DIY)');
+    }
+
+    // Ajustes específicos por tipo de trabajo
+    if (userRequest.includes('electricista') || userRequest.includes('electrical')) {
+      updatedResult.laborCosts = updatedResult.laborCosts.map(labor => {
+        if (labor.category.toLowerCase().includes('electrical') || labor.description.toLowerCase().includes('electrical')) {
+          return {
+            ...labor,
+            rate: Math.max(labor.rate, 65), // Tarifa mínima para electricistas
+            total: labor.hours * Math.max(labor.rate, 65)
+          };
+        }
+        return labor;
+      });
+
+      hasChanges = true;
+      appliedChanges.push('• Ajusté tarifas eléctricas a estándar profesional ($65+/hora)');
+    }
+
+    if (userRequest.includes('plomero') || userRequest.includes('plumbing')) {
+      updatedResult.laborCosts = updatedResult.laborCosts.map(labor => {
+        if (labor.category.toLowerCase().includes('plumbing') || labor.description.toLowerCase().includes('plumbing')) {
+          return {
+            ...labor,
+            rate: Math.max(labor.rate, 55), // Tarifa mínima para plomeros
+            total: labor.hours * Math.max(labor.rate, 55)
+          };
+        }
+        return labor;
+      });
+
+      hasChanges = true;
+      appliedChanges.push('• Ajusté tarifas de plomería a estándar profesional ($55+/hora)');
+    }
+
+    // Recalcular totales si hubo cambios
+    if (hasChanges) {
+      updatedResult.totalLaborCost = updatedResult.laborCosts.reduce((sum, l) => sum + l.total, 0);
+      updatedResult.grandTotal = updatedResult.totalMaterialsCost + updatedResult.totalLaborCost;
+    }
+
+    return {
+      hasChanges,
+      updatedResult: hasChanges ? updatedResult : undefined,
+      appliedChanges
+    };
+  }
+
+  /**
    * Analiza si la solicitud requiere cambios automáticos y los aplica
    */
   private analyzeChangeRequirement(userRequest: string, currentResult: DeepSearchResult): {
@@ -787,11 +966,62 @@ Ayuda al contratista de manera práctica y eficiente.`;
   }
 
   /**
-   * Maneja ajustes específicos de labor
+   * Maneja ajustes específicos de labor - MEJORADO para modificar costos reales
    */
   private async handleLaborAdjustment(request: RefinementRequest): Promise<RefinementResponse> {
-    // Implementación específica para ajustes de labor
-    return await this.handleGeneralRequest(request);
+    // Paso 1: Analizar qué ajustes de labor aplicar
+    const laborAnalysis = this.analyzeLaborAdjustment(request);
+    
+    // Paso 2: Generar respuesta explicando los ajustes
+    const prompt = `Eres Mervin AI, especialista en costos de construcción. Acabas de analizar ajustes de mano de obra.
+
+SOLICITUD: "${request.userRequest}"
+PROYECTO: ${request.projectDescription}
+UBICACIÓN: ${request.location || 'General'}
+
+${laborAnalysis.hasChanges ? `
+AJUSTES DE MANO DE OBRA APLICADOS:
+${laborAnalysis.appliedChanges.join('\n')}
+
+Costo de labor anterior: $${request.currentResult.totalLaborCost.toFixed(2)}
+Nuevo costo de labor: $${laborAnalysis.updatedResult?.totalLaborCost.toFixed(2)}
+Diferencia: ${laborAnalysis.updatedResult!.totalLaborCost > request.currentResult.totalLaborCost ? '+' : ''}$${(laborAnalysis.updatedResult!.totalLaborCost - request.currentResult.totalLaborCost).toFixed(2)}
+
+Nuevo total del proyecto: $${laborAnalysis.updatedResult?.grandTotal.toFixed(2)}
+` : 'No se aplicaron cambios específicos a la mano de obra.'}
+
+INSTRUCCIONES:
+- Responde en español de manera conversacional y profesional
+- ${laborAnalysis.hasChanges ? 'Explica los ajustes realizados y su justificación' : 'Pregunta qué aspectos específicos de la labor necesita ajustar'}
+- Comenta sobre los factores que afectan costos de mano de obra
+- Mantén un tono experto pero accesible
+
+Ayuda al contratista con ajustes de labor realistas y justificados.`;
+
+    const response = await this.anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 800,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const aiResponse = response.content[0].type === 'text' ? response.content[0].text : '';
+
+    return {
+      success: true,
+      response: aiResponse,
+      updatedResult: laborAnalysis.updatedResult,
+      suggestedActions: laborAnalysis.hasChanges ? [
+        'Ajustar tarifas específicas',
+        'Cambiar horas estimadas',
+        'Ver desglose de labor',
+        'Comparar con mercado local'
+      ] : [
+        'Reducir costos de labor',
+        'Aumentar eficiencia',
+        'Cambiar especialización',
+        'Ajustar por ubicación'
+      ]
+    };
   }
 
   /**
@@ -819,11 +1049,58 @@ Ayuda al contratista de manera práctica y eficiente.`;
   }
 
   /**
-   * Maneja remoción de materiales
+   * Maneja remoción de materiales - MEJORADO para quitar materiales específicos
    */
   private async handleMaterialRemoval(request: RefinementRequest): Promise<RefinementResponse> {
-    // Implementación específica para remoción de materiales
-    return await this.handleGeneralRequest(request);
+    // Paso 1: Analizar qué materiales quitar
+    const removalAnalysis = this.analyzeAndRemoveMaterials(request);
+    
+    // Paso 2: Generar respuesta explicando los materiales eliminados
+    const prompt = `Eres Mervin AI, experto en construcción. Acabas de analizar una solicitud para quitar materiales.
+
+SOLICITUD: "${request.userRequest}"
+PROYECTO: ${request.projectDescription}
+
+${removalAnalysis.removedMaterials.length > 0 ? `
+MATERIAL(ES) ELIMINADO(S):
+${removalAnalysis.removedMaterials.map(m => `• ${m.name} - Se ahorraron $${m.totalPrice}`).join('\n')}
+
+Nuevo total del proyecto: $${removalAnalysis.updatedResult?.grandTotal.toFixed(2)}
+Ahorro total: $${removalAnalysis.totalSavings.toFixed(2)}
+` : 'No pude identificar materiales específicos para quitar.'}
+
+INSTRUCCIONES:
+- Responde en español de manera conversacional y amigable
+- ${removalAnalysis.removedMaterials.length > 0 ? 'Explica por qué quité estos materiales y cómo esto optimiza el proyecto' : 'Pregunta cuál material específico quiere eliminar o muestra opciones'}
+- Mantén un tono profesional pero cercano
+- Confirma el ahorro obtenido
+
+Ayuda al contratista explicando los cambios y beneficios.`;
+
+    const response = await this.anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 800,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const aiResponse = response.content[0].type === 'text' ? response.content[0].text : '';
+
+    return {
+      success: true,
+      response: aiResponse,
+      updatedResult: removalAnalysis.updatedResult,
+      suggestedActions: removalAnalysis.removedMaterials.length > 0 ? [
+        'Quitar más materiales',
+        'Ver materiales restantes',
+        'Calcular ahorro adicional',
+        'Finalizar optimización'
+      ] : [
+        'Especificar material a quitar',
+        'Ver lista completa',
+        'Sugerir optimizaciones',
+        'Mostrar costos individuales'
+      ]
+    };
   }
 }
 
