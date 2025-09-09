@@ -21,6 +21,7 @@ import {
 } from "../lib/firebase";
 import { safeFirebaseError, getErrorMessage } from "../lib/firebase-error-fix";
 import { isDevelopmentMode, devLog } from "../lib/dev-session-config";
+import { apiRequest } from "../lib/queryClient";
 
 type User = {
   uid: string;
@@ -74,6 +75,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [networkRetryCount, setNetworkRetryCount] = useState(0);
   const [lastValidUser, setLastValidUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+
+  // 🍪 Helper function: Create session cookie from Firebase user
+  const createSessionCookie = async (firebaseUser: any) => {
+    try {
+      console.log('🔐 [SESSION-COOKIE] Creando session cookie para usuario:', firebaseUser.uid);
+      
+      // Obtener ID token fresco de Firebase
+      const idToken = await firebaseUser.getIdToken(true); // true = force refresh
+      
+      // Llamar al endpoint sessionLogin para crear session cookie
+      const response = await fetch('/api/sessionLogin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include', // 🍪 Importante para recibir la cookie
+        body: JSON.stringify({ idToken })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Session login failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ [SESSION-COOKIE] Session cookie creada exitosamente:', result.user?.uid);
+      
+      return result;
+    } catch (error) {
+      console.error('❌ [SESSION-COOKIE] Error creando session cookie:', error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
     // Verificar autenticación persistida de OTP primero
@@ -206,6 +239,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setCurrentUser(appUser);
             setLastValidUser(appUser); // Guardar último usuario válido
             setIsInitializing(false); // ✅ FIXED: Auth successfully initialized
+
+            // 🍪 CREAR SESSION COOKIE: Convertir ID token a session cookie
+            createSessionCookie(user).catch(error => {
+              console.warn('⚠️ [SESSION-COOKIE] Error creando session cookie:', error);
+              // No bloquear la autenticación si falla la session cookie
+            });
           } else {
             // ✅ FIXED: Simplified auth check using enhanced persistence only
             let fallbackValid = false;
