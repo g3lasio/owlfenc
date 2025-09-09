@@ -360,6 +360,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     if (!userPlan) {
       // Si hay usuario autenticado pero plan aún cargando, dar acceso temporal
       if (currentUser?.uid && !isInitialized) {
+        console.log(`🔓 [PERMISSION-FIX] Permitiendo acceso temporal a ${feature} mientras se cargan datos`);
         return true; // Permitir acceso mientras carga
       }
       return false;
@@ -370,6 +371,12 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
   };
 
   const canUse = (feature: string, count: number = 1): boolean => {
+    // ✅ FIXED: Si los datos aún se están cargando pero hay usuario autenticado, permitir acceso temporal
+    if ((!userPlan || !userUsage) && currentUser?.uid && !isInitialized) {
+      console.log(`🔓 [PERMISSION-FIX] Permitiendo acceso temporal a ${feature} mientras se cargan datos`);
+      return true; // Acceso temporal mientras carga
+    }
+    
     if (!userPlan || !userUsage) return false;
 
     const limit = userPlan.limits[feature as keyof UserLimits];
