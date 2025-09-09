@@ -76,6 +76,8 @@ export class DeepSearchRefinementService {
       switch (requestType) {
         case 'total_adjustment':
           return await this.handleTotalAdjustment(request);
+        case 'material_substitution':
+          return await this.handleMaterialSubstitution(request);
         case 'price_adjustment':
           return await this.handlePriceAdjustment(request);
         case 'quantity_change':
@@ -107,31 +109,179 @@ export class DeepSearchRefinementService {
   }
 
   /**
-   * Analiza el tipo de solicitud del usuario
+   * Analiza el tipo de solicitud del usuario - MEJORADO con detección más inteligente
    */
   private analyzeRequestType(userRequest: string): string {
     const request = userRequest.toLowerCase();
 
-    // Patrones para diferentes tipos de solicitudes
+    // Patrones mejorados para diferentes tipos de solicitudes
     const patterns = {
+      // Ajuste de total específico - Mayor prioridad
       total_adjustment: /(?:total|cueste|valga|costo total|precio total|sea de|que sea|\$[\d,]+|[\d,]+\s*(?:dólares|dolares|pesos))/,
-      price_adjustment: /(?:precio|cost|expensive|cheap|caro|barato|muy alto|muy bajo|expensive|affordable)/,
-      quantity_change: /(?:cantidad|quantity|more|less|increase|decrease|cambiar|ajustar|agregar|quitar|más|menos)/,
-      material_addition: /(?:falta|missing|add|agregar|include|incluir|necesito|need|forgot|olvidé)/,
-      material_removal: /(?:remove|remover|delete|eliminar|don't need|no necesito|sobra|quitar)/,
-      labor_adjustment: /(?:labor|mano de obra|trabajo|workers|trabajadores|hours|horas|rate|tarifa)/,
-      location_specific: /(?:location|ubicación|area|zona|state|estado|city|ciudad|region|región|local)/,
-      alternative_materials: /(?:alternative|alternativa|different|diferente|substitute|sustituto|replace|reemplazar)/,
-      precision_request: /(?:precision|precisión|detail|detalle|specific|específico|exact|exacto|accurate|más detalle)/
+      
+      // Cambio de materiales específicos (concreto -> pasto, etc.)
+      material_substitution: /(?:en lugar de|cambiar.*por|reemplazar.*con|sustituir.*por|concreto.*pasto|concrete.*grass|cambio de.*a)/,
+      
+      // Ajustes de precio
+      price_adjustment: /(?:precio|cost|expensive|cheap|caro|barato|muy alto|muy bajo|económico|reducir precio|más barato)/,
+      
+      // Cambios de cantidad con números específicos
+      quantity_change: /(?:\d+.*(?:cantidad|units|unidades|pieces|piezas)|cantidad.*\d+|cambiar.*\d+|ajustar.*\d+|más cantidad|menos cantidad)/,
+      
+      // Adición de materiales específicos
+      material_addition: /(?:falta|missing|add|agregar|incluir|necesito|need|forgot|olvidé|también necesito|hace falta)/,
+      
+      // Remoción de materiales específicos
+      material_removal: /(?:remove|remover|delete|eliminar|don't need|no necesito|sobra|quitar|sin|not needed|no hace falta)/,
+      
+      // Ajustes de mano de obra
+      labor_adjustment: /(?:labor|mano de obra|trabajo|workers|trabajadores|hours|horas|rate|tarifa|sin labor|solo materiales|diy)/,
+      
+      // Ajustes específicos por ubicación
+      location_specific: /(?:location|ubicación|area|zona|state|estado|city|ciudad|region|región|local|precios.*local)/,
+      
+      // Materiales alternativos
+      alternative_materials: /(?:alternative|alternativa|different|diferente|substitute|sustituto|replace|reemplazar|otros.*materiales|opciones)/,
+      
+      // Solicitudes de precisión
+      precision_request: /(?:precision|precisión|detail|detalle|specific|específico|exact|exacto|accurate|más detalle|desglose)/
     };
 
-    for (const [type, pattern] of Object.entries(patterns)) {
-      if (pattern.test(request)) {
+    // Evaluar patrones en orden de prioridad
+    const priorities = [
+      'total_adjustment',
+      'material_substitution', 
+      'quantity_change',
+      'material_addition',
+      'material_removal', 
+      'labor_adjustment',
+      'price_adjustment',
+      'alternative_materials',
+      'location_specific',
+      'precision_request'
+    ];
+
+    for (const type of priorities) {
+      if (patterns[type as keyof typeof patterns].test(request)) {
         return type;
       }
     }
 
+    // Análisis contextual adicional
+    if (this.hasNumbersAndMaterials(request)) {
+      return 'quantity_change';
+    }
+
+    if (this.hasMoneyAndAdjectives(request)) {
+      return 'price_adjustment';
+    }
+
+    if (this.hasMaterialNames(request)) {
+      return 'material_addition';
+    }
+
     return 'general';
+  }
+
+  /**
+   * Detecta si hay números y materiales mencionados
+   */
+  private hasNumbersAndMaterials(request: string): boolean {
+    const hasNumbers = /\d+/.test(request);
+    const materialWords = ['poste', 'tabla', 'concreto', 'pintura', 'grava', 'arena', 'madera', 'metal', 'fence', 'post', 'board', 'concrete'];
+    const hasMaterials = materialWords.some(word => request.includes(word));
+    
+    return hasNumbers && hasMaterials;
+  }
+
+  /**
+   * Detecta si hay referencias monetarias con adjetivos de precio
+   */
+  private hasMoneyAndAdjectives(request: string): boolean {
+    const moneyWords = ['precio', 'cost', 'caro', 'barato', 'expensive', 'cheap', '$', 'dólar', 'peso'];
+    const priceAdjectives = ['alto', 'bajo', 'caro', 'barato', 'expensive', 'cheap', 'affordable'];
+    
+    const hasMoney = moneyWords.some(word => request.includes(word));
+    const hasAdjectives = priceAdjectives.some(word => request.includes(word));
+    
+    return hasMoney || hasAdjectives;
+  }
+
+  /**
+   * Detecta si se mencionan nombres específicos de materiales
+   */
+  private hasMaterialNames(request: string): boolean {
+    const materialNames = [
+      'tornillo', 'clavo', 'pegamento', 'sellador', 'poste', 'tabla', 'bisagra', 'cerradura',
+      'grava', 'arena', 'concreto', 'pintura', 'primer', 'pasto', 'plantas', 'candado',
+      'screw', 'nail', 'glue', 'sealant', 'post', 'board', 'hinge', 'lock',
+      'gravel', 'sand', 'concrete', 'paint', 'primer', 'grass', 'plants', 'padlock'
+    ];
+    
+    return materialNames.some(material => request.includes(material));
+  }
+
+  /**
+   * Maneja sustitución específica de materiales (ej: "concreto por pasto")
+   */
+  private async handleMaterialSubstitution(request: RefinementRequest): Promise<RefinementResponse> {
+    // Usar el análisis automático de cambios que ya maneja sustituciones
+    const changeAnalysis = this.analyzeChangeRequirement(request.userRequest, request.currentResult);
+    
+    if (changeAnalysis.hasChanges && changeAnalysis.updatedResult) {
+      const prompt = `Eres Mervin AI, especialista en construcción. Acabas de realizar una sustitución de materiales inteligente.
+
+SOLICITUD: "${request.userRequest}"
+PROYECTO: ${request.projectDescription}
+
+CAMBIOS REALIZADOS:
+${changeAnalysis.appliedChanges.join('\n')}
+
+Total anterior: $${request.currentResult.grandTotal.toFixed(2)}
+Nuevo total: $${changeAnalysis.updatedResult.grandTotal.toFixed(2)}
+Diferencia: ${changeAnalysis.updatedResult.grandTotal > request.currentResult.grandTotal ? '+' : ''}$${(changeAnalysis.updatedResult.grandTotal - request.currentResult.grandTotal).toFixed(2)}
+
+INSTRUCCIONES:
+- Responde en español de manera conversacional y profesional
+- Explica claramente la sustitución realizada y sus beneficios
+- Comenta sobre las ventajas del nuevo material elegido
+- Mantén un tono de experto pero accesible
+- Confirma que los cambios están listos para aplicar
+
+Ayuda al contratista explicando la transición de materiales de manera clara.`;
+
+      const response = await this.anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      });
+
+      const aiResponse = response.content[0].type === 'text' ? response.content[0].text : '';
+
+      return {
+        success: true,
+        response: aiResponse,
+        updatedResult: changeAnalysis.updatedResult,
+        suggestedActions: [
+          'Ver nuevo desglose',
+          'Ajustar cantidades',
+          'Comparar opciones',
+          'Finalizar cambio'
+        ]
+      };
+    } else {
+      // Si no se pudo hacer la sustitución automática, pedimos más detalles
+      return {
+        success: true,
+        response: `🤔 **Necesito más detalles para la sustitución**\n\n¿Podrías especificar exactamente:\n• **Qué material** quieres cambiar\n• **Por qué material** lo quieres reemplazar\n\nEjemplo: "Cambiar concreto por pasto sintético" o "Reemplazar madera por vinyl"`,
+        suggestedActions: [
+          'Especificar materiales exactos',
+          'Ver opciones disponibles',
+          'Mostrar alternativas',
+          'Comparar costos'
+        ]
+      };
+    }
   }
 
   /**
