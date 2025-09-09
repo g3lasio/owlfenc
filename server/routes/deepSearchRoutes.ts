@@ -1,5 +1,5 @@
 /**
- * Rutas de la API para el módulo DeepSearch IA
+ * Rutas de la API para el módulo DeepSearch IA - SIN AUTENTICACION
  * 
  * Proporciona endpoints para analizar proyectos y generar
  * automáticamente listas de materiales con IA.

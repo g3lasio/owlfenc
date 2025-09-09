@@ -9,8 +9,7 @@ import { Request, Response, Express } from 'express';
 import { z } from 'zod';
 import { laborDeepSearchService } from '../services/laborDeepSearchService';
 import { aduConstructionExpertService } from '../services/aduConstructionExpertService';
-import { unifiedSessionAuth } from '../middleware/unified-session-auth';
-import { userMappingService } from '../services/userMappingService';
+// Removed authentication - DeepSearch now open to all users
 
 // Schema para validación de entrada - Labor únicamente
 const LaborAnalysisSchema = z.object({
@@ -36,29 +35,9 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
    * POST /api/labor-deepsearch/labor-only
    * LABOR COSTS ONLY: Genera únicamente costos de labor sin materiales
    */
-  app.post('/api/labor-deepsearch/labor-only', unifiedSessionAuth(), async (req: Request, res: Response) => {
+  app.post('/api/labor-deepsearch/labor-only', async (req: Request, res: Response) => {
     try {
       console.log('🔧 LABOR ONLY DeepSearch: Recibiendo solicitud', req.body);
-
-      // 🎯 PLAN-BASED ACCESS: Verificar plan del usuario
-      const firebaseUid = req.authUser?.uid;
-      let userId = null;
-      
-      if (firebaseUid) {
-        userId = await userMappingService.getInternalUserId(firebaseUid);
-        if (!userId) {
-          userId = await userMappingService.createMapping(firebaseUid, req.authUser?.email || `${firebaseUid}@firebase.auth`);
-        }
-        console.log(`🔐 [SECURITY] Labor analysis for user_id: ${userId}`);
-      } else {
-        // Usuario no autenticado - mostrar mensaje de upgrade
-        return res.status(403).json({
-          success: false,
-          error: 'Esta función requiere un plan premium. Upgradea tu cuenta para acceder a DeepSearch.',
-          requiresUpgrade: true,
-          code: 'PREMIUM_FEATURE_REQUIRED'
-        });
-      }
 
       // Validar entrada
       const validatedData = LaborAnalysisSchema.parse(req.body);
@@ -112,29 +91,11 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
    * POST /api/labor-deepsearch/analyze
    * Analiza un proyecto y genera únicamente lista de tareas de labor/servicios
    */
-  app.post('/api/labor-deepsearch/analyze', unifiedSessionAuth(), async (req: Request, res: Response) => {
+  app.post('/api/labor-deepsearch/analyze', async (req: Request, res: Response) => {
     try {
       console.log('🔧 Labor DeepSearch API: Recibiendo solicitud de análisis de labor', req.body);
 
-      // 🎯 PLAN-BASED ACCESS: Verificar plan del usuario
-      const firebaseUid = req.authUser?.uid;
-      let userId = null;
-      
-      if (firebaseUid) {
-        userId = await userMappingService.getInternalUserId(firebaseUid);
-        if (!userId) {
-          userId = await userMappingService.createMapping(firebaseUid, req.authUser?.email || `${firebaseUid}@firebase.auth`);
-        }
-        console.log(`🔐 [SECURITY] Labor analysis for user_id: ${userId}`);
-      } else {
-        // Usuario no autenticado - mostrar mensaje de upgrade
-        return res.status(403).json({
-          success: false,
-          error: 'Esta función requiere un plan premium. Upgradea tu cuenta para acceder a DeepSearch.',
-          requiresUpgrade: true,
-          code: 'PREMIUM_FEATURE_REQUIRED'
-        });
-      }
+      // DeepSearch now available to all users - no authentication required
 
       // Validar entrada
       const validatedData = LaborAnalysisSchema.parse(req.body);
@@ -177,7 +138,7 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
    * POST /api/labor-deepsearch/generate-items
    * Genera lista de items de labor compatible con el sistema de estimados
    */
-  app.post('/api/labor-deepsearch/generate-items', unifiedSessionAuth(), async (req: Request, res: Response) => {
+  app.post('/api/labor-deepsearch/generate-items', async (req: Request, res: Response) => {
     try {
       console.log('🔧 Labor DeepSearch API: Generando items de labor compatibles');
 
@@ -186,10 +147,7 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
       let userId = null;
       
       if (firebaseUid) {
-        userId = await userMappingService.getInternalUserId(firebaseUid);
-        if (!userId) {
-          userId = await userMappingService.createMapping(firebaseUid, req.authUser?.email || `${firebaseUid}@firebase.auth`);
-        }
+        // No authentication required - DeepSearch available to all users
         console.log(`🔐 [SECURITY] Labor items generation for user_id: ${userId}`);
       } else {
         // Usuario no autenticado - mostrar mensaje de upgrade
@@ -240,29 +198,11 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
    * POST /api/labor-deepsearch/combined
    * Genera análisis combinado de materiales Y labor con especialización ADU
    */
-  app.post('/api/labor-deepsearch/combined', unifiedSessionAuth(), async (req: Request, res: Response) => {
+  app.post('/api/labor-deepsearch/combined', async (req: Request, res: Response) => {
     try {
       console.log('🔧🔨 Combined DeepSearch API: Recibiendo solicitud de análisis combinado', req.body);
 
-      // 🎯 PLAN-BASED ACCESS: Verificar plan del usuario
-      const firebaseUid = req.authUser?.uid;
-      let userId = null;
-      
-      if (firebaseUid) {
-        userId = await userMappingService.getInternalUserId(firebaseUid);
-        if (!userId) {
-          userId = await userMappingService.createMapping(firebaseUid, req.authUser?.email || `${firebaseUid}@firebase.auth`);
-        }
-        console.log(`🔐 [SECURITY] Combined analysis for user_id: ${userId}`);
-      } else {
-        // Usuario no autenticado - mostrar mensaje de upgrade
-        return res.status(403).json({
-          success: false,
-          error: 'Esta función requiere un plan premium. Upgradea tu cuenta para acceder a DeepSearch.',
-          requiresUpgrade: true,
-          code: 'PREMIUM_FEATURE_REQUIRED'
-        });
-      }
+      // DeepSearch now available to all users - no authentication required
 
       // Validar entrada
       const validatedData = CombinedAnalysisSchema.parse(req.body);
