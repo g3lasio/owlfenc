@@ -139,6 +139,7 @@ export function DeepSearchButton({
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'include', // 🍪 Enviar session cookies automáticamente
         body: JSON.stringify(requestBody)
       });
 

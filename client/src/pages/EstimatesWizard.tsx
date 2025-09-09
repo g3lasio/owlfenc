@@ -813,6 +813,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include', // 🍪 Enviar session cookies automáticamente
         body: JSON.stringify({
           projectDescription: estimate.projectDetails,
           location: estimate.client?.address || "",
