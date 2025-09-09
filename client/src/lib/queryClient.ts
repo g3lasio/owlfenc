@@ -125,10 +125,15 @@ export async function apiRequest(
       credentials: "include",
     });
 
-    const res = await safeTimeout(fetchPromise, 10000);
+    // Timeout más largo para operaciones DeepSearch intensivas
+    const timeoutMs = url.includes('deepsearch') || url.includes('labor-deepsearch') ? 60000 : 10000;
+    const res = await safeTimeout(fetchPromise, timeoutMs);
     
     if (!res) {
-      throw new Error('Request timeout or failed');
+      const errorMsg = url.includes('deepsearch') || url.includes('labor-deepsearch') 
+        ? 'DeepSearch request timeout (60s) - try with shorter project description'
+        : 'Request timeout or failed';
+      throw new Error(errorMsg);
     }
 
     await throwIfResNotOk(res);
