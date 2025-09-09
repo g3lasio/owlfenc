@@ -169,3 +169,25 @@ export function requireAuthenticatedUser(req: Request): { userId: number; fireba
 
   return user;
 }
+
+/**
+ * Middleware function to require authentication
+ * This is a singleton instance that can be used directly in routes
+ */
+
+// Create a singleton auth middleware instance
+let authMiddlewareInstance: AuthMiddleware | null = null;
+
+export function initializeAuthMiddleware(storage: DatabaseStorage) {
+  authMiddlewareInstance = new AuthMiddleware(storage);
+}
+
+export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
+  if (!authMiddlewareInstance) {
+    // Initialize with default storage if not initialized
+    const { storage } = await import('../storage');
+    authMiddlewareInstance = new AuthMiddleware(storage as DatabaseStorage);
+  }
+  
+  return authMiddlewareInstance.authenticate(req, res, next);
+};

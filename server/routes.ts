@@ -98,7 +98,7 @@ import openrouterAPI from "./routes/openrouter-api"; // Import OpenRouter API fo
 // PDF routes removed - using only premiumPdfService
 import paymentRoutes from "./routes/payment-routes"; // Import payment routes
 import usageLimitsRoutes from "./routes/usage-limits"; // Import usage limits routes
-import { AuthMiddleware, requireAuthenticatedUser } from './middleware/authMiddleware';
+import { AuthMiddleware, requireAuthenticatedUser, requireAuth } from './middleware/authMiddleware';
 import { initSecureUserHelper } from './utils/secureUserHelper';
 import { DataIntegrityChecker } from './utils/dataIntegrityChecker';
 import { registerSubscriptionControlRoutes } from "./routes/subscription-control"; // Import ROBUST subscription control
