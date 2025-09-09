@@ -334,25 +334,33 @@ Ejemplo: "Cambiar la cantidad de postes a 15" o "Necesito 200 pies lineales de c
   }
 
   /**
-   * Maneja adición de materiales
+   * Maneja adición de materiales - MEJORADO para agregar materiales reales
    */
   private async handleMaterialAddition(request: RefinementRequest): Promise<RefinementResponse> {
-    const prompt = `Eres un experto en construcción. El usuario quiere agregar un material faltante.
+    // Paso 1: Analizar qué material específico agregar
+    const materialAnalysis = await this.analyzeAndAddMaterial(request);
+    
+    // Paso 2: Generar respuesta conversacional explicando el material agregado
+    const prompt = `Eres Mervin AI, experto en construcción. Acabas de analizar una solicitud para agregar materiales.
 
 SOLICITUD: "${request.userRequest}"
 PROYECTO: ${request.projectDescription}
 UBICACIÓN: ${request.location || 'General'}
 
-MATERIALES ACTUALES:
-${request.currentResult.materials.map(m => `• ${m.name} (${m.category})`).join('\n')}
+${materialAnalysis.addedMaterials.length > 0 ? `
+MATERIAL(ES) AGREGADO(S):
+${materialAnalysis.addedMaterials.map(m => `• ${m.name} - ${m.quantity} ${m.unit} @ $${m.unitPrice} cada uno = $${m.totalPrice}`).join('\n')}
+
+Nuevo total del proyecto: $${materialAnalysis.updatedResult?.grandTotal.toFixed(2)}
+` : 'No pude identificar un material específico para agregar.'}
 
 INSTRUCCIONES:
-1. Identifica qué material específico falta
-2. Determina cantidad estimada necesaria
-3. Calcula precio unitario realista
-4. Explica por qué es necesario este material
+- Responde en español de manera conversacional y amigable
+- ${materialAnalysis.addedMaterials.length > 0 ? 'Explica por qué agregué estos materiales y cómo benefician al proyecto' : 'Pregunta más detalles sobre qué material específico necesita agregar'}
+- Mantén un tono profesional pero cercano
+- Ofrece sugerencias adicionales si es apropiado
 
-Responde en español, siendo específico sobre el material a agregar y su justificación.`;
+Ayuda al contratista explicando claramente los cambios realizados.`;
 
     const response = await this.anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -365,11 +373,17 @@ Responde en español, siendo específico sobre el material a agregar y su justif
     return {
       success: true,
       response: aiResponse,
-      suggestedActions: [
-        'Agregar material específico',
-        'Recalcular estimado completo',
-        'Revisar lista de materiales',
-        'Verificar completitud'
+      updatedResult: materialAnalysis.updatedResult,
+      suggestedActions: materialAnalysis.addedMaterials.length > 0 ? [
+        'Agregar más materiales',
+        'Ajustar cantidades',
+        'Ver desglose completo',
+        'Finalizar estimado'
+      ] : [
+        'Especificar material exacto',
+        'Ver materiales sugeridos',
+        'Revisar lista actual',
+        'Buscar por categoría'
       ]
     };
   }
@@ -432,6 +446,170 @@ Ayuda al contratista de manera práctica y eficiente.`;
         'Ajustar precios globalmente'
       ]
     };
+  }
+
+  /**
+   * Analiza y agrega materiales específicos basado en la solicitud
+   */
+  private async analyzeAndAddMaterial(request: RefinementRequest): Promise<{
+    updatedResult?: DeepSearchResult;
+    addedMaterials: any[];
+  }> {
+    const userRequest = request.userRequest.toLowerCase();
+    let updatedResult = { ...request.currentResult };
+    const addedMaterials: any[] = [];
+
+    // Base de conocimiento de materiales comunes por categoría/solicitud
+    const materialDatabase = {
+      // Herramientas y hardware
+      'tornillo': { name: 'Tornillos para Madera', unit: 'box', unitPrice: 8.50, category: 'hardware' },
+      'clavo': { name: 'Clavos Galvanizados', unit: 'lb', unitPrice: 2.25, category: 'hardware' },
+      'pegamento': { name: 'Pegamento para Construcción', unit: 'tube', unitPrice: 12.00, category: 'adhesives' },
+      'sellador': { name: 'Sellador Acrílico', unit: 'tube', unitPrice: 6.50, category: 'sealants' },
+      
+      // Materiales de cerca/fencing
+      'poste': { name: 'Postes de Madera Tratada', unit: 'each', unitPrice: 15.00, category: 'posts' },
+      'tabla': { name: 'Tablas para Cerca', unit: 'linear ft', unitPrice: 4.25, category: 'lumber' },
+      'bisagra': { name: 'Bisagras para Puerta', unit: 'pair', unitPrice: 18.00, category: 'hardware' },
+      'cerradura': { name: 'Cerradura para Puerta', unit: 'each', unitPrice: 35.00, category: 'hardware' },
+      
+      // Materiales base
+      'grava': { name: 'Grava para Drenaje', unit: 'cubic yards', unitPrice: 28.00, category: 'base_materials' },
+      'arena': { name: 'Arena de Construcción', unit: 'cubic yards', unitPrice: 32.00, category: 'base_materials' },
+      'concreto': { name: 'Concreto Premezclado', unit: 'cubic yards', unitPrice: 145.00, category: 'concrete' },
+      
+      // Pintura y acabados
+      'pintura': { name: 'Pintura Exterior Premium', unit: 'gallon', unitPrice: 45.00, category: 'paint' },
+      'primer': { name: 'Imprimador Universal', unit: 'gallon', unitPrice: 28.00, category: 'paint' },
+      
+      // Paisajismo
+      'pasto': { name: 'Pasto Sintético', unit: 'sq ft', unitPrice: 4.50, category: 'landscaping' },
+      'plantas': { name: 'Plantas Decorativas', unit: 'each', unitPrice: 12.00, category: 'landscaping' },
+      
+      // Seguridad
+      'candado': { name: 'Candado Resistente', unit: 'each', unitPrice: 22.00, category: 'security' }
+    };
+
+    // Detectar materiales mencionados en la solicitud
+    for (const [keyword, materialInfo] of Object.entries(materialDatabase)) {
+      if (userRequest.includes(keyword) || userRequest.includes(keyword + 's')) {
+        // Extraer cantidad si se menciona
+        const quantityMatch = userRequest.match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(?:de\\s+)?${keyword}`));
+        const defaultQuantity = this.getDefaultQuantityForMaterial(keyword, request.projectDescription);
+        
+        const quantity = quantityMatch ? parseFloat(quantityMatch[1]) : defaultQuantity;
+        
+        const newMaterial = {
+          id: `added_${Date.now()}_${keyword}`,
+          name: materialInfo.name,
+          description: `${materialInfo.name} agregado por solicitud específica`,
+          category: materialInfo.category,
+          quantity: quantity,
+          unit: materialInfo.unit,
+          unitPrice: materialInfo.unitPrice,
+          totalPrice: quantity * materialInfo.unitPrice
+        };
+
+        updatedResult.materials.push(newMaterial);
+        addedMaterials.push(newMaterial);
+      }
+    }
+
+    // Detección inteligente de materiales faltantes por contexto del proyecto
+    if (userRequest.includes('falta') || userRequest.includes('necesito') || userRequest.includes('agregar')) {
+      // Analizar qué tipo de proyecto es para sugerir materiales comunes faltantes
+      const projectType = this.detectProjectType(request.projectDescription);
+      
+      if (projectType === 'fencing' && !this.hasMaterial(updatedResult.materials, ['hardware', 'fastener'])) {
+        const hardwareMaterial = {
+          id: `added_${Date.now()}_hardware`,
+          name: 'Kit de Hardware para Cerca',
+          description: 'Tornillos, clavos y sujetadores necesarios',
+          category: 'hardware',
+          quantity: 1,
+          unit: 'set',
+          unitPrice: 45.00,
+          totalPrice: 45.00
+        };
+        
+        updatedResult.materials.push(hardwareMaterial);
+        addedMaterials.push(hardwareMaterial);
+      }
+
+      if (projectType === 'concrete' && !this.hasMaterial(updatedResult.materials, ['rebar', 'reinforcement'])) {
+        const rebarMaterial = {
+          id: `added_${Date.now()}_rebar`,
+          name: 'Varillas de Refuerzo (Rebar)',
+          description: 'Refuerzo de acero para concreto',
+          category: 'reinforcement',
+          quantity: 20,
+          unit: 'linear ft',
+          unitPrice: 2.80,
+          totalPrice: 56.00
+        };
+        
+        updatedResult.materials.push(rebarMaterial);
+        addedMaterials.push(rebarMaterial);
+      }
+    }
+
+    // Recalcular totales si se agregaron materiales
+    if (addedMaterials.length > 0) {
+      updatedResult.totalMaterialsCost = updatedResult.materials.reduce((sum, m) => sum + m.totalPrice, 0);
+      updatedResult.grandTotal = updatedResult.totalMaterialsCost + updatedResult.totalLaborCost;
+    }
+
+    return {
+      updatedResult: addedMaterials.length > 0 ? updatedResult : undefined,
+      addedMaterials
+    };
+  }
+
+  /**
+   * Obtiene cantidad por defecto para un material específico
+   */
+  private getDefaultQuantityForMaterial(material: string, projectDescription: string): number {
+    const defaults: Record<string, number> = {
+      'tornillo': 2, // cajas
+      'clavo': 5, // libras
+      'poste': 8, // postes
+      'tabla': 100, // pies lineales
+      'grava': 2, // yardas cúbicas
+      'arena': 3, // yardas cúbicas
+      'concreto': 1, // yarda cúbica
+      'pintura': 2, // galones
+      'pasto': 200, // pies cuadrados
+      'candado': 1 // unidad
+    };
+
+    return defaults[material] || 1;
+  }
+
+  /**
+   * Detecta el tipo de proyecto principal
+   */
+  private detectProjectType(description: string): string {
+    const desc = description.toLowerCase();
+    
+    if (desc.includes('fence') || desc.includes('cerca')) return 'fencing';
+    if (desc.includes('concrete') || desc.includes('concreto')) return 'concrete';
+    if (desc.includes('paint') || desc.includes('pintar')) return 'painting';
+    if (desc.includes('deck') || desc.includes('terraza')) return 'decking';
+    if (desc.includes('roof') || desc.includes('techo')) return 'roofing';
+    
+    return 'general';
+  }
+
+  /**
+   * Verifica si ya existe un material de cierta categoría
+   */
+  private hasMaterial(materials: any[], categories: string[]): boolean {
+    return materials.some(material => 
+      categories.some(cat => 
+        material.category.toLowerCase().includes(cat.toLowerCase()) ||
+        material.name.toLowerCase().includes(cat.toLowerCase())
+      )
+    );
   }
 
   /**
