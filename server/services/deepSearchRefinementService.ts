@@ -375,26 +375,38 @@ Responde en español, siendo específico sobre el material a agregar y su justif
   }
 
   /**
-   * Maneja solicitudes generales con IA
+   * Maneja solicitudes generales con IA - MEJORADO para aplicar cambios automáticamente
    */
   private async handleGeneralRequest(request: RefinementRequest): Promise<RefinementResponse> {
+    // Paso 1: Analizar si es una solicitud que requiere cambios específicos
+    const changeAnalysis = this.analyzeChangeRequirement(request.userRequest, request.currentResult);
+    
+    let updatedResult = changeAnalysis.hasChanges ? changeAnalysis.updatedResult : undefined;
+    
+    // Paso 2: Generar respuesta conversacional con IA
     const prompt = `Eres Mervin AI, un asistente inteligente especializado en estimados de construcción. Tu personalidad es amigable, eficiente y directa. Ayudas a contratistas a refinar sus estimados de manera práctica.
 
 PROYECTO ACTUAL:
 - ${request.projectDescription}
 - Ubicación: ${request.location || 'General'}  
-- Total: $${request.currentResult.grandTotal.toFixed(2)}
+- Total actual: $${request.currentResult.grandTotal.toFixed(2)}
 - ${request.currentResult.materials.length} materiales, ${request.currentResult.laborCosts.length} categorías de labor
 
-EL USUARIO PREGUNTA: "${request.userRequest}"
+SOLICITUD DEL USUARIO: "${request.userRequest}"
 
-COMO MERVIN AI:
-- Sé directo y claro
-- Da consejos prácticos 
-- Usa un tono amigable pero profesional
-- Responde en español
-- Ofrece soluciones específicas
-- Mantén respuestas concisas
+${changeAnalysis.hasChanges ? `
+CAMBIOS APLICADOS AUTOMÁTICAMENTE:
+${changeAnalysis.appliedChanges.join('\n')}
+
+Nuevo total: $${updatedResult?.grandTotal.toFixed(2)}
+` : ''}
+
+INSTRUCCIONES:
+- Responde de manera conversacional y amigable en español
+- ${changeAnalysis.hasChanges ? 'Explica los cambios que apliqué automáticamente' : 'Proporciona consejos prácticos'}
+- Sé específico y ofrece sugerencias útiles
+- Mantén un tono profesional pero cercano
+- ${changeAnalysis.hasChanges ? 'Confirma que los cambios están listos para aplicar' : 'Si no puedo hacer cambios automáticos, explica qué necesito para ayudar mejor'}
 
 Ayuda al contratista de manera práctica y eficiente.`;
 
@@ -409,11 +421,155 @@ Ayuda al contratista de manera práctica y eficiente.`;
     return {
       success: true,
       response: aiResponse,
-      suggestedActions: [
-        'Ajustar precios',
-        'Revisar cantidades',
-        'Ver alternativas'
+      updatedResult: updatedResult,
+      suggestedActions: changeAnalysis.hasChanges ? [
+        'Ver desglose detallado',
+        'Hacer más ajustes',
+        'Finalizar estimado'
+      ] : [
+        'Especificar cambios deseados',
+        'Ver opciones de materiales',
+        'Ajustar precios globalmente'
       ]
+    };
+  }
+
+  /**
+   * Analiza si la solicitud requiere cambios automáticos y los aplica
+   */
+  private analyzeChangeRequirement(userRequest: string, currentResult: DeepSearchResult): {
+    hasChanges: boolean;
+    updatedResult?: DeepSearchResult;
+    appliedChanges: string[];
+  } {
+    const request = userRequest.toLowerCase();
+    let updatedResult = { ...currentResult };
+    let hasChanges = false;
+    const appliedChanges: string[] = [];
+
+    // 1. Cambio de material específico (concreto -> pasto)
+    if (request.includes('concreto') && (request.includes('pasto') || request.includes('césped') || request.includes('grass'))) {
+      // Eliminar materiales relacionados con concreto
+      const concreteKeywords = ['concrete', 'concreto', 'cement', 'cemento', 'rebar', 'varilla'];
+      const beforeCount = updatedResult.materials.length;
+      
+      updatedResult.materials = updatedResult.materials.filter(material => 
+        !concreteKeywords.some(keyword => 
+          material.name.toLowerCase().includes(keyword) || 
+          material.description.toLowerCase().includes(keyword)
+        )
+      );
+
+      // Agregar materiales para pasto
+      const grassMaterials = [
+        {
+          id: `grass_${Date.now()}_1`,
+          name: 'Pasto Sintético Premium',
+          description: 'Césped artificial de alta calidad resistente a UV',
+          category: 'landscaping',
+          quantity: Math.ceil((currentResult.materials.find(m => m.name.toLowerCase().includes('concrete'))?.quantity || 1) * 66), // conversión de yardas cúbicas a pies cuadrados
+          unit: 'sq ft',
+          unitPrice: 4.50,
+          totalPrice: 0,
+          specifications: 'Altura de fibra 40mm, respaldo drenante'
+        },
+        {
+          id: `grass_${Date.now()}_2`,
+          name: 'Preparación de Base para Pasto',
+          description: 'Preparación y nivelación del terreno',
+          category: 'preparation',
+          quantity: Math.ceil((currentResult.materials.find(m => m.name.toLowerCase().includes('concrete'))?.quantity || 1) * 66),
+          unit: 'sq ft',
+          unitPrice: 1.25,
+          totalPrice: 0
+        },
+        {
+          id: `grass_${Date.now()}_3`,
+          name: 'Arena de Compactación',
+          description: 'Arena especializada para base de pasto sintético',
+          category: 'base_materials',
+          quantity: 3,
+          unit: 'cubic yards',
+          unitPrice: 35.00,
+          totalPrice: 0
+        }
+      ];
+
+      grassMaterials.forEach(material => {
+        material.totalPrice = material.quantity * material.unitPrice;
+        updatedResult.materials.push(material);
+      });
+
+      hasChanges = true;
+      appliedChanges.push(`• Eliminé ${beforeCount - updatedResult.materials.length + grassMaterials.length} materiales de concreto`);
+      appliedChanges.push(`• Agregué ${grassMaterials.length} materiales para instalación de pasto sintético`);
+    }
+
+    // 2. Ajustes de precio generales
+    if (request.includes('barato') || request.includes('económico') || request.includes('reducir precio')) {
+      const reductionFactor = 0.85; // 15% de reducción
+      
+      updatedResult.materials = updatedResult.materials.map(material => ({
+        ...material,
+        unitPrice: Math.round(material.unitPrice * reductionFactor * 100) / 100,
+        totalPrice: Math.round(material.quantity * material.unitPrice * reductionFactor * 100) / 100
+      }));
+
+      updatedResult.laborCosts = updatedResult.laborCosts.map(labor => ({
+        ...labor,
+        rate: Math.round(labor.rate * reductionFactor * 100) / 100,
+        total: Math.round(labor.hours * labor.rate * reductionFactor * 100) / 100
+      }));
+
+      hasChanges = true;
+      appliedChanges.push('• Reduje todos los precios en un 15% para opción económica');
+    }
+
+    // 3. Aumentar/reducir cantidad general
+    if (request.includes('aumentar') || request.includes('más cantidad')) {
+      const increaseFactor = 1.25; // 25% más
+      
+      updatedResult.materials = updatedResult.materials.map(material => ({
+        ...material,
+        quantity: Math.round(material.quantity * increaseFactor * 100) / 100,
+        totalPrice: Math.round(material.quantity * increaseFactor * material.unitPrice * 100) / 100
+      }));
+
+      hasChanges = true;
+      appliedChanges.push('• Aumenté todas las cantidades en un 25%');
+    }
+
+    if (request.includes('reducir cantidad') || request.includes('menos cantidad')) {
+      const decreaseFactor = 0.80; // 20% menos
+      
+      updatedResult.materials = updatedResult.materials.map(material => ({
+        ...material,
+        quantity: Math.round(material.quantity * decreaseFactor * 100) / 100,
+        totalPrice: Math.round(material.quantity * decreaseFactor * material.unitPrice * 100) / 100
+      }));
+
+      hasChanges = true;
+      appliedChanges.push('• Reduje todas las cantidades en un 20%');
+    }
+
+    // 4. Eliminar labor si se solicita
+    if (request.includes('sin mano de obra') || request.includes('sin labor') || request.includes('only materials')) {
+      updatedResult.laborCosts = [];
+      hasChanges = true;
+      appliedChanges.push('• Eliminé todos los costos de mano de obra');
+    }
+
+    // 5. Recalcular totales si hubo cambios
+    if (hasChanges) {
+      updatedResult.totalMaterialsCost = updatedResult.materials.reduce((sum, m) => sum + m.totalPrice, 0);
+      updatedResult.totalLaborCost = updatedResult.laborCosts.reduce((sum, l) => sum + l.total, 0);
+      updatedResult.grandTotal = updatedResult.totalMaterialsCost + updatedResult.totalLaborCost;
+    }
+
+    return {
+      hasChanges,
+      updatedResult: hasChanges ? updatedResult : undefined,
+      appliedChanges
     };
   }
 
