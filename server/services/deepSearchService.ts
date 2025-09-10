@@ -12,6 +12,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { smartMaterialCacheService } from './smartMaterialCacheService';
 import { expertContractorService } from './expertContractorService';
 import { MultiIndustryExpertService } from './multiIndustryExpertService';
@@ -21,6 +22,11 @@ import { materialValidationService } from './materialValidationService';
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+// Initialize GPT-4o as fallback
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export interface MaterialItem {
@@ -164,7 +170,7 @@ export class DeepSearchService {
       if (responseContent.type !== 'text') {
         throw new Error('Respuesta de Claude no es de tipo texto');
       }
-      const analysisResult = this.parseClaudeResponse(responseContent.text);
+      const analysisResult = await this.parseClaudeResponse(responseContent.text);
       
       // ENHANCED: Apply expert contractor precision and location-based pricing
       const expertEnrichedResult = await this.applyExpertContractorPrecision(analysisResult, projectDescription, location);
@@ -269,46 +275,67 @@ export class DeepSearchService {
 
     } catch (error: any) {
       console.error('❌ DeepSearch Error:', error);
-      console.log('🔄 Activating Multi-Industry fallback system');
+      console.log('🔄 Activating GPT-4o fallback system');
       
-      // FALLBACK MEJORADO: Usar el servicio multi-industria
+      // FALLBACK: Check if OpenAI API key is available
+      if (!process.env.OPENAI_API_KEY) {
+        console.log('⚠️ OpenAI API key not available, using Expert Contractor fallback');
+        return this.generateExpertContractorFallback(projectDescription, location);
+      }
+
+      // FALLBACK GPT-4o: Usar GPT-4o cuando Anthropic falle
       try {
-        const fallbackResult = this.multiIndustryService.generateMultiIndustryEstimate(
-          projectDescription, 
-          location || 'CA'
-        );
+        console.log('🤖 GPT-4o: Generando lista de materiales con OpenAI GPT-4o...');
         
-        // Convertir al formato esperado por DeepSearch
-        const compatibleResult: DeepSearchResult = {
-          projectType: fallbackResult.analysis.industriesDetected.join(', '),
-          projectScope: projectDescription,
-          materials: fallbackResult.materials,
-          laborCosts: [],
-          additionalCosts: [],
-          totalMaterialsCost: fallbackResult.costs.materials,
-          totalLaborCost: fallbackResult.costs.labor,
-          totalAdditionalCost: 0,
-          grandTotal: fallbackResult.costs.total,
-          confidence: 0.85,
-          recommendations: [
-            `✅ Multi-Industry Expert Analysis: ${fallbackResult.analysis.industriesDetected.join(', ')}`,
-            `🏗️ ${fallbackResult.analysis.precisionLevel}`,
-            '🔧 Generated using fallback expert contractor system'
+        // Usar el mismo prompt que se usa para Anthropic
+        const analysisPrompt = this.buildAnalysisPrompt(projectDescription, location);
+        
+        const gptResponse = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: this.getSystemPrompt()
+            },
+            {
+              role: "user", 
+              content: analysisPrompt
+            }
           ],
-          warnings: ['Used fallback system due to AI service unavailability']
-        };
+          max_tokens: 4096,
+          temperature: 0.1
+        });
+
+        // Procesar la respuesta de GPT-5
+        const responseContent = gptResponse.choices[0]?.message?.content;
+        if (!responseContent) {
+          throw new Error('Respuesta vacía de GPT-5');
+        }
         
-        console.log('✅ Multi-Industry Fallback: Análisis completado', { 
-          materialCount: compatibleResult.materials.length,
-          totalCost: compatibleResult.grandTotal,
-          industries: fallbackResult.analysis.industriesDetected
+        const analysisResult = await this.parseClaudeResponse(responseContent);
+        
+        // ENHANCED: Apply expert contractor precision and location-based pricing
+        const expertEnrichedResult = await this.applyExpertContractorPrecision(analysisResult, projectDescription, location);
+        const enrichedResult = await this.enrichWithPricing(expertEnrichedResult, location);
+        
+        // PRECISION FILTER: Remove any tools or equipment
+        enrichedResult.materials = this.filterOnlyConstructionMaterials(enrichedResult.materials);
+        
+        // Agregar marca de fallback GPT-4o
+        enrichedResult.recommendations.push('🤖 Generated using GPT-4o fallback system');
+        enrichedResult.warnings.push('Used GPT-4o fallback due to Anthropic API unavailability');
+        
+        console.log('✅ GPT-4o Fallback: Análisis completado', { 
+          materialCount: enrichedResult.materials.length,
+          totalCost: enrichedResult.grandTotal
         });
         
-        return compatibleResult;
+        return enrichedResult;
         
       } catch (fallbackError: any) {
-        console.error('❌ Multi-Industry Fallback también falló:', fallbackError);
-        throw new Error(`Error en análisis DeepSearch: ${error.message}`);
+        console.error('❌ GPT-4o Fallback también falló:', fallbackError);
+        console.log('🔄 Using final Expert Contractor fallback');
+        return this.generateExpertContractorFallback(projectDescription, location);
       }
     }
   }
@@ -459,7 +486,7 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
   /**
    * Procesa la respuesta de Claude y extrae los datos estructurados
    */
-  private parseClaudeResponse(responseText: string): DeepSearchResult {
+  private async parseClaudeResponse(responseText: string): Promise<DeepSearchResult> {
     try {
       console.log('🔍 Parsing Claude response, length:', responseText.length);
       
@@ -505,43 +532,163 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
       console.error('Error parsing Claude response:', error);
       console.error('Raw response:', responseText.substring(0, 500));
       
-      // Fallback: Generate structured response using expert contractor service
-      console.log('🔄 Activating fallback - using Expert Contractor Service');
-      return this.generateFallbackResponse(responseText);
+      // Fallback: Generate structured response using GPT-4o
+      console.log('🔄 Activating GPT-4o JSON parsing fallback');
+      return await this.generateGPT4oFallbackResponse(responseText);
     }
   }
 
   /**
-   * Genera respuesta de fallback cuando Claude falla
+   * Genera respuesta de fallback usando GPT-4o cuando Claude falla con JSON parsing
    */
-  private generateFallbackResponse(originalResponse: string): DeepSearchResult {
+  private async generateGPT4oFallbackResponse(originalResponse: string): Promise<DeepSearchResult> {
     try {
-      // Extraer información básica del texto de respuesta
+      console.log('🤖 GPT-4o Fallback: Processing Claude response with GPT-4o');
+      
+      // Check if OpenAI API key is available
+      if (!process.env.OPENAI_API_KEY) {
+        console.log('⚠️ OpenAI API key not available, using Expert Contractor fallback');
+        return this.generateExpertContractorFallback(
+          this.extractProjectTypeFromText(originalResponse) + ' project',
+          undefined
+        );
+      }
+      
       const projectType = this.extractProjectTypeFromText(originalResponse);
       
-      // Usar Expert Contractor Service como fallback
+      // Usar GPT-4o para parsear y estructurar la respuesta de Claude usando SDK
+      const gpt4oResponse = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are a JSON parser and material cost estimator. Your job is to extract material information from AI responses that failed to parse as JSON.
+
+CRITICAL INSTRUCTIONS:
+1. Extract ALL materials, quantities, and prices from the provided text
+2. Return ONLY valid JSON - no explanations or markdown
+3. Use this exact structure:
+{
+  "projectType": "string",
+  "projectScope": "string", 
+  "materials": [{"id": "string", "name": "string", "description": "string", "category": "string", "quantity": number, "unit": "string", "unitPrice": number, "totalPrice": number, "supplier": "string", "sku": "string"}],
+  "laborCosts": [],
+  "additionalCosts": [],
+  "confidence": 0.85,
+  "recommendations": ["GPT-4o fallback parsing"],
+  "warnings": ["Original response had JSON parsing issues"]
+}`
+          },
+          {
+            role: "user",
+            content: `Parse this failed Claude response and extract all materials into valid JSON:\n\n${originalResponse}`
+          }
+        ],
+        max_tokens: 4096,
+        temperature: 0.1
+      });
+
+      const gpt4oContent = gpt4oResponse.choices?.[0]?.message?.content;
+
+      if (!gpt4oContent) {
+        throw new Error('GPT-4o returned empty response');
+      }
+
+      console.log('🤖 GPT-4o Fallback: Parsing GPT-4o response');
+      
+      // Parse the GPT-4o response
+      const cleanJson = this.cleanJSONString(gpt4oContent);
+      const jsonData = JSON.parse(cleanJson);
+
+      // Validate and calculate totals
+      const totalMaterialsCost = jsonData.materials.reduce((sum: number, item: any) => sum + (item.totalPrice || 0), 0);
+      const totalLaborCost = jsonData.laborCosts?.reduce((sum: number, item: any) => sum + (item.total || 0), 0) || 0;
+      const totalAdditionalCost = jsonData.additionalCosts?.reduce((sum: number, item: any) => sum + (item.cost || 0), 0) || 0;
+
+      const result: DeepSearchResult = {
+        projectType: jsonData.projectType || projectType,
+        projectScope: jsonData.projectScope || `GPT-4o parsed ${projectType} project`,
+        materials: jsonData.materials.map((item: any, index: number) => ({
+          ...item,
+          id: item.id || `mat_${String(index + 1).padStart(3, '0')}`,
+          supplier: item.supplier || 'Home Depot/Lowes',
+          sku: item.sku || 'TBD'
+        })),
+        laborCosts: jsonData.laborCosts || [],
+        additionalCosts: jsonData.additionalCosts || [],
+        totalMaterialsCost,
+        totalLaborCost,
+        totalAdditionalCost,
+        grandTotal: totalMaterialsCost + totalLaborCost + totalAdditionalCost,
+        confidence: Math.max(0, Math.min(1, jsonData.confidence || 0.85)),
+        recommendations: jsonData.recommendations || ['Generated using GPT-4o fallback system'],
+        warnings: jsonData.warnings || ['Original AI response had JSON parsing issues - parsed by GPT-4o']
+      };
+
+      console.log('✅ GPT-4o Fallback: Successfully parsed and structured response');
+      return result;
+
+    } catch (fallbackError) {
+      console.error('GPT-4o fallback failed:', fallbackError);
+      
+      // Final fallback - use Expert Contractor Service
+      console.log('🔄 Final fallback: Using Expert Contractor Service');
+      return this.generateExpertContractorFallback(
+        this.extractProjectTypeFromText(originalResponse) + ' project',
+        undefined
+      );
+    }
+  }
+
+  /**
+   * Genera respuesta de fallback usando Expert Contractor Service cuando fallan los LLMs
+   */
+  private generateExpertContractorFallback(projectDescription: string, location?: string): DeepSearchResult {
+    try {
+      console.log('🔧 Final fallback: Using Expert Contractor Service');
+      
+      // Extraer información básica del proyecto
+      const projectType = this.extractProjectType(projectDescription);
+      
+      // Usar Expert Contractor Service como fallback definitivo
       const expertResult = expertContractorService.generateExpertEstimate(
-        `${projectType} project requiring materials analysis`,
-        'United States'
+        projectDescription,
+        location || 'United States',
+        projectType
       );
 
       return {
         projectType: projectType,
-        projectScope: 'Material analysis with expert fallback',
-        materials: expertResult.materials,
-        laborCosts: expertResult.labor,
+        projectScope: projectDescription,
+        materials: expertResult.materials || [],
+        laborCosts: expertResult.labor || [],
         additionalCosts: [],
-        totalMaterialsCost: expertResult.costs.materials,
-        totalLaborCost: expertResult.costs.labor,
+        totalMaterialsCost: expertResult.costs?.materials || 0,
+        totalLaborCost: expertResult.costs?.labor || 0,
         totalAdditionalCost: 0,
-        grandTotal: expertResult.costs.total,
-        confidence: 0.75, // Lower confidence for fallback
-        recommendations: ['Generated using expert fallback system'],
-        warnings: ['Original AI response had formatting issues - using expert calculations']
+        grandTotal: expertResult.costs?.total || 0,
+        confidence: 0.75, // Lower confidence for non-LLM fallback
+        recommendations: ['Generated using Expert Contractor Service - final fallback'],
+        warnings: ['AI services unavailable - using expert contractor calculations']
       };
     } catch (fallbackError) {
-      console.error('Fallback generation failed:', fallbackError);
-      throw new Error('Both primary and fallback analysis failed');
+      console.error('Expert Contractor fallback failed:', fallbackError);
+      
+      // Absolute final fallback - basic structure
+      return {
+        projectType: this.extractProjectType(projectDescription),
+        projectScope: projectDescription,
+        materials: [],
+        laborCosts: [],
+        additionalCosts: [],
+        totalMaterialsCost: 0,
+        totalLaborCost: 0,
+        totalAdditionalCost: 0,
+        grandTotal: 0,
+        confidence: 0.1,
+        recommendations: ['Unable to generate estimate - manual analysis required'],
+        warnings: ['All analysis systems failed - please try again or contact support']
+      };
     }
   }
 
@@ -603,12 +750,22 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
   }
 
   /**
-   * Limpia string JSON de problemas comunes
+   * Limpia string JSON de problemas comunes - MEJORADO para caracteres especiales
    */
   private cleanJSONString(jsonStr: string): string {
     // Remover comentarios de JavaScript
     jsonStr = jsonStr.replace(/\/\*[\s\S]*?\*\//g, '');
     jsonStr = jsonStr.replace(/\/\/.*$/gm, '');
+    
+    // NUEVA FUNCIONALIDAD: Limpiar caracteres de control problemáticos
+    // Reemplazar caracteres de control específicos que causan problemas
+    jsonStr = jsonStr.replace(/\\"/g, '\\"'); // Mantener escapes válidos
+    jsonStr = jsonStr.replace(/\n/g, '\\n'); // Convertir newlines a escapes
+    jsonStr = jsonStr.replace(/\r/g, '\\r'); // Convertir returns a escapes
+    jsonStr = jsonStr.replace(/\t/g, '\\t'); // Convertir tabs a escapes
+    
+    // Limpiar caracteres de control inválidos (pero mantener escapes válidos)
+    jsonStr = jsonStr.replace(/[\x00-\x1F]/g, ''); // Remover caracteres de control ASCII
     
     // Corregir strings cortados (problema específico de Claude)
     jsonStr = jsonStr.replace(/"\s*$/g, '""');
