@@ -9,6 +9,7 @@ import { Request, Response, Express } from 'express';
 import { z } from 'zod';
 import { laborDeepSearchService } from '../services/laborDeepSearchService';
 import { aduConstructionExpertService } from '../services/aduConstructionExpertService';
+import { realityValidationService } from '../services/realityValidationService';
 // Removed authentication - DeepSearch now open to all users
 
 // Schema para validación de entrada - Labor únicamente
@@ -320,12 +321,82 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
         grandTotal: fullCostsResult.grandTotal
       });
 
-      res.json({
-        success: true,
-        data: fullCostsResult,
-        timestamp: new Date().toISOString(),
-        searchType: 'full_costs'
-      });
+      // 🚨 REALITY VALIDATION: Verificar si el resultado es realista usando General Contractor Intelligence
+      try {
+        console.log('🔍 [REALITY-CHECK] Starting validation for combined result...');
+        
+        const clientAddress = validatedData.location || 'Estados Unidos';
+        const realityCheck = await realityValidationService.validateDeepSearchResult(
+          fullCostsResult,
+          validatedData.projectDescription,
+          clientAddress
+        );
+
+        console.log(`🔍 [REALITY-CHECK] Validation result: ${realityCheck.isValid ? 'PASSED' : 'FAILED'} (confidence: ${realityCheck.confidence})`);
+        
+        if (!realityCheck.isValid) {
+          console.log('🚨 [REALITY-CHECK] Red flags detected:', realityCheck.redFlags);
+        }
+
+        // Usar resultado validado si el original falló la validación de realidad
+        const finalResult = realityCheck.validatedResult || fullCostsResult;
+        
+        // Añadir información de validación al resultado
+        finalResult.warnings = [
+          ...(finalResult.warnings || []),
+          ...realityCheck.redFlags.map(flag => `⚠️ ${flag}`)
+        ];
+        
+        finalResult.recommendations = [
+          ...(finalResult.recommendations || []),
+          ...realityCheck.recommendations
+        ];
+        
+        // Ajustar confianza basado en validación
+        finalResult.confidence = realityCheck.confidence;
+
+        console.log('✅ [REALITY-CHECK] Final result prepared', {
+          originalTotal: fullCostsResult.grandTotal,
+          validatedTotal: finalResult.grandTotal,
+          wasReplaced: !!realityCheck.validatedResult,
+          confidence: finalResult.confidence
+        });
+
+        res.json({
+          success: true,
+          data: finalResult,
+          timestamp: new Date().toISOString(),
+          searchType: 'full_costs',
+          realityValidation: {
+            isValid: realityCheck.isValid,
+            confidence: realityCheck.confidence,
+            redFlagsCount: realityCheck.redFlags.length,
+            wasValidated: true
+          }
+        });
+
+      } catch (validationError) {
+        console.warn('⚠️ [REALITY-CHECK] Validation failed, using original result:', validationError);
+        
+        // Fallback: Usar resultado original con advertencia
+        fullCostsResult.warnings = [
+          ...(fullCostsResult.warnings || []),
+          '⚠️ Reality validation unavailable - results may need manual review'
+        ];
+        
+        res.json({
+          success: true,
+          data: fullCostsResult,
+          timestamp: new Date().toISOString(),
+          searchType: 'full_costs',
+          realityValidation: {
+            isValid: false,
+            confidence: 0.5,
+            redFlagsCount: 0,
+            wasValidated: false
+          }
+        });
+      }
 
     } catch (error: any) {
       console.error('❌ Combined DeepSearch API Error:', error);
