@@ -345,12 +345,12 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
         finalResult.warnings = [
           ...(finalResult.warnings || []),
           ...realityCheck.redFlags.map(flag => `⚠️ ${flag}`)
-        ];
+        ] as string[];
         
         finalResult.recommendations = [
           ...(finalResult.recommendations || []),
           ...realityCheck.recommendations
-        ];
+        ] as string[];
         
         // Ajustar confianza basado en validación
         finalResult.confidence = realityCheck.confidence;
@@ -382,7 +382,7 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
         fullCostsResult.warnings = [
           ...(fullCostsResult.warnings || []),
           '⚠️ Reality validation unavailable - results may need manual review'
-        ];
+        ] as string[];
         
         res.json({
           success: true,
