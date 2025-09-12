@@ -7754,13 +7754,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+            <div className="text-sm text-gray-900 bg-blue-50 p-3 rounded border border-blue-200">
               <p><strong>Client:</strong> {estimate?.client?.name || 'No client'}</p>
               <p><strong>Items:</strong> {estimate?.items?.length || 0}</p>
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-1">Client Email</label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Client Email</label>
               <input
                 type="email"
                 value={emailData.toEmail}
@@ -7771,7 +7771,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-1">Subject</label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Subject</label>
               <input
                 type="text"
                 value={emailData.subject}
@@ -7782,7 +7782,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-1">Message</label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Message</label>
               <textarea
                 value={emailData.message}
                 onChange={(e) => setEmailData(prev => ({...prev, message: e.target.value}))}
