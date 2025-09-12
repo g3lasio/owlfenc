@@ -14,6 +14,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase';
+import { DeepSearchEffect } from './ui/deepsearch-effect';
 import { 
   Wrench, 
   Brain, 
@@ -71,6 +72,7 @@ export default function LaborDeepSearchButton({
       total: number;
     };
   }>({});
+  const [showAdvancedEffect, setShowAdvancedEffect] = useState(false);
 
   const { toast } = useToast();
 
@@ -104,6 +106,7 @@ export default function LaborDeepSearchButton({
   const generateLaborOnly = async () => {
     try {
       setIsProcessing(true);
+      setShowAdvancedEffect(true);
       setProgress(20);
 
       console.log('🔧 Iniciando Labor DeepSearch...');

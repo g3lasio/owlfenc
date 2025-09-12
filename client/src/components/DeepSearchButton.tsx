@@ -15,6 +15,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { Brain, Sparkles, Package, DollarSign, Clock, CheckCircle2, AlertCircle, Zap } from 'lucide-react';
 import { DeepSearchChat } from './DeepSearchChat';
+import { DeepSearchEffect } from './ui/deepsearch-effect';
 
 interface DeepSearchResult {
   projectType: string;
@@ -74,6 +75,7 @@ export function DeepSearchButton({
   const [showSearchTypes, setShowSearchTypes] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentSearchType, setCurrentSearchType] = useState<'materials' | 'labor' | 'full' | null>(null);
+  const [showAdvancedEffect, setShowAdvancedEffect] = useState(false);
   const { toast } = useToast();
 
   const canAnalyze = projectDescription && projectDescription.length >= 10;
@@ -92,6 +94,7 @@ export function DeepSearchButton({
     setCurrentSearchType(searchType);
     setProgress(0);
     setShowSearchTypes(false);
+    setShowAdvancedEffect(true);
 
     // Simular progreso de análisis
     const progressInterval = setInterval(() => {
@@ -195,6 +198,7 @@ export function DeepSearchButton({
       clearInterval(progressInterval);
       setIsAnalyzing(false);
       setProgress(0);
+      setShowAdvancedEffect(false);
     }
   };
 
@@ -299,6 +303,14 @@ export function DeepSearchButton({
 
   return (
     <>
+      {/* Advanced Visual Effect */}
+      <DeepSearchEffect 
+        isVisible={showAdvancedEffect} 
+        onComplete={() => setShowAdvancedEffect(false)}
+        projectDescription={projectDescription}
+        location={location}
+      />
+      
       <Dialog open={showSearchTypes} onOpenChange={setShowSearchTypes}>
         <DialogTrigger asChild>
           <Button
