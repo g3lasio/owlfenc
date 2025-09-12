@@ -125,13 +125,13 @@ export async function apiRequest(
       credentials: "include",
     });
 
-    // Timeout más largo para operaciones DeepSearch intensivas
-    const timeoutMs = url.includes('deepsearch') || url.includes('labor-deepsearch') ? 60000 : 10000;
+    // Timeout EXTENDIDO para operaciones DeepSearch intensivas (Reality Validation puede tomar hasta 2 minutos)
+    const timeoutMs = url.includes('deepsearch') || url.includes('labor-deepsearch') ? 120000 : 10000;
     const res = await safeTimeout(fetchPromise, timeoutMs);
     
     if (!res) {
       const errorMsg = url.includes('deepsearch') || url.includes('labor-deepsearch') 
-        ? 'DeepSearch request timeout (60s) - try with shorter project description'
+        ? 'DeepSearch request timeout (2min) - Reality Validation took too long'
         : 'Request timeout or failed';
       throw new Error(errorMsg);
     }
