@@ -111,21 +111,21 @@ export class PuppeteerPdfService {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
 
-    // Template mapping based on selectedTemplate - Simplified to 2 options
+    // Template mapping based on selectedTemplate - Fixed with actual filenames
     const templateMapping: Record<string, string> = {
-      basic: "estimate-template-free.html",
-      premium: "estimate-template-premium-advanced.html",
+      basic: "universal-estimate-template.html",
+      premium: "premium-estimate-template.html",
       // Legacy support for old template names
-      professional: "professional_estimate_template.html", 
-      luxury: "luxurytemplate.html",
-      standard: "estimate-template.html",
-      free: "estimate-template-free.html"
+      professional: "premium-estimate-template.html", 
+      luxury: "premium-estimate-template.html",
+      standard: "universal-estimate-template.html",
+      free: "universal-estimate-template.html"
     };
 
     // AUTOMATIC TEMPLATE DETECTION - Check data object for premium parameters
     console.log(`🔍 AUTO TEMPLATE: isMembership=${data.isMembership}, templateMode=${data.templateMode}, selectedTemplate=${data.selectedTemplate}`);
     
-    let templateFile = "estimate-template-free.html"; // Default to basic
+    let templateFile = "universal-estimate-template.html"; // Default to basic
     
     // ENHANCED AUTO-DETECTION: Check multiple premium indicators from data object
     const isPremium = data.templateMode === "premium" || 
@@ -144,7 +144,7 @@ export class PuppeteerPdfService {
 
     const templatePath = path.join(
       __dirname,
-      "../client/src/components/templates/",
+      "../client/src/templates/",
       templateFile
     );
     
@@ -180,7 +180,7 @@ export class PuppeteerPdfService {
         name: item.code,
         description: item.description,
         quantity: item.qty,
-        unitPrice: item.unit_price,
+        price: item.unit_price,
         total: item.total,
       })),
       subtotal: data.estimate.subtotal || "0",
@@ -199,7 +199,7 @@ export class PuppeteerPdfService {
   }
 
   private generatePremiumHtmlFromPreview(data: EstimateData): string {
-    // COPIADO EXACTAMENTE DE generateEstimatePreview() - EL HTML HERMOSO DEL PREVIEW
+    // Fixed data mapping to use correct EstimateData structure
     const estimateNumber = data.estimate.number || `EST-${Date.now()}`;
     const estimateDate = data.estimate.date || new Date().toLocaleDateString();
     
@@ -213,14 +213,14 @@ export class PuppeteerPdfService {
         <!-- Header with Company Info and Logo -->
         <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
           <div style="flex: 1;">
-            ${data.contractorInfo.logo ? `<img src="${data.contractorInfo.logo}" alt="Company Logo" style="max-width: 120px; max-height: 80px; margin-bottom: 10px;" />` : `<div style="width: 120px; height: 80px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; color: #666; font-size: 14px;">Logo</div>`}
-            <h2 style="margin: 0; color: #2563eb; font-size: 1.5em;">${data.contractorInfo.name || ""}</h2>
+            ${data.company?.logo ? `<img src="${data.company.logo}" alt="Company Logo" style="max-width: 120px; max-height: 80px; margin-bottom: 10px;" />` : `<div style="width: 120px; height: 80px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; color: #666; font-size: 14px;">Logo</div>`}
+            <h2 style="margin: 0; color: #2563eb; font-size: 1.5em;">${data.company?.name || ""}</h2>
             <p style="margin: 5px 0; color: #666;">
-              ${data.contractorInfo.address || ""}<br>
-              ${data.contractorInfo.phone || ""}<br>
-              ${data.contractorInfo.email || ""}
+              ${data.company?.address || ""}<br>
+              ${data.company?.phone || ""}<br>
+              ${data.company?.email || ""}
             </p>
-            ${data.contractorInfo.license ? `<p style="margin: 5px 0; font-size: 0.9em; color: #666;">License: ${data.contractorInfo.license}</p>` : ""}
+            ${data.company?.license ? `<p style="margin: 5px 0; font-size: 0.9em; color: #666;">License: ${data.company.license}</p>` : ""}
           </div>
           
           <div style="text-align: right;">
@@ -234,10 +234,10 @@ export class PuppeteerPdfService {
         <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
           <div style="flex: 1; padding-right: 20px;">
             <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">BILL TO:</h3>
-            <p style="margin: 5px 0; font-size: 1.1em; color: #000000;"><strong>${data.client.name || "Client not specified"}</strong></p>
-            <p style="margin: 5px 0; color: #000000;">${data.client.email || ""}</p>
-            <p style="margin: 5px 0; color: #000000;">${data.client.phone || ""}</p>
-            <p style="margin: 5px 0; color: #000000;">${data.client.address || ""}</p>
+            <p style="margin: 5px 0; font-size: 1.1em; color: #000000;"><strong>${data.client?.name || "Client not specified"}</strong></p>
+            <p style="margin: 5px 0; color: #000000;">${data.client?.email || ""}</p>
+            <p style="margin: 5px 0; color: #000000;">${data.client?.phone || ""}</p>
+            <p style="margin: 5px 0; color: #000000;">${data.client?.address || ""}</p>
           </div>
         </div>
 
@@ -245,7 +245,7 @@ export class PuppeteerPdfService {
         <div style="margin-bottom: 30px;">
           <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">MATERIALS AND SERVICES:</h3>
           <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb; line-height: 1.6;">
-            ${data.project.description?.replace(/\n/g, "<br>") || "Professional construction services"}
+            ${data.estimate?.project_description?.replace(/\n/g, "<br>") || "Professional construction services"}
           </div>
         </div>
 
@@ -261,18 +261,18 @@ export class PuppeteerPdfService {
             </tr>
           </thead>
           <tbody>
-            ${data.estimate.items.map((item, index) => `
+            ${data.estimate?.items?.map((item, index) => `
               <tr style="background: ${index % 2 === 0 ? "#f8fafc" : "#ffffff"};">
                 <td style="border: 1px solid #ddd; padding: 12px; color: #000000;">
-                  <strong>${item.name}</strong>
+                  <strong>${item.code || ""}</strong>
                   ${item.description ? `<br><small style="color: #333333;">${item.description}</small>` : ""}
                 </td>
-                <td style="border: 1px solid #ddd; padding: 12px; text-align: center; color: #000000;">${item.quantity}</td>
+                <td style="border: 1px solid #ddd; padding: 12px; text-align: center; color: #000000;">${item.qty || ""}</td>
                 <td style="border: 1px solid #ddd; padding: 12px; text-align: center; color: #000000;">unit</td>
-                <td style="border: 1px solid #ddd; padding: 12px; text-align: right; color: #000000;">${item.unitPrice}</td>
-                <td style="border: 1px solid #ddd; padding: 12px; text-align: right; font-weight: bold; color: #000000;">${item.total}</td>
+                <td style="border: 1px solid #ddd; padding: 12px; text-align: right; color: #000000;">${item.unit_price || ""}</td>
+                <td style="border: 1px solid #ddd; padding: 12px; text-align: right; font-weight: bold; color: #000000;">${item.total || ""}</td>
               </tr>
-            `).join("")}
+            `).join("") || ""}
           </tbody>
         </table>
 
@@ -280,28 +280,28 @@ export class PuppeteerPdfService {
         <div style="text-align: right; margin-top: 30px; background: #f8fafc; padding: 20px; border-radius: 8px; border: 2px solid #e5e7eb;">
           <div style="margin-bottom: 10px; font-size: 1.1em; color: #000000;">
             <span style="margin-right: 40px; color: #000000;"><strong>Subtotal:</strong></span>
-            <span style="font-weight: bold; color: #000000;">${data.estimate.subtotal}</span>
+            <span style="font-weight: bold; color: #000000;">${data.estimate?.subtotal || "$0.00"}</span>
           </div>
           ${discountAmount > 0 ? `
             <div style="margin-bottom: 10px; font-size: 1.1em; color: #22c55e;">
               <span style="margin-right: 40px; color: #22c55e;"><strong>Discount:</strong></span>
-              <span style="font-weight: bold; color: #22c55e;">${data.estimate.discounts}</span>
+              <span style="font-weight: bold; color: #22c55e;">${data.estimate?.discounts || "$0.00"}</span>
             </div>
           ` : ""}
           <div style="margin-bottom: 15px; font-size: 1.1em; color: #000000;">
-            <span style="margin-right: 40px; color: #000000;"><strong>Tax (${data.estimate.tax_rate}%):</strong></span>
-            <span style="font-weight: bold; color: #000000;">${data.estimate.tax_amount}</span>
+            <span style="margin-right: 40px; color: #000000;"><strong>Tax (${data.estimate?.tax_rate || 0}%):</strong></span>
+            <span style="font-weight: bold; color: #000000;">${data.estimate?.tax_amount || "$0.00"}</span>
           </div>
           <div style="border-top: 2px solid #2563eb; padding-top: 15px; font-size: 1.3em; color: #2563eb;">
             <span style="margin-right: 40px; color: #2563eb;"><strong>TOTAL:</strong></span>
-            <span style="font-weight: bold; font-size: 1.2em; color: #2563eb;">${data.estimate.total}</span>
+            <span style="font-weight: bold; font-size: 1.2em; color: #2563eb;">${data.estimate?.total || "$0.00"}</span>
           </div>
         </div>
 
         <!-- Footer -->
         <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e7eb; text-align: center; color: #666; font-size: 0.9em;">
           <p style="margin: 10px 0;"><strong>This estimate is valid for 30 days from the date shown above.</strong></p>
-          <p style="margin: 10px 0;">Thank you for considering ${data.contractorInfo.name || "our company"} for your project!</p>
+          <p style="margin: 10px 0;">Thank you for considering ${data.company?.name || "our company"} for your project!</p>
         </div>
       </div>
     `;

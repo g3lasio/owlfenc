@@ -178,20 +178,20 @@ const STEPS = [
   { id: "preview", title: "Preview", icon: Eye },
 ];
 
-// Available PDF templates - Simplified to 2 options
+// Available PDF templates - CORREGIDO con archivos que existen
 const TEMPLATE_OPTIONS = [
   {
     id: "basic",
     name: "Básico",
     description: "Diseño simple y limpio",
-    file: "estimate-template-free.html",
+    file: "universal-estimate-template.html",
     tier: "free"
   },
   {
     id: "premium", 
     name: "Premium",
     description: "Diseño profesional con efectos holográficos",
-    file: "estimate-template-premium-advanced.html",
+    file: "premium-estimate-template.html",
     tier: "premium"
   }
 ];
@@ -902,10 +902,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               name: service.name,
               description: service.description || "",
               quantity: service.quantity || 1,
-              price: service.unitPrice || service.totalCost || 0,
+              price: service.totalCost || service.price || 0,
               unit: unitMapping[service.unit] || service.unit || "service",
               total:
-                service.totalCost || service.unitPrice * service.quantity || 0,
+                service.totalCost || service.price * service.quantity || 0,
             });
           });
 
@@ -918,7 +918,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               description:
                 service.description || `Labor service: ${service.name}`,
               unit: service.unit || "service",
-              price: service.unitPrice || service.totalCost || 0,
+              price: service.totalCost || service.price || 0,
               source: "deepsearch-labor",
               tags: ["labor", "service", "ai-generated"],
             }));
@@ -985,7 +985,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               description:
                 service.description || `Labor service: ${service.name}`,
               unit: service.unit || "service",
-              price: service.unitPrice || service.totalCost || 0,
+              price: service.totalCost || service.price || 0,
               source: "deepsearch-combined",
               tags: ["labor", "service", "ai-generated", "combined-analysis"],
             }));
@@ -2654,7 +2654,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           category: "material",
           quantity: item.quantity,
           unit: item.unit || "unit",
-          unitPrice: item.price, // CÁLCULOS SEGUROS: valores directos
+          price: item.price, // CÁLCULOS SEGUROS: valores directos
           totalPrice: item.total, // CÁLCULOS SEGUROS: valores directos
           sortOrder: index,
           isOptional: false,
@@ -3444,7 +3444,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           category: "material" as const,
           quantity: item.quantity,
           unit: item.unit || "unit",
-          unitPrice: item.price, // CÁLCULOS SEGUROS: valores directos
+          price: item.price, // CÁLCULOS SEGUROS: valores directos
           totalPrice: item.total, // CÁLCULOS SEGUROS: valores directos
           sortOrder: index,
           isOptional: false,
@@ -3659,9 +3659,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           description: item.description || item.details,
           quantity: item.quantity || 1,
           unit: item.unit || "unidad",
-          unitPrice: item.unitPrice || item.price || 0,
+          price: item.price || 0,
           total:
-            item.total || item.quantity * (item.unitPrice || item.price || 0),
+            item.total || item.quantity * item.price,
         })),
         subtotal: estimate.subtotal || estimate.total || 0,
         discount: estimate.discountAmount || 0,
@@ -3900,11 +3900,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         },
         items: (estimate.items || []).map((item) => ({
           id: item.id || Date.now().toString(),
-          name: item.name || item.material || "Material",
-          description: item.description || item.details || "Sin descripción",
+          name: item.name || "Material",
+          description: item.description || "Sin descripción",
           quantity: item.quantity || 1,
           unit: item.unit || "unidad",
-          unitPrice: item.unitPrice || item.price || 0,
+          price: item.price || 0,
           total: item.total || item.price * item.quantity || 0,
         })),
         subtotal: estimate.subtotal || 0,
