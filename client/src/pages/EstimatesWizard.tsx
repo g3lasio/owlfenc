@@ -7754,13 +7754,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="text-sm text-gray-900 bg-blue-50 p-3 rounded border border-blue-200">
-              <p><strong>Client:</strong> {estimate?.client?.name || 'No client'}</p>
-              <p><strong>Items:</strong> {estimate?.items?.length || 0}</p>
+            <div className="text-sm text-white bg-gray-800 p-3 rounded border border-gray-700">
+              <p><strong className="text-blue-300">Client:</strong> {estimate?.client?.name || 'No client'}</p>
+              <p><strong className="text-blue-300">Items:</strong> {estimate?.items?.length || 0}</p>
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">Client Email</label>
+              <label className="block text-sm font-bold text-black mb-1">Client Email</label>
               <input
                 type="email"
                 value={emailData.toEmail}
@@ -7771,7 +7771,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">Subject</label>
+              <label className="block text-sm font-bold text-black mb-1">Subject</label>
               <input
                 type="text"
                 value={emailData.subject}
@@ -7782,7 +7782,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">Message</label>
+              <label className="block text-sm font-bold text-black mb-1">Message</label>
               <textarea
                 value={emailData.message}
                 onChange={(e) => setEmailData(prev => ({...prev, message: e.target.value}))}
@@ -7792,15 +7792,15 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               />
             </div>
             
-            <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center gap-3 p-4 bg-green-100 border-2 border-green-500 rounded-lg">
               <input
                 type="checkbox" 
                 id="sendCopy"
                 checked={emailData.sendCopy}
                 onChange={(e) => setEmailData(prev => ({...prev, sendCopy: e.target.checked}))}
-                className="w-5 h-5 text-blue-600 border-2 border-gray-300 rounded focus:ring-blue-500"
+                className="w-5 h-5 text-green-600 border-2 border-green-600 rounded focus:ring-green-500"
               />
-              <label htmlFor="sendCopy" className="text-sm font-medium text-gray-900 cursor-pointer select-none">
+              <label htmlFor="sendCopy" className="text-sm font-bold text-black cursor-pointer select-none">
                 Send me a copy
               </label>
             </div>
