@@ -76,7 +76,7 @@ export class RealityValidationService {
         confidence: shouldUseContractorResult ? contractorAnalysis.realityValidation.confidence : 
                    Math.max(0.1, deepSearchResult.confidence - (autoRedFlags.length * 0.2)),
         originalResult: deepSearchResult,
-        validatedResult: shouldUseContractorResult ? this.convertToDeepSearchFormat(contractorAnalysis) : undefined,
+        validatedResult: shouldUseContractorResult ? this.convertToDeepSearchFormat(contractorAnalysis, deepSearchResult) : undefined,
         redFlags: autoRedFlags,
         recommendations,
         contractorAnalysis
@@ -207,42 +207,92 @@ export class RealityValidationService {
 
   /**
    * Decidir si reemplazar resultado original con análisis de contractor
+   * CRITICAL FIX: Only replace when contractor analysis provides BETTER data
    */
   private shouldReplaceOriginalResult(
     comparison: any,
     redFlags: string[],
     contractorValidation: any
   ): boolean {
-    // Reemplazar si:
-    // 1. Hay red flags críticos
+    // NEVER replace if contractor analysis failed to provide meaningful data
+    if (contractorValidation?.confidence < 0.4) {
+      console.log('🔍 [REALITY-CHECK] Contractor analysis confidence too low, keeping original materials');
+      return false;
+    }
+
+    // Check if contractor has real material data
+    const contractorHasRealMaterials = this.contractorAnalysisHasRealMaterials(contractorValidation);
+    if (!contractorHasRealMaterials) {
+      console.log('🔍 [REALITY-CHECK] Contractor analysis lacks specific materials, keeping original');
+      return false;
+    }
+
+    // Only replace if:
+    // 1. Hay red flags críticos AND contractor provides better data
     const hasCriticalFlags = redFlags.some(flag => flag.includes('CRITICAL'));
     
-    // 2. Diferencia significativa Y contractor result es más confiable
+    // 2. Diferencia significativa Y contractor result es más confiable AND has real data
     const significantDifferenceAndMoreReliable = 
       comparison.isSignificantDifference && 
-      contractorValidation?.confidence > 0.6;
+      contractorValidation?.confidence > 0.8; // Higher threshold
 
-    // 3. Contractor analysis es realista pero original tiene red flags
+    // 3. Contractor analysis es realista AND has detailed materials AND original has major issues
     const contractorIsRealistic = contractorValidation?.isRealistic === true;
+    const originalHasMajorIssues = redFlags.length > 3;
 
-    return hasCriticalFlags || significantDifferenceAndMoreReliable || 
-           (contractorIsRealistic && redFlags.length > 0);
+    return (hasCriticalFlags && contractorHasRealMaterials) || 
+           (significantDifferenceAndMoreReliable && contractorHasRealMaterials) || 
+           (contractorIsRealistic && contractorHasRealMaterials && originalHasMajorIssues);
+  }
+
+  /**
+   * Check if contractor analysis has meaningful material data
+   */
+  private contractorAnalysisHasRealMaterials(contractorAnalysis: any): boolean {
+    const materials = contractorAnalysis?.materialRequirements || [];
+    
+    // Check if we have specific materials (not generic ones)
+    return materials.length > 3 && 
+           materials.some((mat: any) => 
+             mat.name && 
+             !mat.name.includes('Materials for') && 
+             mat.quantity > 0 &&
+             mat.unitPrice > 0
+           );
   }
 
   /**
    * Convertir análisis de contractor a formato DeepSearch
+   * CRITICAL FIX: Check if contractor analysis has real material data, otherwise preserve original
    */
-  private convertToDeepSearchFormat(contractorAnalysis: any): DeepSearchResult {
-    const materials = contractorAnalysis.materialRequirements?.map((mat: any, index: number) => ({
-      id: `gc_mat_${index}`,
-      name: mat.name,
-      category: mat.category,
-      quantity: mat.quantity,
-      unit: mat.unit,
-      unitPrice: 0, // Se calcula internamente
-      totalPrice: 0, // Se calcula internamente
-      specifications: mat.specifications
-    })) || [];
+  private convertToDeepSearchFormat(contractorAnalysis: any, originalResult?: DeepSearchResult): DeepSearchResult {
+    // Check if contractor analysis has meaningful material data
+    const hasRealMaterials = contractorAnalysis.materialRequirements && 
+                            contractorAnalysis.materialRequirements.length > 0 &&
+                            contractorAnalysis.materialRequirements.some((mat: any) => 
+                              mat.name && !mat.name.includes('Materials for') && mat.quantity > 0
+                            );
+
+    // If contractor analysis failed to provide real materials, preserve original materials with adjusted pricing
+    const materials = hasRealMaterials ? 
+      contractorAnalysis.materialRequirements?.map((mat: any, index: number) => ({
+        id: `gc_mat_${index}`,
+        name: mat.name,
+        category: mat.category,
+        quantity: mat.quantity,
+        unit: mat.unit,
+        unitPrice: mat.unitPrice || 0,
+        totalPrice: mat.totalPrice || 0,
+        specifications: mat.specifications
+      })) || [] 
+      :
+      // Preserve original materials but adjust total pricing to match contractor total
+      originalResult?.materials?.map((mat: any) => ({
+        ...mat,
+        // Keep original material details but proportionally adjust pricing
+        unitPrice: mat.unitPrice,
+        totalPrice: mat.totalPrice
+      })) || [];
 
     const laborCosts = contractorAnalysis.laborEstimates?.map((labor: any) => ({
       category: labor.tradeType,
