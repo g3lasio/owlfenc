@@ -140,6 +140,12 @@ class UnifiedErrorHandler {
 
   // Método para usar en React Query y otras librerías
   handleError = (error: any, context?: string): any => {
+    // CRITICAL FIX: Never silence DeepSearch/labor-deepsearch errors - always let them through
+    if (context && (context.includes('deepsearch') || context.includes('labor-deepsearch'))) {
+      // Always allow DeepSearch errors to be handled normally to preserve successful responses
+      return error;
+    }
+    
     if (this.shouldSilenceError(error)) {
       if (window.location.search.includes('debug=errors') && !this.isRateLimited()) {
         console.debug(`🔧 [UNIFIED] Handled ${context || 'unknown'} error:`, error?.message?.substring(0, 50));
