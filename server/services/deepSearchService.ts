@@ -148,6 +148,9 @@ export class DeepSearchService {
       // 2. GENERAR NUEVA LISTA - Solo si no existe previamente
       console.log('🤖 DeepSearch: Generando nueva lista con IA...');
       
+      // 🚀 YIELD: Release event loop before heavy AI processing
+      await new Promise(resolve => setImmediate(resolve));
+      
       // Generar el prompt estructurado para Claude
       const analysisPrompt = this.buildAnalysisPrompt(projectDescription, location);
 
@@ -628,8 +631,15 @@ CRITICAL INSTRUCTIONS:
       console.log('✅ GPT-4o Fallback: Successfully parsed and structured response');
       return result;
 
-    } catch (fallbackError) {
-      console.error('GPT-4o fallback failed:', fallbackError);
+    } catch (fallbackError: any) {
+      // 🚨 SECURITY: Never log external API errors directly - they may contain secrets
+      const sanitizedError = {
+        message: fallbackError?.message || 'Unknown error',
+        code: fallbackError?.code || 'unknown',
+        type: fallbackError?.type || 'unknown',
+        status: fallbackError?.status || 'unknown'
+      };
+      console.error('GPT-4o fallback failed:', sanitizedError);
       
       // Final fallback - use Expert Contractor Service
       console.log('🔄 Final fallback: Using Expert Contractor Service');

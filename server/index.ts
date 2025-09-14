@@ -500,6 +500,34 @@ app.post('/api/analysis/unified', async (req: Request, res: Response) => {
   const analysisId = crypto.randomUUID();
   const startTime = Date.now();
   
+  // 🚀 TIMEOUT AGRESIVO: Máximo 20 segundos para respuesta garantizada
+  const globalTimeout = setTimeout(() => {
+    console.log(`⏰ [UNIFIED-ANALYSIS-${analysisId}] Global timeout reached (20s), forcing response`);
+    if (!res.headersSent) {
+      res.status(202).json({
+        success: true,
+        data: {
+          projectType: 'Analysis in progress',
+          message: 'Your analysis is being processed. This complex project requires additional time.',
+          totalMaterialsCost: 0,
+          totalLaborCost: 0,
+          grandTotal: 0,
+          confidence: 0.5,
+          materials: [],
+          laborCosts: [],
+          additionalCosts: []
+        },
+        metadata: {
+          analysisId,
+          systemUsed: 'timeout_fallback',
+          duration: '20000ms',
+          timestamp: new Date().toISOString(),
+          status: 'processing'
+        }
+      });
+    }
+  }, 20000);
+  
   try {
     console.log(`🚀 [UNIFIED-ANALYSIS-${analysisId}] Starting analysis request`);
     
@@ -536,7 +564,7 @@ app.post('/api/analysis/unified', async (req: Request, res: Response) => {
         );
         
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('General Contractor timeout')), 15000)
+          setTimeout(() => reject(new Error('General Contractor timeout')), 10000)
         );
         
         const gcResult = await Promise.race([gcPromise, timeoutPromise]) as any;
@@ -566,6 +594,9 @@ app.post('/api/analysis/unified', async (req: Request, res: Response) => {
     
     console.log(`✅ [UNIFIED-ANALYSIS-${analysisId}] Analysis completed in ${duration}ms using ${systemUsed}`);
     
+    // Clear global timeout since we completed successfully
+    clearTimeout(globalTimeout);
+    
     // Normalize response format
     const normalizedResult = {
       success: true,
@@ -580,25 +611,32 @@ app.post('/api/analysis/unified', async (req: Request, res: Response) => {
       }
     };
     
-    res.json(normalizedResult);
+    if (!res.headersSent) {
+      res.json(normalizedResult);
+    }
     
   } catch (error: any) {
     const endTime = Date.now();
     const duration = endTime - startTime;
     
-    console.error(`❌ [UNIFIED-ANALYSIS-${analysisId}] Critical error after ${duration}ms:`, error);
+    // Clear timeout on error as well
+    clearTimeout(globalTimeout);
     
-    res.status(500).json({
-      success: false,
-      error: 'Analysis system temporarily unavailable',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
-      metadata: {
-        analysisId,
-        systemUsed: 'error',
-        duration: `${duration}ms`,
-        timestamp: new Date().toISOString()
-      }
-    });
+    console.error(`❌ [UNIFIED-ANALYSIS-${analysisId}] Critical error after ${duration}ms:`, error.message || error);
+    
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: 'Analysis system temporarily unavailable',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        metadata: {
+          analysisId,
+          systemUsed: 'error',
+          duration: `${duration}ms`,
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
   }
 });
 
