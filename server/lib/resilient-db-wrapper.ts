@@ -7,6 +7,7 @@
 
 import { neon, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
+import { sql } from 'drizzle-orm';
 import * as schema from '@shared/schema';
 
 // Configure Neon for HTTP mode (more reliable than WebSocket for serverless)
@@ -147,8 +148,8 @@ export class ResilientDbWrapper {
     
     try {
       await this.executeWithRetry(async (db) => {
-        // Simple health check query
-        await db.execute('SELECT 1 as health_check');
+        // Simple health check query using correct Drizzle syntax
+        await db.execute(sql`SELECT 1 as health_check`);
       }, 'Health Check');
       
       const latencyMs = Date.now() - startTime;

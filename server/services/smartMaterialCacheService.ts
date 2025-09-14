@@ -5,7 +5,7 @@
  * generadas por DeepSearch. Evita recálculos innecesarios y mejora la eficiencia.
  */
 
-import { db } from '../db';
+import { resilientDb } from '../db';
 import { smartMaterialLists, projectTemplates } from '@shared/schema';
 import { eq, and, desc, sql, ilike } from 'drizzle-orm';
 import { DeepSearchResult } from './deepSearchService';
@@ -30,46 +30,57 @@ export class SmartMaterialCacheService {
   /**
    * Busca listas de materiales existentes antes de generar nuevas
    * SISTEMA GLOBAL: Busca en todas las regiones para máxima reutilización
-   * FIXED: Now requires AI recalculation for quantities and relevance filtering
+   * DECOUPLED: Completes all DB reads before any AI processing
    */
   async searchExistingMaterials(criteria: CacheSearchCriteria): Promise<CacheSearchResult> {
     try {
       console.log('🔍 SmartCache GLOBAL: Buscando materiales existentes...', criteria);
 
-      // Check if database is available
-      if (!db) {
+      // DECOUPLING STEP 1: Complete ALL database reads first, then process
+      const dbReadResults = await this.performAllDatabaseReads(criteria);
+      
+      if (!dbReadResults) {
         console.log('⚠️ SmartCache: Database not available, skipping cache lookup');
         return { found: false, source: 'none' };
       }
 
-      // Extract project requirements for filtering
+      // DECOUPLING STEP 2: Process results without any DB connections open
       const projectRequirements = this.extractProjectRequirements(criteria.description || '');
 
-      // 1. BÚSQUEDA REGIONAL EXACTA (prioridad alta)
-      const regionalMatch = await this.findRegionalMatch(criteria);
-      if (regionalMatch.found && this.validateMaterialRelevance(regionalMatch.data!, projectRequirements)) {
+      // 1. Check regional match
+      if (dbReadResults.regionalMatch && this.validateMaterialRelevance(dbReadResults.regionalMatch, projectRequirements)) {
         console.log('✅ SmartCache: Coincidencia regional encontrada - requiere recálculo de cantidades');
-        // CRITICAL FIX: Always require AI recalculation for quantities
-        regionalMatch.adaptationNeeded = true;
-        return regionalMatch;
+        return {
+          found: true,
+          data: this.convertToDeepSearchResult(dbReadResults.regionalMatch),
+          similarity: 1.0,
+          source: 'exact_match',
+          adaptationNeeded: true // Always require AI recalculation
+        };
       }
 
-      // 2. BÚSQUEDA GLOBAL POR SIMILITUD (cualquier región) - Higher threshold
-      const globalMatch = await this.findGlobalSimilarProject(criteria);
-      if (globalMatch.found && this.validateMaterialRelevance(globalMatch.data!, projectRequirements)) {
+      // 2. Check global match
+      if (dbReadResults.globalMatch && this.validateMaterialRelevance(dbReadResults.globalMatch, projectRequirements)) {
         console.log('✅ SmartCache: Proyecto global similar encontrado - requiere recálculo de cantidades');
-        // CRITICAL FIX: Always require AI recalculation for quantities
-        globalMatch.adaptationNeeded = true;
-        return globalMatch;
+        return {
+          found: true,
+          data: this.convertToDeepSearchResult(dbReadResults.globalMatch.data),
+          similarity: dbReadResults.globalMatch.similarity,
+          source: 'similar_project',
+          adaptationNeeded: true // Always require AI recalculation
+        };
       }
 
-      // 3. BÚSQUEDA EN TEMPLATES UNIVERSALES
-      const templateMatch = await this.findProjectTemplate(criteria);
-      if (templateMatch.found && this.validateMaterialRelevance(templateMatch.data!, projectRequirements)) {
+      // 3. Check template match
+      if (dbReadResults.templateMatch && this.validateMaterialRelevance(dbReadResults.templateMatch, projectRequirements)) {
         console.log('✅ SmartCache: Template universal encontrado - requiere recálculo de cantidades');
-        // CRITICAL FIX: Always require AI recalculation for quantities
-        templateMatch.adaptationNeeded = true;
-        return templateMatch;
+        return {
+          found: true,
+          data: this.convertTemplateToDeepSearchResult(dbReadResults.templateMatch, criteria.region),
+          similarity: 0.8,
+          source: 'template',
+          adaptationNeeded: true // Always require AI recalculation
+        };
       }
 
       console.log('❌ SmartCache: Generando nueva lista (contribuirá al sistema global)');
@@ -82,8 +93,102 @@ export class SmartMaterialCacheService {
   }
 
   /**
+   * DECOUPLING METHOD: Performs ALL database reads in one operation
+   * Returns raw data without any AI processing or analysis
+   */
+  private async performAllDatabaseReads(criteria: CacheSearchCriteria): Promise<{
+    regionalMatch?: any;
+    globalMatch?: { data: any; similarity: number };
+    templateMatch?: any;
+  } | null> {
+    return await resilientDb.executeOptional(async (db) => {
+      console.log('📊 [RESILIENT-DB] Performing consolidated database reads...');
+      
+      const results: any = {};
+
+      // 1. Regional match query
+      try {
+        const regionalResults = await db
+          .select()
+          .from(smartMaterialLists)
+          .where(
+            and(
+              eq(smartMaterialLists.projectType, this.normalizeProjectType(criteria.projectType)),
+              eq(smartMaterialLists.region, this.normalizeRegion(criteria.region))
+            )
+          )
+          .orderBy(desc(smartMaterialLists.usageCount), desc(smartMaterialLists.lastUsed))
+          .limit(1);
+
+        if (regionalResults.length > 0) {
+          results.regionalMatch = regionalResults[0];
+        }
+      } catch (error) {
+        console.warn('⚠️ Regional match query failed:', error);
+      }
+
+      // 2. Global similarity search (all regions)
+      try {
+        if (criteria.description) {
+          const globalResults = await db
+            .select()
+            .from(smartMaterialLists)
+            .where(eq(smartMaterialLists.projectType, this.normalizeProjectType(criteria.projectType)))
+            .orderBy(desc(smartMaterialLists.usageCount), desc(smartMaterialLists.confidence))
+            .limit(10);
+
+          // Find best similarity match
+          let bestMatch = null;
+          let bestSimilarity = 0;
+          
+          for (const result of globalResults) {
+            const similarity = this.calculateSimilarity(criteria.description, result.projectDescription);
+            const threshold = criteria.similarityThreshold || 0.65;
+            
+            if (similarity >= threshold && similarity > bestSimilarity) {
+              bestMatch = result;
+              bestSimilarity = similarity;
+            }
+          }
+
+          if (bestMatch) {
+            results.globalMatch = { data: bestMatch, similarity: bestSimilarity };
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Global similarity search failed:', error);
+      }
+
+      // 3. Template search
+      try {
+        const templateResults = await db
+          .select()
+          .from(projectTemplates)
+          .where(
+            and(
+              eq(projectTemplates.projectType, this.normalizeProjectType(criteria.projectType)),
+              eq(projectTemplates.isActive, true)
+            )
+          )
+          .orderBy(desc(projectTemplates.usageCount))
+          .limit(1);
+
+        if (templateResults.length > 0) {
+          results.templateMatch = templateResults[0];
+        }
+      } catch (error) {
+        console.warn('⚠️ Template search failed:', error);
+      }
+
+      console.log('✅ [RESILIENT-DB] Consolidated database reads completed');
+      return results;
+      
+    }, 'SmartCache Consolidated Reads');
+  }
+
+  /**
    * Guarda una nueva lista de materiales en el cache GLOBAL
-   * Cada nueva lista contribuye al conocimiento colectivo
+   * DECOUPLED: Uses resilient DB wrapper with retry logic
    */
   async saveMaterialsList(
     projectType: string,
@@ -94,53 +199,53 @@ export class SmartMaterialCacheService {
     try {
       console.log('💾 SmartCache GLOBAL: Contribuyendo nueva lista al sistema...');
 
-      // Check if database is available
-      if (!db) {
-        console.log('⚠️ SmartCache: Database not available, skipping save');
-        return;
-      }
+      // DECOUPLED WRITE: Use resilient wrapper for fresh connection per operation
+      await resilientDb.executeOptional(async (db) => {
+        const id = `smart_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      const id = `smart_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        // Check for duplicates first
+        const existing = await this.checkForDuplicatesResillient(db, projectType, description, region);
+        if (existing) {
+          console.log('🔄 SmartCache: Actualizando lista existente en lugar de crear duplicado');
+          await this.updateExistingListResilient(db, existing.id, result);
+          return;
+        }
 
-      // Verificar si ya existe algo muy similar para evitar duplicados exactos
-      const existing = await this.checkForDuplicates(projectType, description, region);
-      if (existing) {
-        console.log('🔄 SmartCache: Actualizando lista existente en lugar de crear duplicado');
-        await this.updateExistingList(existing.id, result);
-        return;
-      }
+        // Create new entry with defensive null checks
+        await db.insert(smartMaterialLists).values({
+          id,
+          projectType: this.normalizeProjectType(projectType),
+          projectDescription: description,
+          region: this.normalizeRegion(region),
+          materialsList: result.materials || [],
+          laborCosts: result.laborCosts || [],
+          additionalCosts: result.additionalCosts || [],
+          totalMaterialsCost: this.safeNumberToString(result.totalMaterialsCost),
+          totalLaborCost: this.safeNumberToString(result.totalLaborCost),
+          totalAdditionalCost: this.safeNumberToString(result.totalAdditionalCost),
+          grandTotal: this.safeNumberToString(result.grandTotal),
+          confidence: this.safeNumberToString(result.confidence),
+          usageCount: 1
+        });
 
-      await db.insert(smartMaterialLists).values({
-        id,
-        projectType: this.normalizeProjectType(projectType),
-        projectDescription: description,
-        region: this.normalizeRegion(region),
-        materialsList: result.materials,
-        laborCosts: result.laborCosts,
-        additionalCosts: result.additionalCosts,
-        totalMaterialsCost: result.totalMaterialsCost.toString(),
-        totalLaborCost: result.totalLaborCost.toString(),
-        totalAdditionalCost: result.totalAdditionalCost.toString(),
-        grandTotal: result.grandTotal.toString(),
-        confidence: result.confidence.toString(),
-        usageCount: 1
-      });
+        console.log('✅ SmartCache GLOBAL: Nueva contribución guardada con ID:', id);
+        return id;
+        
+      }, 'SmartCache Save Materials List');
 
-      console.log('✅ SmartCache GLOBAL: Nueva contribución guardada con ID:', id);
       console.log('🌍 Esta lista ahora está disponible para todos los usuarios del sistema');
 
     } catch (error) {
       console.error('❌ SmartCache Save Error:', error);
-      // No fallar silenciosamente, solo registrar el error
+      // Graceful degradation - don't fail the AI operation if cache save fails
     }
   }
 
   /**
-   * Verifica duplicados para evitar redundancia en el sistema global
+   * RESILIENT: Verifica duplicados usando conexión pasada como parámetro
    */
-  private async checkForDuplicates(projectType: string, description: string, region: string): Promise<any> {
+  private async checkForDuplicatesResillient(db: any, projectType: string, description: string, region: string): Promise<any> {
     try {
-      if (!db) return null;
       const results = await db
         .select()
         .from(smartMaterialLists)
@@ -153,7 +258,7 @@ export class SmartMaterialCacheService {
         .limit(5);
 
       for (const result of results) {
-        const similarity = this.calculateSimilarity(description, result.projectDescription);
+        const similarity = this.calculateSimilarity(description, result.projectDescription || '');
         if (similarity > 0.95) { // 95% de similitud = muy probable duplicado
           return result;
         }
@@ -162,28 +267,36 @@ export class SmartMaterialCacheService {
       return null;
 
     } catch (error) {
-      console.error('❌ Duplicate check error:', error);
+      console.error('❌ Resilient duplicate check error:', error);
       return null;
     }
   }
 
   /**
-   * Actualiza una lista existente con nuevos datos (mejora continua)
+   * DEPRECATED: Legacy method - use checkForDuplicatesResillient instead
    */
-  private async updateExistingList(id: string, newResult: DeepSearchResult): Promise<void> {
+  private async checkForDuplicates(projectType: string, description: string, region: string): Promise<any> {
+    return await resilientDb.executeOptional(async (db) => {
+      return await this.checkForDuplicatesResillient(db, projectType, description, region);
+    }, 'Legacy Duplicate Check');
+  }
+
+  /**
+   * RESILIENT: Actualiza lista existente usando conexión pasada como parámetro
+   */
+  private async updateExistingListResilient(db: any, id: string, newResult: DeepSearchResult): Promise<void> {
     try {
-      if (!db) return;
       await db
         .update(smartMaterialLists)
         .set({
-          materialsList: newResult.materials,
-          laborCosts: newResult.laborCosts,
-          additionalCosts: newResult.additionalCosts,
-          totalMaterialsCost: newResult.totalMaterialsCost.toString(),
-          totalLaborCost: newResult.totalLaborCost.toString(),
-          totalAdditionalCost: newResult.totalAdditionalCost.toString(),
-          grandTotal: newResult.grandTotal.toString(),
-          confidence: Math.max(parseFloat(newResult.confidence.toString()), 0.1).toString(),
+          materialsList: newResult.materials || [],
+          laborCosts: newResult.laborCosts || [],
+          additionalCosts: newResult.additionalCosts || [],
+          totalMaterialsCost: this.safeNumberToString(newResult.totalMaterialsCost),
+          totalLaborCost: this.safeNumberToString(newResult.totalLaborCost),
+          totalAdditionalCost: this.safeNumberToString(newResult.totalAdditionalCost),
+          grandTotal: this.safeNumberToString(newResult.grandTotal),
+          confidence: this.safeNumberToString(Math.max(parseFloat(this.safeNumberToString(newResult.confidence)), 0.1)),
           usageCount: sql`${smartMaterialLists.usageCount} + 1`,
           lastUsed: new Date(),
           updatedAt: new Date()
@@ -193,46 +306,39 @@ export class SmartMaterialCacheService {
       console.log('✅ Lista existente actualizada con mejoras');
 
     } catch (error) {
-      console.error('❌ Update existing list error:', error);
+      console.error('❌ Resilient update existing list error:', error);
+      throw error; // Re-throw to be handled by resilient wrapper
     }
   }
 
   /**
-   * Encuentra coincidencias regionales exactas
+   * DEPRECATED: Legacy method - use updateExistingListResilient instead
    */
-  private async findRegionalMatch(criteria: CacheSearchCriteria): Promise<CacheSearchResult> {
-    try {
-      if (!db) return { found: false, source: 'none' };
-      const results = await db
-        .select()
-        .from(smartMaterialLists)
-        .where(
-          and(
-            eq(smartMaterialLists.projectType, this.normalizeProjectType(criteria.projectType)),
-            eq(smartMaterialLists.region, this.normalizeRegion(criteria.region))
-          )
-        )
-        .orderBy(desc(smartMaterialLists.usageCount), desc(smartMaterialLists.lastUsed))
-        .limit(1);
-
-      if (results.length > 0) {
-        const cached = results[0];
-        return {
-          found: true,
-          data: this.convertToDeepSearchResult(cached),
-          similarity: 1.0,
-          source: 'exact_match',
-          adaptationNeeded: false
-        };
-      }
-
-      return { found: false, source: 'none' };
-
-    } catch (error) {
-      console.error('❌ Regional match search error:', error);
-      return { found: false, source: 'none' };
-    }
+  private async updateExistingList(id: string, newResult: DeepSearchResult): Promise<void> {
+    await resilientDb.executeOptional(async (db) => {
+      await this.updateExistingListResilient(db, id, newResult);
+    }, 'Legacy Update Existing List');
   }
+
+  /**
+   * DEFENSIVE: Safely converts numbers to strings with null checks
+   */
+  private safeNumberToString(value: any): string {
+    if (value === null || value === undefined) return '0';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return value.toString();
+    
+    // Try to parse as number first
+    const parsed = parseFloat(String(value));
+    if (isNaN(parsed)) return '0';
+    
+    return parsed.toString();
+  }
+
+  /**
+   * REMOVED: Legacy method replaced by performAllDatabaseReads consolidation
+   * All regional matching now happens in the consolidated read method
+   */
 
   /**
    * Extrae requerimientos específicos del proyecto para filtrado de materiales
@@ -322,155 +428,23 @@ export class SmartMaterialCacheService {
   }
 
   /**
-   * Búsqueda GLOBAL: Encuentra proyectos similares en CUALQUIER región
-   * Esta es la clave del sistema colaborativo
+   * REMOVED: Legacy method replaced by performAllDatabaseReads consolidation
+   * Global similarity search now happens in the consolidated read method
    */
-  private async findGlobalSimilarProject(criteria: CacheSearchCriteria, threshold: number = 0.65): Promise<CacheSearchResult> {
-    try {
-      if (!db) return { found: false, source: 'none' };
-      if (!criteria.description) {
-        return { found: false, source: 'none' };
-      }
-
-      // Buscar por tipo de proyecto en TODAS las regiones
-      const results = await db
-        .select()
-        .from(smartMaterialLists)
-        .where(eq(smartMaterialLists.projectType, this.normalizeProjectType(criteria.projectType)))
-        .orderBy(desc(smartMaterialLists.usageCount), desc(smartMaterialLists.confidence))
-        .limit(10); // Analizar los 10 más populares
-
-      // Calcular similitud semántica con todos los resultados
-      for (const result of results) {
-        const similarity = this.calculateSimilarity(criteria.description, result.projectDescription);
-        const threshold = criteria.similarityThreshold || 0.65; // Umbral más bajo para global
-
-        if (similarity >= threshold) {
-          console.log(`🌍 Global Match encontrado - Similitud: ${(similarity*100).toFixed(1)}% | Región original: ${result.region}`);
-          
-          return {
-            found: true,
-            data: this.convertToDeepSearchResult(result),
-            similarity,
-            source: 'similar_project',
-            adaptationNeeded: result.region !== this.normalizeRegion(criteria.region) || similarity < 0.85
-          };
-        }
-      }
-
-      return { found: false, source: 'none' };
-
-    } catch (error) {
-      console.error('❌ Global similar project search error:', error);
-      return { found: false, source: 'none' };
-    }
-  }
 
   /**
-   * Encuentra proyectos similares usando búsqueda semántica
+   * REMOVED: Legacy method replaced by performAllDatabaseReads consolidation
+   * Regional similarity search now happens in the consolidated read method
    */
-  private async findSimilarProject(criteria: CacheSearchCriteria): Promise<CacheSearchResult> {
-    try {
-      if (!db) return { found: false, source: 'none' };
-      if (!criteria.description) {
-        return { found: false, source: 'none' };
-      }
-
-      // Búsqueda por similitud de texto en descripciones
-      const keywords = this.extractKeywords(criteria.description);
-      
-      const results = await db
-        .select()
-        .from(smartMaterialLists)
-        .where(
-          and(
-            eq(smartMaterialLists.projectType, this.normalizeProjectType(criteria.projectType)),
-            eq(smartMaterialLists.region, this.normalizeRegion(criteria.region))
-          )
-        )
-        .orderBy(desc(smartMaterialLists.usageCount))
-        .limit(5);
-
-      // Calcular similitud semántica
-      for (const result of results) {
-        const similarity = this.calculateSimilarity(criteria.description, result.projectDescription);
-        const threshold = criteria.similarityThreshold || 0.7;
-
-        if (similarity >= threshold) {
-          return {
-            found: true,
-            data: this.convertToDeepSearchResult(result),
-            similarity,
-            source: 'similar_project',
-            adaptationNeeded: similarity < 0.9
-          };
-        }
-      }
-
-      return { found: false, source: 'none' };
-
-    } catch (error) {
-      console.error('❌ Similar project search error:', error);
-      return { found: false, source: 'none' };
-    }
-  }
 
   /**
-   * Busca en templates predefinidos
+   * REMOVED: Legacy method replaced by performAllDatabaseReads consolidation
+   * Template search now happens in the consolidated read method
    */
-  private async findProjectTemplate(criteria: CacheSearchCriteria): Promise<CacheSearchResult> {
-    try {
-      if (!db) return { found: false, source: 'none' };
-      const results = await db
-        .select()
-        .from(projectTemplates)
-        .where(
-          and(
-            eq(projectTemplates.projectType, this.normalizeProjectType(criteria.projectType)),
-            eq(projectTemplates.isActive, true)
-          )
-        )
-        .orderBy(desc(projectTemplates.usageCount))
-        .limit(1);
-
-      if (results.length > 0) {
-        const template = results[0];
-        return {
-          found: true,
-          data: this.convertTemplateToDeepSearchResult(template, criteria.region),
-          similarity: 0.8,
-          source: 'template',
-          adaptationNeeded: true
-        };
-      }
-
-      return { found: false, source: 'none' };
-
-    } catch (error) {
-      console.error('❌ Template search error:', error);
-      return { found: false, source: 'none' };
-    }
-  }
 
   /**
-   * Actualiza estadísticas de uso
+   * REMOVED: Legacy method - usage stats are now updated in the resilient methods
    */
-  private async updateUsageStats(id: string): Promise<void> {
-    try {
-      if (!db) return;
-      await db
-        .update(smartMaterialLists)
-        .set({
-          usageCount: sql`${smartMaterialLists.usageCount} + 1`,
-          lastUsed: new Date(),
-          updatedAt: new Date()
-        })
-        .where(eq(smartMaterialLists.id, id));
-
-    } catch (error) {
-      console.error('❌ Usage stats update error:', error);
-    }
-  }
 
   /**
    * Convierte datos cache a DeepSearchResult
@@ -586,10 +560,10 @@ export class SmartMaterialCacheService {
 
   /**
    * Obtiene estadísticas del cache GLOBAL con métricas de colaboración
+   * RESILIENT: Uses resilient wrapper for database access
    */
   async getCacheStats(): Promise<any> {
-    try {
-      if (!db) return { global: {}, byProjectType: [], topReused: [], collaborativeMetrics: {} };
+    return await resilientDb.executeOptional(async (db) => {
       // Estadísticas por tipo de proyecto
       const projectStats = await db
         .select({
@@ -628,28 +602,25 @@ export class SmartMaterialCacheService {
         .limit(10);
 
       return {
-        global: globalStats[0],
-        byProjectType: projectStats,
-        topReused,
+        global: globalStats[0] || {},
+        byProjectType: projectStats || [],
+        topReused: topReused || [],
         collaborativeMetrics: {
           reuseRate: globalStats[0]?.savedGenerations || 0,
           crossRegionalProjects: projectStats.filter(p => p.regionsCovered > 1).length,
-          averageRegionsPerProject: projectStats.reduce((sum, p) => sum + p.regionsCovered, 0) / projectStats.length
+          averageRegionsPerProject: projectStats.length > 0 ? projectStats.reduce((sum, p) => sum + p.regionsCovered, 0) / projectStats.length : 0
         }
       };
 
-    } catch (error) {
-      console.error('❌ Cache stats error:', error);
-      return { global: {}, byProjectType: [], topReused: [], collaborativeMetrics: {} };
-    }
+    }, 'SmartCache Statistics') || { global: {}, byProjectType: [], topReused: [], collaborativeMetrics: {} };
   }
 
   /**
    * Obtiene insights de mejora continua del sistema
+   * RESILIENT: Uses resilient wrapper for database access
    */
   async getSystemInsights(): Promise<any> {
-    try {
-      if (!db) return { evolvingProjects: [], lowConfidenceProjects: [], trends: {} };
+    return await resilientDb.executeOptional(async (db) => {
       
       // Proyectos que más han evolucionado
       const evolvingProjects = await db
@@ -676,8 +647,8 @@ export class SmartMaterialCacheService {
         .orderBy(sql`count(*) ASC`);
 
       return {
-        topEvolvingProjects: evolvingProjects,
-        knowledgeGaps,
+        topEvolvingProjects: evolvingProjects || [],
+        knowledgeGaps: knowledgeGaps || [],
         systemHealth: {
           avgProjectsPerType: 0, // Se calcularía
           crossRegionCollaboration: 0,
@@ -685,10 +656,7 @@ export class SmartMaterialCacheService {
         }
       };
 
-    } catch (error) {
-      console.error('❌ System insights error:', error);
-      return { topEvolvingProjects: [], knowledgeGaps: [], systemHealth: {} };
-    }
+    }, 'SmartCache System Insights') || { topEvolvingProjects: [], knowledgeGaps: [], systemHealth: {} };
   }
 }
 
