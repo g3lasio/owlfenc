@@ -711,7 +711,7 @@ console.log('🔧 [UNIFIED-ANALYSIS] Sistema híbrido registrado en /api/analysi
 
   // Setup server based on environment
   try {
-    const port = parseInt(process.env.PORT ?? '3000', 10);
+    const port = parseInt(process.env.PORT ?? '5000', 10);
     
     // Create server with timeout configuration for deployment health checks
     const server = await new Promise<any>((resolve, reject) => {
@@ -764,8 +764,8 @@ console.log('🔧 [UNIFIED-ANALYSIS] Sistema híbrido registrado en /api/analysi
   } catch (error) {
     console.error('Server setup error:', error instanceof Error ? error.message : String(error));
     // Fallback: start basic server without Vite
-    const server = app.listen(parseInt(process.env.PORT || '5001', 10), "0.0.0.0", () => {
-      log(`Fallback server started on port ${process.env.PORT || '5001'}`);
+    const server = app.listen(parseInt(process.env.PORT || '5000', 10), "0.0.0.0", () => {
+      log(`Fallback server started on port ${process.env.PORT || '5000'}`);
       console.log('⚠️ Running in fallback mode - some features may be limited');
     });
   }
