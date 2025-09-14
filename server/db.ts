@@ -1,9 +1,10 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import { neon, neonConfig } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from "@shared/schema";
+import { resilientDb } from './lib/resilient-db-wrapper';
 
-neonConfig.webSocketConstructor = ws;
+// Configure Neon for HTTP mode - more reliable for serverless than WebSocket
+neonConfig.fetchConnectionCache = true;
 
 if (!process.env.DATABASE_URL) {
   console.error("DATABASE_URL must be set. Did you forget to provision a database?");
@@ -18,17 +19,9 @@ if (!process.env.DATABASE_URL) {
   }
 }
 
-// Create pool and db only if DATABASE_URL is available
-export const pool = process.env.DATABASE_URL 
-  ? new Pool({ 
-      connectionString: process.env.DATABASE_URL,
-      max: 10,
-      connectionTimeoutMillis: 30000,
-      idleTimeoutMillis: 30000,
-      allowExitOnIdle: false
-    })
-  : null;
+// Create HTTP-based connection that avoids pooling issues
+export const sql = process.env.DATABASE_URL ? neon(process.env.DATABASE_URL) : null;
+export const db = sql ? drizzle(sql, { schema }) : null;
 
-export const db = pool 
-  ? drizzle({ client: pool, schema })
-  : null;
+// Export resilient wrapper for services that need retry logic
+export { resilientDb };
