@@ -6877,7 +6877,7 @@ Output must be between 200-900 characters in English.`;
   // 🔧 UNIFIED ANALYSIS SYSTEM: Combines General Contractor + DeepSearch with automatic fallback
   const gcIntelligenceService = new GeneralContractorIntelligenceService();
   
-  app.post('/api/analysis/unified', async (req: Request, res: Response) => {
+  app.post(['/api/analysis/unified', '/analysis/unified'], async (req: Request, res: Response) => {
     const analysisId = crypto.randomUUID();
     const startTime = Date.now();
     
