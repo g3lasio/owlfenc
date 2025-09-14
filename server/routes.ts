@@ -122,6 +122,8 @@ import { setupTemplatesRoutes } from "./routes/templates";
 import { aiEnhancementRoutes } from "./routes/aiEnhancementRoutes"; // Import new AI enhancement routes
 import { registerDeepSearchRoutes } from "./routes/deepSearchRoutes"; // Import DeepSearch AI routes
 import { registerLaborDeepSearchRoutes } from "./routes/laborDeepSearchRoutes"; // Import Labor DeepSearch AI routes
+import { deepSearchService } from "./services/deepSearchService"; // Import DeepSearch service
+import { GeneralContractorIntelligenceService } from "./services/generalContractorIntelligenceService"; // Import GC service
 import { registerUsageRoutes } from "./routes/usage"; // Import Usage & Permissions routes
 import { analyticsRouter } from './analytics-service'; // Import analytics service for system monitoring
 // import legalDefenseRoutes from "./routes/legal-defense-routes"; // Temporarily disabled for horizontal navigation
@@ -6871,6 +6873,163 @@ Output must be between 200-900 characters in English.`;
       });
     }
   });
+
+  // 🔧 UNIFIED ANALYSIS SYSTEM: Combines General Contractor + DeepSearch with automatic fallback
+  const gcIntelligenceService = new GeneralContractorIntelligenceService();
+  
+  app.post('/api/analysis/unified', async (req: Request, res: Response) => {
+    const analysisId = crypto.randomUUID();
+    const startTime = Date.now();
+    
+    try {
+      console.log(`🚀 [UNIFIED-ANALYSIS-${analysisId}] Starting analysis request`);
+      
+      const { projectDescription, location, preferredSystem } = req.body;
+      
+      // Validar entrada
+      if (!projectDescription || projectDescription.length < 10) {
+        return res.status(400).json({
+          success: false,
+          error: 'Project description must be at least 10 characters long',
+          analysisId
+        });
+      }
+      
+      console.log(`📝 [UNIFIED-ANALYSIS-${analysisId}] Project: "${projectDescription.substring(0, 100)}..." | Location: ${location || 'default'} | Preferred: ${preferredSystem || 'auto'}`);
+      
+      let result = null;
+      let systemUsed = 'unknown';
+      let fallbackReason = null;
+      
+      // Feature flag check - if user explicitly wants DeepSearch, use it directly
+      if (preferredSystem === 'deepsearch') {
+        console.log(`🎯 [UNIFIED-ANALYSIS-${analysisId}] User preference: Using DeepSearch directly`);
+        systemUsed = 'deepsearch';
+        result = await deepSearchService.analyzeProject(projectDescription, location);
+      } else {
+        // Try General Contractor first with timeout
+        try {
+          console.log(`🏗️ [UNIFIED-ANALYSIS-${analysisId}] Attempting General Contractor analysis (15s timeout)`);
+          
+          const gcPromise = gcIntelligenceService.analyzeAsLocalContractor(
+            projectDescription, 
+            location || 'California, USA'
+          );
+          
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('General Contractor timeout')), 15000)
+          );
+          
+          const gcResult = await Promise.race([gcPromise, timeoutPromise]) as any;
+          
+          // Check if GC result has sufficient confidence
+          if (gcResult && gcResult.realityValidation && gcResult.realityValidation.confidence > 0.7) {
+            console.log(`✅ [UNIFIED-ANALYSIS-${analysisId}] General Contractor success (confidence: ${gcResult.realityValidation.confidence})`);
+            systemUsed = 'general_contractor';
+            result = normalizeGCResultToDeepSearchFormat(gcResult);
+          } else {
+            throw new Error(`Low confidence result: ${gcResult?.realityValidation?.confidence || 0}`);
+          }
+          
+        } catch (gcError: any) {
+          console.log(`⚠️ [UNIFIED-ANALYSIS-${analysisId}] General Contractor failed: ${gcError.message}`);
+          fallbackReason = gcError.message;
+          
+          // Fallback to DeepSearch
+          console.log(`🔄 [UNIFIED-ANALYSIS-${analysisId}] Falling back to DeepSearch`);
+          systemUsed = 'deepsearch_fallback';
+          result = await deepSearchService.analyzeProject(projectDescription, location);
+        }
+      }
+      
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      
+      console.log(`✅ [UNIFIED-ANALYSIS-${analysisId}] Analysis completed in ${duration}ms using ${systemUsed}`);
+      
+      // Normalize response format
+      const normalizedResult = {
+        success: true,
+        data: result,
+        metadata: {
+          analysisId,
+          systemUsed,
+          fallbackReason,
+          duration: `${duration}ms`,
+          timestamp: new Date().toISOString(),
+          version: '2.0.0'
+        }
+      };
+      
+      res.json(normalizedResult);
+      
+    } catch (error: any) {
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      
+      console.error(`❌ [UNIFIED-ANALYSIS-${analysisId}] Critical error after ${duration}ms:`, error);
+      
+      res.status(500).json({
+        success: false,
+        error: 'Analysis system temporarily unavailable',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        metadata: {
+          analysisId,
+          systemUsed: 'error',
+          duration: `${duration}ms`,
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+  });
+
+  // Helper method to normalize GC results to DeepSearch format
+  function normalizeGCResultToDeepSearchFormat(gcResult: any) {
+    return {
+      projectType: gcResult.projectMagnitude?.scale || 'unknown',
+      projectScope: gcResult.projectMagnitude?.complexity || 'unknown',
+      materials: gcResult.materialRequirements?.map((mat: any) => ({
+        id: crypto.randomUUID(),
+        name: mat.name,
+        description: mat.specifications || mat.name,
+        category: mat.category,
+        quantity: mat.quantity,
+        unit: mat.unit,
+        unitPrice: 0, // GC service doesn't provide unit prices
+        totalPrice: 0,
+        supplier: mat.localAvailability,
+        specifications: mat.specifications
+      })) || [],
+      laborCosts: gcResult.laborEstimates?.map((labor: any) => ({
+        category: labor.tradeType,
+        description: `${labor.skillLevel} ${labor.tradeType}`,
+        hours: labor.hoursRequired,
+        rate: labor.localMarketRate?.hourlyRate || 0,
+        total: labor.totalCost || 0
+      })) || [],
+      additionalCosts: [
+        {
+          category: 'permits',
+          description: 'Permit costs',
+          cost: gcResult.totalProjectCost?.permits || 0,
+          required: true
+        },
+        {
+          category: 'overhead',
+          description: 'Overhead costs',
+          cost: gcResult.totalProjectCost?.overhead || 0,
+          required: true
+        }
+      ],
+      totalMaterialsCost: gcResult.totalProjectCost?.materials || 0,
+      totalLaborCost: gcResult.totalProjectCost?.labor || 0,
+      totalAdditionalCost: (gcResult.totalProjectCost?.permits || 0) + (gcResult.totalProjectCost?.overhead || 0),
+      grandTotal: gcResult.totalProjectCost?.total || 0,
+      confidence: gcResult.realityValidation?.confidence || 0,
+      recommendations: gcResult.contractorInsights || [],
+      warnings: gcResult.realityValidation?.redFlags || []
+    };
+  }
 
   // Registrar rutas del módulo DeepSearch IA
   registerDeepSearchRoutes(app);
