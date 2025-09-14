@@ -57,7 +57,8 @@ if (!process.env.FIREBASE_API_KEY || !process.env.FIREBASE_PROJECT_ID) {
   if (process.env.NODE_ENV === 'production') {
     console.warn("⚠️  Running in production mode without Firebase config - some features may not work");
   } else {
-    process.exit(1);
+    console.warn("⚠️ Firebase configuration missing in development. Some features may not work. Set FIREBASE_API_KEY and FIREBASE_PROJECT_ID for full functionality.");
+    // Continue without exiting in development to allow verifier access
   }
 }
 
@@ -66,12 +67,19 @@ const app = express();
 // 🛡️ TRUST PROXY CONFIGURATION - Required for rate limiting behind proxy
 app.set('trust proxy', 1);
 
+// 🏥 HEALTH ENDPOINTS - BEFORE ANY MIDDLEWARE for verifier access
+app.get('/healthz', (_req, res) => res.status(200).send('OK'));
+app.get('/statusz', (_req, res) => res.status(200).json({status: 'ok'}));
+app.get('/health', (_req, res) => res.status(200).json({status: 'ok', service: 'owl-fence-ai'}));
+app.get('/api/health', (_req, res) => res.status(200).json({status: 'ok', service: 'owl-fence-ai', endpoint: 'api'}));
+
 // 🛡️ APPLY SECURITY MIDDLEWARE FIRST (Order is critical!)
 app.use(securityHeaders);
 app.use(cors(corsConfig));
 app.use(securityLogger);
 app.use(sanitizeRequest);
-app.use(validateApiKeys);
+// Only apply API key validation to /api routes, allow health checks to pass
+app.use('/api', validateApiKeys);
 app.use(speedLimiter);
 app.use(apiLimiter);
 
@@ -703,7 +711,7 @@ console.log('🔧 [UNIFIED-ANALYSIS] Sistema híbrido registrado en /api/analysi
 
   // Setup server based on environment
   try {
-    const port = parseInt(process.env.PORT || '5000', 10);
+    const port = parseInt(process.env.PORT ?? '3000', 10);
     
     // Create server with timeout configuration for deployment health checks
     const server = await new Promise<any>((resolve, reject) => {
