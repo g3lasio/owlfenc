@@ -1256,16 +1256,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       const tokenDebug = await debugAuth();
       console.log("🔍 NEW DEEPSEARCH - Token debug result:", !!tokenDebug);
 
-      // Enhanced error handling with timeout for large projects
-      const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => {
-          controller.abort();
-        },
-        searchType === "full" ? 120000 : 60000,
-      ); // 2 min for full, 1 min for single
-
-      // Usar apiRequest que maneja autenticación automáticamente
+      // Enhanced error handling - REMOVED AbortController to prevent cancellation issues
+      // API request already has built-in timeout handling for DeepSearch (120s)
       const requestData = {
         projectDescription: description,
         includeMaterials: searchType === "materials" || searchType === "full",
@@ -1281,13 +1273,19 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         const response = await apiRequest("POST", endpoint, requestData);
         data = await response.json();
       } catch (error) {
-        clearTimeout(timeoutId);
         clearInterval(progressInterval);
         console.error("🔍 NEW DEEPSEARCH - apiRequest error:", error);
-        throw error;
+        console.error("🔍 NEW DEEPSEARCH - Error details:", error);
+        
+        // Improved error messaging for users
+        const errorMessage = error?.message?.includes('timeout') 
+          ? 'DeepSearch timed out. Try breaking down your project into smaller sections.'
+          : error?.message?.includes('abort')
+          ? 'Request was interrupted. Please try again.'
+          : 'Network error during analysis. Please check your connection and try again.';
+        
+        throw new Error(errorMessage);
       }
-
-      clearTimeout(timeoutId);
       clearInterval(progressInterval);
       console.log("🔍 NEW DEEPSEARCH - Response data:", data);
       console.log("🔍 NEW DEEPSEARCH - Data.success:", data.success);
