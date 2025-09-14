@@ -36,6 +36,12 @@ export class SmartMaterialCacheService {
     try {
       console.log('🔍 SmartCache GLOBAL: Buscando materiales existentes...', criteria);
 
+      // Check if database is available
+      if (!db) {
+        console.log('⚠️ SmartCache: Database not available, skipping cache lookup');
+        return { found: false, source: 'none' };
+      }
+
       // Extract project requirements for filtering
       const projectRequirements = this.extractProjectRequirements(criteria.description || '');
 
@@ -88,6 +94,12 @@ export class SmartMaterialCacheService {
     try {
       console.log('💾 SmartCache GLOBAL: Contribuyendo nueva lista al sistema...');
 
+      // Check if database is available
+      if (!db) {
+        console.log('⚠️ SmartCache: Database not available, skipping save');
+        return;
+      }
+
       const id = `smart_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       // Verificar si ya existe algo muy similar para evitar duplicados exactos
@@ -128,6 +140,7 @@ export class SmartMaterialCacheService {
    */
   private async checkForDuplicates(projectType: string, description: string, region: string): Promise<any> {
     try {
+      if (!db) return null;
       const results = await db
         .select()
         .from(smartMaterialLists)
@@ -159,6 +172,7 @@ export class SmartMaterialCacheService {
    */
   private async updateExistingList(id: string, newResult: DeepSearchResult): Promise<void> {
     try {
+      if (!db) return;
       await db
         .update(smartMaterialLists)
         .set({
@@ -188,6 +202,7 @@ export class SmartMaterialCacheService {
    */
   private async findRegionalMatch(criteria: CacheSearchCriteria): Promise<CacheSearchResult> {
     try {
+      if (!db) return { found: false, source: 'none' };
       const results = await db
         .select()
         .from(smartMaterialLists)
@@ -312,6 +327,7 @@ export class SmartMaterialCacheService {
    */
   private async findGlobalSimilarProject(criteria: CacheSearchCriteria, threshold: number = 0.65): Promise<CacheSearchResult> {
     try {
+      if (!db) return { found: false, source: 'none' };
       if (!criteria.description) {
         return { found: false, source: 'none' };
       }
@@ -355,6 +371,7 @@ export class SmartMaterialCacheService {
    */
   private async findSimilarProject(criteria: CacheSearchCriteria): Promise<CacheSearchResult> {
     try {
+      if (!db) return { found: false, source: 'none' };
       if (!criteria.description) {
         return { found: false, source: 'none' };
       }
@@ -403,6 +420,7 @@ export class SmartMaterialCacheService {
    */
   private async findProjectTemplate(criteria: CacheSearchCriteria): Promise<CacheSearchResult> {
     try {
+      if (!db) return { found: false, source: 'none' };
       const results = await db
         .select()
         .from(projectTemplates)
@@ -439,6 +457,7 @@ export class SmartMaterialCacheService {
    */
   private async updateUsageStats(id: string): Promise<void> {
     try {
+      if (!db) return;
       await db
         .update(smartMaterialLists)
         .set({
@@ -570,6 +589,7 @@ export class SmartMaterialCacheService {
    */
   async getCacheStats(): Promise<any> {
     try {
+      if (!db) return { global: {}, byProjectType: [], topReused: [], collaborativeMetrics: {} };
       // Estadísticas por tipo de proyecto
       const projectStats = await db
         .select({
@@ -629,6 +649,8 @@ export class SmartMaterialCacheService {
    */
   async getSystemInsights(): Promise<any> {
     try {
+      if (!db) return { evolvingProjects: [], lowConfidenceProjects: [], trends: {} };
+      
       // Proyectos que más han evolucionado
       const evolvingProjects = await db
         .select({
