@@ -857,12 +857,23 @@ CRITICAL INSTRUCTIONS:
     // NUEVA FUNCIONALIDAD: Limpiar caracteres de control problemáticos
     // Reemplazar caracteres de control específicos que causan problemas
     jsonStr = jsonStr.replace(/\\"/g, '\\"'); // Mantener escapes válidos
-    jsonStr = jsonStr.replace(/\n/g, '\\n'); // Convertir newlines a escapes
-    jsonStr = jsonStr.replace(/\r/g, '\\r'); // Convertir returns a escapes
-    jsonStr = jsonStr.replace(/\t/g, '\\t'); // Convertir tabs a escapes
+    // ❌ CRÍTICO FIX: NO convertir newlines/tabs legítimos - esto ROMPE el JSON válido
+    // jsonStr = jsonStr.replace(/\n/g, '\\n'); // DESHABILITADO - destruía JSON válido
+    // jsonStr = jsonStr.replace(/\r/g, '\\r'); // DESHABILITADO - destruía JSON válido  
+    // jsonStr = jsonStr.replace(/\t/g, '\\t'); // DESHABILITADO - destruía JSON válido
     
-    // Limpiar caracteres de control inválidos (pero mantener escapes válidos)
-    jsonStr = jsonStr.replace(/[\x00-\x1F]/g, ''); // Remover caracteres de control ASCII
+    // Limpiar SOLO caracteres de control realmente problemáticos (mantener \n, \t, \r legítimos)
+    jsonStr = jsonStr.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ''); // Remover NULL y control chars problemáticos
+    
+    // Validar JSON temprano para evitar sobre-procesamiento
+    try {
+      JSON.parse(jsonStr);
+      console.log('✅ JSON válido después de limpieza básica');
+      return jsonStr.trim();
+    } catch (parseError) {
+      console.log('⚠️ JSON necesita reparación adicional:', parseError.message);
+      // Continuar con reparaciones más agresivas solo si es necesario
+    }
     
     // Corregir strings cortados (problema específico de Claude)
     jsonStr = jsonStr.replace(/"\s*$/g, '""');
