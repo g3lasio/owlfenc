@@ -118,17 +118,58 @@ export class SimpleDeepSearchService {
     try {
       console.log('🔍 SIMPLE DeepSearch: Iniciando análisis con Claude Sonnet únicamente');
 
-      const response = await anthropic.messages.create({
-        model: this.MODEL,
-        max_tokens: 4000,
-        temperature: 0.1,
-        messages: [
-          {
-            role: 'user',
-            content: this.buildSimplePrompt(projectDescription, location)
+      let response;
+      
+      try {
+        response = await anthropic.messages.create({
+          model: this.MODEL,
+          max_tokens: 4000,
+          temperature: 0.1,
+          messages: [
+            {
+              role: 'user',
+              content: this.buildSimplePrompt(projectDescription, location)
+            }
+          ]
+        });
+        
+        console.log("✅ Claude Sonnet analysis successful");
+        
+      } catch (claudeError: any) {
+        console.log("⚠️ Claude Sonnet failed, trying OpenAI fallback:", claudeError.message);
+        
+        // FALLBACK A OPENAI cuando Anthropic falle (error 529 overloaded, etc)
+        if (claudeError.status === 529 || claudeError.message?.includes('overloaded') || claudeError.message?.includes('Overloaded')) {
+          console.log("🔄 Using OpenAI fallback due to Anthropic overload");
+          
+          const openaiResponse = await openai.chat.completions.create({
+            model: "gpt-4-turbo-preview", 
+            max_tokens: 4000,
+            temperature: 0.1,
+            messages: [
+              { 
+                role: "user", 
+                content: this.buildSimplePrompt(projectDescription, location)
+              }
+            ],
+          });
+
+          const openaiContent = openaiResponse.choices[0]?.message?.content;
+          if (openaiContent) {
+            console.log("✅ OpenAI fallback successful");
+            
+            // Convertir respuesta de OpenAI al formato esperado de Anthropic
+            response = {
+              content: [{ type: 'text', text: openaiContent }]
+            };
+          } else {
+            throw new Error("OpenAI fallback also failed - no content received");
           }
-        ]
-      });
+        } else {
+          // Re-throw otros errores de Claude que no sean overload
+          throw claudeError;
+        }
+      }
 
       const responseText = response.content[0]?.type === 'text' 
         ? response.content[0].text 
