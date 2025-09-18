@@ -92,6 +92,8 @@ export class DeepSearchRefinementService {
           return await this.handleLocationSpecificAdjustment(request);
         case 'alternative_materials':
           return await this.handleAlternativeMaterials(request);
+        case 'restart_search':
+          return await this.handleRestartSearch(request);
         case 'precision_request':
           return await this.handlePrecisionRequest(request);
         default:
@@ -131,8 +133,8 @@ export class DeepSearchRefinementService {
       // Adición de materiales específicos
       material_addition: /(?:falta|missing|add|agregar|incluir|necesito|need|forgot|olvidé|también necesito|hace falta)/,
       
-      // Remoción de materiales específicos
-      material_removal: /(?:remove|remover|delete|eliminar|don't need|no necesito|sobra|quitar|sin|not needed|no hace falta)/,
+      // Remoción de materiales específicos - MEJORADO
+      material_removal: /(?:remove|remover|delete|eliminar|don't need|no necesito|sobra|quitar|sin|not needed|no hace falta|eliminar todos|delete all|clear all|borrar todo|quitar todo)/,
       
       // Ajustes de mano de obra
       labor_adjustment: /(?:labor|mano de obra|trabajo|workers|trabajadores|hours|horas|rate|tarifa|sin labor|solo materiales|diy)/,
@@ -143,6 +145,9 @@ export class DeepSearchRefinementService {
       // Materiales alternativos
       alternative_materials: /(?:alternative|alternativa|different|diferente|substitute|sustituto|replace|reemplazar|otros.*materiales|opciones)/,
       
+      // Re-ejecutar deepsearch completo - NUEVO
+      restart_search: /(?:nuevo deepsearch|fresh search|restart|empezar de nuevo|comenzar otra vez|re.*run|volver a buscar|nueva búsqueda|from scratch|desde cero)/,
+      
       // Solicitudes de precisión
       precision_request: /(?:precision|precisión|detail|detalle|specific|específico|exact|exacto|accurate|más detalle|desglose)/
     };
@@ -151,6 +156,7 @@ export class DeepSearchRefinementService {
     const priorities = [
       'total_adjustment',
       'material_substitution', 
+      'restart_search',
       'quantity_change',
       'material_addition',
       'material_removal', 
@@ -325,10 +331,17 @@ Ayuda al contratista explicando la transición de materiales de manera clara.`;
       total: labor.total * adjustmentFactor
     }));
 
-    // Recalcular totales
-    updatedResult.totalMaterialsCost = updatedResult.materials.reduce((sum, m) => sum + m.totalPrice, 0);
-    updatedResult.totalLaborCost = updatedResult.laborCosts.reduce((sum, l) => sum + l.total, 0);
-    updatedResult.grandTotal = updatedResult.totalMaterialsCost + updatedResult.totalLaborCost;
+    // Recalcular totales con validación de números
+    updatedResult.totalMaterialsCost = updatedResult.materials.reduce((sum, m) => sum + (m.totalPrice || 0), 0);
+    updatedResult.totalLaborCost = updatedResult.laborCosts.reduce((sum, l) => sum + (l.total || 0), 0);
+    updatedResult.totalAdditionalCost = updatedResult.additionalCosts?.reduce((sum, a) => sum + (a.cost || 0), 0) || 0;
+    updatedResult.grandTotal = updatedResult.totalMaterialsCost + updatedResult.totalLaborCost + updatedResult.totalAdditionalCost;
+    
+    // Validar que no hay NaN
+    if (isNaN(updatedResult.grandTotal)) {
+      console.error('❌ [REFINEMENT] grandTotal is NaN, resetting to targetTotal');
+      updatedResult.grandTotal = targetTotal;
+    }
 
     const adjustmentPercent = ((adjustmentFactor - 1) * 100).toFixed(1);
     const directionText = adjustmentFactor > 1 ? 'incrementado' : 'reducido';
@@ -775,7 +788,30 @@ Ayuda al contratista de manera práctica y eficiente.`;
     const removedMaterials: any[] = [];
     let totalSavings = 0;
 
-    // Palabras clave para identificar materiales a quitar
+    // NUEVO: Detectar "eliminar todos" primero
+    const removeAllKeywords = ['eliminar todos', 'delete all', 'clear all', 'borrar todo', 'quitar todo'];
+    const isRemoveAllRequest = removeAllKeywords.some(keyword => userRequest.includes(keyword));
+
+    if (isRemoveAllRequest) {
+      // Eliminar TODOS los materiales
+      removedMaterials.push(...updatedResult.materials);
+      totalSavings = updatedResult.materials.reduce((sum, m) => sum + m.totalPrice, 0);
+      updatedResult.materials = [];
+      
+      // Recalcular totales
+      updatedResult.totalMaterialsCost = 0;
+      updatedResult.totalLaborCost = updatedResult.laborCosts.reduce((sum, l) => sum + l.total, 0);
+      updatedResult.totalAdditionalCost = updatedResult.additionalCosts?.reduce((sum, a) => sum + a.cost, 0) || 0;
+      updatedResult.grandTotal = updatedResult.totalLaborCost + updatedResult.totalAdditionalCost;
+
+      return {
+        updatedResult,
+        removedMaterials,
+        totalSavings
+      };
+    }
+
+    // Palabras clave para identificar materiales específicos a quitar
     const removalKeywords = ['quitar', 'remover', 'eliminar', 'no necesito', 'sobra', 'delete', 'remove'];
     const isRemovalRequest = removalKeywords.some(keyword => userRequest.includes(keyword));
 
@@ -1196,6 +1232,32 @@ Ayuda al contratista con ajustes de labor realistas y justificados.`;
   private async handlePrecisionRequest(request: RefinementRequest): Promise<RefinementResponse> {
     // Implementación específica para solicitudes de precisión
     return await this.handleGeneralRequest(request);
+  }
+
+  /**
+   * Maneja re-ejecutar deepsearch completo desde cero - NUEVO
+   */
+  private async handleRestartSearch(request: RefinementRequest): Promise<RefinementResponse> {
+    return {
+      success: true,
+      response: `🔄 **¡Perfecto! Voy a ejecutar un nuevo DeepSearch desde cero**
+
+Para obtener los mejores resultados, necesito que me proporciones:
+
+• **¿Hay cambios en el proyecto?** Descripción actualizada o detalles adicionales
+• **¿Diferente ubicación?** Si el proyecto cambió de lugar
+• **¿Nuevos requerimientos?** Materiales específicos o restricciones
+
+Una vez que tengas la información lista, **cierra este chat** y haz clic en **"BÚSQUEDA INTELIGENTE DE MATERIALES"** nuevamente para ejecutar un DeepSearch completamente nuevo.
+
+¡El nuevo análisis será independiente y actualizado! 🚀`,
+      suggestedActions: [
+        'Cerrar chat y re-ejecutar',
+        'Actualizar descripción proyecto',
+        'Cambiar ubicación',
+        'Especificar nuevos requerimientos'
+      ]
+    };
   }
 
   /**
