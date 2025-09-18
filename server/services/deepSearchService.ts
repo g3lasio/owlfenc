@@ -570,8 +570,17 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
             totalAdditionalCost,
             grandTotal: totalMaterialsCost + totalLaborCost + totalAdditionalCost,
             confidence: Math.max(0, Math.min(1, jsonData.confidence || 0.8)),
-            recommendations: jsonData.recommendations || [],
-            warnings: [...(jsonData.warnings || []), 'JSON was repaired due to truncation']
+            recommendations: [
+              ...(jsonData.recommendations || []),
+              'ℹ️ Estimado generado usando reparación automática de respuesta AI truncada'
+            ],
+            warnings: [
+              ...(jsonData.warnings || []),
+              '⚠️ Respuesta original fue reparada automáticamente - revise los detalles cuidadosamente'
+            ],
+            // Telemetría para debugging y UX
+            generationMethod: 'aggressive_repair',
+            aiProvider: 'claude_repaired'
           };
         }
       } catch (repairError) {
@@ -581,16 +590,40 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
       // Fallback: Generate structured response using GPT-4o
       console.log('🔄 Activating GPT-4o JSON parsing fallback');
       try {
-        return await this.generateGPT4oFallbackResponse(responseText);
+        const gptResult = await this.generateGPT4oFallbackResponse(responseText);
+        // Agregar telemetría para GPT-4o
+        return {
+          ...gptResult,
+          generationMethod: 'gpt4o_fallback',
+          aiProvider: 'gpt4o_after_claude_failure',
+          recommendations: [
+            ...(gptResult.recommendations || []),
+            'ℹ️ Estimado generado usando GPT-4o después de que Claude falló'
+          ]
+        };
       } catch (gptError: any) {
         console.error('GPT-4o fallback failed:', gptError);
         
         // Final fallback: Expert Contractor Service
         console.log('🔄 Final fallback: Using Expert Contractor Service');
-        return this.generateExpertContractorFallback(
+        const expertResult = this.generateExpertContractorFallback(
           this.extractProjectTypeFromText(responseText) + ' project',
           undefined
         );
+        // Agregar telemetría para Expert Contractor fallback
+        return {
+          ...expertResult,
+          generationMethod: 'expert_contractor_fallback',
+          aiProvider: 'rule_based_system',
+          warnings: [
+            ...(expertResult.warnings || []),
+            '⚠️ AI systems falló - usando estimado de contratista experto como fallback'
+          ],
+          recommendations: [
+            ...(expertResult.recommendations || []),
+            'ℹ️ Este estimado fue generado usando reglas de contratista experto después de fallas AI'
+          ]
+        };
       }
     }
   }
