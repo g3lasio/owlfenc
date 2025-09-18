@@ -67,3 +67,4 @@ localPort = 37449
 externalPort = 4200
 
 [agent]
+integrations = ["javascript_stripe:1.0.0"]
