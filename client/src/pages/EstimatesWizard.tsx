@@ -1396,23 +1396,24 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             combinedData.laborCosts.length,
           );
           combinedData.laborCosts.forEach((service: any) => {
+            // Fix: Use correct field mapping from LaborCost structure
+            const serviceName = service.name || service.category || "Labor Service";
+            const servicePrice = service.rate || service.unitPrice || service.totalPrice || service.totalCost || 0;
+            const serviceQuantity = service.hours || service.quantity || 1;
+            const serviceTotal = service.total || service.totalCost || service.totalPrice || (serviceQuantity * servicePrice);
+            const serviceUnit = service.unit || "hrs";
+
+
             laborItems.push({
               id:
                 Date.now().toString() + Math.random().toString(36).substr(2, 9),
               materialId: service.id || Date.now().toString(),
-              name: service.name || "Unknown Service",
-              description: service.description || "",
-              quantity: service.quantity || 1,
-              price:
-                service.unitPrice ||
-                service.totalPrice ||
-                service.totalCost ||
-                0,
-              unit: service.unit || "service",
-              total:
-                service.totalCost ||
-                service.totalPrice ||
-                (service.quantity || 1) * (service.unitPrice || 0),
+              name: serviceName,
+              description: service.description || `${serviceName} - Professional labor service`,
+              quantity: serviceQuantity,
+              price: servicePrice,
+              unit: serviceUnit,
+              total: serviceTotal,
             });
           });
         }
