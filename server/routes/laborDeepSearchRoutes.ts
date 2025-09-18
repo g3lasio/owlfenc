@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { laborDeepSearchService } from '../services/laborDeepSearchService';
 import { aduConstructionExpertService } from '../services/aduConstructionExpertService';
 import { realityValidationService } from '../services/realityValidationService';
+import { simpleDeepSearchService } from '../services/simpleDeepSearchService';
 // Removed authentication - DeepSearch now open to all users
 
 // Schema para validación de entrada - Labor únicamente
@@ -197,233 +198,58 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
 
   /**
    * POST /api/labor-deepsearch/combined
-   * Genera análisis combinado de materiales Y labor con especialización ADU
+   * ULTRA-SIMPLE: SOLO Claude Sonnet - Sin validaciones complejas
    */
   app.post('/api/labor-deepsearch/combined', async (req: Request, res: Response) => {
     try {
-      console.log('🔧🔨 Combined DeepSearch API: Recibiendo solicitud de análisis combinado', req.body);
+      console.log('🔍 SIMPLE DeepSearch: Recibiendo solicitud', req.body);
 
-      // DeepSearch now available to all users - no authentication required
-
-      // Validar entrada
+      // Validar entrada básica
       const validatedData = CombinedAnalysisSchema.parse(req.body);
       
-      // DETECCIÓN ESPECIALIZADA: Verificar si es un proyecto ADU
-      const isADUProject = /\b(?:adu|accessory dwelling unit|new construction|new building|dwelling unit|1200\s*sqft|1200\s*square\s*feet)\b/i.test(validatedData.projectDescription);
-      
-      if (isADUProject) {
-        console.log('🏗️ PROYECTO ADU DETECTADO: Activando servicio especializado');
-        
-        try {
-          // Usar el servicio especializado ADU
-          const aduResult = await aduConstructionExpertService.generateADUEstimate(
-            validatedData.projectDescription,
-            validatedData.location || 'California'
-          );
-
-          // Convertir resultado ADU al formato DeepSearch esperado
-          const materials = aduResult.materialCategories.flatMap(category => 
-            category.materials.map(material => ({
-              id: material.id,
-              name: material.name,
-              description: material.description,
-              category: material.category,
-              quantity: material.quantity,
-              unit: material.unit,
-              unitPrice: material.unitPrice,
-              totalPrice: material.totalPrice,
-              supplier: material.supplier,
-              specifications: material.specifications
-            }))
-          );
-
-          const laborCosts = aduResult.laborTasks.map(task => ({
-            category: task.phase,
-            description: `${task.task}: ${task.description}`,
-            hours: parseInt(task.duration.split('-')[0]) * 8, // Estimación de horas
-            rate: Math.round(task.laborCost / (parseInt(task.duration.split('-')[0]) * 8)),
-            total: task.laborCost
-          }));
-
-          const fullCostsResult = {
-            projectType: `ADU Construction - ${aduResult.specifications.squareFeet} sqft`,
-            projectScope: `New ${aduResult.specifications.squareFeet} sqft ADU with ${aduResult.specifications.bedrooms} bed, ${aduResult.specifications.bathrooms} bath`,
-            materials,
-            laborCosts,
-            additionalCosts: [
-              {
-                category: 'permits',
-                description: 'ADU construction permits and inspections',
-                cost: aduResult.costs.permits,
-                required: true
-              }
-            ],
-            totalMaterialsCost: aduResult.costs.materials,
-            totalLaborCost: aduResult.costs.labor,
-            totalAdditionalCost: aduResult.costs.permits,
-            grandTotal: aduResult.costs.total,
-            confidence: 0.95, // Alta confianza con servicio especializado
-            recommendations: aduResult.recommendations,
-            warnings: [`⏱️ Estimated construction time: ${aduResult.timeline.totalDays} days`]
-          };
-
-          console.log('✅ ADU SPECIALIZED: Análisis completado', {
-            materialsCount: materials.length,
-            laborCount: laborCosts.length,
-            totalCost: aduResult.costs.total,
-            timeline: `${aduResult.timeline.totalDays} days`
-          });
-
-          return res.json({
-            success: true,
-            data: fullCostsResult,
-            timestamp: new Date().toISOString(),
-            searchType: 'adu_specialized_construction',
-            specialization: 'ADU Construction Expert'
-          });
-
-        } catch (aduError) {
-          console.error('❌ Error en servicio ADU especializado, usando fallback:', aduError);
-          // Continuar con el servicio normal si falla el especializado
-        }
-      }
-
-      // SERVICIO NORMAL: Para proyectos no-ADU o como fallback
-      const combinedResult = await laborDeepSearchService.generateCombinedEstimate(
+      // ✅ SOLO Claude Sonnet - Ultra-simplificado
+      const simpleResult = await simpleDeepSearchService.analyzeProject(
         validatedData.projectDescription,
-        validatedData.includeMaterials,
-        validatedData.includeLabor,
-        validatedData.location,
-        validatedData.projectType
+        validatedData.location
       );
 
-      // Formatear respuesta compatible con DeepSearchResult para FULL COSTS
+      // Convertir a formato compatible con frontend
       const fullCostsResult = {
-        projectType: 'Combined Analysis',
-        projectScope: `Complete analysis: ${validatedData.projectDescription.substring(0, 100)}...`,
-        materials: combinedResult.materials || [],
-        laborCosts: combinedResult.labor || [],
-        additionalCosts: [],
-        totalMaterialsCost: combinedResult.totalMaterialsCost || 0,
-        totalLaborCost: combinedResult.totalLaborCost || 0,
+        projectType: simpleResult.projectType,
+        projectScope: simpleResult.projectScope,
+        materials: simpleResult.materials,
+        laborCosts: simpleResult.laborCosts,
+        additionalCosts: [], // Simple: sin costos adicionales
+        totalMaterialsCost: simpleResult.totalMaterialsCost,
+        totalLaborCost: simpleResult.totalLaborCost,
         totalAdditionalCost: 0,
-        grandTotal: combinedResult.grandTotal || 0,
-        confidence: 0.90,
-        recommendations: ['Análisis completo con materiales y labor'] as string[],
-        warnings: [] as string[]
+        grandTotal: simpleResult.grandTotal,
+        confidence: simpleResult.confidence,
+        recommendations: ['Análisis generado con Claude Sonnet'],
+        warnings: []
       };
 
-      console.log('✅ OPTIMIZED Combined estimate generated:', {
-        materialsCount: fullCostsResult.materials.length,
-        laborCount: fullCostsResult.laborCosts.length,
-        totalMaterialsCost: fullCostsResult.totalMaterialsCost,
-        totalLaborCost: fullCostsResult.totalLaborCost,
-        grandTotal: fullCostsResult.grandTotal
+      console.log('✅ SIMPLE DeepSearch: Completado', {
+        materialsCount: simpleResult.materials.length,
+        laborCount: simpleResult.laborCosts.length,
+        grandTotal: simpleResult.grandTotal
       });
 
-      // 🚨 REALITY VALIDATION: Verificar si el resultado es realista usando General Contractor Intelligence
-      try {
-        console.log('🔍 [REALITY-CHECK] Starting validation for combined result...');
-        
-        const clientAddress = validatedData.location || 'Estados Unidos';
-        const realityCheck = await realityValidationService.validateDeepSearchResult(
-          fullCostsResult,
-          validatedData.projectDescription,
-          clientAddress
-        );
-
-        console.log(`🔍 [REALITY-CHECK] Validation result: ${realityCheck.isValid ? 'PASSED' : 'FAILED'} (confidence: ${realityCheck.confidence})`);
-        
-        if (!realityCheck.isValid) {
-          console.log('🚨 [REALITY-CHECK] Red flags detected:', realityCheck.redFlags);
-        }
-
-        // Usar resultado validado si el original falló la validación de realidad
-        const finalResult = realityCheck.validatedResult || fullCostsResult;
-        
-        // Añadir información de validación al resultado
-        const currentWarnings: string[] = Array.isArray(finalResult.warnings) ? finalResult.warnings : [];
-        finalResult.warnings = [
-          ...currentWarnings,
-          ...realityCheck.redFlags.map(flag => `⚠️ ${flag}`)
-        ];
-        
-        const currentRecommendations: string[] = Array.isArray(finalResult.recommendations) ? finalResult.recommendations : [];
-        finalResult.recommendations = [
-          ...currentRecommendations,
-          ...realityCheck.recommendations
-        ];
-        
-        // Ajustar confianza basado en validación
-        finalResult.confidence = realityCheck.confidence;
-
-        console.log('✅ [REALITY-CHECK] Final result prepared', {
-          originalTotal: fullCostsResult.grandTotal,
-          validatedTotal: finalResult.grandTotal,
-          wasReplaced: !!realityCheck.validatedResult,
-          confidence: finalResult.confidence
-        });
-
-        res.json({
-          success: true,
-          data: finalResult,
-          timestamp: new Date().toISOString(),
-          searchType: 'full_costs',
-          realityValidation: {
-            isValid: realityCheck.isValid,
-            confidence: realityCheck.confidence,
-            redFlagsCount: realityCheck.redFlags.length,
-            wasValidated: true
-          }
-        });
-
-      } catch (validationError) {
-        console.warn('⚠️ [REALITY-CHECK] Validation failed, using original result:', validationError);
-        
-        // Fallback: Usar resultado original con advertencia  
-        const existingWarnings: string[] = Array.isArray(fullCostsResult.warnings) ? fullCostsResult.warnings : [];
-        fullCostsResult.warnings = [
-          ...existingWarnings,
-          '⚠️ Reality validation unavailable - results may need manual review'
-        ];
-        
-        res.json({
-          success: true,
-          data: fullCostsResult,
-          timestamp: new Date().toISOString(),
-          searchType: 'full_costs',
-          realityValidation: {
-            isValid: false,
-            confidence: 0.5,
-            redFlagsCount: 0,
-            wasValidated: false
-          }
-        });
-      }
+      res.json({
+        success: true,
+        data: fullCostsResult,
+        timestamp: new Date().toISOString(),
+        searchType: 'simple_claude_only'
+      });
 
     } catch (error: any) {
-      console.error('❌ Combined DeepSearch API Error:', error);
+      console.error('❌ Simple DeepSearch Error:', error);
       
-      // Enhanced error response with debugging information
-      const errorResponse = {
+      res.status(500).json({
         success: false,
-        error: error.message || 'Unknown error occurred',
-        code: error.name || 'COMBINED_ANALYSIS_ERROR',
-        timestamp: new Date().toISOString(),
-        details: {
-          step: error.step || 'unknown',
-          originalError: error.originalError || error.toString()
-        }
-      };
-      
-      // Log detailed error for debugging
-      console.error('📋 Error details:', {
-        message: error.message,
-        stack: error.stack,
-        cause: error.cause
+        error: error.message || 'Simple analysis failed',
+        code: 'SIMPLE_DEEPSEARCH_ERROR'
       });
-      
-      res.status(error.statusCode || 500).json(errorResponse);
     }
   });
 
