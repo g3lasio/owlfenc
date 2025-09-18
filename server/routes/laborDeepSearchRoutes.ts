@@ -213,20 +213,29 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
         validatedData.location
       );
 
-      // Convertir a formato compatible con frontend
+      // Convertir a formato compatible con frontend CON ESTRUCTURA PROFESIONAL
       const fullCostsResult = {
         projectType: simpleResult.projectType,
         projectScope: simpleResult.projectScope,
         materials: simpleResult.materials,
         laborCosts: simpleResult.laborCosts,
-        additionalCosts: [], // Simple: sin costos adicionales
-        totalMaterialsCost: simpleResult.totalMaterialsCost,
-        totalLaborCost: simpleResult.totalLaborCost,
+        additionalCosts: [], // Mantenemos vacío para compatibilidad
+        totalMaterialsCost: simpleResult.professionalBreakdown.materials.total,
+        totalLaborCost: simpleResult.professionalBreakdown.labor.total,
         totalAdditionalCost: 0,
         grandTotal: simpleResult.grandTotal,
         confidence: simpleResult.confidence,
-        recommendations: ['Análisis generado con Claude Sonnet'],
-        warnings: []
+        recommendations: [
+          'Estimado profesional con estructura de costos transparente',
+          `Overhead ${(simpleResult.professionalBreakdown.overhead.percentage * 100).toFixed(1)}% incluido`,
+          `Profit margin ${(simpleResult.professionalBreakdown.profit.percentage * 100).toFixed(1)}% incluido`,
+          `Contingencia ${(simpleResult.professionalBreakdown.contingency.percentage * 100).toFixed(1)}% para imprevistos`,
+          `Sales tax ${(simpleResult.professionalBreakdown.salesTax.percentage * 100).toFixed(2)}% ${simpleResult.professionalBreakdown.salesTax.jurisdiction}`
+        ],
+        warnings: [],
+        // NUEVA: Estructura profesional completa
+        professionalBreakdown: simpleResult.professionalBreakdown,
+        subtotals: simpleResult.subtotals
       };
 
       console.log('✅ SIMPLE DeepSearch: Completado', {
