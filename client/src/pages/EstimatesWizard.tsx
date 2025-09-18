@@ -49,7 +49,7 @@ import { db, auth } from "@/lib/firebase";
 import { MaterialInventoryService } from "../services/materialInventoryService";
 import { EmailService } from "../services/emailService";
 import { checkEmailVerification } from "@/lib/firebase";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getAuthHeaders } from "@/lib/queryClient";
 import {
   shareOrDownloadPdf,
   getSharingCapabilities,
@@ -1241,14 +1241,17 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       const progressInterval = setInterval(() => {
         setAiProgress((prev) => {
           if (searchType === "full") {
-            // Slower, more realistic progress for combined analysis
-            return Math.min(prev + Math.random() * 8 + 2, 75);
+            // Slower, more realistic progress for combined analysis with extended timeouts
+            const increment = prev < 30 ? Math.random() * 6 + 1 : // Slower start
+                             prev < 60 ? Math.random() * 4 + 1 : // Medium pace  
+                             Math.random() * 2 + 0.5; // Much slower near end
+            return Math.min(prev + increment, 85); // Don't go past 85% until complete
           } else {
             // Faster progress for single-type analysis
             return Math.min(prev + Math.random() * 12 + 3, 80);
           }
         });
-      }, 800);
+      }, 1200); // Slower updates for better UX
 
       console.log("🔍 NEW DEEPSEARCH - Making request to:", endpoint);
 
@@ -1269,22 +1272,69 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       console.log("🔍 NEW DEEPSEARCH - Request data:", requestData);
 
       let data;
+      let timeoutId: NodeJS.Timeout | null = null;
+      
       try {
-        const response = await apiRequest("POST", endpoint, requestData);
-        data = await response.json();
-      } catch (error) {
-        clearInterval(progressInterval);
-        console.error("🔍 NEW DEEPSEARCH - apiRequest error:", error);
-        console.error("🔍 NEW DEEPSEARCH - Error details:", error);
+        // ENHANCED: Extended timeout handling for DeepSearch processes
+        console.log("🔍 NEW DEEPSEARCH - Initiating request with extended timeout...");
         
-        // Improved error messaging for users
-        const errorMessage = error?.message?.includes('timeout') 
-          ? 'DeepSearch timed out. Try breaking down your project into smaller sections.'
-          : error?.message?.includes('abort')
-          ? 'Request was interrupted. Please try again.'
-          : 'Network error during analysis. Please check your connection and try again.';
+        const controller = new AbortController();
+        const timeoutMs = searchType === "full" ? 180000 : 120000; // 3min for full, 2min for others
+        
+        timeoutId = setTimeout(() => {
+          console.log("🔍 NEW DEEPSEARCH - Request timeout reached, aborting...");
+          controller.abort();
+        }, timeoutMs);
+        
+        // Use fetch directly for full control over timeout and headers
+        const authHeaders = await getAuthHeaders();
+        
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Request-Timeout': timeoutMs.toString(),
+            ...authHeaders
+          },
+          body: JSON.stringify(requestData),
+          signal: controller.signal,
+          credentials: 'include' // Support both header and cookie auth
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        data = await response.json();
+        console.log("🔍 NEW DEEPSEARCH - Response received successfully");
+        
+      } catch (error) {
+        console.error("🔍 NEW DEEPSEARCH - Request failed:", error);
+        console.error("🔍 NEW DEEPSEARCH - Error name:", error?.name);
+        console.error("🔍 NEW DEEPSEARCH - Error message:", error?.message);
+        
+        // ENHANCED: Better error categorization and user messaging
+        let errorMessage = 'Analysis failed. Please try again.';
+        
+        if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
+          errorMessage = `DeepSearch analysis exceeded time limit (${Math.floor((searchType === "full" ? 180000 : 120000) / 1000 / 60)} minutes). The backend may still be processing. Try checking again in a moment or break down your project into smaller sections.`;
+        } else if (error?.message?.includes('Failed to fetch')) {
+          errorMessage = 'Connection lost during analysis. The backend may still be processing. Please wait a moment and try again.';
+        } else if (error?.message?.includes('timeout')) {
+          errorMessage = 'Request timed out. For complex projects, this is normal. Try again or contact support.';
+        } else if (error?.message?.includes('Network Error')) {
+          errorMessage = 'Network connection issue. Please check your internet connection and try again.';
+        } else if (error?.message) {
+          errorMessage = error.message;
+        }
         
         throw new Error(errorMessage);
+      } finally {
+        // CRITICAL: Always cleanup resources to prevent leaks
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        clearInterval(progressInterval);
       }
       clearInterval(progressInterval);
       console.log("🔍 NEW DEEPSEARCH - Response data:", data);
