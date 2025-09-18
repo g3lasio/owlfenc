@@ -1336,7 +1336,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         }
         clearInterval(progressInterval);
       }
-      clearInterval(progressInterval);
       console.log("🔍 NEW DEEPSEARCH - Response data:", data);
       console.log("🔍 NEW DEEPSEARCH - Data.success:", data.success);
       console.log("🔍 NEW DEEPSEARCH - Data.items:", data.items);

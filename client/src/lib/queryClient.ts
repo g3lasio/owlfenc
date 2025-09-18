@@ -9,7 +9,7 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-async function getAuthHeaders(): Promise<Record<string, string>> {
+export async function getAuthHeaders(): Promise<Record<string, string>> {
   const headers: Record<string, string> = {};
   
   // ✅ FIXED: Obtener token de Firebase si el usuario está autenticado
