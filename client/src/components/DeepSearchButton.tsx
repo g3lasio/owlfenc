@@ -188,10 +188,25 @@ export function DeepSearchButton({
       }
 
     } catch (error: any) {
-      console.error('❌ Error en DeepSearch:', error);
+      console.error('🔍 NEW DEEPSEARCH - apiRequest error:', error);
+      console.error('🔍 NEW DEEPSEARCH - Error details:', error);
+      
+      let errorMessage = error.message || "No se pudo analizar el proyecto. Inténtalo de nuevo.";
+      
+      // Enhanced error messages based on error type
+      if (error.name === 'TypeError' && error.message?.includes('fetch')) {
+        errorMessage = "Error de conexión. Verifica tu internet e inténtalo de nuevo.";
+      } else if (error.message?.includes('JSON')) {
+        errorMessage = "Error procesando respuesta del servidor. Inténtalo de nuevo.";
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = "El análisis está tomando demasiado tiempo. Inténtalo de nuevo.";
+      } else if (error.details?.step) {
+        errorMessage = `Error en ${error.details.step}: ${errorMessage}`;
+      }
+      
       toast({
         title: "Error en DeepSearch",
-        description: error.message || "No se pudo analizar el proyecto. Inténtalo de nuevo.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

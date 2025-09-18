@@ -309,8 +309,8 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
         totalAdditionalCost: 0,
         grandTotal: combinedResult.grandTotal || 0,
         confidence: 0.90,
-        recommendations: ['Análisis completo con materiales y labor'],
-        warnings: []
+        recommendations: ['Análisis completo con materiales y labor'] as string[],
+        warnings: [] as string[]
       };
 
       console.log('✅ OPTIMIZED Combined estimate generated:', {
@@ -342,15 +342,17 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
         const finalResult = realityCheck.validatedResult || fullCostsResult;
         
         // Añadir información de validación al resultado
+        const currentWarnings: string[] = Array.isArray(finalResult.warnings) ? finalResult.warnings : [];
         finalResult.warnings = [
-          ...(finalResult.warnings || []),
+          ...currentWarnings,
           ...realityCheck.redFlags.map(flag => `⚠️ ${flag}`)
-        ] as string[];
+        ];
         
+        const currentRecommendations: string[] = Array.isArray(finalResult.recommendations) ? finalResult.recommendations : [];
         finalResult.recommendations = [
-          ...(finalResult.recommendations || []),
+          ...currentRecommendations,
           ...realityCheck.recommendations
-        ] as string[];
+        ];
         
         // Ajustar confianza basado en validación
         finalResult.confidence = realityCheck.confidence;
@@ -378,11 +380,12 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
       } catch (validationError) {
         console.warn('⚠️ [REALITY-CHECK] Validation failed, using original result:', validationError);
         
-        // Fallback: Usar resultado original con advertencia
+        // Fallback: Usar resultado original con advertencia  
+        const existingWarnings: string[] = Array.isArray(fullCostsResult.warnings) ? fullCostsResult.warnings : [];
         fullCostsResult.warnings = [
-          ...(fullCostsResult.warnings || []),
+          ...existingWarnings,
           '⚠️ Reality validation unavailable - results may need manual review'
-        ] as string[];
+        ];
         
         res.json({
           success: true,
@@ -401,11 +404,26 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
     } catch (error: any) {
       console.error('❌ Combined DeepSearch API Error:', error);
       
-      res.status(400).json({
+      // Enhanced error response with debugging information
+      const errorResponse = {
         success: false,
-        error: error.message,
-        code: error.name || 'COMBINED_ANALYSIS_ERROR'
+        error: error.message || 'Unknown error occurred',
+        code: error.name || 'COMBINED_ANALYSIS_ERROR',
+        timestamp: new Date().toISOString(),
+        details: {
+          step: error.step || 'unknown',
+          originalError: error.originalError || error.toString()
+        }
+      };
+      
+      // Log detailed error for debugging
+      console.error('📋 Error details:', {
+        message: error.message,
+        stack: error.stack,
+        cause: error.cause
       });
+      
+      res.status(error.statusCode || 500).json(errorResponse);
     }
   });
 

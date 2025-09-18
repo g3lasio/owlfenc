@@ -533,11 +533,65 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
 
     } catch (error: any) {
       console.error('Error parsing Claude response:', error);
-      console.error('Raw response:', responseText.substring(0, 500));
+      console.error('Raw response (first 500 chars):', responseText.substring(0, 500));
+      console.error('Raw response (last 500 chars):', responseText.substring(Math.max(0, responseText.length - 500)));
+      
+      // Try one more aggressive JSON repair before fallback
+      console.log('🔧 Attempting aggressive JSON repair...');
+      try {
+        const repairedJson = this.aggressiveJsonRepair(responseText);
+        if (repairedJson) {
+          const jsonData = JSON.parse(repairedJson);
+          this.validateResponseStructure(jsonData);
+          
+          // Calcular totales de forma defensiva
+          const materials = Array.isArray(jsonData.materials) ? jsonData.materials : [];
+          const laborCosts = Array.isArray(jsonData.laborCosts) ? jsonData.laborCosts : [];
+          const additionalCosts = Array.isArray(jsonData.additionalCosts) ? jsonData.additionalCosts : [];
+          
+          const totalMaterialsCost = materials.reduce((sum: number, item: any) => sum + (item.totalPrice || 0), 0);
+          const totalLaborCost = laborCosts.reduce((sum: number, item: any) => sum + (item.total || 0), 0);
+          const totalAdditionalCost = additionalCosts.reduce((sum: number, item: any) => sum + (item.cost || 0), 0);
+
+          console.log('✅ Aggressive JSON repair successful');
+          return {
+            projectType: jsonData.projectType,
+            projectScope: jsonData.projectScope,
+            materials: materials.map((item: any, index: number) => ({
+              ...item,
+              id: item.id || `mat_${String(index + 1).padStart(3, '0')}`,
+              supplier: item.supplier || 'Home Depot/Lowes',
+              sku: item.sku || 'TBD'
+            })),
+            laborCosts: laborCosts,
+            additionalCosts: additionalCosts,
+            totalMaterialsCost,
+            totalLaborCost,
+            totalAdditionalCost,
+            grandTotal: totalMaterialsCost + totalLaborCost + totalAdditionalCost,
+            confidence: Math.max(0, Math.min(1, jsonData.confidence || 0.8)),
+            recommendations: jsonData.recommendations || [],
+            warnings: [...(jsonData.warnings || []), 'JSON was repaired due to truncation']
+          };
+        }
+      } catch (repairError) {
+        console.log('⚠️ Aggressive JSON repair also failed:', repairError);
+      }
       
       // Fallback: Generate structured response using GPT-4o
       console.log('🔄 Activating GPT-4o JSON parsing fallback');
-      return await this.generateGPT4oFallbackResponse(responseText);
+      try {
+        return await this.generateGPT4oFallbackResponse(responseText);
+      } catch (gptError: any) {
+        console.error('GPT-4o fallback failed:', gptError);
+        
+        // Final fallback: Expert Contractor Service
+        console.log('🔄 Final fallback: Using Expert Contractor Service');
+        return this.generateExpertContractorFallback(
+          this.extractProjectTypeFromText(responseText) + ' project',
+          undefined
+        );
+      }
     }
   }
 
@@ -548,9 +602,9 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
     try {
       console.log('🤖 GPT-4o Fallback: Processing Claude response with GPT-4o');
       
-      // Check if OpenAI API key is available
-      if (!process.env.OPENAI_API_KEY) {
-        console.log('⚠️ OpenAI API key not available, using Expert Contractor fallback');
+      // Check if OpenAI API key is available and valid
+      if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.trim().length < 20) {
+        console.log('⚠️ OpenAI API key not available or invalid, using Expert Contractor fallback');
         return this.generateExpertContractorFallback(
           this.extractProjectTypeFromText(originalResponse) + ' project',
           undefined
@@ -806,7 +860,87 @@ CRITICAL INSTRUCTIONS:
       }
     }
     
+    console.log('🧹 JSON cleaned, final length:', jsonStr.length);
     return jsonStr.trim();
+  }
+
+  /**
+   * Reparación agresiva de JSON para casos de truncamiento severo
+   */
+  private aggressiveJsonRepair(rawResponse: string): string | null {
+    try {
+      console.log('🔧 Starting aggressive JSON repair...');
+      
+      // 1. Extraer todo el JSON disponible, incluso parcial
+      let jsonPart = '';
+      const jsonStart = rawResponse.indexOf('{');
+      if (jsonStart === -1) return null;
+      
+      jsonPart = rawResponse.substring(jsonStart);
+      
+      // 2. Si no encuentra el final, construir un JSON válido mínimo
+      if (!jsonPart.includes('}') || jsonPart.lastIndexOf('}') < jsonPart.lastIndexOf('{')) {
+        console.log('🚨 JSON is severely truncated, building minimal valid structure...');
+        
+        // Crear estructura mínima válida
+        const minimalJson = {
+          projectType: "Construction Project",
+          projectScope: "AI-generated estimate with partial data",
+          materials: [] as any[],
+          laborCosts: [] as any[],
+          additionalCosts: [] as any[],
+          confidence: 0.5,
+          recommendations: ["This estimate was generated from truncated AI response"] as string[],
+          warnings: ["Original AI response was incomplete - this is a minimal fallback"] as string[]
+        };
+        
+        // Intentar extraer al menos algunos materiales del texto truncado
+        const partialMaterials = this.extractPartialMaterials(rawResponse);
+        if (partialMaterials.length > 0) {
+          minimalJson.materials = partialMaterials;
+          minimalJson.confidence = 0.6;
+        }
+        
+        return JSON.stringify(minimalJson);
+      }
+      
+      // 3. Si hay algo de JSON, intentar repararlo
+      return this.cleanJSONString(jsonPart);
+      
+    } catch (error) {
+      console.error('Aggressive JSON repair failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Extrae materiales parciales de respuesta truncada
+   */
+  private extractPartialMaterials(rawResponse: string): any[] {
+    const materials: any[] = [];
+    const lines = rawResponse.split('\n');
+    
+    for (const line of lines) {
+      // Buscar patrones de materiales en texto plano
+      const materialMatch = line.match(/(\d+\.?\d*)\s*(sq\s*ft|ft|linear\s*ft|cubic\s*yard|each|piece)/i);
+      if (materialMatch) {
+        const quantity = parseFloat(materialMatch[1]);
+        const unit = materialMatch[2].toLowerCase().replace(/\s+/g, '_');
+        
+        materials.push({
+          id: `fallback_${materials.length + 1}`,
+          name: `Construction Material ${materials.length + 1}`,
+          description: 'Extracted from partial AI response',
+          category: 'general',
+          quantity: quantity,
+          unit: unit,
+          unitPrice: 10, // Default price
+          totalPrice: quantity * 10
+        });
+      }
+    }
+    
+    return materials;
   }
 
   /**
