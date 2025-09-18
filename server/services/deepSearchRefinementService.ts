@@ -311,24 +311,39 @@ Ayuda al contratista explicando la transición de materiales de manera clara.`;
     }
 
     const targetTotal = parseFloat(amountMatch[1].replace(/,/g, ''));
-    const currentTotal = request.currentResult.grandTotal;
+    const currentTotal = request.currentResult.grandTotal || 0;
+    
+    // CRITICAL FIX: Avoid division by zero
+    if (currentTotal === 0) {
+      return {
+        success: true,
+        response: `❌ **No se puede ajustar el total**\n\nEl estimado actual tiene un total de $0, no se puede calcular un factor de ajuste.\n\nPor favor:\n• Asegúrate de que el estimado tenga materiales con precios\n• Vuelve a ejecutar la búsqueda de materiales\n• Intenta el ajuste después de tener un total válido`,
+        suggestedActions: [
+          'Re-ejecutar DeepSearch',
+          'Verificar materiales',
+          'Revisar precios',
+          'Contactar soporte'
+        ]
+      };
+    }
+    
     const difference = targetTotal - currentTotal;
     const adjustmentFactor = targetTotal / currentTotal;
 
     // Crear resultado actualizado
     const updatedResult = { ...request.currentResult };
 
-    // Ajustar proporcionalmente materiales y labor
+    // Ajustar proporcionalmente materiales y labor con validación
     updatedResult.materials = updatedResult.materials.map(material => ({
       ...material,
-      unitPrice: material.unitPrice * adjustmentFactor,
-      totalPrice: material.totalPrice * adjustmentFactor
+      unitPrice: (material.unitPrice || 0) * adjustmentFactor,
+      totalPrice: (material.totalPrice || 0) * adjustmentFactor
     }));
 
     updatedResult.laborCosts = updatedResult.laborCosts.map(labor => ({
       ...labor,
-      rate: labor.rate * adjustmentFactor,
-      total: labor.total * adjustmentFactor
+      rate: (labor.rate || 0) * adjustmentFactor,
+      total: (labor.total || 0) * adjustmentFactor
     }));
 
     // Recalcular totales con validación de números

@@ -5557,16 +5557,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           onResultsUpdated={(updatedResult) => {
                             console.log("🤖 [AI-REFINEMENT] Aplicando cambios del chat IA");
                             
-                            // Convertir los materiales actualizados de DeepSearch al formato del estimado
+                            // Convertir los materiales actualizados de DeepSearch al formato del estimado con validación
                             const updatedItems = updatedResult.materials.map(material => ({
                               id: material.id,
                               materialId: material.id,
                               name: material.name,
                               description: material.description,
-                              price: material.unitPrice,
-                              quantity: material.quantity,
+                              price: material.unitPrice || 0,
+                              quantity: material.quantity || 0,
                               unit: material.unit,
-                              total: material.totalPrice,
+                              total: material.totalPrice || 0,
                               category: material.category
                             }));
 
@@ -5584,8 +5584,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                           }}
                           onApplyChanges={() => {
                             toast({
-                              title: "Cambios aplicados",
-                              description: "Los refinamientos de IA han sido integrados al estimado",
+                              title: "✅ Cambios aplicados",
+                              description: "Los refinamientos del chat han sido aplicados al estimado",
                               duration: 3000
                             });
                           }}
