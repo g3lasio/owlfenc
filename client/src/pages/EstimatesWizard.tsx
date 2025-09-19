@@ -419,7 +419,6 @@ export default function EstimatesWizardFixed() {
 
   // Unified sharing system states
   const [showShareOptions, setShowShareOptions] = useState(false);
-  const [shareFormat, setShareFormat] = useState<'pdf' | 'url'>('pdf');
   const [generatedEstimateUrl, setGeneratedEstimateUrl] = useState<string | null>(null);
   const [isGeneratingUrl, setIsGeneratingUrl] = useState(false);
 
@@ -6866,31 +6865,18 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                       </Button>
 
                       <Button
-                        onClick={handleDownload}
+                        onClick={() => setShowShareOptions(true)}
                         disabled={
                           !estimate.client || estimate.items.length === 0
                         }
                         size="sm"
                         className="bg-green-600 hover:bg-green-700 text-white text-xs"
                       >
-                        {sharingCapabilities.isMobile &&
-                        sharingCapabilities.nativeShareSupported ? (
-                          <>
-                            <Share2 className="h-3 w-3 mr-1" />
-                            <span className="hidden sm:inline">
-                              Share PDF Estimate
-                            </span>
-                            <span className="sm:hidden">Share</span>
-                          </>
-                        ) : (
-                          <>
-                            <Download className="h-3 w-3 mr-1" />
-                            <span className="hidden sm:inline">
-                              Generate as Estimate
-                            </span>
-                            <span className="sm:hidden">Estimate</span>
-                          </>
-                        )}
+                        <Share2 className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">
+                          Share Estimate
+                        </span>
+                        <span className="sm:hidden">Share</span>
                       </Button>
 
                       <Button
