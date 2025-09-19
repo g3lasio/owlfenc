@@ -4098,6 +4098,267 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     }
   };
 
+  // Function to generate shareable URL for estimate
+  const generateEstimateUrl = async (): Promise<string | null> => {
+    try {
+      setIsGeneratingUrl(true);
+      
+      // Validate required data
+      if (!estimate.client) {
+        toast({
+          title: "❌ Error",
+          description: "Necesitas seleccionar un cliente antes de compartir",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      if (!profile?.company) {
+        toast({
+          title: "❌ Perfil Incompleto", 
+          description: "Debes completar el nombre de tu empresa en tu perfil antes de compartir",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      // Prepare estimate data for sharing
+      const shareableEstimate = {
+        client: estimate.client,
+        items: estimate.items,
+        projectDetails: estimate.projectDetails,
+        subtotal: estimate.subtotal,
+        tax: estimate.tax,
+        total: estimate.total,
+        taxRate: estimate.taxRate,
+        discountType: estimate.discountType,
+        discountValue: estimate.discountValue,
+        discountAmount: estimate.discountAmount,
+        discountName: estimate.discountName,
+        contractor: {
+          company: profile.company,
+          address: profile.address,
+          city: profile.city,
+          state: profile.state,
+          zipCode: profile.zipCode,
+          phone: profile.phone,
+          email: profile.email,
+          website: profile.website,
+          license: profile.license,
+          logo: profile.logo,
+        },
+        template: selectedTemplate,
+        createdAt: new Date().toISOString(),
+      };
+
+      // Get auth token for API call
+      const token = await currentUser?.getIdToken();
+      if (!token) {
+        throw new Error("No se pudo obtener token de autenticación");
+      }
+
+      // Send estimate data to backend to create shareable link
+      const response = await fetch('/api/estimates/create-share-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(shareableEstimate),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create shareable link');
+      }
+
+      const result = await response.json();
+      const shareUrl = `${window.location.origin}/estimate/${result.shareId}`;
+      
+      setGeneratedEstimateUrl(shareUrl);
+      console.log('✅ Shareable URL generated:', shareUrl);
+      
+      return shareUrl;
+      
+    } catch (error) {
+      console.error('❌ Error generating shareable URL:', error);
+      toast({
+        title: "❌ Error",
+        description: "No se pudo crear el enlace para compartir. Intenta nuevamente.",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsGeneratingUrl(false);
+    }
+  };
+
+  // Unified sharing function - handles both PDF and URL sharing
+  const handleUnifiedShare = async (format: 'pdf' | 'url' = shareFormat) => {
+    try {
+      const capabilities = getSharingCapabilities();
+      
+      if (format === 'pdf') {
+        // Generate PDF and share using existing mobile sharing system
+        await handlePdfShare();
+      } else {
+        // Generate URL and share
+        await handleUrlShare();
+      }
+      
+      setShowShareOptions(false);
+    } catch (error) {
+      console.error('❌ Error in unified sharing:', error);
+      toast({
+        title: "❌ Error",
+        description: "No se pudo compartir. Intenta nuevamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle PDF sharing using existing download function
+  const handlePdfShare = async () => {
+    try {
+      // Use the existing handleDownload function logic but for sharing
+      if (!currentUser?.uid) {
+        console.warn("⚠️ [PDF-RESILIENT] No currentUser?.uid detected, attempting PDF generation anyway");
+        
+        if (!currentUser && !profile?.email) {
+          toast({
+            title: "❌ Autenticación requerida",
+            description: "Por favor inicia sesión para generar PDFs",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      if (!profile?.company) {
+        toast({
+          title: "❌ Perfil Incompleto",
+          description: "Debes completar el nombre de tu empresa en tu perfil antes de generar PDFs.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Auto-detect template based on subscription
+      const isPremiumUser = userSubscription?.plan?.id !== 1;
+      const template = isPremiumUser ? selectedTemplate : "basic";
+
+      const estimatePayload = {
+        contractor: {
+          company: editableCompanyInfo.company || profile.company,
+          address: editableCompanyInfo.address || profile.address,
+          city: editableCompanyInfo.city || profile.city,
+          state: editableCompanyInfo.state || profile.state,
+          zipCode: editableCompanyInfo.zipCode || profile.zipCode,
+          phone: editableCompanyInfo.phone || profile.phone,
+          email: editableCompanyInfo.email || profile.email,
+          website: editableCompanyInfo.website || profile.website,
+          license: editableCompanyInfo.license || profile.license,
+          logo: editableCompanyInfo.logo || profile.logo,
+        },
+        estimate: {
+          client: estimate.client,
+          items: estimate.items,
+          projectDetails: estimate.projectDetails,
+          subtotal: estimate.subtotal,
+          taxRate: estimate.taxRate,
+          tax: estimate.tax,
+          total: estimate.total,
+          discountType: estimate.discountType,
+          discountValue: estimate.discountValue,
+          discountAmount: estimate.discountAmount,
+          discountName: estimate.discountName,
+        },
+        template: template,
+      };
+
+      console.log("📄 [PDF-SHARE] Generating PDF for sharing...", { template });
+
+      const response = await axios.post("/api/estimate-pdf", estimatePayload, {
+        responseType: "blob",
+      });
+
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const clientName = estimate.client?.name || "Client";
+      const filename = `estimate_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.pdf`;
+
+      // Use mobile sharing utility for PDF
+      await shareOrDownloadPdf(blob, filename, {
+        title: `Estimate - ${clientName}`,
+        text: `Professional estimate for ${clientName}`,
+        clientName: clientName,
+      });
+
+      const capabilities = getSharingCapabilities();
+      const actionText = capabilities.isMobile && capabilities.nativeShareSupported
+        ? "PDF generated and shared successfully"
+        : "PDF downloaded successfully";
+
+      toast({
+        title: "✅ PDF Shared",
+        description: actionText,
+      });
+
+    } catch (error) {
+      console.error("❌ PDF sharing error:", error);
+      toast({
+        title: "❌ Error",
+        description: "Could not generate PDF for sharing. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle URL sharing
+  const handleUrlShare = async () => {
+    try {
+      const shareUrl = await generateEstimateUrl();
+      if (!shareUrl) return;
+
+      const capabilities = getSharingCapabilities();
+      const clientName = estimate.client?.name || "Client";
+
+      if (capabilities.isMobile && capabilities.nativeShareSupported) {
+        // Use native sharing on mobile
+        try {
+          await navigator.share({
+            title: `Estimate - ${clientName}`,
+            text: `Professional estimate for ${clientName}`,
+            url: shareUrl,
+          });
+          
+          toast({
+            title: "✅ URL Shared",
+            description: "Link shared successfully",
+          });
+        } catch (shareError) {
+          if (shareError.name !== 'AbortError') {
+            throw shareError;
+          }
+          // User cancelled, not an error
+        }
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "✅ Link Copied",
+          description: "Estimate link copied to clipboard",
+        });
+      }
+
+    } catch (error) {
+      console.error("❌ URL sharing error:", error);
+      toast({
+        title: "❌ Error", 
+        description: "Could not share estimate link. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDownload = async () => {
     try {
       // FIXED: More resilient authentication check - allow PDF generation even with temporary auth issues
