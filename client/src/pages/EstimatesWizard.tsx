@@ -8223,217 +8223,87 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         </DialogContent>
       </Dialog>
 
-      {/* Iron Man Style Holographic Share Interface */}
+      {/* Compact Professional Share Dialog */}
       {showShareOptions && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Holographic Background with Matrix Effect */}
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-md">
-            {/* Digital Grid Pattern */}
-            <div className="absolute inset-0 opacity-10 motion-safe:animate-pulse"
-                 style={{
-                   backgroundImage: `
-                     linear-gradient(rgba(0,255,255,0.3) 1px, transparent 1px),
-                     linear-gradient(90deg, rgba(0,255,255,0.3) 1px, transparent 1px)
-                   `,
-                   backgroundSize: '50px 50px'
-                 }}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowShareOptions(false)} />
+          
+          <div className="relative bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-xl max-w-sm w-full mx-4">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Share Estimate</h3>
+              <button
+                onClick={() => setShowShareOptions(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                aria-label="Close"
+                data-testid="button-close-share"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            
-            {/* Floating Particles - Respect prefers-reduced-motion */}
-            <div className="absolute inset-0 motion-safe:block motion-reduce:hidden">
-              {[...Array(6)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute w-1 h-1 bg-cyan-400 rounded-full motion-safe:animate-pulse"
-                  style={{
-                    left: `${15 + (i * 15)}%`, // Fixed positions instead of random for better performance
-                    top: `${20 + (i * 10)}%`,
-                    animationDelay: `${i * 0.5}s`,
-                    animationDuration: '3s',
-                    willChange: 'opacity' // Optimize for GPU
-                  }}
-                />
-              ))}
-            </div>
-          </div>
 
-          {/* Main Holographic Interface Container */}
-          <div className="relative">
-            {/* Corner Frames - Iron Man Style */}
-            <div className="absolute -top-6 -left-6 w-16 h-16 border-t-4 border-l-4 border-cyan-400 opacity-80"></div>
-            <div className="absolute -top-6 -right-6 w-16 h-16 border-t-4 border-r-4 border-cyan-400 opacity-80"></div>
-            <div className="absolute -bottom-6 -left-6 w-16 h-16 border-b-4 border-l-4 border-cyan-400 opacity-80"></div>
-            <div className="absolute -bottom-6 -right-6 w-16 h-16 border-b-4 border-r-4 border-cyan-400 opacity-80"></div>
+            {/* Share Options */}
+            <div className="p-4 space-y-3">
 
-            {/* Central Interface Panel */}
-            <div className="relative bg-gradient-to-br from-black/90 via-gray-900/90 to-black/90 
-                            border border-cyan-500/50 rounded-lg p-8 min-w-[400px]
-                            shadow-[0_0_40px_rgba(0,255,255,0.3)] backdrop-blur-xl">
-              
-              {/* Header with Close */}
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></div>
-                  <h3 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-                    SHARE PROTOCOL
-                  </h3>
-                  <div className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></div>
-                </div>
-                <button
-                  onClick={() => setShowShareOptions(false)}
-                  aria-label="Close share dialog"
-                  className="w-8 h-8 flex items-center justify-center border border-red-500/50 
-                           bg-red-900/20 hover:bg-red-500/20 transition-all duration-300 rounded
-                           text-red-400 hover:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-500"
-                  data-testid="button-close-share"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              {/* Holographic Button Options */}
-              <div className="space-y-6">
-                <div className="text-center mb-6">
-                  <p className="text-cyan-300/80 text-sm tracking-wider uppercase">
-                    Select Deployment Method
-                  </p>
-                </div>
-
-                {/* PDF Holographic Button */}
-                <div 
-                  onClick={async () => {
+              {/* PDF Button */}
+              <button
+                onClick={async () => {
+                  try {
                     setShareFormat('pdf');
                     await handleUnifiedShare('pdf');
                     setShowShareOptions(false);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      e.currentTarget.click();
-                    }
-                  }}
-                  tabIndex={0}
-                  role="button"
-                  aria-label="Generate and share PDF document"
-                  className="group relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-black rounded-lg"
-                  data-testid="button-share-pdf"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-500/20 
-                                  rounded-lg blur-lg group-hover:blur-xl transition-all duration-300 
-                                  group-hover:from-orange-500/30 group-hover:to-red-500/30"></div>
-                  
-                  <div className="relative bg-gradient-to-r from-gray-900/80 to-black/80 
-                                  border border-orange-500/50 rounded-lg p-6 
-                                  hover:border-orange-400 transition-all duration-300
-                                  hover:shadow-[0_0_30px_rgba(255,165,0,0.4)]
-                                  transform hover:scale-105">
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 
-                                      rounded-lg flex items-center justify-center shadow-lg">
-                        <FileText className="h-6 w-6 text-white" />
-                      </div>
-                      
-                      <div className="flex-1">
-                        <h4 className="text-lg font-bold text-orange-400 mb-1">PDF DOCUMENT</h4>
-                        <p className="text-gray-400 text-sm">Generate portable document file</p>
-                      </div>
-                      
-                      <div className="flex flex-col items-center">
-                        <div className="w-8 h-8 border border-orange-500/50 rounded-full 
-                                        flex items-center justify-center bg-orange-500/10">
-                          <span className="text-orange-400 text-xs font-bold">GO</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Progress Bar Animation */}
-                    <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-orange-500 to-red-500 
-                                    rounded-b-lg transform scale-x-0 group-hover:scale-x-100 
-                                    transition-transform duration-500 origin-left"></div>
-                  </div>
+                  } catch (error) {
+                    console.error('Error sharing PDF:', error);
+                  }
+                }}
+                className="w-full flex items-center gap-3 p-3 rounded-lg border border-orange-200 dark:border-orange-800 
+                         bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/40 
+                         transition-colors group"
+                data-testid="button-share-pdf"
+              >
+                <div className="flex-shrink-0 w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-white" />
                 </div>
+                <div className="flex-1 text-left">
+                  <div className="font-medium text-orange-900 dark:text-orange-100">Download PDF</div>
+                  <div className="text-sm text-orange-700 dark:text-orange-300">Generate document for printing</div>
+                </div>
+                <div className="flex-shrink-0">
+                  <ChevronRight className="h-5 w-5 text-orange-600 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </button>
 
-                {/* URL Holographic Button */}
-                <div 
-                  onClick={async () => {
+              {/* URL Button */}
+              <button
+                onClick={async () => {
+                  try {
                     setShareFormat('url');
                     await handleUnifiedShare('url');
                     setShowShareOptions(false);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      e.currentTarget.click();
-                    }
-                  }}
-                  tabIndex={0}
-                  role="button"
-                  aria-label="Generate and share secure URL link"
-                  className="group relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-black rounded-lg"
-                  data-testid="button-share-url"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 
-                                  rounded-lg blur-lg group-hover:blur-xl transition-all duration-300 
-                                  group-hover:from-cyan-500/30 group-hover:to-blue-500/30"></div>
-                  
-                  <div className="relative bg-gradient-to-r from-gray-900/80 to-black/80 
-                                  border border-cyan-500/50 rounded-lg p-6 
-                                  hover:border-cyan-400 transition-all duration-300
-                                  hover:shadow-[0_0_30px_rgba(0,255,255,0.4)]
-                                  transform hover:scale-105">
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 
-                                      rounded-lg flex items-center justify-center shadow-lg">
-                        <Link className="h-6 w-6 text-white" />
-                      </div>
-                      
-                      <div className="flex-1">
-                        <h4 className="text-lg font-bold text-cyan-400 mb-1">SECURE LINK</h4>
-                        <p className="text-gray-400 text-sm">Generate shareable URL</p>
-                      </div>
-                      
-                      <div className="flex flex-col items-center">
-                        <div className="w-8 h-8 border border-cyan-500/50 rounded-full 
-                                        flex items-center justify-center bg-cyan-500/10">
-                          {isGeneratingUrl ? (
-                            <RefreshCw className="h-4 w-4 text-cyan-400 animate-spin" />
-                          ) : (
-                            <span className="text-cyan-400 text-xs font-bold">GO</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Progress Bar Animation */}
-                    <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-cyan-500 to-blue-500 
-                                    rounded-b-lg transform scale-x-0 group-hover:scale-x-100 
-                                    transition-transform duration-500 origin-left"></div>
-                  </div>
+                  } catch (error) {
+                    console.error('Error sharing URL:', error);
+                  }
+                }}
+                className="w-full flex items-center gap-3 p-3 rounded-lg border border-blue-200 dark:border-blue-800 
+                         bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 
+                         transition-colors group"
+                data-testid="button-share-url"
+              >
+                <div className="flex-shrink-0 w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <Link className="h-5 w-5 text-white" />
                 </div>
-              </div>
-
-              {/* Status Indicator */}
-              <div className="flex items-center justify-center mt-8 gap-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-green-400 text-xs uppercase tracking-wider">System Ready</span>
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              </div>
-            </div>
-
-            {/* Scanning Lines Effect - Respect prefers-reduced-motion */}
-            <div className="absolute inset-0 pointer-events-none motion-safe:block motion-reduce:hidden">
-              <div className="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent 
-                              opacity-30" 
-                   style={{
-                     top: '20%',
-                     animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches 
-                       ? 'none' 
-                       : 'scan 4s linear infinite',
-                     willChange: 'transform' // Optimize for GPU
-                   }}>
-              </div>
+                <div className="flex-1 text-left">
+                  <div className="font-medium text-blue-900 dark:text-blue-100">Share Link</div>
+                  <div className="text-sm text-blue-700 dark:text-blue-300">Generate shareable web link</div>
+                </div>
+                <div className="flex-shrink-0">
+                  {isGeneratingUrl && shareFormat === 'url' ? (
+                    <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                  ) : (
+                    <ChevronRight className="h-5 w-5 text-blue-600 group-hover:translate-x-1 transition-transform" />
+                  )}
+                </div>
+              </button>
             </div>
           </div>
         </div>
