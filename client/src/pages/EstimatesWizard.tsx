@@ -7814,7 +7814,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 value={emailData.toEmail}
                 onChange={(e) => setEmailData(prev => ({...prev, toEmail: e.target.value}))}
                 placeholder="client@email.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-white"
               />
             </div>
             
@@ -7825,7 +7825,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 value={emailData.subject}
                 onChange={(e) => setEmailData(prev => ({...prev, subject: e.target.value}))}
                 placeholder="Professional Estimate"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-white"
               />
             </div>
             
@@ -7836,7 +7836,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 onChange={(e) => setEmailData(prev => ({...prev, message: e.target.value}))}
                 placeholder="Your message..."
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-black bg-white"
               />
             </div>
             
