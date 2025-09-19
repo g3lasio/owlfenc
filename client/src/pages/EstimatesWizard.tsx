@@ -8228,7 +8228,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           {/* Holographic Background with Matrix Effect */}
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md">
             {/* Digital Grid Pattern */}
-            <div className="absolute inset-0 opacity-10"
+            <div className="absolute inset-0 opacity-10 motion-safe:animate-pulse"
                  style={{
                    backgroundImage: `
                      linear-gradient(rgba(0,255,255,0.3) 1px, transparent 1px),
@@ -8238,17 +8238,18 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                  }}>
             </div>
             
-            {/* Floating Particles */}
-            <div className="absolute inset-0">
-              {[...Array(8)].map((_, i) => (
+            {/* Floating Particles - Respect prefers-reduced-motion */}
+            <div className="absolute inset-0 motion-safe:block motion-reduce:hidden">
+              {[...Array(6)].map((_, i) => (
                 <div
                   key={i}
-                  className="absolute w-1 h-1 bg-cyan-400 rounded-full animate-pulse"
+                  className="absolute w-1 h-1 bg-cyan-400 rounded-full motion-safe:animate-pulse"
                   style={{
-                    left: `${Math.random() * 100}%`,
-                    top: `${Math.random() * 100}%`,
-                    animationDelay: `${Math.random() * 2}s`,
-                    animationDuration: `${2 + Math.random() * 3}s`
+                    left: `${15 + (i * 15)}%`, // Fixed positions instead of random for better performance
+                    top: `${20 + (i * 10)}%`,
+                    animationDelay: `${i * 0.5}s`,
+                    animationDuration: '3s',
+                    willChange: 'opacity' // Optimize for GPU
                   }}
                 />
               ))}
@@ -8279,9 +8280,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 </div>
                 <button
                   onClick={() => setShowShareOptions(false)}
+                  aria-label="Close share dialog"
                   className="w-8 h-8 flex items-center justify-center border border-red-500/50 
                            bg-red-900/20 hover:bg-red-500/20 transition-all duration-300 rounded
-                           text-red-400 hover:text-red-300"
+                           text-red-400 hover:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  data-testid="button-close-share"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -8302,7 +8305,17 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     await handleUnifiedShare('pdf');
                     setShowShareOptions(false);
                   }}
-                  className="group relative cursor-pointer"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.currentTarget.click();
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label="Generate and share PDF document"
+                  className="group relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-black rounded-lg"
+                  data-testid="button-share-pdf"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-500/20 
                                   rounded-lg blur-lg group-hover:blur-xl transition-all duration-300 
@@ -8347,7 +8360,17 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     await handleUnifiedShare('url');
                     setShowShareOptions(false);
                   }}
-                  className="group relative cursor-pointer"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.currentTarget.click();
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label="Generate and share secure URL link"
+                  className="group relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-black rounded-lg"
+                  data-testid="button-share-url"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 
                                   rounded-lg blur-lg group-hover:blur-xl transition-all duration-300 
@@ -8398,13 +8421,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               </div>
             </div>
 
-            {/* Scanning Lines Effect */}
-            <div className="absolute inset-0 pointer-events-none">
+            {/* Scanning Lines Effect - Respect prefers-reduced-motion */}
+            <div className="absolute inset-0 pointer-events-none motion-safe:block motion-reduce:hidden">
               <div className="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent 
-                              animate-pulse opacity-30" 
+                              opacity-30" 
                    style={{
                      top: '20%',
-                     animation: 'scan 3s linear infinite'
+                     animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches 
+                       ? 'none' 
+                       : 'scan 4s linear infinite',
+                     willChange: 'transform' // Optimize for GPU
                    }}>
               </div>
             </div>
