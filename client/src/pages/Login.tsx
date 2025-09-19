@@ -572,11 +572,8 @@ export default function AuthPage() {
                             </FormControl>
                             <div className="space-y-1 leading-none">
                               <FormLabel className="text-sm font-normal cursor-pointer">
-                                Stay signed in
+                                Remember me
                               </FormLabel>
-                              <p className="text-xs text-muted-foreground">
-                                30-day persistent login
-                              </p>
                             </div>
                           </FormItem>
                         )}
