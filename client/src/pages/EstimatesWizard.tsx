@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
 import { usePermissions } from "@/contexts/PermissionContext";
@@ -320,6 +320,7 @@ export default function EstimatesWizardFixed() {
   const [previewHtml, setPreviewHtml] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
 
@@ -1608,16 +1609,63 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     estimate.discountValue,
   ]);
 
-  // AUTOGUARDADO INTELIGENTE: Actualizar proyecto existente cuando cambien datos críticos - MEJORADO
-  useEffect(() => {
-    // Debounce timer to avoid excessive saves
-    const timeoutId = setTimeout(() => {
-      // Envolver en .catch() para evitar unhandled rejections
-      autoSaveEstimateChanges().catch(error => {
-        console.warn('🛡️ [AUTO-SAVE] Error en autoguardado silenciado:', (error as Error).message);
-      });
-    }, 2000); // Wait 2 seconds after changes
+  // 🔄 AUTO-SAVE con DEBOUNCE MEJORADO - useRef para evitar primer render
+  const isFirstRender = useRef(true);
+  const previousEstimateSnapshot = useRef<string>("");
 
+  useEffect(() => {
+    // ✅ EVITAR GUARDADO EN PRIMER RENDER
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      // Crear snapshot inicial para comparaciones futuras
+      previousEstimateSnapshot.current = JSON.stringify({
+        items: estimate.items,
+        client: estimate.client,
+        projectDetails: estimate.projectDetails,
+        taxRate: estimate.taxRate,
+        discountType: estimate.discountType,
+        discountValue: estimate.discountValue,
+      });
+      return;
+    }
+
+    // ✅ CREAR SNAPSHOT ACTUAL PARA COMPARACIÓN
+    const currentSnapshot = JSON.stringify({
+      items: estimate.items,
+      client: estimate.client,
+      projectDetails: estimate.projectDetails,
+      taxRate: estimate.taxRate,
+      discountType: estimate.discountType,
+      discountValue: estimate.discountValue,
+    });
+
+    // ✅ EVITAR GUARDADOS REDUNDANTES - Solo guardar si hay cambios reales
+    if (currentSnapshot === previousEstimateSnapshot.current) {
+      return;
+    }
+
+    // ✅ DEBOUNCE DE 2000ms - Solo activar indicador DESPUÉS del debounce
+    const timeoutId = setTimeout(async () => {
+      // ✅ ACTIVAR INDICADOR SOLO CUANDO REALMENTE VA A GUARDAR
+      setIsAutoSaving(true);
+      
+      try {
+        // ✅ EJECUTAR AUTOGUARDADO SIN INDICADOR DUPLICADO
+        await autoSaveEstimateChangesWithoutIndicator();
+        
+        // ✅ ACTUALIZAR SNAPSHOT DESPUÉS DE GUARDADO EXITOSO
+        previousEstimateSnapshot.current = currentSnapshot;
+        
+        console.log('✅ [AUTO-SAVE] Guardado automático completado con debounce');
+      } catch (error) {
+        console.warn('🛡️ [AUTO-SAVE] Error en autoguardado silenciado:', (error as Error).message);
+      } finally {
+        // ✅ DESACTIVAR INDICADOR DESPUÉS DE 1 SEGUNDO
+        setTimeout(() => setIsAutoSaving(false), 1000);
+      }
+    }, 2000); // ✅ DEBOUNCE DE 2 SEGUNDOS
+
+    // ✅ CLEANUP APROPIADO DEL TIMEOUT
     return () => clearTimeout(timeoutId);
   }, [
     estimate.items,
@@ -1633,8 +1681,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     estimate.projectDetails,
   ]);
 
-  // Función de autoguardado que actualiza el proyecto existente
-  const autoSaveEstimateChanges = useCallback(async () => {
+  // 💾 FUNCIÓN DE AUTOGUARDADO SIN INDICADOR (para uso interno)
+  const autoSaveEstimateChangesWithoutIndicator = useCallback(async () => {
     // ✅ FIXED: Resilient auth check - allow save if we have profile data
     if ((!currentUser?.uid && !profile?.email) || !estimate.client || estimate.items.length === 0) {
       return; // No autoguardar si no hay datos válidos
@@ -1732,8 +1780,20 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     } catch (error) {
       console.error("❌ AUTOGUARDADO: Error:", error);
       // Silenciar errores de autoguardado para no interrumpir al usuario
+    } finally {
+      // ✅ NO MANEJAR INDICADOR AQUÍ - Se maneja en el useEffect principal
     }
   }, [currentUser?.uid, estimate]);
+
+  // 💾 FUNCIÓN DE AUTOGUARDADO PÚBLICA (con indicador) - Para uso manual
+  const autoSaveEstimateChanges = useCallback(async () => {
+    setIsAutoSaving(true);
+    try {
+      await autoSaveEstimateChangesWithoutIndicator();
+    } finally {
+      setTimeout(() => setIsAutoSaving(false), 1000);
+    }
+  }, [autoSaveEstimateChangesWithoutIndicator]);
 
   // Initialize company data when contractor profile loads
   useEffect(() => {
@@ -6825,7 +6885,14 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 {/* Card 5: Acciones Principales */}
                 <Card className="border-cyan-500/30 bg-gradient-to-r from-gray-900/50 via-black/50 to-gray-900/50">
                   <CardContent className="pt-6">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {/* Auto-save indicator */}
+                    {isAutoSaving && (
+                      <div className="flex items-center justify-center gap-2 mb-4 p-2 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                        <RefreshCw className="h-4 w-4 text-blue-400 animate-spin" />
+                        <span className="text-sm text-blue-300 font-medium">Auto-guardando...</span>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <Button
                         onClick={handleDirectInvoiceGeneration}
                         disabled={
@@ -6865,23 +6932,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                               Generate as Estimate
                             </span>
                             <span className="sm:hidden">Estimate</span>
-                          </>
-                        )}
-                      </Button>
-
-                      <Button
-                        onClick={() => handleSaveEstimate()}
-                        disabled={isSaving || (!currentUser?.uid && !profile?.email)}
-                        size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
-                      >
-                        <Save className="h-3 w-3 mr-1" />
-                        {isSaving ? (
-                          <span className="hidden sm:inline">Guardando...</span>
-                        ) : (
-                          <>
-                            <span className="hidden sm:inline">Guardar</span>
-                            <span className="sm:hidden">Save</span>
                           </>
                         )}
                       </Button>
