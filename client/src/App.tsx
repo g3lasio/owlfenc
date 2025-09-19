@@ -63,6 +63,7 @@ import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
 import SimpleContractGenerator from './pages/SimpleContractGenerator';
 import ContractSignature from './pages/ContractSignature';
+import SharedEstimate from './pages/SharedEstimate';
 
 
 import { Redirect } from "wouter";
@@ -142,6 +143,10 @@ function Router() {
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/login/email-link-callback" component={EmailLinkCallback} />
       <Route path="/auth-diagnostic" component={AuthDiagnostic} />
+      
+      {/* Public shared estimate route - no auth required */}
+      <Route path="/estimate/:shareId" component={SharedEstimate} />
+      
       <Route path="/about-owlfenc" component={AboutOwlFence} />
       
       {/* Public signature routes */}
