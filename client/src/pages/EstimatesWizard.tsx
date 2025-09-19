@@ -8144,17 +8144,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                 )}
               </div>
 
-              {/* Legacy Download PDF Button (for fallback) */}
-              <Button
-                variant="outline"
-                onClick={handleDownload}
-                disabled={!estimate.client || estimate.items.length === 0}
-                className="flex items-center gap-2 border-green-300 text-green-600 hover:bg-green-50"
-                data-testid="button-download-pdf"
-              >
-                <Download className="h-4 w-4" />
-                Download
-              </Button>
             </div>
           </DialogFooter>
         </DialogContent>

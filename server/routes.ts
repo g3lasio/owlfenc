@@ -4167,6 +4167,182 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
+  // *** ESTIMATE SHARE LINK ROUTE ***
+  app.post("/api/estimates/create-share-link", async (req: Request, res: Response) => {
+    try {
+      console.log("🔗 [ESTIMATE-SHARE] Creating shareable link for estimate...");
+
+      // Get Firebase user from token
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith('Bearer ')) {
+        return res.status(401).json({
+          success: false,
+          error: "Authorization token required"
+        });
+      }
+
+      const token = authHeader.substring(7);
+      let decodedToken;
+      try {
+        decodedToken = await admin.auth().verifyIdToken(token);
+      } catch (error) {
+        console.error("❌ [ESTIMATE-SHARE] Invalid token:", error);
+        return res.status(401).json({
+          success: false,
+          error: "Invalid authorization token"
+        });
+      }
+
+      // Validate estimate data
+      const schema = z.object({
+        client: z.object({
+          name: z.string(),
+          email: z.string().email().optional(),
+          phone: z.string().optional(),
+          address: z.string().optional()
+        }),
+        items: z.array(z.any()).min(1),
+        projectDetails: z.string(),
+        subtotal: z.number(),
+        tax: z.number(),
+        total: z.number(),
+        taxRate: z.number(),
+        discountType: z.string().optional(),
+        discountValue: z.number().optional(),
+        discountAmount: z.number().optional(),
+        discountName: z.string().optional(),
+        contractor: z.object({
+          company: z.string(),
+          address: z.string().optional(),
+          city: z.string().optional(),
+          state: z.string().optional(),
+          zipCode: z.string().optional(),
+          phone: z.string().optional(),
+          email: z.string().email().optional(),
+          website: z.string().optional(),
+          license: z.string().optional(),
+          logo: z.string().optional()
+        }),
+        template: z.string().optional(),
+        createdAt: z.string()
+      });
+
+      const estimateData = schema.parse(req.body);
+
+      // Generate secure share ID using crypto
+      const shareId = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+
+      // Store estimate data with share ID in Firebase
+      try {
+        const firebaseStorage = new (await import('./FirebaseStorage')).FirebaseStorage();
+        const db = firebaseStorage.getDb();
+        
+        // Store in shared_estimates collection
+        await db.collection('shared_estimates').doc(shareId).set({
+          userId: decodedToken.uid,
+          estimateData: estimateData,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
+          accessCount: 0,
+          isActive: true
+        });
+
+        console.log(`✅ [ESTIMATE-SHARE] Share link created: ${shareId}`);
+        
+        res.json({
+          success: true,
+          shareId: shareId,
+          expiresAt: expiresAt.toISOString(),
+          message: "Shareable link created successfully"
+        });
+
+      } catch (dbError) {
+        console.error("❌ [ESTIMATE-SHARE] Database error:", dbError);
+        return res.status(500).json({
+          success: false,
+          error: "Failed to store estimate data"
+        });
+      }
+
+    } catch (error) {
+      console.error("❌ [ESTIMATE-SHARE] Error creating share link:", error);
+
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid estimate data",
+          errors: error.errors
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        error: "Internal server error"
+      });
+    }
+  });
+
+  // *** ESTIMATE SHARE VIEW ROUTE ***
+  app.get("/api/estimates/shared/:shareId", async (req: Request, res: Response) => {
+    try {
+      const { shareId } = req.params;
+      console.log(`🔗 [ESTIMATE-VIEW] Fetching shared estimate: ${shareId}`);
+
+      if (!shareId || typeof shareId !== 'string' || shareId.length !== 64) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid share ID"
+        });
+      }
+
+      // Get estimate data from Firebase
+      const firebaseStorage = new (await import('./FirebaseStorage')).FirebaseStorage();
+      const db = firebaseStorage.getDb();
+      
+      const doc = await db.collection('shared_estimates').doc(shareId).get();
+      
+      if (!doc.exists) {
+        return res.status(404).json({
+          success: false,
+          error: "Shared estimate not found"
+        });
+      }
+
+      const data = doc.data();
+      
+      // Check if link is still valid
+      if (!data?.isActive || (data.expiresAt && data.expiresAt.toDate() < new Date())) {
+        return res.status(410).json({
+          success: false,
+          error: "Shared estimate has expired"
+        });
+      }
+
+      // Increment access count
+      await doc.ref.update({
+        accessCount: admin.firestore.FieldValue.increment(1),
+        lastAccessedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      console.log(`✅ [ESTIMATE-VIEW] Served shared estimate: ${shareId}`);
+      
+      res.json({
+        success: true,
+        estimateData: data.estimateData,
+        createdAt: data.createdAt?.toDate()?.toISOString(),
+        expiresAt: data.expiresAt?.toDate()?.toISOString()
+      });
+
+    } catch (error) {
+      console.error("❌ [ESTIMATE-VIEW] Error fetching shared estimate:", error);
+      res.status(500).json({
+        success: false,
+        error: "Internal server error"
+      });
+    }
+  });
+
   // *** SUBSCRIPTION ROUTES ***
   app.get("/api/subscription/plans", async (req: Request, res: Response) => {
     try {
