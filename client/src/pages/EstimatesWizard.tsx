@@ -287,6 +287,7 @@ export default function EstimatesWizardFixed() {
   const [sharingCapabilities, setSharingCapabilities] = useState(() =>
     getSharingCapabilities(),
   );
+  const [shareFormat, setShareFormat] = useState<'pdf' | 'url'>('pdf');
   const [estimate, setEstimate] = useState<EstimateData>({
     client: null,
     items: [],
