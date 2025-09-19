@@ -8222,6 +8222,92 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         </DialogContent>
       </Dialog>
 
+      {/* Global Share Options Dialog */}
+      {showShareOptions && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Share Estimate</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowShareOptions(false)}
+                  className="h-6 w-6 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">Choose how you want to share this estimate:</p>
+                
+                {/* Format Selection */}
+                <div className="space-y-3">
+                  <label className="flex items-center space-x-3 cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      name="shareFormat"
+                      value="pdf"
+                      checked={shareFormat === 'pdf'}
+                      onChange={(e) => setShareFormat(e.target.value as 'pdf' | 'url')}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">PDF Document</div>
+                      <div className="text-xs text-gray-500">Share as downloadable PDF file</div>
+                    </div>
+                  </label>
+                  
+                  <label className="flex items-center space-x-3 cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      name="shareFormat"
+                      value="url"
+                      checked={shareFormat === 'url'}
+                      onChange={(e) => setShareFormat(e.target.value as 'pdf' | 'url')}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">Shareable Link</div>
+                      <div className="text-xs text-gray-500">Generate a secure URL to share</div>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Share Button */}
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowShareOptions(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      await handleUnifiedShare();
+                      setShowShareOptions(false);
+                    }}
+                    disabled={isGeneratingUrl && shareFormat === 'url'}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {isGeneratingUrl && shareFormat === 'url' ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      `Share ${shareFormat.toUpperCase()}`
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* DeepSearch Effect - Smart Search con frases futuristas */}
       <DeepSearchEffect
         isVisible={isAIProcessing}
