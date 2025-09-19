@@ -8222,91 +8222,203 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         </DialogContent>
       </Dialog>
 
-      {/* Global Share Options Dialog */}
+      {/* Iron Man Style Holographic Share Interface */}
       {showShareOptions && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Share Estimate</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Holographic Background with Matrix Effect */}
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-md">
+            {/* Digital Grid Pattern */}
+            <div className="absolute inset-0 opacity-10"
+                 style={{
+                   backgroundImage: `
+                     linear-gradient(rgba(0,255,255,0.3) 1px, transparent 1px),
+                     linear-gradient(90deg, rgba(0,255,255,0.3) 1px, transparent 1px)
+                   `,
+                   backgroundSize: '50px 50px'
+                 }}>
+            </div>
+            
+            {/* Floating Particles */}
+            <div className="absolute inset-0">
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 h-1 bg-cyan-400 rounded-full animate-pulse"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 2}s`,
+                    animationDuration: `${2 + Math.random() * 3}s`
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Main Holographic Interface Container */}
+          <div className="relative">
+            {/* Corner Frames - Iron Man Style */}
+            <div className="absolute -top-6 -left-6 w-16 h-16 border-t-4 border-l-4 border-cyan-400 opacity-80"></div>
+            <div className="absolute -top-6 -right-6 w-16 h-16 border-t-4 border-r-4 border-cyan-400 opacity-80"></div>
+            <div className="absolute -bottom-6 -left-6 w-16 h-16 border-b-4 border-l-4 border-cyan-400 opacity-80"></div>
+            <div className="absolute -bottom-6 -right-6 w-16 h-16 border-b-4 border-r-4 border-cyan-400 opacity-80"></div>
+
+            {/* Central Interface Panel */}
+            <div className="relative bg-gradient-to-br from-black/90 via-gray-900/90 to-black/90 
+                            border border-cyan-500/50 rounded-lg p-8 min-w-[400px]
+                            shadow-[0_0_40px_rgba(0,255,255,0.3)] backdrop-blur-xl">
+              
+              {/* Header with Close */}
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></div>
+                  <h3 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                    SHARE PROTOCOL
+                  </h3>
+                  <div className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></div>
+                </div>
+                <button
                   onClick={() => setShowShareOptions(false)}
-                  className="h-6 w-6 p-0"
+                  className="w-8 h-8 flex items-center justify-center border border-red-500/50 
+                           bg-red-900/20 hover:bg-red-500/20 transition-all duration-300 rounded
+                           text-red-400 hover:text-red-300"
                 >
                   <X className="h-4 w-4" />
-                </Button>
+                </button>
               </div>
-              
-              <div className="space-y-4">
-                <p className="text-sm text-gray-600">Choose how you want to share this estimate:</p>
-                
-                {/* Format Selection */}
-                <div className="space-y-3">
-                  <label className="flex items-center space-x-3 cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                    <input
-                      type="radio"
-                      name="shareFormat"
-                      value="pdf"
-                      checked={shareFormat === 'pdf'}
-                      onChange={(e) => setShareFormat(e.target.value as 'pdf' | 'url')}
-                      className="w-4 h-4 text-blue-600"
-                    />
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">PDF Document</div>
-                      <div className="text-xs text-gray-500">Share as downloadable PDF file</div>
-                    </div>
-                  </label>
-                  
-                  <label className="flex items-center space-x-3 cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                    <input
-                      type="radio"
-                      name="shareFormat"
-                      value="url"
-                      checked={shareFormat === 'url'}
-                      onChange={(e) => setShareFormat(e.target.value as 'pdf' | 'url')}
-                      className="w-4 h-4 text-blue-600"
-                    />
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">Shareable Link</div>
-                      <div className="text-xs text-gray-500">Generate a secure URL to share</div>
-                    </div>
-                  </label>
+
+              {/* Holographic Button Options */}
+              <div className="space-y-6">
+                <div className="text-center mb-6">
+                  <p className="text-cyan-300/80 text-sm tracking-wider uppercase">
+                    Select Deployment Method
+                  </p>
                 </div>
 
-                {/* Share Button */}
-                <div className="flex gap-2 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowShareOptions(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={async () => {
-                      await handleUnifiedShare();
-                      setShowShareOptions(false);
-                    }}
-                    disabled={isGeneratingUrl && shareFormat === 'url'}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    {isGeneratingUrl && shareFormat === 'url' ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      `Share ${shareFormat.toUpperCase()}`
-                    )}
-                  </Button>
+                {/* PDF Holographic Button */}
+                <div 
+                  onClick={async () => {
+                    setShareFormat('pdf');
+                    await handleUnifiedShare('pdf');
+                    setShowShareOptions(false);
+                  }}
+                  className="group relative cursor-pointer"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-500/20 
+                                  rounded-lg blur-lg group-hover:blur-xl transition-all duration-300 
+                                  group-hover:from-orange-500/30 group-hover:to-red-500/30"></div>
+                  
+                  <div className="relative bg-gradient-to-r from-gray-900/80 to-black/80 
+                                  border border-orange-500/50 rounded-lg p-6 
+                                  hover:border-orange-400 transition-all duration-300
+                                  hover:shadow-[0_0_30px_rgba(255,165,0,0.4)]
+                                  transform hover:scale-105">
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 
+                                      rounded-lg flex items-center justify-center shadow-lg">
+                        <FileText className="h-6 w-6 text-white" />
+                      </div>
+                      
+                      <div className="flex-1">
+                        <h4 className="text-lg font-bold text-orange-400 mb-1">PDF DOCUMENT</h4>
+                        <p className="text-gray-400 text-sm">Generate portable document file</p>
+                      </div>
+                      
+                      <div className="flex flex-col items-center">
+                        <div className="w-8 h-8 border border-orange-500/50 rounded-full 
+                                        flex items-center justify-center bg-orange-500/10">
+                          <span className="text-orange-400 text-xs font-bold">GO</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Progress Bar Animation */}
+                    <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-orange-500 to-red-500 
+                                    rounded-b-lg transform scale-x-0 group-hover:scale-x-100 
+                                    transition-transform duration-500 origin-left"></div>
+                  </div>
                 </div>
+
+                {/* URL Holographic Button */}
+                <div 
+                  onClick={async () => {
+                    setShareFormat('url');
+                    await handleUnifiedShare('url');
+                    setShowShareOptions(false);
+                  }}
+                  className="group relative cursor-pointer"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 
+                                  rounded-lg blur-lg group-hover:blur-xl transition-all duration-300 
+                                  group-hover:from-cyan-500/30 group-hover:to-blue-500/30"></div>
+                  
+                  <div className="relative bg-gradient-to-r from-gray-900/80 to-black/80 
+                                  border border-cyan-500/50 rounded-lg p-6 
+                                  hover:border-cyan-400 transition-all duration-300
+                                  hover:shadow-[0_0_30px_rgba(0,255,255,0.4)]
+                                  transform hover:scale-105">
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 
+                                      rounded-lg flex items-center justify-center shadow-lg">
+                        <Link className="h-6 w-6 text-white" />
+                      </div>
+                      
+                      <div className="flex-1">
+                        <h4 className="text-lg font-bold text-cyan-400 mb-1">SECURE LINK</h4>
+                        <p className="text-gray-400 text-sm">Generate shareable URL</p>
+                      </div>
+                      
+                      <div className="flex flex-col items-center">
+                        <div className="w-8 h-8 border border-cyan-500/50 rounded-full 
+                                        flex items-center justify-center bg-cyan-500/10">
+                          {isGeneratingUrl ? (
+                            <RefreshCw className="h-4 w-4 text-cyan-400 animate-spin" />
+                          ) : (
+                            <span className="text-cyan-400 text-xs font-bold">GO</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Progress Bar Animation */}
+                    <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-cyan-500 to-blue-500 
+                                    rounded-b-lg transform scale-x-0 group-hover:scale-x-100 
+                                    transition-transform duration-500 origin-left"></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Indicator */}
+              <div className="flex items-center justify-center mt-8 gap-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-green-400 text-xs uppercase tracking-wider">System Ready</span>
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+
+            {/* Scanning Lines Effect */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent 
+                              animate-pulse opacity-30" 
+                   style={{
+                     top: '20%',
+                     animation: 'scan 3s linear infinite'
+                   }}>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      <style jsx>{`
+        @keyframes scan {
+          0% { top: 0%; opacity: 0; }
+          50% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
+      `}</style>
 
       {/* DeepSearch Effect - Smart Search con frases futuristas */}
       <DeepSearchEffect
