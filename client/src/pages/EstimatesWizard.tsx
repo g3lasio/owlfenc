@@ -416,6 +416,12 @@ export default function EstimatesWizardFixed() {
     sendCopy: true,
   });
 
+  // Unified sharing system states
+  const [showShareOptions, setShowShareOptions] = useState(false);
+  const [shareFormat, setShareFormat] = useState<'pdf' | 'url'>('pdf');
+  const [generatedEstimateUrl, setGeneratedEstimateUrl] = useState<string | null>(null);
+  const [isGeneratingUrl, setIsGeneratingUrl] = useState(false);
+
   // Client editing state for preview step
   const [isEditingClient, setIsEditingClient] = useState(false);
 
