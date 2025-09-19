@@ -4295,7 +4295,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
   // Handle PDF sharing using existing download function
   const handlePdfShare = async () => {
     try {
-      // Use the existing handleDownload function logic but for sharing
+      // FIXED: Use exact same logic as handleDownload for consistency
       if (!currentUser?.uid) {
         console.warn("⚠️ [PDF-RESILIENT] No currentUser?.uid detected, attempting PDF generation anyway");
         
@@ -4307,8 +4307,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           });
           return;
         }
+        
+        console.log("✅ [PDF-RESILIENT] Proceeding with PDF generation using profile data");
       }
 
+      // Validar que el perfil del contractor esté completo
       if (!profile?.company) {
         toast({
           title: "❌ Perfil Incompleto",
@@ -4320,66 +4323,116 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       // Auto-detect template based on subscription
       const isPremiumUser = userSubscription?.plan?.id !== 1;
-      const template = isPremiumUser ? selectedTemplate : "basic";
+      console.log("🎨 AUTO TEMPLATE DETECTION:", {
+        planId: userSubscription?.plan?.id,
+        isPremiumUser,
+        willUsePremiumTemplate: isPremiumUser
+      });
 
-      const estimatePayload = {
+      // Create payload in the exact format expected by Puppeteer service - RESILIENT to auth state
+      const payload = {
+        user: currentUser?.uid
+          ? [
+              {
+                uid: currentUser?.uid,
+                email: currentUser.email,
+                displayName: currentUser.displayName,
+              },
+            ]
+          : [
+              {
+                uid: "anonymous-pdf-user",
+                email: profile?.email || "contractor@example.com",
+                displayName: profile?.company || "Anonymous User",
+              },
+            ],
+        client: estimate.client || {},
+        items: estimate.items || [],
+        projectTotalCosts: {
+          subtotal: Number(Number(estimate.subtotal).toFixed(2)) || 0,
+          discount: Number(Number(estimate.discountAmount).toFixed(2)) || 0,
+          taxRate: Number(Number(estimate.taxRate.toFixed(2)).toFixed(2)) || 0,
+          tax: Number(Number(estimate.tax.toFixed(2))) || 0,
+          total: Number(Number(estimate.total.toFixed(2))) || 0,
+        },
+        originalData: {
+          projectDescription: estimate.projectDetails || "",
+        },
+        // Add contractor data from profile - ENHANCED fallback data
         contractor: {
-          company: editableCompanyInfo.company || profile.company,
-          address: editableCompanyInfo.address || profile.address,
-          city: editableCompanyInfo.city || profile.city,
-          state: editableCompanyInfo.state || profile.state,
-          zipCode: editableCompanyInfo.zipCode || profile.zipCode,
-          phone: editableCompanyInfo.phone || profile.phone,
-          email: editableCompanyInfo.email || profile.email,
-          website: editableCompanyInfo.website || profile.website,
-          license: editableCompanyInfo.license || profile.license,
-          logo: editableCompanyInfo.logo || profile.logo,
+          name: profile?.company || profile?.ownerName || "Professional Contractor",
+          company: profile?.company || "Construction Company",
+          address: profile?.address || "Business Address",
+          phone: profile?.phone || "Phone Number",
+          email: profile?.email || currentUser?.email || "contractor@example.com",
+          website: profile?.website || "",
+          logo: profile?.logo || "",
+          license: profile?.license || "",
         },
-        estimate: {
-          client: estimate.client,
-          items: estimate.items,
-          projectDetails: estimate.projectDetails,
-          subtotal: estimate.subtotal,
-          taxRate: estimate.taxRate,
-          tax: estimate.tax,
-          total: estimate.total,
-          discountType: estimate.discountType,
-          discountValue: estimate.discountValue,
-          discountAmount: estimate.discountAmount,
-          discountName: estimate.discountName,
-        },
-        template: template,
+        isMembership: userSubscription?.plan?.id === 1 ? false : true,
+        templateMode: isPremiumUser ? "premium" : "basic", // Auto-detection
       };
 
-      console.log("📄 [PDF-SHARE] Generating PDF for sharing...", { template });
+      console.log("📤 [PDF-SHARE] Sending payload to PDF service:", payload);
 
-      const response = await axios.post("/api/estimate-pdf", estimatePayload, {
-        responseType: "blob",
+      // Use new Puppeteer PDF service (local, no external dependency) - SAME AS handleDownload
+      const response = await axios.post(
+        "/api/estimate-puppeteer-pdf",
+        payload,
+        {
+          responseType: "blob", // Important for PDF download
+        },
+      );
+
+      console.log("📨 [PDF-SHARE] Response received:", {
+        status: response.status,
+        headers: response.headers,
+        dataType: typeof response.data,
+        dataSize: response.data?.size || "unknown",
       });
 
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      const clientName = estimate.client?.name || "Client";
-      const filename = `estimate_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.pdf`;
+      // Validate the blob
+      if (!response.data || response.data.size === 0) {
+        throw new Error("Received empty PDF data from server");
+      }
 
-      // Use mobile sharing utility for PDF
-      await shareOrDownloadPdf(blob, filename, {
-        title: `Estimate - ${clientName}`,
-        text: `Professional estimate for ${clientName}`,
-        clientName: clientName,
+      // Create blob for sharing/downloading
+      const pdfBlob = new Blob([response.data], { type: "application/pdf" });
+      console.log("📄 [PDF-SHARE] Created PDF blob:", {
+        size: pdfBlob.size,
+        type: pdfBlob.type,
       });
 
+      // Generate filename with client name and timestamp
+      const clientName =
+        estimate.client?.name?.replace(/[^a-zA-Z0-9]/g, "_") || "client";
+      const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format
+      const filename = `estimate-${clientName}-${timestamp}.pdf`;
+
+      // Use mobile sharing utility for smart download/share behavior
+      await shareOrDownloadPdf(pdfBlob, filename, {
+        title: `Estimate for ${estimate.client?.name || "Client"}`,
+        text: `Professional estimate from ${profile?.company || "your contractor"}`,
+        clientName: estimate.client?.name,
+        estimateNumber: `EST-${timestamp}`,
+      });
+
+      console.log("📥 [PDF-SHARE] PDF share completed successfully");
+
+      // Get sharing capabilities for toast message
       const capabilities = getSharingCapabilities();
-      const actionText = capabilities.isMobile && capabilities.nativeShareSupported
-        ? "PDF generated and shared successfully"
-        : "PDF downloaded successfully";
+      const actionText =
+        capabilities.isMobile && capabilities.nativeShareSupported
+          ? "PDF generated and ready to share"
+          : "PDF downloaded successfully";
 
       toast({
-        title: "✅ PDF Shared",
+        title: "✅ PDF Generated",
         description: actionText,
       });
 
     } catch (error) {
-      console.error("❌ PDF sharing error:", error);
+      console.error("❌ [PDF-SHARE] PDF sharing error:", error);
       toast({
         title: "❌ Error",
         description: "Could not generate PDF for sharing. Please try again.",
