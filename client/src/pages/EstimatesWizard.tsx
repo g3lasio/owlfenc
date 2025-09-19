@@ -95,6 +95,7 @@ import {
   Palette,
   Lock,
   Crown,
+  Link,
 } from "lucide-react";
 import axios from "axios";
 
