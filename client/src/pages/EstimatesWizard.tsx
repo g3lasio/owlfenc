@@ -7810,7 +7810,7 @@ This link provides a professional view of your estimate that you can access anyt
                                     total: Number(Number((estimate.total || 0).toFixed(2))) || 0,
                                   },
                                   originalData: {
-                                    projectDescription: estimate.projectDetails || "",
+                                    projectDescription: estimate.title || estimate.rawData?.projectDescription || estimate.rawData?.projectDetails?.name || estimate.rawData?.projectName || estimate.rawData?.scope || estimate.rawData?.notes || "",
                                   },
                                   // Add contractor data from profile
                                   contractor: {
