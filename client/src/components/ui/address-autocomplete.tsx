@@ -41,7 +41,9 @@ export function AddressAutocomplete({
     const tokenAvailable = !!token && token.length > 10;
     setHasMapboxToken(tokenAvailable);
     
-    console.log(`📍 [MAPBOX] Token status: ${tokenAvailable ? 'AVAILABLE' : 'MISSING'} (${token?.substring(0, 20)}...)`);  
+    if (import.meta.env.DEV) {
+      console.log(`📍 [MAPBOX] Token status: ${tokenAvailable ? 'AVAILABLE' : 'MISSING'} (${token?.substring(0, 20)}...)`);  
+    }
   }, []);
 
   // Sincronizar valor interno con prop externa
@@ -87,7 +89,7 @@ export function AddressAutocomplete({
             if (data && data.features && Array.isArray(data.features)) {
               // Filtrar y procesar sugerencias
               const processedSuggestions = data.features
-                .filter(feature => feature.place_name && feature.place_name.trim())
+                .filter((feature: any) => feature.place_name && feature.place_name.trim())
                 .slice(0, 5); // Máximo 5 sugerencias
               
               setSuggestions(processedSuggestions);

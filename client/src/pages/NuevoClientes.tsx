@@ -81,6 +81,7 @@ import {
   importClientsFromVcf,
 } from "../lib/clientFirebase";
 import { importClientsFromCsvWithAI } from "../services/clientService";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 
 
 // Interfaces
@@ -105,25 +106,8 @@ interface Client {
   updatedAt: Date;
 }
 
-// Simple Address Input Component (sin Google Maps)
-const AddressInput = ({
-  value,
-  onChange,
-  placeholder,
-}: {
-  value: string | undefined;
-  onChange: (value: string) => void;
-  placeholder: string;
-}) => {
-  return (
-    <Input
-      placeholder={placeholder}
-      value={value || ""}
-      onChange={(e) => onChange(e.target.value)}
-      className="h-11"
-    />
-  );
-};
+// Componente de dirección con autocompletado de Mapbox reemplaza el AddressInput básico
+// El AddressAutocomplete está importado desde @/components/ui/address-autocomplete
 
 // Schemas para la validación de formularios
 const clientFormSchema = z.object({
@@ -1421,8 +1405,8 @@ export default function NuevoClientes() {
                           Street Address
                         </FormLabel>
                         <FormControl>
-                          <AddressInput
-                            value={field.value}
+                          <AddressAutocomplete
+                            value={field.value || ""}
                             onChange={(value) => field.onChange(value)}
                             placeholder="Street address, apartment, suite, etc."
                           />
@@ -1674,8 +1658,8 @@ export default function NuevoClientes() {
                         Dirección
                       </FormLabel>
                       <FormControl>
-                        <AddressInput
-                          value={field.value}
+                        <AddressAutocomplete
+                          value={field.value || ""}
                           onChange={(value) => field.onChange(value)}
                           placeholder="Buscar dirección..."
                         />
