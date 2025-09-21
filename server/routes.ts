@@ -4384,7 +4384,11 @@ Output must be between 200-900 characters in English.`;
         success: true,
         estimateData: data.estimateData,
         createdAt: data.createdAt?.toDate()?.toISOString(),
-        expiresAt: null // ✅ PERMANENT: No expiration date for stable URLs
+        expiresAt: null, // ✅ PERMANENT: No expiration date for stable URLs
+        // ✅ APPROVAL FIELDS: Include approval data if available
+        clientApproved: data.clientApproved || false,
+        approvedAt: data.approvedAt?.toDate()?.toISOString() || null,
+        approvalCount: data.approvalCount || 0
       });
 
     } catch (error) {
@@ -4420,13 +4424,17 @@ Output must be between 200-900 characters in English.`;
       }
 
       // Actualizar el documento con la aprobación
-      await admin.firestore().collection('shared_estimates').doc(shareId).update({
+      const updateData = {
         approvedAt: admin.firestore.FieldValue.serverTimestamp(),
         clientApproved: true,
         approvalCount: admin.firestore.FieldValue.increment(1)
-      });
+      };
       
-      console.log(`✅ [ESTIMATE-APPROVAL] Estimate approved: ${shareId}`);
+      console.log(`📝 [ESTIMATE-APPROVAL] Updating document ${shareId} with:`, updateData);
+      
+      await admin.firestore().collection('shared_estimates').doc(shareId).update(updateData);
+      
+      console.log(`✅ [ESTIMATE-APPROVAL] Estimate approved successfully: ${shareId}`);
       
       res.json({
         success: true,

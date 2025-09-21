@@ -220,6 +220,28 @@ export default function SharedEstimate() {
     });
   };
 
+  // 🛡️ Helper function to safely render address (handle both string and object)
+  const renderAddress = (address: any) => {
+    if (!address) return null;
+    
+    if (typeof address === 'string') {
+      return address;
+    }
+    
+    // Handle address object - concatenate meaningful fields
+    if (typeof address === 'object') {
+      const parts = [];
+      if (address.street) parts.push(address.street);
+      if (address.city) parts.push(address.city);
+      if (address.state) parts.push(address.state);
+      if (address.zipCode || address.zip) parts.push(address.zipCode || address.zip);
+      
+      return parts.join(', ') || JSON.stringify(address);
+    }
+    
+    return String(address);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-blue-900 py-8 relative overflow-hidden">
       {/* ✨ Holographic background effects */}
@@ -371,7 +393,7 @@ export default function SharedEstimate() {
                     {estimateData.client.address && (
                       <div className="flex items-center text-sm text-gray-300 p-2 bg-gray-800/50 rounded-lg border border-gray-600/30">
                         <MapPin className="w-4 h-4 mr-3 text-red-400" />
-                        <span className="tracking-wider">{estimateData.client.address}</span>
+                        <span className="tracking-wider">{renderAddress(estimateData.client.address)}</span>
                       </div>
                     )}
                   </div>
