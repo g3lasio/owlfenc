@@ -120,7 +120,7 @@ export default function SharedEstimate() {
             <div className="absolute inset-4 rounded-full border-2 border-blue-400 animate-ping"></div>
             <Cpu className="absolute inset-6 w-8 h-8 text-yellow-400 animate-pulse" />
           </div>
-          <div className="text-yellow-400 font-bold text-xl tracking-wider mb-2">STARK INDUSTRIES</div>
+          <div className="text-yellow-400 font-bold text-xl tracking-wider mb-2">CHYRRIS TECHNOLOGIES</div>
           <p className="text-gray-300 text-sm tracking-wider">INITIALIZING HOLOGRAPHIC DISPLAY...</p>
           <div className="mt-4 flex justify-center space-x-1">
             <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
@@ -257,7 +257,7 @@ export default function SharedEstimate() {
           {/* 🎆 Holographic container with glowing edges */}
           <div className="absolute -inset-1 bg-gradient-to-r from-yellow-600 via-red-500 to-blue-600 rounded-2xl blur opacity-20 animate-pulse"></div>
           <div className="relative bg-black/80 backdrop-blur-sm border border-yellow-400/30 rounded-2xl overflow-hidden">
-            {/* 🎯 STARK INDUSTRIES Header */}
+            {/* 🎯 CHYRRIS TECHNOLOGIES Header */}
             <div className="relative bg-gradient-to-r from-yellow-600/20 via-red-600/20 to-yellow-600/20 border-b border-yellow-400/30 p-8">
             <div className="flex items-center justify-between">
               <div className="relative">
@@ -265,7 +265,7 @@ export default function SharedEstimate() {
                   <div className="w-8 h-8 bg-yellow-400 rounded-full mr-3 flex items-center justify-center">
                     <Zap className="w-5 h-5 text-black" />
                   </div>
-                  <span className="text-yellow-400 font-bold text-sm tracking-widest">STARK INDUSTRIES</span>
+                  <span className="text-yellow-400 font-bold text-sm tracking-widest">CHYRRIS TECHNOLOGIES</span>
                 </div>
                 <h1 className="text-3xl font-bold text-white mb-1 tracking-wide">HOLOGRAPHIC ESTIMATE</h1>
                 <p className="text-gray-300 text-sm tracking-wider">
@@ -572,16 +572,16 @@ export default function SharedEstimate() {
             </div>
           </div>
 
-          {/* 🏁 Footer - Stark Industries */}
+          {/* 🏁 Footer - Chyrris Technologies */}
           <div className="bg-gradient-to-r from-gray-800/50 via-black/60 to-gray-800/50 border-t border-yellow-400/30 px-8 py-6 text-center">
             <div className="flex items-center justify-center mb-3">
               <div className="w-6 h-6 bg-yellow-400 rounded-full mr-3 flex items-center justify-center">
                 <Zap className="w-4 h-4 text-black" />
               </div>
-              <span className="text-yellow-400 font-bold text-sm tracking-widest">STARK INDUSTRIES</span>
+              <span className="text-yellow-400 font-bold text-sm tracking-widest">CHYRRIS TECHNOLOGIES</span>
             </div>
             <p className="text-gray-300 text-sm tracking-wider mb-2">ADVANCED HOLOGRAPHIC ESTIMATE DISPLAY SYSTEM</p>
-            <p className="text-gray-400 text-xs tracking-wider">Powered by Arc Reactor Technology | Contact contractor to proceed with project</p>
+            <p className="text-gray-400 text-xs tracking-wider">Powered by Mervin AI | Contact contractor to proceed with project</p>
             <div className="mt-4 flex justify-center space-x-4">
               <div className="flex items-center text-xs text-green-400">
                 <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
