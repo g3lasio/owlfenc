@@ -419,8 +419,7 @@ export default function EstimatesWizardFixed() {
     sendCopy: true,
   });
 
-  // Unified sharing system states
-  const [showShareOptions, setShowShareOptions] = useState(false);
+  // ✅ DIRECT URL SHARING: Simplified states, no dropdown needed
   const [generatedEstimateUrl, setGeneratedEstimateUrl] = useState<string | null>(null);
   const [isGeneratingUrl, setIsGeneratingUrl] = useState(false);
 
@@ -445,20 +444,7 @@ export default function EstimatesWizardFixed() {
   // Template selection state
   const [selectedTemplate, setSelectedTemplate] = useState("basic");
 
-  // Close share options when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (showShareOptions && !target.closest('[data-share-dropdown]')) {
-        setShowShareOptions(false);
-      }
-    };
-
-    if (showShareOptions) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showShareOptions]);
+  // ✅ CLICK OUTSIDE HANDLER REMOVED: No longer needed for direct URL sharing
 
   // Initialize editable company info when profile loads
   useEffect(() => {
@@ -6952,7 +6938,7 @@ This link provides a professional view of your estimate that you can access anyt
                       </Button>
 
                       <Button
-                        onClick={() => setShowShareOptions(true)}
+                        onClick={handleUrlShare}
                         disabled={
                           !estimate.client || estimate.items.length === 0
                         }
@@ -8235,91 +8221,7 @@ This link provides a professional view of your estimate that you can access anyt
         </DialogContent>
       </Dialog>
 
-      {/* Compact Professional Share Dialog */}
-      {showShareOptions && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowShareOptions(false)} />
-          
-          <div className="relative bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-xl max-w-sm w-full mx-4">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Share Estimate</h3>
-              <button
-                onClick={() => setShowShareOptions(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                aria-label="Close"
-                data-testid="button-close-share"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Share Options */}
-            <div className="p-4 space-y-3">
-
-              {/* PDF Button */}
-              <button
-                onClick={async () => {
-                  try {
-                    setShareFormat('pdf');
-                    await handleUnifiedShare('pdf');
-                    setShowShareOptions(false);
-                  } catch (error) {
-                    console.error('Error sharing PDF:', error);
-                  }
-                }}
-                className="w-full flex items-center gap-3 p-3 rounded-lg border border-orange-200 dark:border-orange-800 
-                         bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/40 
-                         transition-colors group"
-                data-testid="button-share-pdf"
-              >
-                <div className="flex-shrink-0 w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
-                  <FileText className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-medium text-orange-900 dark:text-orange-100">Download PDF</div>
-                  <div className="text-sm text-orange-700 dark:text-orange-300">Generate document for printing</div>
-                </div>
-                <div className="flex-shrink-0">
-                  <ChevronRight className="h-5 w-5 text-orange-600 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </button>
-
-              {/* URL Button */}
-              <button
-                onClick={async () => {
-                  try {
-                    setShareFormat('url');
-                    await handleUnifiedShare('url');
-                    setShowShareOptions(false);
-                  } catch (error) {
-                    console.error('Error sharing URL:', error);
-                  }
-                }}
-                className="w-full flex items-center gap-3 p-3 rounded-lg border border-blue-200 dark:border-blue-800 
-                         bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 
-                         transition-colors group"
-                data-testid="button-share-url"
-              >
-                <div className="flex-shrink-0 w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                  <Link className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-medium text-blue-900 dark:text-blue-100">Share Link</div>
-                  <div className="text-sm text-blue-700 dark:text-blue-300">Generate shareable web link</div>
-                </div>
-                <div className="flex-shrink-0">
-                  {isGeneratingUrl && shareFormat === 'url' ? (
-                    <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                  ) : (
-                    <ChevronRight className="h-5 w-5 text-blue-600 group-hover:translate-x-1 transition-transform" />
-                  )}
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ✅ SHARE DIALOG COMPLETELY REMOVED: Direct URL sharing via handleUrlShare() */}
 
       <style jsx>{`
         @keyframes scan {
