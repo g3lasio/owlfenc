@@ -131,178 +131,213 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   return <Component />;
 }
 
-function Router() {
 
+// 🔒 ISOLATED PUBLIC ROUTES - No authentication or layout needed
+function PublicOnlyRouter() {
   return (
     <Switch>
-      {/* Rutas públicas */}
-      <Route path="/login" component={() => <AuthPage />} />
-      <Route path="/signup" component={() => <AuthPage />} /> {/* Mantiene la misma ruta pero usa AuthPage */}
-      <Route path="/recuperar-password" component={RecuperarPassword} />
-      <Route path="/forgot-password" component={RecuperarPassword} />
-      <Route path="/reset-password" component={ResetPassword} />
-      <Route path="/login/email-link-callback" component={EmailLinkCallback} />
-      <Route path="/auth-diagnostic" component={AuthDiagnostic} />
-      
-      {/* Public shared estimate routes - no auth required */}
+      {/* Public shared estimate routes - COMPLETELY ISOLATED */}
       <Route path="/estimate/:shareId" component={SharedEstimate} />
       <Route path="/shared-estimate/:shareId" component={SharedEstimate} />
       
-      <Route path="/about-owlfenc" component={AboutOwlFence} />
-      
-      {/* Public signature routes */}
+      {/* Public signature routes - COMPLETELY ISOLATED */}
       <Route path="/sign/:contractId/:party" component={ContractSignature} />
-      <Route path="/about-mervin" component={AboutMervin} />
-      <Route path="/legal-policy" component={LegalPolicy} />
-      <Route path="/privacy-policy" component={PrivacyPolicy} />
-      <Route path="/terms-of-service" component={TermsOfService} />
-
-
-      {/* Rutas protegidas */}
-      <Route path="/" component={() => <ProtectedRoute component={Home} />} />
-      <Route path="/mervin" component={() => <ProtectedRoute component={Mervin} />} />
-      <Route path="/projects">
-        {() => <ProtectedRoute component={Projects} />}
-      </Route>
-      <Route path="/project-payments">
-        {() => <ProtectedRoute component={ProjectPayments} />}
-      </Route>
-      <Route path="/payments">
-        {() => <ProtectedRoute component={ProjectPayments} />}
-      </Route>
-      <Route path="/invoices">
-        {() => <ProtectedRoute component={Invoices} />}
-      </Route>
-
-      <Route path="/clients" component={() => <ProtectedRoute component={NuevoClientes} />} />
-      <Route path="/clientes" component={() => <ProtectedRoute component={Clients} />} />
-      <Route path="/materials">
-        {() => <ProtectedRoute component={Materials} />}
-      </Route>
-      <Route path="/settings">
-        {() => <ProtectedRoute component={Settings} />}
-      </Route>
-      <Route path="/profile">
-        {() => <ProtectedRoute component={Profile} />}
-      </Route>
-      <Route path="/property-verifier">
-        {() => <ProtectedRoute component={PropertyOwnershipVerifier} />}
-      </Route>
-      <Route path="/property-ownership-verifier">
-        {() => <ProtectedRoute component={PropertyOwnershipVerifier} />}
-      </Route>
-      <Route path="/permit-advisor">
-        {() => <ProtectedRoute component={PermitAdvisor} />}
-      </Route>
-      <Route path="/ai-project-manager">
-        {() => <ProtectedRoute component={AIProjectManager} />}
-      </Route>
-      <Route path="/owl-funding">
-        {() => <ProtectedRoute component={OwlFunding} />}
-      </Route>
-      <Route path="/owlfunding">
-        {() => <ProtectedRoute component={OwlFunding} />}
-      </Route>
-      <Route path="/ar-fence-estimator">
-        {() => <ProtectedRoute component={ARFenceEstimator} />}
-      </Route>
-      <Route path="/settings/pricing">
-        {() => <ProtectedRoute component={PricingSettings} />}
-      </Route>
-      <Route path="/subscription">
-        {() => <ProtectedRoute component={Subscription} />}
-      </Route>
-      <Route path="/subscription-test">
-        {() => <ProtectedRoute component={SubscriptionTest} />}
-      </Route>
-
-      <Route path="/billing">
-        {() => <ProtectedRoute component={Billing} />}
-      </Route>
-      <Route path="/history">
-        {() => <ProtectedRoute component={History} />}
-      </Route>
-      <Route path="/security">
-        {() => <ProtectedRoute component={SecuritySettings} />}
-      </Route>
-
-      <Route path="/smart-contract-wizard">
-        {() => <ProtectedRoute component={SmartContractWizard} />}
-      </Route>
-      <Route path="/contract-generator">
-        {() => <ProtectedRoute component={LegalContractEngineFixed} />}
-      </Route>
-      <Route path="/legal-contract-engine">
-        {() => <ProtectedRoute component={LegalContractEngineFixed} />}
-      </Route>
-      <Route path="/legal-defense">
-        {() => <ProtectedRoute component={SimpleContractGenerator} />}
-      </Route>
-      <Route path="/cyberpunk-legal-defense">
-        {() => <ProtectedRoute component={CyberpunkLegalDefense} />}
-      </Route>
-      <Route path="/simple-contracts">
-        {() => <ProtectedRoute component={SimpleContractGenerator} />}
-      </Route>
-      <Route path="/simple-contract-generator">
-        {() => <ProtectedRoute component={SimpleContractGenerator} />}
-      </Route>
-
-      <Route path="/unified-contracts">
-        {() => <ProtectedRoute component={UnifiedContractManager} />}
-      </Route>
-      <Route path="/cyberpunk-contracts">
-        {() => <ProtectedRoute component={CyberpunkContractGenerator} />}
-      </Route>
-      <Route path="/ai-testing">
-        {() => <ProtectedRoute component={AITestingPage} />}
-      </Route>
-      <Route path="/deepsearch-demo">
-        {() => <ProtectedRoute component={DeepSearchDemo} />}
-      </Route>
-      <Route path="/permissions-demo">
-        {() => <ProtectedRoute component={PermissionsDemo} />}
-      </Route>
-      <Route path="/estimates">
-        {() => <ProtectedRoute component={EstimatesWizard} />}
-      </Route>
-      <Route path="/estimates-wizard">
-        {() => <ProtectedRoute component={EstimatesWizard} />}
-      </Route>
-      <Route path="/estimate-generator">
-        {() => <ProtectedRoute component={EstimateGenerator} />}
-      </Route>
-      <Route path="/mis-estimados">
-        {() => <ProtectedRoute component={MisEstimados} />}
-      </Route>
-      <Route path="/estimates-dashboard">
-        {() => <ProtectedRoute component={EstimatesDashboard} />}
-      </Route>
-      <Route path="/estimates-legacy">
-        {() => <ProtectedRoute component={EstimateGenerator} />}
-      </Route>
-
-
-      {/* Página no encontrada */}
-      <Route component={NotFound} />
+      
+      {/* No match for public-only routes */}
+      <Route component={() => null} />
     </Switch>
   );
 }
 
+// 🔐 MAIN APP ROUTER - Requires full app context and layout
+function MainAppRouter() {
+  return (
+    <AuthProvider>
+      <PermissionProvider>
+        <SidebarProvider>
+          <AppLayout>
+            <Switch>
+              {/* Rutas públicas con layout mínimo */}
+              <Route path="/login" component={() => <AuthPage />} />
+              <Route path="/signup" component={() => <AuthPage />} />
+              <Route path="/recuperar-password" component={RecuperarPassword} />
+              <Route path="/forgot-password" component={RecuperarPassword} />
+              <Route path="/reset-password" component={ResetPassword} />
+              <Route path="/login/email-link-callback" component={EmailLinkCallback} />
+              <Route path="/auth-diagnostic" component={AuthDiagnostic} />
+              
+              <Route path="/about-owlfenc" component={AboutOwlFence} />
+              <Route path="/about-mervin" component={AboutMervin} />
+              <Route path="/legal-policy" component={LegalPolicy} />
+              <Route path="/privacy-policy" component={PrivacyPolicy} />
+              <Route path="/terms-of-service" component={TermsOfService} />
+
+              {/* Rutas protegidas */}
+              <Route path="/" component={() => <ProtectedRoute component={Home} />} />
+              <Route path="/mervin" component={() => <ProtectedRoute component={Mervin} />} />
+              <Route path="/projects">
+                {() => <ProtectedRoute component={Projects} />}
+              </Route>
+              <Route path="/project-payments">
+                {() => <ProtectedRoute component={ProjectPayments} />}
+              </Route>
+              <Route path="/payments">
+                {() => <ProtectedRoute component={ProjectPayments} />}
+              </Route>
+              <Route path="/invoices">
+                {() => <ProtectedRoute component={Invoices} />}
+              </Route>
+
+              <Route path="/clients" component={() => <ProtectedRoute component={NuevoClientes} />} />
+              <Route path="/clientes" component={() => <ProtectedRoute component={Clients} />} />
+              <Route path="/materials">
+                {() => <ProtectedRoute component={Materials} />}
+              </Route>
+              <Route path="/settings">
+                {() => <ProtectedRoute component={Settings} />}
+              </Route>
+              <Route path="/profile">
+                {() => <ProtectedRoute component={Profile} />}
+              </Route>
+              <Route path="/property-verifier">
+                {() => <ProtectedRoute component={PropertyOwnershipVerifier} />}
+              </Route>
+              <Route path="/property-ownership-verifier">
+                {() => <ProtectedRoute component={PropertyOwnershipVerifier} />}
+              </Route>
+              <Route path="/permit-advisor">
+                {() => <ProtectedRoute component={PermitAdvisor} />}
+              </Route>
+              <Route path="/ai-project-manager">
+                {() => <ProtectedRoute component={AIProjectManager} />}
+              </Route>
+              <Route path="/owl-funding">
+                {() => <ProtectedRoute component={OwlFunding} />}
+              </Route>
+              <Route path="/owlfunding">
+                {() => <ProtectedRoute component={OwlFunding} />}
+              </Route>
+              <Route path="/ar-fence-estimator">
+                {() => <ProtectedRoute component={ARFenceEstimator} />}
+              </Route>
+              <Route path="/settings/pricing">
+                {() => <ProtectedRoute component={PricingSettings} />}
+              </Route>
+              <Route path="/subscription">
+                {() => <ProtectedRoute component={Subscription} />}
+              </Route>
+              <Route path="/subscription-test">
+                {() => <ProtectedRoute component={SubscriptionTest} />}
+              </Route>
+
+              <Route path="/billing">
+                {() => <ProtectedRoute component={Billing} />}
+              </Route>
+              <Route path="/history">
+                {() => <ProtectedRoute component={History} />}
+              </Route>
+              <Route path="/security">
+                {() => <ProtectedRoute component={SecuritySettings} />}
+              </Route>
+
+              <Route path="/smart-contract-wizard">
+                {() => <ProtectedRoute component={SmartContractWizard} />}
+              </Route>
+              <Route path="/contract-generator">
+                {() => <ProtectedRoute component={LegalContractEngineFixed} />}
+              </Route>
+              <Route path="/legal-contract-engine">
+                {() => <ProtectedRoute component={LegalContractEngineFixed} />}
+              </Route>
+              <Route path="/legal-defense">
+                {() => <ProtectedRoute component={SimpleContractGenerator} />}
+              </Route>
+              <Route path="/cyberpunk-legal-defense">
+                {() => <ProtectedRoute component={CyberpunkLegalDefense} />}
+              </Route>
+              <Route path="/simple-contracts">
+                {() => <ProtectedRoute component={SimpleContractGenerator} />}
+              </Route>
+              <Route path="/simple-contract-generator">
+                {() => <ProtectedRoute component={SimpleContractGenerator} />}
+              </Route>
+
+              <Route path="/unified-contracts">
+                {() => <ProtectedRoute component={UnifiedContractManager} />}
+              </Route>
+              <Route path="/cyberpunk-contracts">
+                {() => <ProtectedRoute component={CyberpunkContractGenerator} />}
+              </Route>
+              <Route path="/ai-testing">
+                {() => <ProtectedRoute component={AITestingPage} />}
+              </Route>
+              <Route path="/deepsearch-demo">
+                {() => <ProtectedRoute component={DeepSearchDemo} />}
+              </Route>
+              <Route path="/permissions-demo">
+                {() => <ProtectedRoute component={PermissionsDemo} />}
+              </Route>
+              <Route path="/estimates">
+                {() => <ProtectedRoute component={EstimatesWizard} />}
+              </Route>
+              <Route path="/estimates-wizard">
+                {() => <ProtectedRoute component={EstimatesWizard} />}
+              </Route>
+              <Route path="/estimate-generator">
+                {() => <ProtectedRoute component={EstimateGenerator} />}
+              </Route>
+              <Route path="/mis-estimados">
+                {() => <ProtectedRoute component={MisEstimados} />}
+              </Route>
+              <Route path="/estimates-dashboard">
+                {() => <ProtectedRoute component={EstimatesDashboard} />}
+              </Route>
+              <Route path="/estimates-legacy">
+                {() => <ProtectedRoute component={EstimateGenerator} />}
+              </Route>
+
+              {/* Página no encontrada */}
+              <Route component={NotFound} />
+            </Switch>
+          </AppLayout>
+          <Toaster />
+        </SidebarProvider>
+      </PermissionProvider>
+    </AuthProvider>
+  );
+}
+
 function App() {
+  // 🔒 CHECK: Is this a public-only route that needs complete isolation?
+  // Using window.location.pathname since useLocation requires Router context
+  const currentPath = window.location.pathname;
+  const isIsolatedPublicRoute = 
+    currentPath.startsWith('/estimate/') ||
+    currentPath.startsWith('/shared-estimate/') ||
+    currentPath.startsWith('/sign/');
+
+  // 🔍 DEBUG: Log routing decision (remove in production)
+  console.log('🔒 [ROUTING-DECISION]', {
+    currentPath,
+    isIsolatedPublicRoute,
+    decision: isIsolatedPublicRoute ? 'ISOLATED_PUBLIC' : 'FULL_APP'
+  });
+
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
-        <AuthProvider>
-          <PermissionProvider>
-            <SidebarProvider>
-              <AppLayout>
-                <Router />
-              </AppLayout>
-              <Toaster />
-            </SidebarProvider>
-          </PermissionProvider>
-        </AuthProvider>
+        {isIsolatedPublicRoute ? (
+          // 🔒 ISOLATED: Render public routes without any app context
+          <div className="isolated-public-app">
+            <PublicOnlyRouter />
+            <Toaster />
+          </div>
+        ) : (
+          // 🔐 FULL APP: Render main app with full context and layout  
+          <div className="full-authenticated-app">
+            <MainAppRouter />
+          </div>
+        )}
       </LanguageProvider>
     </QueryClientProvider>
   );
