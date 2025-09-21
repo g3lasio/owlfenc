@@ -5906,18 +5906,23 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
                     </div>
                   ))}
 
-                  {/* CHAT IA REFINEMENT BUTTON */}
+                  {/* CHAT IA REFINEMENT BUTTON - HOLOGRAPHIC COMPACT */}
                   {estimate.items.length > 0 && (
-                    <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 border border-purple-200 mb-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-purple-100 rounded-lg">
-                            <Brain className="h-5 w-5 text-purple-600" />
+                    <div className="relative bg-gradient-to-r from-gray-900/80 via-cyan-900/20 to-gray-900/80 rounded-lg p-2 border border-cyan-400/30 mb-4 backdrop-blur-sm shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20 transition-all duration-300">
+                      {/* Holographic border effects */}
+                      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-cyan-400/10 to-transparent animate-pulse"></div>
+                      <div className="absolute top-0 left-4 w-8 h-px bg-cyan-400/50"></div>
+                      <div className="absolute bottom-0 right-4 w-8 h-px bg-cyan-400/50"></div>
+                      
+                      <div className="relative flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1 bg-cyan-400/10 rounded border border-cyan-400/30">
+                            <Brain className="h-3 w-3 text-cyan-400" />
                           </div>
                           <div>
-                            <h4 className="font-medium text-purple-800">Refinar Lista con IA</h4>
-                            <p className="text-sm text-purple-600">
-                              Ajusta cantidades, precios y materiales mediante chat inteligente
+                            <h4 className="text-xs font-medium text-cyan-300 leading-tight">Refinar con IA</h4>
+                            <p className="text-xs text-cyan-400/70 leading-tight">
+                              Ajusta mediante chat inteligente
                             </p>
                           </div>
                         </div>
