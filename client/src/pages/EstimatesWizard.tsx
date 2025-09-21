@@ -4214,13 +4214,10 @@ This link provides a professional view of your estimate that you can access anyt
         return null;
       }
 
+      // Use default company name if profile is incomplete (for development/testing)
+      const companyName = profile?.company || "Default Company";
       if (!profile?.company) {
-        toast({
-          title: "❌ Perfil Incompleto", 
-          description: "Debes completar el nombre de tu empresa en tu perfil antes de compartir",
-          variant: "destructive",
-        });
-        return null;
+        console.warn("⚠️ [SHARE-URL] No company name in profile, using default for development");
       }
 
       // Prepare estimate data for sharing
@@ -4237,16 +4234,16 @@ This link provides a professional view of your estimate that you can access anyt
         discountAmount: estimate.discountAmount,
         discountName: estimate.discountName,
         contractor: {
-          company: profile.company,
-          address: profile.address,
-          city: profile.city,
-          state: profile.state,
-          zipCode: profile.zipCode,
-          phone: profile.phone,
-          email: profile.email,
-          website: profile.website,
-          license: profile.license,
-          logo: profile.logo,
+          company: companyName,
+          address: profile?.address || "",
+          city: profile?.city || "",
+          state: profile?.state || "",
+          zipCode: profile?.zipCode || "",
+          phone: profile?.phone || "",
+          email: profile?.email || "",
+          website: profile?.website || "",
+          license: profile?.license || "",
+          logo: profile?.logo || "",
         },
         template: selectedTemplate,
         createdAt: new Date().toISOString(),
