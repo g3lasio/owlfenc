@@ -4396,6 +4396,52 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
+  // ✅ APPROVE ESTIMATE: Handle client approval
+  app.post("/api/estimates/shared/:shareId/approve", async (req: Request, res: Response) => {
+    try {
+      const { shareId } = req.params;
+      console.log(`✅ [ESTIMATE-APPROVAL] Processing approval for: ${shareId}`);
+
+      if (!shareId || typeof shareId !== 'string' || shareId.length !== 64) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid share ID"
+        });
+      }
+
+      // Verificar que el estimado existe
+      const doc = await admin.firestore().collection('shared_estimates').doc(shareId).get();
+      
+      if (!doc.exists) {
+        return res.status(404).json({
+          success: false,
+          error: "Shared estimate not found"
+        });
+      }
+
+      // Actualizar el documento con la aprobación
+      await admin.firestore().collection('shared_estimates').doc(shareId).update({
+        approvedAt: admin.firestore.FieldValue.serverTimestamp(),
+        clientApproved: true,
+        approvalCount: admin.firestore.FieldValue.increment(1)
+      });
+      
+      console.log(`✅ [ESTIMATE-APPROVAL] Estimate approved: ${shareId}`);
+      
+      res.json({
+        success: true,
+        message: "Estimate approved successfully"
+      });
+
+    } catch (error) {
+      console.error("❌ [ESTIMATE-APPROVAL] Error approving estimate:", error);
+      res.status(500).json({
+        success: false,
+        error: "Server error"
+      });
+    }
+  });
+
   // *** SUBSCRIPTION ROUTES ***
   app.get("/api/subscription/plans", async (req: Request, res: Response) => {
     try {

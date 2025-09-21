@@ -235,8 +235,8 @@ export default function SharedEstimate() {
           {/* 🎆 Holographic container with glowing edges */}
           <div className="absolute -inset-1 bg-gradient-to-r from-yellow-600 via-red-500 to-blue-600 rounded-2xl blur opacity-20 animate-pulse"></div>
           <div className="relative bg-black/80 backdrop-blur-sm border border-yellow-400/30 rounded-2xl overflow-hidden">
-          {/* 🎯 STARK INDUSTRIES Header */}
-          <div className="relative bg-gradient-to-r from-yellow-600/20 via-red-600/20 to-yellow-600/20 border-b border-yellow-400/30 p-8">
+            {/* 🎯 STARK INDUSTRIES Header */}
+            <div className="relative bg-gradient-to-r from-yellow-600/20 via-red-600/20 to-yellow-600/20 border-b border-yellow-400/30 p-8">
             <div className="flex items-center justify-between">
               <div className="relative">
                 <div className="flex items-center mb-2">
@@ -276,7 +276,7 @@ export default function SharedEstimate() {
             <div className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-transparent via-yellow-400 to-transparent w-full animate-pulse"></div>
           </div>
 
-          <div className="p-8 space-y-8">
+            <div className="p-8 space-y-8">
             {/* 🏢 Contractor Information - Holographic Panel */}
             <div className="relative">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl blur opacity-20"></div>
@@ -574,6 +574,7 @@ export default function SharedEstimate() {
                 <span>VERIFIED</span>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>
