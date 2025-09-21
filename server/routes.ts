@@ -4173,12 +4173,8 @@ Output must be between 200-900 characters in English.`;
       console.log("🔗 [ESTIMATE-SHARE] Creating shareable link for estimate...");
 
       // Get Firebase user from token
-      console.log("🔍 [SERVER-TOKEN-DEBUG] Authorization header:", req.headers.authorization ? "✅ Present" : "❌ Missing");
-      
       const authHeader = req.headers.authorization;
       if (!authHeader?.startsWith('Bearer ')) {
-        console.error("🔍 [SERVER-TOKEN-DEBUG] ERROR: No Bearer token in Authorization header");
-        console.error("🔍 [SERVER-TOKEN-DEBUG] Received header:", authHeader);
         return res.status(401).json({
           success: false,
           error: "Authorization token required"
@@ -4186,20 +4182,11 @@ Output must be between 200-900 characters in English.`;
       }
 
       const token = authHeader.substring(7);
-      console.log("🔍 [SERVER-TOKEN-DEBUG] Token extracted from header:");
-      console.log("🔍 [SERVER-TOKEN-DEBUG] Token length:", token.length);
-      console.log("🔍 [SERVER-TOKEN-DEBUG] Token first 100 chars:", token.substring(0, 100));
-      console.log("🔍 [SERVER-TOKEN-DEBUG] Token last 50 chars:", token.slice(-50));
-      
       let decodedToken;
       try {
-        console.log("🔍 [SERVER-TOKEN-DEBUG] Attempting to verify token with Firebase Admin...");
         decodedToken = await admin.auth().verifyIdToken(token);
-        console.log("✅ [SERVER-TOKEN-DEBUG] Token verified successfully, UID:", decodedToken.uid);
       } catch (error) {
         console.error("❌ [ESTIMATE-SHARE] Invalid token:", error);
-        console.error("🔍 [SERVER-TOKEN-DEBUG] Token verification failed:");
-        console.error("🔍 [SERVER-TOKEN-DEBUG] Error details:", error);
         return res.status(401).json({
           success: false,
           error: "Invalid authorization token"

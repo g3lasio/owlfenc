@@ -86,19 +86,10 @@ class RobustAuthManager {
           console.debug('🔧 [ROBUST-AUTH] Error obteniendo token real, usando fallback');
         }
         
-        // FALLBACK para usuario específico con problemas: usar bypass
-        if (user.uid === 'qztot1YEy3UWz605gIH2iwwWhW53') {
-          const bypassToken = `bypass_${user.uid}`;
-          console.log('🔧 [ROBUST-AUTH] Usando bypass temporal para debugging');
-          await this.updateSession(user, bypassToken);
-          return bypassToken;
-        }
-        
-        // FALLBACK para otros usuarios: token local válido
-        const localToken = `local_token_${user.uid}_${Date.now()}`;
-        console.log('✅ [ROBUST-AUTH] Token local generado (sin red)');
-        await this.updateSession(user, localToken);
-        return localToken;
+        // ✅ FIXED: No more fake tokens - return empty string for degraded mode
+        console.log('⚠️ [ROBUST-AUTH] Cannot obtain real Firebase token - entering degraded mode');
+        // Return empty string to indicate authentication failure
+        // Calling code should handle this gracefully and show appropriate UI
       }
     } catch (error: any) {
       // Silenciar completamente

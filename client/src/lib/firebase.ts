@@ -104,7 +104,7 @@ export const createDevUser = () => {
     photoURL: null,
     phoneNumber: null,
     emailVerified: true,
-    getIdToken: () => Promise.resolve("dev-token-123"),
+    getIdToken: () => Promise.reject(new Error("Dev mode - use real Firebase for server authentication")),
     toJSON: () => ({
       uid: null, // Requiere autenticación real
       email: "dev@example.com",

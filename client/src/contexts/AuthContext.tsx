@@ -227,12 +227,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
               emailVerified: user.emailVerified,
               getIdToken: async () => {
                 try {
-                  // ARREGLADO: Usar token real de Firebase
+                  // ✅ FIXED: Usar token real de Firebase
                   return await user.getIdToken();
                 } catch (error) {
                   console.error("❌ Error obteniendo token Firebase:", error);
-                  // Fallback para problemas de conectividad: usar token temporal pero válido
-                  return `firebase_${user.uid}_${Date.now()}`;
+                  // ✅ FIXED: Retry con force refresh, luego re-throw error si falla
+                  try {
+                    console.log("🔄 Intentando refresh forzado del token...");
+                    return await user.getIdToken(true); // Force refresh
+                  } catch (retryError) {
+                    console.error("❌ Error en retry del token Firebase:", retryError);
+                    throw retryError; // Re-throw para manejo apropiado upstream
+                  }
                 }
               },
             };
@@ -305,8 +311,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
           emailVerified: user.emailVerified,
           getIdToken: async () => {
             try {
-              // Para usuarios OTP, usar un token especial
-              return `otp_${user.uid}_${Date.now()}`;
+              // ✅ FIXED: Para usuarios OTP, usar token JWT real de Firebase
+              const firebaseUser = auth.currentUser;
+              if (firebaseUser) {
+                return await firebaseUser.getIdToken();
+              }
+              throw new Error('No authenticated Firebase user found');
             } catch (error) {
               console.error("❌ Error obteniendo token OTP:", error);
               throw error;
@@ -357,8 +367,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         phoneNumber: (user as any).phoneNumber || null,
         emailVerified: (user as any).emailVerified || false,
         getIdToken: async () => {
-          // SOLUCIÓN DEFINITIVA: No hacer fetch, retornar token local
-          return `local_${user.uid}_${Date.now()}`;
+          try {
+            // ✅ FIXED: Usar token JWT real de Firebase
+            const firebaseUser = auth.currentUser;
+            if (firebaseUser) {
+              return await firebaseUser.getIdToken();
+            }
+            throw new Error('No authenticated Firebase user found');
+          } catch (error) {
+            console.error("❌ Error obteniendo token Firebase:", error);
+            throw error; // Re-throw para manejo apropiado upstream
+          }
         },
       };
 
@@ -418,8 +437,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         phoneNumber: user.phoneNumber || null,
         emailVerified: user.emailVerified || false,
         getIdToken: async () => {
-          // SOLUCIÓN DEFINITIVA: No hacer fetch, retornar token local
-          return `local_${user.uid}_${Date.now()}`;
+          try {
+            // ✅ FIXED: Usar token JWT real de Firebase
+            const firebaseUser = auth.currentUser;
+            if (firebaseUser) {
+              return await firebaseUser.getIdToken();
+            }
+            throw new Error('No authenticated Firebase user found');
+          } catch (error) {
+            console.error("❌ Error obteniendo token Firebase:", error);
+            throw error; // Re-throw para manejo apropiado upstream
+          }
         },
       };
 
