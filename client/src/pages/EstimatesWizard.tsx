@@ -4251,8 +4251,15 @@ This link provides a professional view of your estimate that you can access anyt
       }
 
       // Get auth token for API call
+      console.log("🔍 [TOKEN-DEBUG] Getting Firebase token...");
       const token = await currentUser.getIdToken();
+      console.log("🔍 [TOKEN-DEBUG] Token received:", token ? "✅ Token exists" : "❌ No token");
+      console.log("🔍 [TOKEN-DEBUG] Token length:", token?.length);
+      console.log("🔍 [TOKEN-DEBUG] Token first 100 chars:", token?.substring(0, 100));
+      console.log("🔍 [TOKEN-DEBUG] Token last 50 chars:", token?.slice(-50));
+      
       if (!token) {
+        console.error("🔍 [TOKEN-DEBUG] ERROR: No token obtained from currentUser.getIdToken()");
         toast({
           title: "❌ Error de Autenticación",
           description: "No se pudo obtener token de autenticación. Intenta cerrar sesión e iniciar nuevamente.",
