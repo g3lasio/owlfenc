@@ -4187,10 +4187,11 @@ This link provides a professional view of your estimate that you can access anyt
     }
   };
 
-  // Function to generate shareable URL for estimate
+  // ✅ SIMPLE PUBLIC URL SHARING (NO AUTH REQUIRED) 
   const generateEstimateUrl = async (): Promise<string | null> => {
     try {
       setIsGeneratingUrl(true);
+      console.log('🚀 [SIMPLE-SHARE] Creating public shareable URL...');
       
       // Validate required data
       if (!estimate.client) {
@@ -4240,51 +4241,37 @@ This link provides a professional view of your estimate that you can access anyt
         createdAt: new Date().toISOString(),
       };
 
-      // Check if user is authenticated
-      if (!currentUser) {
-        toast({
-          title: "🔐 Autenticación Requerida",
-          description: "Debes iniciar sesión para compartir estimados. La funcionalidad de compartir requiere autenticación para generar enlaces seguros.",
-          variant: "destructive",
-        });
-        return null;
-      }
-
-      // Get auth token for API call
-      const token = await currentUser.getIdToken();
-      if (!token) {
-        toast({
-          title: "❌ Error de Autenticación",
-          description: "No se pudo obtener token de autenticación. Intenta cerrar sesión e iniciar nuevamente.",
-          variant: "destructive",
-        });
-        return null;
-      }
-
-      // Send estimate data to backend to create shareable link
-      const response = await fetch('/api/estimates/create-share-link', {
+      // ✅ SIMPLE: Call public endpoint (NO AUTH REQUIRED)
+      const response = await fetch('/api/share-estimate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          // NO Authorization header needed!
         },
-        body: JSON.stringify(shareableEstimate),
+        body: JSON.stringify({
+          estimateData: shareableEstimate,
+        }),
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ [SIMPLE-SHARE] Server error:', errorText);
         throw new Error('Failed to create shareable link');
       }
 
       const result = await response.json();
-      const shareUrl = `${window.location.origin}/estimate/${result.shareId}`;
       
-      setGeneratedEstimateUrl(shareUrl);
-      console.log('✅ Shareable URL generated:', shareUrl);
+      if (!result.success || !result.shareUrl) {
+        throw new Error('Invalid server response');
+      }
+
+      setGeneratedEstimateUrl(result.shareUrl);
+      console.log('✅ [SIMPLE-SHARE] Public shareable URL created:', result.shareUrl);
       
-      return shareUrl;
+      return result.shareUrl;
       
     } catch (error) {
-      console.error('❌ Error generating shareable URL:', error);
+      console.error('❌ [SIMPLE-SHARE] Error generating public shareable URL:', error);
       toast({
         title: "❌ Error",
         description: "No se pudo crear el enlace para compartir. Intenta nuevamente.",

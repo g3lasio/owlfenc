@@ -163,6 +163,12 @@ export interface IStorage {
   updateEstimateTemplate(id: number, template: Partial<EstimateTemplate>): Promise<EstimateTemplate>;
   deleteEstimateTemplate(id: number): Promise<boolean>;
   
+  // ===== PUBLIC SHARING SYSTEM =====
+  
+  // Shared Estimates methods (no auth required)
+  saveSharedEstimate(sharedData: { shareId: string, data: any, createdAt: string, expiresAt: null }): Promise<boolean>;
+  getSharedEstimate(shareId: string): Promise<any>;
+  
   // Sistema de salud
   healthCheck(): Promise<boolean>;
 }

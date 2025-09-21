@@ -4284,6 +4284,58 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
+  // =====================================
+  // 🔗 SIMPLE PUBLIC URL SHARING (NO AUTH)
+  // =====================================
+  
+  app.post("/api/share-estimate", async (req: Request, res: Response) => {
+    try {
+      console.log('📤 [SHARE-ESTIMATE] Creating shareable URL...');
+      
+      // Generar shareId único
+      const shareId = crypto.randomBytes(32).toString('hex');
+      console.log(`🆔 [SHARE-ESTIMATE] Generated shareId: ${shareId}`);
+      
+      // Obtener datos del estimado
+      const { estimateData } = req.body;
+      
+      if (!estimateData) {
+        console.error('❌ [SHARE-ESTIMATE] No estimate data provided');
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Estimate data required' 
+        });
+      }
+      
+      // ✅ SIMPLE: Guardar directamente en Firebase usando admin SDK
+      await admin.firestore().collection('shared_estimates').doc(shareId).set({
+        estimateData,
+        shareId,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        accessCount: 0,
+        isActive: true
+      });
+      
+      // Generar URL completa
+      const shareUrl = `${getDynamicUrl()}/shared-estimate/${shareId}`;
+      
+      console.log(`✅ [SHARE-ESTIMATE] Shareable URL created: ${shareUrl}`);
+      
+      res.json({
+        success: true,
+        shareUrl,
+        shareId
+      });
+      
+    } catch (error: any) {
+      console.error('❌ [SHARE-ESTIMATE] Error creating shareable URL:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to create shareable URL' 
+      });
+    }
+  });
+
   // *** ESTIMATE SHARE VIEW ROUTE ***
   app.get("/api/estimates/shared/:shareId", async (req: Request, res: Response) => {
     try {

@@ -144,8 +144,9 @@ function Router() {
       <Route path="/login/email-link-callback" component={EmailLinkCallback} />
       <Route path="/auth-diagnostic" component={AuthDiagnostic} />
       
-      {/* Public shared estimate route - no auth required */}
+      {/* Public shared estimate routes - no auth required */}
       <Route path="/estimate/:shareId" component={SharedEstimate} />
+      <Route path="/shared-estimate/:shareId" component={SharedEstimate} />
       
       <Route path="/about-owlfenc" component={AboutOwlFence} />
       
