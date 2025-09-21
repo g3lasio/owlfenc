@@ -557,6 +557,86 @@ export default function SharedEstimate() {
                 </div>
               </div>
             </div>
+
+            {/* 📋 Terms & Conditions - Holographic Legal Framework */}
+            <div className="relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 rounded-2xl blur opacity-30 animate-pulse"></div>
+              <div className="relative bg-gray-900/80 backdrop-blur-sm border border-blue-400/40 rounded-2xl p-8">
+                <div className="flex items-center mb-6">
+                  <div className="w-10 h-10 bg-blue-500/20 rounded-xl mr-4 flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-blue-400 animate-pulse" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white tracking-wide">TERMS & CONDITIONS</h2>
+                  <div className="ml-auto">
+                    <div className="grid grid-cols-4 gap-1">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                      <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0.6s' }}></div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4 text-gray-300">
+                  <div className="p-4 bg-gray-800/50 border border-gray-600/30 rounded-lg">
+                    <span className="text-blue-400 font-bold tracking-wider">Payment:</span>
+                    <span className="ml-2 tracking-wide">50% upfront deposit, with the remaining balance due upon project completion and client approval.</span>
+                  </div>
+                  <div className="p-4 bg-gray-800/50 border border-gray-600/30 rounded-lg">
+                    <span className="text-blue-400 font-bold tracking-wider">Scope:</span>
+                    <span className="ml-2 tracking-wide">Work is limited to the items specifically listed in this estimate. Any additional work, permits, hidden conditions, or services not explicitly described are excluded.</span>
+                  </div>
+                  <div className="p-4 bg-gray-800/50 border border-gray-600/30 rounded-lg">
+                    <span className="text-blue-400 font-bold tracking-wider">Change Orders:</span>
+                    <span className="ml-2 tracking-wide">Any modification or additional work must be authorized in writing and may result in changes to cost and completion time.</span>
+                  </div>
+                  <div className="p-4 bg-gray-800/50 border border-gray-600/30 rounded-lg">
+                    <span className="text-blue-400 font-bold tracking-wider">Schedule:</span>
+                    <span className="ml-2 tracking-wide">A detailed project schedule will be provided in the formal contract once the estimate has been approved by the client.</span>
+                  </div>
+                  <div className="p-4 bg-gray-800/50 border border-gray-600/30 rounded-lg">
+                    <span className="text-blue-400 font-bold tracking-wider">Price Validity:</span>
+                    <span className="ml-2 tracking-wide">This estimate is valid for 30 days from the date of issuance.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ⚖️ Warranty - Holographic Protection Matrix */}
+            <div className="relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-cyan-600 to-purple-600 rounded-2xl blur opacity-30 animate-pulse"></div>
+              <div className="relative bg-gray-900/80 backdrop-blur-sm border border-purple-400/40 rounded-2xl p-8">
+                <div className="flex items-center mb-6">
+                  <div className="w-10 h-10 bg-purple-500/20 rounded-xl mr-4 flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-purple-400 animate-pulse" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white tracking-wide">WARRANTY</h2>
+                  <div className="ml-auto">
+                    <div className="grid grid-cols-4 gap-1">
+                      <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                      <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                      <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" style={{ animationDelay: '0.6s' }}></div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4 text-gray-300">
+                  <div className="p-4 bg-gray-800/50 border border-gray-600/30 rounded-lg">
+                    <span className="text-purple-400 font-bold tracking-wider">Workmanship:</span>
+                    <span className="ml-2 tracking-wide">1-year warranty against defects in installation or workmanship from the date of substantial completion.</span>
+                  </div>
+                  <div className="p-4 bg-gray-800/50 border border-gray-600/30 rounded-lg">
+                    <span className="text-purple-400 font-bold tracking-wider">Materials:</span>
+                    <span className="ml-2 tracking-wide">Covered by the manufacturer's limited warranty where applicable.</span>
+                  </div>
+                  <div className="p-4 bg-gray-800/50 border border-gray-600/30 rounded-lg">
+                    <span className="text-purple-400 font-bold tracking-wider">Exclusions:</span>
+                    <span className="ml-2 tracking-wide">This warranty does not cover misuse, alterations by third parties, damage from natural disasters (force majeure), or lack of proper maintenance.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
             
             {/* ✅ APPROVE ESTIMATE Button - Holographic Action Panel */}
             <div className="relative">
