@@ -78,7 +78,7 @@ export default function SharedEstimate() {
           if (response.status === 404) {
             setError("This estimate link was not found.");
           } else if (response.status === 410) {
-            setError("This estimate link has expired.");
+            setError("This estimate link has been deactivated.");
           } else {
             setError(data.error || "Failed to load estimate");
           }
@@ -169,12 +169,7 @@ export default function SharedEstimate() {
                   Created on {formatDate(estimateData.createdAt)}
                 </p>
               </div>
-              {expiresAt && (
-                <Badge variant="secondary" className="bg-blue-500 text-white">
-                  <Clock className="w-4 h-4 mr-1" />
-                  Expires {formatDate(expiresAt)}
-                </Badge>
-              )}
+              {/* ✅ PERMANENT URLS: No expiry badge for permanent links */}
             </div>
           </div>
 
@@ -349,7 +344,7 @@ export default function SharedEstimate() {
 
           {/* Footer */}
           <div className="bg-gray-50 px-6 py-4 text-center text-sm text-gray-600">
-            <p>This estimate is valid for a limited time. Please contact us to proceed with your project.</p>
+            <p>This is your professional estimate. Please contact us to proceed with your project.</p>
           </div>
         </div>
       </div>

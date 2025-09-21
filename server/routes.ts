@@ -4231,7 +4231,8 @@ Output must be between 200-900 characters in English.`;
 
       // Generate secure share ID using crypto
       const shareId = crypto.randomBytes(32).toString('hex');
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+      // ✅ PERMANENT URLS: No expiration - URLs are permanent and stable as requested
+      const expiresAt = null;
 
       // Store estimate data with share ID in Firebase
       try {
@@ -4243,7 +4244,7 @@ Output must be between 200-900 characters in English.`;
           userId: decodedToken.uid,
           estimateData: estimateData,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
+          expiresAt: null, // ✅ PERMANENT: No expiration date for stable URLs
           accessCount: 0,
           isActive: true
         });
@@ -4253,8 +4254,8 @@ Output must be between 200-900 characters in English.`;
         res.json({
           success: true,
           shareId: shareId,
-          expiresAt: expiresAt.toISOString(),
-          message: "Shareable link created successfully"
+          expiresAt: null, // ✅ PERMANENT: No expiration for stable URLs
+          message: "Permanent shareable link created successfully"
         });
 
       } catch (dbError) {
@@ -4311,11 +4312,11 @@ Output must be between 200-900 characters in English.`;
 
       const data = doc.data();
       
-      // Check if link is still valid
-      if (!data?.isActive || (data.expiresAt && data.expiresAt.toDate() < new Date())) {
+      // Check if link is still active (permanent URLs - no expiry check)
+      if (!data?.isActive) {
         return res.status(410).json({
           success: false,
-          error: "Shared estimate has expired"
+          error: "Shared estimate has been deactivated"
         });
       }
 
@@ -4331,7 +4332,7 @@ Output must be between 200-900 characters in English.`;
         success: true,
         estimateData: data.estimateData,
         createdAt: data.createdAt?.toDate()?.toISOString(),
-        expiresAt: data.expiresAt?.toDate()?.toISOString()
+        expiresAt: null // ✅ PERMANENT: No expiration date for stable URLs
       });
 
     } catch (error) {
