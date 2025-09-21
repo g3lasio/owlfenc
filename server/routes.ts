@@ -4380,9 +4380,23 @@ Output must be between 200-900 characters in English.`;
 
       console.log(`✅ [ESTIMATE-VIEW] Served shared estimate: ${shareId}`);
       
+      // ✅ FIX UNIT PRICE: Convert price fields to unitPrice for frontend compatibility
+      const processedEstimateData = {
+        ...data.estimateData,
+        items: data.estimateData.items?.map((item: any) => ({
+          ...item,
+          // Convert price to unitPrice if needed
+          unitPrice: item.unitPrice || item.price || 0,
+          // Ensure total is available
+          total: item.total || item.totalPrice || (item.quantity * (item.unitPrice || item.price || 0))
+        })) || []
+      };
+
+      console.log(`🔍 [UNIT-PRICE-FIX] Processed ${processedEstimateData.items.length} items for shareId: ${shareId}`);
+
       res.json({
         success: true,
-        estimateData: data.estimateData,
+        estimateData: processedEstimateData,
         createdAt: data.createdAt?.toDate()?.toISOString(),
         expiresAt: null, // ✅ PERMANENT: No expiration date for stable URLs
         // ✅ APPROVAL FIELDS: Include approval data if available
