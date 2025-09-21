@@ -8104,98 +8104,25 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               Close Preview
             </Button>
             <div className="flex gap-2 justify-end relative">
-              {/* Unified Share Button */}
-              <div className="relative" data-share-dropdown>
-                <Button
-                  onClick={() => setShowShareOptions(!showShareOptions)}
-                  disabled={!estimate.client || estimate.items.length === 0}
-                  className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
-                  data-testid="button-share"
-                >
-                  <Share2 className="h-4 w-4" />
-                  Share
-                  <ChevronDown className="h-3 w-3" />
-                </Button>
-
-                {/* Share Options Dropdown */}
-                {showShareOptions && (
-                  <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                    <div className="p-3">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Choose sharing format</h3>
-                      
-                      {/* Format Selection */}
-                      <div className="space-y-2 mb-4">
-                        <label className="flex items-center space-x-3 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="shareFormat"
-                            value="pdf"
-                            checked={shareFormat === 'pdf'}
-                            onChange={(e) => setShareFormat(e.target.value as 'pdf' | 'url')}
-                            className="w-4 h-4 text-blue-600"
-                            data-testid="radio-format-pdf"
-                          />
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">PDF Document</div>
-                            <div className="text-xs text-gray-500">Share as downloadable PDF file</div>
-                          </div>
-                        </label>
-                        
-                        <label className="flex items-center space-x-3 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="shareFormat"
-                            value="url"
-                            checked={shareFormat === 'url'}
-                            onChange={(e) => setShareFormat(e.target.value as 'pdf' | 'url')}
-                            className="w-4 h-4 text-blue-600"
-                            data-testid="radio-format-url"
-                          />
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">Web Link</div>
-                            <div className="text-xs text-gray-500">Share as viewable web link</div>
-                          </div>
-                        </label>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setShowShareOptions(false)}
-                          className="flex-1"
-                          data-testid="button-cancel-share"
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleUnifiedShare()}
-                          disabled={isGeneratingUrl && shareFormat === 'url'}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                          data-testid="button-confirm-share"
-                        >
-                          {isGeneratingUrl && shareFormat === 'url' ? (
-                            "Generating..."
-                          ) : (
-                            `Share ${shareFormat.toUpperCase()}`
-                          )}
-                        </Button>
-                      </div>
-
-                      {/* Mobile sharing capabilities info */}
-                      {sharingCapabilities.isMobile && (
-                        <div className="mt-3 text-xs text-gray-500 bg-blue-50 p-2 rounded">
-                          📱 {sharingCapabilities.nativeShareSupported 
-                            ? "Ready to share to any app on your device" 
-                            : "Will copy to clipboard for sharing"}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+              {/* Share URL Button - Direct URL Generation */}
+              <Button
+                onClick={handleUrlShare}
+                disabled={!estimate.client || estimate.items.length === 0 || isGeneratingUrl}
+                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 min-w-[120px]"
+                data-testid="button-share-url"
+              >
+                {isGeneratingUrl ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="h-4 w-4" />
+                    Share Link
+                  </>
                 )}
-              </div>
+              </Button>
 
             </div>
           </DialogFooter>
