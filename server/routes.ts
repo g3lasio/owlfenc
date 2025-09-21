@@ -29,6 +29,7 @@ import { memoryService } from "./services/memoryService";
 import { stripeService } from "./services/stripeService";
 import { permitService } from "./services/permitService";
 import admin from "firebase-admin";
+import { buildDynamicUrl } from './utils/url-builder';
 import { searchService } from "./services/searchService";
 import { sendEmail } from "./services/emailService";
 import { firebaseSubscriptionService } from "./services/firebaseSubscriptionService";
@@ -4316,8 +4317,10 @@ Output must be between 200-900 characters in English.`;
         isActive: true
       });
       
-      // Generar URL completa
-      const shareUrl = `${getDynamicUrl()}/shared-estimate/${shareId}`;
+      // Generar URL completa usando url-builder dinámico
+      const shareUrl = buildDynamicUrl(req, `/shared-estimate/${shareId}`, {
+        forceHttps: false // Para desarrollo, usar HTTP
+      });
       
       console.log(`✅ [SHARE-ESTIMATE] Shareable URL created: ${shareUrl}`);
       
@@ -4349,11 +4352,8 @@ Output must be between 200-900 characters in English.`;
         });
       }
 
-      // Get estimate data from Firebase
-      const firebaseStorage = new (await import('./FirebaseStorage')).FirebaseStorage();
-      const db = firebaseStorage.getDb();
-      
-      const doc = await db.collection('shared_estimates').doc(shareId).get();
+      // ✅ SIMPLE: Obtener datos directamente de Firebase usando admin SDK
+      const doc = await admin.firestore().collection('shared_estimates').doc(shareId).get();
       
       if (!doc.exists) {
         return res.status(404).json({
