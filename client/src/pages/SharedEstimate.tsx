@@ -92,6 +92,7 @@ export default function SharedEstimate() {
         }
 
         if (data.success && data.estimateData) {
+          console.log("🔍 [DEBUG] Raw estimate data items:", data.estimateData.items);
           setEstimateData(data.estimateData);
           setExpiresAt(data.expiresAt || null);
           console.log("✅ [SHARED-ESTIMATE] Estimate loaded successfully");
@@ -148,7 +149,7 @@ export default function SharedEstimate() {
               </div>
               <h2 className="text-xl font-bold text-red-400 mb-3 tracking-wider">ACCESS DENIED</h2>
               <p className="text-gray-300 text-sm leading-relaxed">{error}</p>
-              <div className="mt-6 text-xs text-gray-500 tracking-wider">STARK SECURITY PROTOCOL</div>
+              <div className="mt-6 text-xs text-gray-500 tracking-wider">CHYRRIS SECURITY PROTOCOL</div>
             </div>
           </div>
         </div>
@@ -164,12 +165,29 @@ export default function SharedEstimate() {
     );
   }
 
-  const formatCurrency = (amount: number | string) => {
-    // ✅ FIX: Validación para evitar 'nan' en unit price
-    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-    if (isNaN(numAmount) || numAmount === null || numAmount === undefined) {
-      return '$0.00'; // Valor por defecto en lugar de NaN
+  const formatCurrency = (amount: number | string, debugLabel?: string) => {
+    // 🐛 DEBUG: Log para diagnosticar unit price issues
+    if (debugLabel) {
+      console.log(`💰 [CURRENCY-DEBUG] ${debugLabel}:`, { amount, type: typeof amount });
     }
+    
+    // ✅ FIX: Validación mejorada para unit price
+    let numAmount: number;
+    
+    if (typeof amount === 'string') {
+      numAmount = parseFloat(amount);
+    } else if (typeof amount === 'number') {
+      numAmount = amount;
+    } else {
+      console.warn(`⚠️ [CURRENCY-WARN] Invalid amount type:`, { amount, type: typeof amount });
+      return '$0.00';
+    }
+    
+    if (isNaN(numAmount) || numAmount === null || numAmount === undefined) {
+      console.warn(`⚠️ [CURRENCY-WARN] NaN detected for ${debugLabel || 'amount'}:`, { amount, numAmount });
+      return '$0.00';
+    }
+    
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
@@ -316,13 +334,30 @@ export default function SharedEstimate() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <div className="p-4 bg-yellow-500/10 border border-yellow-400/20 rounded-lg">
-                      <h3 className="font-bold text-xl text-yellow-400 mb-1 tracking-wide">{estimateData.contractor.company}</h3>
-                      {estimateData.contractor.license && (
-                        <div className="flex items-center text-sm text-gray-300">
-                          <Shield className="w-3 h-3 mr-2 text-green-400" />
-                          <span>LICENSE: {estimateData.contractor.license}</span>
+                      <div className="flex items-start space-x-4">
+                        {/* 🏢 Company Logo */}
+                        {estimateData.contractor.logo && (
+                          <div className="flex-shrink-0">
+                            <img 
+                              src={estimateData.contractor.logo}
+                              alt={`${estimateData.contractor.company} Logo`}
+                              className="w-12 h-12 rounded-lg object-contain bg-white/10 p-1"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h3 className="font-bold text-xl text-yellow-400 mb-1 tracking-wide">{estimateData.contractor.company}</h3>
+                          {estimateData.contractor.license && (
+                            <div className="flex items-center text-sm text-gray-300">
+                              <Shield className="w-3 h-3 mr-2 text-green-400" />
+                              <span>LICENSE: {estimateData.contractor.license}</span>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                   <div className="space-y-3">
@@ -464,7 +499,7 @@ export default function SharedEstimate() {
                           </td>
                           <td className="text-center py-4 text-blue-400 font-mono font-bold">{item.quantity}</td>
                           <td className="text-center py-4 text-gray-300 tracking-wider">{item.unit}</td>
-                          <td className="text-right py-4 text-green-400 font-mono font-bold">{formatCurrency(item.unitPrice)}</td>
+                          <td className="text-right py-4 text-green-400 font-mono font-bold">{formatCurrency(item.unitPrice, `Item-${index}-UnitPrice`)}</td>
                           <td className="text-right py-4 text-yellow-400 font-mono font-bold text-lg">{formatCurrency(item.total)}</td>
                         </tr>
                       ))}
