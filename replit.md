@@ -57,6 +57,7 @@ This project is an AI-powered legal document and permit management platform feat
 - **Dynamic Form Validation**: Client-side validation using Zod schema integrated with UI components.
 - **API Design**: Secure API endpoints for subscription management, usage tracking, authentication, and password reset functionality, enforced with middleware for access controls and usage limits. Critical legal defense functionalities have integrated robust authentication and token verification.
 - **Holographic Sharing System**: Futuristic Iron Man-style interface for PDF generation and URL sharing with complete accessibility support, motion optimization, and robust error handling. Features holographic buttons, matrix effects, scanning lines, and corner frames with professional-grade visual design.
+- **Public URL Sharing System**: Simplified estimate sharing system converting decorative buttons to functional direct URL sharing. Generates permanent, stable URLs that work in both development and deployment environments without authentication requirements. Uses Firebase Admin SDK for data persistence, crypto-secure shareId generation (64-byte hex), and dynamic URL building via `url-builder.ts`. Features public routes (`/shared-estimate/:shareId`) with access tracking and permanent link storage (no expiration).
 
 ## External Dependencies
 - Firebase (Firestore, Admin SDK)
