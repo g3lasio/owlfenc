@@ -96,6 +96,12 @@ import {
   Lock,
   Crown,
   Link,
+  Copy,
+  MessageSquare,
+  Twitter,
+  Globe,
+  Zap,
+  ExternalLink,
 } from "lucide-react";
 import axios from "axios";
 
@@ -362,6 +368,11 @@ export default function EstimatesWizardFixed() {
   const [savedEstimates, setSavedEstimates] = useState<any[]>([]);
   const [isLoadingEstimates, setIsLoadingEstimates] = useState(false);
   const [showCompanyEditDialog, setShowCompanyEditDialog] = useState(false);
+  
+  // Holographic Share Modal states
+  const [showHolographicShare, setShowHolographicShare] = useState(false);
+  const [currentShareUrl, setCurrentShareUrl] = useState<string | null>(null);
+  const [isGeneratingShareUrl, setIsGeneratingShareUrl] = useState(false);
 
   // Invoice configuration states
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
@@ -4456,7 +4467,7 @@ This link provides a professional view of your estimate that you can access anyt
     }
   };
 
-  // Handle URL sharing
+  // Handle URL sharing - Opens holographic modal
   const handleUrlShare = async () => {
     // Check authentication before attempting to share
     if (!currentUser) {
@@ -4469,47 +4480,27 @@ This link provides a professional view of your estimate that you can access anyt
     }
 
     try {
+      setIsGeneratingShareUrl(true);
+      setShowHolographicShare(true);
+      
       const shareUrl = await generateEstimateUrl();
-      if (!shareUrl) return;
-
-      const capabilities = getSharingCapabilities();
-      const clientName = estimate.client?.name || "Client";
-
-      if (capabilities.isMobile && capabilities.nativeShareSupported) {
-        // Use native sharing on mobile
-        try {
-          await navigator.share({
-            title: `Estimate - ${clientName}`,
-            text: `Professional estimate for ${clientName}`,
-            url: shareUrl,
-          });
-          
-          toast({
-            title: "✅ URL Shared",
-            description: "Link shared successfully",
-          });
-        } catch (shareError) {
-          if (shareError.name !== 'AbortError') {
-            throw shareError;
-          }
-          // User cancelled, not an error
-        }
-      } else {
-        // Fallback: copy to clipboard
-        await navigator.clipboard.writeText(shareUrl);
-        toast({
-          title: "✅ Link Copied",
-          description: "Estimate link copied to clipboard",
-        });
+      if (!shareUrl) {
+        setShowHolographicShare(false);
+        return;
       }
+
+      setCurrentShareUrl(shareUrl);
 
     } catch (error) {
       console.error("❌ URL sharing error:", error);
+      setShowHolographicShare(false);
       toast({
         title: "❌ Error", 
-        description: "Could not share estimate link. Please try again.",
+        description: "Could not generate share link. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsGeneratingShareUrl(false);
     }
   };
 
@@ -8126,7 +8117,197 @@ This link provides a professional view of your estimate that you can access anyt
         </DialogContent>
       </Dialog>
 
-      {/* ✅ SHARE DIALOG COMPLETELY REMOVED: Direct URL sharing via handleUrlShare() */}
+      {/* ✅ HOLOGRAPHIC SHARE MODAL: Advanced sharing options with external apps */}
+      <Dialog open={showHolographicShare} onOpenChange={setShowHolographicShare}>
+        <DialogContent className="max-w-2xl bg-gray-900/95 backdrop-blur-sm border border-cyan-500/30 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+              🚀 Share Professional Estimate
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {/* Holographic URL Display */}
+            <div className="relative">
+              <div className="bg-black/50 border border-cyan-500/30 rounded-lg p-4 relative overflow-hidden">
+                {/* Scanning effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent animate-pulse"></div>
+                
+                {/* Corner decorations */}
+                <div className="absolute top-2 left-2 w-3 h-3 border-l-2 border-t-2 border-cyan-400"></div>
+                <div className="absolute top-2 right-2 w-3 h-3 border-r-2 border-t-2 border-cyan-400"></div>
+                <div className="absolute bottom-2 left-2 w-3 h-3 border-l-2 border-b-2 border-cyan-400"></div>
+                <div className="absolute bottom-2 right-2 w-3 h-3 border-r-2 border-b-2 border-cyan-400"></div>
+                
+                <div className="relative z-10">
+                  <label className="text-sm text-cyan-400 font-semibold mb-2 block">📎 Shareable URL Generated</label>
+                  {isGeneratingShareUrl ? (
+                    <div className="flex items-center space-x-3">
+                      <RefreshCw className="h-5 w-5 animate-spin text-cyan-400" />
+                      <span className="text-gray-300 animate-pulse">Generating secure link...</span>
+                    </div>
+                  ) : currentShareUrl ? (
+                    <div className="bg-gray-800/50 rounded px-3 py-2 border border-gray-600">
+                      <p className="text-sm text-green-400 font-mono break-all">{currentShareUrl}</p>
+                    </div>
+                  ) : (
+                    <div className="text-gray-400">No URL generated</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* External Sharing Options */}
+            {currentShareUrl && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-cyan-400 text-center">🌐 Share with External Apps</h3>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {/* Copy to Clipboard */}
+                  <Button
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(currentShareUrl);
+                        toast({
+                          title: "✅ Copied!",
+                          description: "URL copied to clipboard",
+                        });
+                      } catch (error) {
+                        toast({
+                          title: "❌ Error",
+                          description: "Failed to copy URL",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    className="bg-gray-700 hover:bg-gray-600 text-white border border-gray-600 h-16 flex flex-col items-center justify-center gap-1"
+                    data-testid="button-copy-url"
+                  >
+                    <Copy className="h-5 w-5" />
+                    <span className="text-xs">Copy URL</span>
+                  </Button>
+
+                  {/* WhatsApp */}
+                  <Button
+                    onClick={() => {
+                      const message = `Professional Estimate - ${estimate.client?.name || 'Client'}\n\n${currentShareUrl}`;
+                      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+                      window.open(whatsappUrl, '_blank');
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white h-16 flex flex-col items-center justify-center gap-1"
+                    data-testid="button-share-whatsapp"
+                  >
+                    <MessageSquare className="h-5 w-5" />
+                    <span className="text-xs">WhatsApp</span>
+                  </Button>
+
+                  {/* Email */}
+                  <Button
+                    onClick={() => {
+                      const subject = `Professional Estimate - ${estimate.client?.name || 'Client'}`;
+                      const body = `Hi,\n\nPlease review your professional estimate:\n\n${currentShareUrl}\n\nBest regards`;
+                      const emailUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                      window.open(emailUrl, '_blank');
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white h-16 flex flex-col items-center justify-center gap-1"
+                    data-testid="button-share-email"
+                  >
+                    <Mail className="h-5 w-5" />
+                    <span className="text-xs">Email</span>
+                  </Button>
+
+                  {/* SMS */}
+                  <Button
+                    onClick={() => {
+                      const message = `Professional Estimate: ${currentShareUrl}`;
+                      const smsUrl = `sms:?body=${encodeURIComponent(message)}`;
+                      window.open(smsUrl, '_blank');
+                    }}
+                    className="bg-purple-600 hover:bg-purple-700 text-white h-16 flex flex-col items-center justify-center gap-1"
+                    data-testid="button-share-sms"
+                  >
+                    <Smartphone className="h-5 w-5" />
+                    <span className="text-xs">SMS</span>
+                  </Button>
+
+                  {/* Twitter */}
+                  <Button
+                    onClick={() => {
+                      const tweet = `Professional Estimate Ready 📊 ${currentShareUrl}`;
+                      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`;
+                      window.open(twitterUrl, '_blank');
+                    }}
+                    className="bg-sky-500 hover:bg-sky-600 text-white h-16 flex flex-col items-center justify-center gap-1"
+                    data-testid="button-share-twitter"
+                  >
+                    <Twitter className="h-5 w-5" />
+                    <span className="text-xs">Twitter</span>
+                  </Button>
+
+                  {/* LinkedIn */}
+                  <Button
+                    onClick={() => {
+                      const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentShareUrl)}`;
+                      window.open(linkedinUrl, '_blank');
+                    }}
+                    className="bg-blue-700 hover:bg-blue-800 text-white h-16 flex flex-col items-center justify-center gap-1"
+                    data-testid="button-share-linkedin"
+                  >
+                    <Globe className="h-5 w-5" />
+                    <span className="text-xs">LinkedIn</span>
+                  </Button>
+
+                  {/* Native Share (if supported) */}
+                  {navigator.share && (
+                    <Button
+                      onClick={async () => {
+                        try {
+                          await navigator.share({
+                            title: `Estimate - ${estimate.client?.name || 'Client'}`,
+                            text: `Professional estimate for ${estimate.client?.name || 'Client'}`,
+                            url: currentShareUrl,
+                          });
+                        } catch (error) {
+                          if (error.name !== 'AbortError') {
+                            console.error('Share error:', error);
+                          }
+                        }
+                      }}
+                      className="bg-orange-600 hover:bg-orange-700 text-white h-16 flex flex-col items-center justify-center gap-1"
+                      data-testid="button-share-native"
+                    >
+                      <ExternalLink className="h-5 w-5" />
+                      <span className="text-xs">Share</span>
+                    </Button>
+                  )}
+
+                  {/* Open in New Tab */}
+                  <Button
+                    onClick={() => {
+                      window.open(currentShareUrl, '_blank');
+                    }}
+                    className="bg-cyan-600 hover:bg-cyan-700 text-white h-16 flex flex-col items-center justify-center gap-1"
+                    data-testid="button-open-url"
+                  >
+                    <ExternalLink className="h-5 w-5" />
+                    <span className="text-xs">Open</span>
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-center pt-4 border-t border-gray-700">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowHolographicShare(false)}
+              className="bg-gray-800 hover:bg-gray-700 text-white border-gray-600"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <style jsx>{`
         @keyframes scan {
