@@ -3745,6 +3745,21 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     setIsSendingEmail(true);
 
     try {
+      // STEP 1: Generate shareable URL first using the same endpoint as share button
+      console.log("📧✨ [EMAIL-URL-UNIFICATION] Generating shareable URL for email...");
+      const shareUrl = await generateEstimateUrl();
+      
+      if (!shareUrl) {
+        toast({
+          title: "❌ Error",
+          description: "No se pudo generar el enlace compartible para el email. Intenta nuevamente.",
+          variant: "destructive",
+        });
+        setIsSendingEmail(false);
+        return;
+      }
+      
+      console.log("📧✨ [EMAIL-URL-UNIFICATION] Successfully generated share URL:", shareUrl);
       // Generate estimate number
       const estimateNumber = `EST-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, "0")}`;
 
@@ -3811,6 +3826,17 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         estimateData,
       );
 
+      // STEP 2: Enhance email message with shareable URL
+      const enhancedMessage = `${emailData.message}
+
+📎 **View Online & Share:**
+You can view this estimate online and share it easily using this secure link:
+${shareUrl}
+
+This link provides a professional view of your estimate that you can access anytime and share with others as needed.`;
+
+      console.log("📧✨ [EMAIL-URL-UNIFICATION] Enhanced email message with share URL");
+
       // Send estimate using centralized email system
       const response = await fetch("/api/centralized-email/send-estimate", {
         method: "POST",
@@ -3822,8 +3848,9 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           contractorName: profile.displayName || profile.company,
           contractorCompany: profile.company,
           estimateData: estimateData,
-          customMessage: emailData.message,
+          customMessage: enhancedMessage, // ✨ UNIFIED: Now includes shareable URL
           sendCopy: emailData.sendCopy, // ← CORREGIDO: usar el valor real del checkbox
+          shareUrl: shareUrl, // ✨ UNIFIED: Pass share URL to backend for tracking
         }),
       });
 
