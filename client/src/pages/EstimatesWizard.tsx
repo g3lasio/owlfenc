@@ -7770,176 +7770,84 @@ This link provides a professional view of your estimate that you can access anyt
                                   return;
                                 }
 
-                                // Get stored estimate data from originalData field
-                                const estimateData = estimate.originalData;
-
-                                if (!estimateData) {
-                                  toast({
-                                    title: "Error de datos",
-                                    description:
-                                      "No se pudieron cargar los datos del estimado",
-                                    variant: "destructive",
-                                  });
-                                  return;
-                                }
-
-                                // Extract client information from different possible locations
-                                const clientInfo =
-                                  estimateData.clientInformation ||
-                                    estimateData.client || {
-                                      name: estimate.clientName,
-                                      email: estimate.clientEmail || "",
-                                      phone: "",
-                                      address: "",
-                                    };
-
-                                // Extract items from different possible locations
-                                const items =
-                                  estimateData.projectTotalCosts?.materialCosts
-                                    ?.items ||
-                                  estimateData.items ||
-                                  estimate.items ||
-                                  [];
-
-                                // Extract financial data for tax and discount calculations
-                                const totalCosts =
-                                  estimateData.projectTotalCosts?.totalSummary;
-                                const subtotal =
-                                  totalCosts?.subtotal ||
-                                  estimateData.subtotal ||
-                                  estimate.subtotal ||
-                                  0;
-                                const discountAmount =
-                                  totalCosts?.discountAmount ||
-                                  estimateData.discountAmount ||
-                                  estimate.discountAmount ||
-                                  0;
-                                const taxAmount =
-                                  totalCosts?.tax ||
-                                  estimateData.tax ||
-                                  estimate.tax ||
-                                  0;
-                                const finalTotal =
-                                  totalCosts?.finalTotal ||
-                                  estimateData.total ||
-                                  estimate.total ||
-                                  0;
-
-                                const payload = {
-                                  company: {
-                                    name: profile.company,
-                                    address: profile.address
-                                      ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}`
-                                      : "",
-                                    phone: profile.phone || "",
-                                    email:
-                                      profile.email || currentUser?.email || "",
-                                    website: profile.website || "",
-                                    logo: profile.logo || "",
-                                  },
-                                  estimate: {
-                                    number:
-                                      estimate.estimateNumber ||
-                                      "EST-" + Date.now(),
-                                    date: new Date().toLocaleDateString(),
-                                    valid_until: new Date(
-                                      Date.now() + 30 * 24 * 60 * 60 * 1000,
-                                    ).toLocaleDateString(),
-                                    project_description: rewriteProjectDescription(estimate.projectDetails || "", 500),
-                                    items: items.map((item: any) => ({
-                                      code:
-                                        item.name || item.material || "Item",
-                                      description: item.description || "",
-                                      qty: item.quantity || 1,
-                                      unit_price: `$${Number(item.price || item.unitPrice || 0).toFixed(2)}`,
-                                      total: `$${Number(item.total || item.totalPrice || item.quantity * item.price || 0).toFixed(2)}`,
-                                    })),
-                                    subtotal: `$${Number(subtotal).toFixed(2)}`, // CÁLCULOS SEGUROS: valores directos
-                                    discounts:
-                                      discountAmount > 0
-                                        ? `-$${Number(discountAmount).toFixed(2)}` // CÁLCULOS SEGUROS: valores directos
-                                        : "$0.00",
-                                    tax_rate:
-                                      Math.round(
-                                        (taxAmount /
-                                          (subtotal - discountAmount)) *
-                                          100,
-                                      ) || 0, // Esta conversión SÍ es correcta (para porcentaje)
-                                    tax_amount:
-                                      taxAmount > 0
-                                        ? `$${Number(taxAmount).toFixed(2)}` // CÁLCULOS SEGUROS: valores directos
-                                        : "$0.00",
-                                    total: `$${Number(finalTotal).toFixed(2)}`, // CÁLCULOS SEGUROS: valores directos
-                                  },
-                                  client: {
-                                    name:
-                                      clientInfo.name ||
-                                      estimate.clientName ||
-                                      "",
-                                    email:
-                                      clientInfo.email ||
-                                      estimate.clientEmail ||
-                                      "",
-                                    phone: clientInfo.phone || "",
-                                    address: clientInfo.address
-                                      ? `${clientInfo.address}${clientInfo.city ? ", " + clientInfo.city : ""}${clientInfo.state ? ", " + clientInfo.state : ""}${clientInfo.zipCode ? " " + clientInfo.zipCode : ""}`
-                                      : "",
-                                  },
-                                  firebaseUid: currentUser?.uid,
-                                };
-
-                                console.log(
-                                  "📊 Full Payload enviado a PDF:",
-                                  JSON.stringify(payload, null, 2),
-                                );
-                                console.log(
-                                  "📊 Items being sent:",
-                                  payload.estimate.items,
-                                );
-
-                                // AUTO-DETECT PREMIUM: Check user's subscription level
-                                console.log("🔍 MEMBERSHIP DEBUG:", {
-                                  userPlan: userPlan,
-                                  planId: userPlan?.id,
-                                  planName: userPlan?.name
-                                });
-                                
-                                const isPremiumUser = userPlan?.id >= 3; // Master Contractor (3) or Trial Master (4)
-                                const premiumPayload = {
-                                  ...payload,
-                                  templateMode: isPremiumUser ? "premium" : "basic",
-                                  isMembership: isPremiumUser,
-                                  selectedTemplate: isPremiumUser ? "premium" : "basic"
-                                };
-
-                                console.log("🎨 TEMPLATE DETECTION:", {
-                                  planId: userPlan?.id,
-                                  planName: userPlan?.name,
+                                // Auto-detect template based on subscription
+                                const isPremiumUser = userSubscription?.plan?.id !== 1;
+                                console.log("🎨 AUTO TEMPLATE DETECTION:", {
+                                  planId: userSubscription?.plan?.id,
                                   isPremiumUser,
-                                  templateMode: premiumPayload.templateMode,
-                                  isMembership: premiumPayload.isMembership,
-                                  selectedTemplate: premiumPayload.selectedTemplate,
-                                  payloadSent: JSON.stringify(premiumPayload, null, 2)
+                                  willUsePremiumTemplate: isPremiumUser
                                 });
 
-                                // Use blob response for mobile compatibility
-                                const res = await axios.post(
+                                // Create payload in the exact format expected by Puppeteer service
+                                const payload = {
+                                  user: currentUser?.uid
+                                    ? [
+                                        {
+                                          uid: currentUser?.uid,
+                                          email: currentUser.email,
+                                          displayName: currentUser.displayName,
+                                        },
+                                      ]
+                                    : [
+                                        {
+                                          uid: "anonymous-pdf-user",
+                                          email: profile?.email || "contractor@example.com",
+                                          displayName: profile?.company || "Anonymous User",
+                                        },
+                                      ],
+                                  client: {
+                                    name: estimate.clientName || "",
+                                    email: estimate.clientEmail || "",
+                                    phone: "",
+                                    address: "",
+                                  },
+                                  items: estimate.items || [],
+                                  projectTotalCosts: {
+                                    subtotal: Number(Number(estimate.subtotal || 0).toFixed(2)) || 0,
+                                    discount: Number(Number(estimate.discountAmount || 0).toFixed(2)) || 0,
+                                    taxRate: Number(Number((estimate.taxRate || 0).toFixed(2))) || 0,
+                                    tax: Number(Number((estimate.tax || 0).toFixed(2))) || 0,
+                                    total: Number(Number((estimate.total || 0).toFixed(2))) || 0,
+                                  },
+                                  originalData: {
+                                    projectDescription: estimate.projectDetails || "",
+                                  },
+                                  // Add contractor data from profile
+                                  contractor: {
+                                    name: profile?.company || profile?.ownerName || "Professional Contractor",
+                                    company: profile?.company || "Construction Company",
+                                    address: profile?.address || "Business Address",
+                                    phone: profile?.phone || "Phone Number",
+                                    email: profile?.email || currentUser?.email || "contractor@example.com",
+                                    website: profile?.website || "",
+                                    logo: profile?.logo || "",
+                                    license: profile?.license || "",
+                                  },
+                                  isMembership: userSubscription?.plan?.id === 1 ? false : true,
+                                  templateMode: isPremiumUser ? "premium" : "basic", // Auto-detection
+                                };
+
+                                console.log("📤 Sending payload to PDF service:", payload);
+
+                                // Use new Puppeteer PDF service (local, no external dependency)
+                                const response = await axios.post(
                                   "/api/estimate-puppeteer-pdf",
-                                  premiumPayload,
+                                  payload,
                                   {
-                                    responseType: "blob", // Important for mobile PDF handling
-                                  }
+                                    responseType: "blob", // Important for PDF download
+                                  },
                                 );
 
-                                // Create blob from response for mobile sharing
-                                const pdfBlob = new Blob([res.data], { type: "application/pdf" });
-                                
-                                // Generate mobile-friendly filename
-                                const clientName = estimate.clientName?.replace(/[^a-zA-Z0-9]/g, "_") || "client";
-                                const timestamp = new Date().toISOString().slice(0, 10);
+                                // Create blob for sharing/downloading
+                                const pdfBlob = new Blob([response.data], { type: "application/pdf" });
+
+                                // Generate filename with client name and timestamp
+                                const clientName =
+                                  estimate.clientName?.replace(/[^a-zA-Z0-9]/g, "_") || "client";
+                                const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format
                                 const filename = `estimate-${clientName}-${timestamp}.pdf`;
 
-                                // Use robust mobile sharing utility
+                                // Use mobile sharing utility for smart download/share behavior
                                 await shareOrDownloadPdf(pdfBlob, filename, {
                                   title: `Estimate for ${estimate.clientName || "Client"}`,
                                   text: `Professional estimate from ${profile?.company || "your contractor"}`,
@@ -7948,29 +7856,14 @@ This link provides a professional view of your estimate that you can access anyt
                                 });
 
                                 toast({
-                                  title: "✅ PDF Generado",
-                                  description: "El PDF se ha generado y descargado correctamente",
+                                  title: "✅ PDF Generated",
+                                  description: "PDF downloaded successfully",
                                 });
                               } catch (error) {
-                                console.error("Error generating PDF:", error);
-                                
-                                // Enhanced error handling for mobile devices
-                                let errorMessage = "No se pudo generar el PDF. Inténtalo de nuevo.";
-                                
-                                if (error.response?.status === 400) {
-                                  errorMessage = "Datos incompletos. Verifica que toda la información esté completa.";
-                                } else if (error.response?.status === 500) {
-                                  errorMessage = "Error del servidor. Intenta nuevamente en unos momentos.";
-                                } else if (error.code === 'NETWORK_ERROR' || !navigator.onLine) {
-                                  errorMessage = "Sin conexión a internet. Verifica tu conexión e intenta nuevamente.";
-                                } else if (error.name === 'AbortError') {
-                                  // User cancelled, not really an error
-                                  return;
-                                }
-                                
+                                console.error("PDF generation error:", error);
                                 toast({
-                                  title: "❌ Error al generar PDF",
-                                  description: errorMessage,
+                                  title: "❌ Error",
+                                  description: "Could not generate PDF. Please try again.",
                                   variant: "destructive",
                                 });
                               }
