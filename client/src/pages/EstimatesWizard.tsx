@@ -198,7 +198,7 @@ const TEMPLATE_OPTIONS = [
 ];
 
 export default function EstimatesWizardFixed() {
-  const { currentUser } = useAuth();
+  const { currentUser } = useAuth(); // ✅ Using AuthContext which provides currentUser
   const { toast } = useToast();
   const { profile, isLoading: isProfileLoading } = useProfile();
   const { userPlan, loading: isPermissionsLoading } = usePermissions();
@@ -4240,10 +4240,25 @@ This link provides a professional view of your estimate that you can access anyt
         createdAt: new Date().toISOString(),
       };
 
+      // Check if user is authenticated
+      if (!currentUser) {
+        toast({
+          title: "🔐 Autenticación Requerida",
+          description: "Debes iniciar sesión para compartir estimados. La funcionalidad de compartir requiere autenticación para generar enlaces seguros.",
+          variant: "destructive",
+        });
+        return null;
+      }
+
       // Get auth token for API call
-      const token = await currentUser?.getIdToken();
+      const token = await currentUser.getIdToken();
       if (!token) {
-        throw new Error("No se pudo obtener token de autenticación");
+        toast({
+          title: "❌ Error de Autenticación",
+          description: "No se pudo obtener token de autenticación. Intenta cerrar sesión e iniciar nuevamente.",
+          variant: "destructive",
+        });
+        return null;
       }
 
       // Send estimate data to backend to create shareable link
@@ -4456,6 +4471,16 @@ This link provides a professional view of your estimate that you can access anyt
 
   // Handle URL sharing
   const handleUrlShare = async () => {
+    // Check authentication before attempting to share
+    if (!currentUser) {
+      toast({
+        title: "🔐 Autenticación Requerida",
+        description: "Debes iniciar sesión para compartir estimados.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const shareUrl = await generateEstimateUrl();
       if (!shareUrl) return;
