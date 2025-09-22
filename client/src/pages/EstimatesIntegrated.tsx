@@ -313,13 +313,25 @@ export default function EstimatesIntegrated() {
     if (!currentUser) return;
 
     try {
-      const response = await fetch('/api/profile');
+      // 🔐 FIXED: Usar autenticación correcta para obtener datos del contratista
+      const authHeaders = await getAuthHeaders();
+      const response = await fetch('/api/profile', {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders
+        }
+      });
       if (response.ok) {
         const data = await response.json();
+        console.log("✅ [ESTIMATES-INTEGRATED] Datos del contratista cargados:", data);
         setContractor(data);
+      } else {
+        console.warn("⚠️ [ESTIMATES-INTEGRATED] Error en respuesta del servidor:", response.status);
       }
     } catch (error) {
-      console.error('Error loading contractor profile:', error);
+      console.error("❌ [ESTIMATES-INTEGRATED] Error loading contractor profile:", error);
     }
   };
 

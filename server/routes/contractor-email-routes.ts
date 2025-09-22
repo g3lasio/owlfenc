@@ -44,7 +44,7 @@ router.post('/verify', async (req, res) => {
       });
     }
 
-    const result = await ContractorEmailService.verifyContractorEmail(email, name);
+    const result = await contractorEmailService.verifyContractorEmail(email, name);
 
     res.json(result);
   } catch (error) {
@@ -407,7 +407,7 @@ router.post('/check-verification', async (req, res) => {
       });
     }
 
-    const status = await ContractorEmailService.checkVerificationStatus(email);
+    const status = await contractorEmailService.checkVerificationStatus(email);
     
     res.json({
       success: true,
@@ -428,7 +428,7 @@ router.get('/status/:email', async (req, res) => {
   try {
     const { email } = req.params;
     
-    const status = await ContractorEmailService.checkVerificationStatus(email);
+    const status = await contractorEmailService.checkVerificationStatus(email);
     
     res.json({
       success: true,

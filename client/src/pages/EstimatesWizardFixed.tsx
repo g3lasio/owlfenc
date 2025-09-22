@@ -211,13 +211,25 @@ export default function EstimatesWizardFixed() {
 
   const loadContractorProfile = async () => {
     try {
-      const response = await fetch('/api/profile');
+      // 🔐 FIXED: Usar autenticación correcta para obtener datos del contratista
+      const authHeaders = await getAuthHeaders();
+      const response = await fetch('/api/profile', {
+        method: "GET",
+        credentials: "include", 
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders
+        }
+      });
       if (response.ok) {
         const data = await response.json();
+        console.log("✅ [ESTIMATES-FIXED] Datos del contratista cargados:", data);
         setContractor(data);
+      } else {
+        console.warn("⚠️ [ESTIMATES-FIXED] Error en respuesta del servidor:", response.status);
       }
     } catch (error) {
-      console.error('Error loading contractor profile:', error);
+      console.error("❌ [ESTIMATES-FIXED] Error loading contractor profile:", error);
     }
   };
 
