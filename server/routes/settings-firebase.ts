@@ -29,7 +29,11 @@ const updateSettingsSchema = z.object({
   emailNotifications: z.boolean().optional(),
   smsNotifications: z.boolean().optional(),
   pushNotifications: z.boolean().optional(),
-  marketingEmails: z.boolean().optional()
+  marketingEmails: z.boolean().optional(),
+  // Privacy settings
+  dataAnalytics: z.boolean().optional(),
+  marketingCommunications: z.boolean().optional(),
+  darkMode: z.boolean().optional()
 });
 
 // GET /api/settings - Obtener configuración del usuario
@@ -55,6 +59,47 @@ router.get('/', requireAuth, async (req, res) => {
     console.error('❌ [SETTINGS-API] Error al obtener configuración:', error);
     res.status(500).json({ 
       error: 'Error al obtener configuración',
+      message: error instanceof Error ? error.message : 'Error desconocido'
+    });
+  }
+});
+
+// PATCH /api/settings - Actualizar configuración parcial del usuario
+router.patch('/', requireAuth, async (req, res) => {
+  try {
+    const userId = req.firebaseUser?.uid;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+    
+    console.log('🔧 [SETTINGS-API] Actualizando configuración parcial para usuario:', userId);
+    
+    // Validar datos
+    const validationResult = updateSettingsSchema.safeParse(req.body);
+    
+    if (!validationResult.success) {
+      return res.status(400).json({
+        error: 'Datos de configuración inválidos',
+        details: validationResult.error.format()
+      });
+    }
+    
+    // Obtener configuración actual
+    const currentSettings = await firebaseSettingsService.getUserSettings(userId);
+    
+    // Hacer merge de los datos
+    const updatedSettings = await firebaseSettingsService.saveUserSettings(
+      userId,
+      { ...currentSettings, ...validationResult.data }
+    );
+    
+    console.log('✅ [SETTINGS-API] Configuración parcial actualizada exitosamente');
+    
+    res.json(updatedSettings);
+  } catch (error) {
+    console.error('❌ [SETTINGS-API] Error al actualizar configuración parcial:', error);
+    res.status(500).json({ 
+      error: 'Error al actualizar configuración',
       message: error instanceof Error ? error.message : 'Error desconocido'
     });
   }

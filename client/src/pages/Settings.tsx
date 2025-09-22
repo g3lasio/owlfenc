@@ -59,17 +59,36 @@ interface UserSettings {
   companyName?: string;
   companyPhone?: string;
   companyEmail?: string;
+  // Privacy settings
+  dataAnalytics?: boolean;
+  marketingCommunications?: boolean;
 }
 
 export default function Settings() {
   const { toast } = useToast();
   const { logout, currentUser } = useAuth();
   
-  // Load settings from backend
+  // Load settings from backend with proper auth headers
   const { data: settings, isLoading: settingsLoading, error: settingsError } = useQuery<UserSettings>({
     queryKey: ['/api/settings'],
-    enabled: !!currentUser,
+    queryFn: async () => {
+      if (!currentUser?.uid) {
+        throw new Error('User not authenticated');
+      }
+      // Ensure token is ready before making request
+      await currentUser.getIdToken();
+      // Use apiRequest helper that returns parsed JSON
+      return await apiRequest.get('/api/settings');
+    },
+    enabled: !!currentUser && !!currentUser.uid, // Ensure user is fully loaded
     staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: (failureCount, error) => {
+      // Retry auth-related failures but not other errors
+      if (error.message?.includes('401') || error.message?.includes('auth')) {
+        return failureCount < 3;
+      }
+      return false;
+    },
   });
 
   // Update settings mutation with consistent API client
@@ -307,8 +326,45 @@ export default function Settings() {
     }
   };
 
-  const handleChangePassword = () => {
-    window.location.href = "/reset-password";
+  const handleChangePassword = async () => {
+    if (!currentUser?.email) {
+      toast({
+        title: "Error",
+        description: "No email found for password reset",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { sendPasswordResetEmail } = await import('firebase/auth');
+      const { auth } = await import('@/lib/firebase');
+      
+      await sendPasswordResetEmail(auth, currentUser.email);
+      
+      toast({
+        title: "Password Reset Email Sent",
+        description: `A password reset link has been sent to ${currentUser.email}`,
+      });
+    } catch (error: any) {
+      console.error('❌ [SETTINGS] Error sending password reset:', error);
+      
+      let errorMessage = "Failed to send password reset email. Please try again.";
+      
+      if (error.code === 'auth/user-not-found') {
+        errorMessage = "No account found with this email address.";
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = "Too many requests. Please try again later.";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "Invalid email address.";
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEmailChange = async () => {
@@ -352,6 +408,12 @@ export default function Settings() {
           title: "Verification Email Sent",
           description: `A verification email has been sent to ${newEmail}. Please verify your new email address to complete the change.`,
         });
+        
+        // Synchronize with backend settings (as pending email until verified)
+        scheduleBatchedUpdate({ companyEmail: newEmail });
+        
+        // Invalidate queries to refresh data
+        queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
         
         setIsEmailDialogOpen(false);
         setNewEmail("");
@@ -422,6 +484,12 @@ export default function Settings() {
         title: "Name Updated",
         description: `Your display name has been updated to "${newDisplayName.trim()}"`,
       });
+      
+      // Synchronize with backend settings
+      scheduleBatchedUpdate({ displayName: newDisplayName.trim() });
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
       
       setIsNameDialogOpen(false);
       setNewDisplayName("");
@@ -861,7 +929,23 @@ export default function Settings() {
                           Help improve our service with usage analytics
                         </p>
                       </div>
-                      <Switch defaultChecked />
+                      <Switch 
+                        checked={settings?.dataAnalytics ?? true}
+                        onCheckedChange={(checked) => {
+                          // Optimistic update to cache
+                          queryClient.setQueryData(['/api/settings'], (prev: UserSettings | undefined) => ({
+                            ...prev,
+                            dataAnalytics: checked
+                          }));
+                          
+                          scheduleBatchedUpdate({ dataAnalytics: checked });
+                          toast({
+                            title: checked ? "Data Analytics Enabled" : "Data Analytics Disabled",
+                            description: "Privacy preference will be saved",
+                          });
+                        }}
+                        data-testid="switch-data-analytics"
+                      />
                     </div>
 
                     <div className="flex items-center justify-between">
@@ -871,7 +955,23 @@ export default function Settings() {
                           Receive product updates and tips
                         </p>
                       </div>
-                      <Switch />
+                      <Switch 
+                        checked={settings?.marketingCommunications ?? false}
+                        onCheckedChange={(checked) => {
+                          // Optimistic update to cache
+                          queryClient.setQueryData(['/api/settings'], (prev: UserSettings | undefined) => ({
+                            ...prev,
+                            marketingCommunications: checked
+                          }));
+                          
+                          scheduleBatchedUpdate({ marketingCommunications: checked });
+                          toast({
+                            title: checked ? "Marketing Communications Enabled" : "Marketing Communications Disabled",
+                            description: "Privacy preference will be saved",
+                          });
+                        }}
+                        data-testid="switch-marketing-communications"
+                      />
                     </div>
                   </div>
                 </div>
