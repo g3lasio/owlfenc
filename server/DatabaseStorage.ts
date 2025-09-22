@@ -735,7 +735,7 @@ export class DatabaseStorage implements IStorage {
 
   // ===== ESTIMATE METHODS =====
   
-  async getEstimate(id: number): Promise<Estimate | undefined> {
+  async getEstimate(id: string): Promise<Estimate | undefined> {
     if (!db) throw new Error('Database connection not available');
     const [estimate] = await db.select().from(estimates).where(eq(estimates.id, id));
     return estimate;
@@ -749,24 +749,24 @@ export class DatabaseStorage implements IStorage {
 
   async getEstimatesByUserId(userId: number): Promise<Estimate[]> {
     if (!db) throw new Error('Database connection not available');
-    console.log(`🔍 [DATABASE] Fetching estimates for user_id: ${userId} directly via user_id field`);
+    console.log(`🔍 [DATABASE] Fetching estimates for user_id: ${userId} via userId field`);
     
-    // The estimates table has a user_id field, so we can query directly
+    // Query estimates directly by userId field since the schema now uses userId
     const userEstimates = await db.select()
       .from(estimates)
-      .where(eq(estimates.user_id, userId))
-      .orderBy(desc(estimates.created_at));
+      .where(eq(estimates.userId, userId))
+      .orderBy(desc(estimates.createdAt));
     
     console.log(`📊 [DATABASE] Found ${userEstimates.length} estimates for user_id: ${userId}`);
     
     return userEstimates;
   }
 
-  async getEstimatesByClientId(clientId: number): Promise<Estimate[]> {
+  async getEstimatesByClientId(clientId: string): Promise<Estimate[]> {
     if (!db) throw new Error('Database connection not available');
     return db.select()
       .from(estimates)
-      .where(eq(estimates.clientId, clientId))
+      .where(eq(estimates.clientEmail, clientId))
       .orderBy(desc(estimates.createdAt));
   }
 
@@ -778,12 +778,12 @@ export class DatabaseStorage implements IStorage {
     return newEstimate;
   }
 
-  async updateEstimate(id: number, estimate: Partial<Estimate>): Promise<Estimate> {
+  async updateEstimate(id: string, estimate: Partial<Estimate>): Promise<Estimate> {
     if (!db) throw new Error('Database connection not available');
     const [updatedEstimate] = await db.update(estimates)
       .set({
         ...estimate,
-        updated_at: new Date()
+        updatedAt: new Date()
       })
       .where(eq(estimates.id, id))
       .returning();
@@ -795,7 +795,7 @@ export class DatabaseStorage implements IStorage {
     return updatedEstimate;
   }
 
-  async deleteEstimate(id: number): Promise<boolean> {
+  async deleteEstimate(id: string): Promise<boolean> {
     if (!db) throw new Error('Database connection not available');
     const result = await db.delete(estimates)
       .where(eq(estimates.id, id));

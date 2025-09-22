@@ -7809,7 +7809,7 @@ This link provides a professional view of your estimate that you can access anyt
         </DialogContent>
       </Dialog>
 
-      <style jsx>{`
+      <style jsx={true}>{`
         @keyframes scan {
           0% { top: 0%; opacity: 0; }
           50% { opacity: 1; }
