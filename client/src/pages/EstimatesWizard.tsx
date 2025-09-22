@@ -2042,10 +2042,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         // Set estimate data for editing
         setEstimate({
           client: {
+            id: "temp-" + Date.now(),
+            clientId: "temp-" + Date.now(),
             name: projectData.clientName || "",
             email: projectData.clientEmail || "",
-            phone: "",
-            address: "",
+            phone: projectData.clientPhone || "",
+            address: projectData.clientAddress || "",
+            city: projectData.clientCity || null,
+            state: projectData.clientState || null,
+            zipCode: projectData.clientZipCode || null,
+            notes: null,
           },
           items: projectData.items || [],
           projectDetails: projectData.projectDescription || "",
@@ -2079,10 +2085,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     material.description.toLowerCase().includes(materialSearch.toLowerCase())
   );
 
-  // Client search filter
+  // Client search filter  
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
-    client.email.toLowerCase().includes(clientSearch.toLowerCase())
+    (client.email && client.email.toLowerCase().includes(clientSearch.toLowerCase()))
   );
 
   // Add Material to Estimate
@@ -2136,185 +2142,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
   // ✅ React Query + PostgreSQL endpoints integration complete
   // ✅ All Firebase business data imports eliminated  
   // ✅ Cache invalidation with queryClient.invalidateQueries implemented
-  // ✅ Security fixes applied (user mapping, privilege escalation prevention)
-        const clientName =
-          projectData.clientName || projectData.clientInformation?.name;
 
-        if (clientName && clients.length > 0) {
-          clientData = clients.find((c) => c.name === clientName);
-        }
 
-        // Create client object if not found in database
-        if (!clientData && clientName) {
-          clientData = {
-            id: "temp-" + Date.now(),
-            clientId: "temp-" + Date.now(),
-            name: clientName,
-            email:
-              projectData.clientEmail ||
-              projectData.clientInformation?.email ||
-              null,
-            phone:
-              projectData.clientPhone ||
-              projectData.clientInformation?.phone ||
-              null,
-            address:
-              projectData.address ||
-              projectData.clientInformation?.address ||
-              null,
-            city:
-              projectData.clientCity ||
-              projectData.clientInformation?.city ||
-              null,
-            state:
-              projectData.clientState ||
-              projectData.clientInformation?.state ||
-              null,
-            zipCode:
-              projectData.clientZipCode ||
-              projectData.clientInformation?.zipCode ||
-              null,
-            notes: null,
-          };
-        }
-
-        // Parse estimate items from project data with better price handling
-        let estimateItems: EstimateItem[] = [];
-
-        console.log("💰 DATOS COMPLETOS DEL PROYECTO:", projectData);
-        console.log("💰 Analizando datos de precios del proyecto:", {
-          items: projectData.items,
-          materialCosts: projectData.projectTotalCosts?.materialCosts,
-          estimateHtml: !!projectData.estimateHtml,
-        });
-
-        // Log raw price data for debugging
-        if (projectData.items) {
-          console.log("📊 PRECIOS RAW en items array:");
-          projectData.items.forEach((item: any, i: number) => {
-            console.log(`  Item ${i}:`, {
-              name: item.name,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              price: item.price,
-              total: item.total || item.totalPrice,
-              rawData: item,
-            });
-          });
-        }
-
-        // Priority 1: Try materialCosts.items (most structured)
-        if (projectData.projectTotalCosts?.materialCosts?.items) {
-          estimateItems = projectData.projectTotalCosts.materialCosts.items.map(
-            (item: any, index: number) => {
-              const quantity = parseFloat(item.quantity || item.qty || 1);
-              const rawPrice = parseFloat(
-                item.unitPrice || item.price || item.pricePerUnit || 0,
-              );
-              const rawTotal = parseFloat(item.total || item.totalPrice || 0);
-
-              // NORMALIZAR PRECIOS: Aplicar conversión inteligente
-              // CÁLCULOS SEGUROS: Usar valores directos sin conversiones
-              let price = rawPrice;
-              let total = rawTotal;
-
-              // Si no hay total, calcularlo correctamente
-              if (!total || total === 0) {
-                total = price * quantity;
-              }
-
-              return {
-                id: item.id || `item-${index}`,
-                materialId: item.materialId || "",
-                name: item.name || item.description || "Material",
-                description: item.description || item.name || "",
-                quantity,
-                price,
-                unit: item.unit || item.unitType || "unidad",
-                total,
-              };
-            },
-          );
-          console.log(
-            "✅ Items cargados desde materialCosts.items:",
-            estimateItems,
-          );
-        }
-        // Priority 2: Try direct items array
-        else if (projectData.items && Array.isArray(projectData.items)) {
-          estimateItems = projectData.items.map((item: any, index: number) => {
-            const quantity = parseFloat(item.quantity || 1);
-            const rawPrice = parseFloat(item.unitPrice || item.price || 0);
-            const rawTotal = parseFloat(item.totalPrice || item.total || 0);
-
-            // NORMALIZAR PRECIOS: Aplicar conversión inteligente
-            let price = rawPrice;
-            let total = rawTotal;
-
-            // CÁLCULOS SEGUROS: Usar precio directo sin conversiones
-
-            // CÁLCULOS SEGUROS: Usar total directo sin conversiones
-
-            // Si no hay total, calcularlo correctamente
-            if (!total || total === 0) {
-              total = price * quantity;
-            }
-
-            return {
-              id: item.id || `item-${index}`,
-              materialId: item.materialId || "",
-              name: item.name || item.description || "Material",
-              description: item.description || "",
-              quantity,
-              price,
-              unit: item.unit || "unidad",
-              total,
-            };
-          });
-          console.log("✅ Items cargados desde items array:", estimateItems);
-        }
-        // Priority 3: Try to parse from HTML
-        else if (projectData.estimateHtml) {
-          estimateItems = parseEstimateItemsFromHtml(projectData.estimateHtml);
-          console.log("✅ Items parseados desde HTML:", estimateItems);
-        }
-
-        // Ensure we have valid items with prices
-        if (estimateItems.length === 0) {
-          // Create a basic item so user can edit
-          estimateItems = [
-            {
-              id: "item-1",
-              materialId: "",
-              name: "Material a definir",
-              description: "Material del proyecto original",
-              quantity: 1,
-              price: 0,
-              unit: "unidad",
-              total: 0,
-            },
-          ];
-          console.log(
-            "⚠️ No se encontraron items, creando item básico para edición",
-          );
-        }
-
-        // Get project total and details
-        const projectTotal =
-          projectData.total ||
-          projectData.projectTotalCosts?.total ||
-          projectData.estimateAmount ||
-          estimateItems.reduce((sum, item) => sum + item.total, 0);
-
-        const projectDetails =
-          projectData.projectDescription ||
-          projectData.projectScope ||
-          projectData.scope ||
-          projectData.notes ||
-          `Proyecto de ${projectData.projectType || "cerca"} para ${clientName}`;
-
-  // 🎯 CONSOLIDATION COMPLETED: Orphaned Firebase code removed
-  // All function definitions are now clean and properly structured
 
   // Helper function to parse estimate items from HTML
   const parseEstimateItemsFromHtml = (html: string): EstimateItem[] => {
