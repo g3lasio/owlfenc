@@ -61,7 +61,7 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 import AuthDiagnostic from './pages/AuthDiagnostic';
 import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
-import SimpleContractGenerator from './pages/SimpleContractGenerator';
+// TEMPORARILY DISABLED: import SimpleContractGenerator from './pages/SimpleContractGenerator';
 import ContractSignature from './pages/ContractSignature';
 import SharedEstimate from './pages/SharedEstimate';
 
@@ -250,16 +250,16 @@ function MainAppRouter() {
                 {() => <ProtectedRoute component={LegalContractEngineFixed} />}
               </Route>
               <Route path="/legal-defense">
-                {() => <ProtectedRoute component={SimpleContractGenerator} />}
+                {/* TEMPORARILY DISABLED: {() => <ProtectedRoute component={SimpleContractGenerator} />} */}
               </Route>
               <Route path="/cyberpunk-legal-defense">
                 {() => <ProtectedRoute component={CyberpunkLegalDefense} />}
               </Route>
               <Route path="/simple-contracts">
-                {() => <ProtectedRoute component={SimpleContractGenerator} />}
+                {/* TEMPORARILY DISABLED: {() => <ProtectedRoute component={SimpleContractGenerator} />} */}
               </Route>
               <Route path="/simple-contract-generator">
-                {() => <ProtectedRoute component={SimpleContractGenerator} />}
+                {/* TEMPORARILY DISABLED: {() => <ProtectedRoute component={SimpleContractGenerator} />} */}
               </Route>
 
               <Route path="/unified-contracts">

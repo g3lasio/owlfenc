@@ -176,7 +176,7 @@ export default function NuevoClientes() {
     isError,
     error,
   } = useQuery({
-    queryKey: ["firebaseClients", userId], // Incluir userId en la key
+    queryKey: ["clients", userId], // PostgreSQL API clients
     queryFn: async () => {
       try {
         console.log("Obteniendo clientes desde Firebase para usuario:", userId);
@@ -199,7 +199,7 @@ export default function NuevoClientes() {
         title: "Cliente añadido",
         description: "El cliente ha sido añadido correctamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
       setShowAddClientDialog(false);
       clientForm.reset();
     },
@@ -233,7 +233,7 @@ export default function NuevoClientes() {
         title: "Cliente actualizado",
         description: "El cliente ha sido actualizado correctamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
       setShowEditClientDialog(false);
       setCurrentClient(null);
     },
@@ -256,7 +256,7 @@ export default function NuevoClientes() {
         title: "Cliente eliminado",
         description: "El cliente ha sido eliminado correctamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
       setShowDeleteDialog(false);
       setCurrentClient(null);
     },
@@ -446,7 +446,7 @@ export default function NuevoClientes() {
       console.log("✅ [CLIENTES] Importación CSV inteligente exitosa:", importedClients.length);
       
       // Actualizar lista de clientes
-      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
 
       toast({
         title: "✨ Importación inteligente completada",
@@ -692,7 +692,7 @@ export default function NuevoClientes() {
       }
 
       // Actualizar lista de clientes
-      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
 
       toast({
         title: "Eliminación exitosa",

@@ -32,7 +32,7 @@ import {
   RefreshCw,
   AlertCircle
 } from 'lucide-react';
-import { saveEstimate } from '@/lib/firebase';
+// REMOVED Firebase import: saveEstimate - using PostgreSQL API instead
 
 // Types
 interface Client {
