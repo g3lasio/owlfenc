@@ -56,6 +56,29 @@ export function registerRobustFirebaseAuthRoutes(app: any) {
         console.log(`🔒 [ROBUST-AUTH] Existing user ${email} without subscription - keeping as free user (no new trial)`);
       }
 
+      // LÓGICA CORREGIDA: Detectar trial basándose en plan y fecha, no solo status
+      let isTrialing = false;
+      let daysRemaining = 0;
+      let active = false;
+      
+      if (subscription) {
+        const now = new Date();
+        const endDate = new Date(subscription.subscription.currentPeriodEnd || now);
+        daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+        
+        // CORRECCIÓN: Un usuario está en trial si:
+        // 1. Tiene un plan "Free Trial" o "Trial Master" Y
+        // 2. No ha expirado (daysRemaining > 0)
+        // INDEPENDIENTEMENTE del status en la DB
+        const isTrialPlan = subscription.plan?.name === 'Free Trial' || subscription.plan?.name === 'Trial Master';
+        isTrialing = isTrialPlan && daysRemaining > 0;
+        
+        // Está activo si está en trial O si el status es active/trialing
+        active = isTrialing || subscription.subscription.status === 'active' || subscription.subscription.status === 'trialing';
+        
+        console.log(`🔍 [TRIAL-FIX] Plan: ${subscription.plan?.name}, Status: ${subscription.subscription.status}, Days: ${daysRemaining}, IsTrialing: ${isTrialing}`);
+      }
+
       const response = {
         success: true,
         user: {
@@ -65,12 +88,12 @@ export function registerRobustFirebaseAuthRoutes(app: any) {
           isAuthenticated: true
         },
         subscription: subscription ? {
-          active: subscription.subscription.status === 'active' || subscription.subscription.status === 'trialing',
+          active,
           status: subscription.subscription.status,
           planName: subscription.plan?.name,
           features: subscription.plan?.features,
-          daysRemaining: Math.max(0, Math.ceil((new Date(subscription.subscription.currentPeriodEnd || new Date()).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))),
-          isTrialing: subscription.subscription.status === 'trialing'
+          daysRemaining,
+          isTrialing
         } : {
           active: false,
           status: 'none',
