@@ -862,7 +862,14 @@ export default function EstimatesWizardFixed() {
                 </div>
                 <Textarea
                   id="projectDetails"
-                  placeholder="Describe los detalles completos del proyecto:&#10;&#10;• Alcance del trabajo y especificaciones técnicas&#10;• Cronograma y tiempo estimado&#10;• Proceso paso a paso del trabajo&#10;• Qué está incluido en el precio&#10;• Qué NO está incluido&#10;• Notas adicionales, términos especiales, condiciones..."
+                  placeholder={`Describe los detalles completos del proyecto:
+
+• Alcance del trabajo y especificaciones técnicas
+• Cronograma y tiempo estimado
+• Proceso paso a paso del trabajo
+• Qué está incluido en el precio
+• Qué NO está incluido
+• Notas adicionales, términos especiales, condiciones...`}
                   value={estimate.projectDetails}
                   onChange={(e) => setEstimate(prev => ({ ...prev, projectDetails: e.target.value }))}
                   className="min-h-[120px] text-sm"

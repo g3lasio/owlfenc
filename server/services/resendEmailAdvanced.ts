@@ -42,7 +42,7 @@ export class ResendEmailAdvanced {
     }
     
     console.log('🔑 [RESEND-CONFIG] Using RESEND_API_KEY for initialization');
-    console.log('🔑 [RESEND-CONFIG] API Key prefix:', process.env.RESEND_API_KEY?.substring(0, 8) + '...');
+    // Security: API key details removed from logs
     
     this.resend = new Resend(process.env.RESEND_API_KEY);
   }
