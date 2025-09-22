@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
+import { useQuery, useMutation, QueryClient } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Card,
   CardContent,
@@ -41,19 +43,86 @@ import {
   CreditCard,
   Mail,
   Edit3,
+  Loader2,
 } from "lucide-react";
+
+// Types for settings
+interface UserSettings {
+  language?: 'en' | 'es' | 'fr';
+  timezone?: string;
+  emailNotifications?: boolean;
+  smsNotifications?: boolean;
+  pushNotifications?: boolean;
+  marketingEmails?: boolean;
+  displayName?: string;
+  companyName?: string;
+  companyPhone?: string;
+  companyEmail?: string;
+}
 
 export default function Settings() {
   const { toast } = useToast();
   const { logout, currentUser } = useAuth();
   
-  // Simplified state management
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [language, setLanguage] = useState("en");
-  const [timezone, setTimezone] = useState("pst");
+  // Load settings from backend
+  const { data: settings, isLoading: settingsLoading, error: settingsError } = useQuery<UserSettings>({
+    queryKey: ['/api/settings'],
+    enabled: !!currentUser,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Update settings mutation
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (updates: Partial<UserSettings>) => {
+      const response = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(await import('@/lib/queryClient').then(m => m.getAuthHeaders()))
+        },
+        body: JSON.stringify(updates),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update settings');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      toast({
+        title: "Settings Updated",
+        description: "Your preferences have been saved successfully",
+      });
+    },
+    onError: (error: any) => {
+      console.error('❌ [SETTINGS] Error updating settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save settings. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Local state management with backend sync
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [language, setLanguage] = useState<'en' | 'es' | 'fr'>('en');
+  const [timezone, setTimezone] = useState('pst');
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Sync state with loaded settings
+  useEffect(() => {
+    if (settings) {
+      setLanguage(settings.language || 'en');
+      setTimezone(settings.timezone || 'pst');
+      setEmailNotifications(settings.emailNotifications ?? true);
+      setSmsNotifications(settings.smsNotifications ?? false);
+    }
+  }, [settings]);
   
   // Email change functionality
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
@@ -65,25 +134,21 @@ export default function Settings() {
   const [newDisplayName, setNewDisplayName] = useState("");
   const [isChangingName, setIsChangingName] = useState(false);
 
-  // Handlers
-  const handleLanguageChange = (value: string) => {
+  // Handlers with backend persistence
+  const handleLanguageChange = (value: 'en' | 'es' | 'fr') => {
     setLanguage(value);
-    toast({
-      title: "Language Updated",
-      description: `Language changed to ${value === "en" ? "English" : value === "es" ? "Español" : "Français"}`,
-    });
+    updateSettingsMutation.mutate({ language: value });
   };
 
   const handleTimezoneChange = (value: string) => {
     setTimezone(value);
-    toast({
-      title: "Timezone Updated",
-      description: "Your timezone preference has been saved",
-    });
+    updateSettingsMutation.mutate({ timezone: value });
   };
 
   const handleDarkModeToggle = (checked: boolean) => {
     setIsDarkMode(checked);
+    // Note: Dark mode is typically stored in localStorage or theme context
+    // We'll keep this as local state for now
     toast({
       title: checked ? "Dark Mode Enabled" : "Light Mode Enabled",
       description: "Theme preference updated",
@@ -92,18 +157,12 @@ export default function Settings() {
 
   const handleEmailNotificationsToggle = (checked: boolean) => {
     setEmailNotifications(checked);
-    toast({
-      title: checked ? "Email Notifications Enabled" : "Email Notifications Disabled",
-      description: "Email notification preference updated",
-    });
+    updateSettingsMutation.mutate({ emailNotifications: checked });
   };
 
   const handleSmsNotificationsToggle = (checked: boolean) => {
     setSmsNotifications(checked);
-    toast({
-      title: checked ? "SMS Notifications Enabled" : "SMS Notifications Disabled",
-      description: "SMS notification preference updated",
-    });
+    updateSettingsMutation.mutate({ smsNotifications: checked });
   };
 
   const handleLogout = async () => {
@@ -279,6 +338,19 @@ export default function Settings() {
           <p className="text-slate-600 dark:text-slate-400 mt-2">
             Manage your account preferences and security settings
           </p>
+          {settingsLoading && (
+            <div className="flex items-center gap-2 mt-4 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading your settings...
+            </div>
+          )}
+          {settingsError && (
+            <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+              <p className="text-sm text-destructive">
+                Failed to load settings. Some features may not work correctly.
+              </p>
+            </div>
+          )}
         </div>
 
         <Tabs defaultValue="account" className="space-y-6">
@@ -314,8 +386,12 @@ export default function Settings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="language">Language</Label>
-                    <Select value={language} onValueChange={handleLanguageChange}>
-                      <SelectTrigger>
+                    <Select 
+                      value={language} 
+                      onValueChange={handleLanguageChange}
+                      disabled={updateSettingsMutation.isPending}
+                    >
+                      <SelectTrigger data-testid="select-language">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -328,8 +404,12 @@ export default function Settings() {
 
                   <div className="space-y-2">
                     <Label htmlFor="timezone">Timezone</Label>
-                    <Select value={timezone} onValueChange={handleTimezoneChange}>
-                      <SelectTrigger>
+                    <Select 
+                      value={timezone} 
+                      onValueChange={handleTimezoneChange}
+                      disabled={updateSettingsMutation.isPending}
+                    >
+                      <SelectTrigger data-testid="select-timezone">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -411,6 +491,8 @@ export default function Settings() {
                     <Switch
                       checked={emailNotifications}
                       onCheckedChange={handleEmailNotificationsToggle}
+                      disabled={updateSettingsMutation.isPending}
+                      data-testid="switch-email-notifications"
                     />
                   </div>
 
@@ -426,6 +508,8 @@ export default function Settings() {
                     <Switch
                       checked={smsNotifications}
                       onCheckedChange={handleSmsNotificationsToggle}
+                      disabled={updateSettingsMutation.isPending}
+                      data-testid="switch-sms-notifications"
                     />
                   </div>
                 </div>
