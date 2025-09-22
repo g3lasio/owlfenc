@@ -5105,9 +5105,17 @@ Output must be between 200-900 characters in English.`;
   app.post(
     "/api/subscription/create-portal",
     async (req: Request, res: Response) => {
+      // 🚨 DEV ROUTE - DISABLE IN PRODUCTION
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(403).json({ 
+          message: "Development endpoint disabled in production",
+          code: "DEV_ROUTE_DISABLED"
+        });
+      }
+      
       try {
         console.log(
-          "Solicitud de creación de portal de cliente recibida:",
+          "[DEV-PORTAL] Solicitud de creación de portal de cliente recibida:",
           req.body,
         );
 
@@ -5454,8 +5462,16 @@ Output must be between 200-900 characters in English.`;
   app.post(
     "/api/payments/connect/create-onboarding",
     async (req: Request, res: Response) => {
+      // 🚨 DEV ROUTE - DISABLE IN PRODUCTION
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(403).json({ 
+          message: "Development endpoint disabled in production",
+          code: "DEV_ROUTE_DISABLED"
+        });
+      }
+      
       try {
-        // En una app real, verificaríamos autenticación
+        // DEV ONLY: En una app real, verificaríamos autenticación
         const userId = 1; // ID de usuario fijo para pruebas
 
         // Validar los parámetros de la solicitud
@@ -5514,8 +5530,16 @@ Output must be between 200-900 characters in English.`;
   app.get(
     "/api/payments/connect/account-status",
     async (req: Request, res: Response) => {
+      // 🚨 DEV ROUTE - DISABLE IN PRODUCTION
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(403).json({ 
+          message: "Development endpoint disabled in production",
+          code: "DEV_ROUTE_DISABLED"
+        });
+      }
+      
       try {
-        // En una app real, verificaríamos autenticación
+        // DEV ONLY: En una app real, verificaríamos autenticación
         const userId = 1; // ID de usuario fijo para pruebas
 
         console.log(
@@ -5660,8 +5684,16 @@ Output must be between 200-900 characters in English.`;
   app.get(
     "/api/payments/connect/external-accounts",
     async (req: Request, res: Response) => {
+      // 🚨 DEV ROUTE - DISABLE IN PRODUCTION
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(403).json({ 
+          message: "Development endpoint disabled in production",
+          code: "DEV_ROUTE_DISABLED"
+        });
+      }
+      
       try {
-        // En una app real, verificaríamos autenticación
+        // DEV ONLY: En una app real, verificaríamos autenticación
         const userId = 1; // ID de usuario fijo para pruebas
 
         console.log(`Obteniendo cuentas bancarias para usuario ID: ${userId}`);
@@ -5697,8 +5729,16 @@ Output must be between 200-900 characters in English.`;
   app.post(
     "/api/payments/connect/dashboard-link",
     async (req: Request, res: Response) => {
+      // 🚨 DEV ROUTE - DISABLE IN PRODUCTION
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(403).json({ 
+          message: "Development endpoint disabled in production",
+          code: "DEV_ROUTE_DISABLED"
+        });
+      }
+      
       try {
-        // En una app real, verificaríamos autenticación
+        // DEV ONLY: En una app real, verificaríamos autenticación
         const userId = 1; // ID de usuario fijo para pruebas
 
         // Validar los parámetros de la solicitud
@@ -5954,14 +5994,22 @@ Output must be between 200-900 characters in English.`;
   app.post(
     "/api/subscription/setup-intent",
     async (req: Request, res: Response) => {
+      // 🚨 DEV ROUTE - DISABLE IN PRODUCTION
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(403).json({ 
+          message: "Development endpoint disabled in production",
+          code: "DEV_ROUTE_DISABLED"
+        });
+      }
+      
       try {
-        // En un entorno real, usaríamos req.isAuthenticated() desde passport
+        // DEV ONLY: En un entorno real, usaríamos req.isAuthenticated() desde passport
         // Para desarrollo, asumiremos que estamos autenticados
         // if (!req.isAuthenticated()) {
         //   return res.status(401).json({ message: "No autenticado" });
         // }
 
-        // Usar un ID de usuario fijo para desarrollo
+        // DEV ONLY: Usar un ID de usuario fijo para desarrollo
         const userId = 1; // En producción: req.user.id
 
         // Obtenemos la suscripción del usuario para conseguir el customerId
@@ -6461,12 +6509,20 @@ Output must be between 200-900 characters in English.`;
   });
 
   app.get("/api/user-profile", async (req: Request, res: Response) => {
+    // 🚨 DEV ROUTE - DISABLE IN PRODUCTION
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({ 
+        message: "Development endpoint disabled in production",
+        code: "DEV_ROUTE_DISABLED"
+      });
+    }
+    
     try {
-      // Obtener el usuario autenticado desde Firebase
+      // DEV ONLY: Obtener el usuario autenticado desde Firebase
       const authHeader = req.headers.authorization;
       let firebaseUserId; // Autenticación requerida
 
-      // En producción, extraer el ID real del usuario de Firebase
+      // DEV ONLY: En producción, extraer el ID real del usuario de Firebase
       if (authHeader && authHeader.startsWith("Bearer ")) {
         try {
           // Aquí normalmente verificaríamos el token de Firebase
@@ -6480,9 +6536,9 @@ Output must be between 200-900 characters in English.`;
         }
       }
 
-      console.log("🔐 Cargando perfil para usuario Firebase:", firebaseUserId);
+      console.log("[DEV-PROFILE] Cargando perfil para usuario Firebase:", firebaseUserId);
 
-      // Buscar usuario por firebaseUserId en lugar de ID numérico
+      // DEV ONLY: Buscar usuario por firebaseUserId en lugar de ID numérico
       const userId = 1; // ID numérico temporal para la base de datos PostgreSQL
       const user = await storage.getUser(userId);
 
@@ -6530,8 +6586,16 @@ Output must be between 200-900 characters in English.`;
 
   // Endpoint para actualizar el perfil de usuario
   app.post("/api/user-profile", async (req: Request, res: Response) => {
+    // 🚨 DEV ROUTE - DISABLE IN PRODUCTION
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({ 
+        message: "Development endpoint disabled in production",
+        code: "DEV_ROUTE_DISABLED"
+      });
+    }
+    
     try {
-      // En producción, obtener userId del token de autenticación
+      // DEV ONLY: En producción, obtener userId del token de autenticación
       const userId = 1; // Por ahora usar ID fijo para desarrollo
 
       // Verificar que el usuario existe
