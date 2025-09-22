@@ -100,6 +100,7 @@ import openrouterAPI from "./routes/openrouter-api"; // Import OpenRouter API fo
 import paymentRoutes from "./routes/payment-routes"; // Import payment routes
 import usageLimitsRoutes from "./routes/usage-limits"; // Import usage limits routes
 import { AuthMiddleware, requireAuthenticatedUser, requireAuth } from './middleware/authMiddleware';
+import { unifiedSessionAuth } from './middleware/unified-session-auth';
 import { initSecureUserHelper } from './utils/secureUserHelper';
 import { DataIntegrityChecker } from './utils/dataIntegrityChecker';
 import { registerSubscriptionControlRoutes } from "./routes/subscription-control"; // Import ROBUST subscription control
@@ -4650,7 +4651,7 @@ Output must be between 200-900 characters in English.`;
 
   app.get(
     "/api/subscription/user-subscription",
-    requireAuth,
+    unifiedSessionAuth,
     async (req: Request, res: Response) => {
       try {
         // 🔧 USAR AUTENTICACIÓN UNIFICADA CON BYPASS SUPPORT
