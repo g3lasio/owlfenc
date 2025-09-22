@@ -93,7 +93,35 @@ export const unifiedSessionAuth = (options: AuthOptions = { requireAuth: true })
         }
       }
 
-      // STEP 3: Handle authentication requirement
+      // STEP 3: SECURE TEMPORARY BYPASS (development only, read-only)
+      if (!decodedClaims && process.env.NODE_ENV === 'development') {
+        const bypassUid = req.headers['x-bypass-uid'] as string;
+        const bypassHeader = req.headers['x-temp-bypass'] as string;
+        const userEmail = req.headers['x-user-email'] as string;
+        
+        if (bypassUid === 'qztot1YEy3UWz605gIH2iwwWhW53' && 
+            bypassHeader === 'read-only-access' && 
+            req.method === 'GET' &&
+            userEmail) {
+          
+          console.log(`🔧 [SECURE-BYPASS] Temporary read-only access granted for: ${bypassUid}`);
+          
+          // Create minimal claims for bypass
+          decodedClaims = {
+            uid: bypassUid,
+            email: userEmail,
+            auth_time: Math.floor(Date.now() / 1000),
+            iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(Date.now() / 1000) + 3600,
+            aud: 'owl-fenc',
+            iss: 'https://securetoken.google.com/owl-fenc',
+            sub: bypassUid
+          };
+          authMethod = 'temporary-bypass';
+        }
+      }
+
+      // STEP 4: Handle authentication requirement
       if (!decodedClaims) {
         if (options.requireAuth !== false) {
           console.log('❌ [UNIFIED-AUTH] Autenticación requerida - acceso denegado');
