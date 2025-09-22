@@ -61,7 +61,8 @@ router.post('/', requireAuth, requireSubscriptionLevel(PermissionLevel.BASIC), a
     // Mapear Firebase UID → PostgreSQL user_id
     let userId = await userMappingService.getInternalUserId(firebaseUid);
     if (!userId) {
-      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      const mappingResult = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      userId = mappingResult?.id || null;
     }
     if (!userId) {
       return res.status(500).json({ error: 'Error creando mapeo de usuario' });
@@ -93,7 +94,7 @@ router.post('/', requireAuth, requireSubscriptionLevel(PermissionLevel.BASIC), a
     // Crear estimado en la base de datos
     const newEstimate = await storage.createEstimate(validationResult.data);
     
-    console.log('✅ Estimado creado exitosamente para usuario:', firebaseUserId, 'ID:', newEstimate.id);
+    console.log('✅ Estimado creado exitosamente para usuario:', firebaseUid, 'ID:', newEstimate.id);
     
     res.status(201).json(newEstimate);
   } catch (error) {
@@ -115,7 +116,8 @@ router.get('/:id', requireAuth, async (req, res) => {
     }
     let userId = await userMappingService.getInternalUserId(firebaseUid);
     if (!userId) {
-      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      const mappingResult = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      userId = mappingResult?.id || null;
     }
     if (!userId) {
       return res.status(500).json({ error: 'Error creando mapeo de usuario' });
@@ -160,7 +162,8 @@ router.put('/:id', requireAuth, async (req, res) => {
     }
     let userId = await userMappingService.getInternalUserId(firebaseUid);
     if (!userId) {
-      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      const mappingResult = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      userId = mappingResult?.id || null;
     }
     if (!userId) {
       return res.status(500).json({ error: 'Error creando mapeo de usuario' });
@@ -201,7 +204,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 });
 
 // DELETE /api/estimates/:id - Eliminar un estimado
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
     // 🔐 SECURITY FIX: Usar user_id real del usuario autenticado
     const firebaseUid = req.firebaseUser?.uid;
@@ -210,7 +213,8 @@ router.delete('/:id', async (req, res) => {
     }
     let userId = await userMappingService.getInternalUserId(firebaseUid);
     if (!userId) {
-      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      const mappingResult = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      userId = mappingResult?.id || null;
     }
     if (!userId) {
       return res.status(500).json({ error: 'Error creando mapeo de usuario' });
@@ -260,7 +264,8 @@ router.post('/:id/update-status', requireAuth, async (req, res) => {
     }
     let userId = await userMappingService.getInternalUserId(firebaseUid);
     if (!userId) {
-      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      const mappingResult = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      userId = mappingResult?.id || null;
     }
     if (!userId) {
       return res.status(500).json({ error: 'Error creando mapeo de usuario' });

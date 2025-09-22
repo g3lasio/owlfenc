@@ -109,7 +109,8 @@ import { registerRobustFirebaseAuthRoutes } from "./routes/robust-firebase-auth"
 import userProfileRoutes from "./routes/user-profile-routes"; // Import user profile routes
 import openaiChatRoutes from "./routes/openai-chat-routes"; // Import OpenAI chat routes
 import contractorPaymentRoutes from "./routes/contractor-payment-routes"; // Import contractor payment routes
-import estimatesRoutes from "./routes/estimates"; // Import new estimates routes
+import estimatesRoutes from "./routes/estimates"; // Import legacy estimates routes (for fallback)
+import estimatesApiRoutes from "./routes/estimates-api"; // Import PostgreSQL estimates API
 import estimatesFirebaseRoutes from "./routes/estimates-firebase"; // Import Firebase estimates routes
 import contractsFirebaseRoutes from "./routes/contracts-firebase"; // Import Firebase contracts routes
 import searchFirebaseRoutes from "./routes/search-firebase"; // Import Firebase search routes
@@ -1645,9 +1646,10 @@ Output must be between 200-900 characters in English.`;
   const invoiceRoutes = await import("./routes/invoice-routes");
   app.use("/api/invoices", invoiceRoutes.default);
 
-  // MIGRATION: Using Firebase-only routes instead of PostgreSQL
-  app.use("/api/estimates", estimatesRoutes); // ✅ CONSOLIDATION: PostgreSQL routes ENABLED
-  // app.use("/api/estimates", estimatesFirebaseRoutes); // ❌ Firebase-only routes DISABLED for consolidation
+  // 🔄 CONSOLIDATION: PostgreSQL estimates-api.ts enabled
+  app.use("/api/estimates", estimatesApiRoutes); // ✅ PostgreSQL estimates API (NEW)
+  // app.use("/api/estimates", estimatesRoutes); // ❌ Legacy estimates routes DISABLED
+  // app.use("/api/estimates", estimatesFirebaseRoutes); // ❌ Firebase routes DISABLED
 
   // PDF generation now handled exclusively by premiumPdfService in contract routes
 
