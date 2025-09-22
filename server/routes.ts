@@ -6628,11 +6628,43 @@ Output must be between 200-900 characters in English.`;
 
       console.log(`🔍 [PROPERTY-HISTORY-SECURED] Obteniendo historial para usuario autenticado: ${firebaseUid} (ID: ${user.id})`);
 
-      // 🔒 FILTRAR POR userId DEL USUARIO AUTENTICADO - SIN CROSS-CONTAMINATION
-      const history = await storage.getPropertySearchHistoryByUserId(user.id);
+      // 🔒 QUERY DIRECTA PARA EVITAR PROBLEMAS CON DatabaseStorage - TEMPORAL FIX
+      // Import Pool from pg at the top level if not already imported
+      const { Pool } = require('pg');
       
-      console.log(`✅ [PROPERTY-HISTORY-SECURED] Devolviendo ${history.length} búsquedas del usuario ${user.id}`);
-      res.json(history);
+      // Use the DATABASE_URL from environment
+      const pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+      });
+      
+      const query = `
+        SELECT id, user_id, address, owner_name, parcel_number, results, title, notes, tags, is_favorite, created_at, search_date
+        FROM property_search_history 
+        WHERE user_id = $1 
+        ORDER BY search_date DESC
+      `;
+      
+      const result = await pool.query(query, [user.id]);
+      const history = result.rows || [];
+      
+      // Transform snake_case to camelCase for frontend compatibility
+      const transformedHistory = history.map((item: any) => ({
+        id: item.id,
+        userId: item.user_id,
+        address: item.address,
+        ownerName: item.owner_name,
+        parcelNumber: item.parcel_number,
+        results: item.results,
+        title: item.title,
+        notes: item.notes,
+        tags: item.tags,
+        isFavorite: item.is_favorite,
+        createdAt: item.created_at,
+        searchDate: item.search_date
+      }));
+      
+      console.log(`✅ [PROPERTY-HISTORY-SECURED] Devolviendo ${transformedHistory.length} búsquedas del usuario ${user.id}`);
+      res.json(transformedHistory);
     } catch (error) {
       console.error("❌ [PROPERTY-HISTORY-SECURED] Error:", error);
       res.status(500).json({
