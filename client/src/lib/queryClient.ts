@@ -36,11 +36,13 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
               console.debug("🔧 [AUTH-DEBUG] Refreshed Firebase token included");
             }
           } else {
-            // FALLBACK 2: Usar bypass temporal para usuario específico
-            if (auth.currentUser.uid === 'qztot1YEy3UWz605gIH2iwwWhW53') {
+            // FALLBACK 2: Usar bypass temporal para usuario específico (SEGURO)
+            if (auth.currentUser.uid === 'qztot1YEy3UWz605gIH2iwwWhW53' && import.meta.env.DEV) {
               headers["x-bypass-uid"] = auth.currentUser.uid;
               headers["x-firebase-uid"] = auth.currentUser.uid;
-              console.log("🔧 [AUTH-BYPASS] Using temporary bypass for troubleshooting");
+              headers["x-user-email"] = auth.currentUser.email || '';
+              headers["x-temp-bypass"] = "read-only-access";
+              console.log("🔧 [AUTH-BYPASS-SECURE] Using secure read-only bypass for data access");
             } else {
               // FALLBACK 3: Headers solo con UID para otros usuarios
               headers["x-firebase-uid"] = auth.currentUser.uid;
@@ -50,8 +52,10 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
         } catch {
           // FINAL FALLBACK: Solo headers de UID
           headers["x-firebase-uid"] = auth.currentUser.uid;
-          if (auth.currentUser.uid === 'qztot1YEy3UWz605gIH2iwwWhW53') {
+          if (auth.currentUser.uid === 'qztot1YEy3UWz605gIH2iwwWhW53' && import.meta.env.DEV) {
             headers["x-bypass-uid"] = auth.currentUser.uid;
+            headers["x-user-email"] = auth.currentUser.email || '';
+            headers["x-temp-bypass"] = "read-only-access";
           }
         }
       }
