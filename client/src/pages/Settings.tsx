@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { useQuery, useMutation, QueryClient } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -54,6 +54,7 @@ interface UserSettings {
   smsNotifications?: boolean;
   pushNotifications?: boolean;
   marketingEmails?: boolean;
+  darkMode?: boolean; // Added dark mode to backend persistence
   displayName?: string;
   companyName?: string;
   companyPhone?: string;
@@ -71,24 +72,19 @@ export default function Settings() {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // Update settings mutation
+  // Update settings mutation with consistent API client
   const updateSettingsMutation = useMutation({
     mutationFn: async (updates: Partial<UserSettings>) => {
-      const response = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(await import('@/lib/queryClient').then(m => m.getAuthHeaders()))
-        },
-        body: JSON.stringify(updates),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to update settings');
+      // Guard against updates without authentication
+      if (!currentUser) {
+        throw new Error('Authentication required for settings updates');
       }
       
-      return response.json();
+      // Use standard apiRequest for consistent auth/error handling
+      // apiRequest already returns parsed JSON, no need to call .json()
+      return await apiRequest('PATCH', '/api/settings', updates);
     },
+    retry: 3, // Retry failed mutations
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
       toast({
@@ -96,15 +92,26 @@ export default function Settings() {
         description: "Your preferences have been saved successfully",
       });
     },
-    onError: (error: any) => {
+    onError: (error: any, updates: Partial<UserSettings>) => {
       console.error('❌ [SETTINGS] Error updating settings:', error);
+      
+      // Re-queue failed updates for retry
+      const existingPending = localStorage.getItem('pendingSettingsUpdates');
+      const existingUpdates = existingPending ? JSON.parse(existingPending) : {};
+      const mergedUpdates = { ...existingUpdates, ...updates };
+      localStorage.setItem('pendingSettingsUpdates', JSON.stringify(mergedUpdates));
+      
       toast({
         title: "Error",
-        description: "Failed to save settings. Please try again.",
+        description: "Failed to save settings. Will retry automatically.",
         variant: "destructive",
       });
     }
   });
+  
+  // Batched updates state for efficient persistence  
+  const pendingUpdatesRef = useRef<Partial<UserSettings>>({});
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout>>();
   
   // Local state management with backend sync
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -114,13 +121,103 @@ export default function Settings() {
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Sync state with loaded settings
+  // Batched update function to reduce Firestore writes
+  const scheduleBatchedUpdate = (newUpdates: Partial<UserSettings>) => {
+    // Guard against updates without authentication
+    if (!currentUser) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to save your settings",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Merge new updates with pending ones
+    pendingUpdatesRef.current = {
+      ...pendingUpdatesRef.current,
+      ...newUpdates
+    };
+
+    // Clear existing timer and schedule new one
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      const updatesToSend = { ...pendingUpdatesRef.current };
+      pendingUpdatesRef.current = {}; // Clear pending updates
+      
+      if (Object.keys(updatesToSend).length > 0) {
+        updateSettingsMutation.mutate(updatesToSend);
+      }
+    }, 1500); // 1.5 second delay
+  };
+
+  // Cleanup on unmount with better error handling
+  useEffect(() => {
+    return () => {
+      // Clear any pending timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      
+      // Flush any pending updates on unmount with error handling
+      // Check pendingUpdatesRef regardless of timer state for completeness
+      if (Object.keys(pendingUpdatesRef.current).length > 0 && currentUser) {
+        updateSettingsMutation.mutateAsync(pendingUpdatesRef.current).catch((error) => {
+          // Store failed updates in localStorage for retry on next mount
+          console.warn('Failed to save settings on unmount:', error);
+          localStorage.setItem('pendingSettingsUpdates', JSON.stringify(pendingUpdatesRef.current));
+        });
+      }
+    };
+  }, []);
+
+  // Retry failed updates from previous session or failed mutations
+  useEffect(() => {
+    const pendingFromStorage = localStorage.getItem('pendingSettingsUpdates');
+    if (pendingFromStorage && currentUser) {
+      try {
+        const updates = JSON.parse(pendingFromStorage);
+        if (Object.keys(updates).length > 0) {
+          // Use mutateAsync to handle success/failure properly
+          updateSettingsMutation.mutateAsync(updates)
+            .then(() => {
+              // Only remove on successful retry
+              localStorage.removeItem('pendingSettingsUpdates');
+            })
+            .catch((error) => {
+              console.warn('Retry failed, keeping in localStorage for next attempt:', error);
+              // Keep in localStorage for future retry
+            });
+        }
+      } catch (error) {
+        console.warn('Failed to parse pending settings updates:', error);
+        localStorage.removeItem('pendingSettingsUpdates');
+      }
+    }
+  }, [currentUser]);
+
+  // Apply dark mode theme whenever isDarkMode changes
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode);
+  }, [isDarkMode]);
+
+  // Sync state with loaded settings and localStorage
   useEffect(() => {
     if (settings) {
       setLanguage(settings.language || 'en');
       setTimezone(settings.timezone || 'pst');
       setEmailNotifications(settings.emailNotifications ?? true);
       setSmsNotifications(settings.smsNotifications ?? false);
+      setIsDarkMode(settings.darkMode ?? false); // Sync dark mode from backend
+    }
+    
+    // Load dark mode from localStorage for immediate application (fallback)
+    const savedDarkMode = localStorage.getItem('darkMode');
+    if (savedDarkMode && !settings?.darkMode) {
+      setIsDarkMode(savedDarkMode === 'true');
     }
   }, [settings]);
   
@@ -134,35 +231,61 @@ export default function Settings() {
   const [newDisplayName, setNewDisplayName] = useState("");
   const [isChangingName, setIsChangingName] = useState(false);
 
-  // Handlers with backend persistence
+  // Handlers with batched backend persistence  
   const handleLanguageChange = (value: 'en' | 'es' | 'fr') => {
     setLanguage(value);
-    updateSettingsMutation.mutate({ language: value });
+    scheduleBatchedUpdate({ language: value });
+    
+    // Immediate UI feedback
+    toast({
+      title: "Language Updated",
+      description: `Language changed to ${value === "en" ? "English" : value === "es" ? "Español" : "Français"}`,
+    });
   };
 
   const handleTimezoneChange = (value: string) => {
     setTimezone(value);
-    updateSettingsMutation.mutate({ timezone: value });
+    scheduleBatchedUpdate({ timezone: value });
+    
+    toast({
+      title: "Timezone Updated", 
+      description: "Your timezone preference will be saved",
+    });
   };
 
   const handleDarkModeToggle = (checked: boolean) => {
-    setIsDarkMode(checked);
-    // Note: Dark mode is typically stored in localStorage or theme context
-    // We'll keep this as local state for now
+    setIsDarkMode(checked); // This will trigger useEffect to apply theme
+    
+    // Immediate localStorage for instant UX
+    localStorage.setItem('darkMode', checked.toString());
+    
+    // CRITICAL FIX: Also persist to backend
+    scheduleBatchedUpdate({ darkMode: checked });
+    
     toast({
       title: checked ? "Dark Mode Enabled" : "Light Mode Enabled",
-      description: "Theme preference updated",
+      description: "Theme preference will be saved",
     });
   };
 
   const handleEmailNotificationsToggle = (checked: boolean) => {
     setEmailNotifications(checked);
-    updateSettingsMutation.mutate({ emailNotifications: checked });
+    scheduleBatchedUpdate({ emailNotifications: checked });
+    
+    toast({
+      title: checked ? "Email Notifications Enabled" : "Email Notifications Disabled",
+      description: "Notification preference will be saved",
+    });
   };
 
   const handleSmsNotificationsToggle = (checked: boolean) => {
     setSmsNotifications(checked);
-    updateSettingsMutation.mutate({ smsNotifications: checked });
+    scheduleBatchedUpdate({ smsNotifications: checked });
+    
+    toast({
+      title: checked ? "SMS Notifications Enabled" : "SMS Notifications Disabled", 
+      description: "Notification preference will be saved",
+    });
   };
 
   const handleLogout = async () => {
