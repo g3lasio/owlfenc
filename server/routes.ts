@@ -6124,6 +6124,14 @@ Output must be between 200-900 characters in English.`;
   // Profile endpoint used by frontend
   app.get("/api/profile", async (req: Request, res: Response) => {
     try {
+      // 🔍 DIAGNÓSTICO: Log detallado de headers para debug
+      console.log("🔍 [PROFILE-DEBUG] Headers recibidos:", {
+        authorization: req.headers.authorization ? `Bearer ${req.headers.authorization.substring(7, 20)}...` : 'MISSING',
+        'content-type': req.headers['content-type'],
+        origin: req.headers.origin,
+        userAgent: req.headers['user-agent']?.substring(0, 50)
+      });
+
       // Get Firebase UID from authorization header
       let firebaseUserId;
       const authHeader = req.headers.authorization;
@@ -6133,12 +6141,14 @@ Output must be between 200-900 characters in English.`;
           const token = authHeader.substring(7);
           const decodedToken = await admin.auth().verifyIdToken(token);
           firebaseUserId = decodedToken.uid;
-          console.log("✅ Token Firebase verificado, UID:", firebaseUserId);
+          console.log("✅ [PROFILE-DEBUG] Token Firebase verificado, UID:", firebaseUserId);
         } catch (authError) {
           console.warn(
-            "No se pudo verificar token Firebase, usando usuario de desarrollo",
+            "⚠️ [PROFILE-DEBUG] No se pudo verificar token Firebase:", authError.message,
           );
         }
+      } else {
+        console.warn("⚠️ [PROFILE-DEBUG] No authorization header found:", authHeader);
       }
 
       // First try to get the user from PostgreSQL by Firebase UID
