@@ -1646,8 +1646,8 @@ Output must be between 200-900 characters in English.`;
   app.use("/api/invoices", invoiceRoutes.default);
 
   // MIGRATION: Using Firebase-only routes instead of PostgreSQL
-  // app.use("/api/estimates", estimatesRoutes); // OLD PostgreSQL routes - DISABLED
-  app.use("/api/estimates", estimatesFirebaseRoutes); // NEW Firebase-only routes
+  app.use("/api/estimates", estimatesRoutes); // ✅ CONSOLIDATION: PostgreSQL routes ENABLED
+  // app.use("/api/estimates", estimatesFirebaseRoutes); // ❌ Firebase-only routes DISABLED for consolidation
 
   // PDF generation now handled exclusively by premiumPdfService in contract routes
 

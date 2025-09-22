@@ -2835,94 +2835,59 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         total: estimateData.displayTotal,
       });
 
-      // Guardar también en Firebase para máxima compatibilidad
+      // 🔄 MIGRATION: PostgreSQL-only storage (eliminando dual-writes)
+      console.log("💾 [CONSOLIDATION] Guardando estimate en PostgreSQL únicamente...");
+      
       try {
-        const firebaseDoc = {
-          ...estimateData,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          type: "estimate",
-          source: "estimates-wizard",
-        };
-
-        const estimateRef = await addDoc(
-          collection(db, "estimates"),
-          firebaseDoc,
-        );
-        console.log("✅ También guardado en Firebase:", estimateRef.id);
-
-        const projectRef = await addDoc(collection(db, "projects"), {
-          ...firebaseDoc,
-          projectId: estimateData.projectId,
-          status: "estimate",
-          type: "project",
+        // Llamada unificada al servidor PostgreSQL
+        const response = await fetch("/api/estimates", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            ...await getAuthHeaders(),
+          },
+          body: JSON.stringify(estimateData),
         });
-        console.log("✅ Proyecto creado en Firebase:", projectRef.id);
-      } catch (firebaseError) {
-        console.warn(
-          "⚠️ No se pudo guardar en Firebase, pero PostgreSQL funcionó:",
-          firebaseError,
-        );
-      }
 
-      console.log("💾 Guardando estimado:", estimateData);
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
 
-      // 3. Save directly to Firebase (primary storage)
-      console.log("💾 Guardando directamente en Firebase...");
+        const savedEstimate = await response.json();
+        console.log("✅ [CONSOLIDATION] Estimate guardado en PostgreSQL:", savedEstimate.id);
 
-      const estimateDoc = {
-        ...estimateData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        type: "estimate",
-        source: "estimates-wizard",
-      };
+        // 4. Save to localStorage solo como cache local (no como fuente de verdad)
+        try {
+          const localData = {
+            ...estimateData,
+            savedAt: new Date().toISOString(),
+            estimateId: savedEstimate.id,
+            source: "postgresql"
+          };
 
-      // Save to Firebase estimates collection
-      const estimateRef = await addDoc(
-        collection(db, "estimates"),
-        estimateDoc,
-      );
-      console.log(
-        "✅ Estimado guardado en Firebase estimates:",
-        estimateRef.id,
-      );
-
-      // Also save to Firebase projects collection for dashboard integration
-      const projectDoc = {
-        ...estimateData,
-        projectId: estimateRef.id,
-        estimateId: estimateRef.id,
-        type: "project",
-        source: "estimate",
-        status: "estimate",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      const projectRef = await addDoc(collection(db, "projects"), projectDoc);
-      console.log("✅ Estimado guardado en Firebase projects:", projectRef.id);
-
-      // 4. Save to localStorage as final backup
-      try {
-        const localData = {
-          ...estimateData,
-          savedAt: new Date().toISOString(),
-          estimateId: estimateRef.id,
-          projectId: projectRef.id,
-        };
-
-        const existingEstimates = JSON.parse(
-          localStorage.getItem("savedEstimates") || "[]",
-        );
-        existingEstimates.push(localData);
-        localStorage.setItem(
-          "savedEstimates",
-          JSON.stringify(existingEstimates),
-        );
-        console.log("✅ Estimado guardado en localStorage como respaldo");
-      } catch (localError) {
-        console.warn("⚠️ No se pudo guardar en localStorage:", localError);
+          const existingEstimates = JSON.parse(
+            localStorage.getItem("savedEstimates") || "[]",
+          );
+          existingEstimates.push(localData);
+          localStorage.setItem(
+            "savedEstimates",
+            JSON.stringify(existingEstimates),
+          );
+          console.log("✅ Cache local actualizado");
+        } catch (localError) {
+          console.warn("⚠️ Error actualizando cache local (no crítico):", localError);
+        }
+      } catch (serverError) {
+        console.error("❌ [CONSOLIDATION] Error guardando en PostgreSQL:", serverError);
+        
+        // Error crítico - mostrar al usuario
+        toast({
+          title: "Error al guardar estimate",
+          description: "No se pudo guardar en el servidor. Verifica tu conexión.",
+          variant: "destructive",
+        });
+        return;
       }
 
       // 5. Success feedback
