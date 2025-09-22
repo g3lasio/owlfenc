@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/contexts/PermissionContext";
+import { getAuthHeaders } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -22,116 +24,95 @@ interface Project {
 }
 
 function Projects() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   
   const { toast } = useToast();
   const { user } = useAuth();
-  const { hasAccess, showUpgradeModal } = usePermissions();
+  const { hasAccess, showUpgradeModal, loading: permissionsLoading } = usePermissions();
 
+  // 🚀 TANSTACK QUERY INTEGRATION for PostgreSQL projects - matching EstimatesWizard pattern
+  const { data: projects = [], isLoading, error } = useQuery({
+    queryKey: ["/api/projects"],
+    queryFn: async () => {
+      console.log("🔄 Loading projects from PostgreSQL via /api/projects...");
+      
+      const authHeaders = await getAuthHeaders();
+      const response = await fetch("/api/projects", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to load projects: ${response.status}`);
+      }
+
+      const allProjects: Project[] = await response.json();
+      console.log(`✅ Projects loaded from PostgreSQL: ${allProjects.length}`);
+      return allProjects;
+    },
+    enabled: !!user?.uid && hasAccess('projects'),
+  });
+
+  // Handle permissions and error states with useEffect
   useEffect(() => {
-    if (user?.uid) {
-      loadProjects();
-    }
-  }, [user?.uid]);
-
-  const loadProjects = async () => {
-    try {
-      setIsLoading(true);
-
-      if (!user?.uid) {
+    if (!user?.uid) {
+      if (user !== undefined) { // Only show error if auth check is complete
         toast({
           title: "🔐 Autenticación requerida",
           description: "Por favor inicia sesión para ver tus proyectos",
           variant: "destructive",
         });
-        return;
       }
+      return;
+    }
 
-      // ✅ FIXED: Revisar permisos pero permitir acceso temporal durante carga inicial
-      if (!hasAccess('projects')) {
-        // Solo bloquear si definitivamente no tiene acceso (no durante carga inicial)
-        const { loading } = usePermissions();
-        if (!loading) {
-          toast({
-            title: "⭐ Acceso Restringido",
-            description: "Tu plan actual no incluye acceso completo a gestión de proyectos",
-            variant: "destructive",
-          });
-          showUpgradeModal('projects', 'Gestiona proyectos con herramientas profesionales');
-          return;
+    if (!hasAccess('projects')) {
+      if (!permissionsLoading) {
+        toast({
+          title: "⭐ Acceso Restringido", 
+          description: "Tu plan actual no incluye acceso completo a gestión de proyectos",
+          variant: "destructive",
+        });
+        showUpgradeModal('projects', 'Gestiona proyectos con herramientas profesionales');
+      }
+    }
+  }, [user?.uid, hasAccess, toast, showUpgradeModal, permissionsLoading]);
+
+  // Handle query errors
+  useEffect(() => {
+    if (error) {
+      console.error("❌ Error loading projects:", error);
+      
+      let errorMessage = "No se pudieron cargar los proyectos";
+      if (error instanceof Error) {
+        if (error.message.includes("401")) {
+          errorMessage = "Sesión expirada. Por favor inicia sesión nuevamente";
+        } else if (error.message.includes("403")) {
+          errorMessage = "No tienes permisos para acceder a esta información";
+        } else if (error.message.includes("Failed to fetch")) {
+          errorMessage = "Error de conexión. Verifica tu internet e intenta nuevamente";
         }
       }
-
-      console.log("🚀 NUEVA PÁGINA PROJECTS CARGANDO...");
-
-      // Cargar datos de Firebase
-      const { collection, getDocs, query, where } = await import("firebase/firestore");
-      const { db } = await import("@/lib/firebase");
-
-      const allProjects: Project[] = [];
-
-      // Cargar estimados
-      const estimatesRef = collection(db, "estimates");
-      const estimatesQuery = query(estimatesRef, where("userId", "==", user.uid));
-      const estimatesSnapshot = await getDocs(estimatesQuery);
-
-      estimatesSnapshot.forEach((doc) => {
-        const data = doc.data();
-        allProjects.push({
-          id: doc.id,
-          clientName: data.clientName || "Cliente no especificado",
-          address: data.address || data.clientAddress || "Dirección no especificada",
-          projectType: data.projectType || "General",
-          status: data.status || "estimate",
-          totalPrice: data.totalAmount || data.totalPrice || 0,
-          createdAt: data.createdAt,
-          source: "estimates"
-        });
-      });
-
-      // Cargar proyectos
-      const projectsRef = collection(db, "projects");
-      const projectsQuery = query(projectsRef, where("userId", "==", user.uid));
-      const projectsSnapshot = await getDocs(projectsQuery);
-
-      projectsSnapshot.forEach((doc) => {
-        const data = doc.data();
-        allProjects.push({
-          id: doc.id,
-          clientName: data.clientName || "Cliente no especificado",
-          address: data.address || data.clientAddress || "Dirección no especificada",
-          projectType: data.projectType || "General",
-          status: data.status || "active",
-          totalPrice: data.totalPrice || data.totalAmount || 0,
-          createdAt: data.createdAt,
-          source: "projects"
-        });
-      });
-
-      console.log(`✅ NUEVA PÁGINA: Proyectos cargados: ${allProjects.length}`);
-      setProjects(allProjects);
-
-    } catch (error) {
-      console.error("❌ Error loading projects:", error);
+      
       toast({
+        title: "Error al cargar proyectos",
+        description: errorMessage,
         variant: "destructive",
-        title: "Error",
-        description: "No se pudieron cargar los proyectos.",
       });
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [error, toast]);
 
-  // Filtrar proyectos
+  // Filtrar proyectos - NULL-SAFE filtering for database nullable fields
   const filteredProjects = projects.filter((project) => {
     const matchesSearch = 
-      project.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.projectType.toLowerCase().includes(searchTerm.toLowerCase());
+      (project.clientName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (project.address?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (project.projectType?.toLowerCase() || "").includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === "all" || project.status === statusFilter;
     
