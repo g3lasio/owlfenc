@@ -7,7 +7,7 @@
  */
 
 import { firebaseSubscriptionService } from './firebaseSubscriptionService';
-import { userMappingService } from './UserMappingService';
+import { userMappingService } from './userMappingService';
 
 interface UserIdentity {
   firebaseUid: string;
@@ -53,7 +53,11 @@ class UserIdentityService {
       throw new Error('❌ [USER-IDENTITY] Firebase UID requerido');
     }
 
-    const postgresUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
+    let postgresUserId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!postgresUserId) {
+      const result = await userMappingService.createMapping(firebaseUid, email || '');
+      postgresUserId = result?.id || 0;
+    }
     const legacyEmailBasedId = email ? `user_${email.replace(/[@.]/g, '_')}` : undefined;
 
     return {

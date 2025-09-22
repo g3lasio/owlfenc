@@ -6,12 +6,10 @@ import { Router } from 'express';
 import { storage } from '../storage';
 import { insertProjectSchema } from '@shared/schema';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
-import { UserMappingService } from '../services/UserMappingService';
+import { userMappingService } from '../services/userMappingService';
 import { DatabaseStorage } from '../DatabaseStorage';
 
-// Inicializar UserMappingService
-const databaseStorage = new DatabaseStorage();
-const userMappingService = UserMappingService.getInstance(databaseStorage);
+// userMappingService is imported directly as singleton
 
 const router = Router();
 
@@ -39,7 +37,8 @@ router.post('/', verifyFirebaseAuth, async (req, res) => {
     }
     let userId = await userMappingService.getInternalUserId(firebaseUid);
     if (!userId) {
-      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      const result = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      userId = result?.id;
     }
     if (!userId) {
       return res.status(500).json({ success: false, message: 'Error creando mapeo de usuario' });
@@ -109,7 +108,8 @@ router.get('/', verifyFirebaseAuth, async (req, res) => {
     }
     let userId = await userMappingService.getInternalUserId(firebaseUid);
     if (!userId) {
-      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      const result = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      userId = result?.id;
     }
     if (!userId) {
       return res.status(500).json({ success: false, message: 'Error creando mapeo de usuario' });

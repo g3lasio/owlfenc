@@ -6,12 +6,10 @@ import { db } from "../db";
 import { z } from "zod";
 import { verifyFirebaseAuth } from "../middleware/firebase-auth";
 import { requireSubscriptionLevel, PermissionLevel } from "../middleware/subscription-auth";
-import { UserMappingService } from "../services/UserMappingService";
+import { userMappingService } from "../services/userMappingService";
 import { DatabaseStorage } from "../DatabaseStorage";
 
-// Inicializar UserMappingService
-const databaseStorage = new DatabaseStorage();
-const userMappingService = UserMappingService.getInstance(databaseStorage);
+// userMappingService is imported directly as singleton
 
 const createProfessionalTemplate = async () => {
   try {

@@ -2,13 +2,11 @@ import { Router } from 'express';
 import { intelligentImportService } from '../services/intelligentImportService';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { DatabaseStorage } from '../DatabaseStorage';
-import { UserMappingService } from '../services/UserMappingService';
+import { userMappingService } from '../services/userMappingService';
 
 const router = Router();
 
-// Crear instancia del servicio de mapeo de usuarios
-const storage = new DatabaseStorage();
-const userMappingService = UserMappingService.getInstance(storage);
+// userMappingService is imported directly as singleton
 
 /**
  * POST /api/intelligent-import/csv
@@ -27,10 +25,11 @@ router.post('/csv', verifyFirebaseAuth, async (req, res) => {
     }
 
     // Mapear Firebase UID a userId de PostgreSQL
-    const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(
-      req.firebaseUser.uid,
-      req.firebaseUser.email
-    );
+    let userId = await userMappingService.getInternalUserId(req.firebaseUser.uid);
+    if (!userId) {
+      const result = await userMappingService.createMapping(req.firebaseUser.uid, req.firebaseUser.email || '');
+      userId = result?.id;
+    }
     const { csvContent } = req.body;
     
     if (!csvContent) {

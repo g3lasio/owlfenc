@@ -1,5 +1,5 @@
 import { DatabaseStorage } from '../DatabaseStorage';
-import { UserMappingService } from '../services/UserMappingService';
+import { userMappingService } from '../services/userMappingService';
 
 /**
  * CRITICAL: Secure User Helper
@@ -8,10 +8,10 @@ import { UserMappingService } from '../services/UserMappingService';
  * It ELIMINATES all dangerous userId = 1 fallbacks.
  */
 
-let userMappingService: UserMappingService;
+// userMappingService is now imported as singleton
 
 export function initSecureUserHelper(storage: DatabaseStorage) {
-  userMappingService = UserMappingService.getInstance(storage);
+  // userMappingService is now imported as singleton
 }
 
 /**
@@ -19,16 +19,21 @@ export function initSecureUserHelper(storage: DatabaseStorage) {
  * NEVER returns userId = 1 as fallback
  */
 export async function getSecureUserId(firebaseUid: string, email?: string): Promise<number> {
-  if (!userMappingService) {
-    throw new Error("SecureUserHelper not initialized. Call initSecureUserHelper() first.");
-  }
+  // userMappingService is always available as singleton
 
   if (!firebaseUid) {
     throw new Error("Firebase UID is required for secure user identification");
   }
 
   try {
-    const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid, email);
+    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      const result = await userMappingService.createMapping(firebaseUid, email || '');
+      userId = result?.id;
+    }
+    if (!userId) {
+      throw new Error('Failed to create user mapping');
+    }
     console.log(`✅ [SECURE-USER] Mapped ${firebaseUid} → ${userId}`);
     return userId;
   } catch (error) {
@@ -41,9 +46,7 @@ export async function getSecureUserId(firebaseUid: string, email?: string): Prom
  * SECURE: Verify user ownership of data
  */
 export async function verifyUserOwnership(firebaseUid: string, dataUserId: number): Promise<boolean> {
-  if (!userMappingService) {
-    throw new Error("SecureUserHelper not initialized");
-  }
+  // userMappingService is always available as singleton
 
   try {
     return await userMappingService.verifyUserOwnership(firebaseUid, dataUserId);
@@ -58,13 +61,21 @@ export async function verifyUserOwnership(firebaseUid: string, dataUserId: numbe
  * Use this to fix existing code that uses unsafe fallbacks
  */
 export function createSecureUserIdGetter(storage: DatabaseStorage) {
-  const mappingService = UserMappingService.getInstance(storage);
+  const mappingService = userMappingService;
   
   return async (firebaseUid?: string, email?: string): Promise<number> => {
     if (!firebaseUid) {
       throw new Error("SECURITY: Cannot provide user ID without Firebase UID. Dangerous userId = 1 fallback eliminated.");
     }
     
-    return await mappingService.getOrCreateUserIdForFirebaseUid(firebaseUid, email);
+    let userId = await mappingService.getInternalUserId(firebaseUid);
+    if (!userId) {
+      const result = await mappingService.createMapping(firebaseUid, email || '');
+      userId = result?.id;
+    }
+    if (!userId) {
+      throw new Error('Failed to create user mapping');
+    }
+    return userId;
   };
 }
