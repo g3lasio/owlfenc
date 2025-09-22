@@ -25,12 +25,12 @@ import { apiRequest } from "../lib/queryClient";
 
 // 🛡️ COMPREHENSIVE TRIPLE-LAYER FETCH ERROR ELIMINATION FOR AUTHCONTEXT
 async function getTokenWithTripleLayerProtection(user: any): Promise<string> {
-  // LAYER 1: Aggressive timeout with retry
+  // LAYER 1: Aggressive timeout with retry (increased timeout for production)
   try {
     const token = await Promise.race([
       user.getIdToken(false),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Token timeout')), 3000)
+        setTimeout(() => reject(new Error('Token timeout')), 6000) // Increased from 3000
       )
     ]);
     
@@ -41,12 +41,12 @@ async function getTokenWithTripleLayerProtection(user: any): Promise<string> {
     // Silent - continue to Layer 2
   }
 
-  // LAYER 2: Force refresh with shorter timeout
+  // LAYER 2: Force refresh with longer timeout (increased for production)
   try {
     const refreshedToken = await Promise.race([
       user.getIdToken(true),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Refresh timeout')), 2000)
+        setTimeout(() => reject(new Error('Refresh timeout')), 4000) // Increased from 2000
       )
     ]);
     
@@ -57,10 +57,15 @@ async function getTokenWithTripleLayerProtection(user: any): Promise<string> {
     // Silent - continue to Layer 3
   }
 
-  // LAYER 3: Fallback to mock token (graceful degradation)
-  const mockToken = `mock_token_${user.uid}_${Date.now()}`;
-  console.debug('🔧 [AUTH-CONTEXT-FALLBACK] Usando token mock para continuidad');
-  return mockToken;
+  // LAYER 3: Mock token only in development mode (SECURITY FIX)
+  if (isDevelopmentMode()) {
+    const mockToken = `mock_token_${user.uid}_${Date.now()}`;
+    console.debug('🔧 [AUTH-CONTEXT-FALLBACK] Usando token mock para continuidad (solo desarrollo)');
+    return mockToken;
+  }
+
+  // Production: Throw error instead of using mock token
+  throw new Error('Failed to obtain valid Firebase ID token after multiple attempts');
 }
 
 type User = {
