@@ -1679,108 +1679,15 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     estimate.projectDetails,
   ]);
 
-  // 💾 FUNCIÓN DE AUTOGUARDADO SIN INDICADOR (para uso interno)
+  // 🔄 CONSOLIDATION: Autoguardado PostgreSQL-only
   const autoSaveEstimateChangesWithoutIndicator = useCallback(async () => {
-    // ✅ FIXED: Resilient auth check - allow save if we have profile data
+    // MIGRATION: Autoguardado deshabilitado durante consolidación PostgreSQL
+    // TODO: Implementar autoguardado PostgreSQL via /api/estimates en futuras versiones
     if ((!currentUser?.uid && !profile?.email) || !estimate.client || estimate.items.length === 0) {
-      return; // No autoguardar si no hay datos válidos
+      return;
     }
-
-    try {
-      console.log("💾 AUTOGUARDADO: Actualizando proyecto existente...");
-
-      // Preparar datos completos del estimado con descuentos e impuestos
-      const estimateNumber = `EST-${Date.now()}`;
-      const estimateData = {
-        firebaseUserId: currentUser?.uid,
-        estimateNumber,
-
-        // Información completa del cliente
-        clientName: estimate.client.name,
-        clientEmail: estimate.client.email || "",
-        clientPhone: estimate.client.phone || "",
-        clientAddress: estimate.client.address || "",
-        clientInformation: estimate.client,
-
-        // Detalles del proyecto
-        projectDescription: estimate.projectDetails,
-        projectType: "construction",
-
-        // Items completos - VALORES DIRECTOS SIN CONVERSIONES
-        items: estimate.items.map((item, index) => ({
-          id: item.id,
-          materialId: item.materialId || "",
-          name: item.name,
-          description: item.description || "",
-          quantity: item.quantity,
-          unit: item.unit || "unit",
-          unitPrice: item.price, // NO convertir a centavos
-          price: item.price, // Agregar precio directo
-          totalPrice: item.total, // NO convertir a centavos
-          total: item.total, // Agregar total directo
-          sortOrder: index,
-          isOptional: false,
-        })),
-
-        // DATOS FINANCIEROS DIRECTOS - SIN CONVERSIONES A CENTAVOS
-        subtotal: estimate.subtotal,
-        taxRate: estimate.taxRate,
-        taxAmount: estimate.tax,
-        tax: estimate.tax, // Agregar tax directo
-
-        // DESCUENTOS DIRECTOS - SIN CONVERSIONES
-        discount: estimate.discountAmount || 0,
-        discountType: estimate.discountType || "percentage",
-        discountValue: estimate.discountValue || 0,
-        discountAmount: estimate.discountAmount || 0,
-        discountName: estimate.discountName || "",
-
-        total: estimate.total,
-
-        // Display-friendly totals (mismos valores)
-        displaySubtotal: estimate.subtotal,
-        displayTax: estimate.tax,
-        displayTotal: estimate.total,
-        displayDiscountAmount: estimate.discountAmount || 0,
-
-        // Metadata
-        status: "draft",
-        type: "estimate",
-        source: "estimates-wizard-autosave",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      // Buscar proyecto existente para el mismo cliente
-      const { collection, query, where, getDocs, addDoc, updateDoc, doc } =
-        await import("firebase/firestore");
-      const { db } = await import("@/lib/firebase");
-
-      const existingQuery = query(
-        collection(db, "estimates"),
-        where("firebaseUserId", "==", currentUser?.uid),
-        where("clientName", "==", estimate.client.name),
-      );
-
-      const querySnapshot = await getDocs(existingQuery);
-
-      if (!querySnapshot.empty) {
-        // Actualizar proyecto existente
-        const existingDoc = querySnapshot.docs[0];
-        const docRef = doc(db, "estimates", existingDoc.id);
-        await updateDoc(docRef, estimateData);
-        console.log("✅ AUTOGUARDADO: Proyecto actualizado:", existingDoc.id);
-      } else {
-        // Crear nuevo proyecto si no existe
-        const docRef = await addDoc(collection(db, "estimates"), estimateData);
-        console.log("✅ AUTOGUARDADO: Nuevo proyecto creado:", docRef.id);
-      }
-    } catch (error) {
-      console.error("❌ AUTOGUARDADO: Error:", error);
-      // Silenciar errores de autoguardado para no interrumpir al usuario
-    } finally {
-      // ✅ NO MANEJAR INDICADOR AQUÍ - Se maneja en el useEffect principal
-    }
+    
+    console.log("ℹ️ [CONSOLIDATION] Autoguardado Firebase eliminado - solo guardado manual PostgreSQL");
   }, [currentUser?.uid, estimate]);
 
   // 💾 FUNCIÓN DE AUTOGUARDADO PÚBLICA (con indicador) - Para uso manual
