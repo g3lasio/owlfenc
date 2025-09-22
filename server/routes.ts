@@ -3229,41 +3229,24 @@ Output must be between 200-900 characters in English.`;
   });
 
   // SECURE Endpoint: Only returns materials for the authenticated user
-  app.get("/api/materials", async (req: Request, res: Response) => {
+  app.get("/api/materials", requireAuth, async (req: Request, res: Response) => {
     try {
-      // CRITICAL SECURITY: Verify user authentication
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
+      // Get authenticated user ID from requireAuth middleware
+      const userId = req.user?.uid;
 
-      const firebaseToken = authHeader.substring(7);
-
-      try {
-        // Verify Firebase token and get user ID
-        const admin = require("firebase-admin");
-        const decodedToken = await admin.auth().verifyIdToken(firebaseToken);
-        const userId = decodedToken.uid;
-
-        if (!userId) {
-          return res
-            .status(401)
-            .json({ message: "Invalid authentication token" });
-        }
-
-        // Get user-specific materials only
-        const materials = await storage.getUserMaterials(userId);
-
-        console.log(
-          `🔒 SECURE: Returning ${materials.length} materials for user ${userId}`,
-        );
-        res.json(materials);
-      } catch (tokenError) {
-        console.error("Token verification failed:", tokenError);
+      if (!userId) {
         return res
           .status(401)
           .json({ message: "Invalid authentication token" });
       }
+
+      // Get user-specific materials only
+      const materials = await storage.getUserMaterials(userId);
+
+      console.log(
+        `🔒 SECURE: Returning ${materials.length} materials for user ${userId}`,
+      );
+      res.json(materials);
     } catch (error) {
       console.error("Error fetching user materials:", error);
       res.status(500).json({ message: "Error obteniendo materiales" });
