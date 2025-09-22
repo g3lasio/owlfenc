@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { adminAuth } from '../firebase-admin';
-import { UserMappingService } from '../services/UserMappingService';
+import { userMappingService } from '../services/userMappingService';
 import { storage } from '../storage';
 
 const router = Router();

@@ -10,7 +10,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { adminAuth } from '../firebase-admin';
-import { UserMappingService } from '../services/UserMappingService';
+import { userMappingService } from '../services/userMappingService';
 import { storage } from '../storage';
 
 // Extended Request interface with auth data
@@ -113,11 +113,13 @@ export const unifiedSessionAuth = (options: AuthOptions = { requireAuth: true })
       // STEP 4: Get or create internal user mapping
       let internalUserId: number | null = null;
       try {
-        const userMappingService = UserMappingService.getInstance(storage);
-        internalUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(
-          decodedClaims.uid,
-          decodedClaims.email || ''
-        );
+        // CORREGIDO: Usar servicio unificado consolidado
+        internalUserId = await userMappingService.getInternalUserId(decodedClaims.uid);
+        
+        if (!internalUserId && decodedClaims.email) {
+          const mappingResult = await userMappingService.createMapping(decodedClaims.uid, decodedClaims.email);
+          internalUserId = mappingResult?.id || null;
+        }
       } catch (mappingError) {
         console.error('❌ [UNIFIED-AUTH] User mapping failed:', mappingError);
         if (options.requireAuth !== false) {

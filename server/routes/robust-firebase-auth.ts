@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { userMappingService } from '../services/userMappingService';
+import { adminAuth } from '../firebase-admin';
 
 /**
  * RUTAS ROBUSTAS DE AUTENTICACIÓN FIREBASE
@@ -11,12 +12,43 @@ export function registerRobustFirebaseAuthRoutes(app: any) {
   // Obtener datos completos del usuario autenticado
   app.post('/api/auth/user-data', async (req: Request, res: Response) => {
     try {
-      const { firebaseUid, email } = req.body;
+      const { firebaseUid, email, idToken } = req.body;
 
-      if (!firebaseUid || !email) {
+      if (!firebaseUid || !email || !idToken) {
         return res.status(400).json({
-          error: 'Firebase UID and email are required',
+          error: 'Firebase UID, email, and valid ID token are required',
           code: 'MISSING_CREDENTIALS'
+        });
+      }
+
+      // 🔐 SECURITY FIX: VERIFICAR TOKEN FIREBASE ANTES DE PROCESAR
+      let decodedToken;
+      try {
+        decodedToken = await adminAuth.verifyIdToken(idToken);
+        
+        // Verificar que el UID del token coincida con el enviado
+        if (decodedToken.uid !== firebaseUid) {
+          return res.status(401).json({
+            error: 'Token UID mismatch',
+            code: 'TOKEN_UID_MISMATCH'
+          });
+        }
+
+        // SECURITY: Verificar que el email esté verificado en Firebase
+        if (!decodedToken.email_verified) {
+          return res.status(401).json({
+            error: 'Email not verified in Firebase',
+            code: 'EMAIL_NOT_VERIFIED'
+          });
+        }
+
+        console.log(`🔐 [ROBUST-AUTH] Token verificado exitosamente para: ${decodedToken.email}`);
+        
+      } catch (tokenError) {
+        console.error('❌ [ROBUST-AUTH] Token verification failed:', tokenError);
+        return res.status(401).json({
+          error: 'Invalid Firebase token',
+          code: 'INVALID_TOKEN'
         });
       }
 
@@ -28,10 +60,21 @@ export function registerRobustFirebaseAuthRoutes(app: any) {
       
       if (!internalUserId) {
         console.log(`📝 [ROBUST-AUTH] Creating new user mapping for: ${email}`);
-        internalUserId = await userMappingService.createMapping(firebaseUid, email);
-        isNewUser = true; // Usuario completamente nuevo
+        const mappingResult = await userMappingService.createMapping(firebaseUid, email);
+        
+        if (!mappingResult) {
+          return res.status(500).json({
+            error: 'Could not create or find internal user',
+            code: 'USER_MAPPING_FAILED'
+          });
+        }
+        
+        internalUserId = mappingResult.id;
+        isNewUser = mappingResult.wasCreated; // CORREGIDO: Solo es nuevo si se CREÓ el registro
+        
+        console.log(`🔍 [ROBUST-AUTH] User mapping result: internalUserId=${internalUserId}, wasCreated=${mappingResult.wasCreated}`);
       }
-
+      
       if (!internalUserId) {
         return res.status(500).json({
           error: 'Could not create or find internal user',

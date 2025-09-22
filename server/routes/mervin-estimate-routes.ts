@@ -3,12 +3,7 @@ import { Express, Request, Response } from "express";
 import { z } from "zod";
 import { mervinEstimateService } from "../services/mervinEstimateService";
 import { verifyFirebaseAuth } from "../middleware/firebase-auth";
-import { UserMappingService } from "../services/UserMappingService";
-import { DatabaseStorage } from "../DatabaseStorage";
-
-// Inicializar UserMappingService
-const databaseStorage = new DatabaseStorage();
-const userMappingService = UserMappingService.getInstance(databaseStorage); 
+import { userMappingService } from "../services/userMappingService"; 
 
 export function registerMervinEstimateRoutes(app: Express): void {
   // Endpoint para procesar comando de estimado a través de Mervin
@@ -29,7 +24,8 @@ export function registerMervinEstimateRoutes(app: Express): void {
       }
       let userId = await userMappingService.getInternalUserId(firebaseUid);
       if (!userId) {
-        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+        const mappingResult = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+        userId = mappingResult?.id || null;
       }
       if (!userId) {
         return res.status(500).json({ type: "error", message: "Error creando mapeo de usuario" });

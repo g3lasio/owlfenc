@@ -9,14 +9,9 @@ import { insertEstimateSchema } from '@shared/schema';
 import { z } from 'zod';
 import { verifyFirebaseAuth as requireAuth } from '../middleware/firebase-auth';
 import { requireSubscriptionLevel, PermissionLevel } from '../middleware/subscription-auth';
-import { UserMappingService } from '../services/UserMappingService';
-import { DatabaseStorage } from '../DatabaseStorage';
+import { userMappingService } from '../services/userMappingService';
 
 const router = express.Router();
-
-// Inicializar UserMappingService
-const databaseStorage = new DatabaseStorage();
-const userMappingService = UserMappingService.getInstance(databaseStorage);
 
 // GET /api/estimates - Obtener todos los estimados del usuario
 router.get('/', requireAuth, async (req, res) => {
@@ -26,7 +21,8 @@ router.get('/', requireAuth, async (req, res) => {
     let userId = await userMappingService.getInternalUserId(firebaseUid);
     if (!userId) {
       // Crear mapeo si no existe
-      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser.email || `${firebaseUid}@firebase.auth`);
+      const mappingResult = await userMappingService.createMapping(firebaseUid, req.firebaseUser.email || `${firebaseUid}@firebase.auth`);
+      userId = mappingResult?.id || null;
     }
     if (!userId) {
       return res.status(500).json({ error: 'Error creando mapeo de usuario' });

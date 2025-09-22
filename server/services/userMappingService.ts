@@ -47,16 +47,19 @@ export class UserMappingService {
 
   /**
    * Crear mapeo para usuario existente
+   * CORREGIDO: Ahora retorna {id, wasCreated} para detectar usuarios nuevos vs existentes
    */
-  async createMapping(firebaseUid: string, email: string): Promise<number | null> {
+  async createMapping(firebaseUid: string, email: string): Promise<{id: number, wasCreated: boolean} | null> {
     try {
-      console.log(`🔄 [USER-MAPPING] Creando mapeo para ${email} (${firebaseUid})`);
+      // NORMALIZACIÓN DE EMAIL: Eliminar espacios y convertir a lowercase
+      const normalizedEmail = email.trim().toLowerCase();
+      console.log(`🔄 [USER-MAPPING] Creando mapeo para ${normalizedEmail} (${firebaseUid})`);
       
-      // Primero intentar encontrar usuario por email
+      // Primero intentar encontrar usuario por email NORMALIZADO
       const existingUserResult = await db!
         .select({ id: users.id, email: users.email })
         .from(users)
-        .where(eq(users.email, email))
+        .where(eq(users.email, normalizedEmail))
         .limit(1);
       
       if (existingUserResult.length > 0) {
@@ -68,28 +71,28 @@ export class UserMappingService {
           .set({ firebaseUid })
           .where(eq(users.id, existingUser.id));
         
-        console.log(`✅ [USER-MAPPING] Mapeo creado: ${email} -> user_id ${existingUser.id}`);
-        return existingUser.id;
+        console.log(`✅ [USER-MAPPING] Mapeo actualizado: ${normalizedEmail} -> user_id ${existingUser.id} (USUARIO EXISTENTE)`);
+        return { id: existingUser.id, wasCreated: false }; // Usuario existente, no crear trial
       }
       
-      // Si no existe, crear nuevo usuario con campos obligatorios
+      // Si no existe, crear nuevo usuario con campos obligatorios Y EMAIL NORMALIZADO
       const newUserResult = await db!
         .insert(users)
         .values({
-          username: email.split('@')[0],
+          username: normalizedEmail.split('@')[0],
           password: '', // Empty password for Firebase users
-          email,
+          email: normalizedEmail, // USAR EMAIL NORMALIZADO
           firebaseUid,
           company: '',
-          ownerName: email.split('@')[0],
+          ownerName: normalizedEmail.split('@')[0],
           role: 'contractor',
         })
         .returning({ id: users.id });
       
       if (newUserResult.length > 0) {
         const newUserId = newUserResult[0].id;
-        console.log(`✅ [USER-MAPPING] Usuario creado: ${email} -> user_id ${newUserId}`);
-        return newUserId;
+        console.log(`✅ [USER-MAPPING] Usuario NUEVO creado: ${normalizedEmail} -> user_id ${newUserId}`);
+        return { id: newUserId, wasCreated: true }; // Usuario verdaderamente nuevo, crear trial
       }
       
       return null;
@@ -149,64 +152,78 @@ export class UserMappingService {
   }
 
   /**
-   * Crear suscripción trial para Firebase UID
+   * Crear suscripción trial para Firebase UID - IDEMPOTENTE
+   * CORREGIDO: Solo crear trial para usuarios VERDADERAMENTE NUEVOS
    */
-  async createTrialSubscriptionForFirebaseUid(firebaseUid: string, email: string) {
+  async createTrialSubscriptionForFirebaseUid(firebaseUid: string, email: string, forceCreateForNewUser: boolean = false) {
     try {
-      console.log(`🆓 [USER-MAPPING] Creando trial para ${email} (${firebaseUid})`);
+      const normalizedEmail = email.trim().toLowerCase();
+      console.log(`🆓 [USER-MAPPING] Creando trial para ${normalizedEmail} (${firebaseUid})`);
       
       // Obtener o crear mapeo de usuario
       let internalUserId = await this.getInternalUserId(firebaseUid);
+      let wasUserCreated = false;
       
       if (!internalUserId) {
-        internalUserId = await this.createMapping(firebaseUid, email);
+        const mappingResult = await this.createMapping(firebaseUid, normalizedEmail);
+        if (!mappingResult) {
+          throw new Error('No se pudo crear o encontrar usuario interno');
+        }
+        internalUserId = mappingResult.id;
+        wasUserCreated = mappingResult.wasCreated;
       }
       
-      if (!internalUserId) {
-        throw new Error('No se pudo crear o encontrar usuario interno');
-      }
+      // PROTECCIÓN ANTI-DUPLICADOS: Verificar si YA EXISTE CUALQUIER SUSCRIPCIÓN (activa, cancelada, trial previa)
+      // USANDO TRANSACCIÓN para evitar race conditions
+      return await db!.transaction(async (tx) => {
+        const anyExistingSubscription = await tx
+          .select()
+          .from(userSubscriptions)
+          .where(eq(userSubscriptions.userId, internalUserId))
+          .limit(1);
+        
+        if (anyExistingSubscription.length > 0) {
+          console.log(`🚫 [TRIAL-PROTECTION] Usuario ${internalUserId} ya tiene historial de suscripción - NO crear nuevo trial`);
+          return anyExistingSubscription[0];
+        }
+
+        // SOLO CREAR TRIAL si es usuario verdaderamente nuevo O se fuerza explícitamente
+        if (!wasUserCreated && !forceCreateForNewUser) {
+          console.log(`🚫 [TRIAL-PROTECTION] Usuario ${internalUserId} es existente por email - NO crear trial automático`);
+          return null;
+        }
+
+        // Obtener plan Free Trial
+        const trialPlan = await tx
+          .select()
+          .from(subscriptionPlans)
+          .where(eq(subscriptionPlans.name, 'Free Trial'))
+          .limit(1);
+        
+        if (trialPlan.length === 0) {
+          throw new Error('Free Trial plan not found');
+        }
+        
+        // Crear suscripción trial de 21 días DENTRO DE LA TRANSACCIÓN
+        const trialStart = new Date();
+        const trialEnd = new Date(Date.now() + (21 * 24 * 60 * 60 * 1000)); // 21 días
+        
+        const newSubscription = await tx
+          .insert(userSubscriptions)
+          .values({
+            userId: internalUserId,
+            planId: trialPlan[0].id,
+            status: 'trialing',
+            currentPeriodStart: trialStart,
+            currentPeriodEnd: trialEnd,
+            billingCycle: 'monthly'
+          })
+          .returning();
+        
+        console.log(`✅ [USER-MAPPING] Trial creado de forma IDEMPOTENTE para user_id ${internalUserId}`);
+        return newSubscription[0];
+      });
       
-      // Verificar si ya tiene suscripción
-      const existingSubscription = await db!
-        .select()
-        .from(userSubscriptions)
-        .where(eq(userSubscriptions.userId, internalUserId))
-        .limit(1);
-      
-      if (existingSubscription.length > 0) {
-        console.log(`⚠️ [USER-MAPPING] Usuario ${internalUserId} ya tiene suscripción`);
-        return existingSubscription[0];
-      }
-      
-      // Obtener plan Free Trial
-      const trialPlan = await db!
-        .select()
-        .from(subscriptionPlans)
-        .where(eq(subscriptionPlans.name, 'Free Trial'))
-        .limit(1);
-      
-      if (trialPlan.length === 0) {
-        throw new Error('Free Trial plan not found');
-      }
-      
-      // Crear suscripción trial de 21 días
-      const trialStart = new Date();
-      const trialEnd = new Date(Date.now() + (21 * 24 * 60 * 60 * 1000)); // 21 días
-      
-      const newSubscription = await db!
-        .insert(userSubscriptions)
-        .values({
-          userId: internalUserId,
-          planId: trialPlan[0].id,
-          status: 'trialing',
-          currentPeriodStart: trialStart,
-          currentPeriodEnd: trialEnd,
-          billingCycle: 'monthly'
-        })
-        .returning();
-      
-      console.log(`✅ [USER-MAPPING] Trial creado para user_id ${internalUserId}`);
-      return newSubscription[0];
       
     } catch (error) {
       console.error('❌ [USER-MAPPING] Error creating trial:', error);
