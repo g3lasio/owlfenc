@@ -1,13 +1,6 @@
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase';
+// 🔥 NO STATIC FIREBASE IMPORTS - Use existing useAuth from AuthContext  
+import { useAuth as useAuthContext } from '@/contexts/AuthContext';
 
 export function useAuth() {
-  const [user, loading, error] = useAuthState(auth);
-
-  return {
-    user,
-    loading,
-    error,
-    isAuthenticated: !!user
-  };
+  return useAuthContext();
 }

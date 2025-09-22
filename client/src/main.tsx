@@ -9,28 +9,35 @@ import './lib/unified-error-handler';
 
 console.log('🛡️ [MAIN] Sistema unificado de errores activado');
 
-// 🛡️ SISTEMA ROBUSTO DE NIVEL ENTERPRISE
-// Inicialización automática para prevenir pérdida de datos
+// 🛡️ SISTEMA ROBUSTO DE NIVEL ENTERPRISE - ENV-GATED
+// Inicialización automática para prevenir pérdida de datos SOLO si Firebase está habilitado
+const USE_FIREBASE_AUTH = import.meta.env.VITE_USE_FIREBASE_AUTH === 'true';
+
 (async () => {
   try {
     console.log('🚀 [ENTERPRISE] Inicializando sistemas robustos...');
     
-    // Sistema de autenticación robusto con múltiples fallbacks
-    const { robustAuth } = await import('./lib/robust-auth-manager');
-    await robustAuth.initialize();
-    console.log('✅ [ENTERPRISE] Sistema de autenticación robusto inicializado');
+    if (USE_FIREBASE_AUTH) {
+      // Sistema de autenticación robusto con múltiples fallbacks - SOLO FIREBASE
+      console.log('🔥 [ENTERPRISE] Firebase habilitado - inicializando robust auth...');
+      const { robustAuth } = await import('./lib/robust-auth-manager');
+      await robustAuth.initialize();
+      console.log('✅ [ENTERPRISE] Sistema de autenticación robusto inicializado');
+      
+      // Cleanup al cerrar la aplicación
+      window.addEventListener('beforeunload', () => {
+        robustAuth.destroy();
+      });
+    } else {
+      console.log('🚫 [ENTERPRISE] Firebase deshabilitado - omitiendo robust auth');
+      console.log('✅ [ENTERPRISE] Usando SessionAdapter - no requiere robust auth');
+    }
     
     // Sistema de monitoreo de integridad de datos  
     // DATA MONITOR DESHABILITADO - Causaba errores masivos de fetch
     // const { dataMonitor } = await import('./lib/data-integrity-monitor');
     // dataMonitor.startMonitoring();
     console.log('✅ [ENTERPRISE] Monitor de integridad de datos iniciado');
-    
-    // Cleanup al cerrar la aplicación
-    window.addEventListener('beforeunload', () => {
-      robustAuth.destroy();
-      // dataMonitor.stopMonitoring(); // Deshabilitado
-    });
     
   } catch (error) {
     console.error('❌ [ENTERPRISE] Error inicializando sistemas robustos:', error);

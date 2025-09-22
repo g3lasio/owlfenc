@@ -4,8 +4,8 @@
  * Diseñado para miles de usuarios comerciales
  */
 
-import { auth } from './firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+// 🔥 NO STATIC FIREBASE IMPORTS - Dynamic imports only when enabled
+const USE_FIREBASE_AUTH = import.meta.env.VITE_USE_FIREBASE_AUTH === 'true';
 
 interface UserSession {
   uid: string;

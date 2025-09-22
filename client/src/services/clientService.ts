@@ -3,8 +3,7 @@
  * Usa las rutas del backend para mantener consistencia total con Firebase
  */
 
-import { auth } from '@/lib/firebase';
-import { getAuth } from 'firebase/auth';
+// 🔥 NO STATIC FIREBASE IMPORTS - Use session-based auth instead
 
 // Interfaz unificada para clientes
 export interface Client {
@@ -30,74 +29,34 @@ export interface Client {
 // Tipo para crear/actualizar clientes
 export type ClientInput = Omit<Client, 'id' | 'userId' | 'clientId' | 'createdAt' | 'updatedAt'>;
 
-/**
- * Obtener token de autenticación usando el sistema robusto
- * ENTERPRISE: Sistema con múltiples fallbacks y auto-recuperación
- */
-async function getAuthToken(): Promise<string> {
-  console.log('🛡️ [CLIENT-SERVICE] Obteniendo token con sistema robusto...');
-  
-  try {
-    // Usar el sistema robusto de autenticación
-    const { robustAuth } = await import('../lib/robust-auth-manager');
-    const token = await robustAuth.getAuthToken();
-    
-    console.log('✅ [CLIENT-SERVICE] Token obtenido del sistema robusto');
-    return token;
-  } catch (error) {
-    console.error('❌ [CLIENT-SERVICE] Error con sistema robusto, usando fallback:', error);
-    
-    // Fallback al método anterior como último recurso
-    const idToken = localStorage.getItem('firebase_id_token');
-    // SISTEMA UNIFICADO: Usar Firebase UID directamente desde contexto de autenticación
-    const auth = getAuth();
-    const userId = auth.currentUser?.uid;
-    
-    if (!idToken) {
-      throw new Error('CRÍTICO: Sistema de autenticación completamente fallido - contacta soporte');
-    }
-    
-    console.log('⚠️ [CLIENT-SERVICE] Usando fallback de emergencia para:', userId);
-    return idToken;
-  }
-}
+// 🔥 NO FIREBASE IMPORTS - Session-based auth only
+// Architect guidance: Use cookie-based session, gracefully handle 401
 
 /**
- * Configuración base para peticiones al backend
+ * SESSION-BASED AUTH: Cookie-based requests without Firebase
+ * Architect guidance: Rely solely on cookie-based session, gracefully handle 401
  */
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
-  console.log('🔐 [UNIFIED-CLIENT-SERVICE] Fetching with unified authentication...');
-  
-  let token: string | null = null;
-  let useBypass = false;
-  
-  try {
-    token = await getAuthToken();
-    console.log('✅ [UNIFIED-CLIENT-SERVICE] Got authentication token');
-  } catch (error) {
-    console.warn('⚠️ [UNIFIED-CLIENT-SERVICE] Token failed, using bypass mode:', error);
-    useBypass = true;
-  }
+  console.log('🔐 [SESSION-CLIENT-SERVICE] Using session-based authentication...');
   
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...options.headers as Record<string, string>,
   };
   
-  if (token && !useBypass) {
-    headers['Authorization'] = `Bearer ${token}`;
-  } else {
-    // TEMPORARY: Use bypass until authentication is fully resolved
-    headers['x-bypass-uid'] = 'qztot1YEy3UWz605gIH2iwwWhW53';
-    console.log('🔧 [UNIFIED-CLIENT-SERVICE] Using bypass mode for PostgreSQL access');
-  }
-  
   const response = await fetch(url, {
     ...options,
     headers,
+    credentials: 'include' // Use session cookies
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      console.warn('🔐 [SESSION-CLIENT-SERVICE] Authentication required - session expired');
+      // Gracefully handle 401 - redirect to login or show auth prompt
+      throw new Error('Authentication required. Please log in again.');
+    }
+    
     const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
     throw new Error(errorData.error || `Error HTTP: ${response.status}`);
   }

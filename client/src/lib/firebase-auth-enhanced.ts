@@ -1,32 +1,101 @@
 /**
  * 🔐 ENHANCED FIREBASE AUTHENTICATION
  * Comprehensive OAuth + Email + Phone authentication with security hardening
+ * 🔧 ENV-GATED: Only loads when VITE_USE_FIREBASE_AUTH=true
  */
 
-import {
-  Auth,
-  User,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  sendEmailVerification,
-  sendPasswordResetEmail,
-  signInWithEmailLink,
-  sendSignInLinkToEmail,
-  isSignInWithEmailLink,
-  signOut,
-  onAuthStateChanged,
-  updateProfile,
-  reauthenticateWithCredential,
-  EmailAuthProvider,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  PhoneAuthProvider,
-  linkWithCredential,
-  signInWithCredential,
-  UserCredential,
-  IdTokenResult,
-} from 'firebase/auth';
-import { auth } from './firebase';
+// 🛡️ ENV-GATED FIREBASE IMPORTS - Static imports with conditional exports
+const USE_FIREBASE_AUTH = import.meta.env.VITE_USE_FIREBASE_AUTH === 'true';
+
+// 🔥 NO STATIC FIREBASE IMPORTS - Dynamic imports only when enabled
+
+// Conditionally use Firebase or provide stubs
+let auth: any;
+let signInWithEmailAndPassword: any;
+let createUserWithEmailAndPassword: any;
+let sendEmailVerification: any;
+let sendPasswordResetEmail: any;
+let signInWithEmailLink: any;
+let sendSignInLinkToEmail: any;
+let isSignInWithEmailLink: any;
+let signOut: any;
+let onAuthStateChanged: any;
+let updateProfile: any;
+let reauthenticateWithCredential: any;
+let EmailAuthProvider: any;
+let RecaptchaVerifier: any;
+let signInWithPhoneNumber: any;
+let PhoneAuthProvider: any;
+let linkWithCredential: any;
+let signInWithCredential: any;
+
+// 🔧 Initialize Firebase dynamically or provide stubs
+let firebaseInitialized = false;
+
+async function initializeFirebaseIfNeeded() {
+  if (!USE_FIREBASE_AUTH) return;
+  if (firebaseInitialized) return;
+  
+  try {
+    console.log('🔥 [FIREBASE-AUTH-ENHANCED] Loading Firebase modules dynamically...');
+    const firebaseAuthModule = await import('firebase/auth');
+    const firebaseConfigModule = await import('./firebase');
+    
+    // Assign Firebase functions from dynamic imports
+    auth = firebaseConfigModule.auth;
+    signInWithEmailAndPassword = firebaseAuthModule.signInWithEmailAndPassword;
+    createUserWithEmailAndPassword = firebaseAuthModule.createUserWithEmailAndPassword;
+    sendEmailVerification = firebaseAuthModule.sendEmailVerification;
+    sendPasswordResetEmail = firebaseAuthModule.sendPasswordResetEmail;
+    signInWithEmailLink = firebaseAuthModule.signInWithEmailLink;
+    sendSignInLinkToEmail = firebaseAuthModule.sendSignInLinkToEmail;
+    isSignInWithEmailLink = firebaseAuthModule.isSignInWithEmailLink;
+    signOut = firebaseAuthModule.signOut;
+    onAuthStateChanged = firebaseAuthModule.onAuthStateChanged;
+    updateProfile = firebaseAuthModule.updateProfile;
+    reauthenticateWithCredential = firebaseAuthModule.reauthenticateWithCredential;
+    EmailAuthProvider = firebaseAuthModule.EmailAuthProvider;
+    RecaptchaVerifier = firebaseAuthModule.RecaptchaVerifier;
+    signInWithPhoneNumber = firebaseAuthModule.signInWithPhoneNumber;
+    PhoneAuthProvider = firebaseAuthModule.PhoneAuthProvider;
+    linkWithCredential = firebaseAuthModule.linkWithCredential;
+    signInWithCredential = firebaseAuthModule.signInWithCredential;
+    
+    firebaseInitialized = true;
+    console.log('✅ [FIREBASE-AUTH-ENHANCED] Firebase modules loaded successfully');
+  } catch (error) {
+    console.error('❌ [FIREBASE-AUTH-ENHANCED] Failed to load Firebase modules:', error);
+    initializeStubs();
+  }
+}
+
+function initializeStubs() {
+  auth = null;
+  signInWithEmailAndPassword = async () => { throw new Error('Firebase authentication disabled'); };
+  createUserWithEmailAndPassword = async () => { throw new Error('Firebase authentication disabled'); };
+  sendEmailVerification = async () => { throw new Error('Firebase authentication disabled'); };
+  sendPasswordResetEmail = async () => { throw new Error('Firebase authentication disabled'); };
+  signInWithEmailLink = async () => { throw new Error('Firebase authentication disabled'); };
+  sendSignInLinkToEmail = async () => { throw new Error('Firebase authentication disabled'); };
+  isSignInWithEmailLink = () => false;
+  signOut = async () => { throw new Error('Firebase authentication disabled'); };
+  onAuthStateChanged = () => () => {}; // Return no-op unsubscribe
+  updateProfile = async () => { throw new Error('Firebase authentication disabled'); };
+  reauthenticateWithCredential = async () => { throw new Error('Firebase authentication disabled'); };
+  EmailAuthProvider = class StubEmailAuthProvider {};
+  RecaptchaVerifier = class StubRecaptchaVerifier {};
+  signInWithPhoneNumber = async () => { throw new Error('Firebase authentication disabled'); };
+  PhoneAuthProvider = class StubPhoneAuthProvider {};
+  linkWithCredential = async () => { throw new Error('Firebase authentication disabled'); };
+  signInWithCredential = async () => { throw new Error('Firebase authentication disabled'); };
+}
+
+if (USE_FIREBASE_AUTH) {
+  console.log('🔥 [FIREBASE-AUTH-ENHANCED] Firebase authentication enabled - will load on demand');
+} else {
+  console.log('🚫 [FIREBASE-AUTH-ENHANCED] Firebase authentication disabled via VITE_USE_FIREBASE_AUTH');
+  initializeStubs();
+}
 
 // 🛡️ SECURITY CONFIGURATION - OPTIMIZADO PARA EVITAR FETCH ERRORS
 const SECURITY_CONFIG = {
@@ -48,7 +117,7 @@ const SECURITY_CONFIG = {
 // 🔐 ENHANCED AUTHENTICATION CLASS
 export class EnhancedFirebaseAuth {
   private auth: Auth;
-  private recaptchaVerifier: RecaptchaVerifier | null = null;
+  private recaptchaVerifier: any | null = null;
   private loginAttempts: Map<string, { count: number; lastAttempt: number }> = new Map();
 
   constructor() {
@@ -58,7 +127,7 @@ export class EnhancedFirebaseAuth {
 
   // 📊 Security monitoring - OPTIMIZADO para evitar fetch errors
   private setupSecurityMonitoring() {
-    onAuthStateChanged(this.auth, (user) => {
+    onAuthStateChanged(this.auth, (user: any) => {
       if (user) {
         this.logSecurityEvent('USER_SIGNED_IN', { uid: user.uid, method: 'state_change' });
         

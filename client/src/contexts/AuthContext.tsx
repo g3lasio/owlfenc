@@ -5,23 +5,140 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
-import {
-  onAuthStateChanged,
-  updateProfile,
-  getRedirectResult,
-} from "firebase/auth";
-import {
-  auth,
-  loginUser,
-  registerUser,
-  logoutUser,
-  sendEmailLink,
-  resetPassword,
-  devMode,
-} from "../lib/firebase";
+// 🔥 FIREBASE IMPORTS REMOVED - Now dynamically loaded in FirebaseAdapter only
+// Static imports cause "Failed to fetch" even when SessionAdapter is selected
 import { safeFirebaseError, getErrorMessage } from "../lib/firebase-error-fix";
 import { isDevelopmentMode, devLog } from "../lib/dev-session-config";
 import { apiRequest } from "../lib/queryClient";
+
+// 🏗️ AUTH ADAPTER ABSTRACTION - Two-phase migration strategy
+interface AuthAdapter {
+  init(): Promise<User | null>;
+  getCurrentUser(): User | null;
+  login(email: string, password: string, rememberMe?: boolean): Promise<User>;
+  logout(): Promise<boolean>;
+  register(email: string, password: string, displayName: string): Promise<User>;
+  sendPasswordResetEmail(email: string): Promise<boolean>;
+  sendEmailLoginLink(email: string): Promise<boolean>;
+  getIdToken(): Promise<string>;
+}
+
+// 🏗️ SESSION ADAPTER IMPLEMENTATION - Firebase replacement for REST/cookie-based auth
+class SessionAdapter implements AuthAdapter {
+  private currentUser: User | null = null;
+
+  async init(): Promise<User | null> {
+    try {
+      // Check for existing session via /api/me
+      const response = await fetch('/api/me', {
+        credentials: 'include' // Important for cookies
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        this.currentUser = userData;
+        return userData;
+      }
+      
+      return null;
+    } catch (error) {
+      console.warn('🔧 [SESSION-ADAPTER] Session check failed, starting fresh');
+      return null;
+    }
+  }
+
+  getCurrentUser(): User | null {
+    return this.currentUser;
+  }
+
+  async login(email: string, password: string, rememberMe?: boolean): Promise<User> {
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password, rememberMe })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Login failed');
+    }
+
+    const user = await response.json();
+    this.currentUser = user;
+    return user;
+  }
+
+  async logout(): Promise<boolean> {
+    try {
+      await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      this.currentUser = null;
+      return true;
+    } catch (error) {
+      console.error('Logout error:', error);
+      return false;
+    }
+  }
+
+  async register(email: string, password: string, displayName: string): Promise<User> {
+    throw new Error('Register not implemented in SessionAdapter yet');
+  }
+
+  async sendPasswordResetEmail(email: string): Promise<boolean> {
+    throw new Error('Password reset not implemented in SessionAdapter yet');
+  }
+
+  async sendEmailLoginLink(email: string): Promise<boolean> {
+    throw new Error('Email login link not implemented in SessionAdapter yet');
+  }
+
+  async getIdToken(): Promise<string> {
+    // Return empty string for cookie-based auth (no tokens needed)
+    return '';
+  }
+}
+
+// 🔥 FIREBASE ADAPTER - Legacy Firebase implementation with guards
+class FirebaseAdapter implements AuthAdapter {
+  private currentUser: User | null = null;
+  
+  async init(): Promise<User | null> {
+    // Firebase initialization logic (will be guarded by environment flag)
+    return null;
+  }
+  
+  getCurrentUser(): User | null {
+    return this.currentUser;
+  }
+  
+  async login(email: string, password: string, rememberMe?: boolean): Promise<User> {
+    throw new Error('FirebaseAdapter: Use environment flag USE_FIREBASE_AUTH to enable');
+  }
+  
+  async logout(): Promise<boolean> {
+    throw new Error('FirebaseAdapter: Use environment flag USE_FIREBASE_AUTH to enable');
+  }
+  
+  async register(email: string, password: string, displayName: string): Promise<User> {
+    throw new Error('FirebaseAdapter: Use environment flag USE_FIREBASE_AUTH to enable');
+  }
+  
+  async sendPasswordResetEmail(email: string): Promise<boolean> {
+    throw new Error('FirebaseAdapter: Use environment flag USE_FIREBASE_AUTH to enable');
+  }
+  
+  async sendEmailLoginLink(email: string): Promise<boolean> {
+    throw new Error('FirebaseAdapter: Use environment flag USE_FIREBASE_AUTH to enable');
+  }
+  
+  async getIdToken(): Promise<string> {
+    throw new Error('FirebaseAdapter: Use environment flag USE_FIREBASE_AUTH to enable');
+  }
+}
 
 // 🛡️ COMPREHENSIVE TRIPLE-LAYER FETCH ERROR ELIMINATION FOR AUTHCONTEXT
 async function getTokenWithTripleLayerProtection(user: any): Promise<string> {
@@ -120,6 +237,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [networkRetryCount, setNetworkRetryCount] = useState(0);
   const [lastValidUser, setLastValidUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  
+  // 🏗️ ADAPTER SELECTION - SessionAdapter by default, FirebaseAdapter as dev fallback
+  const authAdapter = useState(() => {
+    const useFirebase = import.meta.env.VITE_USE_FIREBASE_AUTH === 'true';
+    
+    if (useFirebase) {
+      console.log('🔥 [AUTH-ADAPTER] Using FirebaseAdapter (development mode)');
+      return new FirebaseAdapter();
+    } else {
+      console.log('🏗️ [AUTH-ADAPTER] Using SessionAdapter (production mode)');
+      return new SessionAdapter();
+    }
+  })[0];
 
   // 🍪 Helper function: Create session cookie from Firebase user
   const createSessionCookie = async (firebaseUser: any) => {
@@ -153,61 +283,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // 🏗️ ADAPTER-DRIVEN LIFECYCLE - Replace Firebase useEffect with adapter delegation
   useEffect(() => {
-    // Verificar autenticación persistida de OTP primero
-    const checkPersistedAuth = async () => {
+    console.log('🏗️ [AUTH-LIFECYCLE] Starting adapter-driven authentication...');
+    
+    const initializeAuth = async () => {
       try {
-        // Verificar sesión persistente mejorada (30 días)
-        const { enhancedPersistenceService } = await import('../lib/enhanced-persistence');
-        const sessionValidation = enhancedPersistenceService.validatePersistentSession();
+        setLoading(true);
         
-        if (sessionValidation.valid && sessionValidation.session) {
-          console.log('🔄 [PERSISTENCE] Sesión persistente válida encontrada:', sessionValidation.session.email);
-          // Firebase onAuthStateChanged manejará la autenticación automática
-          enhancedPersistenceService.initActivityMonitoring();
-          return;
-        } else if (sessionValidation.reason) {
-          console.log('⚠️ [PERSISTENCE] Sesión inválida:', sessionValidation.reason);
+        // Use selected adapter (SessionAdapter or FirebaseAdapter)
+        const user = await authAdapter.init();
+        
+        if (user) {
+          console.log('✅ [ADAPTER-AUTH] User authenticated via adapter:', user.uid || user.email);
+          setCurrentUser(user);
+          setLastValidUser(user);
+        } else {
+          console.log('ℹ️ [ADAPTER-AUTH] No authenticated user found');
+          setCurrentUser(null);
         }
         
-        // ✅ FIXED: Removed redundant OTP localStorage fallbacks
-        // Enhanced persistence service now handles all session recovery
-        console.log('🧹 [SIMPLIFICATION] Using enhanced persistence only - removed redundant OTP fallbacks');
-      } catch (error) {
-        console.error('Error checking persisted auth:', error);
-      }
-    };
-
-    // Verificar autenticación persistida primero (async)
-    checkPersistedAuth();
-
-    // Primero verificamos si hay algún resultado de redirección pendiente
-    const checkRedirectResult = async () => {
-      try {
-        console.log("Verificando resultado de redirección...");
-        const result = await Promise.race([
-          getRedirectResult(auth),
-          new Promise<null>((resolve) => {
-            setTimeout(() => resolve(null), 15000); // 15 segundos timeout
-          })
-        ]);
-
-        if (result && result.user) {
-          console.log(
-            "Resultado de redirección procesado exitosamente:",
-            result.user,
-          );
-          // ✅ FIXED: Enhanced persistence handles cleanup
-          setNetworkRetryCount(0); // Reset retry count en éxito
-          setError(null);
-        }
+        setError(null);
+        setNetworkRetryCount(0);
+        
       } catch (error: any) {
-        await handleFirebaseError(error, "Redirect result error");
+        console.error('❌ [ADAPTER-AUTH] Authentication initialization failed:', error);
+        setError(error.message || 'Authentication failed');
+        setCurrentUser(null);
+      } finally {
+        setLoading(false);
+        setIsInitializing(false);
       }
     };
 
-    // Ejecutamos después de un breve delay para permitir que persisted auth cargue
-    setTimeout(checkRedirectResult, 100);
+    initializeAuth();
 
     // Función para manejar errores de Firebase con retry (DEV-FRIENDLY)
     const handleFirebaseError = async (error: any, context: string) => {
@@ -250,88 +359,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     };
 
-    // Escuchar cambios en la autenticación con manejo de errores mejorado
-    const unsubscribe = onAuthStateChanged(auth, 
-      (user) => {
-        try {
-          if (user) {
-            console.log("Usuario autenticado detectado:", user.uid);
-            // Reset retry count en conexión exitosa
-            setNetworkRetryCount(0);
-            setError(null);
-            
-            // ✅ FIXED: Enhanced persistence handles cleanup
-            
-            // Convertir al tipo User para usar en nuestra aplicación con manejo de errores en getIdToken
-            const appUser: User = {
-              uid: user.uid,
-              email: user.email,
-              displayName: user.displayName,
-              photoURL: user.photoURL,
-              phoneNumber: user.phoneNumber,
-              emailVerified: user.emailVerified,
-              getIdToken: async () => {
-                // 🛡️ COMPREHENSIVE TRIPLE-LAYER FETCH ERROR ELIMINATION
-                return await getTokenWithTripleLayerProtection(user);
-              },
-              getIdTokenSafe: async () => {
-                // Legacy method - same comprehensive protection
-                return await getTokenWithTripleLayerProtection(user);
-              },
-            };
-            setCurrentUser(appUser);
-            setLastValidUser(appUser); // Guardar último usuario válido
-            setIsInitializing(false); // ✅ FIXED: Auth successfully initialized
-
-            // 🍪 CREAR SESSION COOKIE: Convertir ID token a session cookie
-            createSessionCookie(user).catch(error => {
-              console.warn('⚠️ [SESSION-COOKIE] Error creando session cookie:', error);
-              // No bloquear la autenticación si falla la session cookie
-            });
-          } else {
-            // ✅ FIXED: Simplified auth check using enhanced persistence only
-            let fallbackValid = false;
-            try {
-              const { enhancedPersistenceService } = require('../lib/enhanced-persistence');
-              fallbackValid = enhancedPersistenceService.validatePersistentSession().valid;
-            } catch (e) {
-              // Enhanced persistence not available, continue
-            }
-            const isDevelopment = window.location.hostname.includes('replit') || 
-                                 window.location.hostname === 'localhost';
-            
-            if (!fallbackValid && !isDevelopment) {
-              console.log("🔓 Usuario no autenticado - Firebase signOut detectado");
-              
-              // En desarrollo, mantener sesión por más tiempo antes de limpiar
-              if (isDevelopment && currentUser) {
-                console.log("🛠️ [DEV-MODE] Manteniendo usuario en desarrollo por posible reconexión");
-                
-                // Dar tiempo para reconexión automática antes de limpiar
-                setTimeout(() => {
-                  if (!auth.currentUser) {
-                    console.log("🛠️ [DEV-MODE] Timeout alcanzado - limpiando usuario");
-                    setCurrentUser(null);
-                  }
-                }, 3000); // 3 segundos en desarrollo
-              } else {
-                setCurrentUser(null);
-              }
-            }
-          }
-          setLoading(false);
-          if (!isInitializing) setIsInitializing(false); // ✅ FIXED: Ensure initialization completes
-        } catch (error) {
-          handleFirebaseError(error, "Auth state change error");
-          setLoading(false);
-          setIsInitializing(false); // ✅ FIXED: Even on error, mark as initialized
-        }
-      },
-      (error) => {
-        handleFirebaseError(error, "Auth state listener error");
-        setLoading(false);
-      }
-    );
+    // 🔥 FIREBASE LISTENER DISABLED - Adapter-driven auth replaces onAuthStateChanged
+    const unsubscribe = (() => {
+      console.log('🏗️ [ADAPTER-MODE] Firebase listener disabled - using SessionAdapter');
+      return () => {}; // No-op cleanup function
+    })();
+    
+    // 🔥 FIREBASE LOGIC COMPLETELY REMOVED - Adapter-driven auth only
 
     // Escuchamos el evento personalizado para OTP fallback
     const handleDevAuthChange = (event: any) => {
@@ -347,17 +381,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           phoneNumber: user.phoneNumber,
           emailVerified: user.emailVerified,
           getIdToken: async () => {
-            try {
-              // ✅ FIXED: Para usuarios OTP, usar token JWT real de Firebase
-              const firebaseUser = auth.currentUser;
-              if (firebaseUser) {
-                return await firebaseUser.getIdToken();
-              }
-              throw new Error('No authenticated Firebase user found');
-            } catch (error) {
-              console.error("❌ Error obteniendo token OTP:", error);
-              throw error;
-            }
+            // 🏗️ DEV-ONLY TOKEN STUB - Firebase adapter will handle real tokens
+            console.log('🛠️ [DEV-AUTH] Using dev-only token stub for OTP user');
+            return 'dev-otp-token-stub';
           },
         };
         setCurrentUser(appUser);
