@@ -27,6 +27,12 @@ import {
   InsertPromptTemplate,
   PermitSearchHistory,
   InsertPermitSearchHistory,
+  Estimate,
+  InsertEstimate,
+  EstimateAdjustment,
+  InsertEstimateAdjustment,
+  Notification,
+  InsertNotification,
   users,
   projects,
   templates,
@@ -40,7 +46,10 @@ import {
   materials,
   promptTemplates,
   permitSearchHistory,
-  propertySearchHistory
+  propertySearchHistory,
+  estimates,
+  estimateAdjustments,
+  notifications
 } from "@shared/schema";
 
 import { db } from './db';
@@ -722,5 +731,147 @@ export class DatabaseStorage implements IStorage {
     }
     
     return updatedPayment;
+  }
+
+  // ===== ESTIMATE METHODS =====
+  
+  async getEstimate(id: number): Promise<Estimate | undefined> {
+    if (!db) throw new Error('Database connection not available');
+    const [estimate] = await db.select().from(estimates).where(eq(estimates.id, id));
+    return estimate;
+  }
+
+  async getEstimateByNumber(estimateNumber: string): Promise<Estimate | undefined> {
+    if (!db) throw new Error('Database connection not available');
+    const [estimate] = await db.select().from(estimates).where(eq(estimates.estimateNumber, estimateNumber));
+    return estimate;
+  }
+
+  async getEstimatesByUserId(userId: number): Promise<Estimate[]> {
+    if (!db) throw new Error('Database connection not available');
+    console.log(`🔍 [DATABASE] Fetching estimates for user_id: ${userId} directly via user_id field`);
+    
+    // The estimates table has a user_id field, so we can query directly
+    const userEstimates = await db.select()
+      .from(estimates)
+      .where(eq(estimates.user_id, userId))
+      .orderBy(desc(estimates.created_at));
+    
+    console.log(`📊 [DATABASE] Found ${userEstimates.length} estimates for user_id: ${userId}`);
+    
+    return userEstimates;
+  }
+
+  async getEstimatesByClientId(clientId: number): Promise<Estimate[]> {
+    if (!db) throw new Error('Database connection not available');
+    return db.select()
+      .from(estimates)
+      .where(eq(estimates.clientId, clientId))
+      .orderBy(desc(estimates.createdAt));
+  }
+
+  async createEstimate(estimate: InsertEstimate): Promise<Estimate> {
+    if (!db) throw new Error('Database connection not available');
+    const [newEstimate] = await db.insert(estimates)
+      .values(estimate)
+      .returning();
+    return newEstimate;
+  }
+
+  async updateEstimate(id: number, estimate: Partial<Estimate>): Promise<Estimate> {
+    if (!db) throw new Error('Database connection not available');
+    const [updatedEstimate] = await db.update(estimates)
+      .set({
+        ...estimate,
+        updated_at: new Date()
+      })
+      .where(eq(estimates.id, id))
+      .returning();
+    
+    if (!updatedEstimate) {
+      throw new Error(`Estimate with ID ${id} not found`);
+    }
+    
+    return updatedEstimate;
+  }
+
+  async deleteEstimate(id: number): Promise<boolean> {
+    if (!db) throw new Error('Database connection not available');
+    const result = await db.delete(estimates)
+      .where(eq(estimates.id, id));
+    return result.rowCount > 0;
+  }
+
+  // ===== ESTIMATE SHARING SYSTEM =====
+  
+  async saveSharedEstimate(sharedData: { shareId: string, data: any, createdAt: string, expiresAt: null }): Promise<boolean> {
+    // For shared estimates, we might use a separate table or Firebase
+    // For now, this is a placeholder that returns true
+    console.log('📤 [SHARED-ESTIMATE] Saving shared estimate:', sharedData.shareId);
+    return true;
+  }
+  
+  async getSharedEstimate(shareId: string): Promise<any> {
+    // For shared estimates, we might use a separate table or Firebase
+    // For now, this is a placeholder that returns null
+    console.log('📥 [SHARED-ESTIMATE] Getting shared estimate:', shareId);
+    return null;
+  }
+
+  // ===== ESTIMATE ITEMS =====
+  
+  async getEstimateItem(id: number): Promise<any | undefined> {
+    // EstimateItem methods would be implemented here
+    // For now, returning undefined as it's not in the current schema
+    return undefined;
+  }
+
+  async getEstimateItemsByEstimateId(estimateId: number): Promise<any[]> {
+    // EstimateItem methods would be implemented here
+    return [];
+  }
+
+  async createEstimateItem(item: any): Promise<any> {
+    // EstimateItem methods would be implemented here
+    throw new Error('EstimateItem methods not yet implemented');
+  }
+
+  async updateEstimateItem(id: number, item: any): Promise<any> {
+    throw new Error('EstimateItem methods not yet implemented');
+  }
+
+  async deleteEstimateItem(id: number): Promise<boolean> {
+    throw new Error('EstimateItem methods not yet implemented');
+  }
+
+  // ===== ESTIMATE TEMPLATES =====
+  
+  async getEstimateTemplate(id: number): Promise<any | undefined> {
+    // EstimateTemplate methods would be implemented here
+    return undefined;
+  }
+
+  async getEstimateTemplatesByUserId(userId: number): Promise<any[]> {
+    return [];
+  }
+
+  async getEstimateTemplatesByProjectType(projectType: string, userId?: number): Promise<any[]> {
+    return [];
+  }
+
+  async getDefaultEstimateTemplate(projectType: string, userId: number): Promise<any | undefined> {
+    return undefined;
+  }
+
+  async createEstimateTemplate(template: any): Promise<any> {
+    throw new Error('EstimateTemplate methods not yet implemented');
+  }
+
+  async updateEstimateTemplate(id: number, template: any): Promise<any> {
+    throw new Error('EstimateTemplate methods not yet implemented');
+  }
+
+  async deleteEstimateTemplate(id: number): Promise<boolean> {
+    throw new Error('EstimateTemplate methods not yet implemented');
   }
 }
