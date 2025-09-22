@@ -283,4 +283,12 @@ export class UserMappingService {
   }
 }
 
+// Create singleton instance
 export const userMappingService = new UserMappingService();
+
+// Compatibility wrapper for uppercase file methods  
+export class UserMappingServiceSingleton {
+  static getInstance(): UserMappingService {
+    return userMappingService;
+  }
+}

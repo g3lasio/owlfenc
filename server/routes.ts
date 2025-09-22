@@ -2611,8 +2611,7 @@ Output must be between 200-900 characters in English.`;
       }
 
       // Use secure user mapping service
-      const { UserMappingService } = await import('./services/UserMappingService');
-      const userMappingService = UserMappingService.getInstance(storage);
+      const { userMappingService } = await import('./services/userMappingService');
       
       let userId: number;
       try {
@@ -3550,8 +3549,7 @@ Output must be between 200-900 characters in English.`;
         if (!user && firebaseUserId) {
           console.log("🔍 [USER-MAPPING] Usuario no encontrado por Firebase UID en PostgreSQL");
           
-          const { UserMappingService } = await import('./services/userMappingService');
-          const userMappingService = new UserMappingService();
+          const { userMappingService } = await import('./services/userMappingService');
           
           // Try to get Firebase user info to create proper mapping
           try {
@@ -6152,8 +6150,7 @@ Output must be between 200-900 characters in English.`;
           console.log("🔍 [USER-MAPPING] Usuario no encontrado por Firebase UID, intentando mapeo...");
           
           // Import UserMappingService to handle Firebase UID mapping
-          const { UserMappingService } = await import('./services/userMappingService');
-          const userMappingService = new UserMappingService();
+          const { userMappingService } = await import('./services/userMappingService');
           
           // Try to get Firebase user to get email for mapping
           try {

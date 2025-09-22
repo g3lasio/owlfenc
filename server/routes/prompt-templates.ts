@@ -4,12 +4,12 @@ import { storage } from "../storage";
 import { promptGeneratorService } from "../services/promptGeneratorService";
 import { InsertPromptTemplate } from "@shared/schema";
 import { verifyFirebaseAuth } from "../middleware/firebase-auth";
-import { UserMappingService } from "../services/UserMappingService";
+import { UserMappingService, userMappingService } from "../services/userMappingService";
 import { DatabaseStorage } from "../DatabaseStorage";
 
-// Inicializar UserMappingService
-const databaseStorage = new DatabaseStorage();
-const userMappingService = UserMappingService.getInstance(databaseStorage);
+// Use the singleton instance directly
+// const databaseStorage = new DatabaseStorage();
+// const userMappingService = UserMappingService.getInstance(databaseStorage);
 
 export function registerPromptTemplateRoutes(app: Express): void {
   // Obtener todas las plantillas de prompts

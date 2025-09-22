@@ -287,8 +287,9 @@ router.post(
       }
       
       // Convert Firebase UID to internal user_id for comparison
-      const userMapping = await import('../services/UserMappingService');
-      const internalUserId = await userMapping.UserMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
+      const { userMappingService } = await import('../services/userMappingService');
+      const internalUserId = await userMappingService.getInternalUserId(req.firebaseUser.uid) || 
+                           await userMappingService.createMapping(req.firebaseUser.uid, req.firebaseUser.email || `${req.firebaseUser.uid}@firebase.auth`);
       
       if (!payment || payment.userId !== internalUserId) {
         return res.status(404).json({ message: "Payment not found" });
@@ -349,7 +350,7 @@ router.get(
 
       // Convert Firebase UID to internal user_id for database query
       const userMapping = await import('../services/UserMappingService');
-      const internalUserId = await userMapping.UserMappingService.getOrCreateUserMapping(userId);
+      const internalUserId = await userMapping.UserMappingService.getOrCreateUserIdForFirebaseUid(userId);
       
       let payments = await storage.getProjectPaymentsByUserId(internalUserId);
 
@@ -396,8 +397,9 @@ router.get(
       }
       
       // Convert Firebase UID to internal user_id for comparison
-      const userMapping = await import('../services/UserMappingService');
-      const internalUserId = await userMapping.UserMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
+      const { userMappingService } = await import('../services/userMappingService');
+      const internalUserId = await userMappingService.getInternalUserId(req.firebaseUser.uid) || 
+                           await userMappingService.createMapping(req.firebaseUser.uid, req.firebaseUser.email || `${req.firebaseUser.uid}@firebase.auth`);
       
       if (!project || project.userId !== internalUserId) {
         return res.status(404).json({ message: "Project not found" });
@@ -435,8 +437,9 @@ router.get(
       }
       
       // Convert Firebase UID to internal user_id for comparison
-      const userMapping = await import('../services/UserMappingService');
-      const internalUserId = await userMapping.UserMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
+      const { userMappingService } = await import('../services/userMappingService');
+      const internalUserId = await userMappingService.getInternalUserId(req.firebaseUser.uid) || 
+                           await userMappingService.createMapping(req.firebaseUser.uid, req.firebaseUser.email || `${req.firebaseUser.uid}@firebase.auth`);
       
       if (!payment || payment.userId !== internalUserId) {
         return res.status(404).json({ message: "Payment not found" });
@@ -474,8 +477,9 @@ router.patch(
       }
       
       // Convert Firebase UID to internal user_id for comparison
-      const userMapping = await import('../services/UserMappingService');
-      const internalUserId = await userMapping.UserMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
+      const { userMappingService } = await import('../services/userMappingService');
+      const internalUserId = await userMappingService.getInternalUserId(req.firebaseUser.uid) || 
+                           await userMappingService.createMapping(req.firebaseUser.uid, req.firebaseUser.email || `${req.firebaseUser.uid}@firebase.auth`);
       
       if (!payment || payment.userId !== internalUserId) {
         return res.status(404).json({ message: "Payment not found" });
