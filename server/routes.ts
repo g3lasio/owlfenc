@@ -4653,8 +4653,10 @@ Output must be between 200-900 characters in English.`;
     requireAuth,
     async (req: Request, res: Response) => {
       try {
-        // USAR AUTENTICACIÓN FIREBASE ROBUSTA IGUAL QUE CREATE-CHECKOUT
-        if (!req.firebaseUser?.uid || !req.firebaseUser?.email) {
+        // 🔧 USAR AUTENTICACIÓN UNIFICADA CON BYPASS SUPPORT
+        const firebaseUserId = req.authUser?.uid || req.firebaseUser?.uid;
+        
+        if (!firebaseUserId) {
           console.warn("❌ [SUBSCRIPTION-USER] No valid Firebase UID available");
           return res.status(401).json({
             success: false,
@@ -4662,8 +4664,6 @@ Output must be between 200-900 characters in English.`;
             message: "Token de autenticación requerido - Por favor inicia sesión nuevamente"
           });
         }
-
-        const firebaseUserId = req.firebaseUser.uid;
         console.log(`🔐 [SUBSCRIPTION-USER] Firebase UID verified: ${firebaseUserId}`);
 
         // USAR SISTEMA ROBUSTO DE MAPEO
