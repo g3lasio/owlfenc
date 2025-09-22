@@ -38,38 +38,17 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import AppLayout from "../components/layout/AppLayout";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
-  deleteDoc,
-  doc,
-  serverTimestamp,
-  updateDoc,
-} from "firebase/firestore";
-import { db } from "../lib/firebase";
+// 🚀 FASE 3 CONSOLIDACIÓN: Firebase eliminated - Using PostgreSQL + TanStack Query
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
 import Papa from "papaparse";
 import { analyzeCSVWithAnthropic } from "../services/anthropicService";
+import { getAuthHeaders } from "@/lib/queryClient";
+import type { Material, InsertMaterial } from "@shared/schema";
 
-// Definir interfaz para Material
-interface Material {
-  id: string;
-  name: string;
-  category: string;
-  description?: string;
-  unit: string;
-  price: number;
-  supplier?: string;
-  supplierLink?: string;
-  sku?: string;
-  createdAt: any;
-  updatedAt: any;
-  userId: string;
-}
+// 🚀 CONSOLIDACIÓN: Using PostgreSQL schema types instead of Firebase interface
 
 // Categorías comunes de materiales
 const COMMON_CATEGORIES = [
@@ -103,24 +82,19 @@ const COMMON_UNITS = [
  */
 export default function Materials() {
   const { currentUser } = useAuth();
-  const [materials, setMaterials] = useState<Material[]>([]);
   const [filteredMaterials, setFilteredMaterials] = useState<Material[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [newMaterial, setNewMaterial] = useState<Partial<Material>>({
+  const [newMaterial, setNewMaterial] = useState<Partial<InsertMaterial>>({
     name: "",
     category: "",
     description: "",
     unit: "pieza",
-    price: 0,
-    supplier: "",
-    supplierLink: "",
-    sku: "",
+    price: "0",
   });
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [deletingMaterial, setDeletingMaterial] = useState<Material | null>(
@@ -134,72 +108,86 @@ export default function Materials() {
 
   const [, navigate] = useLocation();
 
-  // Comprobar autenticación y cargar materiales al montar
+  // 🚀 TANSTACK QUERY INTEGRATION for PostgreSQL materials - matching EstimatesWizard/Projects pattern
+  const { data: materials = [], isLoading, error } = useQuery({
+    queryKey: ["/api/materials"],
+    queryFn: async () => {
+      console.log("🔄 Loading materials from PostgreSQL via /api/materials...");
+      
+      const authHeaders = await getAuthHeaders();
+      const response = await fetch("/api/materials", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to load materials: ${response.status}`);
+      }
+
+      const allMaterials: Material[] = await response.json();
+      console.log(`✅ Materials loaded from PostgreSQL: ${allMaterials.length}`);
+      return allMaterials;
+    },
+    enabled: !!currentUser?.uid,
+  });
+
+  // Handle authentication and redirect
   useEffect(() => {
     if (!currentUser) {
-      navigate("/login");
+      if (currentUser !== undefined) { // Only show error if auth check is complete
+        navigate("/login");
+      }
       return;
     }
-
-    loadMaterials();
   }, [currentUser, navigate]);
+
+  // Handle query errors
+  useEffect(() => {
+    if (error) {
+      console.error("❌ Error loading materials:", error);
+      
+      let errorMessage = "No se pudieron cargar los materiales";
+      if (error instanceof Error) {
+        if (error.message.includes("401")) {
+          errorMessage = "Sesión expirada. Por favor inicia sesión nuevamente";
+        } else if (error.message.includes("403")) {
+          errorMessage = "No tienes permisos para acceder a esta información";
+        } else if (error.message.includes("Failed to fetch")) {
+          errorMessage = "Error de conexión. Verifica tu internet e intenta nuevamente";
+        }
+      }
+      
+      toast({
+        title: "Error al cargar materiales",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  }, [error]);
 
   // Filtrar materiales cuando cambia el término de búsqueda o la categoría
   useEffect(() => {
     filterMaterials();
   }, [materials, searchTerm, selectedCategory]);
 
-  /**
-   * Cargar materiales desde Firestore
-   */
-  const loadMaterials = async () => {
-    if (!currentUser) return;
-
-    setIsLoading(true);
-    try {
-      const materialsRef = collection(db, "materials");
-      const q = query(materialsRef, where("userId", "==", currentUser.uid));
-      const querySnapshot = await getDocs(q);
-
-      const materialsData: Material[] = [];
+  // Extract categories from materials data
+  useEffect(() => {
+    if (materials.length > 0) {
       const categoriesSet = new Set<string>();
-
-      querySnapshot.forEach((doc) => {
-        const data = doc.data() as Omit<Material, "id">;
-        const material: Material = {
-          id: doc.id,
-          ...data,
-          price: typeof data.price === "number" ? data.price : 0,
-        };
-
-        materialsData.push(material);
-
-        // Guardar categoría para filtrado
-        if (data.category) {
-          categoriesSet.add(data.category);
+      materials.forEach((material) => {
+        if (material.category) {
+          categoriesSet.add(material.category);
         }
       });
-
-      // Ordenar materiales por nombre
-      materialsData.sort((a, b) => a.name.localeCompare(b.name));
-
-      // Actualizar estados
-      setMaterials(materialsData);
-      setCategories(Array.from(categoriesSet));
-
-      console.log(`Cargados ${materialsData.length} materiales`);
-    } catch (error) {
-      console.error("Error al cargar materiales:", error);
-      toast({
-        title: "Error al cargar materiales",
-        description:
-          "No se pudieron cargar los materiales. Por favor, inténtalo de nuevo.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      setCategories(Array.from(categoriesSet).sort());
     }
-  };
+  }, [materials]);
+
+  // 🚀 CONSOLIDACIÓN: This function replaced by TanStack Query useQuery hook above
 
   /**
    * Filtrar materiales según término de búsqueda y categoría seleccionada
@@ -227,171 +215,247 @@ export default function Materials() {
     setFilteredMaterials(filtered);
   };
 
-  /**
-   * Guardar un nuevo material
-   */
-  const saveMaterial = async () => {
-    if (!currentUser) return;
+  // 🚀 TANSTACK QUERY MUTATION for creating materials - replacing Firebase saveMaterial
+  const createMaterialMutation = useMutation({
+    mutationFn: async (materialData: InsertMaterial) => {
+      console.log("🔄 Creating material via /api/materials POST...");
+      
+      const authHeaders = await getAuthHeaders();
+      const response = await fetch("/api/materials", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders,
+        },
+        body: JSON.stringify(materialData),
+      });
 
-    try {
-      // Verificar campos obligatorios
-      if (!newMaterial.name || !newMaterial.category || !newMaterial.unit) {
-        toast({
-          title: "Datos incompletos",
-          description:
-            "Por favor, completa los campos obligatorios: Nombre, Categoría y Unidad.",
-          variant: "destructive",
-        });
-        return;
+      if (!response.ok) {
+        throw new Error(`Failed to create material: ${response.status}`);
       }
 
-      // Convertir el precio a número
-      const price =
-        typeof newMaterial.price === "number"
-          ? newMaterial.price
-          : parseFloat(String(newMaterial.price || "0")) || 0;
-
-      // Crear documento en Firestore
-      const materialData = {
-        ...newMaterial,
-        price,
-        userId: currentUser.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-
-      const docRef = await addDoc(collection(db, "materials"), materialData);
-
-      // Actualizar la lista de materiales
-      const newMaterialWithId: Material = {
-        id: docRef.id,
-        ...materialData,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      } as Material;
-
-      setMaterials((prev) => [...prev, newMaterialWithId]);
-
-      // Limpiar formulario
+      const createdMaterial: Material = await response.json();
+      console.log("✅ Material created:", createdMaterial);
+      return createdMaterial;
+    },
+    onSuccess: (createdMaterial) => {
+      // Invalidate and refetch materials
+      queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
+      
+      // Clear form
       setNewMaterial({
         name: "",
         category: "",
         description: "",
         unit: "pieza",
-        price: 0,
-        supplier: "",
-        supplierLink: "",
-        sku: "",
+        price: "0",
       });
-
+      
       setShowAddDialog(false);
-
+      
       toast({
         title: "Material agregado",
-        description: `Se ha agregado el material "${newMaterial.name}" correctamente.`,
+        description: `Se ha agregado el material "${createdMaterial.name}" correctamente.`,
       });
-    } catch (error) {
-      console.error("Error al guardar material:", error);
+    },
+    onError: (error) => {
+      console.error("❌ Error creating material:", error);
+      
+      let errorMessage = "No se pudo guardar el material";
+      if (error instanceof Error) {
+        if (error.message.includes("401")) {
+          errorMessage = "Sesión expirada. Por favor inicia sesión nuevamente";
+        } else if (error.message.includes("403")) {
+          errorMessage = "No tienes permisos para crear materiales";
+        }
+      }
+      
       toast({
         title: "Error al guardar",
-        description:
-          "No se pudo guardar el material. Por favor, inténtalo de nuevo.",
+        description: errorMessage,
         variant: "destructive",
       });
-    }
-  };
+    },
+  });
 
   /**
-   * Actualizar un material existente
+   * Guardar un nuevo material - CONSOLIDATION: Using TanStack Query instead of Firebase
+   */
+  const saveMaterial = async () => {
+    if (!currentUser) return;
+
+    // Verificar campos obligatorios
+    if (!newMaterial.name || !newMaterial.category || !newMaterial.unit) {
+      toast({
+        title: "Datos incompletos",
+        description:
+          "Por favor, completa los campos obligatorios: Nombre, Categoría y Unidad.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Preparar datos para PostgreSQL
+    const materialData: InsertMaterial = {
+      name: newMaterial.name,
+      category: newMaterial.category,
+      description: newMaterial.description || null,
+      unit: newMaterial.unit,
+      price: newMaterial.price || "0",
+    };
+
+    createMaterialMutation.mutate(materialData);
+  };
+
+  // 🚀 TANSTACK QUERY MUTATION for updating materials - replacing Firebase updateMaterial
+  const updateMaterialMutation = useMutation({
+    mutationFn: async ({ id, materialData }: { id: string; materialData: Partial<InsertMaterial> }) => {
+      console.log("🔄 Updating material via /api/materials PUT...");
+      
+      const authHeaders = await getAuthHeaders();
+      const response = await fetch(`/api/materials/${id}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders,
+        },
+        body: JSON.stringify(materialData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update material: ${response.status}`);
+      }
+
+      const updatedMaterial: Material = await response.json();
+      console.log("✅ Material updated:", updatedMaterial);
+      return updatedMaterial;
+    },
+    onSuccess: (updatedMaterial) => {
+      // Invalidate and refetch materials
+      queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
+      
+      setShowEditDialog(false);
+      
+      toast({
+        title: "Material actualizado",
+        description: `Se ha actualizado el material "${updatedMaterial.name}" correctamente.`,
+      });
+    },
+    onError: (error) => {
+      console.error("❌ Error updating material:", error);
+      
+      let errorMessage = "No se pudo actualizar el material";
+      if (error instanceof Error) {
+        if (error.message.includes("401")) {
+          errorMessage = "Sesión expirada. Por favor inicia sesión nuevamente";
+        } else if (error.message.includes("403")) {
+          errorMessage = "No tienes permisos para actualizar materiales";
+        }
+      }
+      
+      toast({
+        title: "Error al actualizar",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
+  /**
+   * Actualizar un material existente - CONSOLIDATION: Using TanStack Query instead of Firebase
    */
   const updateMaterial = async () => {
     if (!currentUser || !editingMaterial) return;
 
-    try {
-      // Verificar campos obligatorios
-      if (
-        !editingMaterial.name ||
-        !editingMaterial.category ||
-        !editingMaterial.unit
-      ) {
-        toast({
-          title: "Datos incompletos",
-          description:
-            "Por favor, completa los campos obligatorios: Nombre, Categoría y Unidad.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Convertir valores numéricos
-      const materialData = {
-        ...editingMaterial,
-        price:
-          typeof editingMaterial.price === "number"
-            ? editingMaterial.price
-            : parseFloat(String(editingMaterial.price || "0")) || 0,
-        updatedAt: serverTimestamp(),
-      };
-
-      // Actualizar documento en Firestore
-      const materialRef = doc(db, "materials", editingMaterial.id);
-      await updateDoc(materialRef, materialData);
-
-      // Actualizar la lista de materiales
-      setMaterials((prev) =>
-        prev.map((m) =>
-          m.id === editingMaterial.id
-            ? ({ ...materialData, id: m.id } as Material)
-            : m,
-        ),
-      );
-
-      setShowEditDialog(false);
-
+    // Verificar campos obligatorios
+    if (
+      !editingMaterial.name ||
+      !editingMaterial.category ||
+      !editingMaterial.unit
+    ) {
       toast({
-        title: "Material actualizado",
-        description: `Se ha actualizado el material "${editingMaterial.name}" correctamente.`,
-      });
-    } catch (error) {
-      console.error("Error al actualizar material:", error);
-      toast({
-        title: "Error al actualizar",
+        title: "Datos incompletos",
         description:
-          "No se pudo actualizar el material. Por favor, inténtalo de nuevo.",
+          "Por favor, completa los campos obligatorios: Nombre, Categoría y Unidad.",
         variant: "destructive",
       });
+      return;
     }
+
+    // Preparar datos para PostgreSQL
+    const materialData: Partial<InsertMaterial> = {
+      name: editingMaterial.name,
+      category: editingMaterial.category,
+      description: editingMaterial.description || null,
+      unit: editingMaterial.unit,
+      price: editingMaterial.price || "0",
+    };
+
+    updateMaterialMutation.mutate({ id: editingMaterial.id, materialData });
   };
 
+  // 🚀 TANSTACK QUERY MUTATION for deleting materials - replacing Firebase deleteMaterial
+  const deleteMaterialMutation = useMutation({
+    mutationFn: async (materialId: string) => {
+      console.log("🔄 Deleting material via /api/materials DELETE...");
+      
+      const authHeaders = await getAuthHeaders();
+      const response = await fetch(`/api/materials/${materialId}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete material: ${response.status}`);
+      }
+
+      console.log("✅ Material deleted:", materialId);
+      return materialId;
+    },
+    onSuccess: (deletedId) => {
+      // Invalidate and refetch materials
+      queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
+      
+      setShowDeleteDialog(false);
+      
+      toast({
+        title: "Material eliminado",
+        description: `Se ha eliminado el material correctamente.`,
+      });
+    },
+    onError: (error) => {
+      console.error("❌ Error deleting material:", error);
+      
+      let errorMessage = "No se pudo eliminar el material";
+      if (error instanceof Error) {
+        if (error.message.includes("401")) {
+          errorMessage = "Sesión expirada. Por favor inicia sesión nuevamente";
+        } else if (error.message.includes("403")) {
+          errorMessage = "No tienes permisos para eliminar materiales";
+        }
+      }
+      
+      toast({
+        title: "Error al eliminar",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
   /**
-   * Eliminar un material
+   * Eliminar un material - CONSOLIDATION: Using TanStack Query instead of Firebase
    */
   const deleteMaterial = async () => {
     if (!currentUser || !deletingMaterial) return;
 
-    try {
-      // Eliminar documento de Firestore
-      const materialRef = doc(db, "materials", deletingMaterial.id);
-      await deleteDoc(materialRef);
-
-      // Actualizar la lista de materiales
-      setMaterials((prev) => prev.filter((m) => m.id !== deletingMaterial.id));
-
-      setShowDeleteDialog(false);
-
-      toast({
-        title: "Material eliminado",
-        description: `Se ha eliminado el material "${deletingMaterial.name}" correctamente.`,
-      });
-    } catch (error) {
-      console.error("Error al eliminar material:", error);
-      toast({
-        title: "Error al eliminar",
-        description:
-          "No se pudo eliminar el material. Por favor, inténtalo de nuevo.",
-        variant: "destructive",
-      });
-    }
+    deleteMaterialMutation.mutate(deletingMaterial.id);
   };
 
   /**
