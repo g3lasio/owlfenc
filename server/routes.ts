@@ -2617,7 +2617,15 @@ Output must be between 200-900 characters in English.`;
       
       let userId: number;
       try {
-        userId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
+        userId = await userMappingService.getInternalUserId(firebaseUid);
+        if (!userId) {
+          // 🚨 SECURITY: Do not auto-create mappings in business endpoints
+          // User must go through proper onboarding flow first
+          return res.status(404).json({ 
+            message: "User mapping not found. Please complete account setup first.",
+            code: "USER_MAPPING_REQUIRED"
+          });
+        }
         console.log(`✅ [USER-MAPPING] Secure mapping: ${firebaseUid} → ${userId}`);
       } catch (error) {
         console.error(`❌ [USER-MAPPING] Failed to map user:`, error);
@@ -2828,9 +2836,23 @@ Output must be between 200-900 characters in English.`;
   app.get("/api/templates/:type", authMiddleware.authenticate, async (req: Request, res: Response) => {
     try {
       const { type } = req.params;
-      // REMOVED AUTH: Open to all users
-      const userId = 1; // Default user
-      console.log(`✅ [SECURE-TEMPLATES] Getting templates for user ${userId}, type: ${type}`);
+      
+      // 🔐 SECURITY: Get real user ID from Firebase UID
+      const firebaseUid = (req as any).firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ message: "Authentication required - Firebase UID not found" });
+      }
+      
+      const { userMappingService } = await import('./services/userMappingService');
+      const userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        return res.status(404).json({ 
+          message: "User mapping not found. Please complete account setup first.",
+          code: "USER_MAPPING_REQUIRED"
+        });
+      }
+      
+      console.log(`✅ [SECURE-TEMPLATES] Getting templates for user ${userId} (Firebase: ${firebaseUid}), type: ${type}`);
       const templates = await storage.getTemplatesByType(userId, type);
       res.json(templates);
     } catch (error) {
@@ -2858,9 +2880,23 @@ Output must be between 200-900 characters in English.`;
       });
 
       const { message, context = {} } = schema.parse(req.body);
-      // REMOVED AUTH: Open to all users
-      const userId = 1; // Default user
-      console.log(`✅ [SECURE-CHAT] Processing message for user ${userId}`);
+      
+      // 🔐 SECURITY: Get real user ID from Firebase UID
+      const firebaseUid = (req as any).firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ message: "Authentication required - Firebase UID not found" });
+      }
+      
+      const { userMappingService } = await import('./services/userMappingService');
+      const userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        return res.status(404).json({ 
+          message: "User mapping not found. Please complete account setup first.",
+          code: "USER_MAPPING_REQUIRED"
+        });
+      }
+      
+      console.log(`✅ [SECURE-CHAT] Processing message for user ${userId} (Firebase: ${firebaseUid})`);
       const user = await storage.getUser(userId);
       const userContext = {
         contractorName: user?.company || "Acme Fencing",
@@ -2922,10 +2958,22 @@ Output must be between 200-900 characters in English.`;
 
       const { projectDetails } = schema.parse(req.body);
 
-      // Get the default estimate template for authenticated user
-      // REMOVED AUTH: Open to all users
-      const userId = 1; // Default user
-      console.log(`✅ [SECURE-ESTIMATE] Generating estimate for user ${userId}`);
+      // 🔐 SECURITY: Get real user ID from Firebase UID
+      const firebaseUid = (req as any).firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ message: "Authentication required - Firebase UID not found" });
+      }
+      
+      const { userMappingService } = await import('./services/userMappingService');
+      const userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        return res.status(404).json({ 
+          message: "User mapping not found. Please complete account setup first.",
+          code: "USER_MAPPING_REQUIRED"
+        });
+      }
+      
+      console.log(`✅ [SECURE-ESTIMATE] Generating estimate for user ${userId} (Firebase: ${firebaseUid})`);
       const template = await storage.getDefaultTemplate(userId, "estimate");
 
       if (!template) {
@@ -2957,9 +3005,22 @@ Output must be between 200-900 characters in English.`;
   // Endpoint para validar datos de entrada
   app.post("/api/estimate/validate", authMiddleware.authenticate, async (req: Request, res: Response) => {
     try {
-      // REMOVED AUTH: Open to all users
-      const userId = 1; // Default user
-      console.log(`✅ [SECURE-VALIDATE] Validating estimate for user ${userId}`);
+      // 🔐 SECURITY: Get real user ID from Firebase UID
+      const firebaseUid = (req as any).firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ message: "Authentication required - Firebase UID not found" });
+      }
+      
+      const { userMappingService } = await import('./services/userMappingService');
+      const userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        return res.status(404).json({ 
+          message: "User mapping not found. Please complete account setup first.",
+          code: "USER_MAPPING_REQUIRED"
+        });
+      }
+      
+      console.log(`✅ [SECURE-VALIDATE] Validating estimate for user ${userId} (Firebase: ${firebaseUid})`);
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -3108,9 +3169,22 @@ Output must be between 200-900 characters in English.`;
 
       const { estimateData, status = "draft" } = schema.parse(req.body);
 
-      // REMOVED AUTH: Open to all users
-      const userId = 1; // Default user
-      console.log(`✅ [SECURE-SAVE] Saving estimate as project for user ${userId}`);
+      // 🔐 SECURITY: Get real user ID from Firebase UID
+      const firebaseUid = (req as any).firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ message: "Authentication required - Firebase UID not found" });
+      }
+      
+      const { userMappingService } = await import('./services/userMappingService');
+      const userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        return res.status(404).json({ 
+          message: "User mapping not found. Please complete account setup first.",
+          code: "USER_MAPPING_REQUIRED"
+        });
+      }
+      
+      console.log(`✅ [SECURE-SAVE] Saving estimate as project for user ${userId} (Firebase: ${firebaseUid})`);
 
       // Generate HTML for the estimate
       const estimateHtml =
@@ -3458,9 +3532,22 @@ Output must be between 200-900 characters in English.`;
 
         // Usar el método de respaldo tradicional si OpenAI falla - REQUIERE AUTENTICACIÓN
         try {
-          // REMOVED AUTH: Open to all users
-      const userId = 1; // Default user
-          console.log(`✅ [SECURE-CONTRACT-FALLBACK] Using fallback template for user ${userId}`);
+          // 🔐 SECURITY: Get real user ID from Firebase UID
+          const firebaseUid = (req as any).firebaseUser?.uid;
+          if (!firebaseUid) {
+            return res.status(401).json({ message: "Authentication required - Firebase UID not found" });
+          }
+          
+          const { userMappingService } = await import('./services/userMappingService');
+          const userId = await userMappingService.getInternalUserId(firebaseUid);
+          if (!userId) {
+            return res.status(404).json({ 
+              message: "User mapping not found. Please complete account setup first.",
+              code: "USER_MAPPING_REQUIRED"
+            });
+          }
+          
+          console.log(`✅ [SECURE-CONTRACT-FALLBACK] Using fallback template for user ${userId} (Firebase: ${firebaseUid})`);
           const template = await storage.getDefaultTemplate(userId, "contract");
 
           if (!template) {
@@ -8308,9 +8395,8 @@ async function generateEstimateHtml({
   clientName,
   address,
   context,
-}: EstimateData): Promise<string> {
-  // For simplicity, we'll use a basic templating approach
-  const userId = 1; // Default user ID
+}: EstimateData, userId: number): Promise<string> {
+  // Use authenticated user ID for template access
   const template = await storage.getDefaultTemplate(userId, "estimate");
   if (!template) {
     throw new Error("No default estimate template found");
@@ -8388,9 +8474,8 @@ async function generateEstimateHtml({
   return html;
 }
 
-async function generateContractHtml(projectDetails: any): Promise<string> {
-  // Get the default contract template
-  const userId = 1; // Default user ID
+async function generateContractHtml(projectDetails: any, userId: number): Promise<string> {
+  // Use authenticated user ID for template access
   const template = await storage.getDefaultTemplate(userId, "contract");
   if (!template) {
     throw new Error("No default contract template found");
