@@ -271,12 +271,29 @@ export default function Profile() {
         const profileKey = `userProfile_${userId}`;
         localStorage.setItem(profileKey, JSON.stringify(updatedInfo));
 
-        // También guardar en servidor inmediatamente
-        fetch("/api/profile", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedInfo),
-        })
+        // También guardar en servidor inmediatamente con autenticación
+        (async () => {
+          try {
+            const authHeaders = await getAuthHeaders();
+            const response = await fetch("/api/profile", {
+              method: "POST",
+              credentials: "include",
+              headers: { 
+                "Content-Type": "application/json",
+                ...authHeaders
+              },
+              body: JSON.stringify(updatedInfo),
+            });
+            return response;
+          } catch (error) {
+            console.warn("⚠️ Error con autenticación:", error);
+            return fetch("/api/profile", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(updatedInfo),
+            });
+          }
+        })()
           .then((response) => {
             if (response.ok) {
               console.log("✅ Logo guardado en servidor y localStorage");
@@ -364,11 +381,13 @@ export default function Profile() {
         await updateProfile(companyInfo);
       } else {
         console.log("🔄 Hook no disponible, guardando directamente...");
-        // Fallback directo a la API
+        // Fallback directo a la API con autenticación
+        const authHeaders = await getAuthHeaders();
         const response = await fetch("/api/profile", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...authHeaders
           },
           credentials: "include",
           body: JSON.stringify(companyInfo),
