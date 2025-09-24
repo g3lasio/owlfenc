@@ -8456,11 +8456,11 @@ Output must be between 200-900 characters in English.`;
       
       try {
         // Verify Firebase ID token with Admin SDK
-        const decodedToken = await adminAuth.verifyIdToken(idToken);
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
         
         // Create session cookie from verified ID token
         const expiresIn = 5 * 24 * 60 * 60 * 1000; // 5 days
-        const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+        const sessionCookie = await admin.auth().createSessionCookie(idToken, { expiresIn });
         
         // Set secure session cookie
         const cookieOptions = {

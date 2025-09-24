@@ -272,7 +272,7 @@ export class OTPService {
       const emailContent = this.createOTPEmail(code);
       
       await resend.emails.send({
-        from: 'noreply@owlfenc.com', // Replace with your verified sender
+        from: 'noreply@owlfenc.com',
         to: email,
         subject: 'Tu código de acceso - Owl Fenc',
         html: emailContent.html,
