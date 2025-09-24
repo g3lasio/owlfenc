@@ -52,21 +52,33 @@ class SessionAdapter implements AuthAdapter {
   }
 
   async login(email: string, password: string, rememberMe?: boolean): Promise<User> {
-    const response = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ email, password, rememberMe })
-    });
+    try {
+      // 1. Authenticate with Firebase client SDK to get ID token
+      const { signInWithEmailAndPassword, getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await userCredential.user.getIdToken();
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Login failed');
+      // 2. Send ID token to our server to create session cookie
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ idToken })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Login failed');
+      }
+
+      const user = await response.json();
+      this.currentUser = user;
+      return user;
+    } catch (error: any) {
+      console.error('🔥 [SESSION-ADAPTER] Login error:', error);
+      throw new Error(error.message || 'Login failed');
     }
-
-    const user = await response.json();
-    this.currentUser = user;
-    return user;
   }
 
   async logout(): Promise<boolean> {
@@ -85,15 +97,59 @@ class SessionAdapter implements AuthAdapter {
   }
 
   async register(email: string, password: string, displayName: string): Promise<User> {
-    throw new Error('Register not implemented in SessionAdapter yet');
+    try {
+      // 1. Create Firebase user account
+      const { createUserWithEmailAndPassword, getAuth, updateProfile } = await import('firebase/auth');
+      const auth = getAuth();
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // 2. Update display name
+      await updateProfile(userCredential.user, { displayName });
+      
+      // 3. Get ID token and send to server to create session
+      const idToken = await userCredential.user.getIdToken();
+
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ idToken })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Registration failed');
+      }
+
+      const user = await response.json();
+      this.currentUser = user;
+      return user;
+    } catch (error: any) {
+      console.error('🔥 [SESSION-ADAPTER] Registration error:', error);
+      throw new Error(error.message || 'Registration failed');
+    }
   }
 
   async sendPasswordResetEmail(email: string): Promise<boolean> {
-    throw new Error('Password reset not implemented in SessionAdapter yet');
+    const response = await fetch('/api/password-reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email })
+    });
+
+    return response.ok;
   }
 
   async sendEmailLoginLink(email: string): Promise<boolean> {
-    throw new Error('Email login link not implemented in SessionAdapter yet');
+    const response = await fetch('/api/email-login-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email })
+    });
+
+    return response.ok;
   }
 
   async getIdToken(): Promise<string> {
@@ -416,7 +472,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       console.log(`🔐 [AUTH-CONTEXT] Login iniciado para: ${email}, recordarme: ${rememberMe}`);
       
-      const user = await loginUser(email, password, rememberMe);
+      const user = await authAdapter.login(email, password, rememberMe);
 
       if (!user) {
         throw new Error("No se pudo iniciar sesión");
@@ -431,14 +487,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         emailVerified: (user as any).emailVerified || false,
         getIdToken: async () => {
           try {
-            // ✅ FIXED: Usar token JWT real de Firebase
-            const firebaseUser = auth.currentUser;
-            if (firebaseUser) {
-              return await firebaseUser.getIdToken();
-            }
-            throw new Error('No authenticated Firebase user found');
+            // ✅ ADAPTER-BASED: Use adapter's getIdToken method
+            return await authAdapter.getIdToken();
           } catch (error) {
-            console.error("❌ Error obteniendo token Firebase:", error);
+            console.error("❌ Error obteniendo token del adapter:", error);
             throw error; // Re-throw para manejo apropiado upstream
           }
         },
@@ -483,14 +535,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setLoading(true);
       setError(null);
-      const user = await registerUser(email, password);
+      const user = await authAdapter.register(email, password, displayName);
 
-      // Para Firebase, actualizamos el displayName después del registro
-      if (user && displayName) {
-        await updateProfile(auth.currentUser!, {
-          displayName: displayName,
-        });
-      }
+      // SessionAdapter handles displayName in register call
 
       const appUser: User = {
         uid: user.uid,
@@ -501,14 +548,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         emailVerified: user.emailVerified || false,
         getIdToken: async () => {
           try {
-            // ✅ FIXED: Usar token JWT real de Firebase
-            const firebaseUser = auth.currentUser;
-            if (firebaseUser) {
-              return await firebaseUser.getIdToken();
-            }
-            throw new Error('No authenticated Firebase user found');
+            // ✅ ADAPTER-BASED: Use adapter's getIdToken method
+            return await authAdapter.getIdToken();
           } catch (error) {
-            console.error("❌ Error obteniendo token Firebase:", error);
+            console.error("❌ Error obteniendo token del adapter:", error);
             throw error; // Re-throw para manejo apropiado upstream
           }
         },
@@ -563,8 +606,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setCurrentUser(null);
       setLastValidUser(null);
       
-      // Ejecutar logout de Firebase
-      await logoutUser();
+      // Ejecutar logout usando adapter
+      await authAdapter.logout();
       console.log("✅ [AUTH-CONTEXT] SignOut completado exitosamente");
       
       // Limpiar cualquier dato de sesión adicional
@@ -606,7 +649,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setLoading(true);
       setError(null);
-      await resetPassword(email);
+      await authAdapter.sendPasswordResetEmail(email);
       return true;
     } catch (err: any) {
       setError(err.message || "Error al enviar email de recuperación");
@@ -621,7 +664,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setLoading(true);
       setError(null);
-      await sendEmailLink(email);
+      await authAdapter.sendEmailLoginLink(email);
       return true;
     } catch (err: any) {
       setError(err.message || "Error al enviar enlace de inicio de sesión");

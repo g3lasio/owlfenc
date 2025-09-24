@@ -8415,7 +8415,7 @@ Output must be between 200-900 characters in English.`;
     },
   );
 
-  // 🏗️ REST AUTH ENDPOINTS - SessionAdapter support for AuthContext migration
+  // 🏗️ REST AUTH ENDPOINTS - Firebase Admin SDK support for AuthContext migration
   // Get current user session (replaces Firebase auth state check)
   app.get("/api/me", unifiedSessionAuth({ requireAuth: true }), async (req: Request, res: Response) => {
     try {
@@ -8443,76 +8443,51 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
-  // Login endpoint (replaces Firebase loginUser)
+  // Login endpoint - accepts Firebase ID token and creates session cookie
   app.post("/api/login", async (req: Request, res: Response) => {
     try {
-      const { email, password, rememberMe } = req.body;
+      const { idToken } = req.body;
       
-      if (!email || !password) {
-        return res.status(400).json({ error: "Email and password required" });
+      if (!idToken) {
+        return res.status(400).json({ error: "Firebase ID token required" });
       }
       
-      // 🛠️ DEV-ONLY LOGIN - Basic credential check for development
-      if (process.env.NODE_ENV === 'development') {
-        // Simple dev auth - any email/password combo works for testing
-        console.log(`🔐 [DEV-LOGIN] Development login attempt: ${email}`);
+      console.log(`🔐 [FIREBASE-LOGIN] Verifying ID token...`);
+      
+      try {
+        // Verify Firebase ID token with Admin SDK
+        const decodedToken = await adminAuth.verifyIdToken(idToken);
         
-        // Create session cookie for dev user  
-        const devUser = {
-          uid: 'dev-user-' + Buffer.from(email).toString('base64').slice(0, 10),
-          email: email,
-          name: email.split('@')[0]
+        // Create session cookie from verified ID token
+        const expiresIn = 5 * 24 * 60 * 60 * 1000; // 5 days
+        const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+        
+        // Set secure session cookie
+        const cookieOptions = {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax' as const,
+          maxAge: expiresIn,
+          path: '/'
         };
         
-        // Use Firebase Admin to create session cookie (reusing existing infrastructure)
-        try {
-          // Create a temporary ID token for dev user
-          const customToken = await adminAuth.createCustomToken(devUser.uid, {
-            email: devUser.email,
-            name: devUser.name
-          });
-          
-          // Create session cookie with proper security settings
-          const expiresIn = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 5 * 24 * 60 * 60 * 1000; // 30 days or 5 days
-          const sessionCookie = await adminAuth.createSessionCookie(customToken, { expiresIn });
-          
-          // Set secure session cookie
-          const cookieOptions = {
-            httpOnly: true, // Prevent XSS attacks
-            secure: process.env.NODE_ENV === 'production', // HTTPS in production
-            sameSite: 'lax' as const, // CSRF protection, more compatible than 'none'
-            maxAge: expiresIn,
-            path: '/'
-          };
-          
-          res.cookie('__session', sessionCookie, cookieOptions);
-          
-          console.log(`✅ [DEV-LOGIN] Session cookie created for: ${devUser.email}`);
-          
-          // Return user data in format expected by SessionAdapter
-          res.json({
-            success: true,
-            user: {
-              uid: devUser.uid,
-              email: devUser.email,
-              displayName: devUser.name,
-              photoURL: null,
-              phoneNumber: null,
-              emailVerified: true
-            },
-            message: "Development login successful with session cookie"
-          });
-          
-        } catch (tokenError) {
-          console.error("❌ [DEV-LOGIN] Token creation failed:", tokenError);
-          res.status(500).json({ error: "Development login token creation failed" });
-        }
-      } else {
-        // Production would integrate with real auth system
-        res.status(501).json({ 
-          error: "Production login not implemented yet",
-          note: "Use development mode for testing" 
+        res.cookie('__session', sessionCookie, cookieOptions);
+        
+        console.log(`✅ [FIREBASE-LOGIN] Session cookie created for: ${decodedToken.email}`);
+        
+        // Return user data in format expected by SessionAdapter
+        res.json({
+          uid: decodedToken.uid,
+          email: decodedToken.email,
+          displayName: decodedToken.name || decodedToken.email?.split('@')[0],
+          photoURL: decodedToken.picture,
+          phoneNumber: decodedToken.phone_number,
+          emailVerified: decodedToken.email_verified || false
         });
+        
+      } catch (tokenError) {
+        console.error("❌ [FIREBASE-LOGIN] Token verification failed:", tokenError);
+        res.status(401).json({ error: "Invalid Firebase token" });
       }
       
     } catch (error) {
@@ -8528,7 +8503,7 @@ Output must be between 200-900 characters in English.`;
       res.clearCookie('__session', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'none',
+        sameSite: 'lax',
         path: '/'
       });
       

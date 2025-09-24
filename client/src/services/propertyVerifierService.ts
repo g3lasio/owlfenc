@@ -1,6 +1,6 @@
 
 import axios from 'axios';
-import { auth } from '@/lib/firebase';
+// 🔥 NO FIREBASE IMPORTS - Use session-based auth instead
 
 export interface OwnerHistoryEntry {
   owner: string;

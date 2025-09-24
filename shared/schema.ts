@@ -81,7 +81,7 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   stripeConnectAccountId: text('stripe_connect_account_id'),
   defaultPaymentTerms: integer('default_payment_terms').default(30), // días para pago
-  invoiceMessageTemplate: text('invoice_message_template'),
+  invoiceMessageTemplate: text('invoice_message_template')
 });
 
 // Projects table
