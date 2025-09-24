@@ -52,7 +52,14 @@ class SessionAdapter implements AuthAdapter {
   }
 
   async login(email: string, password: string, rememberMe?: boolean): Promise<User> {
+    // Import auth flow functions first
+    const { markAuthFlowStart, markAuthFlowEnd } = await import('../lib/firebase-sts-interceptor');
+    const flowId = `login_${Date.now()}`;
+    
     try {
+      // Mark start of auth flow to allow STS calls during login
+      markAuthFlowStart(flowId);
+      
       // 1. Authenticate with Firebase client SDK to get ID token
       const { signInWithEmailAndPassword, getAuth } = await import('firebase/auth');
       const auth = getAuth();
@@ -78,6 +85,9 @@ class SessionAdapter implements AuthAdapter {
     } catch (error: any) {
       console.error('🔥 [SESSION-ADAPTER] Login error:', error);
       throw new Error(error.message || 'Login failed');
+    } finally {
+      // Always mark end of auth flow, regardless of success or failure
+      markAuthFlowEnd(flowId);
     }
   }
 
@@ -97,7 +107,14 @@ class SessionAdapter implements AuthAdapter {
   }
 
   async register(email: string, password: string, displayName: string): Promise<User> {
+    // Import auth flow functions first  
+    const { markAuthFlowStart, markAuthFlowEnd } = await import('../lib/firebase-sts-interceptor');
+    const flowId = `register_${Date.now()}`;
+    
     try {
+      // Mark start of auth flow to allow STS calls during registration
+      markAuthFlowStart(flowId);
+      
       // 1. Create Firebase user account
       const { createUserWithEmailAndPassword, getAuth, updateProfile } = await import('firebase/auth');
       const auth = getAuth();
@@ -127,6 +144,9 @@ class SessionAdapter implements AuthAdapter {
     } catch (error: any) {
       console.error('🔥 [SESSION-ADAPTER] Registration error:', error);
       throw new Error(error.message || 'Registration failed');
+    } finally {
+      // Always mark end of auth flow, regardless of success or failure
+      markAuthFlowEnd(flowId);
     }
   }
 

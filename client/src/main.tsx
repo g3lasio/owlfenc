@@ -3,6 +3,10 @@ import App from "./App";
 import "./index.css";
 import "./i18n/i18n"; // Importamos la configuración de i18n
 
+// 🛡️ FIREBASE STS ERROR ELIMINATION - Must initialize FIRST before any Firebase imports
+import { initializeStsFetchInterceptor } from './lib/firebase-sts-interceptor';
+initializeStsFetchInterceptor();
+
 // 🛡️ SISTEMA UNIFICADO DE MANEJO DE ERRORES
 // Importamos el sistema unificado que reemplaza todos los interceptores anteriores
 import './lib/unified-error-handler';
