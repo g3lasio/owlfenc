@@ -185,13 +185,42 @@ class SessionAdapter implements AuthAdapter {
   }
 }
 
-// 🔥 FIREBASE ADAPTER - Legacy Firebase implementation with guards
+// 🔥 FIREBASE ADAPTER - RESTORED Full Firebase Auth implementation
 class FirebaseAdapter implements AuthAdapter {
   private currentUser: User | null = null;
   
   async init(): Promise<User | null> {
-    // Firebase initialization logic (will be guarded by environment flag)
-    return null;
+    try {
+      // Import Firebase Auth SDK
+      const { onAuthStateChanged, getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      
+      // Return promise that resolves with initial auth state
+      return new Promise((resolve) => {
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+          unsubscribe(); // Only need initial state for init
+          if (firebaseUser) {
+            const user: User = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+              phoneNumber: firebaseUser.phoneNumber,
+              emailVerified: firebaseUser.emailVerified,
+              getIdToken: () => firebaseUser.getIdToken()
+            };
+            this.currentUser = user;
+            resolve(user);
+          } else {
+            this.currentUser = null;
+            resolve(null);
+          }
+        });
+      });
+    } catch (error) {
+      console.error('❌ [FIREBASE-ADAPTER] Init failed:', error);
+      return null;
+    }
   }
   
   getCurrentUser(): User | null {
@@ -199,27 +228,98 @@ class FirebaseAdapter implements AuthAdapter {
   }
   
   async login(email: string, password: string, rememberMe?: boolean): Promise<User> {
-    throw new Error('FirebaseAdapter: Use environment flag USE_FIREBASE_AUTH to enable');
+    const { signInWithEmailAndPassword, getAuth } = await import('firebase/auth');
+    const auth = getAuth();
+    
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const firebaseUser = userCredential.user;
+    
+    const user: User = {
+      uid: firebaseUser.uid,
+      email: firebaseUser.email,
+      displayName: firebaseUser.displayName,
+      photoURL: firebaseUser.photoURL,
+      phoneNumber: firebaseUser.phoneNumber,
+      emailVerified: firebaseUser.emailVerified,
+      getIdToken: () => firebaseUser.getIdToken()
+    };
+    
+    this.currentUser = user;
+    return user;
   }
   
   async logout(): Promise<boolean> {
-    throw new Error('FirebaseAdapter: Use environment flag USE_FIREBASE_AUTH to enable');
+    try {
+      const { signOut, getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      await signOut(auth);
+      this.currentUser = null;
+      return true;
+    } catch (error) {
+      console.error('❌ [FIREBASE-ADAPTER] Logout failed:', error);
+      return false;
+    }
   }
   
   async register(email: string, password: string, displayName: string): Promise<User> {
-    throw new Error('FirebaseAdapter: Use environment flag USE_FIREBASE_AUTH to enable');
+    const { createUserWithEmailAndPassword, updateProfile, getAuth } = await import('firebase/auth');
+    const auth = getAuth();
+    
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const firebaseUser = userCredential.user;
+    
+    // Update the display name
+    await updateProfile(firebaseUser, { displayName });
+    
+    const user: User = {
+      uid: firebaseUser.uid,
+      email: firebaseUser.email,
+      displayName: displayName,
+      photoURL: firebaseUser.photoURL,
+      phoneNumber: firebaseUser.phoneNumber,
+      emailVerified: firebaseUser.emailVerified,
+      getIdToken: () => firebaseUser.getIdToken()
+    };
+    
+    this.currentUser = user;
+    return user;
   }
   
   async sendPasswordResetEmail(email: string): Promise<boolean> {
-    throw new Error('FirebaseAdapter: Use environment flag USE_FIREBASE_AUTH to enable');
+    try {
+      const { sendPasswordResetEmail, getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      await sendPasswordResetEmail(auth, email);
+      return true;
+    } catch (error) {
+      console.error('❌ [FIREBASE-ADAPTER] Password reset failed:', error);
+      return false;
+    }
   }
   
   async sendEmailLoginLink(email: string): Promise<boolean> {
-    throw new Error('FirebaseAdapter: Use environment flag USE_FIREBASE_AUTH to enable');
+    try {
+      const { sendSignInLinkToEmail, getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      
+      const actionCodeSettings = {
+        url: window.location.origin + '/login/email-link-callback',
+        handleCodeInApp: true,
+      };
+      
+      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+      return true;
+    } catch (error) {
+      console.error('❌ [FIREBASE-ADAPTER] Email link failed:', error);
+      return false;
+    }
   }
   
   async getIdToken(): Promise<string> {
-    throw new Error('FirebaseAdapter: Use environment flag USE_FIREBASE_AUTH to enable');
+    if (!this.currentUser) {
+      throw new Error('No user is currently signed in');
+    }
+    return await this.currentUser.getIdToken();
   }
 }
 
@@ -435,11 +535,45 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     };
 
-    // 🔥 FIREBASE LISTENER DISABLED - Adapter-driven auth replaces onAuthStateChanged
-    const unsubscribe = (() => {
-      console.log('🏗️ [ADAPTER-MODE] Firebase listener disabled - using SessionAdapter');
-      return () => {}; // No-op cleanup function
-    })();
+    // 🔥 FIREBASE LISTENER RESTORED - Real onAuthStateChanged for Firebase Auth
+    let unsubscribe: (() => void) | null = null;
+    
+    const setupFirebaseListener = async () => {
+      try {
+        const { onAuthStateChanged, getAuth } = await import('firebase/auth');
+        const auth = getAuth();
+        
+        console.log('🔥 [FIREBASE-LISTENER] Setting up real Firebase Auth listener');
+        
+        unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+          if (firebaseUser) {
+            console.log('✅ [FIREBASE-LISTENER] User authenticated:', firebaseUser.uid);
+            const user: User = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+              phoneNumber: firebaseUser.phoneNumber,
+              emailVerified: firebaseUser.emailVerified,
+              getIdToken: () => firebaseUser.getIdToken()
+            };
+            setCurrentUser(user);
+            setLastValidUser(user);
+          } else {
+            console.log('ℹ️ [FIREBASE-LISTENER] User signed out');
+            setCurrentUser(null);
+          }
+          setLoading(false);
+          setIsInitializing(false);
+        });
+      } catch (error) {
+        console.error('❌ [FIREBASE-LISTENER] Setup failed:', error);
+        setLoading(false);
+        setIsInitializing(false);
+      }
+    };
+    
+    setupFirebaseListener();
     
     // 🔥 FIREBASE LOGIC COMPLETELY REMOVED - Adapter-driven auth only
 
@@ -479,7 +613,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Limpiar las suscripciones al desmontar
     return () => {
-      unsubscribe();
+      if (unsubscribe) {
+        unsubscribe();
+      }
       window.removeEventListener("dev-auth-change", handleDevAuthChange);
     };
   }, []);
