@@ -8423,7 +8423,11 @@ Output must be between 200-900 characters in English.`;
       const user = req.user;
       
       if (!user) {
-        return res.status(401).json({ error: "Authentication failed" });
+        return res.status(401).json({ 
+          error: "No active session",
+          message: "Please log in to continue",
+          code: "NO_SESSION"
+        });
       }
       
       // Return user data in format expected by SessionAdapter
@@ -8439,7 +8443,11 @@ Output must be between 200-900 characters in English.`;
       
     } catch (error) {
       console.error("❌ [API-ME] Error getting user session:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ 
+        error: "Server error",
+        message: "Unable to verify session at this time",
+        code: "SERVER_ERROR"
+      });
     }
   });
 

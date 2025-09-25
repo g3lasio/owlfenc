@@ -49,6 +49,9 @@ export const markAuthFlowEnd = (flowId: string) => {
 export const initializeStsFetchInterceptor = () => {
   console.log('🛡️ [SMART-STS-SUPPRESSOR] Initializing intelligent STS error suppression...');
   
+  // Check if Firebase is disabled
+  const USE_FIREBASE_AUTH = import.meta.env.VITE_USE_FIREBASE_AUTH === 'true';
+  
   // Handle unhandled promise rejections for STS background errors
   const originalRejectionHandler = window.onunhandledrejection;
   
@@ -57,11 +60,18 @@ export const initializeStsFetchInterceptor = () => {
     
     // Check if it's a background STS error (not during active auth)
     if (isStsBackgroundError(error)) {
+      // If Firebase Auth is disabled, ALWAYS suppress these errors
+      if (!USE_FIREBASE_AUTH) {
+        console.debug('🛡️ [SMART-STS-SUPPRESSOR] Firebase disabled - suppressing STS error');
+        event.preventDefault();
+        return;
+      }
+      
       // If there are active auth flows, let the error through (might be legitimate)
       if (activeAuthFlows.size > 0) {
         console.debug('🛡️ [SMART-STS-SUPPRESSOR] Active auth flow detected - allowing error through');
         if (originalRejectionHandler) {
-          originalRejectionHandler(event);
+          originalRejectionHandler.call(window, event);
         }
         return;
       }
@@ -74,7 +84,7 @@ export const initializeStsFetchInterceptor = () => {
     
     // Let other unhandled rejections proceed normally
     if (originalRejectionHandler) {
-      originalRejectionHandler(event);
+      originalRejectionHandler.call(window, event);
     }
   };
   

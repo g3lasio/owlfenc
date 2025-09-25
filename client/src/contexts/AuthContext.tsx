@@ -37,12 +37,19 @@ class SessionAdapter implements AuthAdapter {
       if (response.ok) {
         const userData = await response.json();
         this.currentUser = userData;
+        console.log('✅ [SESSION-ADAPTER] Sesión existente restaurada:', userData.uid);
         return userData;
+      } else if (response.status === 401) {
+        // Expected when no session exists - not an error
+        console.log('ℹ️ [SESSION-ADAPTER] No hay sesión activa - usuario necesita autenticarse');
+        return null;
+      } else {
+        console.warn('⚠️ [SESSION-ADAPTER] Error inesperado en verificación de sesión:', response.status);
+        return null;
       }
-      
-      return null;
     } catch (error) {
-      console.warn('🔧 [SESSION-ADAPTER] Session check failed, starting fresh');
+      // Network errors or other issues - don't treat as critical
+      console.log('🔧 [SESSION-ADAPTER] No se pudo verificar sesión existente, continuando sin autenticación');
       return null;
     }
   }

@@ -141,14 +141,34 @@ console.log("🔧 [OAUTH-DEBUG] Dominio actual:", currentHostname);
 console.log("🔧 [OAUTH-DEBUG] URL completa:", window.location.href);
 console.log("🔧 [OAUTH-DEBUG] Dominios autorizados:", authorizedDomains);
 
-// Initialize Firebase with STABLE CONFIGURATION
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
-export const auth = getAuth(app);
-export const storage = getStorage(app);
+// Initialize Firebase with STABLE CONFIGURATION - ENV-GATED
+// Only initialize Firebase if explicitly enabled to prevent unnecessary STS calls
+let app: any = null;
+let db: any = null;
+let auth: any = null;
+let storage: any = null;
+
+const USE_FIREBASE_AUTH = import.meta.env.VITE_USE_FIREBASE_AUTH === 'true';
+
+if (USE_FIREBASE_AUTH) {
+  console.log('🔥 [FIREBASE-INIT] Initializing Firebase Auth SDK...');
+  app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  auth = getAuth(app);
+  storage = getStorage(app);
+} else {
+  console.log('🚫 [FIREBASE-INIT] Firebase Auth disabled via VITE_USE_FIREBASE_AUTH');
+  // Create stub objects to prevent import errors
+  app = { name: 'stub-firebase-app' };
+  db = { _type: 'stub-firestore' };
+  auth = { _type: 'stub-auth' };
+  storage = { _type: 'stub-storage' };
+}
+
+export { app, db, auth, storage };
 
 // 🔧 SOLUCIÓN DEFINITIVA: Configurar Firebase Auth para evitar token refreshes problemáticos
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && USE_FIREBASE_AUTH && auth && auth._type !== 'stub-auth') {
   // Configurar persistencia estable sin auto-refresh
   setPersistence(auth, browserLocalPersistence).catch(() => {
     console.debug('🔧 [FIREBASE-CONFIG] Persistence fallback applied');
@@ -172,6 +192,8 @@ if (typeof window !== 'undefined') {
   }
   
   console.log('🔧 [FIREBASE-CONFIG] Auth configurado con refreshes mínimos');
+} else if (!USE_FIREBASE_AUTH) {
+  console.log('🚫 [FIREBASE-CONFIG] Firebase Auth configuration skipped - disabled via VITE_USE_FIREBASE_AUTH');
 }
 
 
