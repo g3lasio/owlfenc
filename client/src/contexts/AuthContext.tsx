@@ -321,17 +321,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [lastValidUser, setLastValidUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   
-  // 🏗️ ADAPTER SELECTION - SessionAdapter by default, FirebaseAdapter as dev fallback
+  // 🔥 FIREBASE AUTH - Primary authentication system (restored per user request)
   const authAdapter = useState(() => {
-    const useFirebase = import.meta.env.VITE_USE_FIREBASE_AUTH === 'true';
-    
-    if (useFirebase) {
-      console.log('🔥 [AUTH-ADAPTER] Using FirebaseAdapter (development mode)');
-      return new FirebaseAdapter();
-    } else {
-      console.log('🏗️ [AUTH-ADAPTER] Using SessionAdapter (production mode)');
-      return new SessionAdapter();
-    }
+    console.log('🔥 [AUTH-ADAPTER] Using FirebaseAdapter - Firebase Auth primary system');
+    return new FirebaseAdapter();
   })[0];
 
   // 🍪 Helper function: Create session cookie from Firebase user
