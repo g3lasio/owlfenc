@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -106,27 +106,27 @@ function Projects() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const { hasAccess, showUpgradeModal } = usePermissions();
 
   useEffect(() => {
     // Esperar a que el usuario esté completamente autenticado
-    if (user?.uid) {
+    if (currentUser?.uid) {
       console.log("👤 [PROJECTS] Usuario autenticado detectado, cargando proyectos...");
       loadProjects();
     } else {
       console.log("👤 [PROJECTS] Esperando autenticación...");
       setIsLoading(false); // No mostrar cargando infinito si no hay usuario
     }
-  }, [user?.uid]);
+  }, [currentUser?.uid]);
 
   // Auto-reload cuando el usuario se autentica por primera vez
   useEffect(() => {
-    if (user && projects.length === 0 && !isLoading) {
+    if (currentUser && projects.length === 0 && !isLoading) {
       console.log("🔄 [PROJECTS] Usuario autenticado pero sin proyectos, recargando...");
       loadProjects();
     }
-  }, [user]);
+  }, [currentUser]);
 
   // Filter projects when any filter changes
   useEffect(() => {
@@ -195,7 +195,7 @@ function Projects() {
     try {
       setIsLoading(true);
 
-      if (!user?.uid) {
+      if (!currentUser?.uid) {
         toast({
           title: "🔐 Autenticación requerida",
           description: "Por favor inicia sesión para ver tus proyectos",
@@ -216,7 +216,7 @@ function Projects() {
       }
 
       console.log("🚀 [PROJECTS] Iniciando carga del dashboard de proyectos...");
-      console.log(`🔍 [PROJECTS] Usuario autenticado: ${user.uid}`);
+      console.log(`🔍 [PROJECTS] Usuario autenticado: ${currentUser.uid}`);
 
       const allProjects: Project[] = [];
 
@@ -236,7 +236,7 @@ function Projects() {
         try {
           const projectsQuery = query(
             collection(db, "projects"),
-            where("firebaseUserId", "==", user.uid)  // ✅ FIXED: Usar firebaseUserId como EstimatesWizard
+            where("firebaseUserId", "==", currentUser.uid)  // ✅ FIXED: Usar firebaseUserId como EstimatesWizard
           );
 
           const projectsSnapshot = await getDocs(projectsQuery);
@@ -330,7 +330,7 @@ function Projects() {
         try {
           const estimatesQuery = query(
             collection(db, "estimates"),
-            where("firebaseUserId", "==", user.uid)  // ✅ FIXED: Usar firebaseUserId
+            where("firebaseUserId", "==", currentUser.uid)  // ✅ FIXED: Usar firebaseUserId
           );
 
           const estimatesSnapshot = await getDocs(estimatesQuery);
