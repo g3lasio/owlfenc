@@ -229,54 +229,202 @@ function Projects() {
 
         console.log("📋 [ESTIMATE-INTEGRATION] Buscando estimados del usuario...");
         
-        // Cargar estimados de forma simplificada (sin orderBy que puede fallar)
-        const estimatesRef = collection(db, "estimates");
-        const estimatesQuery = query(estimatesRef, where("userId", "==", user.uid));
-        
-        const estimatesSnapshot = await getDocs(estimatesQuery);
-        console.log(`📊 [ESTIMATE-INTEGRATION] Encontrados ${estimatesSnapshot.size} estimados`);
+        // 🎯 USAR EXACTAMENTE LA MISMA LÓGICA QUE ESTIMATESWIZARD.TSX
+        let allEstimates: any[] = [];
 
-        estimatesSnapshot.forEach((doc) => {
-          const data = doc.data();
+        // 1. Cargar desde collection "projects" (igual que EstimatesWizard)
+        try {
+          const projectsQuery = query(
+            collection(db, "projects"),
+            where("firebaseUserId", "==", user.uid)  // ✅ FIXED: Usar firebaseUserId como EstimatesWizard
+          );
+
+          const projectsSnapshot = await getDocs(projectsQuery);
+          console.log(`📊 [PROJECTS-COLLECTION] Encontrados ${projectsSnapshot.size} documentos`);
           
-          console.log(`📋 [ESTIMATE]`, {
-            id: doc.id,
-            cliente: data.clientName || 'Sin nombre',
-            estado: data.status || 'Sin estado',
-            total: data.totalAmount || data.totalPrice || 0
+          const projectEstimates = projectsSnapshot.docs
+            .filter((doc) => {
+              const data = doc.data();
+              return data.status === "estimate" || data.estimateNumber;
+            })
+            .map((doc) => {
+              const data = doc.data();
+
+              // ✅ EXACT SAME MAPPING AS EstimatesWizard.tsx
+              const clientName =
+                data.clientInformation?.name ||
+                data.clientName ||
+                data.client?.name ||
+                "Cliente sin nombre";
+
+              const clientEmail =
+                data.clientInformation?.email ||
+                data.clientEmail ||
+                data.client?.email ||
+                "";
+
+              // ✅ SAME TOTAL CALCULATION
+              let totalValue =
+                data.projectTotalCosts?.totalSummary?.finalTotal ||
+                data.projectTotalCosts?.total ||
+                data.total ||
+                data.estimateAmount ||
+                0;
+
+              const projectTitle =
+                data.projectDetails?.name ||
+                data.projectName ||
+                data.title ||
+                `Estimado para ${clientName}`;
+
+              return {
+                id: doc.id,
+                clientName: clientName,
+                address: data.address || data.clientAddress || "Dirección no especificada",
+                projectType: data.projectType || data.projectDetails?.type || "fencing",
+                projectSubtype: data.projectSubtype || data.fenceType || data.serviceType,
+                fenceType: data.fenceType,
+                fenceHeight: data.fenceHeight || data.height,
+                height: data.height || data.fenceHeight,
+                status: data.status || "estimate",
+                totalPrice: totalValue,
+                createdAt: data.createdAt,
+                source: "projects",
+                projectProgress: mapStatusToProgress(data.status),
+                estimateHtml: data.estimateHtml,
+                contractHtml: data.contractHtml,
+                attachments: data.attachments || {},
+                clientNotes: data.clientNotes || data.notes,
+                internalNotes: data.internalNotes,
+                permitStatus: data.permitStatus,
+                paymentStatus: data.paymentStatus,
+                scheduledDate: data.scheduledDate,
+                completedDate: data.completedDate,
+                projectDescription: data.projectDescription || data.description || projectTitle,
+                projectCategory: data.projectCategory || "fencing",
+                projectScope: data.projectScope,
+                materialsList: data.materialsList || data.items || [],
+                laborHours: data.laborHours,
+                difficulty: data.difficulty || "medium",
+                // ✅ EXACT SAME FIELDS AS EstimatesWizard
+                estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
+                title: projectTitle,
+                clientEmail: clientEmail,
+                estimateDate: data.createdAt
+                  ? data.createdAt.toDate?.() || new Date(data.createdAt)
+                  : new Date(),
+                items: data.projectTotalCosts?.materialCosts?.items || data.items || [],
+                projectId: doc.id,
+                pdfUrl: data.pdfUrl || null,
+                originalData: data
+              };
+            });
+
+          allEstimates = [...allEstimates, ...projectEstimates];
+          console.log(`📊 [PROJECTS-COLLECTION] Mapeados ${projectEstimates.length} estimados desde proyectos`);
+        } catch (projectError) {
+          console.warn("⚠️ [PROJECTS-COLLECTION] Error:", projectError);
+        }
+
+        // 2. Cargar desde collection "estimates" (igual que EstimatesWizard)
+        try {
+          const estimatesQuery = query(
+            collection(db, "estimates"),
+            where("firebaseUserId", "==", user.uid)  // ✅ FIXED: Usar firebaseUserId
+          );
+
+          const estimatesSnapshot = await getDocs(estimatesQuery);
+          console.log(`📊 [ESTIMATES-COLLECTION] Encontrados ${estimatesSnapshot.size} estimados`);
+          
+          const firebaseEstimates = estimatesSnapshot.docs.map((doc) => {
+            const data = doc.data();
+
+            // ✅ EXACT SAME MAPPING AS EstimatesWizard.tsx
+            const clientName =
+              data.clientInformation?.name ||
+              data.clientName ||
+              data.client?.name ||
+              "Cliente sin nombre";
+
+            const clientEmail =
+              data.clientInformation?.email ||
+              data.clientEmail ||
+              data.client?.email ||
+              "";
+
+            let totalValue =
+              data.projectTotalCosts?.totalSummary?.finalTotal ||
+              data.projectTotalCosts?.total ||
+              data.total ||
+              data.estimateAmount ||
+              0;
+
+            const projectTitle =
+              data.projectDetails?.name ||
+              data.projectName ||
+              data.title ||
+              `Estimado para ${clientName}`;
+
+            return {
+              id: doc.id,
+              clientName: clientName,
+              address: data.address || data.clientAddress || "Dirección no especificada",
+              projectType: data.projectType || data.projectDetails?.type || "fencing",
+              projectSubtype: data.projectSubtype || data.fenceType || data.serviceType,
+              fenceType: data.fenceType,
+              fenceHeight: data.fenceHeight || data.height,
+              height: data.height || data.fenceHeight,
+              status: data.status || "estimate",
+              totalPrice: totalValue,
+              createdAt: data.createdAt,
+              source: "estimates",
+              projectProgress: mapStatusToProgress(data.status),
+              estimateHtml: data.estimateHtml,
+              contractHtml: data.contractHtml,
+              attachments: data.attachments || {},
+              clientNotes: data.clientNotes || data.notes,
+              internalNotes: data.internalNotes,
+              permitStatus: data.permitStatus,
+              paymentStatus: data.paymentStatus,
+              scheduledDate: data.scheduledDate,
+              completedDate: data.completedDate,
+              projectDescription: data.projectDescription || data.description || projectTitle,
+              projectCategory: data.projectCategory || "fencing",
+              projectScope: data.projectScope,
+              materialsList: data.materialsList || data.items || [],
+              laborHours: data.laborHours,
+              difficulty: data.difficulty || "medium",
+              // ✅ EXACT SAME FIELDS AS EstimatesWizard
+              estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
+              title: projectTitle,
+              clientEmail: clientEmail,
+              estimateDate: data.createdAt
+                ? data.createdAt.toDate?.() || new Date(data.createdAt)
+                : new Date(),
+              items: data.projectTotalCosts?.materialCosts?.items || data.items || [],
+              projectId: doc.id,
+              pdfUrl: data.pdfUrl || null,
+              originalData: data
+            };
           });
 
-          // Mapear estimado a proyecto con datos esenciales
-          allProjects.push({
-            id: doc.id,
-            clientName: data.clientName || "Cliente no especificado",
-            address: data.address || data.clientAddress || "Dirección no especificada",
-            projectType: data.projectType || "fencing",
-            projectSubtype: data.projectSubtype || data.fenceType || data.serviceType,
-            fenceType: data.fenceType,
-            fenceHeight: data.fenceHeight || data.height,
-            height: data.height || data.fenceHeight,
-            status: data.status || "estimate",
-            totalPrice: data.totalAmount || data.totalPrice || data.grandTotal || 0,
-            createdAt: data.createdAt,
-            source: "estimates",
-            projectProgress: mapStatusToProgress(data.status),
-            estimateHtml: data.estimateHtml,
-            contractHtml: data.contractHtml,
-            attachments: data.attachments || {},
-            clientNotes: data.clientNotes || data.notes,
-            internalNotes: data.internalNotes,
-            permitStatus: data.permitStatus,
-            paymentStatus: data.paymentStatus,
-            scheduledDate: data.scheduledDate,
-            completedDate: data.completedDate,
-            projectDescription: data.projectDescription || data.description,
-            projectCategory: data.projectCategory || "fencing",
-            projectScope: data.projectScope,
-            materialsList: data.materialsList || data.items || [],
-            laborHours: data.laborHours,
-            difficulty: data.difficulty || "medium"
+          allEstimates = [...allEstimates, ...firebaseEstimates];
+          console.log(`📊 [ESTIMATES-COLLECTION] Mapeados ${firebaseEstimates.length} estimados`);
+        } catch (estimatesError) {
+          console.warn("⚠️ [ESTIMATES-COLLECTION] Error:", estimatesError);
+        }
+
+        // Convertir estimados a formato de proyectos
+        allEstimates.forEach((estimate) => {
+          console.log(`📋 [ESTIMATE-TO-PROJECT]`, {
+            id: estimate.id,
+            cliente: estimate.clientName,
+            estado: estimate.status,
+            total: estimate.totalPrice,
+            numero: estimate.estimateNumber
           });
+
+          allProjects.push(estimate);
         });
 
         console.log(`🎯 [DASHBOARD] Total proyectos cargados: ${allProjects.length}`);
@@ -304,7 +452,7 @@ function Projects() {
         setProjects(projectsWithProgress);
         setFilteredProjects(projectsWithProgress);
 
-      } catch (firebaseError) {
+      } catch (firebaseError: any) {
         console.error("🚨 [FIREBASE-ERROR] Error conectando con Firebase:", firebaseError);
         
         // Manejar errores específicos
