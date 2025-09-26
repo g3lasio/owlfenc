@@ -2,8 +2,6 @@ import { Router } from 'express';
 import { z } from 'zod';
 import admin from 'firebase-admin';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
-import { unifiedSessionAuth } from '../middleware/unified-session-auth';
-import { storage } from '../storage';
 
 const router = Router();
 
@@ -43,26 +41,33 @@ const importClientsSchema = z.object({
   clients: z.array(clientSchema),
 });
 
-// Obtener todos los clientes del usuario autenticado (POSTGRESQL)
-router.get('/', unifiedSessionAuth(), async (req, res) => {
+// Obtener todos los clientes del usuario autenticado
+router.get('/', verifyFirebaseAuth, async (req, res) => {
   try {
-    console.log('🔒 [POSTGRESQL-CLIENTS] Obteniendo clientes para usuario:', req.authUser?.uid);
+    console.log('🔒 [FIREBASE-CLIENTS] Obteniendo clientes para usuario:', req.firebaseUser?.uid);
     
-    const firebaseUid = req.authUser?.uid;
-    const internalUserId = req.authUser?.internalUserId;
-    
-    if (!firebaseUid || !internalUserId) {
+    const userId = req.firebaseUser?.uid;
+    if (!userId) {
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
 
-    // Obtener clientes desde PostgreSQL usando el user_id correcto
-    const clients = await storage.getClientsByUserId(internalUserId);
+    const db = admin.firestore();
+    const clientsRef = db.collection('clients');
+    const query = clientsRef.where('userId', '==', userId).orderBy('createdAt', 'desc');
+    
+    const snapshot = await query.get();
+    const clients = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate() || new Date(),
+      updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+    }));
 
-    console.log(`✅ [POSTGRESQL-CLIENTS] Encontrados ${clients.length} clientes para user_id: ${internalUserId}`);
+    console.log(`✅ [FIREBASE-CLIENTS] Encontrados ${clients.length} clientes`);
     res.json(clients);
 
   } catch (error) {
-    console.error('❌ [POSTGRESQL-CLIENTS] Error al obtener clientes:', error);
+    console.error('❌ [FIREBASE-CLIENTS] Error al obtener clientes:', error);
     res.status(500).json({ error: 'Error al obtener clientes' });
   }
 });

@@ -6,13 +6,15 @@
  */
 
 import { DatabaseStorage } from '../DatabaseStorage';
-import { userMappingService } from '../services/userMappingService';
+import { UserMappingService } from '../services/UserMappingService';
 
 export class DataIntegrityChecker {
   private storage: DatabaseStorage;
+  private userMappingService: UserMappingService;
 
   constructor(storage: DatabaseStorage) {
     this.storage = storage;
+    this.userMappingService = UserMappingService.getInstance(storage);
   }
 
   /**
@@ -31,7 +33,7 @@ export class DataIntegrityChecker {
       usersWithoutFirebaseUID: 0,
       projectsWithUserId1: 0,
       totalProjects: 0,
-      mappingSystemStatus: 'active'
+      mappingCacheSize: this.userMappingService.getCacheSize()
     };
 
     try {
@@ -52,7 +54,7 @@ export class DataIntegrityChecker {
       console.error("❌ [DATA-INTEGRITY] Error during integrity check:", error);
       return {
         status: 'critical',
-        issues: [`Integrity check failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
+        issues: [`Integrity check failed: ${error.message}`],
         statistics
       };
     }
@@ -69,21 +71,7 @@ export class DataIntegrityChecker {
     try {
       console.log(`🧪 [DATA-INTEGRITY] Testing user mapping for ${firebaseUid}`);
       
-      const userId = await userMappingService.getInternalUserId(firebaseUid);
-      
-      if (!userId && email) {
-        // Try to create mapping if user doesn't exist
-        const mapping = await userMappingService.createMapping(firebaseUid, email);
-        const finalUserId = mapping?.id;
-        
-        console.log(`✅ [DATA-INTEGRITY] User mapping test successful: ${firebaseUid} → ${finalUserId}`);
-        
-        return {
-          success: !!mapping,
-          userId: finalUserId,
-          error: mapping ? undefined : 'Failed to create user mapping'
-        };
-      }
+      const userId = await this.userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid, email);
       
       console.log(`✅ [DATA-INTEGRITY] User mapping test successful: ${firebaseUid} → ${userId}`);
       
@@ -96,7 +84,7 @@ export class DataIntegrityChecker {
       
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error.message
       };
     }
   }

@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { useFeatureAccess } from "@/hooks/usePermissions";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,14 +31,24 @@ import { DeepSearchChat } from "@/components/DeepSearchChat";
 // Usar el logo correcto de OWL FENCE
 const mervinLogoUrl =
   "https://ik.imagekit.io/lp5czyx2a/ChatGPT%20Image%20May%2010,%202025,%2005_35_38%20PM.png?updatedAt=1748157114019";
-// 🔄 CONSOLIDATION: clientFirebase imports removed - PostgreSQL + React Query only
-// import { getClients as getFirebaseClients, saveClient } from "@/lib/clientFirebase"; // REMOVED
-// 🔄 CONSOLIDATION: Firebase Firestore imports removed - PostgreSQL + React Query only
-// import { collection, query, where, getDocs, addDoc, Timestamp, doc, setDoc } from "firebase/firestore"; // REMOVED
-// import { db, auth } from "@/lib/firebase"; // REMOVED
+import {
+  getClients as getFirebaseClients,
+  saveClient,
+} from "@/lib/clientFirebase";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  Timestamp,
+  doc,
+  setDoc,
+} from "firebase/firestore";
+import { db, auth } from "@/lib/firebase";
 import { MaterialInventoryService } from "../services/materialInventoryService";
 import { EmailService } from "../services/emailService";
-// import { checkEmailVerification } from "@/lib/firebase"; // REMOVED: Auth handled elsewhere
+import { checkEmailVerification } from "@/lib/firebase";
 import { apiRequest, getAuthHeaders } from "@/lib/queryClient";
 import {
   shareOrDownloadPdf,
@@ -355,58 +365,8 @@ export default function EstimatesWizardFixed() {
 
   // Estimates history states
   const [showEstimatesHistory, setShowEstimatesHistory] = useState(false);
-  // 🔄 CONSOLIDATION: PostgreSQL-only estimates via React Query
-  const queryClient = useQueryClient();
-  
-  // React Query for estimates list (PostgreSQL-first with Firebase fallback)
-  const {
-    data: savedEstimates = [],
-    isLoading: isLoadingEstimates,
-    error: estimatesError,
-    refetch: refetchEstimates
-  } = useQuery({
-    queryKey: ['/api/estimates'],
-    queryFn: async () => {
-      console.log("📥 [CONSOLIDATION] Cargando estimates desde PostgreSQL...");
-      
-      const authHeaders = await getAuthHeaders();
-      const response = await fetch("/api/estimates", {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          ...authHeaders,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch estimates: ${response.status} ${response.statusText}`);
-      }
-
-      const pgEstimates = await response.json();
-      console.log(`✅ [CONSOLIDATION] ${pgEstimates.length} estimates cargados desde PostgreSQL`);
-
-      // Transform PostgreSQL data to UI format
-      return pgEstimates.map((est: any) => ({
-        id: est.id,
-        estimateNumber: est.estimateNumber || `EST-${est.id}`,
-        title: est.projectDescription || est.title || `Estimado para ${est.clientName}`,
-        clientName: est.clientName || "Cliente sin nombre",
-        clientEmail: est.clientEmail || "",
-        total: est.total || 0,
-        status: est.status || "draft",
-        estimateDate: new Date(est.estimateDate || est.createdAt),
-        items: est.items || [],
-        projectType: est.projectType || "construction",
-        projectId: est.id,
-        pdfUrl: null,
-        originalData: est,
-      })).sort((a, b) => new Date(b.estimateDate).getTime() - new Date(a.estimateDate).getTime());
-    },
-    enabled: !!(currentUser?.uid || profile?.email), // Only fetch when authenticated
-    staleTime: 30000, // Consider data fresh for 30 seconds
-    refetchOnWindowFocus: false,
-  });
+  const [savedEstimates, setSavedEstimates] = useState<any[]>([]);
+  const [isLoadingEstimates, setIsLoadingEstimates] = useState(false);
   const [showCompanyEditDialog, setShowCompanyEditDialog] = useState(false);
   
   // Holographic Share Modal states
@@ -444,21 +404,12 @@ export default function EstimatesWizardFixed() {
         const token = await currentUser.getIdToken();
         if (!token) throw new Error("No se pudo obtener token de autenticación");
         
-        // Use bypass headers for development like other endpoints
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json'
-        };
-        
-        // Add bypass headers if available (like in EstimatesWizardFixed.tsx)
-        if (currentUser?.uid) {
-          headers['x-bypass-uid'] = currentUser.uid;
-          headers['x-temp-bypass'] = 'read-only-access';
-          headers['x-user-email'] = currentUser.email || '';
-        }
-        
         const response = await fetch("/api/subscription/user-subscription", {
           method: "GET",
-          headers,
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
         });
         
         if (!response.ok) throw new Error("Failed to fetch subscription");
@@ -1728,15 +1679,108 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     estimate.projectDetails,
   ]);
 
-  // 🔄 CONSOLIDATION: Autoguardado PostgreSQL-only
+  // 💾 FUNCIÓN DE AUTOGUARDADO SIN INDICADOR (para uso interno)
   const autoSaveEstimateChangesWithoutIndicator = useCallback(async () => {
-    // MIGRATION: Autoguardado deshabilitado durante consolidación PostgreSQL
-    // TODO: Implementar autoguardado PostgreSQL via /api/estimates en futuras versiones
+    // ✅ FIXED: Resilient auth check - allow save if we have profile data
     if ((!currentUser?.uid && !profile?.email) || !estimate.client || estimate.items.length === 0) {
-      return;
+      return; // No autoguardar si no hay datos válidos
     }
-    
-    console.log("ℹ️ [CONSOLIDATION] Autoguardado Firebase eliminado - solo guardado manual PostgreSQL");
+
+    try {
+      console.log("💾 AUTOGUARDADO: Actualizando proyecto existente...");
+
+      // Preparar datos completos del estimado con descuentos e impuestos
+      const estimateNumber = `EST-${Date.now()}`;
+      const estimateData = {
+        firebaseUserId: currentUser?.uid,
+        estimateNumber,
+
+        // Información completa del cliente
+        clientName: estimate.client.name,
+        clientEmail: estimate.client.email || "",
+        clientPhone: estimate.client.phone || "",
+        clientAddress: estimate.client.address || "",
+        clientInformation: estimate.client,
+
+        // Detalles del proyecto
+        projectDescription: estimate.projectDetails,
+        projectType: "construction",
+
+        // Items completos - VALORES DIRECTOS SIN CONVERSIONES
+        items: estimate.items.map((item, index) => ({
+          id: item.id,
+          materialId: item.materialId || "",
+          name: item.name,
+          description: item.description || "",
+          quantity: item.quantity,
+          unit: item.unit || "unit",
+          unitPrice: item.price, // NO convertir a centavos
+          price: item.price, // Agregar precio directo
+          totalPrice: item.total, // NO convertir a centavos
+          total: item.total, // Agregar total directo
+          sortOrder: index,
+          isOptional: false,
+        })),
+
+        // DATOS FINANCIEROS DIRECTOS - SIN CONVERSIONES A CENTAVOS
+        subtotal: estimate.subtotal,
+        taxRate: estimate.taxRate,
+        taxAmount: estimate.tax,
+        tax: estimate.tax, // Agregar tax directo
+
+        // DESCUENTOS DIRECTOS - SIN CONVERSIONES
+        discount: estimate.discountAmount || 0,
+        discountType: estimate.discountType || "percentage",
+        discountValue: estimate.discountValue || 0,
+        discountAmount: estimate.discountAmount || 0,
+        discountName: estimate.discountName || "",
+
+        total: estimate.total,
+
+        // Display-friendly totals (mismos valores)
+        displaySubtotal: estimate.subtotal,
+        displayTax: estimate.tax,
+        displayTotal: estimate.total,
+        displayDiscountAmount: estimate.discountAmount || 0,
+
+        // Metadata
+        status: "draft",
+        type: "estimate",
+        source: "estimates-wizard-autosave",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Buscar proyecto existente para el mismo cliente
+      const { collection, query, where, getDocs, addDoc, updateDoc, doc } =
+        await import("firebase/firestore");
+      const { db } = await import("@/lib/firebase");
+
+      const existingQuery = query(
+        collection(db, "estimates"),
+        where("firebaseUserId", "==", currentUser?.uid),
+        where("clientName", "==", estimate.client.name),
+      );
+
+      const querySnapshot = await getDocs(existingQuery);
+
+      if (!querySnapshot.empty) {
+        // Actualizar proyecto existente
+        const existingDoc = querySnapshot.docs[0];
+        const docRef = doc(db, "estimates", existingDoc.id);
+        await updateDoc(docRef, estimateData);
+        console.log("✅ AUTOGUARDADO: Proyecto actualizado:", existingDoc.id);
+      } else {
+        // Crear nuevo proyecto si no existe
+        const docRef = await addDoc(collection(db, "estimates"), estimateData);
+        console.log("✅ AUTOGUARDADO: Nuevo proyecto creado:", docRef.id);
+      }
+    } catch (error) {
+      console.error("❌ AUTOGUARDADO: Error:", error);
+      // Silenciar errores de autoguardado para no interrumpir al usuario
+    } finally {
+      // ✅ NO MANEJAR INDICADOR AQUÍ - Se maneja en el useEffect principal
+    }
   }, [currentUser?.uid, estimate]);
 
   // 💾 FUNCIÓN DE AUTOGUARDADO PÚBLICA (con indicador) - Para uso manual
@@ -1943,33 +1987,269 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     }
   };
 
-  // 🔄 CONSOLIDATION: Firebase loader eliminated - React Query handles estimates loading
-  // (Function body completely removed to fix syntax error - React Query replacement above)
+  // Load saved estimates from Firebase
+  const loadSavedEstimates = async () => {
+    // ✅ FIXED: Resilient auth check - use profile fallback
+    if (!currentUser?.uid && !profile?.email) return;
 
+    try {
+      setIsLoadingEstimates(true);
+      console.log("📥 Cargando estimados desde Firebase...");
 
-  // FIXED: Calculate Totals Function using setState updater pattern
-  const calculateTotals = (items: EstimateItem[]) => {
-    const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+      // Import Firebase functions
+      const { collection, query, where, getDocs } = await import(
+        "firebase/firestore"
+      );
+      const { db } = await import("../lib/firebase");
+
+      let allEstimates = [];
+
+      // Try loading from projects collection first (simpler query)
+      try {
+        const projectsQuery = query(
+          collection(db, "projects"),
+          where("firebaseUserId", "==", currentUser?.uid),
+        );
+
+        const projectsSnapshot = await getDocs(projectsQuery);
+        const projectEstimates = projectsSnapshot.docs
+          .filter((doc) => {
+            const data = doc.data();
+            return data.status === "estimate" || data.estimateNumber;
+          })
+          .map((doc) => {
+            const data = doc.data();
+
+            // Better data extraction with multiple fallback paths
+            const clientName =
+              data.clientInformation?.name ||
+              data.clientName ||
+              data.client?.name ||
+              "Cliente sin nombre";
+
+            const clientEmail =
+              data.clientInformation?.email ||
+              data.clientEmail ||
+              data.client?.email ||
+              "";
+
+            // Better total calculation with multiple paths
+            let totalValue =
+              data.projectTotalCosts?.totalSummary?.finalTotal ||
+              data.projectTotalCosts?.total ||
+              data.total ||
+              data.estimateAmount ||
+              0;
+
+            // No conversion - keep original values as they are stored
+            const displayTotal = totalValue;
+
+            const projectTitle =
+              data.projectDetails?.name ||
+              data.projectName ||
+              data.title ||
+              `Estimado para ${clientName}`;
+
+            return {
+              id: doc.id,
+              estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
+              title: projectTitle,
+              clientName: clientName,
+              clientEmail: clientEmail,
+              total: displayTotal,
+              status: data.status || "estimate",
+              estimateDate: data.createdAt
+                ? data.createdAt.toDate?.() || new Date(data.createdAt)
+                : new Date(),
+              items:
+                data.projectTotalCosts?.materialCosts?.items ||
+                data.items ||
+                [],
+              projectType:
+                data.projectType || data.projectDetails?.type || "fence",
+              projectId: doc.id,
+              pdfUrl: data.pdfUrl || null,
+              originalData: data, // Store original data for editing
+            };
+          });
+
+        allEstimates = [...allEstimates, ...projectEstimates];
+        console.log(
+          `📊 Cargados ${projectEstimates.length} estimados desde proyectos`,
+        );
+      } catch (projectError) {
+        console.warn(
+          "No se pudieron cargar estimados desde proyectos:",
+          projectError,
+        );
+      }
+
+      // Try loading from estimates collection (if it exists)
+      try {
+        const estimatesQuery = query(
+          collection(db, "estimates"),
+          where("firebaseUserId", "==", currentUser?.uid),
+        );
+
+        const estimatesSnapshot = await getDocs(estimatesQuery);
+        const firebaseEstimates = estimatesSnapshot.docs.map((doc) => {
+          const data = doc.data();
+
+          // Better data extraction for estimates collection
+          const clientName =
+            data.clientInformation?.name ||
+            data.clientName ||
+            data.client?.name ||
+            "Cliente sin nombre";
+
+          const clientEmail =
+            data.clientInformation?.email ||
+            data.clientEmail ||
+            data.client?.email ||
+            "";
+
+          // Better total calculation
+          let totalValue =
+            data.projectTotalCosts?.totalSummary?.finalTotal ||
+            data.projectTotalCosts?.total ||
+            data.total ||
+            data.estimateAmount ||
+            0;
+
+          // No conversion - keep original values as they are stored
+          const displayTotal = totalValue;
+
+          const projectTitle =
+            data.projectDetails?.name ||
+            data.title ||
+            data.projectName ||
+            `Estimado para ${clientName}`;
+
+          return {
+            id: doc.id,
+            estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
+            title: projectTitle,
+            clientName: clientName,
+            clientEmail: clientEmail,
+            total: displayTotal,
+            status: data.status || "draft",
+            estimateDate: data.createdAt
+              ? data.createdAt.toDate?.() || new Date(data.createdAt)
+              : new Date(),
+            items:
+              data.projectTotalCosts?.materialCosts?.items || data.items || [],
+            projectType:
+              data.projectType ||
+              data.projectDetails?.type ||
+              data.fenceType ||
+              "fence",
+            projectId: data.projectId || doc.id,
+            pdfUrl: data.pdfUrl || null,
+            originalData: data, // Store original data for editing
+          };
+        });
+
+        allEstimates = [...allEstimates, ...firebaseEstimates];
+        console.log(
+          `📋 Cargados ${firebaseEstimates.length} estimados adicionales`,
+        );
+      } catch (estimatesError) {
+        console.warn(
+          "No se pudieron cargar estimados desde colección estimates:",
+          estimatesError,
+        );
+      }
+
+      // Deduplicate and sort
+      const uniqueEstimates = allEstimates
+        .filter(
+          (estimate, index, self) =>
+            index ===
+            self.findIndex((e) => e.estimateNumber === estimate.estimateNumber),
+        )
+        .sort(
+          (a, b) =>
+            new Date(b.estimateDate).getTime() -
+            new Date(a.estimateDate).getTime(),
+        );
+
+      setSavedEstimates(uniqueEstimates);
+      console.log(
+        `✅ Total: ${uniqueEstimates.length} estimados únicos cargados`,
+      );
+
+      // Debug: Log the first few estimates to see their data structure
+      if (uniqueEstimates.length > 0) {
+        console.log(
+          "📋 Muestra de estimados cargados:",
+          uniqueEstimates.slice(0, 3).map((est) => ({
+            estimateNumber: est.estimateNumber,
+            clientName: est.clientName,
+            total: est.total,
+            title: est.title,
+            rawData: est.originalData
+              ? {
+                  clientInfo: est.originalData.clientInformation,
+                  totalCosts: est.originalData.projectTotalCosts,
+                  directTotal: est.originalData.total,
+                  totalSummary:
+                    est.originalData.projectTotalCosts?.totalSummary,
+                  hasCentsField:
+                    !!est.originalData.projectTotalCosts?.totalSummary
+                      ?.finalTotalCents,
+                }
+              : null,
+          })),
+        );
+      }
+
+      if (uniqueEstimates.length === 0) {
+        toast({
+          title: "Sin estimados",
+          description:
+            "No se encontraron estimados guardados. Crea tu primer estimado para verlo aquí.",
+          duration: 4000,
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error cargando estimados:", error);
+      toast({
+        title: "Error al cargar estimados",
+        description:
+          "No se pudieron cargar los estimados guardados. Verifica tu conexión.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingEstimates(false);
+    }
+  };
+
+  // FIXED: Edit function without page reload - maintains authentication state
+  const handleEditEstimate = (projectId: string) => {
+    console.log("🔧 [EDIT-FIX] Editing estimate:", projectId, "without page reload");
     
-    setEstimate(prev => {
-      const discountAmount = prev.discountType === 'percentage' 
-        ? subtotal * (prev.discountValue / 100)
-        : prev.discountValue;
-      const discountedSubtotal = subtotal - discountAmount;
-      const tax = discountedSubtotal * prev.taxRate;
-      const total = discountedSubtotal + tax;
-
-      return {
-        ...prev,
-        subtotal,
-        discountAmount,
-        tax,
-        total,
-      };
+    // Set edit mode and ID without reloading the page
+    setIsEditMode(true);
+    setEditingEstimateId(projectId);
+    
+    // Update URL parameters without navigation
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('edit', projectId);
+    window.history.replaceState({}, document.title, newUrl.toString());
+    
+    // Load the estimate data for editing
+    loadProjectForEdit(projectId);
+    
+    // Close the history dialog
+    setShowEstimatesHistory(false);
+    
+    toast({
+      title: "✅ Editando estimado",
+      description: "Los datos del estimado han sido cargados para editar",
     });
   };
 
-  // AI Enhancement Function - CLEANED: Orphaned code removed during consolidation
+  // AI Enhancement Function - Using new Mervin Working Effect
   const enhanceProjectWithAI = async () => {
     if (!estimate.projectDetails.trim()) {
       toast({
@@ -1995,32 +2275,32 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         }),
       });
 
-      if (response.ok) {
-        const aiData = await response.json();
-        console.log("🤖 AI Enhancement successful:", aiData);
-        
-        setEstimate(prev => ({
+      if (!response.ok) {
+        throw new Error("Error al procesar con Mervin AI");
+      }
+
+      const result = await response.json();
+      console.log("✅ Mervin AI Response:", result);
+
+      if (result.enhancedDescription) {
+        setEstimate((prev) => ({
           ...prev,
-          projectDetails: aiData.enhancedText || prev.projectDetails,
+          projectDetails: result.enhancedDescription,
         }));
-        
+
         toast({
-          title: "✅ Mervin AI Enhancement Complete",
-          description: "Your project description has been improved!",
+          title: "✨ Mejorado con Mervin AI",
+          description:
+            "La descripción del proyecto ha sido mejorada profesionalmente",
         });
       } else {
-        console.error("AI Enhancement failed:", response.status);
-        toast({
-          title: "Error",
-          description: "AI enhancement failed. Please try again.",
-          variant: "destructive",
-        });
+        throw new Error("No se pudo generar contenido mejorado");
       }
     } catch (error) {
-      console.error("Error during AI enhancement:", error);
+      console.error("Error enhancing with AI:", error);
       toast({
         title: "Error",
-        description: "Could not enhance project description.",
+        description: "No se pudo procesar con Mervin AI. Inténtalo de nuevo.",
         variant: "destructive",
       });
     } finally {
@@ -2029,130 +2309,284 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     }
   };
 
-  // Save function handled below - duplicate removed for cleaner code
-
-  // Load Project for Edit
+  // Load project for editing
   const loadProjectForEdit = async (projectId: string) => {
+    if (!currentUser) return;
+
     try {
-      const authHeaders = await getAuthHeaders();
-      const response = await fetch(`/api/estimates/${projectId}`, {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          ...authHeaders,
-        },
+      toast({
+        title: "Cargando datos del proyecto...",
+        description: "Preparando estimado para edición",
       });
 
-      if (response.ok) {
-        const projectData = await response.json();
-        console.log("📝 Loading project for edit:", projectData);
-        
-        // Set estimate data for editing
-        setEstimate({
-          client: {
+      // Import Firebase functions
+      const { collection, query, where, getDocs, doc, getDoc } = await import(
+        "firebase/firestore"
+      );
+      const { db } = await import("../lib/firebase");
+
+      console.log(" ��� Buscando proyecto con ID:", projectId);
+
+      // First try to get from projects collection
+      let projectData = null;
+      try {
+        const projectDocRef = doc(db, "projects", projectId);
+        const projectSnap = await getDoc(projectDocRef);
+
+        if (projectSnap.exists()) {
+          projectData = { id: projectSnap.id, ...projectSnap.data() };
+          console.log(
+            "📄 Proyecto encontrado en colección projects:",
+            projectData,
+          );
+        }
+      } catch (error) {
+        console.warn("No se pudo cargar desde projects collection:", error);
+      }
+
+      // If not found, try estimates collection
+      if (!projectData) {
+        try {
+          const estimateDocRef = doc(db, "estimates", projectId);
+          const estimateSnap = await getDoc(estimateDocRef);
+
+          if (estimateSnap.exists()) {
+            projectData = { id: estimateSnap.id, ...estimateSnap.data() };
+            console.log(
+              "📋 Proyecto encontrado en colección estimates:",
+              projectData,
+            );
+          }
+        } catch (error) {
+          console.warn("No se pudo cargar desde estimates collection:", error);
+        }
+      }
+
+      if (projectData) {
+        // Find matching client
+        let clientData = null;
+        const clientName =
+          projectData.clientName || projectData.clientInformation?.name;
+
+        if (clientName && clients.length > 0) {
+          clientData = clients.find((c) => c.name === clientName);
+        }
+
+        // Create client object if not found in database
+        if (!clientData && clientName) {
+          clientData = {
             id: "temp-" + Date.now(),
             clientId: "temp-" + Date.now(),
-            name: projectData.clientName || "",
-            email: projectData.clientEmail || "",
-            phone: projectData.clientPhone || "",
-            address: projectData.clientAddress || "",
-            city: projectData.clientCity || null,
-            state: projectData.clientState || null,
-            zipCode: projectData.clientZipCode || null,
+            name: clientName,
+            email:
+              projectData.clientEmail ||
+              projectData.clientInformation?.email ||
+              null,
+            phone:
+              projectData.clientPhone ||
+              projectData.clientInformation?.phone ||
+              null,
+            address:
+              projectData.address ||
+              projectData.clientInformation?.address ||
+              null,
+            city:
+              projectData.clientCity ||
+              projectData.clientInformation?.city ||
+              null,
+            state:
+              projectData.clientState ||
+              projectData.clientInformation?.state ||
+              null,
+            zipCode:
+              projectData.clientZipCode ||
+              projectData.clientInformation?.zipCode ||
+              null,
             notes: null,
-          },
-          items: projectData.items || [],
-          projectDetails: projectData.projectDescription || "",
-          attachments: [],
-          subtotal: projectData.subtotal || 0,
-          tax: projectData.tax || 0,
-          total: projectData.total || 0,
-          taxRate: 0.08,
-          discountType: "percentage",
-          discountValue: 0,
-          discountAmount: 0,
-          discountName: "",
+          };
+        }
+
+        // Parse estimate items from project data with better price handling
+        let estimateItems: EstimateItem[] = [];
+
+        console.log("💰 DATOS COMPLETOS DEL PROYECTO:", projectData);
+        console.log("💰 Analizando datos de precios del proyecto:", {
+          items: projectData.items,
+          materialCosts: projectData.projectTotalCosts?.materialCosts,
+          estimateHtml: !!projectData.estimateHtml,
         });
 
-        // Jump to materials step for editing
+        // Log raw price data for debugging
+        if (projectData.items) {
+          console.log("📊 PRECIOS RAW en items array:");
+          projectData.items.forEach((item: any, i: number) => {
+            console.log(`  Item ${i}:`, {
+              name: item.name,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              price: item.price,
+              total: item.total || item.totalPrice,
+              rawData: item,
+            });
+          });
+        }
+
+        // Priority 1: Try materialCosts.items (most structured)
+        if (projectData.projectTotalCosts?.materialCosts?.items) {
+          estimateItems = projectData.projectTotalCosts.materialCosts.items.map(
+            (item: any, index: number) => {
+              const quantity = parseFloat(item.quantity || item.qty || 1);
+              const rawPrice = parseFloat(
+                item.unitPrice || item.price || item.pricePerUnit || 0,
+              );
+              const rawTotal = parseFloat(item.total || item.totalPrice || 0);
+
+              // NORMALIZAR PRECIOS: Aplicar conversión inteligente
+              // CÁLCULOS SEGUROS: Usar valores directos sin conversiones
+              let price = rawPrice;
+              let total = rawTotal;
+
+              // Si no hay total, calcularlo correctamente
+              if (!total || total === 0) {
+                total = price * quantity;
+              }
+
+              return {
+                id: item.id || `item-${index}`,
+                materialId: item.materialId || "",
+                name: item.name || item.description || "Material",
+                description: item.description || item.name || "",
+                quantity,
+                price,
+                unit: item.unit || item.unitType || "unidad",
+                total,
+              };
+            },
+          );
+          console.log(
+            "✅ Items cargados desde materialCosts.items:",
+            estimateItems,
+          );
+        }
+        // Priority 2: Try direct items array
+        else if (projectData.items && Array.isArray(projectData.items)) {
+          estimateItems = projectData.items.map((item: any, index: number) => {
+            const quantity = parseFloat(item.quantity || 1);
+            const rawPrice = parseFloat(item.unitPrice || item.price || 0);
+            const rawTotal = parseFloat(item.totalPrice || item.total || 0);
+
+            // NORMALIZAR PRECIOS: Aplicar conversión inteligente
+            let price = rawPrice;
+            let total = rawTotal;
+
+            // CÁLCULOS SEGUROS: Usar precio directo sin conversiones
+
+            // CÁLCULOS SEGUROS: Usar total directo sin conversiones
+
+            // Si no hay total, calcularlo correctamente
+            if (!total || total === 0) {
+              total = price * quantity;
+            }
+
+            return {
+              id: item.id || `item-${index}`,
+              materialId: item.materialId || "",
+              name: item.name || item.description || "Material",
+              description: item.description || "",
+              quantity,
+              price,
+              unit: item.unit || "unidad",
+              total,
+            };
+          });
+          console.log("✅ Items cargados desde items array:", estimateItems);
+        }
+        // Priority 3: Try to parse from HTML
+        else if (projectData.estimateHtml) {
+          estimateItems = parseEstimateItemsFromHtml(projectData.estimateHtml);
+          console.log("✅ Items parseados desde HTML:", estimateItems);
+        }
+
+        // Ensure we have valid items with prices
+        if (estimateItems.length === 0) {
+          // Create a basic item so user can edit
+          estimateItems = [
+            {
+              id: "item-1",
+              materialId: "",
+              name: "Material a definir",
+              description: "Material del proyecto original",
+              quantity: 1,
+              price: 0,
+              unit: "unidad",
+              total: 0,
+            },
+          ];
+          console.log(
+            "⚠️ No se encontraron items, creando item básico para edición",
+          );
+        }
+
+        // Get project total and details
+        const projectTotal =
+          projectData.total ||
+          projectData.projectTotalCosts?.total ||
+          projectData.estimateAmount ||
+          estimateItems.reduce((sum, item) => sum + item.total, 0);
+
+        const projectDetails =
+          projectData.projectDescription ||
+          projectData.projectScope ||
+          projectData.scope ||
+          projectData.notes ||
+          `Proyecto de ${projectData.projectType || "cerca"} para ${clientName}`;
+
+        // Set estimate data - MANTENER DESCUENTOS E IMPUESTOS GUARDADOS
+        setEstimate({
+          client: clientData,
+          items: estimateItems,
+          projectDetails,
+          attachments: [], // FIXED: Always initialize attachments array to prevent undefined errors
+          subtotal: 0, // Will be recalculated by useEffect
+          tax: 0, // Will be recalculated by useEffect
+          total: 0, // Will be recalculated by useEffect
+          taxRate:
+            projectData.taxRate > 100
+              ? projectData.taxRate / 100
+              : projectData.taxRate || 10,
+          // RESTAURAR VALORES DE DESCUENTO GUARDADOS
+          discountType: projectData.discountType || "percentage",
+          discountValue: projectData.discountValue || 0,
+          discountAmount: projectData.discountAmount || 0,
+          discountName: projectData.discountName || "",
+        });
+
+        console.log("🎯 Estimate configurado:", {
+          client: clientData?.name,
+          itemsCount: estimateItems.length,
+          projectDetails,
+          originalTotal: projectTotal,
+        });
+
+        // Jump to materials step (step 2) since client and details are loaded
         setCurrentStep(2);
+
+        toast({
+          title: "Proyecto cargado exitosamente",
+          description: `${estimateItems.length} materiales listos para editar`,
+        });
+      } else {
+        throw new Error("Proyecto no encontrado");
       }
     } catch (error) {
       console.error("Error loading project for edit:", error);
       toast({
-        title: "Error",
-        description: "Could not load project data for editing.",
+        title: "Error al cargar proyecto",
+        description: "No se pudieron cargar los datos del proyecto",
         variant: "destructive",
       });
     }
   };
-
-  // Material search and selection functions
-  const filteredMaterials = materials.filter(material =>
-    material.name.toLowerCase().includes(materialSearch.toLowerCase()) ||
-    material.description.toLowerCase().includes(materialSearch.toLowerCase())
-  );
-
-  // Client search filter  
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
-    (client.email && client.email.toLowerCase().includes(clientSearch.toLowerCase()))
-  );
-
-  // Add Material to Estimate
-  const addMaterialToEstimate = (material: Material) => {
-    const newItem: EstimateItem = {
-      id: Date.now().toString(),
-      materialId: material.id,
-      name: material.name,
-      description: material.description,
-      quantity: 1,
-      price: material.price,
-      unit: material.unit,
-      total: material.price,
-    };
-
-    setEstimate(prev => ({
-      ...prev,
-      items: [...prev.items, newItem],
-    }));
-
-    // Recalculate totals
-    calculateTotals([...estimate.items, newItem]);
-    
-    toast({
-      title: "✅ Material Added",
-      description: `${material.name} added to estimate`,
-    });
-  };
-
-  // Handle Edit Estimate Function  
-  const handleEditEstimate = (projectId: string) => {
-    console.log("🔧 [EDIT-FIX] Editing estimate:", projectId, "without page reload");
-    
-    setIsEditMode(true);
-    setEditingEstimateId(projectId);
-    
-    const newUrl = new URL(window.location.href);
-    newUrl.searchParams.set('edit', projectId);
-    window.history.replaceState({}, document.title, newUrl.toString());
-    
-    loadProjectForEdit(projectId);
-    setShowEstimatesHistory(false);
-    
-    toast({
-      title: "✅ Editando estimado",
-      description: "Los datos del estimado han sido cargados para editar",
-    });
-  };
-
-  // 🎯 CONSOLIDATION COMPLETED: Firebase → PostgreSQL transformation successful
-  // ✅ React Query + PostgreSQL endpoints integration complete
-  // ✅ All Firebase business data imports eliminated  
-  // ✅ Cache invalidation with queryClient.invalidateQueries implemented
-
-
 
   // Helper function to parse estimate items from HTML
   const parseEstimateItemsFromHtml = (html: string): EstimateItem[] => {
@@ -2401,59 +2835,94 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         total: estimateData.displayTotal,
       });
 
-      // 🔄 MIGRATION: PostgreSQL-only storage (eliminando dual-writes)
-      console.log("💾 [CONSOLIDATION] Guardando estimate en PostgreSQL únicamente...");
-      
+      // Guardar también en Firebase para máxima compatibilidad
       try {
-        // Llamada unificada al servidor PostgreSQL
-        const response = await fetch("/api/estimates", {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            ...await getAuthHeaders(),
-          },
-          body: JSON.stringify(estimateData),
+        const firebaseDoc = {
+          ...estimateData,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          type: "estimate",
+          source: "estimates-wizard",
+        };
+
+        const estimateRef = await addDoc(
+          collection(db, "estimates"),
+          firebaseDoc,
+        );
+        console.log("✅ También guardado en Firebase:", estimateRef.id);
+
+        const projectRef = await addDoc(collection(db, "projects"), {
+          ...firebaseDoc,
+          projectId: estimateData.projectId,
+          status: "estimate",
+          type: "project",
         });
+        console.log("✅ Proyecto creado en Firebase:", projectRef.id);
+      } catch (firebaseError) {
+        console.warn(
+          "⚠️ No se pudo guardar en Firebase, pero PostgreSQL funcionó:",
+          firebaseError,
+        );
+      }
 
-        if (!response.ok) {
-          throw new Error(`Server error: ${response.status} ${response.statusText}`);
-        }
+      console.log("💾 Guardando estimado:", estimateData);
 
-        const savedEstimate = await response.json();
-        console.log("✅ [CONSOLIDATION] Estimate guardado en PostgreSQL:", savedEstimate.id);
+      // 3. Save directly to Firebase (primary storage)
+      console.log("💾 Guardando directamente en Firebase...");
 
-        // 4. Save to localStorage solo como cache local (no como fuente de verdad)
-        try {
-          const localData = {
-            ...estimateData,
-            savedAt: new Date().toISOString(),
-            estimateId: savedEstimate.id,
-            source: "postgresql"
-          };
+      const estimateDoc = {
+        ...estimateData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        type: "estimate",
+        source: "estimates-wizard",
+      };
 
-          const existingEstimates = JSON.parse(
-            localStorage.getItem("savedEstimates") || "[]",
-          );
-          existingEstimates.push(localData);
-          localStorage.setItem(
-            "savedEstimates",
-            JSON.stringify(existingEstimates),
-          );
-          console.log("✅ Cache local actualizado");
-        } catch (localError) {
-          console.warn("⚠️ Error actualizando cache local (no crítico):", localError);
-        }
-      } catch (serverError) {
-        console.error("❌ [CONSOLIDATION] Error guardando en PostgreSQL:", serverError);
-        
-        // Error crítico - mostrar al usuario
-        toast({
-          title: "Error al guardar estimate",
-          description: "No se pudo guardar en el servidor. Verifica tu conexión.",
-          variant: "destructive",
-        });
-        return;
+      // Save to Firebase estimates collection
+      const estimateRef = await addDoc(
+        collection(db, "estimates"),
+        estimateDoc,
+      );
+      console.log(
+        "✅ Estimado guardado en Firebase estimates:",
+        estimateRef.id,
+      );
+
+      // Also save to Firebase projects collection for dashboard integration
+      const projectDoc = {
+        ...estimateData,
+        projectId: estimateRef.id,
+        estimateId: estimateRef.id,
+        type: "project",
+        source: "estimate",
+        status: "estimate",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const projectRef = await addDoc(collection(db, "projects"), projectDoc);
+      console.log("✅ Estimado guardado en Firebase projects:", projectRef.id);
+
+      // 4. Save to localStorage as final backup
+      try {
+        const localData = {
+          ...estimateData,
+          savedAt: new Date().toISOString(),
+          estimateId: estimateRef.id,
+          projectId: projectRef.id,
+        };
+
+        const existingEstimates = JSON.parse(
+          localStorage.getItem("savedEstimates") || "[]",
+        );
+        existingEstimates.push(localData);
+        localStorage.setItem(
+          "savedEstimates",
+          JSON.stringify(existingEstimates),
+        );
+        console.log("✅ Estimado guardado en localStorage como respaldo");
+      } catch (localError) {
+        console.warn("⚠️ No se pudo guardar en localStorage:", localError);
       }
 
       // 5. Success feedback
@@ -2502,9 +2971,24 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     }
   };
 
-  // Client filtering handled above - duplicate removed for cleaner code
+  // Filter clients and materials
+  const filteredClients = clients.filter(
+    (client) =>
+      client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+      (client.email &&
+        client.email.toLowerCase().includes(clientSearch.toLowerCase())) ||
+      (client.phone && client.phone.includes(clientSearch)) ||
+      (client.mobilePhone && client.mobilePhone.includes(clientSearch)),
+  );
 
-  // Material filtering handled above - duplicate removed for cleaner code
+  const filteredMaterials = materials.filter(
+    (material) =>
+      material.name.toLowerCase().includes(materialSearch.toLowerCase()) ||
+      material.description
+        .toLowerCase()
+        .includes(materialSearch.toLowerCase()) ||
+      material.category.toLowerCase().includes(materialSearch.toLowerCase()),
+  );
 
   // Client selection
   const selectClient = (client: Client) => {
@@ -2666,7 +3150,31 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     }
   };
 
-  // Material addition handled above - duplicate removed for cleaner code
+  // Add material to estimate
+  const addMaterialToEstimate = (material: Material) => {
+    const estimateItem: EstimateItem = {
+      id: `item-${Date.now()}`,
+      materialId: material.id,
+      name: material.name,
+      description: material.description || "",
+      quantity: 1,
+      price: material.price,
+      unit: material.unit || "unit",
+      total: material.price * 1,
+    };
+
+    setEstimate((prev) => ({
+      ...prev,
+      items: [...prev.items, estimateItem],
+    }));
+
+    setShowMaterialDialog(false);
+
+    toast({
+      title: "Material Added",
+      description: `${material.name} has been added to the estimate`,
+    });
+  };
 
   // Update item quantity
   const updateItemQuantity = (itemId: string, newQuantity: number) => {
@@ -3401,8 +3909,7 @@ This link provides a professional view of your estimate that you can access anyt
         setShowEmailPreview(false);
 
         // Refresh estimates list
-        // 🔄 CONSOLIDATION: React Query cache invalidation instead of Firebase reload
-        queryClient.invalidateQueries({ queryKey: ['/api/estimates'] });
+        loadSavedEstimates();
       } else {
         // Handle specific error types
         if (result.error === "RESEND_TEST_MODE_LIMITATION") {
@@ -4546,14 +5053,7 @@ This link provides a professional view of your estimate that you can access anyt
                 <div className="relative">
                   <Textarea
                     id="projectDetails"
-                    placeholder={`Describe los detalles completos del proyecto:
-
-• Alcance del trabajo y especificaciones técnicas
-• Cronograma y tiempo estimado
-• Proceso paso a paso del trabajo
-• Qué está incluido en el precio
-• Qué NO está incluido
-• Notas adicionales, términos especiales, condiciones...`}
+                    placeholder="Describe los detalles completos del proyecto:&#10;&#10;• Alcance del trabajo y especificaciones técnicas&#10;• Cronograma y tiempo estimado&#10;• Proceso paso a paso del trabajo&#10;• Qué está incluido en el precio&#10;• Qué NO está incluido&#10;• Notas adicionales, términos especiales, condiciones..."
                     value={estimate.projectDetails}
                     onChange={(e) =>
                       setEstimate((prev) => ({
@@ -6520,7 +7020,7 @@ This link provides a professional view of your estimate that you can access anyt
                 <button
                   onClick={() => {
                     setShowEstimatesHistory(true);
-                    // 🔄 CONSOLIDATION: React Query auto-loads data when component mounts
+                    loadSavedEstimates();
                   }}
                   className="px-6 py-3 text-gray-300 hover:text-white hover:bg-gray-800 transition-all duration-200 flex items-center gap-2 relative"
                 >
@@ -7818,7 +8318,7 @@ This link provides a professional view of your estimate that you can access anyt
         </DialogContent>
       </Dialog>
 
-      <style jsx={true}>{`
+      <style jsx>{`
         @keyframes scan {
           0% { top: 0%; opacity: 0; }
           50% { opacity: 1; }

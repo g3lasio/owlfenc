@@ -1,28 +1,25 @@
 /**
- * Servicio para gestionar el historial de búsquedas de permisos usando PostgreSQL
- * 🚀 CONSOLIDATION: Converted from Firebase to PostgreSQL
+ * Servicio para gestionar el historial de búsquedas de permisos usando Firebase
  */
 
-import { getAuthHeaders } from '@/lib/queryClient';
+import { collection, addDoc, getDocs, query, where, orderBy, limit, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export interface PermitSearchHistoryItem {
-  id: string;
-  query: string;
-  results: any;
-  userId: number;
-  searchDate: string;
-  // Legacy fields for backward compatibility
-  address?: string;
-  projectType?: string;
+  id?: string;
+  userId: string;
+  address: string;
+  projectType: string;
   projectDescription?: string;
-  title?: string;
+  results: any;
+  title: string;
+  createdAt: Timestamp;
 }
 
-const API_ENDPOINT = '/api/permit/history';
+const COLLECTION_NAME = 'permit_search_history';
 
 /**
  * Guardar una búsqueda en el historial
- * 🚀 CONSOLIDATION: PostgreSQL endpoint
  */
 export async function savePermitSearchToHistory(
   userId: string,
@@ -33,75 +30,52 @@ export async function savePermitSearchToHistory(
 ): Promise<string> {
   try {
     const title = `${projectType.charAt(0).toUpperCase() + projectType.slice(1)} en ${address}`;
-    const query = `${title} - ${address}`;
     
-    const historyData = {
-      query,
+    const historyItem: Omit<PermitSearchHistoryItem, 'id'> = {
+      userId,
+      address,
+      projectType,
+      projectDescription: projectDescription || '',
       results,
-      userId: parseInt(userId), // Convert to integer for PostgreSQL
+      title,
+      createdAt: Timestamp.now()
     };
 
-    const authHeaders = await getAuthHeaders();
-    const response = await fetch(API_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders,
-      },
-      credentials: 'include',
-      body: JSON.stringify(historyData),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-    console.log('✅ Búsqueda guardada en historial PostgreSQL:', result.id);
-    return result.id;
+    const docRef = await addDoc(collection(db, COLLECTION_NAME), historyItem);
+    console.log('✅ Búsqueda guardada en historial de Firebase:', docRef.id);
+    return docRef.id;
   } catch (error) {
-    console.error('❌ Error al guardar en historial PostgreSQL:', error);
+    console.error('❌ Error al guardar en historial de Firebase:', error);
     throw error;
   }
 }
 
 /**
  * Obtener el historial de búsquedas de un usuario
- * 🚀 CONSOLIDATION: PostgreSQL endpoint
  */
 export async function getPermitSearchHistory(userId: string, limitResults = 20): Promise<PermitSearchHistoryItem[]> {
   try {
-    const authHeaders = await getAuthHeaders();
-    const response = await fetch(`${API_ENDPOINT}?userId=${userId}&limit=${limitResults}`, {
-      method: 'GET',
-      headers: {
-        ...authHeaders,
-      },
-      credentials: 'include',
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc'),
+      limit(limitResults)
+    );
+
+    const querySnapshot = await getDocs(q);
+    const history: PermitSearchHistoryItem[] = [];
+
+    querySnapshot.forEach((doc) => {
+      history.push({
+        id: doc.id,
+        ...doc.data() as Omit<PermitSearchHistoryItem, 'id'>
+      });
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const history: PermitSearchHistoryItem[] = await response.json();
-    
-    // Map PostgreSQL fields to legacy format for compatibility
-    const mappedHistory = history.map(item => ({
-      ...item,
-      // Extract legacy fields from query for UI compatibility
-      title: item.query.split(' - ')[0] || item.query,
-      address: item.query.split(' - ')[1] || '',
-      projectType: item.query.toLowerCase().includes('electrical') ? 'electrical' :
-                   item.query.toLowerCase().includes('plumbing') ? 'plumbing' :
-                   item.query.toLowerCase().includes('roofing') ? 'roofing' : 'general',
-      createdAt: { toDate: () => new Date(item.searchDate) }, // Legacy compatibility
-    }));
-
-    console.log(`✅ Historial obtenido de PostgreSQL: ${mappedHistory.length} elementos`);
-    return mappedHistory;
+    console.log(`✅ Historial obtenido de Firebase: ${history.length} elementos`);
+    return history;
   } catch (error) {
-    console.error('❌ Error al obtener historial PostgreSQL:', error);
+    console.error('❌ Error al obtener historial de Firebase:', error);
     throw error;
   }
 }
@@ -109,9 +83,8 @@ export async function getPermitSearchHistory(userId: string, limitResults = 20):
 /**
  * Formatear fecha para mostrar en el historial
  */
-export function formatHistoryDate(dateInput: string | Date | { toDate: () => Date }): string {
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : 
-               dateInput instanceof Date ? dateInput : dateInput.toDate();
+export function formatHistoryDate(timestamp: Timestamp): string {
+  const date = timestamp.toDate();
   const now = new Date();
   const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
   

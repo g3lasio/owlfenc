@@ -8,15 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/use-auth";
-import { getAuthHeaders } from "@/lib/queryClient";
-import { queryClient } from "@/lib/queryClient";
 import { 
-  type Client,
-  type ClientInput,
+  getClients as getFirebaseClients,
+  saveClient,
+  updateClient as updateFirebaseClient,
+  deleteClient as deleteFirebaseClient,
   importClientsFromCsvWithAI,
-  importClientsFromVcf
+  importClientsFromVcf,
+  type Client
 } from "../services/clientService";
 import { 
   Select, 
@@ -33,10 +32,9 @@ import { ClientDetailModal } from "../components/clients/ClientDetailModal";
 import { ExportClientsButton } from "../components/clients/ExportClientsButton";
 
 export default function Clients() {
-  // 🚀 CONSOLIDATION: Using TanStack Query instead of Firebase useState + useEffect
-  const { user: currentUser } = useAuth();
-  
+  const [clients, setClients] = useState<Client[]>([]);
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTag, setSelectedTag] = useState("_all");
   const [selectedClassification, setSelectedClassification] = useState("_all");
@@ -57,163 +55,30 @@ export default function Clients() {
 
   const { toast } = useToast();
 
-  // 🚀 TANSTACK QUERY for loading clients - replacing Firebase useEffect
-  const {
-    data: clients = [],
-    isLoading,
-    error
-  } = useQuery({
-    queryKey: ["/api/clients"],
-    queryFn: async () => {
-      console.log("🔄 [CLIENTS] Loading clients via /api/clients...");
-      
-      const authHeaders = await getAuthHeaders();
-      const response = await fetch("/api/clients", {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          ...authHeaders,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to load clients: ${response.status}`);
+  // Cargar clientes al inicio
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        setIsLoading(true);
+        console.log("🔄 [CLIENTES] Cargando clientes desde backend unificado...");
+        const data = await getFirebaseClients();
+        console.log("✅ [CLIENTES] Clientes cargados desde backend:", data.length);
+        setClients(data);
+        setFilteredClients(data);
+      } catch (error) {
+        console.error("Error loading clients:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudieron cargar los clientes"
+        });
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      const clientsData: Client[] = await response.json();
-      console.log("✅ [CLIENTS] Loaded clients:", clientsData.length);
-      return clientsData;
-    },
-    enabled: !!currentUser, // Only run when user is authenticated
-  });
-
-  // 🚀 TANSTACK QUERY MUTATIONS - replacing Firebase CRUD operations
-  const createClientMutation = useMutation({
-    mutationFn: async (clientData: ClientInput) => {
-      console.log("🔄 Creating client via /api/clients POST...");
-      
-      const authHeaders = await getAuthHeaders();
-      const response = await fetch("/api/clients", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          ...authHeaders,
-        },
-        body: JSON.stringify(clientData),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to create client: ${response.status}`);
-      }
-
-      const newClient: Client = await response.json();
-      console.log("✅ Client created:", newClient);
-      return newClient;
-    },
-    onSuccess: () => {
-      // Invalidate and refetch clients
-      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
-      setShowAddDialog(false);
-      toast({
-        title: "Cliente creado",
-        description: "El cliente ha sido agregado exitosamente."
-      });
-    },
-    onError: (error) => {
-      console.error("❌ Error creating client:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo crear el cliente"
-      });
-    },
-  });
-
-  const updateClientMutation = useMutation({
-    mutationFn: async ({ id, clientData }: { id: string; clientData: Partial<ClientInput> }) => {
-      console.log("🔄 Updating client via /api/clients PUT...");
-      
-      const authHeaders = await getAuthHeaders();
-      const response = await fetch(`/api/clients/${id}`, {
-        method: "PUT",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          ...authHeaders,
-        },
-        body: JSON.stringify(clientData),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to update client: ${response.status}`);
-      }
-
-      const updatedClient: Client = await response.json();
-      console.log("✅ Client updated:", updatedClient);
-      return updatedClient;
-    },
-    onSuccess: () => {
-      // Invalidate and refetch clients
-      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
-      setShowEditDialog(false);
-      setCurrentClient(null);
-      toast({
-        title: "Cliente actualizado",
-        description: "El cliente ha sido actualizado exitosamente."
-      });
-    },
-    onError: (error) => {
-      console.error("❌ Error updating client:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo actualizar el cliente"
-      });
-    },
-  });
-
-  const deleteClientMutation = useMutation({
-    mutationFn: async (clientId: string) => {
-      console.log("🔄 Deleting client via /api/clients DELETE...");
-      
-      const authHeaders = await getAuthHeaders();
-      const response = await fetch(`/api/clients/${clientId}`, {
-        method: "DELETE",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          ...authHeaders,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete client: ${response.status}`);
-      }
-
-      console.log("✅ Client deleted:", clientId);
-      return clientId;
-    },
-    onSuccess: () => {
-      // Invalidate and refetch clients
-      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
-      setShowDeleteDialog(false);
-      setCurrentClient(null);
-      toast({
-        title: "Cliente eliminado",
-        description: "El cliente ha sido eliminado exitosamente."
-      });
-    },
-    onError: (error) => {
-      console.error("❌ Error deleting client:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo eliminar el cliente"
-      });
-    },
-  });
+    fetchClients();
+  }, [toast]);
 
   // Filtrar clientes
   useEffect(() => {
@@ -252,46 +117,84 @@ export default function Clients() {
     new Set(clients.flatMap(client => client.tags || []))
   ).sort();
 
-  // 🚀 CONSOLIDATION: Handle functions using TanStack Query mutations
+  // Manejar creación de cliente
   const handleCreateClient = async (data: ClientFormData) => {
-    // Mapear datos del formulario a ClientInput
-    const clientData: ClientInput = {
-      name: data.name,
-      email: data.email || null,
-      phone: data.phone || null,
-      address: data.address || null,
-      // Campos opcionales del clientService
-      mobilePhone: null,
-      city: null,
-      state: null,
-      zipCode: null,
-      notes: null,
-      source: "manual_entry",
-      classification: "cliente",
-      tags: null,
-    };
-    
-    createClientMutation.mutate(clientData);
+    try {
+      console.log("🔄 [CLIENTES] Creando cliente:", data);
+      const newClient = await saveClient(data);
+      console.log("✅ [CLIENTES] Cliente creado exitosamente:", newClient);
+      
+      setClients(prev => [...prev, newClient]);
+      setShowAddDialog(false);
+      
+      toast({
+        title: "Cliente creado",
+        description: `${data.name} ha sido agregado exitosamente.`
+      });
+    } catch (error) {
+      console.error("Error creating client:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo crear el cliente"
+      });
+    }
   };
 
+  // Manejar actualización de cliente
   const handleUpdateClient = async (data: ClientFormData) => {
     if (!currentClient) return;
 
-    // Mapear datos del formulario a ClientInput
-    const clientData: Partial<ClientInput> = {
-      name: data.name,
-      email: data.email || null,
-      phone: data.phone || null,
-      address: data.address || null,
-    };
-    
-    updateClientMutation.mutate({ id: currentClient.id, clientData });
+    try {
+      console.log("🔄 [CLIENTES] Actualizando cliente:", currentClient.id, data);
+      const updatedClient = await updateFirebaseClient(currentClient.id, data);
+      console.log("✅ [CLIENTES] Cliente actualizado exitosamente:", updatedClient);
+      
+      setClients(prev => prev.map(client => 
+        client.id === currentClient.id ? updatedClient : client
+      ));
+      setShowEditDialog(false);
+      setCurrentClient(null);
+      
+      toast({
+        title: "Cliente actualizado",
+        description: `${data.name} ha sido actualizado exitosamente.`
+      });
+    } catch (error) {
+      console.error("Error updating client:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar el cliente"
+      });
+    }
   };
 
+  // Manejar eliminación de cliente
   const handleDeleteClient = async () => {
     if (!currentClient) return;
-    
-    deleteClientMutation.mutate(currentClient.id);
+
+    try {
+      console.log("🔄 [CLIENTES] Eliminando cliente:", currentClient.id);
+      await deleteFirebaseClient(currentClient.id);
+      console.log("✅ [CLIENTES] Cliente eliminado exitosamente");
+      
+      setClients(prev => prev.filter(client => client.id !== currentClient.id));
+      setShowDeleteDialog(false);
+      setCurrentClient(null);
+      
+      toast({
+        title: "Cliente eliminado",
+        description: `${currentClient.name} ha sido eliminado.`
+      });
+    } catch (error) {
+      console.error("Error deleting client:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo eliminar el cliente"
+      });
+    }
   };
 
   // Manejar importación CSV
@@ -308,8 +211,9 @@ export default function Clients() {
           const importedClients = await importClientsFromCsvWithAI(csvData);
           console.log("✅ [CLIENTES] Importación CSV inteligente exitosa:", importedClients.length);
           
-          // Invalidate and refetch clients after CSV import
-          queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+          const allClients = await getFirebaseClients();
+          setClients(allClients);
+          setFilteredClients(allClients);
           
           toast({
             title: "Importación inteligente exitosa",
@@ -352,8 +256,9 @@ export default function Clients() {
           const importedClients = await importClientsFromVcf(vcfData);
           console.log("✅ [CLIENTES] Importación Apple exitosa:", importedClients.length);
           
-          // Invalidate and refetch clients after Apple contacts import
-          queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+          const allClients = await getFirebaseClients();
+          setClients(allClients);
+          setFilteredClients(allClients);
           
           toast({
             title: "Importación exitosa",

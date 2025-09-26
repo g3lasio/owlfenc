@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { User } from 'firebase/auth';
+import { User } from 'firebase/auth';
 import { enhancedAuth } from '@/lib/firebase-auth-enhanced';
 import { useToast } from '@/hooks/use-toast';
 

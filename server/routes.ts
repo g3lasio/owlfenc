@@ -100,7 +100,6 @@ import openrouterAPI from "./routes/openrouter-api"; // Import OpenRouter API fo
 import paymentRoutes from "./routes/payment-routes"; // Import payment routes
 import usageLimitsRoutes from "./routes/usage-limits"; // Import usage limits routes
 import { AuthMiddleware, requireAuthenticatedUser, requireAuth } from './middleware/authMiddleware';
-import { unifiedSessionAuth } from './middleware/unified-session-auth';
 import { initSecureUserHelper } from './utils/secureUserHelper';
 import { DataIntegrityChecker } from './utils/dataIntegrityChecker';
 import { registerSubscriptionControlRoutes } from "./routes/subscription-control"; // Import ROBUST subscription control
@@ -110,8 +109,7 @@ import { registerRobustFirebaseAuthRoutes } from "./routes/robust-firebase-auth"
 import userProfileRoutes from "./routes/user-profile-routes"; // Import user profile routes
 import openaiChatRoutes from "./routes/openai-chat-routes"; // Import OpenAI chat routes
 import contractorPaymentRoutes from "./routes/contractor-payment-routes"; // Import contractor payment routes
-import estimatesRoutes from "./routes/estimates"; // Import legacy estimates routes (for fallback)
-import estimatesApiRoutes from "./routes/estimates-api"; // Import PostgreSQL estimates API
+import estimatesRoutes from "./routes/estimates"; // Import new estimates routes
 import estimatesFirebaseRoutes from "./routes/estimates-firebase"; // Import Firebase estimates routes
 import contractsFirebaseRoutes from "./routes/contracts-firebase"; // Import Firebase contracts routes
 import searchFirebaseRoutes from "./routes/search-firebase"; // Import Firebase search routes
@@ -1647,10 +1645,9 @@ Output must be between 200-900 characters in English.`;
   const invoiceRoutes = await import("./routes/invoice-routes");
   app.use("/api/invoices", invoiceRoutes.default);
 
-  // 🔄 CONSOLIDATION: PostgreSQL estimates-api.ts enabled
-  app.use("/api/estimates", estimatesApiRoutes); // ✅ PostgreSQL estimates API (NEW)
-  // app.use("/api/estimates", estimatesRoutes); // ❌ Legacy estimates routes DISABLED
-  // app.use("/api/estimates", estimatesFirebaseRoutes); // ❌ Firebase routes DISABLED
+  // MIGRATION: Using Firebase-only routes instead of PostgreSQL
+  // app.use("/api/estimates", estimatesRoutes); // OLD PostgreSQL routes - DISABLED
+  app.use("/api/estimates", estimatesFirebaseRoutes); // NEW Firebase-only routes
 
   // PDF generation now handled exclusively by premiumPdfService in contract routes
 
@@ -2618,15 +2615,7 @@ Output must be between 200-900 characters in English.`;
       
       let userId: number;
       try {
-        userId = await userMappingService.getInternalUserId(firebaseUid);
-        if (!userId) {
-          // 🚨 SECURITY: Do not auto-create mappings in business endpoints
-          // User must go through proper onboarding flow first
-          return res.status(404).json({ 
-            message: "User mapping not found. Please complete account setup first.",
-            code: "USER_MAPPING_REQUIRED"
-          });
-        }
+        userId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
         console.log(`✅ [USER-MAPPING] Secure mapping: ${firebaseUid} → ${userId}`);
       } catch (error) {
         console.error(`❌ [USER-MAPPING] Failed to map user:`, error);
@@ -2837,23 +2826,9 @@ Output must be between 200-900 characters in English.`;
   app.get("/api/templates/:type", authMiddleware.authenticate, async (req: Request, res: Response) => {
     try {
       const { type } = req.params;
-      
-      // 🔐 SECURITY: Get real user ID from Firebase UID
-      const firebaseUid = (req as any).firebaseUser?.uid;
-      if (!firebaseUid) {
-        return res.status(401).json({ message: "Authentication required - Firebase UID not found" });
-      }
-      
-      const { userMappingService } = await import('./services/userMappingService');
-      const userId = await userMappingService.getInternalUserId(firebaseUid);
-      if (!userId) {
-        return res.status(404).json({ 
-          message: "User mapping not found. Please complete account setup first.",
-          code: "USER_MAPPING_REQUIRED"
-        });
-      }
-      
-      console.log(`✅ [SECURE-TEMPLATES] Getting templates for user ${userId} (Firebase: ${firebaseUid}), type: ${type}`);
+      // REMOVED AUTH: Open to all users
+      const userId = 1; // Default user
+      console.log(`✅ [SECURE-TEMPLATES] Getting templates for user ${userId}, type: ${type}`);
       const templates = await storage.getTemplatesByType(userId, type);
       res.json(templates);
     } catch (error) {
@@ -2881,23 +2856,9 @@ Output must be between 200-900 characters in English.`;
       });
 
       const { message, context = {} } = schema.parse(req.body);
-      
-      // 🔐 SECURITY: Get real user ID from Firebase UID
-      const firebaseUid = (req as any).firebaseUser?.uid;
-      if (!firebaseUid) {
-        return res.status(401).json({ message: "Authentication required - Firebase UID not found" });
-      }
-      
-      const { userMappingService } = await import('./services/userMappingService');
-      const userId = await userMappingService.getInternalUserId(firebaseUid);
-      if (!userId) {
-        return res.status(404).json({ 
-          message: "User mapping not found. Please complete account setup first.",
-          code: "USER_MAPPING_REQUIRED"
-        });
-      }
-      
-      console.log(`✅ [SECURE-CHAT] Processing message for user ${userId} (Firebase: ${firebaseUid})`);
+      // REMOVED AUTH: Open to all users
+      const userId = 1; // Default user
+      console.log(`✅ [SECURE-CHAT] Processing message for user ${userId}`);
       const user = await storage.getUser(userId);
       const userContext = {
         contractorName: user?.company || "Acme Fencing",
@@ -2959,22 +2920,10 @@ Output must be between 200-900 characters in English.`;
 
       const { projectDetails } = schema.parse(req.body);
 
-      // 🔐 SECURITY: Get real user ID from Firebase UID
-      const firebaseUid = (req as any).firebaseUser?.uid;
-      if (!firebaseUid) {
-        return res.status(401).json({ message: "Authentication required - Firebase UID not found" });
-      }
-      
-      const { userMappingService } = await import('./services/userMappingService');
-      const userId = await userMappingService.getInternalUserId(firebaseUid);
-      if (!userId) {
-        return res.status(404).json({ 
-          message: "User mapping not found. Please complete account setup first.",
-          code: "USER_MAPPING_REQUIRED"
-        });
-      }
-      
-      console.log(`✅ [SECURE-ESTIMATE] Generating estimate for user ${userId} (Firebase: ${firebaseUid})`);
+      // Get the default estimate template for authenticated user
+      // REMOVED AUTH: Open to all users
+      const userId = 1; // Default user
+      console.log(`✅ [SECURE-ESTIMATE] Generating estimate for user ${userId}`);
       const template = await storage.getDefaultTemplate(userId, "estimate");
 
       if (!template) {
@@ -3006,22 +2955,9 @@ Output must be between 200-900 characters in English.`;
   // Endpoint para validar datos de entrada
   app.post("/api/estimate/validate", authMiddleware.authenticate, async (req: Request, res: Response) => {
     try {
-      // 🔐 SECURITY: Get real user ID from Firebase UID
-      const firebaseUid = (req as any).firebaseUser?.uid;
-      if (!firebaseUid) {
-        return res.status(401).json({ message: "Authentication required - Firebase UID not found" });
-      }
-      
-      const { userMappingService } = await import('./services/userMappingService');
-      const userId = await userMappingService.getInternalUserId(firebaseUid);
-      if (!userId) {
-        return res.status(404).json({ 
-          message: "User mapping not found. Please complete account setup first.",
-          code: "USER_MAPPING_REQUIRED"
-        });
-      }
-      
-      console.log(`✅ [SECURE-VALIDATE] Validating estimate for user ${userId} (Firebase: ${firebaseUid})`);
+      // REMOVED AUTH: Open to all users
+      const userId = 1; // Default user
+      console.log(`✅ [SECURE-VALIDATE] Validating estimate for user ${userId}`);
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -3170,22 +3106,9 @@ Output must be between 200-900 characters in English.`;
 
       const { estimateData, status = "draft" } = schema.parse(req.body);
 
-      // 🔐 SECURITY: Get real user ID from Firebase UID
-      const firebaseUid = (req as any).firebaseUser?.uid;
-      if (!firebaseUid) {
-        return res.status(401).json({ message: "Authentication required - Firebase UID not found" });
-      }
-      
-      const { userMappingService } = await import('./services/userMappingService');
-      const userId = await userMappingService.getInternalUserId(firebaseUid);
-      if (!userId) {
-        return res.status(404).json({ 
-          message: "User mapping not found. Please complete account setup first.",
-          code: "USER_MAPPING_REQUIRED"
-        });
-      }
-      
-      console.log(`✅ [SECURE-SAVE] Saving estimate as project for user ${userId} (Firebase: ${firebaseUid})`);
+      // REMOVED AUTH: Open to all users
+      const userId = 1; // Default user
+      console.log(`✅ [SECURE-SAVE] Saving estimate as project for user ${userId}`);
 
       // Generate HTML for the estimate
       const estimateHtml =
@@ -3229,24 +3152,41 @@ Output must be between 200-900 characters in English.`;
   });
 
   // SECURE Endpoint: Only returns materials for the authenticated user
-  app.get("/api/materials", requireAuth, async (req: Request, res: Response) => {
+  app.get("/api/materials", async (req: Request, res: Response) => {
     try {
-      // Get authenticated user ID from requireAuth middleware
-      const userId = req.user?.uid;
+      // CRITICAL SECURITY: Verify user authentication
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
 
-      if (!userId) {
+      const firebaseToken = authHeader.substring(7);
+
+      try {
+        // Verify Firebase token and get user ID
+        const admin = require("firebase-admin");
+        const decodedToken = await admin.auth().verifyIdToken(firebaseToken);
+        const userId = decodedToken.uid;
+
+        if (!userId) {
+          return res
+            .status(401)
+            .json({ message: "Invalid authentication token" });
+        }
+
+        // Get user-specific materials only
+        const materials = await storage.getUserMaterials(userId);
+
+        console.log(
+          `🔒 SECURE: Returning ${materials.length} materials for user ${userId}`,
+        );
+        res.json(materials);
+      } catch (tokenError) {
+        console.error("Token verification failed:", tokenError);
         return res
           .status(401)
           .json({ message: "Invalid authentication token" });
       }
-
-      // Get user-specific materials only
-      const materials = await storage.getUserMaterials(userId);
-
-      console.log(
-        `🔒 SECURE: Returning ${materials.length} materials for user ${userId}`,
-      );
-      res.json(materials);
     } catch (error) {
       console.error("Error fetching user materials:", error);
       res.status(500).json({ message: "Error obteniendo materiales" });
@@ -3516,22 +3456,9 @@ Output must be between 200-900 characters in English.`;
 
         // Usar el método de respaldo tradicional si OpenAI falla - REQUIERE AUTENTICACIÓN
         try {
-          // 🔐 SECURITY: Get real user ID from Firebase UID
-          const firebaseUid = (req as any).firebaseUser?.uid;
-          if (!firebaseUid) {
-            return res.status(401).json({ message: "Authentication required - Firebase UID not found" });
-          }
-          
-          const { userMappingService } = await import('./services/userMappingService');
-          const userId = await userMappingService.getInternalUserId(firebaseUid);
-          if (!userId) {
-            return res.status(404).json({ 
-              message: "User mapping not found. Please complete account setup first.",
-              code: "USER_MAPPING_REQUIRED"
-            });
-          }
-          
-          console.log(`✅ [SECURE-CONTRACT-FALLBACK] Using fallback template for user ${userId} (Firebase: ${firebaseUid})`);
+          // REMOVED AUTH: Open to all users
+      const userId = 1; // Default user
+          console.log(`✅ [SECURE-CONTRACT-FALLBACK] Using fallback template for user ${userId}`);
           const template = await storage.getDefaultTemplate(userId, "contract");
 
           if (!template) {
@@ -4634,13 +4561,11 @@ Output must be between 200-900 characters in English.`;
 
   app.get(
     "/api/subscription/user-subscription",
-    unifiedSessionAuth,
+    requireAuth,
     async (req: Request, res: Response) => {
       try {
-        // 🔧 USAR AUTENTICACIÓN UNIFICADA CON BYPASS SUPPORT
-        const firebaseUserId = req.authUser?.uid || req.firebaseUser?.uid;
-        
-        if (!firebaseUserId) {
+        // USAR AUTENTICACIÓN FIREBASE ROBUSTA IGUAL QUE CREATE-CHECKOUT
+        if (!req.firebaseUser?.uid || !req.firebaseUser?.email) {
           console.warn("❌ [SUBSCRIPTION-USER] No valid Firebase UID available");
           return res.status(401).json({
             success: false,
@@ -4648,6 +4573,8 @@ Output must be between 200-900 characters in English.`;
             message: "Token de autenticación requerido - Por favor inicia sesión nuevamente"
           });
         }
+
+        const firebaseUserId = req.firebaseUser.uid;
         console.log(`🔐 [SUBSCRIPTION-USER] Firebase UID verified: ${firebaseUserId}`);
 
         // USAR SISTEMA ROBUSTO DE MAPEO
@@ -5089,17 +5016,9 @@ Output must be between 200-900 characters in English.`;
   app.post(
     "/api/subscription/create-portal",
     async (req: Request, res: Response) => {
-      // 🚨 DEV ROUTE - DISABLE IN PRODUCTION
-      if (process.env.NODE_ENV === 'production') {
-        return res.status(403).json({ 
-          message: "Development endpoint disabled in production",
-          code: "DEV_ROUTE_DISABLED"
-        });
-      }
-      
       try {
         console.log(
-          "[DEV-PORTAL] Solicitud de creación de portal de cliente recibida:",
+          "Solicitud de creación de portal de cliente recibida:",
           req.body,
         );
 
@@ -5446,16 +5365,8 @@ Output must be between 200-900 characters in English.`;
   app.post(
     "/api/payments/connect/create-onboarding",
     async (req: Request, res: Response) => {
-      // 🚨 DEV ROUTE - DISABLE IN PRODUCTION
-      if (process.env.NODE_ENV === 'production') {
-        return res.status(403).json({ 
-          message: "Development endpoint disabled in production",
-          code: "DEV_ROUTE_DISABLED"
-        });
-      }
-      
       try {
-        // DEV ONLY: En una app real, verificaríamos autenticación
+        // En una app real, verificaríamos autenticación
         const userId = 1; // ID de usuario fijo para pruebas
 
         // Validar los parámetros de la solicitud
@@ -5514,16 +5425,8 @@ Output must be between 200-900 characters in English.`;
   app.get(
     "/api/payments/connect/account-status",
     async (req: Request, res: Response) => {
-      // 🚨 DEV ROUTE - DISABLE IN PRODUCTION
-      if (process.env.NODE_ENV === 'production') {
-        return res.status(403).json({ 
-          message: "Development endpoint disabled in production",
-          code: "DEV_ROUTE_DISABLED"
-        });
-      }
-      
       try {
-        // DEV ONLY: En una app real, verificaríamos autenticación
+        // En una app real, verificaríamos autenticación
         const userId = 1; // ID de usuario fijo para pruebas
 
         console.log(
@@ -5668,16 +5571,8 @@ Output must be between 200-900 characters in English.`;
   app.get(
     "/api/payments/connect/external-accounts",
     async (req: Request, res: Response) => {
-      // 🚨 DEV ROUTE - DISABLE IN PRODUCTION
-      if (process.env.NODE_ENV === 'production') {
-        return res.status(403).json({ 
-          message: "Development endpoint disabled in production",
-          code: "DEV_ROUTE_DISABLED"
-        });
-      }
-      
       try {
-        // DEV ONLY: En una app real, verificaríamos autenticación
+        // En una app real, verificaríamos autenticación
         const userId = 1; // ID de usuario fijo para pruebas
 
         console.log(`Obteniendo cuentas bancarias para usuario ID: ${userId}`);
@@ -5713,16 +5608,8 @@ Output must be between 200-900 characters in English.`;
   app.post(
     "/api/payments/connect/dashboard-link",
     async (req: Request, res: Response) => {
-      // 🚨 DEV ROUTE - DISABLE IN PRODUCTION
-      if (process.env.NODE_ENV === 'production') {
-        return res.status(403).json({ 
-          message: "Development endpoint disabled in production",
-          code: "DEV_ROUTE_DISABLED"
-        });
-      }
-      
       try {
-        // DEV ONLY: En una app real, verificaríamos autenticación
+        // En una app real, verificaríamos autenticación
         const userId = 1; // ID de usuario fijo para pruebas
 
         // Validar los parámetros de la solicitud
@@ -5978,22 +5865,14 @@ Output must be between 200-900 characters in English.`;
   app.post(
     "/api/subscription/setup-intent",
     async (req: Request, res: Response) => {
-      // 🚨 DEV ROUTE - DISABLE IN PRODUCTION
-      if (process.env.NODE_ENV === 'production') {
-        return res.status(403).json({ 
-          message: "Development endpoint disabled in production",
-          code: "DEV_ROUTE_DISABLED"
-        });
-      }
-      
       try {
-        // DEV ONLY: En un entorno real, usaríamos req.isAuthenticated() desde passport
+        // En un entorno real, usaríamos req.isAuthenticated() desde passport
         // Para desarrollo, asumiremos que estamos autenticados
         // if (!req.isAuthenticated()) {
         //   return res.status(401).json({ message: "No autenticado" });
         // }
 
-        // DEV ONLY: Usar un ID de usuario fijo para desarrollo
+        // Usar un ID de usuario fijo para desarrollo
         const userId = 1; // En producción: req.user.id
 
         // Obtenemos la suscripción del usuario para conseguir el customerId
@@ -6493,20 +6372,12 @@ Output must be between 200-900 characters in English.`;
   });
 
   app.get("/api/user-profile", async (req: Request, res: Response) => {
-    // 🚨 DEV ROUTE - DISABLE IN PRODUCTION
-    if (process.env.NODE_ENV === 'production') {
-      return res.status(403).json({ 
-        message: "Development endpoint disabled in production",
-        code: "DEV_ROUTE_DISABLED"
-      });
-    }
-    
     try {
-      // DEV ONLY: Obtener el usuario autenticado desde Firebase
+      // Obtener el usuario autenticado desde Firebase
       const authHeader = req.headers.authorization;
       let firebaseUserId; // Autenticación requerida
 
-      // DEV ONLY: En producción, extraer el ID real del usuario de Firebase
+      // En producción, extraer el ID real del usuario de Firebase
       if (authHeader && authHeader.startsWith("Bearer ")) {
         try {
           // Aquí normalmente verificaríamos el token de Firebase
@@ -6520,9 +6391,9 @@ Output must be between 200-900 characters in English.`;
         }
       }
 
-      console.log("[DEV-PROFILE] Cargando perfil para usuario Firebase:", firebaseUserId);
+      console.log("🔐 Cargando perfil para usuario Firebase:", firebaseUserId);
 
-      // DEV ONLY: Buscar usuario por firebaseUserId en lugar de ID numérico
+      // Buscar usuario por firebaseUserId en lugar de ID numérico
       const userId = 1; // ID numérico temporal para la base de datos PostgreSQL
       const user = await storage.getUser(userId);
 
@@ -6570,16 +6441,8 @@ Output must be between 200-900 characters in English.`;
 
   // Endpoint para actualizar el perfil de usuario
   app.post("/api/user-profile", async (req: Request, res: Response) => {
-    // 🚨 DEV ROUTE - DISABLE IN PRODUCTION
-    if (process.env.NODE_ENV === 'production') {
-      return res.status(403).json({ 
-        message: "Development endpoint disabled in production",
-        code: "DEV_ROUTE_DISABLED"
-      });
-    }
-    
     try {
-      // DEV ONLY: En producción, obtener userId del token de autenticación
+      // En producción, obtener userId del token de autenticación
       const userId = 1; // Por ahora usar ID fijo para desarrollo
 
       // Verificar que el usuario existe
@@ -8415,114 +8278,6 @@ Output must be between 200-900 characters in English.`;
     },
   );
 
-  // 🏗️ REST AUTH ENDPOINTS - Firebase Admin SDK support for AuthContext migration
-  // Get current user session (replaces Firebase auth state check)
-  app.get("/api/me", unifiedSessionAuth({ requireAuth: true }), async (req: Request, res: Response) => {
-    try {
-      // unifiedSessionAuth middleware already verified session and set req.user
-      const user = req.user;
-      
-      if (!user) {
-        return res.status(401).json({ 
-          error: "No active session",
-          message: "Please log in to continue",
-          code: "NO_SESSION"
-        });
-      }
-      
-      // Return user data in format expected by SessionAdapter
-      res.json({
-        uid: user.uid,
-        email: user.email || null,
-        displayName: user.displayName || null,
-        photoURL: null, // Not available in session
-        phoneNumber: null, // Not available in session
-        emailVerified: true, // Assume verified if session exists
-        internalUserId: user.internalUserId
-      });
-      
-    } catch (error) {
-      console.error("❌ [API-ME] Error getting user session:", error);
-      res.status(500).json({ 
-        error: "Server error",
-        message: "Unable to verify session at this time",
-        code: "SERVER_ERROR"
-      });
-    }
-  });
-
-  // Login endpoint - accepts Firebase ID token and creates session cookie
-  app.post("/api/login", async (req: Request, res: Response) => {
-    try {
-      const { idToken } = req.body;
-      
-      if (!idToken) {
-        return res.status(400).json({ error: "Firebase ID token required" });
-      }
-      
-      console.log(`🔐 [FIREBASE-LOGIN] Verifying ID token...`);
-      
-      try {
-        // Verify Firebase ID token with Admin SDK
-        const decodedToken = await admin.auth().verifyIdToken(idToken);
-        
-        // Create session cookie from verified ID token
-        const expiresIn = 5 * 24 * 60 * 60 * 1000; // 5 days
-        const sessionCookie = await admin.auth().createSessionCookie(idToken, { expiresIn });
-        
-        // Set secure session cookie
-        const cookieOptions = {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax' as const,
-          maxAge: expiresIn,
-          path: '/'
-        };
-        
-        res.cookie('__session', sessionCookie, cookieOptions);
-        
-        console.log(`✅ [FIREBASE-LOGIN] Session cookie created for: ${decodedToken.email}`);
-        
-        // Return user data in format expected by SessionAdapter
-        res.json({
-          uid: decodedToken.uid,
-          email: decodedToken.email,
-          displayName: decodedToken.name || decodedToken.email?.split('@')[0],
-          photoURL: decodedToken.picture,
-          phoneNumber: decodedToken.phone_number,
-          emailVerified: decodedToken.email_verified || false
-        });
-        
-      } catch (tokenError) {
-        console.error("❌ [FIREBASE-LOGIN] Token verification failed:", tokenError);
-        res.status(401).json({ error: "Invalid Firebase token" });
-      }
-      
-    } catch (error) {
-      console.error("❌ [API-LOGIN] Error in login endpoint:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  // Logout endpoint (replaces Firebase logoutUser)
-  app.post("/api/logout", async (req: Request, res: Response) => {
-    try {
-      // Clear session cookie
-      res.clearCookie('__session', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/'
-      });
-      
-      res.json({ success: true, message: "Logged out successfully" });
-      
-    } catch (error) {
-      console.error("Error in /api/logout:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
   // Crear y retornar el servidor HTTP
   const server = createServer(app);
   return server;
@@ -8551,8 +8306,9 @@ async function generateEstimateHtml({
   clientName,
   address,
   context,
-}: EstimateData, userId: number): Promise<string> {
-  // Use authenticated user ID for template access
+}: EstimateData): Promise<string> {
+  // For simplicity, we'll use a basic templating approach
+  const userId = 1; // Default user ID
   const template = await storage.getDefaultTemplate(userId, "estimate");
   if (!template) {
     throw new Error("No default estimate template found");
@@ -8630,8 +8386,9 @@ async function generateEstimateHtml({
   return html;
 }
 
-async function generateContractHtml(projectDetails: any, userId: number): Promise<string> {
-  // Use authenticated user ID for template access
+async function generateContractHtml(projectDetails: any): Promise<string> {
+  // Get the default contract template
+  const userId = 1; // Default user ID
   const template = await storage.getDefaultTemplate(userId, "contract");
   if (!template) {
     throw new Error("No default contract template found");

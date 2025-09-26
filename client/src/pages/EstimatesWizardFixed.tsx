@@ -8,7 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-// REMOVED: All Firebase imports - now using PostgreSQL API only
+import { getClients as getFirebaseClients, saveClient } from '@/lib/clientFirebase';
+import { collection, query, where, getDocs, addDoc, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { 
   Search, 
   Plus, 
@@ -32,7 +34,7 @@ import {
   RefreshCw,
   AlertCircle
 } from 'lucide-react';
-// REMOVED Firebase import: saveEstimate - using PostgreSQL API instead
+import { saveEstimate } from '@/lib/firebase';
 
 // Types
 interface Client {
@@ -160,31 +162,10 @@ export default function EstimatesWizardFixed() {
   const loadClients = async () => {
     try {
       setIsLoadingClients(true);
-      
-      // Use PostgreSQL API with secure bypass
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      
-      // Add bypass headers if available
-      if (currentUser?.uid) {
-        headers['x-bypass-uid'] = currentUser.uid;
-        headers['x-temp-bypass'] = 'read-only-access';
-        headers['x-user-email'] = currentUser.email || '';
-      }
-      
-      const response = await fetch('/api/clients', { headers });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const clientsData = await response.json();
+      const clientsData = await getFirebaseClients();
       setClients(clientsData);
-      console.log(`✅ [CONSOLIDATION] ${clientsData.length} clientes cargados desde PostgreSQL`);
-      
     } catch (error) {
-      console.error('❌ [CONSOLIDATION] Error cargando clientes desde PostgreSQL:', error);
+      console.error('Error loading clients from Firebase:', error);
       toast({
         title: 'Error',
         description: 'No se pudieron cargar los clientes',
@@ -200,34 +181,27 @@ export default function EstimatesWizardFixed() {
     
     try {
       setIsLoadingMaterials(true);
-      
-      // Use PostgreSQL API with secure bypass
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      
-      // Add bypass headers if available
-      if (currentUser?.uid) {
-        headers['x-bypass-uid'] = currentUser.uid;
-        headers['x-temp-bypass'] = 'read-only-access';
-        headers['x-user-email'] = currentUser.email || '';
-      }
-      
-      const response = await fetch('/api/materials', { headers });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const materialsData = await response.json();
+      const materialsRef = collection(db, 'materials');
+      const q = query(materialsRef, where('userId', '==', currentUser.uid));
+      const querySnapshot = await getDocs(q);
+
+      const materialsData: Material[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data() as Omit<Material, 'id'>;
+        const material: Material = {
+          id: doc.id,
+          ...data,
+          price: typeof data.price === 'number' ? data.price : 0
+        };
+        materialsData.push(material);
+      });
+
       setMaterials(materialsData);
-      console.log(`✅ [CONSOLIDATION] ${materialsData.length} materiales cargados desde PostgreSQL`);
-      
     } catch (error) {
-      console.error('❌ [CONSOLIDATION] Error cargando materiales desde PostgreSQL:', error);
+      console.error('Error loading materials from Firebase:', error);
       toast({
         title: 'Error',
-        description: 'No se pudieron cargar los materiales',
+        description: 'Could not load materials',
         variant: 'destructive'
       });
     } finally {
@@ -238,12 +212,13 @@ export default function EstimatesWizardFixed() {
   const loadContractorProfile = async () => {
     try {
       // 🔐 FIXED: Usar autenticación correcta para obtener datos del contratista
-      // Auth headers not needed for profile endpoint
+      const authHeaders = await getAuthHeaders();
       const response = await fetch('/api/profile', {
         method: "GET",
         credentials: "include", 
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...authHeaders
         }
       });
       if (response.ok) {
@@ -390,30 +365,7 @@ export default function EstimatesWizardFixed() {
         tags: []
       };
 
-      // Save client via PostgreSQL API
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      
-      // Add bypass headers if available
-      if (currentUser?.uid) {
-        headers['x-bypass-uid'] = currentUser.uid;
-        headers['x-temp-bypass'] = 'read-only-access'; // Note: write operations need different setup
-        headers['x-user-email'] = currentUser.email || '';
-      }
-      
-      const response = await fetch('/api/clients', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(clientData)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const savedClient = await response.json();
-      console.log(`✅ [CONSOLIDATION] Cliente guardado en PostgreSQL:`, savedClient);
+      const savedClient = await saveClient(clientData);
       
       const clientWithId = { 
         id: savedClient.id, 
@@ -910,14 +862,7 @@ export default function EstimatesWizardFixed() {
                 </div>
                 <Textarea
                   id="projectDetails"
-                  placeholder={`Describe los detalles completos del proyecto:
-
-• Alcance del trabajo y especificaciones técnicas
-• Cronograma y tiempo estimado
-• Proceso paso a paso del trabajo
-• Qué está incluido en el precio
-• Qué NO está incluido
-• Notas adicionales, términos especiales, condiciones...`}
+                  placeholder="Describe los detalles completos del proyecto:&#10;&#10;• Alcance del trabajo y especificaciones técnicas&#10;• Cronograma y tiempo estimado&#10;• Proceso paso a paso del trabajo&#10;• Qué está incluido en el precio&#10;• Qué NO está incluido&#10;• Notas adicionales, términos especiales, condiciones..."
                   value={estimate.projectDetails}
                   onChange={(e) => setEstimate(prev => ({ ...prev, projectDetails: e.target.value }))}
                   className="min-h-[120px] text-sm"

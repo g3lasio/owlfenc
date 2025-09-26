@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-// 🔥 NO STATIC FIREBASE IMPORTS - Use authAdapter instead
+import { auth } from '@/lib/firebase';
 import { DeepSearchEffect } from './ui/deepsearch-effect';
 import { 
   Wrench, 

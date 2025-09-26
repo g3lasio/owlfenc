@@ -108,20 +108,20 @@ export default function PermitSearchHistory({ onSelectHistory }: PermitSearchHis
                       {/* Header with project type and date */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg">{getProjectTypeIcon(item.projectType || 'general')}</span>
-                          <Badge className={`${getProjectTypeColor(item.projectType || 'general')} text-xs font-medium`}>
-                            {(item.projectType || 'general').charAt(0).toUpperCase() + (item.projectType || 'general').slice(1)}
+                          <span className="text-lg">{getProjectTypeIcon(item.projectType)}</span>
+                          <Badge className={`${getProjectTypeColor(item.projectType)} text-xs font-medium`}>
+                            {item.projectType.charAt(0).toUpperCase() + item.projectType.slice(1)}
                           </Badge>
                         </div>
                         <span className="text-xs text-gray-400 font-mono">
-                          {formatHistoryDate(item.searchDate)}
+                          {formatHistoryDate(item.createdAt)}
                         </span>
                       </div>
 
                       {/* Address */}
                       <div className="space-y-1">
                         <p className="text-teal-300 font-medium text-sm line-clamp-1">
-                          {item.address || item.query}
+                          {item.address}
                         </p>
                         {item.projectDescription && (
                           <p className="text-gray-400 text-xs line-clamp-2">

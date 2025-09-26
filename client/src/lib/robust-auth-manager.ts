@@ -4,8 +4,8 @@
  * Diseñado para miles de usuarios comerciales
  */
 
-// 🔥 NO STATIC FIREBASE IMPORTS - Dynamic imports only when enabled
-const USE_FIREBASE_AUTH = import.meta.env.VITE_USE_FIREBASE_AUTH === 'true';
+import { auth } from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 interface UserSession {
   uid: string;
@@ -360,58 +360,30 @@ class RobustAuthManager {
         unsubscribe();
         if (user) {
           try {
-            // 🛡️ TRIPLE-LAYER FETCH ERROR ELIMINATION SYSTEM
-            const token = await this.getTokenWithComprehensiveErrorHandling(user);
-            await this.updateSession(user, token);
-            console.log('✅ [ROBUST-AUTH] Usuario sincronizado exitosamente');
+            // ✅ FIXED: Intentar obtener token Firebase real en syncWithFirebaseAuth
+            try {
+              const realToken = await user.getIdToken(false);
+              if (realToken && !realToken.startsWith('local_') && !realToken.startsWith('mock_')) {
+                await this.updateSession(user, realToken);
+                console.log('✅ [ROBUST-AUTH] Usuario sincronizado con token real');
+                return;
+              }
+            } catch (tokenError) {
+              console.debug('🔧 [ROBUST-AUTH] No se pudo obtener token real en sync');
+            }
+            
+            // FALLBACK: token mock solo si no se puede obtener real
+            const mockToken = `mock_token_${user.uid}_${Date.now()}`;
+            await this.updateSession(user, mockToken);
+            console.log('✅ [ROBUST-AUTH] Usuario sincronizado (sin red)');
           } catch (error: any) {
-            // Último fallback: usar sesión local sin interrumpir experiencia
-            console.debug('📦 [ROBUST-AUTH] Usando caché local silenciosamente');
+            // Silenciar completamente cualquier error
+            console.debug('📦 [ROBUST-AUTH] Usando caché local');
           }
         }
         resolve();
       });
     });
-  }
-
-  // 🛡️ COMPREHENSIVE TRIPLE-LAYER FETCH ERROR ELIMINATION
-  private async getTokenWithComprehensiveErrorHandling(user: any): Promise<string> {
-    // LAYER 1: Aggressive timeout with retry
-    try {
-      const token = await Promise.race([
-        user.getIdToken(false),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Token timeout')), 3000)
-        )
-      ]);
-      
-      if (token && !token.startsWith('local_') && !token.startsWith('mock_')) {
-        return token;
-      }
-    } catch (error) {
-      // Silent - continue to Layer 2
-    }
-
-    // LAYER 2: Force refresh with shorter timeout
-    try {
-      const refreshedToken = await Promise.race([
-        user.getIdToken(true),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Refresh timeout')), 2000)
-        )
-      ]);
-      
-      if (refreshedToken && !refreshedToken.startsWith('local_') && !refreshedToken.startsWith('mock_')) {
-        return refreshedToken;
-      }
-    } catch (error) {
-      // Silent - continue to Layer 3
-    }
-
-    // LAYER 3: Fallback to mock token (graceful degradation)
-    const mockToken = `mock_token_${user.uid}_${Date.now()}`;
-    console.debug('🔧 [FETCH-FALLBACK] Usando token mock para continuidad');
-    return mockToken;
   }
 
   private async rebuildSessionFromLocalStorage(): Promise<void> {

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { DatabaseStorage } from '../DatabaseStorage';
-import { userMappingService } from '../services/userMappingService';
+import { UserMappingService } from '../services/UserMappingService';
 
 /**
  * CRITICAL: Secure Authentication Middleware
@@ -16,10 +16,10 @@ export interface AuthenticatedRequest extends Request {
 }
 
 export class AuthMiddleware {
-  // userMappingService is now imported as singleton
+  private userMappingService: UserMappingService;
 
   constructor(storage: DatabaseStorage) {
-    // userMappingService is now imported as singleton
+    this.userMappingService = UserMappingService.getInstance(storage);
   }
 
   /**
@@ -45,14 +45,10 @@ export class AuthMiddleware {
       // Use secure user mapping service to get or create user
       let userId: number;
       try {
-        userId = await userMappingService.getInternalUserId(firebaseUid);
-        if (!userId) {
-          const result = await userMappingService.createMapping(firebaseUid, userEmail || '');
-          userId = result?.id;
-        }
-        if (!userId) {
-          throw new Error('Failed to create user mapping');
-        }
+        userId = await this.userMappingService.getOrCreateUserIdForFirebaseUid(
+          firebaseUid,
+          userEmail
+        );
         console.log(`✅ [AUTH-MIDDLEWARE] Secure mapping: ${firebaseUid} → ${userId}`);
       } catch (error) {
         console.error(`❌ [AUTH-MIDDLEWARE] Failed to map user:`, error);
@@ -88,14 +84,10 @@ export class AuthMiddleware {
 
       if (firebaseUid) {
         try {
-          let userId = await userMappingService.getInternalUserId(firebaseUid);
-          if (!userId) {
-            const result = await userMappingService.createMapping(firebaseUid, userEmail || '');
-            userId = result?.id;
-          }
-          if (!userId) {
-            throw new Error('Failed to create user mapping');
-          }
+          const userId = await this.userMappingService.getOrCreateUserIdForFirebaseUid(
+            firebaseUid,
+            userEmail
+          );
           (req as AuthenticatedRequest).userId = userId;
           (req as AuthenticatedRequest).firebaseUid = firebaseUid;
           (req as AuthenticatedRequest).userEmail = userEmail;

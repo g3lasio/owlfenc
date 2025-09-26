@@ -81,7 +81,7 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   stripeConnectAccountId: text('stripe_connect_account_id'),
   defaultPaymentTerms: integer('default_payment_terms').default(30), // días para pago
-  invoiceMessageTemplate: text('invoice_message_template')
+  invoiceMessageTemplate: text('invoice_message_template'),
 });
 
 // Projects table
@@ -330,37 +330,34 @@ export const contracts = pgTable('contracts', {
 });
 
 export const estimates = pgTable('estimates', {
-  id: serial('id').primaryKey(),
-  userId: integer('user_id'),
-  firebaseUserId: text('firebase_user_id').notNull(),
-  estimateNumber: text('estimate_number').notNull(),
-  clientId: integer('client_id'),
-  clientName: text('client_name').notNull(),
-  clientEmail: text('client_email'),
-  clientPhone: text('client_phone'),
-  clientAddress: text('client_address').notNull(),
-  projectType: text('project_type').notNull(),
-  projectSubtype: text('project_subtype'),
+  id: text('id').primaryKey(),
+  estimateNumber: varchar('estimate_number', { length: 50 }).notNull(),
+  clientName: varchar('client_name', { length: 255 }).notNull(),
+  clientEmail: varchar('client_email', { length: 255 }).notNull(),
+  clientPhone: varchar('client_phone', { length: 50 }),
+  clientAddress: text('client_address'),
+  contractorName: varchar('contractor_name', { length: 255 }).notNull(),
+  contractorEmail: varchar('contractor_email', { length: 255 }).notNull(),
+  contractorCompany: varchar('contractor_company', { length: 255 }).notNull(),
+  contractorPhone: varchar('contractor_phone', { length: 50 }),
+  contractorAddress: text('contractor_address'),
+  projectType: varchar('project_type', { length: 255 }).notNull(),
   projectDescription: text('project_description'),
-  scope: text('scope'),
-  timeline: text('timeline'),
-  items: jsonb('items').notNull(),
-  subtotal: integer('subtotal').notNull(),
-  taxRate: integer('tax_rate'),
-  taxAmount: integer('tax_amount').notNull(),
-  total: integer('total').notNull(),
-  status: text('status'),
-  validUntil: timestamp('valid_until'),
-  estimateDate: timestamp('estimate_date'),
-  sentDate: timestamp('sent_date'),
-  approvedDate: timestamp('approved_date'),
-  htmlContent: text('html_content'),
-  pdfUrl: text('pdf_url'),
+  projectLocation: text('project_location'),
+  scopeOfWork: text('scope_of_work'),
+  items: jsonb('items').notNull(), // Array of estimate items
+  subtotal: decimal('subtotal', { precision: 10, scale: 2 }).notNull(),
+  tax: decimal('tax', { precision: 10, scale: 2 }).notNull(),
+  taxRate: decimal('tax_rate', { precision: 5, scale: 2 }).notNull(),
+  total: decimal('total', { precision: 10, scale: 2 }).notNull(),
+  status: varchar('status', { length: 50 }).notNull().default('sent'), // sent, approved, adjustments_requested, completed
   notes: text('notes'),
-  internalNotes: text('internal_notes'),
-  terms: text('terms'),
-  createdAt: timestamp('created_at'),
-  updatedAt: timestamp('updated_at'),
+  validUntil: timestamp('valid_until'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  approvedAt: timestamp('approved_at'),
+  approverName: varchar('approver_name', { length: 255 }),
+  approverSignature: text('approver_signature'),
 });
 
 export const estimateAdjustments = pgTable('estimate_adjustments', {

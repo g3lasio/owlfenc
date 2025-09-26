@@ -621,24 +621,19 @@ export default function AuthPage() {
                           const userCredential = await signInWithCustomToken(auth, customToken);
                           console.log('✅ Firebase authentication successful with custom token');
                           
-                          // CRÍTICO: Obtener ID token y crear session cookie en el servidor
-                          const idToken = await userCredential.user.getIdToken();
-                          console.log('🔐 [OTP-SESSION] Creating server session cookie...');
+                          // Persistir estado temporalmente para evitar conflictos
+                          localStorage.setItem('otp-auth-success', JSON.stringify({
+                            uid: userCredential.user.uid,
+                            email: userCredential.user.email,
+                            timestamp: Date.now()
+                          }));
                           
-                          const sessionResponse = await fetch('/api/login', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
-                            body: JSON.stringify({ idToken })
-                          });
+                          showSuccessEffect();
                           
-                          if (sessionResponse.ok) {
-                            console.log('✅ [OTP-SESSION] Server session cookie created successfully');
-                            showSuccessEffect();
-                          } else {
-                            console.error('❌ [OTP-SESSION] Failed to create server session');
-                            throw new Error('Session creation failed');
-                          }
+                          // Redirigir después de un breve delay
+                          setTimeout(() => {
+                            window.location.href = '/';
+                          }, 1000);
                           
                         } else {
                           throw new Error('Failed to create custom token');

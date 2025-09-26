@@ -47,8 +47,7 @@ router.post('/extract-pdf', upload.single('pdf'), verifyFirebaseAuth, async (req
     }
     let userId = await userMappingService.getInternalUserId(firebaseUid);
     if (!userId) {
-      const result = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
-      userId = result?.id;
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
     }
     if (!userId) {
       return res.status(500).json({ 
@@ -306,8 +305,7 @@ router.get('/approved-projects', verifyFirebaseAuth, async (req, res) => {
     
     let userId = await userMappingService.getInternalUserId(firebaseUid);
     if (!userId) {
-      const result = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
-      userId = result?.id;
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
     }
     if (!userId) {
       return res.status(500).json({ error: 'Error creando mapeo de usuario' });
@@ -348,8 +346,7 @@ router.post('/create-project', verifyFirebaseAuth, async (req, res) => {
     }
     let userId = await userMappingService.getInternalUserId(firebaseUid);
     if (!userId) {
-      const result = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
-      userId = result?.id;
+      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
     }
     if (!userId) {
       return res.status(500).json({ error: 'Error creando mapeo de usuario' });

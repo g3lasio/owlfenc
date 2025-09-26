@@ -2,7 +2,6 @@ import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { ErrorBoundary } from "@/components/ui/error-boundary";
 import NotFound from "@/pages/not-found";
 import AppLayout from "@/components/layout/AppLayout";
 import Home from "@/pages/Home";
@@ -10,7 +9,7 @@ import Projects from "@/pages/Projects";
 import Clients from "./pages/Clients";
 import NuevoClientes from "./pages/NuevoClientes";
 import Materials from "./pages/Materials";
-import EstimatesWizard from "./pages/EstimatesWizardFixed";
+import EstimatesWizard from "./pages/EstimatesWizard";
 import ChatInterface from "@/components/chat/ChatInterface";
 import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
@@ -62,7 +61,7 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 import AuthDiagnostic from './pages/AuthDiagnostic';
 import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
-// TEMPORARILY DISABLED: import SimpleContractGenerator from './pages/SimpleContractGenerator';
+import SimpleContractGenerator from './pages/SimpleContractGenerator';
 import ContractSignature from './pages/ContractSignature';
 import SharedEstimate from './pages/SharedEstimate';
 
@@ -251,16 +250,16 @@ function MainAppRouter() {
                 {() => <ProtectedRoute component={LegalContractEngineFixed} />}
               </Route>
               <Route path="/legal-defense">
-                {/* TEMPORARILY DISABLED: {() => <ProtectedRoute component={SimpleContractGenerator} />} */}
+                {() => <ProtectedRoute component={SimpleContractGenerator} />}
               </Route>
               <Route path="/cyberpunk-legal-defense">
                 {() => <ProtectedRoute component={CyberpunkLegalDefense} />}
               </Route>
               <Route path="/simple-contracts">
-                {/* TEMPORARILY DISABLED: {() => <ProtectedRoute component={SimpleContractGenerator} />} */}
+                {() => <ProtectedRoute component={SimpleContractGenerator} />}
               </Route>
               <Route path="/simple-contract-generator">
-                {/* TEMPORARILY DISABLED: {() => <ProtectedRoute component={SimpleContractGenerator} />} */}
+                {() => <ProtectedRoute component={SimpleContractGenerator} />}
               </Route>
 
               <Route path="/unified-contracts">
@@ -325,24 +324,22 @@ function App() {
   });
 
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <LanguageProvider>
-          {isIsolatedPublicRoute ? (
-            // 🔒 ISOLATED: Render public routes without any app context
-            <div className="isolated-public-app">
-              <PublicOnlyRouter />
-              <Toaster />
-            </div>
-          ) : (
-            // 🔐 FULL APP: Render main app with full context and layout  
-            <div className="full-authenticated-app">
-              <MainAppRouter />
-            </div>
-          )}
-        </LanguageProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
+        {isIsolatedPublicRoute ? (
+          // 🔒 ISOLATED: Render public routes without any app context
+          <div className="isolated-public-app">
+            <PublicOnlyRouter />
+            <Toaster />
+          </div>
+        ) : (
+          // 🔐 FULL APP: Render main app with full context and layout  
+          <div className="full-authenticated-app">
+            <MainAppRouter />
+          </div>
+        )}
+      </LanguageProvider>
+    </QueryClientProvider>
   );
 }
 

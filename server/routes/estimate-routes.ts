@@ -4,10 +4,12 @@ import { storage } from "../storage";
 import { estimatorService, ProjectInput } from "../services/estimatorService";
 import { sendEmail } from "../services/emailService";
 import { verifyFirebaseAuth } from "../middleware/firebase-auth";
-import { userMappingService } from "../services/userMappingService";
+import { UserMappingService } from "../services/UserMappingService";
 import { DatabaseStorage } from "../DatabaseStorage";
 
-// userMappingService is imported directly as singleton
+// Inicializar UserMappingService
+const databaseStorage = new DatabaseStorage();
+const userMappingService = UserMappingService.getInstance(databaseStorage);
 
 export function registerEstimateRoutes(app: Express): void {
   // Endpoint para validar datos de entrada

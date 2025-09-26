@@ -58,9 +58,19 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  orderBy,
+  getDocs,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import {
   contractHistoryService,
   ContractHistoryEntry,
 } from "@/services/contractHistoryService";
+import { getClients as getFirebaseClients } from "@/lib/clientFirebase";
 
 // Interface for completed contracts
 interface CompletedContract {
@@ -509,79 +519,77 @@ export default function SimpleContractGenerator() {
     }
   }, [currentUser?.uid, toast]);
 
-  // Load projects from PostgreSQL API (migrated from Firebase)
-  const loadProjectsFromPostgreSQL = useCallback(async () => {
-    // ✅ FIXED: Resilient auth check with null safety
+  // Load projects from Firebase (same logic as ProjectToContractSelector)
+  const loadProjectsFromFirebase = useCallback(async () => {
+    // ✅ FIXED: Resilient auth check
     if (!currentUser?.uid && !profile?.email) return;
 
     try {
       setIsLoading(true);
-      console.log("📋 Loading estimates from PostgreSQL API for Legal Defense...");
+      console.log("🔥 Loading projects from Firebase for Legal Defense...");
 
-      // Use PostgreSQL API instead of Firebase
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      
-      // Add bypass headers if available (like in EstimatesWizardFixed.tsx)
-      if (currentUser?.uid) {
-        headers['x-bypass-uid'] = currentUser.uid;
-        headers['x-temp-bypass'] = 'read-only-access';
-        headers['x-user-email'] = currentUser.email || '';
-      }
+      let allEstimates: any[] = [];
 
-      const response = await fetch('/api/estimates', {
-        method: 'GET',
-        headers
-      });
+      // Load from projects collection (same as EstimatesWizard)
+      try {
+        const projectsQuery = query(
+          collection(db, "projects"),
+          where("firebaseUserId", "==", currentUser.uid),
+        );
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch estimates: ${response.status}`);
-      }
+        const projectsSnapshot = await getDocs(projectsQuery);
+        const projectEstimates = projectsSnapshot.docs
+          .filter((doc) => {
+            const data = doc.data();
+            return data.status === "estimate" || data.estimateNumber;
+          })
+          .map((doc) => {
+            const data = doc.data();
 
-      const allEstimates = await response.json();
+            const clientName =
+              data.clientInformation?.name ||
+              data.clientName ||
+              data.client?.name ||
+              "Cliente sin nombre";
 
-      // Transform PostgreSQL data to match expected format
-      const projectEstimates = allEstimates.map((estimate: any) => {
-        const clientName = estimate.clientName || "Cliente sin nombre";
-        const clientEmail = estimate.clientEmail || "";
-        const clientPhone = estimate.clientPhone || "";
-        const totalValue = estimate.totalAmount || estimate.total || 0;
-        const projectTitle = estimate.title || `Estimado para ${clientName}`;
-        const address = estimate.clientAddress || estimate.address || "";
+            const clientEmail =
+              data.clientInformation?.email ||
+              data.clientEmail ||
+              data.client?.email ||
+              "";
 
-        return {
-          id: estimate.id || estimate.estimateId,
-          estimateNumber: estimate.estimateNumber || `EST-${Date.now()}`,
-          title: projectTitle,
-          clientName: clientName,
-          clientEmail: clientEmail,
-          clientPhone: clientPhone,
-          totalAmount: totalValue,
-          totalPrice: totalValue,
-          displaySubtotal: totalValue,
-          status: estimate.status || "estimate",
-          estimateDate: estimate.createdAt ? new Date(estimate.createdAt) : new Date(),
-          items: estimate.items || [],
-          projectType: estimate.projectType || "fence",
-          address: address,
-          projectDescription: estimate.projectDescription || estimate.description || "",
-          originalData: estimate,
-        };
-      });
+            const clientPhone =
+              data.clientInformation?.phone ||
+              data.clientPhone ||
+              data.client?.phone ||
+              "";
 
-      console.log(`📊 Loaded ${projectEstimates.length} estimates from PostgreSQL API`);
+            // Total calculation with multiple paths
+            let totalValue =
+              data.projectTotalCosts?.totalSummary?.finalTotal ||
+              data.projectTotalCosts?.total ||
+              data.total ||
+              data.estimateAmount ||
+              0;
 
-      // Set projects for the component
-      setProjects(projectEstimates);
+            const displayTotal = totalValue;
 
-      const eligibleProjects = projectEstimates.filter(
-        (estimate) => estimate.totalAmount > 0 && estimate.clientName !== "Cliente sin nombre"
-      );
+            const projectTitle =
+              data.projectDetails?.name ||
+              data.projectName ||
+              data.title ||
+              `Estimado para ${clientName}`;
 
-      console.log(
-        `✅ Total: ${eligibleProjects.length} unique projects loaded for Legal Defense`,
-      );
+            const address =
+              data.clientInformation?.address ||
+              data.clientAddress ||
+              data.client?.address ||
+              data.address ||
+              "";
+
+            return {
+              id: doc.id,
+              estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
               title: projectTitle,
               clientName: clientName,
               clientEmail: clientEmail,

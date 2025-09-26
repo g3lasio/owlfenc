@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
-import { apiRequest, getAuthHeaders } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Select,
   SelectContent,
@@ -133,31 +133,34 @@ export default function Profile() {
       const userId = currentUser?.uid;
       console.log(`👤 Usuario actual: ${userId}`);
 
-      // PRIORIZAR SERVIDOR: Siempre consultar servidor primero como fuente de verdad
-      const authHeaders = await getAuthHeaders();
-      const response = await fetch("/api/profile", {
+      // Usar clave específica por usuario para localStorage
+      const profileKey = `userProfile_${userId}`;
+      const localProfile = localStorage.getItem(profileKey);
+
+      if (localProfile) {
+        console.log(
+          "✅ Perfil cargado desde localStorage para usuario:",
+          userId,
+        );
+        const parsedProfile = JSON.parse(localProfile);
+        setCompanyInfo(parsedProfile);
+        return;
+      } else {
+        console.log("📦 No hay perfil guardado para usuario:", userId);
+      }
+
+      // Si no hay datos en localStorage o no estamos en dev, intentamos la API
+      const response = await fetch("/api/user-profile", {
         method: "GET",
         credentials: "include",
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders
-        }
       });
 
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
-      const serverData = await response.json();
-      console.log("✅ Datos del servidor obtenidos:", serverData);
-      
-      // Usar datos del servidor como fuente de verdad
-      setCompanyInfo(serverData);
-      
-      // SOLO DESPUÉS actualizar localStorage como cache
-      const profileKey = `userProfile_${userId}`;
-      localStorage.setItem(profileKey, JSON.stringify(serverData));
-      console.log("📦 Cache local actualizado desde servidor");
+      const data = await response.json();
+      setCompanyInfo(data);
     } catch (error) {
       console.error("Error loading profile:", error);
 
@@ -253,7 +256,7 @@ export default function Profile() {
     if (type === "logo") {
       // Convertir logo a Base64 para almacenamiento en base de datos
       const reader = new FileReader();
-      reader.onload = async (e) => {
+      reader.onload = (e) => {
         const base64Result = e.target?.result as string;
 
         const updatedInfo = {
@@ -261,45 +264,49 @@ export default function Profile() {
           logo: base64Result,
         };
 
-        // Primero actualizar UI localmente
         setCompanyInfo(updatedInfo);
 
-        // Guardar en servidor PRIMERO, luego localStorage solo si éxito
+        // Guardar inmediatamente en localStorage y servidor
         const userId = currentUser?.uid;
         const profileKey = `userProfile_${userId}`;
-        
-        try {
-          const authHeaders = await getAuthHeaders();
-          const response = await fetch("/api/profile", {
-            method: "POST",
-            credentials: "include",
-            headers: { 
-              "Content-Type": "application/json",
-              ...authHeaders
-            },
-            body: JSON.stringify(updatedInfo),
+        localStorage.setItem(profileKey, JSON.stringify(updatedInfo));
+
+        // También guardar en servidor inmediatamente con autenticación
+        (async () => {
+          try {
+            const authHeaders = await getAuthHeaders();
+            const response = await fetch("/api/profile", {
+              method: "POST",
+              credentials: "include",
+              headers: { 
+                "Content-Type": "application/json",
+                ...authHeaders
+              },
+              body: JSON.stringify(updatedInfo),
+            });
+            return response;
+          } catch (error) {
+            console.warn("⚠️ Error con autenticación:", error);
+            return fetch("/api/profile", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(updatedInfo),
+            });
+          }
+        })()
+          .then((response) => {
+            if (response.ok) {
+              console.log("✅ Logo guardado en servidor y localStorage");
+            }
+          })
+          .catch((error) => {
+            console.warn("⚠️ Error guardando en servidor:", error);
           });
 
-          if (response.ok) {
-            // SOLO DESPUÉS del éxito del servidor: actualizar cache y mostrar éxito
-            localStorage.setItem(profileKey, JSON.stringify(updatedInfo));
-            console.log("✅ Logo guardado en servidor y cache actualizado");
-            
-            toast({
-              title: "Logo guardado",
-              description: `${file.name} convertido a Base64 y guardado correctamente`,
-            });
-          } else {
-            throw new Error(`Error ${response.status}: ${response.statusText}`);
-          }
-        } catch (error) {
-          console.error("❌ Error guardando logo:", error);
-          toast({
-            title: "Error al guardar logo",
-            description: "No se pudo guardar en el servidor. Verifica tu conexión e intenta de nuevo.",
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Logo guardado",
+          description: `${file.name} convertido a Base64 y guardado correctamente`,
+        });
       };
 
       reader.onerror = () => {

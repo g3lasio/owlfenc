@@ -8,31 +8,14 @@ import { getAuth } from 'firebase-admin/auth';
 
 let adminApp: App;
 
-// Inicializar Firebase Admin con credenciales completas
+// Inicializar Firebase Admin
 function initializeFirebaseAdmin() {
   if (getApps().length === 0) {
-    try {
-      // Usar credenciales completas de Admin SDK desde variables de entorno
-      const adminCredentials = process.env.FIREBASE_ADMIN_CREDENTIALS;
-      
-      if (adminCredentials) {
-        const serviceAccount = JSON.parse(adminCredentials);
-        adminApp = initializeApp({
-          credential: cert(serviceAccount),
-          projectId: process.env.FIREBASE_PROJECT_ID || "owl-fenc",
-        });
-        console.log('✅ Firebase Admin SDK inicializado correctamente');
-      } else {
-        // Fallback para desarrollo
-        adminApp = initializeApp({
-          projectId: process.env.FIREBASE_PROJECT_ID || "owl-fenc",
-        });
-        console.log('⚠️ Firebase Admin SDK inicializado sin credenciales (modo desarrollo)');
-      }
-    } catch (error) {
-      console.error('❌ Error inicializando Firebase Admin:', error);
-      throw error;
-    }
+    // En producción, usar variables de entorno para las credenciales
+    // Por ahora, usar la configuración del cliente para acceder a los mismos datos
+    adminApp = initializeApp({
+      projectId: process.env.FIREBASE_PROJECT_ID || "owlfence-f4570",
+    });
   } else {
     adminApp = getApps()[0];
   }
@@ -42,29 +25,9 @@ function initializeFirebaseAdmin() {
 
 // Inicializar la aplicación primero
 if (getApps().length === 0) {
-  try {
-    const adminCredentials = process.env.FIREBASE_ADMIN_CREDENTIALS;
-    
-    if (adminCredentials) {
-      const serviceAccount = JSON.parse(adminCredentials);
-      adminApp = initializeApp({
-        credential: cert(serviceAccount),
-        projectId: process.env.FIREBASE_PROJECT_ID || "owl-fenc",
-      });
-      console.log('✅ Firebase Admin SDK inicializado correctamente');
-    } else {
-      adminApp = initializeApp({
-        projectId: process.env.FIREBASE_PROJECT_ID || "owl-fenc",
-      });
-      console.log('⚠️ Firebase Admin SDK inicializado sin credenciales (modo desarrollo)');
-    }
-  } catch (error) {
-    console.error('❌ Error inicializando Firebase Admin:', error);
-    // Continuar con inicialización básica como fallback
-    adminApp = initializeApp({
-      projectId: process.env.FIREBASE_PROJECT_ID || "owl-fenc",
-    });
-  }
+  adminApp = initializeApp({
+    projectId: process.env.FIREBASE_PROJECT_ID || "owlfence-f4570",
+  });
 } else {
   adminApp = getApps()[0];
 }

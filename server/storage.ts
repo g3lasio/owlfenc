@@ -139,13 +139,13 @@ export interface IStorage {
   // ===== SISTEMA DE ESTIMADOS RENOVADO =====
   
   // Estimate methods
-  getEstimate(id: string): Promise<Estimate | undefined>;
+  getEstimate(id: number): Promise<Estimate | undefined>;
   getEstimateByNumber(estimateNumber: string): Promise<Estimate | undefined>;
   getEstimatesByUserId(userId: number): Promise<Estimate[]>;
-  getEstimatesByClientId(clientId: string): Promise<Estimate[]>;
+  getEstimatesByClientId(clientId: number): Promise<Estimate[]>;
   createEstimate(estimate: InsertEstimate): Promise<Estimate>;
-  updateEstimate(id: string, estimate: Partial<Estimate>): Promise<Estimate>;
-  deleteEstimate(id: string): Promise<boolean>;
+  updateEstimate(id: number, estimate: Partial<Estimate>): Promise<Estimate>;
+  deleteEstimate(id: number): Promise<boolean>;
   
   // Estimate Item methods
   getEstimateItem(id: number): Promise<EstimateItem | undefined>;
@@ -1062,153 +1062,6 @@ export class StorageManager implements IStorage {
       undefined,
       undefined,
       `property_search_history_`
-    );
-  }
-
-  // ===== ESTIMATE METHODS =====
-  
-  async getEstimate(id: string): Promise<Estimate | undefined> {
-    return this.executeWithFailover<Estimate | undefined>(
-      'getEstimate',
-      () => this.primaryStorage.getEstimate(id),
-      () => this.backupStorage!.getEstimate(id),
-      `estimate_${id}`,
-      this.CACHE_TTL
-    );
-  }
-  
-  async getEstimateByNumber(estimateNumber: string): Promise<Estimate | undefined> {
-    return this.executeWithFailover<Estimate | undefined>(
-      'getEstimateByNumber',
-      () => this.primaryStorage.getEstimateByNumber(estimateNumber),
-      () => this.backupStorage!.getEstimateByNumber(estimateNumber),
-      `estimate_number_${estimateNumber}`,
-      this.CACHE_TTL
-    );
-  }
-  
-  async getEstimatesByUserId(userId: number): Promise<Estimate[]> {
-    return this.executeWithFailover<Estimate[]>(
-      'getEstimatesByUserId',
-      () => this.primaryStorage.getEstimatesByUserId(userId),
-      () => this.backupStorage!.getEstimatesByUserId(userId),
-      `estimates_user_${userId}`,
-      this.SHORT_CACHE_TTL
-    );
-  }
-  
-  async getEstimatesByClientId(clientId: string): Promise<Estimate[]> {
-    return this.executeWithFailover<Estimate[]>(
-      'getEstimatesByClientId',
-      () => this.primaryStorage.getEstimatesByClientId(clientId),
-      () => this.backupStorage!.getEstimatesByClientId(clientId),
-      `estimates_client_${clientId}`,
-      this.SHORT_CACHE_TTL
-    );
-  }
-  
-  async createEstimate(estimate: InsertEstimate): Promise<Estimate> {
-    return this.executeWithFailover<Estimate>(
-      'createEstimate',
-      () => this.primaryStorage.createEstimate(estimate),
-      () => this.backupStorage!.createEstimate(estimate),
-      undefined,
-      undefined,
-      'estimates_'
-    );
-  }
-  
-  async updateEstimate(id: string, estimate: Partial<Estimate>): Promise<Estimate> {
-    return this.executeWithFailover<Estimate>(
-      'updateEstimate',
-      () => this.primaryStorage.updateEstimate(id, estimate),
-      () => this.backupStorage!.updateEstimate(id, estimate),
-      undefined,
-      undefined,
-      `estimate_${id}`
-    );
-  }
-  
-  async deleteEstimate(id: string): Promise<boolean> {
-    return this.executeWithFailover<boolean>(
-      'deleteEstimate',
-      () => this.primaryStorage.deleteEstimate(id),
-      () => this.backupStorage!.deleteEstimate(id),
-      undefined,
-      undefined,
-      `estimate_${id}`
-    );
-  }
-
-  // Estimate Item methods - placeholder implementations
-  async getEstimateItem(id: number): Promise<EstimateItem | undefined> {
-    throw new Error('EstimateItem methods not implemented yet');
-  }
-  
-  async getEstimateItemsByEstimateId(estimateId: number): Promise<EstimateItem[]> {
-    throw new Error('EstimateItem methods not implemented yet');
-  }
-  
-  async createEstimateItem(item: InsertEstimateItem): Promise<EstimateItem> {
-    throw new Error('EstimateItem methods not implemented yet');
-  }
-  
-  async updateEstimateItem(id: number, item: Partial<EstimateItem>): Promise<EstimateItem> {
-    throw new Error('EstimateItem methods not implemented yet');
-  }
-  
-  async deleteEstimateItem(id: number): Promise<boolean> {
-    throw new Error('EstimateItem methods not implemented yet');
-  }
-
-  // Estimate Template methods - placeholder implementations  
-  async getEstimateTemplate(id: number): Promise<EstimateTemplate | undefined> {
-    throw new Error('EstimateTemplate methods not implemented yet');
-  }
-  
-  async getEstimateTemplatesByUserId(userId: number): Promise<EstimateTemplate[]> {
-    throw new Error('EstimateTemplate methods not implemented yet');
-  }
-  
-  async getEstimateTemplatesByProjectType(projectType: string, userId?: number): Promise<EstimateTemplate[]> {
-    throw new Error('EstimateTemplate methods not implemented yet');
-  }
-  
-  async getDefaultEstimateTemplate(projectType: string, userId: number): Promise<EstimateTemplate | undefined> {
-    throw new Error('EstimateTemplate methods not implemented yet');
-  }
-  
-  async createEstimateTemplate(template: InsertEstimateTemplate): Promise<EstimateTemplate> {
-    throw new Error('EstimateTemplate methods not implemented yet');
-  }
-  
-  async updateEstimateTemplate(id: number, template: Partial<EstimateTemplate>): Promise<EstimateTemplate> {
-    throw new Error('EstimateTemplate methods not implemented yet');
-  }
-  
-  async deleteEstimateTemplate(id: number): Promise<boolean> {
-    throw new Error('EstimateTemplate methods not implemented yet');
-  }
-
-  // Public sharing methods - placeholder implementations
-  async saveSharedEstimate(sharedData: { shareId: string, data: any, createdAt: string, expiresAt: null }): Promise<boolean> {
-    return this.executeWithFailover<boolean>(
-      'saveSharedEstimate',
-      () => this.primaryStorage.saveSharedEstimate(sharedData),
-      () => this.backupStorage!.saveSharedEstimate(sharedData),
-      undefined,
-      undefined,
-      `shared_estimate_${sharedData.shareId}`
-    );
-  }
-  
-  async getSharedEstimate(shareId: string): Promise<any> {
-    return this.executeWithFailover<any>(
-      'getSharedEstimate',
-      () => this.primaryStorage.getSharedEstimate(shareId),
-      () => this.backupStorage!.getSharedEstimate(shareId),
-      `shared_estimate_${shareId}`,
-      this.CACHE_TTL
     );
   }
 }
