@@ -58,7 +58,7 @@ export async function verifyUserOwnership(firebaseUid: string, dataUserId: numbe
  * Use this to fix existing code that uses unsafe fallbacks
  */
 export function createSecureUserIdGetter(storage: DatabaseStorage) {
-  const mappingService = UserMappingService.getInstance(storage);
+  const mappingService = userMappingServiceInstance;
   
   return async (firebaseUid?: string, email?: string): Promise<number> => {
     if (!firebaseUid) {

@@ -41,7 +41,7 @@ const CreateEstimateSchema = z.object({
 const UpdateEstimateSchema = CreateEstimateSchema.partial();
 
 // POST /api/estimates - Crear nuevo estimado
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   try {
     console.log('🔐 Creando estimado, datos recibidos:', req.body);
     
