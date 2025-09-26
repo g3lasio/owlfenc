@@ -223,9 +223,7 @@ export class ContractorPaymentService {
   async getUserPayments(firebaseUid: string): Promise<ProjectPayment[]> {
     try {
       // Import the user mapping service to convert Firebase UID to database user ID
-      const { UserMappingService } = await import('../services/UserMappingService');
-      const { DatabaseStorage } = await import('../DatabaseStorage');
-      const userMappingService = UserMappingService.getInstance(new DatabaseStorage());
+      const { userMappingService } = await import('../services/userMappingService');
       const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
       
       // Fetch real payments from database instead of empty array
@@ -243,9 +241,7 @@ export class ContractorPaymentService {
   async getPaymentSummary(firebaseUid: string) {
     try {
       // Import the user mapping service to convert Firebase UID to database user ID
-      const { UserMappingService } = await import('../services/UserMappingService');
-      const { DatabaseStorage } = await import('../DatabaseStorage');
-      const userMappingService = UserMappingService.getInstance(new DatabaseStorage());
+      const { userMappingService } = await import('../services/userMappingService');
       const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
       
       const payments = await storage.getProjectPaymentsByUserId(dbUserId);
@@ -317,9 +313,7 @@ export class ContractorPaymentService {
     const year = new Date().getFullYear();
     
     // Convert Firebase UID to database user ID for storage query
-    const { UserMappingService } = await import('../services/UserMappingService');
-    const { DatabaseStorage } = await import('../DatabaseStorage');
-    const userMappingService = UserMappingService.getInstance(new DatabaseStorage());
+    const { userMappingService } = await import('../services/userMappingService');
     const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(userId);
     
     const userPayments = await storage.getProjectPaymentsByUserId(dbUserId);

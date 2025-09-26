@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { DatabaseStorage } from '../DatabaseStorage';
-import { UserMappingService } from '../services/UserMappingService';
+import { userMappingService, UserMappingService as UserMappingServiceType } from '../services/userMappingService';
 
 /**
  * CRITICAL: Secure Authentication Middleware
@@ -16,10 +16,10 @@ export interface AuthenticatedRequest extends Request {
 }
 
 export class AuthMiddleware {
-  private userMappingService: UserMappingService;
+  private userMappingService: UserMappingServiceType;
 
   constructor(storage: DatabaseStorage) {
-    this.userMappingService = UserMappingService.getInstance(storage);
+    this.userMappingService = userMappingService;
   }
 
   /**

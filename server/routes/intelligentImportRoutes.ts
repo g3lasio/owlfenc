@@ -2,13 +2,13 @@ import { Router } from 'express';
 import { intelligentImportService } from '../services/intelligentImportService';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { DatabaseStorage } from '../DatabaseStorage';
-import { UserMappingService } from '../services/UserMappingService';
+import { userMappingService } from '../services/userMappingService';
 
 const router = Router();
 
 // Crear instancia del servicio de mapeo de usuarios
 const storage = new DatabaseStorage();
-const userMappingService = UserMappingService.getInstance(storage);
+// Using singleton userMappingService from import
 
 /**
  * POST /api/intelligent-import/csv

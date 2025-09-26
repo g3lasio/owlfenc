@@ -1,5 +1,5 @@
 import { DatabaseStorage } from '../DatabaseStorage';
-import { UserMappingService } from '../services/UserMappingService';
+import { userMappingService as userMappingServiceInstance, UserMappingService } from '../services/userMappingService';
 
 /**
  * CRITICAL: Secure User Helper
@@ -11,7 +11,7 @@ import { UserMappingService } from '../services/UserMappingService';
 let userMappingService: UserMappingService;
 
 export function initSecureUserHelper(storage: DatabaseStorage) {
-  userMappingService = UserMappingService.getInstance(storage);
+  userMappingService = userMappingServiceInstance;
 }
 
 /**

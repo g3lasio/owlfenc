@@ -6,15 +6,15 @@
  */
 
 import { DatabaseStorage } from '../DatabaseStorage';
-import { UserMappingService } from '../services/UserMappingService';
+import { userMappingService, UserMappingService as UserMappingServiceType } from '../services/userMappingService';
 
 export class DataIntegrityChecker {
   private storage: DatabaseStorage;
-  private userMappingService: UserMappingService;
+  private userMappingService: UserMappingServiceType;
 
   constructor(storage: DatabaseStorage) {
     this.storage = storage;
-    this.userMappingService = UserMappingService.getInstance(storage);
+    this.userMappingService = userMappingService;
   }
 
   /**

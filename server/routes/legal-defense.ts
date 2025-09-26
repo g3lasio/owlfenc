@@ -298,10 +298,7 @@ router.get('/approved-projects', verifyFirebaseAuth, async (req, res) => {
     }
     
     // Usar UserMappingService para obtener userId real
-    const { UserMappingService } = await import('../services/UserMappingService');
-    const { DatabaseStorage } = await import('../DatabaseStorage');
-    const databaseStorage = new DatabaseStorage();
-    const userMappingService = UserMappingService.getInstance(databaseStorage);
+    const { userMappingService } = await import('../services/userMappingService');
     
     let userId = await userMappingService.getInternalUserId(firebaseUid);
     if (!userId) {

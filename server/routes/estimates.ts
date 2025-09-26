@@ -2,12 +2,12 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { storage } from '../storage';
 import { verifyFirebaseAuth as requireAuth } from '../middleware/firebase-auth';
-import { UserMappingService } from '../services/UserMappingService';
+import { userMappingService } from '../services/userMappingService';
 import { DatabaseStorage } from '../DatabaseStorage';
 
 // Inicializar UserMappingService
 const databaseStorage = new DatabaseStorage();
-const userMappingService = UserMappingService.getInstance(databaseStorage);
+// Using singleton userMappingService from import
 
 const router = Router();
 

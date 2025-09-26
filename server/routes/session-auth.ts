@@ -60,7 +60,7 @@ router.post('/sessionLogin', async (req: Request, res: Response) => {
     // Get or create internal user mapping
     let internalUserId: number | null = null;
     try {
-      const userMappingService = UserMappingService.getInstance(storage);
+      const { userMappingService } = await import('../services/userMappingService');
       internalUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(
         decodedToken.uid, 
         decodedToken.email || ''

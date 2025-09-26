@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
 import { subscriptionControlService } from '../services/subscriptionControlService';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
-import { UserMappingService } from '../services/UserMappingService';
+import { userMappingService } from '../services/userMappingService';
 import { DatabaseStorage } from '../DatabaseStorage';
 
 // Inicializar UserMappingService
 const databaseStorage = new DatabaseStorage();
-const userMappingService = UserMappingService.getInstance(databaseStorage);
+// Using singleton userMappingService from import
 
 /**
  * NUEVAS RUTAS PARA CONTROL ROBUSTO DE SUSCRIPCIONES
