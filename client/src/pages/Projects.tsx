@@ -110,10 +110,23 @@ function Projects() {
   const { hasAccess, showUpgradeModal } = usePermissions();
 
   useEffect(() => {
+    // Esperar a que el usuario esté completamente autenticado
     if (user?.uid) {
+      console.log("👤 [PROJECTS] Usuario autenticado detectado, cargando proyectos...");
       loadProjects();
+    } else {
+      console.log("👤 [PROJECTS] Esperando autenticación...");
+      setIsLoading(false); // No mostrar cargando infinito si no hay usuario
     }
   }, [user?.uid]);
+
+  // Auto-reload cuando el usuario se autentica por primera vez
+  useEffect(() => {
+    if (user && projects.length === 0 && !isLoading) {
+      console.log("🔄 [PROJECTS] Usuario autenticado pero sin proyectos, recargando...");
+      loadProjects();
+    }
+  }, [user]);
 
   // Filter projects when any filter changes
   useEffect(() => {
@@ -157,6 +170,27 @@ function Projects() {
     setFilteredProjects(result);
   }, [activeTab, selectedProjectCategory, selectedProjectType, searchTerm, projects]);
 
+  // Helper function para mapear estados de estimados a progreso de proyecto
+  const mapStatusToProgress = (status?: string): string => {
+    switch (status) {
+      case "approved":
+      case "signed":
+        return "estimate_approved";
+      case "in_progress":
+      case "started":
+        return "work_in_progress";
+      case "completed":
+      case "finished":
+        return "project_completed";
+      case "draft":
+        return "estimate_draft";
+      case "sent":
+        return "estimate_sent";
+      default:
+        return "estimate_created";
+    }
+  };
+
   const loadProjects = async () => {
     try {
       setIsLoading(true);
@@ -181,84 +215,119 @@ function Projects() {
         return;
       }
 
-      console.log("🚀 PROYECTOS RESTAURADOS - Cargando funcionalidad completa...");
-
-      // Cargar datos de Firebase
-      const { collection, getDocs, query, where } = await import("firebase/firestore");
-      const { db } = await import("@/lib/firebase");
+      console.log("🚀 [PROJECTS] Iniciando carga del dashboard de proyectos...");
+      console.log(`🔍 [PROJECTS] Usuario autenticado: ${user.uid}`);
 
       const allProjects: Project[] = [];
 
-      // Cargar estimados
-      const estimatesRef = collection(db, "estimates");
-      const estimatesQuery = query(estimatesRef, where("userId", "==", user.uid));
-      const estimatesSnapshot = await getDocs(estimatesQuery);
+      try {
+        // ✅ INTEGRACIÓN SIMPLIFICADA ESTIMATE WIZARD → PROJECTS DASHBOARD
+        console.log("📊 [ESTIMATE-INTEGRATION] Conectando con Firebase de forma robusta...");
+        
+        const { collection, getDocs, query, where } = await import("firebase/firestore");
+        const { db } = await import("@/lib/firebase");
 
-      estimatesSnapshot.forEach((doc) => {
-        const data = doc.data();
-        allProjects.push({
-          id: doc.id,
-          clientName: data.clientName || "Cliente no especificado",
-          address: data.address || data.clientAddress || "Dirección no especificada",
-          projectType: data.projectType || "general",
-          projectSubtype: data.projectSubtype || data.fenceType,
-          status: data.status || "estimate",
-          totalPrice: data.totalAmount || data.totalPrice || 0,
-          createdAt: data.createdAt,
-          source: "estimates",
-          projectProgress: data.projectProgress || "estimate_created",
-          estimateHtml: data.estimateHtml,
-          contractHtml: data.contractHtml,
-          attachments: data.attachments,
-          clientNotes: data.clientNotes,
-          internalNotes: data.internalNotes,
-          permitStatus: data.permitStatus,
-          paymentStatus: data.paymentStatus,
-          scheduledDate: data.scheduledDate,
-          completedDate: data.completedDate
+        console.log("📋 [ESTIMATE-INTEGRATION] Buscando estimados del usuario...");
+        
+        // Cargar estimados de forma simplificada (sin orderBy que puede fallar)
+        const estimatesRef = collection(db, "estimates");
+        const estimatesQuery = query(estimatesRef, where("userId", "==", user.uid));
+        
+        const estimatesSnapshot = await getDocs(estimatesQuery);
+        console.log(`📊 [ESTIMATE-INTEGRATION] Encontrados ${estimatesSnapshot.size} estimados`);
+
+        estimatesSnapshot.forEach((doc) => {
+          const data = doc.data();
+          
+          console.log(`📋 [ESTIMATE]`, {
+            id: doc.id,
+            cliente: data.clientName || 'Sin nombre',
+            estado: data.status || 'Sin estado',
+            total: data.totalAmount || data.totalPrice || 0
+          });
+
+          // Mapear estimado a proyecto con datos esenciales
+          allProjects.push({
+            id: doc.id,
+            clientName: data.clientName || "Cliente no especificado",
+            address: data.address || data.clientAddress || "Dirección no especificada",
+            projectType: data.projectType || "fencing",
+            projectSubtype: data.projectSubtype || data.fenceType || data.serviceType,
+            fenceType: data.fenceType,
+            fenceHeight: data.fenceHeight || data.height,
+            height: data.height || data.fenceHeight,
+            status: data.status || "estimate",
+            totalPrice: data.totalAmount || data.totalPrice || data.grandTotal || 0,
+            createdAt: data.createdAt,
+            source: "estimates",
+            projectProgress: mapStatusToProgress(data.status),
+            estimateHtml: data.estimateHtml,
+            contractHtml: data.contractHtml,
+            attachments: data.attachments || {},
+            clientNotes: data.clientNotes || data.notes,
+            internalNotes: data.internalNotes,
+            permitStatus: data.permitStatus,
+            paymentStatus: data.paymentStatus,
+            scheduledDate: data.scheduledDate,
+            completedDate: data.completedDate,
+            projectDescription: data.projectDescription || data.description,
+            projectCategory: data.projectCategory || "fencing",
+            projectScope: data.projectScope,
+            materialsList: data.materialsList || data.items || [],
+            laborHours: data.laborHours,
+            difficulty: data.difficulty || "medium"
+          });
         });
-      });
 
-      // Cargar proyectos
-      const projectsRef = collection(db, "projects");
-      const projectsQuery = query(projectsRef, where("userId", "==", user.uid));
-      const projectsSnapshot = await getDocs(projectsQuery);
+        console.log(`🎯 [DASHBOARD] Total proyectos cargados: ${allProjects.length}`);
+        
+        if (allProjects.length === 0) {
+          console.log("📭 [DASHBOARD] Dashboard vacío - No hay estimados");
+          toast({
+            title: "📋 Dashboard de Proyectos",
+            description: "No tienes estimados aún. Crea un estimado en Estimate Wizard y aparecerá aquí automáticamente.",
+          });
+        } else {
+          console.log("✅ [DASHBOARD] Dashboard cargado exitosamente");
+          toast({
+            title: "📊 Dashboard Cargado",
+            description: `${allProjects.length} proyecto${allProjects.length !== 1 ? 's' : ''} cargado${allProjects.length !== 1 ? 's' : ''} desde estimate wizard.`,
+          });
+        }
 
-      projectsSnapshot.forEach((doc) => {
-        const data = doc.data();
-        allProjects.push({
-          id: doc.id,
-          clientName: data.clientName || "Cliente no especificado",
-          address: data.address || data.clientAddress || "Dirección no especificada",
-          projectType: data.projectType || "general",
-          projectSubtype: data.projectSubtype || data.fenceType,
-          status: data.status || "active",
-          totalPrice: data.totalPrice || data.totalAmount || 0,
-          createdAt: data.createdAt,
-          source: "projects",
-          projectProgress: data.projectProgress || "estimate_created",
-          estimateHtml: data.estimateHtml,
-          contractHtml: data.contractHtml,
-          attachments: data.attachments,
-          clientNotes: data.clientNotes,
-          internalNotes: data.internalNotes,
-          permitStatus: data.permitStatus,
-          paymentStatus: data.paymentStatus,
-          scheduledDate: data.scheduledDate,
-          completedDate: data.completedDate
-        });
-      });
+        // Mapear estados correctamente
+        const projectsWithProgress = allProjects.map(project => ({
+          ...project,
+          projectProgress: mapStatusToProgress(project.status) || "estimate_created"
+        }));
+        
+        setProjects(projectsWithProgress);
+        setFilteredProjects(projectsWithProgress);
 
-      console.log(`✅ PROYECTOS RESTAURADOS: ${allProjects.length} proyectos cargados con funcionalidad completa`);
-      
-      // Asegurar que todos tengan projectProgress
-      const projectsWithProgress = allProjects.map(project => ({
-        ...project,
-        projectProgress: project.projectProgress || "estimate_created"
-      }));
-      
-      setProjects(projectsWithProgress);
-      setFilteredProjects(projectsWithProgress);
+      } catch (firebaseError) {
+        console.error("🚨 [FIREBASE-ERROR] Error conectando con Firebase:", firebaseError);
+        
+        // Manejar errores específicos
+        if (firebaseError.code === 'permission-denied') {
+          toast({
+            variant: "destructive",
+            title: "Error de Permisos",
+            description: "No tienes permisos para acceder a los proyectos. Verifica tu autenticación.",
+          });
+        } else if (firebaseError.code === 'unavailable') {
+          toast({
+            variant: "destructive",
+            title: "Firebase No Disponible",
+            description: "El servicio está temporalmente no disponible. Intenta de nuevo en unos minutos.",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Error de Conexión",
+            description: "No se pudo cargar los proyectos. Verifica tu conexión a internet.",
+          });
+        }
+      }
 
     } catch (error) {
       console.error("❌ Error loading projects:", error);
