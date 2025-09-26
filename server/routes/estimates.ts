@@ -130,7 +130,7 @@ router.post('/', requireAuth, async (req, res) => {
 });
 
 // GET /api/estimates - Obtener estimados del usuario
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
     // 🔐 SECURITY FIX: Usar user_id real del usuario autenticado
     const firebaseUid = req.firebaseUser?.uid;
