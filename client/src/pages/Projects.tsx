@@ -8,24 +8,102 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Link } from "wouter";
+import { getProjectById, updateProject } from "@/lib/firebase";
+import ProjectProgress from "@/components/projects/ProjectProgress";
+import ProjectDetails from "@/components/projects/ProjectDetails";
+import FuturisticTimeline from "@/components/projects/FuturisticTimeline";
 
 interface Project {
   id: string;
   clientName: string;
   address: string;
   projectType: string;
+  projectSubtype?: string;
+  projectDescription?: string;
+  fenceType?: string;
+  fenceHeight?: number;
+  height?: number;
   status: string;
-  totalPrice?: number;
   createdAt: any;
   source?: string;
+  projectProgress?: string;
+  estimateHtml?: string;
+  contractHtml?: string;
+  totalPrice?: number;
+  scheduledDate?: any;
+  completedDate?: any;
+  assignedTo?: any[];
+  attachments?: any;
+  permitStatus?: string;
+  permitDetails?: any;
+  clientNotes?: string;
+  internalNotes?: string;
+  paymentStatus?: string;
+  paymentDetails?: any;
+  projectCategory?: string;
+  projectScope?: string;
+  materialsList?: any[];
+  laborHours?: number;
+  difficulty?: string;
 }
 
+// Categorías de proyectos disponibles
+const projectCategories = {
+  fencing: {
+    name: "Cercas y Portones",
+    icon: "fence",
+    types: [
+      "Wood Fence", "Metal Fence", "Iron Fence", "Chain Link Fence",
+      "Mesh Fence", "Vinyl Fence", "Composite Fence", "Bamboo Fence",
+      "Aluminum Fence", "Privacy Fence", "Picket Fence"
+    ]
+  },
+  roofing: {
+    name: "Techos",
+    icon: "home",
+    types: [
+      "Asphalt Shingles", "Metal Roofing", "Tile Roofing", "Slate Roofing",
+      "Flat Roofing", "Roof Repair", "Gutter Installation", "Skylight Installation"
+    ]
+  },
+  general: {
+    name: "Contratista General",
+    icon: "tool",
+    types: [
+      "Home Renovation", "Kitchen Remodel", "Bathroom Remodel", "Addition",
+      "Basement Finishing", "Garage Conversion", "Whole House", "Commercial Build"
+    ]
+  }
+};
+
+// Estados de proyecto y progreso
+const projectStatuses = ["draft", "sent", "approved", "completed"];
+
 function Projects() {
+  // Asegurar que la página tenga scroll en móviles
+  useEffect(() => {
+    document.body.style.overflow = 'auto';
+    document.documentElement.style.overflow = 'auto';
+    
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, []);
+
   const [projects, setProjects] = useState<Project[]>([]);
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("all");
+  const [selectedProjectCategory, setSelectedProjectCategory] = useState("");
+  const [selectedProjectType, setSelectedProjectType] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -36,6 +114,48 @@ function Projects() {
       loadProjects();
     }
   }, [user?.uid]);
+
+  // Filter projects when any filter changes
+  useEffect(() => {
+    let result = [...projects];
+    
+    // Filter by status tab
+    if (activeTab !== "all") {
+      result = result.filter(project => project.status === activeTab);
+    }
+    
+    // Filter by project category
+    if (selectedProjectCategory && selectedProjectCategory !== 'all') {
+      result = result.filter(project => {
+        const projectCategory = project.projectType || project.projectCategory || 'general';
+        return projectCategory === selectedProjectCategory;
+      });
+    }
+    
+    // Filter by specific project type
+    if (selectedProjectType && selectedProjectType !== 'all') {
+      result = result.filter(project => {
+        const projectSubtype = project.projectSubtype || project.fenceType;
+        return projectSubtype === selectedProjectType;
+      });
+    }
+    
+    // Filter by search term
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        project => 
+          project.clientName.toLowerCase().includes(term) || 
+          project.address.toLowerCase().includes(term) ||
+          (project.projectType && project.projectType.toLowerCase().includes(term)) ||
+          (project.projectSubtype && project.projectSubtype.toLowerCase().includes(term)) ||
+          (project.fenceType && project.fenceType.toLowerCase().includes(term)) ||
+          (project.projectDescription && project.projectDescription.toLowerCase().includes(term))
+      );
+    }
+    
+    setFilteredProjects(result);
+  }, [activeTab, selectedProjectCategory, selectedProjectType, searchTerm, projects]);
 
   const loadProjects = async () => {
     try {
@@ -50,22 +170,18 @@ function Projects() {
         return;
       }
 
-      // ✅ FIXED: Revisar permisos pero permitir acceso temporal durante carga inicial
+      // ✅ FIXED: Solo verificar permisos sin llamar hooks anidados
       if (!hasAccess('projects')) {
-        // Solo bloquear si definitivamente no tiene acceso (no durante carga inicial)
-        const { loading } = usePermissions();
-        if (!loading) {
-          toast({
-            title: "⭐ Acceso Restringido",
-            description: "Tu plan actual no incluye acceso completo a gestión de proyectos",
-            variant: "destructive",
-          });
-          showUpgradeModal('projects', 'Gestiona proyectos con herramientas profesionales');
-          return;
-        }
+        toast({
+          title: "⭐ Acceso Restringido",
+          description: "Tu plan actual no incluye acceso completo a gestión de proyectos",
+          variant: "destructive",
+        });
+        showUpgradeModal('projects', 'Gestiona proyectos con herramientas profesionales');
+        return;
       }
 
-      console.log("🚀 NUEVA PÁGINA PROJECTS CARGANDO...");
+      console.log("🚀 PROYECTOS RESTAURADOS - Cargando funcionalidad completa...");
 
       // Cargar datos de Firebase
       const { collection, getDocs, query, where } = await import("firebase/firestore");
@@ -84,11 +200,22 @@ function Projects() {
           id: doc.id,
           clientName: data.clientName || "Cliente no especificado",
           address: data.address || data.clientAddress || "Dirección no especificada",
-          projectType: data.projectType || "General",
+          projectType: data.projectType || "general",
+          projectSubtype: data.projectSubtype || data.fenceType,
           status: data.status || "estimate",
           totalPrice: data.totalAmount || data.totalPrice || 0,
           createdAt: data.createdAt,
-          source: "estimates"
+          source: "estimates",
+          projectProgress: data.projectProgress || "estimate_created",
+          estimateHtml: data.estimateHtml,
+          contractHtml: data.contractHtml,
+          attachments: data.attachments,
+          clientNotes: data.clientNotes,
+          internalNotes: data.internalNotes,
+          permitStatus: data.permitStatus,
+          paymentStatus: data.paymentStatus,
+          scheduledDate: data.scheduledDate,
+          completedDate: data.completedDate
         });
       });
 
@@ -103,16 +230,35 @@ function Projects() {
           id: doc.id,
           clientName: data.clientName || "Cliente no especificado",
           address: data.address || data.clientAddress || "Dirección no especificada",
-          projectType: data.projectType || "General",
+          projectType: data.projectType || "general",
+          projectSubtype: data.projectSubtype || data.fenceType,
           status: data.status || "active",
           totalPrice: data.totalPrice || data.totalAmount || 0,
           createdAt: data.createdAt,
-          source: "projects"
+          source: "projects",
+          projectProgress: data.projectProgress || "estimate_created",
+          estimateHtml: data.estimateHtml,
+          contractHtml: data.contractHtml,
+          attachments: data.attachments,
+          clientNotes: data.clientNotes,
+          internalNotes: data.internalNotes,
+          permitStatus: data.permitStatus,
+          paymentStatus: data.paymentStatus,
+          scheduledDate: data.scheduledDate,
+          completedDate: data.completedDate
         });
       });
 
-      console.log(`✅ NUEVA PÁGINA: Proyectos cargados: ${allProjects.length}`);
-      setProjects(allProjects);
+      console.log(`✅ PROYECTOS RESTAURADOS: ${allProjects.length} proyectos cargados con funcionalidad completa`);
+      
+      // Asegurar que todos tengan projectProgress
+      const projectsWithProgress = allProjects.map(project => ({
+        ...project,
+        projectProgress: project.projectProgress || "estimate_created"
+      }));
+      
+      setProjects(projectsWithProgress);
+      setFilteredProjects(projectsWithProgress);
 
     } catch (error) {
       console.error("❌ Error loading projects:", error);
@@ -126,17 +272,27 @@ function Projects() {
     }
   };
 
-  // Filtrar proyectos
-  const filteredProjects = projects.filter((project) => {
-    const matchesSearch = 
-      project.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.projectType.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || project.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  // Helper functions
+  const formatDate = (date: any) => {
+    try {
+      if (date && typeof date.toDate === 'function') {
+        return new Intl.DateTimeFormat('es-ES', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        }).format(date.toDate());
+      }
+      
+      const dateObj = date instanceof Date ? date : new Date(date);
+      return new Intl.DateTimeFormat('es-ES', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      }).format(dateObj);
+    } catch (e) {
+      return "Fecha no disponible";
+    }
+  };
 
   const formatPrice = (price?: number) => {
     if (!price) return "N/A";
@@ -146,42 +302,95 @@ function Projects() {
     }).format(price);
   };
 
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return "N/A";
-    try {
-      return timestamp.toDate ? timestamp.toDate().toLocaleDateString() : new Date(timestamp).toLocaleDateString();
-    } catch {
-      return "N/A";
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case "draft":
+        return "bg-slate-500";
+      case "sent":
+        return "bg-blue-500";
+      case "approved":
+        return "bg-green-500";
+      case "completed":
+        return "bg-purple-500";
+      default:
+        return "bg-slate-500";
     }
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      estimate: "bg-blue-100 text-blue-800",
-      "client_approved": "bg-green-100 text-green-800",
-      "in_progress": "bg-yellow-100 text-yellow-800",
-      completed: "bg-green-100 text-green-800",
-      active: "bg-blue-100 text-blue-800"
-    };
-    return colors[status] || "bg-gray-100 text-gray-800";
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "draft":
+        return "Borrador";
+      case "sent":
+        return "Enviado";
+      case "approved":
+        return "Aprobado";
+      case "completed":
+        return "Completado";
+      default:
+        return status;
+    }
   };
 
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      estimate: "Estimado",
-      "client_approved": "Aprobado",
-      "in_progress": "En Progreso",
-      completed: "Completado",
-      active: "Activo"
+  const getProjectCategoryInfo = (project: Project) => {
+    const projectType = project.projectType || project.projectCategory || 'general';
+    const category = projectCategories[projectType as keyof typeof projectCategories] || projectCategories.general;
+    
+    return {
+      categoryName: category.name,
+      categoryIcon: category.icon,
+      subtype: project.projectSubtype || project.fenceType || 'No especificado'
     };
-    return labels[status] || status;
+  };
+
+  // Handle viewing project details
+  const handleViewProject = async (id: string) => {
+    try {
+      const projectData = await getProjectById(id);
+      setSelectedProject(projectData as Project);
+      setIsDialogOpen(true);
+    } catch (error) {
+      console.error("Error fetching project details:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron cargar los detalles del proyecto."
+      });
+    }
+  };
+
+  // Handle updating project
+  const handleProjectUpdate = (updatedProject: Project) => {
+    setSelectedProject(updatedProject);
+    
+    const updatedProjects = projects.map(p => 
+      p.id === updatedProject.id ? updatedProject : p
+    );
+    
+    setProjects(updatedProjects);
+    setFilteredProjects(
+      filteredProjects.map(p => p.id === updatedProject.id ? updatedProject : p)
+    );
+  };
+
+  // Handle updating project progress
+  const handleProgressUpdate = (newProgress: string) => {
+    if (!selectedProject) return;
+    
+    const updatedProject = {
+      ...selectedProject,
+      projectProgress: newProgress
+    };
+    
+    setSelectedProject(updatedProject);
+    handleProjectUpdate(updatedProject);
   };
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="flex-1 p-6 space-y-6">
         <div className="mb-6">
-          <div className="text-4xl mb-4">🚀 CARGANDO NUEVA PÁGINA...</div>
+          <div className="text-4xl mb-4">🔄 CARGANDO PROYECTOS RESTAURADOS...</div>
           <Skeleton className="h-8 w-48 mb-2" />
           <Skeleton className="h-4 w-96" />
         </div>
@@ -200,147 +409,402 @@ function Projects() {
     );
   }
 
-  return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="mb-6 bg-gradient-to-r from-blue-50 to-green-50 p-6 rounded-lg border-2 border-green-200">
-        <h1 className="text-4xl font-bold mb-2">🚀 NUEVA PÁGINA PROJECTS</h1>
-        <p className="text-lg text-green-600 font-semibold">
-          ✅ Página completamente nueva y optimizada (284 líneas vs 1,979)
-        </p>
-        <p className="text-muted-foreground">
-          Gestiona todos tus proyectos y estimados en un solo lugar
-        </p>
-      </div>
-
-      {/* Filtros */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="flex-1">
-          <Input
-            placeholder="🔍 Buscar por cliente, dirección o tipo..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+  if (projects.length === 0) {
+    return (
+      <div className="flex-1 p-6 flex flex-col items-center justify-center text-center">
+        <div className="rounded-full bg-muted p-6 mb-4">
+          <div className="text-4xl">📋</div>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Filtrar por estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los estados</SelectItem>
-            <SelectItem value="estimate">Estimados</SelectItem>
-            <SelectItem value="client_approved">Aprobados</SelectItem>
-            <SelectItem value="in_progress">En Progreso</SelectItem>
-            <SelectItem value="completed">Completados</SelectItem>
-            <SelectItem value="active">Activos</SelectItem>
-          </SelectContent>
-        </Select>
+        <h2 className="text-xl font-semibold mb-2">No hay proyectos</h2>
+        <p className="text-muted-foreground mb-6 max-w-md">
+          Aún no has creado ningún estimado o contrato.
+        </p>
+        <Link href="/estimates-dashboard">
+          <Button className="bg-green-500 hover:bg-green-600">
+            🚀 Crear Nuevo Estimado
+          </Button>
+        </Link>
       </div>
+    );
+  }
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-blue-600">{projects.length}</div>
-            <div className="text-sm text-blue-600">📋 Total Proyectos</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-green-50 border-green-200">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">
-              {projects.filter(p => p.status === "estimate").length}
+  return (
+    <div className="flex-1 flex flex-col">
+      <div className="flex-shrink-0 p-6 pb-2">
+        {/* Header con funcionalidad restaurada */}
+        <div className="mb-6 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-gray-800 dark:to-gray-900 p-6 rounded-lg border-2 border-cyan-200 dark:border-cyan-800">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+                ✅ PROYECTOS RESTAURADOS
+              </h1>
+              <p className="text-lg text-cyan-600 dark:text-cyan-400 font-semibold">
+                🎯 Funcionalidad completa restaurada: Línea de tiempo + Detalles + Archivos
+              </p>
+              <p className="text-muted-foreground">
+                Gestiona todos tus proyectos con línea de tiempo de progreso y almacenamiento de archivos
+              </p>
             </div>
-            <div className="text-sm text-green-600">📝 Estimados</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-yellow-50 border-yellow-200">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-yellow-600">
-              {projects.filter(p => p.status === "in_progress").length}
-            </div>
-            <div className="text-sm text-yellow-600">🔧 En Progreso</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-purple-50 border-purple-200">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-purple-600">
-              {formatPrice(projects.reduce((sum, p) => sum + (p.totalPrice || 0), 0))}
-            </div>
-            <div className="text-sm text-purple-600">💰 Valor Total</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Projects Grid */}
-      {filteredProjects.length === 0 ? (
-        <Card className="bg-gray-50">
-          <CardContent className="p-12 text-center">
-            <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-xl font-semibold mb-2">No hay proyectos</h3>
-            <p className="text-muted-foreground mb-4">
-              {searchTerm || statusFilter !== "all" 
-                ? "No se encontraron proyectos con los filtros aplicados."
-                : "Comienza creando tu primer estimado o proyecto."
-              }
-            </p>
-            <Link href="/estimates-dashboard">
-              <Button className="bg-green-500 hover:bg-green-600">
-                🚀 Crear Estimado
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setViewMode("grid")} 
+                className={viewMode === "grid" ? "bg-muted" : ""}
+                data-testid="button-view-grid"
+              >
+                📋
               </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
-            <Card key={project.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-blue-400">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">{project.clientName}</CardTitle>
-                  <Badge className={getStatusColor(project.status)}>
-                    {getStatusLabel(project.status)}
-                  </Badge>
+              <Button 
+                variant="outline" 
+                onClick={() => setViewMode("list")} 
+                className={viewMode === "list" ? "bg-muted" : ""}
+                data-testid="button-view-list"
+              >
+                📝
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Search and Filter Controls */}
+        <div className="mb-4 space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <Input
+                placeholder="🔍 Buscar por cliente, dirección o tipo..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full"
+                data-testid="input-search"
+              />
+            </div>
+            <div className="w-full md:w-64">
+              <Select value={selectedProjectCategory} onValueChange={(value) => {
+                setSelectedProjectCategory(value);
+                setSelectedProjectType("");
+              }}>
+                <SelectTrigger data-testid="select-category">
+                  <SelectValue placeholder="Filtrar por categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las categorías</SelectItem>
+                  {Object.entries(projectCategories).map(([key, category]) => (
+                    <SelectItem key={key} value={key}>
+                      <div className="flex items-center gap-2">
+                        🔧 {category.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {selectedProjectCategory && selectedProjectCategory !== 'all' && (
+              <div className="w-full md:w-64">
+                <Select value={selectedProjectType} onValueChange={setSelectedProjectType}>
+                  <SelectTrigger data-testid="select-type">
+                    <SelectValue placeholder="Tipo específico" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los tipos</SelectItem>
+                    {projectCategories[selectedProjectCategory as keyof typeof projectCategories]?.types.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          
+          {/* Status Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="w-full md:w-auto flex flex-wrap">
+              <TabsTrigger value="all" data-testid="tab-all">Todos</TabsTrigger>
+              {projectStatuses.map(status => (
+                <TabsTrigger key={status} value={status} data-testid={`tab-${status}`}>
+                  {getStatusLabel(status)}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          
+          {/* Results Count */}
+          <div className="text-sm text-muted-foreground" data-testid="text-results-count">
+            {filteredProjects.length} {filteredProjects.length === 1 ? 'proyecto encontrado' : 'proyectos encontrados'}
+          </div>
+        </div>
+      </div>
+      
+      {/* Scrollable Content Area */}
+      <div className="flex-1 px-6 pb-6">
+        {filteredProjects.length === 0 ? (
+          <div className="text-center py-12 bg-muted/20 rounded-lg">
+            <div className="text-3xl mb-2">🔍</div>
+            <p className="text-muted-foreground">No se encontraron proyectos con los filtros actuales</p>
+          </div>
+        ) : viewMode === "grid" ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filteredProjects.map((project) => {
+              const categoryInfo = getProjectCategoryInfo(project);
+              return (
+                <Card 
+                  key={project.id} 
+                  className="hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-cyan-400"
+                  onClick={() => handleViewProject(project.id)}
+                  data-testid={`card-project-${project.id}`}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-lg">{project.clientName}</CardTitle>
+                      <Badge className={`${getStatusBadgeColor(project.status)} text-white`}>
+                        {getStatusLabel(project.status)}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        📍 {project.address}
+                      </p>
+                      <p className="text-sm">
+                        🔨 {categoryInfo.categoryName}
+                      </p>
+                      <p className="text-xs text-cyan-600">
+                        📊 Progreso: {project.projectProgress || "estimate_created"}
+                      </p>
+                      <div className="flex justify-between items-center pt-2">
+                        <span className="font-semibold text-green-600">
+                          {formatPrice(project.totalPrice)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(project.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewProject(project.id);
+                        }}
+                        data-testid={`button-view-${project.id}`}
+                      >
+                        📋 Ver Detalles
+                      </Button>
+                      {project.attachments && Object.keys(project.attachments).length > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          📎 {Object.keys(project.attachments).length}
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredProjects.map((project) => {
+              const categoryInfo = getProjectCategoryInfo(project);
+              return (
+                <Card 
+                  key={project.id} 
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => handleViewProject(project.id)}
+                  data-testid={`row-project-${project.id}`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4">
+                          <h3 className="font-semibold">{project.clientName}</h3>
+                          <Badge className={`${getStatusBadgeColor(project.status)} text-white`}>
+                            {getStatusLabel(project.status)}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          📍 {project.address} • 🔨 {categoryInfo.categoryName}
+                        </p>
+                        <p className="text-xs text-cyan-600 mt-1">
+                          📊 {project.projectProgress || "estimate_created"}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold text-green-600">
+                          {formatPrice(project.totalPrice)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {formatDate(project.createdAt)}
+                        </div>
+                        {project.attachments && Object.keys(project.attachments).length > 0 && (
+                          <Badge variant="secondary" className="text-xs mt-1">
+                            📎 {Object.keys(project.attachments).length}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Modal de detalles del proyecto con línea de tiempo */}
+      {selectedProject && (
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-7xl h-[90vh] p-0 overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+            <DialogHeader className="sticky top-0 z-20 bg-gradient-to-r from-gray-800/90 to-gray-900/90 backdrop-blur-sm border-b border-cyan-400/20 p-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-cyan-400/20 flex items-center justify-center border border-cyan-400/30">
+                  <div className="text-cyan-400 text-xl">🏗️</div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    📍 {project.address}
-                  </p>
-                  <p className="text-sm">
-                    🔨 {project.projectType}
-                  </p>
-                  <div className="flex justify-between items-center pt-2">
-                    <span className="font-semibold text-green-600">
-                      {formatPrice(project.totalPrice)}
+                <div>
+                  <DialogTitle className="text-2xl font-bold text-white flex items-center gap-2">
+                    <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                      {selectedProject.clientName}
                     </span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDate(project.createdAt)}
-                    </span>
+                    <Badge className={`${getStatusBadgeColor(selectedProject.status)} text-white`}>
+                      {getStatusLabel(selectedProject.status)}
+                    </Badge>
+                  </DialogTitle>
+                  <p className="text-cyan-300/80 text-sm font-mono">
+                    ID: {selectedProject.id} • 📍 {selectedProject.address}
+                  </p>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+              {/* Mobile Layout: Stack */}
+              <div className="lg:hidden p-4 space-y-6 overflow-y-auto h-full">
+                {/* Futuristic Timeline for Mobile */}
+                <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg p-4 relative shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                  <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
+                  <h3 className="text-cyan-300 font-semibold mb-4 flex items-center font-mono">
+                    <div className="mr-2">⏱️</div>
+                    LÍNEA DE TIEMPO DEL PROYECTO
+                  </h3>
+                  <FuturisticTimeline 
+                    projectId={selectedProject.id} 
+                    currentProgress={selectedProject.projectProgress || "estimate_created"} 
+                    onProgressUpdate={handleProgressUpdate} 
+                  />
+                </div>
+                
+                {/* Mobile Details Section */}
+                <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4 relative">
+                  <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
+                  <h3 className="text-cyan-300 font-semibold mb-4 flex items-center font-mono">
+                    <div className="mr-2">📋</div>
+                    DETALLES DEL PROYECTO
+                  </h3>
+                  <ProjectDetails 
+                    project={selectedProject} 
+                    onUpdate={handleProjectUpdate} 
+                  />
+                </div>
+              </div>
+
+              {/* Desktop Layout: Two Columns */}
+              <div className="hidden lg:grid lg:grid-cols-2 gap-6 p-6 h-full">
+                {/* Left Column - Timeline */}
+                <div className="space-y-6">
+                  {/* Futuristic Timeline */}
+                  <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                    <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
+                    <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-400"></div>
+                    
+                    <div className="p-4 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50 relative">
+                      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
+                      <h3 className="text-cyan-300 font-semibold flex items-center font-mono">
+                        <div className="mr-2">⏱️</div>
+                        LÍNEA DE TIEMPO DEL PROYECTO
+                      </h3>
+                    </div>
+                    
+                    <div className="p-4">
+                      <FuturisticTimeline 
+                        projectId={selectedProject.id} 
+                        currentProgress={selectedProject.projectProgress || "estimate_created"} 
+                        onProgressUpdate={handleProgressUpdate} 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Sistema de estado del proyecto */}
+                  <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                    <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan-400"></div>
+                    <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-cyan-400"></div>
+                    
+                    <div className="p-4 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50 relative">
+                      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
+                      <h3 className="text-cyan-300 font-semibold flex items-center font-mono">
+                        <div className="mr-2">📊</div>
+                        ESTADO DEL SISTEMA
+                      </h3>
+                    </div>
+                    
+                    <div className="p-4 space-y-3">
+                      <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative hover:border-cyan-400/40 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-cyan-400 text-xs mb-1 font-mono">PRECIO TOTAL</div>
+                            <div className="text-white font-bold">
+                              {formatPrice(selectedProject.totalPrice)}
+                            </div>
+                          </div>
+                          <div className="text-cyan-400 text-lg">💰</div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gray-700/50 border border-cyan-400/20 rounded-md p-3 relative hover:border-cyan-400/40 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-cyan-400 text-xs mb-1 font-mono">ARCHIVOS ADJUNTOS</div>
+                            <div className="text-white font-semibold">
+                              {selectedProject.attachments ? Object.keys(selectedProject.attachments).length : 0} archivos
+                            </div>
+                          </div>
+                          <div className="text-cyan-400 text-lg">📎</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="mt-4 flex gap-2">
-                  {project.source === "estimates" ? (
-                    <Link href={`/estimates-dashboard`}>
-                      <Button size="sm" variant="outline" className="flex-1">
-                        📊 Ver Estimado
-                      </Button>
-                    </Link>
-                  ) : (
-                    <Button size="sm" variant="outline" className="flex-1">
-                      📋 Ver Proyecto
-                    </Button>
-                  )}
-                  <Link href={`/project-payments`}>
-                    <Button size="sm" className="flex-1 bg-green-500 hover:bg-green-600">
-                      💳 Pagos
-                    </Button>
-                  </Link>
+
+                {/* Right Column - Project Details */}
+                <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg relative shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                  <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
+                  <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-400"></div>
+                  <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan-400"></div>
+                  <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-cyan-400"></div>
+                  
+                  <div className="p-4 border-b border-cyan-400/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50 relative">
+                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
+                    <h3 className="text-cyan-300 font-semibold flex items-center font-mono">
+                      <div className="mr-2">📋</div>
+                      DETALLES DEL PROYECTO
+                    </h3>
+                  </div>
+                  
+                  <div className="p-4 h-full overflow-y-auto">
+                    <ProjectDetails 
+                      project={selectedProject} 
+                      onUpdate={handleProjectUpdate} 
+                    />
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

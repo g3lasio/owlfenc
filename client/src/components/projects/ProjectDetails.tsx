@@ -7,6 +7,7 @@ import { updateProject } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import FileManager from "./FileManager";
 
 interface ProjectDetailsProps {
   project: any;
@@ -346,63 +347,61 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
           </Card>
         </TabsContent>
 
-        {/* SECCIÓN DE DOCUMENTOS */}
+        {/* SECCIÓN DE DOCUMENTOS - MEJORADA CON DRAG & DROP */}
         <TabsContent value="documents">
-          <Card>
-            <CardHeader>
-              <CardTitle>Documentos del Proyecto</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="font-medium mb-2">Presupuesto</h3>
-                {project.estimateHtml ? (
-                  <Button variant="outline">
-                    <i className="ri-file-text-line mr-2"></i>
-                    Ver Presupuesto
-                  </Button>
-                ) : (
-                  <p className="text-muted-foreground">No hay presupuesto disponible</p>
-                )}
-              </div>
+          <div className="space-y-4">
+            {/* Documentos del sistema (Presupuesto y Contrato) */}
+            <Card>
+              <CardHeader>
+                <CardTitle>📋 Documentos del Sistema</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-medium mb-2 flex items-center gap-2">
+                      📊 Presupuesto
+                    </h3>
+                    {project.estimateHtml ? (
+                      <Button variant="outline" className="w-full">
+                        <div className="mr-2">📄</div>
+                        Ver Presupuesto
+                      </Button>
+                    ) : (
+                      <div className="text-center p-4 border-2 border-dashed border-gray-300 rounded-lg">
+                        <p className="text-muted-foreground">No hay presupuesto disponible</p>
+                      </div>
+                    )}
+                  </div>
 
-              <div>
-                <h3 className="font-medium mb-2">Contrato</h3>
-                {project.contractHtml ? (
-                  <Button variant="outline">
-                    <i className="ri-file-text-line mr-2"></i>
-                    Ver Contrato
-                  </Button>
-                ) : (
-                  <p className="text-muted-foreground">No hay contrato disponible</p>
-                )}
-              </div>
+                  <div>
+                    <h3 className="font-medium mb-2 flex items-center gap-2">
+                      📜 Contrato
+                    </h3>
+                    {project.contractHtml ? (
+                      <Button variant="outline" className="w-full">
+                        <div className="mr-2">📃</div>
+                        Ver Contrato
+                      </Button>
+                    ) : (
+                      <div className="text-center p-4 border-2 border-dashed border-gray-300 rounded-lg">
+                        <p className="text-muted-foreground">No hay contrato disponible</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-              <div>
-                <h3 className="font-medium mb-2">Documentos Adjuntos</h3>
-                {project.attachments && Object.keys(project.attachments).length > 0 ? (
-                  <ul className="space-y-2">
-                    {Object.entries(project.attachments).map(([key, url]: [string, any]) => (
-                      <li key={key} className="flex items-center">
-                        <i className="ri-file-line mr-2"></i>
-                        <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                          {key}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-muted-foreground">No hay documentos adjuntos</p>
-                )}
-              </div>
-
-              <div className="flex justify-end">
-                <Button>
-                  <i className="ri-upload-line mr-2"></i>
-                  Adjuntar Documento
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            {/* Sistema de gestión de archivos mejorado */}
+            <FileManager 
+              projectId={project.id}
+              attachments={project.attachments}
+              onUpdate={(newAttachments) => {
+                const updatedProject = { ...project, attachments: newAttachments };
+                onUpdate(updatedProject);
+              }}
+            />
+          </div>
         </TabsContent>
 
         {/* SECCIÓN DE PAGOS */}
