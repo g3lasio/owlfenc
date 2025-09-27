@@ -648,38 +648,28 @@ function Projects() {
   return (
     <div className="flex-1 flex flex-col">
       <div className="flex-shrink-0 p-6 pb-2">
-        {/* Header con funcionalidad restaurada */}
-        <div className="mb-6 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-gray-800 dark:to-gray-900 p-6 rounded-lg border-2 border-cyan-200 dark:border-cyan-800">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                ✅ PROYECTOS RESTAURADOS
-              </h1>
-              <p className="text-lg text-cyan-600 dark:text-cyan-400 font-semibold">
-                🎯 Funcionalidad completa restaurada: Línea de tiempo + Detalles + Archivos
-              </p>
-              <p className="text-muted-foreground">
-                Gestiona todos tus proyectos con línea de tiempo de progreso y almacenamiento de archivos
-              </p>
-            </div>
-            <div className="flex space-x-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setViewMode("grid")} 
-                className={viewMode === "grid" ? "bg-muted" : ""}
-                data-testid="button-view-grid"
-              >
-                📋
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setViewMode("list")} 
-                className={viewMode === "list" ? "bg-muted" : ""}
-                data-testid="button-view-list"
-              >
-                📝
-              </Button>
-            </div>
+        {/* Header con controles de vista */}
+        <div className="mb-6 flex justify-between items-center">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+            Proyectos
+          </h1>
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setViewMode("grid")} 
+              className={viewMode === "grid" ? "bg-muted" : ""}
+              data-testid="button-view-grid"
+            >
+              📋
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setViewMode("list")} 
+              className={viewMode === "list" ? "bg-muted" : ""}
+              data-testid="button-view-list"
+            >
+              📝
+            </Button>
           </div>
         </div>
 
