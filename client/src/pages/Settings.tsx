@@ -304,7 +304,10 @@ export default function Settings() {
 
 
   const handleChangePassword = async () => {
+    console.log('🔐 [PASSWORD-RESET] Iniciando proceso de reset de password');
+    
     if (!currentUser?.email) {
+      console.error('❌ [PASSWORD-RESET] No email found for user:', currentUser);
       toast({
         title: "Error",
         description: "No email found for password reset",
@@ -313,31 +316,55 @@ export default function Settings() {
       return;
     }
 
+    console.log('🔐 [PASSWORD-RESET] Enviando email a:', currentUser.email);
+
     try {
       const { sendPasswordResetEmail } = await import('firebase/auth');
       const { auth } = await import('@/lib/firebase');
       
+      console.log('🔐 [PASSWORD-RESET] Firebase auth inicializado, enviando email...');
+      
+      // Add detailed logging for Firebase auth status
+      console.log('🔐 [PASSWORD-RESET] Auth status:', {
+        currentUser: auth.currentUser?.uid,
+        targetEmail: currentUser.email,
+        authReady: !!auth.currentUser
+      });
+      
       await sendPasswordResetEmail(auth, currentUser.email);
+      
+      console.log('✅ [PASSWORD-RESET] Email enviado exitosamente a:', currentUser.email);
       
       toast({
         title: "Password Reset Email Sent",
-        description: `A password reset link has been sent to ${currentUser.email}`,
+        description: `A password reset link has been sent to ${currentUser.email}. Please check your inbox and spam folder.`,
       });
     } catch (error: any) {
-      console.error('❌ [SETTINGS] Error sending password reset:', error);
+      console.error('❌ [PASSWORD-RESET] Error completo:', {
+        error: error,
+        code: error?.code,
+        message: error?.message,
+        userEmail: currentUser.email
+      });
       
       let errorMessage = "Failed to send password reset email. Please try again.";
       
       if (error.code === 'auth/user-not-found') {
         errorMessage = "No account found with this email address.";
+        console.error('❌ [PASSWORD-RESET] Usuario no encontrado:', currentUser.email);
       } else if (error.code === 'auth/too-many-requests') {
         errorMessage = "Too many requests. Please try again later.";
+        console.error('❌ [PASSWORD-RESET] Demasiadas solicitudes');
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = "Invalid email address.";
+        console.error('❌ [PASSWORD-RESET] Email inválido:', currentUser.email);
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = "Network error. Please check your connection and try again.";
+        console.error('❌ [PASSWORD-RESET] Error de red');
       }
       
       toast({
-        title: "Error",
+        title: "Password Reset Error",
         description: errorMessage,
         variant: "destructive",
       });
@@ -345,6 +372,8 @@ export default function Settings() {
   };
 
   const handleEmailChange = async () => {
+    console.log('🔧 [EMAIL-CHANGE] Iniciando proceso de cambio de email');
+    
     if (!newEmail.trim()) {
       toast({
         title: "Error",
@@ -364,6 +393,7 @@ export default function Settings() {
     }
 
     if (!currentUser) {
+      console.error('❌ [EMAIL-CHANGE] Usuario no autenticado');
       toast({
         title: "Error",
         description: "You must be logged in to change your email",
@@ -372,10 +402,41 @@ export default function Settings() {
       return;
     }
 
+    console.log('🔧 [EMAIL-CHANGE] Validaciones pasadas, obteniendo token de autenticación...');
     setIsChangingEmail(true);
+    
+    let token: string;
     try {
-      // Get Firebase token for authentication
-      const token = await currentUser.getIdToken();
+      // Get Firebase token for authentication with robust error handling
+      console.log('🔧 [EMAIL-CHANGE] Intentando obtener Firebase token...');
+      token = await currentUser.getIdToken();
+      console.log('✅ [EMAIL-CHANGE] Token obtenido exitosamente');
+    } catch (tokenError: any) {
+      console.error('❌ [EMAIL-CHANGE] Error obteniendo token Firebase:', tokenError);
+      
+      // Handle specific token errors with user-friendly messages
+      let errorMessage = "Authentication error. Please sign in again.";
+      
+      if (tokenError?.code === 'auth/network-request-failed') {
+        errorMessage = "Network error. Please check your connection and try again.";
+      } else if (tokenError?.message?.includes('token') || tokenError?.message?.includes('expired')) {
+        errorMessage = "Your session has expired. Please sign out and sign in again.";
+      } else if (tokenError?.message?.includes('user')) {
+        errorMessage = "User authentication failed. Please sign in again.";
+      }
+      
+      toast({
+        title: "Authentication Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+      setIsChangingEmail(false);
+      return;
+    }
+
+    try {
+      console.log('🔧 [EMAIL-CHANGE] Enviando solicitud al endpoint seguro...');
       
       // Use new secure email change endpoint
       const response = await fetch('/api/auth/account/email/change', {
@@ -388,11 +449,20 @@ export default function Settings() {
         body: JSON.stringify({ newEmail: newEmail.trim() })
       });
 
+      console.log('🔧 [EMAIL-CHANGE] Respuesta del servidor:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+
       const data = await response.json();
+      console.log('🔧 [EMAIL-CHANGE] Datos de respuesta:', data);
 
       if (!response.ok) {
         throw new Error(data.error || `Server error: ${response.status}`);
       }
+
+      console.log('✅ [EMAIL-CHANGE] Solicitud exitosa, email de confirmación enviado');
 
       toast({
         title: "🔐 Confirmation Email Sent",
@@ -407,7 +477,13 @@ export default function Settings() {
       queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
       
     } catch (error: any) {
-      console.error('❌ [SETTINGS] Error updating email:', error);
+      console.error('❌ [EMAIL-CHANGE] Error en el proceso:', {
+        error: error,
+        message: error?.message,
+        stack: error?.stack,
+        newEmail: newEmail.trim(),
+        currentUserUid: currentUser.uid
+      });
       
       let errorMessage = "Failed to change email. Please try again.";
       
@@ -426,10 +502,12 @@ export default function Settings() {
         errorMessage = "Failed to send confirmation email. Please try again.";
       } else if (error.message?.includes('USER_NOT_FOUND')) {
         errorMessage = "User account not found. Please contact support.";
+      } else if (error.message?.includes('Failed to fetch') || error.message?.includes('fetch')) {
+        errorMessage = "Network error. Please check your connection and try again.";
       }
       
       toast({
-        title: "Error",
+        title: "Email Change Error",
         description: errorMessage,
         variant: "destructive",
       });
