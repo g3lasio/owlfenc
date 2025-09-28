@@ -45,7 +45,7 @@ router.post('/register/begin', async (req, res) => {
     }
 
     // Buscar usuario por email
-    const [user] = await db
+    const [user] = await db!
       .select()
       .from(users)
       .where(eq(users.email, email))
@@ -56,7 +56,7 @@ router.post('/register/begin', async (req, res) => {
     }
 
     // Verificar credenciales existentes
-    const existingCredentials = await db
+    const existingCredentials = await db!
       .select()
       .from(webauthnCredentials)
       .where(eq(webauthnCredentials.userId, user.id));
@@ -137,7 +137,7 @@ router.post('/register/complete', async (req, res) => {
     challenges.delete(challengeKey);
 
     // Buscar usuario
-    const [user] = await db
+    const [user] = await db!
       .select()
       .from(users)
       .where(eq(users.email, email))
@@ -197,7 +197,7 @@ router.post('/register/complete', async (req, res) => {
     else if (userAgent.includes('Mac')) deviceType = 'Mac';
 
     // Guardar credencial en la base de datos
-    await db.insert(webauthnCredentials).values({
+    await db!.insert(webauthnCredentials).values({
       userId: user.id,
       credentialId: credentialId.toString('base64url'),
       publicKey: JSON.stringify(publicKey),
@@ -243,14 +243,14 @@ router.post('/authenticate/begin', async (req, res) => {
     
     if (email) {
       // Buscar credenciales específicas del usuario
-      const [user] = await db
+      const [user] = await db!
         .select()
         .from(users)
         .where(eq(users.email, email))
         .limit(1);
 
       if (user) {
-        const userCredentials = await db
+        const userCredentials = await db!
           .select()
           .from(webauthnCredentials)
           .where(eq(webauthnCredentials.userId, user.id));
@@ -283,11 +283,12 @@ router.post('/authenticate/begin', async (req, res) => {
 
 /**
  * Completa el proceso de autenticación WebAuthn
+ * Integrado con Firebase Auth como source of truth
  */
 router.post('/authenticate/complete', async (req, res) => {
   try {
     const { credential, challengeKey } = req.body;
-    console.log('🔐 [WEBAUTHN-AUTH] Completando autenticación');
+    console.log('🔐 [WEBAUTHN-AUTH] Completando autenticación biométrica');
 
     if (!credential || !challengeKey) {
       return res.status(400).json({ error: 'Datos incompletos' });
@@ -317,7 +318,7 @@ router.post('/authenticate/complete', async (req, res) => {
     }
 
     // Buscar credencial en la base de datos
-    const [storedCredential] = await db
+    const [storedCredential] = await db!
       .select()
       .from(webauthnCredentials)
       .where(eq(webauthnCredentials.credentialId, id))
@@ -328,7 +329,7 @@ router.post('/authenticate/complete', async (req, res) => {
     }
 
     // Buscar usuario asociado
-    const [user] = await db
+    const [user] = await db!
       .select()
       .from(users)
       .where(eq(users.id, storedCredential.userId))
@@ -348,23 +349,67 @@ router.post('/authenticate/complete', async (req, res) => {
     }
 
     // Actualizar última vez usado
-    await db
+    await db!
       .update(webauthnCredentials)
       .set({ lastUsed: new Date() })
       .where(eq(webauthnCredentials.id, storedCredential.id));
 
-    console.log('✅ [WEBAUTHN-AUTH] Autenticación exitosa para:', user.email);
-
-    res.json({ 
-      success: true, 
-      user: {
-        id: user.id,
+    // 🔥 FIREBASE INTEGRATION: Crear custom token después de autenticación WebAuthn exitosa
+    try {
+      // Firebase Admin ya está inicializado en server startup según logs
+      const { getAuth } = (await import('firebase-admin/auth'));
+      
+      console.log('🔑 [WEBAUTHN-FIREBASE] Creando custom token para usuario autenticado biométricamente:', user.email);
+      
+      // Crear custom token con claims específicos de biometric auth
+      const customToken = await getAuth().createCustomToken(user.firebaseUid || user.id.toString(), {
+        authMethod: 'biometric',
+        webauthn: true,
+        deviceType: storedCredential.deviceType,
+        credentialId: storedCredential.id,
+        biometricLoginTime: Date.now()
+      });
+      
+      // Logging de auditoría para biometric authentication
+      console.log('🔐 [BIOMETRIC-AUDIT] Successful biometric authentication:', {
+        userId: user.id,
         email: user.email,
-        username: user.username,
-        ownerName: user.ownerName
-      },
-      message: 'Autenticación biométrica exitosa' 
-    });
+        firebaseUid: user.firebaseUid,
+        deviceType: storedCredential.deviceType,
+        credentialName: storedCredential.name,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+        timestamp: new Date().toISOString(),
+        authMethod: 'webauthn_biometric'
+      });
+
+      console.log('✅ [WEBAUTHN-AUTH] Autenticación biométrica exitosa para:', user.email);
+
+      res.json({ 
+        success: true, 
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          ownerName: user.ownerName,
+          firebaseUid: user.firebaseUid
+        },
+        // 🔑 Custom Firebase token para signInWithCustomToken en el cliente
+        customToken,
+        authMethod: 'biometric',
+        deviceType: storedCredential.deviceType,
+        message: 'Autenticación biométrica exitosa' 
+      });
+
+    } catch (firebaseError) {
+      console.error('❌ [WEBAUTHN-FIREBASE] Error creando custom token:', firebaseError);
+      
+      // Si no se puede crear el custom token, devolver error
+      return res.status(500).json({ 
+        error: 'Error en integración con Firebase Auth',
+        details: 'No se pudo crear token de autenticación'
+      });
+    }
 
   } catch (error) {
     console.error('❌ [WEBAUTHN-AUTH] Error:', error);
@@ -384,7 +429,7 @@ router.get('/credentials', async (req, res) => {
     }
 
     // Buscar usuario
-    const [user] = await db
+    const [user] = await db!
       .select()
       .from(users)
       .where(eq(users.email, email))
@@ -395,7 +440,7 @@ router.get('/credentials', async (req, res) => {
     }
 
     // Buscar credenciales
-    const credentials = await db
+    const credentials = await db!
       .select({
         id: webauthnCredentials.id,
         deviceType: webauthnCredentials.deviceType,

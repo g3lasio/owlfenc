@@ -34,6 +34,8 @@ import {
   RiCheckboxCircleLine,
 } from "react-icons/ri";
 import { useAuth } from "@/contexts/AuthContext";
+import BiometricLoginButton from "@/components/auth/BiometricLoginButton";
+import { detectBiometricCapabilities, hasBasicBiometricSupport } from "@/lib/biometric-detection";
 
 import OTPAuth from "@/components/auth/OTPAuth";
 import SessionUnlockPrompt from "@/components/auth/SessionUnlockPrompt";
@@ -82,6 +84,12 @@ export default function AuthPage() {
     email?: string;
     method?: string;
   }>({ canUnlock: false });
+  
+  // 🔐 Estados para autenticación biométrica adaptativa
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [biometricCapabilities, setBiometricCapabilities] = useState<any>(null);
+  const [showBiometricOption, setShowBiometricOption] = useState(false);
+  
   const cardRef = useRef<HTMLDivElement>(null);
   const successRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation(); // Obtenemos la función de traducción
@@ -93,6 +101,43 @@ export default function AuthPage() {
       navigate("/");
     }
   }, [currentUser, authLoading, navigate]);
+
+  // 🔐 Detectar capacidades biométricas del dispositivo
+  useEffect(() => {
+    const detectBiometric = async () => {
+      try {
+        console.log('🔐 [BIOMETRIC-DETECTION] Detectando capacidades biométricas del dispositivo...');
+        
+        // Detección rápida para mostrar UI inmediatamente
+        const hasBasicSupport = hasBasicBiometricSupport();
+        setBiometricSupported(hasBasicSupport);
+        
+        if (hasBasicSupport) {
+          console.log('✅ [BIOMETRIC-DETECTION] Soporte básico detectado, obteniendo capacidades detalladas...');
+          
+          // Detección completa en background
+          const capabilities = await detectBiometricCapabilities();
+          setBiometricCapabilities(capabilities);
+          setBiometricSupported(capabilities.supported);
+          setShowBiometricOption(capabilities.supported);
+          
+          console.log('🔍 [BIOMETRIC-DETECTION] Capacidades completas:', capabilities);
+        } else {
+          console.log('❌ [BIOMETRIC-DETECTION] No hay soporte biométrico básico');
+          setShowBiometricOption(false);
+        }
+      } catch (error) {
+        console.error('❌ [BIOMETRIC-DETECTION] Error detectando biometría:', error);
+        setBiometricSupported(false);
+        setShowBiometricOption(false);
+      }
+    };
+
+    // Solo detectar si no hay usuario autenticado
+    if (!currentUser && !authLoading) {
+      detectBiometric();
+    }
+  }, [currentUser, authLoading]);
 
   // Verificar si hay sesión disponible para desbloqueo biométrico
   useEffect(() => {
@@ -182,6 +227,26 @@ export default function AuthPage() {
       description: "Por favor, inicia sesión nuevamente.",
       variant: "default",
     });
+  };
+
+  // 🔐 Handler para login biométrico exitoso
+  const handleBiometricLoginSuccess = (authData: any) => {
+    console.log('🎉 [BIOMETRIC-LOGIN] Autenticación biométrica exitosa:', authData);
+    
+    toast({
+      title: "Autenticación biométrica exitosa",
+      description: `¡Bienvenido de vuelta! Autenticado con ${authData.deviceType}`,
+    });
+    
+    showSuccessEffect();
+  };
+
+  // Handler para errores de login biométrico
+  const handleBiometricLoginError = (error: string) => {
+    console.error('❌ [BIOMETRIC-LOGIN] Error en login biométrico:', error);
+    
+    // Los errores específicos ya se manejan en BiometricLoginButton
+    // Este handler es para casos adicionales si es necesario
   };
 
   // Mostrar efecto de congratulación después de login exitoso con redirección inmediata
@@ -587,11 +652,39 @@ export default function AuthPage() {
                         {isLoading ? t("auth.login") + "..." : t("auth.login")}
                       </Button>
 
-                      <div className="flex items-center gap-3">
-                        <Separator className="flex-1 bg-muted-foreground/30" />
-                        <span className="text-xs text-muted-foreground">or</span>
-                        <Separator className="flex-1 bg-muted-foreground/30" />
-                      </div>
+                      {/* 🔐 BIOMETRIC LOGIN BUTTON - Mostrar automáticamente si el dispositivo lo soporta */}
+                      {showBiometricOption && (
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-3">
+                            <Separator className="flex-1 bg-muted-foreground/30" />
+                            <span className="text-xs text-muted-foreground">or</span>
+                            <Separator className="flex-1 bg-muted-foreground/30" />
+                          </div>
+
+                          <BiometricLoginButton
+                            onSuccess={handleBiometricLoginSuccess}
+                            onError={handleBiometricLoginError}
+                            email={loginForm.getValues('email')}
+                            disabled={isLoading}
+                            className="w-full"
+                          />
+
+                          <div className="flex items-center gap-3">
+                            <Separator className="flex-1 bg-muted-foreground/30" />
+                            <span className="text-xs text-muted-foreground">or continue with</span>
+                            <Separator className="flex-1 bg-muted-foreground/30" />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Fallback - siempre mostrar opción "or" si no hay biometría */}
+                      {!showBiometricOption && (
+                        <div className="flex items-center gap-3">
+                          <Separator className="flex-1 bg-muted-foreground/30" />
+                          <span className="text-xs text-muted-foreground">or</span>
+                          <Separator className="flex-1 bg-muted-foreground/30" />
+                        </div>
+                      )}
                     </form>
                   </Form>
                 ) : (

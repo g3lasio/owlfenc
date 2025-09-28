@@ -107,7 +107,7 @@ export function BiometricLoginButton({
 
       console.log('✅ [BIOMETRIC-BUTTON] Credencial biométrica obtenida');
 
-      // Procesar respuesta del servidor
+      // Procesar respuesta del servidor que incluye custom Firebase token
       const response = await fetch('/api/webauthn/authenticate/complete', {
         method: 'POST',
         headers: {
@@ -115,6 +115,7 @@ export function BiometricLoginButton({
         },
         body: JSON.stringify({
           credential,
+          challengeKey: challengeKeyRef.current, // CRÍTICO: Incluir challengeKey requerido
           email: loginEmail
         }),
       });
@@ -126,16 +127,61 @@ export function BiometricLoginButton({
 
       const result = await response.json();
       
-      if (result.success && result.user) {
-        console.log('🎉 [BIOMETRIC-BUTTON] Login completado exitosamente');
+      if (result.success && result.user && result.customToken) {
+        console.log('🎉 [BIOMETRIC-BUTTON] Autenticación WebAuthn exitosa, procesando Firebase custom token...');
         
-        toast({
-          title: "Autenticación exitosa",
-          description: `Bienvenido de vuelta, ${result.user.displayName || result.user.email}!`,
-          variant: "default",
-        });
+        // 🔥 FIREBASE INTEGRATION: Autenticar con Firebase usando custom token
+        try {
+          const { signInWithCustomToken } = await import('firebase/auth');
+          const { auth } = await import('@/lib/firebase');
+          
+          console.log('🔑 [BIOMETRIC-FIREBASE] Autenticando con Firebase usando custom token...');
+          const userCredential = await signInWithCustomToken(auth, result.customToken);
+          
+          console.log('✅ [BIOMETRIC-FIREBASE] Autenticación Firebase exitosa:', userCredential.user.email);
+          
+          // Logging de auditoría en el cliente
+          console.log('🔐 [BIOMETRIC-CLIENT-AUDIT] Firebase auth completed:', {
+            uid: userCredential.user.uid,
+            email: userCredential.user.email,
+            authMethod: result.authMethod,
+            deviceType: result.deviceType,
+            timestamp: new Date().toISOString()
+          });
+          
+          toast({
+            title: "Autenticación biométrica exitosa",
+            description: `Bienvenido de vuelta, ${userCredential.user.displayName || userCredential.user.email}!`,
+            variant: "default",
+          });
 
-        onSuccess(result.user);
+          // Pasar tanto la respuesta del servidor como el usuario de Firebase
+          onSuccess({
+            firebaseUser: userCredential.user,
+            serverUser: result.user,
+            authMethod: result.authMethod,
+            deviceType: result.deviceType
+          });
+          
+        } catch (firebaseError: any) {
+          console.error('❌ [BIOMETRIC-FIREBASE] Error autenticando con Firebase:', firebaseError);
+          
+          let firebaseErrorMessage = 'Error completando autenticación con Firebase';
+          if (firebaseError?.code === 'auth/invalid-custom-token') {
+            firebaseErrorMessage = 'Token de autenticación inválido. Intenta de nuevo.';
+          } else if (firebaseError?.code === 'auth/custom-token-mismatch') {
+            firebaseErrorMessage = 'Error de configuración de autenticación. Contacta soporte.';
+          }
+          
+          toast({
+            title: "Error de autenticación",
+            description: firebaseErrorMessage,
+            variant: "destructive",
+          });
+          
+          throw new Error(firebaseErrorMessage);
+        }
+        
       } else {
         throw new Error(result.message || result.error || 'Error en la autenticación');
       }
