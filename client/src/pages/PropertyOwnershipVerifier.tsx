@@ -116,7 +116,7 @@ export default function PropertyOwnershipVerifier() {
       title: "Property Address",
       description: "Enter or select the property address",
       icon: <MapPin className="h-5 w-5" />,
-      completed: !!selectedPlace,
+      completed: !!selectedPlace || !!address.trim(),
     },
     {
       number: 2,
@@ -146,10 +146,13 @@ export default function PropertyOwnershipVerifier() {
       return;
     }
 
-    if (!selectedPlace || !selectedPlace.address) {
-      setError("Por favor, selecciona una dirección válida del autocompletado.");
+    // ✅ FIXED: Permitir búsqueda manual si Mapbox falla
+    if (!selectedPlace && !address.trim()) {
+      setError("Por favor, ingresa una dirección válida.");
       return;
     }
+
+    const searchAddress = selectedPlace?.address || address.trim();
 
     setLoading(true);
     setError(null);
@@ -157,16 +160,16 @@ export default function PropertyOwnershipVerifier() {
     setCurrentStep(2);
 
     try {
-      const addressComponents = selectedPlace.context || {};
+      const addressComponents = selectedPlace?.context || {};
       
       const searchParams = {
-        address: selectedPlace.address,
+        address: searchAddress,
         city: addressComponents.city,
         state: addressComponents.state || addressComponents.region,
         zip: addressComponents.zipcode || addressComponents.postcode,
         country: addressComponents.country,
-        coordinates: selectedPlace.coordinates,
-        fullContext: selectedPlace.context
+        coordinates: selectedPlace?.coordinates,
+        fullContext: selectedPlace?.context
       };
 
       const response = await propertyVerifierService.verifyProperty(
@@ -392,7 +395,7 @@ export default function PropertyOwnershipVerifier() {
                   
                   <Button
                     onClick={handleSearch}
-                    disabled={loading || !selectedPlace || !canSearch}
+                    disabled={loading || (!selectedPlace && !address.trim()) || !canSearch}
                     className={`w-full shadow-lg transition-all duration-300 ${
                       !canSearch 
                         ? 'bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-600 hover:to-gray-700 border-gray-500/50 shadow-gray-500/20'

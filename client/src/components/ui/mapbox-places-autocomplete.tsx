@@ -277,6 +277,15 @@ export default function MapboxPlacesAutocomplete({
             onChange={(e) => {
               setInputValue(e.target.value);
               onChange(e.target.value);
+              // ✅ FIXED: Simular selección para entrada manual
+              if (e.target.value.trim() && onPlaceSelect) {
+                onPlaceSelect({
+                  address: e.target.value.trim(),
+                  coordinates: null,
+                  context: {},
+                  isManualEntry: true
+                });
+              }
             }}
             placeholder={placeholder}
             disabled={disabled}
@@ -290,7 +299,7 @@ export default function MapboxPlacesAutocomplete({
         <Alert className="py-2">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="text-xs">
-            {apiError} - Usando entrada manual.
+            {apiError} - Usando entrada manual. Puedes ingresar la dirección directamente.
           </AlertDescription>
         </Alert>
       </div>
