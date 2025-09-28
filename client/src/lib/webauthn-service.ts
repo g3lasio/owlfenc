@@ -149,11 +149,15 @@ export class WebAuthnService {
 
   /**
    * Autentica al usuario usando credencial biométrica
+   * Implementa mejores prácticas para iOS Safari
    */
   async authenticateUser(email?: string): Promise<{ credential: WebAuthnCredential, challengeKey: string, options: any }> {
     console.log('🔐 [WEBAUTHN] Iniciando autenticación biométrica');
 
     try {
+      // Verificar soporte antes de proceder
+      await this.verifyWebAuthnSupport();
+
       // Solicitar opciones de autenticación al servidor
       const optionsResponse = await fetch('/api/webauthn/authenticate/begin', {
         method: 'POST',
@@ -164,21 +168,27 @@ export class WebAuthnService {
       });
 
       if (!optionsResponse.ok) {
-        throw new Error(`Error obteniendo opciones: ${optionsResponse.statusText}`);
+        const errorText = await optionsResponse.text();
+        throw new Error(`Error del servidor (${optionsResponse.status}): ${errorText}`);
       }
 
       const options: WebAuthnAuthenticationOptions = await optionsResponse.json();
       console.log('📝 [WEBAUTHN] Opciones de autenticación recibidas');
 
-      // Convertir opciones para WebAuthn API
+      // Convertir opciones para WebAuthn API con mejores prácticas iOS
       const publicKeyOptions = this.prepareAuthenticationOptions(options);
 
       console.log('🎯 [WEBAUTHN] Iniciando autenticación...');
       
-      // Obtener credencial usando WebAuthn
-      const assertion = await navigator.credentials.get({
-        publicKey: publicKeyOptions
-      }) as PublicKeyCredential;
+      // CRÍTICO: Obtener credencial usando WebAuthn con timeout
+      const assertion = await Promise.race([
+        navigator.credentials.get({
+          publicKey: publicKeyOptions
+        }) as Promise<PublicKeyCredential>,
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: Touch ID authentication timed out')), 60000)
+        )
+      ]);
 
       if (!assertion) {
         throw new Error('No se pudo obtener la credencial');
@@ -199,18 +209,8 @@ export class WebAuthnService {
     } catch (error: any) {
       console.error('❌ [WEBAUTHN] Error en autenticación:', error);
       
-      // Manejar errores específicos de WebAuthn
-      if (error.name === 'NotAllowedError') {
-        throw new Error('Autenticación cancelada o no autorizada');
-      } else if (error.name === 'NotSupportedError') {
-        throw new Error('Autenticación biométrica no soportada');
-      } else if (error.name === 'SecurityError') {
-        throw new Error('Error de seguridad. Verifica que estés en HTTPS');
-      } else if (error.name === 'InvalidStateError') {
-        throw new Error('No se encontraron credenciales para este dispositivo');
-      }
-      
-      throw error;
+      // Manejo avanzado de errores específicos de iOS Safari
+      return this.handleWebAuthnError(error);
     }
   }
 
@@ -234,17 +234,27 @@ export class WebAuthnService {
 
   /**
    * Prepara las opciones de autenticación para WebAuthn API
+   * Implementa mejores prácticas para iOS Safari Touch ID
    */
   private prepareAuthenticationOptions(options: WebAuthnAuthenticationOptions): PublicKeyCredentialRequestOptions {
-    return {
-      challenge: this.base64urlToArrayBuffer(options.challenge),
-      allowCredentials: options.allowCredentials?.map(cred => ({
+    // Configurar allowCredentials con transports apropiados para iOS Touch ID
+    const allowCredentials = options.allowCredentials?.map(cred => {
+      const credential = {
         id: this.base64urlToArrayBuffer(cred.id),
         type: 'public-key' as const,
-        transports: cred.transports as AuthenticatorTransport[]
-      })),
-      userVerification: options.userVerification as any,
-      timeout: options.timeout,
+        // CRÍTICO: iOS Safari Touch ID requiere 'internal' transport
+        transports: this.isIOSSafari() 
+          ? ['internal' as AuthenticatorTransport]
+          : (cred.transports as AuthenticatorTransport[] || ['internal' as AuthenticatorTransport])
+      };
+      return credential;
+    }) || [];
+
+    return {
+      challenge: this.base64urlToArrayBuffer(options.challenge),
+      allowCredentials,
+      userVerification: 'required', // Forzar verificación biométrica
+      timeout: options.timeout || 60000, // 60 segundos timeout por defecto
     };
   }
 
@@ -301,6 +311,68 @@ export class WebAuthnService {
     }
     
     return buffer;
+  }
+
+  /**
+   * Verifica si es iOS Safari (crítico para WebAuthn)
+   */
+  private isIOSSafari(): boolean {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && 
+           /Safari/.test(navigator.userAgent);
+  }
+
+  /**
+   * Verifica soporte de WebAuthn antes de usar
+   */
+  private async verifyWebAuthnSupport(): Promise<void> {
+    if (!window.PublicKeyCredential) {
+      throw new Error('WebAuthn no soportado en este navegador');
+    }
+
+    try {
+      const available = await Promise.race([
+        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(),
+        new Promise<boolean>(resolve => setTimeout(() => resolve(false), 3000))
+      ]);
+      
+      if (!available) {
+        throw new Error('Autenticador biométrico no disponible');
+      }
+    } catch (error) {
+      console.error('❌ [WEBAUTHN] Error verificando soporte:', error);
+      throw new Error('Error verificando capacidades biométricas');
+    }
+  }
+
+  /**
+   * Manejo avanzado de errores específicos de iOS Safari
+   */
+  private handleWebAuthnError(error: any): never {
+    let errorMessage = 'Error en la autenticación biométrica';
+    
+    if (error.name === 'NotAllowedError') {
+      if (error.message?.includes('User gesture is not detected')) {
+        errorMessage = 'Por favor, toca el botón biométrico directamente';
+      } else if (error.message?.includes('cancelled by the user')) {
+        errorMessage = 'Autenticación cancelada por el usuario';
+      } else if (error.message?.includes('Operation failed')) {
+        errorMessage = 'Touch ID/Face ID falló. Intenta de nuevo';
+      } else {
+        errorMessage = 'Acceso denegado o cancelado';
+      }
+    } else if (error.name === 'NotSupportedError') {
+      errorMessage = 'Autenticación biométrica no soportada en este dispositivo';
+    } else if (error.name === 'SecurityError') {
+      errorMessage = 'Error de seguridad. Verifica que uses HTTPS';
+    } else if (error.name === 'InvalidStateError') {
+      errorMessage = 'No se encontraron credenciales biométricas registradas';
+    } else if (error.name === 'AbortError') {
+      errorMessage = 'Autenticación interrumpida o tiempo agotado';
+    } else if (error.message?.includes('Timeout')) {
+      errorMessage = 'Tiempo agotado. Intenta de nuevo';
+    }
+    
+    throw new Error(errorMessage);
   }
 
   /**
