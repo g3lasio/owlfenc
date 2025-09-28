@@ -1,5 +1,5 @@
 /**
- * Servicio de Email con Resend para Owl Fence
+ * Servicio de Email con Resend para Owl Fenc
  * Reemplaza completamente SendGrid
  */
 
@@ -22,7 +22,7 @@ export interface EmailData {
 }
 
 export class ResendEmailService {
-  private platformDomain = 'owlfenc.com'; // Dominio profesional de Owl Fence
+  private platformDomain = 'owlfenc.com'; // Dominio profesional de Owl Fenc
   private fallbackDomain = 'resend.dev'; // Dominio de respaldo para desarrollo
   private noReplyEmail = `noreply@${this.platformDomain}`; // Email principal no-reply
   private defaultFromEmail = `noreply@${this.platformDomain}`;
@@ -54,7 +54,7 @@ export class ResendEmailService {
    */
   private generateContractorNoReplyEmail(contractorEmail: string, contractorCompany: string): string {
     // Usar siempre noreply@owlfenc.com para máxima profesionalidad
-    // Los clients verán emails desde el dominio oficial de Owl Fence
+    // Los clients verán emails desde el dominio oficial de Owl Fenc
     return this.noReplyEmail;
   }
 
@@ -231,7 +231,7 @@ export class ResendEmailService {
           'X-Priority': '1',
           'X-MSMail-Priority': 'High',
           'Importance': 'high',
-          'X-Mailer': 'Owl Fence Professional Platform',
+          'X-Mailer': 'Owl Fenc Professional Platform',
           'List-Unsubscribe': '<mailto:unsubscribe@owlfenc.com?subject=Unsubscribe>',
           'X-Entity-Ref-ID': `email-${Date.now()}`,
           'Authentication-Results': 'owlfenc.com',
@@ -316,7 +316,7 @@ export class ResendEmailService {
     console.log('📧 [RESEND] Proyecto:', estimateData.projectType);
     console.log('📧 [RESEND] PDF adjunto:', !!pdfBuffer, pdfBuffer?.length || 0, 'bytes');
 
-    const subject = `Estimado para ${estimateData.projectType} - Owl Fence LLC`;
+    const subject = `Estimado para ${estimateData.projectType} - Owl Fenc`;
     
     const html = `
       <!DOCTYPE html>
@@ -334,14 +334,14 @@ export class ResendEmailService {
       </head>
       <body>
         <div class="header">
-          <img src="https://ik.imagekit.io/lp5czyx2a/logo%20mervin.png?updatedAt=1748883786155" alt="Owl Fence" class="logo">
+          <img src="https://i.postimg.cc/ZK16qb4Z/owl-pentgrama.png" alt="Owl Fenc" class="logo">
           <h1>Estimado Profesional</h1>
         </div>
         
         <div class="content">
           <h2>Estimado Señor/a ${clientName},</h2>
           
-          <p>Gracias por contactar a Owl Fence LLC para su proyecto de ${estimateData.projectType}. Adjunto encontrará nuestro estimado profesional detallado.</p>
+          <p>Gracias por contactar a Owl Fenc para su proyecto de ${estimateData.projectType}. Adjunto encontrará nuestro estimado profesional detallado.</p>
           
           <div class="estimate-details">
             <h3>Detalles del Proyecto:</h3>
@@ -367,12 +367,12 @@ export class ResendEmailService {
           <p>Agradecemos la oportunidad de trabajar con usted.</p>
           
           <p>Atentamente,<br>
-          <strong>Equipo de Owl Fence LLC</strong><br>
+          <strong>Equipo de Owl Fenc</strong><br>
           <em>Su partner confiable en proyectos de cercas</em></p>
         </div>
         
         <div class="footer">
-          <p>&copy; 2025 Owl Fence LLC. Todos los derechos reservados.</p>
+          <p>&copy; 2025 Owl Fenc. Todos los derechos reservados.</p>
           <p>Email: support@owlfenc.com | Web: www.owlfenc.com</p>
         </div>
       </body>
@@ -402,7 +402,7 @@ export class ResendEmailService {
     contractData: any,
     pdfBuffer?: Buffer
   ): Promise<boolean> {
-    const subject = `Contrato Profesional - ${contractData.projectType} - Owl Fence LLC`;
+    const subject = `Contrato Profesional - ${contractData.projectType} - Owl Fenc`;
     
     const html = `
       <!DOCTYPE html>
@@ -421,7 +421,7 @@ export class ResendEmailService {
       </head>
       <body>
         <div class="header">
-          <img src="https://ik.imagekit.io/lp5czyx2a/logo%20mervin.png?updatedAt=1748883786155" alt="Owl Fence" class="logo">
+          <img src="https://i.postimg.cc/ZK16qb4Z/owl-pentgrama.png" alt="Owl Fenc" class="logo">
           <h1>Contrato Profesional Generado</h1>
         </div>
         
@@ -462,15 +462,15 @@ export class ResendEmailService {
           <p>📞 Teléfono: <strong>${contractData.contractorPhone}</strong></p>
           <p>📧 Email: <strong>${contractData.contractorEmail}</strong></p>
           
-          <p>Gracias por confiar en Owl Fence LLC para su proyecto.</p>
+          <p>Gracias por confiar en Owl Fenc para su proyecto.</p>
           
           <p>Atentamente,<br>
           <strong>${contractData.contractorName}</strong><br>
-          <em>Owl Fence LLC - Protegidos por Mervin AI Legal Defense</em></p>
+          <em>Owl Fenc - Protegidos por Mervin AI Legal Defense</em></p>
         </div>
         
         <div class="footer">
-          <p>&copy; 2025 Owl Fence LLC. Todos los derechos reservados.</p>
+          <p>&copy; 2025 Owl Fenc. Todos los derechos reservados.</p>
           <p>Contrato generado por Mervin AI Legal Defense Engine</p>
         </div>
       </body>
@@ -504,7 +504,7 @@ export class ResendEmailService {
       dueDate?: string;
     }
   ): Promise<boolean> {
-    const subject = `Enlace de Pago - ${paymentData.description} - Owl Fence LLC`;
+    const subject = `Enlace de Pago - ${paymentData.description} - Owl Fenc`;
     
     const html = `
       <!DOCTYPE html>
@@ -523,7 +523,7 @@ export class ResendEmailService {
       </head>
       <body>
         <div class="header">
-          <img src="https://ik.imagekit.io/lp5czyx2a/logo%20mervin.png?updatedAt=1748883786155" alt="Owl Fence" class="logo">
+          <img src="https://i.postimg.cc/ZK16qb4Z/owl-pentgrama.png" alt="Owl Fenc" class="logo">
           <h1>💳 Enlace de Pago Seguro</h1>
         </div>
         
@@ -566,14 +566,14 @@ export class ResendEmailService {
           <p>📞 Teléfono: <strong>(555) 123-4567</strong></p>
           <p>📧 Email: <strong>payments@owlfenc.com</strong></p>
           
-          <p>Gracias por su confianza en Owl Fence LLC.</p>
+          <p>Gracias por su confianza en Owl Fenc.</p>
           
           <p>Atentamente,<br>
-          <strong>Equipo de Pagos - Owl Fence LLC</strong></p>
+          <strong>Equipo de Pagos - Owl Fenc</strong></p>
         </div>
         
         <div class="footer">
-          <p>&copy; 2025 Owl Fence LLC. Todos los derechos reservados.</p>
+          <p>&copy; 2025 Owl Fenc. Todos los derechos reservados.</p>
           <p>Procesamiento seguro de pagos | SSL Encriptado</p>
         </div>
       </body>

@@ -393,6 +393,8 @@ export class OTPService {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tu código de acceso - Owl Fenc</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Quantico:wght@400;700&display=swap');
+        
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #0c1419 0%, #1a2332 100%);
@@ -415,10 +417,21 @@ export class OTPService {
             text-align: center;
         }
         .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        .logo img {
+            width: 48px;
+            height: 48px;
+            margin-right: 12px;
+        }
+        .logo-text {
+            font-family: 'Quantico', monospace;
             font-size: 28px;
             font-weight: 700;
             color: white;
-            margin-bottom: 8px;
         }
         .subtitle {
             color: rgba(255, 255, 255, 0.9);
@@ -491,7 +504,10 @@ export class OTPService {
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">🦉 Owl Fenc</div>
+            <div class="logo">
+                <img src="https://i.postimg.cc/ZK16qb4Z/owl-pentgrama.png" alt="Owl Fenc Logo">
+                <span class="logo-text">Owl Fenc</span>
+            </div>
             <p class="subtitle">Plataforma de Contratistas</p>
         </div>
         
@@ -552,6 +568,8 @@ Si no solicitaste este acceso, ignora este correo.
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Código de registro - Owl Fenc</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Quantico:wght@400;700&display=swap');
+        
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #0c1419 0%, #1a2332 100%);
@@ -574,10 +592,21 @@ Si no solicitaste este acceso, ignora este correo.
             text-align: center;
         }
         .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        .logo img {
+            width: 48px;
+            height: 48px;
+            margin-right: 12px;
+        }
+        .logo-text {
+            font-family: 'Quantico', monospace;
             font-size: 28px;
             font-weight: 700;
             color: white;
-            margin-bottom: 8px;
         }
         .subtitle {
             color: rgba(255, 255, 255, 0.9);
@@ -650,7 +679,10 @@ Si no solicitaste este acceso, ignora este correo.
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">🦉 Owl Fenc</div>
+            <div class="logo">
+                <img src="https://i.postimg.cc/ZK16qb4Z/owl-pentgrama.png" alt="Owl Fenc Logo">
+                <span class="logo-text">Owl Fenc</span>
+            </div>
             <p class="subtitle">Plataforma de Contratistas</p>
         </div>
         
