@@ -65,26 +65,30 @@ export function BiometricLoginButton({
       return;
     }
 
-    // ARREGLADO: Mejor manejo de email para autenticación biométrica
-    let loginEmail = email;
-    if (!loginEmail) {
-      // Intentar obtener el último email usado
-      loginEmail = localStorage.getItem('last_biometric_email') || '';
-      
-      if (!loginEmail) {
-        // ARREGLADO: Usar un identificador más simple y estable
-        const deviceId = navigator.userAgent.substring(0, 15).replace(/[^a-zA-Z0-9]/g, '');
-        loginEmail = `device_${deviceId}@touch.local`;
-        console.log('🔐 [BIOMETRIC-BUTTON] Usando ID de dispositivo:', loginEmail);
-      }
+    // SEGURIDAD: Solo permitir emails reales - sin sintéticos
+    const storedEmail = localStorage.getItem('last_biometric_email') || '';
+    let loginEmail = email || storedEmail;
+    
+    if (!loginEmail || loginEmail.includes('@touch.local') || loginEmail.includes('@biometric.local')) {
+      console.error('🛡️ [BIOMETRIC-SECURITY] No hay email válido - WebAuthn requiere cuenta existente');
+      toast({
+        title: "Autenticación requerida",
+        description: "Necesitas iniciar sesión primero antes de usar autenticación biométrica",
+        variant: "destructive"
+      });
+      return;
     }
 
     console.log('🔐 [BIOMETRIC-BUTTON] Iniciando login biométrico para:', loginEmail);
     setIsLoading(true);
 
     try {
-      // ARREGLADO: Guardar email para futuros logins con mejor lógica
-      if (loginEmail && !loginEmail.includes('@touch.local') && !loginEmail.includes('@biometric.local')) {
+      // SEGURIDAD: Solo guardar emails válidos y reales
+      if (loginEmail && 
+          !loginEmail.includes('@touch.local') && 
+          !loginEmail.includes('@biometric.local') &&
+          loginEmail.includes('@') && 
+          loginEmail.length > 5) {
         localStorage.setItem('last_biometric_email', loginEmail);
       }
       

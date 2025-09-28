@@ -51,21 +51,13 @@ router.post('/register/begin', async (req, res) => {
       .where(eq(users.email, email))
       .limit(1);
 
-    // ARREGLADO: Crear usuario automáticamente si no existe para biometría
+    // SEGURIDAD: Solo permitir WebAuthn para usuarios existentes y verificados
     if (!user) {
-      console.log('🛠️ [WEBAUTHN-REGISTER] Usuario no existe, creando automáticamente:', email);
-      
-      // Crear usuario temporal para autenticación biométrica
-      const [newUser] = await db!.insert(users).values({
-        email,
-        username: email.split('@')[0],
-        ownerName: email.includes('@touch.local') ? 'Usuario Touch ID' : email.split('@')[0],
-        password: 'WEBAUTHN_ONLY', // Marcador especial - campo correcto según schema
-        firebaseUid: `webauthn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      }).returning();
-      
-      user = newUser;
-      console.log('✅ [WEBAUTHN-REGISTER] Usuario creado automáticamente:', user.id);
+      console.log('🛡️ [WEBAUTHN-SECURITY] Usuario no existe - rechazando registro biométrico:', email);
+      return res.status(400).json({ 
+        error: 'Usuario no encontrado. WebAuthn requiere cuenta verificada existente.',
+        code: 'USER_NOT_FOUND_FOR_WEBAUTHN'
+      });
     }
 
     // Verificar credenciales existentes

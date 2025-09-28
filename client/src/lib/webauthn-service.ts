@@ -196,21 +196,9 @@ export class WebAuthnService {
           )
         ]);
       } catch (getError: any) {
-        // ARREGLADO: Si get() falla, intentar con opciones simplificadas
-        console.log('⚠️ [WEBAUTHN] Primer intento falló, intentando con opciones simplificadas:', getError.message);
-        
-        // Intentar sin allowCredentials para permitir cualquier credencial disponible
-        const simplifiedOptions = {
-          ...publicKeyOptions,
-          allowCredentials: [], // Vacío para permitir cualquier credencial
-          userVerification: 'discouraged' as UserVerificationRequirement // Más permisivo
-        };
-        
-        assertion = await navigator.credentials.get({
-          publicKey: simplifiedOptions
-        }) as PublicKeyCredential;
-        
-        console.log('✅ [WEBAUTHN] Éxito con opciones simplificadas');
+        // SEGURIDAD: No fallback inseguro - mantener autenticación fuerte
+        console.error('🛡️ [WEBAUTHN] Autenticación falló - sin fallbacks inseguros:', getError.message);
+        throw getError; // Re-lanzar error sin comprometer seguridad
       }
 
       if (!assertion) {
@@ -280,8 +268,8 @@ export class WebAuthnService {
     return {
       challenge: this.base64urlToArrayBuffer(options.challenge),
       allowCredentials,
-      userVerification: 'preferred', // ARREGLADO: 'preferred' en lugar de 'required' para mejor compatibilidad
-      timeout: options.timeout || 120000, // ARREGLADO: 2 minutos timeout
+      userVerification: 'required', // SEGURIDAD: Exigir verificación biométrica fuerte
+      timeout: options.timeout || 60000, // Timeout estándar para autenticación segura
     };
   }
 
