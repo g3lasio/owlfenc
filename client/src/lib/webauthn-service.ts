@@ -330,23 +330,29 @@ export class WebAuthnService {
   }
 
   /**
-   * ELIMINADO: La verificación de soporte ya se hizo en la detección inicial
-   * Saltamos esta verificación redundante que causaba fallos
+   * Verifica si estamos en un iframe (problema común en Replit)
    */
   private async verifyWebAuthnSupport(): Promise<void> {
-    // SIMPLIFICADO: Si llegamos aquí, ya sabemos que funciona
-    console.log('✅ [WEBAUTHN] Saltando verificación redundante - soporte confirmado');
+    // Verificar si estamos en un iframe
+    if (window.self !== window.top) {
+      throw new Error('WebAuthn no funciona en iframes. Por favor abre la aplicación en una nueva ventana.');
+    }
+    
+    console.log('✅ [WEBAUTHN] Verificación de iframe exitosa - no estamos en iframe');
     return;
   }
 
   /**
-   * Manejo avanzado de errores específicos de iOS Safari
+   * Manejo avanzado de errores específicos de iOS Safari y iframe
    */
   private handleWebAuthnError(error: any): never {
     let errorMessage = 'Error en la autenticación biométrica';
     
     if (error.name === 'NotAllowedError') {
-      if (error.message?.includes('User gesture is not detected')) {
+      if (error.message?.includes('origin of the document is not the same as its ancestors')) {
+        // ERROR CRÍTICO: iframe detectado
+        errorMessage = '🚫 Touch ID no funciona en ventanas embebidas. \n\n📱 Solución: Abre esta aplicación en una nueva ventana haciendo clic en el ícono de "Abrir en nueva ventana" o copia la URL y pégala en Safari.';
+      } else if (error.message?.includes('User gesture is not detected')) {
         errorMessage = 'Por favor, toca el botón biométrico directamente';
       } else if (error.message?.includes('cancelled by the user')) {
         errorMessage = 'Autenticación cancelada por el usuario';
@@ -365,6 +371,8 @@ export class WebAuthnService {
       errorMessage = 'Autenticación interrumpida o tiempo agotado';
     } else if (error.message?.includes('Timeout')) {
       errorMessage = 'Tiempo agotado. Intenta de nuevo';
+    } else if (error.message?.includes('iframe')) {
+      errorMessage = '🚫 Touch ID requiere abrir la app en una nueva ventana (no en iframe/embed)';
     }
     
     throw new Error(errorMessage);
