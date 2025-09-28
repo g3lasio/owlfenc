@@ -3,6 +3,8 @@ import App from "./App";
 import "./index.css";
 import "./i18n/i18n"; // Importamos la configuración de i18n
 
+// 🚫 REVERTIDO: Sistema STS bypass agresivo que rompía Firebase
+
 // 🛡️ SISTEMA UNIFICADO DE MANEJO DE ERRORES
 // Importamos el sistema unificado que reemplaza todos los interceptores anteriores
 import './lib/unified-error-handler';
@@ -14,6 +16,8 @@ console.log('🛡️ [MAIN] Sistema unificado de errores activado');
 (async () => {
   try {
     console.log('🚀 [ENTERPRISE] Inicializando sistemas robustos...');
+    
+    // 🚫 REVERTIDO: Configuración STS que rompía Firebase
     
     // Sistema de autenticación robusto con múltiples fallbacks
     const { robustAuth } = await import('./lib/robust-auth-manager');

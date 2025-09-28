@@ -145,35 +145,69 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [lastValidUser, setLastValidUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
-  // 🍪 Helper function: Create session cookie from Firebase user
+  // 🍪 Helper function: Create session cookie from Firebase user - SEGURO Y QUIRURGICO
   const createSessionCookie = async (firebaseUser: any) => {
     try {
       console.log('🔐 [SESSION-COOKIE] Creando session cookie para usuario:', firebaseUser.uid);
       
-      // Obtener ID token fresco de Firebase
-      const idToken = await firebaseUser.getIdToken(true); // true = force refresh
+      // 🔄 TOKEN RESILIENTE: Obtener token con retry y backoff para manejar errores de red
+      let idToken;
+      let retryCount = 0;
+      const maxRetries = 3;
       
-      // Llamar al endpoint sessionLogin para crear session cookie
-      const response = await fetch('/api/sessionLogin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include', // 🍪 Importante para recibir la cookie
-        body: JSON.stringify({ idToken })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Session login failed: ${response.status}`);
+      while (retryCount < maxRetries) {
+        try {
+          // Intentar obtener token - empezar sin force refresh
+          const forceRefresh = retryCount > 0; // Solo force refresh en reintentos
+          idToken = await firebaseUser.getIdToken(forceRefresh);
+          console.log(`✅ [TOKEN-RESILIENT] Token obtenido exitosamente (attempt ${retryCount + 1}, forceRefresh: ${forceRefresh})`);
+          break;
+        } catch (tokenError: any) {
+          retryCount++;
+          console.warn(`⚠️ [TOKEN-RESILIENT] Error obteniendo token (attempt ${retryCount}/${maxRetries}):`, tokenError.code || tokenError.message);
+          
+          if (retryCount >= maxRetries) {
+            console.error('❌ [TOKEN-RESILIENT] Agotados reintentos para token');
+            throw new Error(`Token obtainment failed after ${maxRetries} attempts: ${tokenError.message}`);
+          }
+          
+          // Backoff exponencial: 1s, 2s, 4s
+          const backoffDelay = Math.pow(2, retryCount - 1) * 1000;
+          console.log(`🔄 [TOKEN-RESILIENT] Esperando ${backoffDelay}ms antes del reintento...`);
+          await new Promise(resolve => setTimeout(resolve, backoffDelay));
+        }
       }
-
-      const result = await response.json();
-      console.log('✅ [SESSION-COOKIE] Session cookie creada exitosamente:', result.user?.uid);
       
-      return result;
-    } catch (error) {
-      console.error('❌ [SESSION-COOKIE] Error creando session cookie:', error);
-      throw error;
+      // 🍪 SESSION COOKIE RESILIENTE: Crear session cookie con manejo de errores
+      try {
+        const response = await fetch('/api/sessionLogin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({ idToken })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Session login failed: ${response.status} ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('✅ [SESSION-COOKIE] Session cookie creada exitosamente:', result.user?.uid);
+        return result;
+        
+      } catch (fetchError: any) {
+        console.error('❌ [SESSION-COOKIE] Error en llamada de session login:', fetchError.message);
+        
+        // 🚑 NO BYPASS INSEGURO: Lanzar error para manejo apropiado
+        // La autenticación frontend puede continuar, pero server-side estará limitado
+        throw new Error(`Session cookie creation failed: ${fetchError.message}`);
+      }
+      
+    } catch (error: any) {
+      console.error('❌ [SESSION-COOKIE] Error general en createSessionCookie:', error.message);
+      throw error; // 🔒 SEGURO: No bypass, manejar error apropiadamente
     }
   };
 
@@ -320,10 +354,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setLastValidUser(appUser); // Guardar último usuario válido
             setIsInitializing(false); // ✅ FIXED: Auth successfully initialized
 
-            // 🍪 CREAR SESSION COOKIE: Convertir ID token a session cookie
-            createSessionCookie(user).catch(error => {
-              console.warn('⚠️ [SESSION-COOKIE] Error creando session cookie:', error);
-              // No bloquear la autenticación si falla la session cookie
+            // 🍪 CREAR SESSION COOKIE: Convertir ID token a session cookie - MANEJO SEGURO
+            createSessionCookie(user).then(result => {
+              console.log('✅ [SESSION-COOKIE] Session cookie creada exitosamente');
+            }).catch(error => {
+              console.warn('⚠️ [SESSION-COOKIE] Error creando session cookie - funcionalidad limitada en servidor:', error.message);
+              // 🔒 SEGURO: La autenticación frontend continúa, pero server-side estará limitado
+              // No es una condición crítica - el usuario puede usar la app, pero con limitaciones
             });
           } else {
             // ✅ FIXED: Simplified auth check using enhanced persistence only
