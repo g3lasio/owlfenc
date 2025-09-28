@@ -76,7 +76,7 @@ class RobustAuthManager {
       if (user) {
         // ✅ FIXED: INTENTAR obtener token Firebase real primero
         try {
-          const realToken = await user.getIdToken(false);
+          const realToken = await safeGetIdToken(user, false);
           if (realToken && !realToken.startsWith('local_')) {
             console.log('✅ [ROBUST-AUTH] Token Firebase real obtenido');
             await this.updateSession(user, realToken);
@@ -362,7 +362,7 @@ class RobustAuthManager {
           try {
             // ✅ FIXED: Intentar obtener token Firebase real en syncWithFirebaseAuth
             try {
-              const realToken = await user.getIdToken(false);
+              const realToken = await safeGetIdToken(user, false);
               if (realToken && !realToken.startsWith('local_') && !realToken.startsWith('mock_')) {
                 await this.updateSession(user, realToken);
                 console.log('✅ [ROBUST-AUTH] Usuario sincronizado con token real');

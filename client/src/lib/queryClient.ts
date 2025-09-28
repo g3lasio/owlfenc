@@ -1,5 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { auth } from "@/lib/firebase";
+import { auth, safeGetIdToken } from "@/lib/firebase";
 import { unifiedErrorHandler } from "./unified-error-handler";
 
 async function throwIfResNotOk(res: Response) {
@@ -16,7 +16,7 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
   if (auth.currentUser) {
     try {
       // PRIORITY: Intentar obtener token Firebase real
-      const token = await auth.currentUser.getIdToken(false).catch(() => null);
+      const token = await safeGetIdToken(auth.currentUser, false);
       
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
@@ -27,7 +27,7 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
       } else {
         // FALLBACK 1: Intentar refresh forzado una vez
         try {
-          const refreshedToken = await auth.currentUser.getIdToken(true).catch(() => null);
+          const refreshedToken = await safeGetIdToken(auth.currentUser, true);
           
           if (refreshedToken) {
             headers["Authorization"] = `Bearer ${refreshedToken}`;

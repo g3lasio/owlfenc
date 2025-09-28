@@ -113,7 +113,7 @@ export const createDevUser = () => {
   };
 };
 
-// Configuración de Firebase
+// 🔑 [API-KEY-DEBUG] Configuración de Firebase con logging de debug
 const firebaseConfig = {
   apiKey: "AIzaSyBkiNyJNG-uGBO3-w4g-q5SbqDxvTdCRSk",
   authDomain: "owl-fenc.firebaseapp.com",
@@ -123,6 +123,15 @@ const firebaseConfig = {
   appId: "1:610753147271:web:b720b293ba1f4d2f456322",
   measurementId: "G-Z2PWQXHEN0"
 };
+
+// 🔑 [API-KEY-DEBUG] Logging para debugging de restricciones
+console.log('🔑 [API-KEY-DEBUG] Firebase config:', {
+  ...firebaseConfig,
+  apiKey: firebaseConfig.apiKey.substring(0, 10) + '...', // Solo primeros 10 chars por seguridad
+  currentDomain: window.location.hostname,
+  fullUrl: window.location.href,
+  referrer: document.referrer || 'none'
+});
 
 // Lista de dominios autorizados para desarrollo y producción (ACTUALIZADA PARA OAUTH)
 const currentHostname = window.location.hostname;
@@ -147,31 +156,185 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 
-// 🔧 SOLUCIÓN DEFINITIVA: Configurar Firebase Auth para evitar token refreshes problemáticos
-if (typeof window !== 'undefined') {
-  // Configurar persistencia estable sin auto-refresh
-  setPersistence(auth, browserLocalPersistence).catch(() => {
-    console.debug('🔧 [FIREBASE-CONFIG] Persistence fallback applied');
-  });
+// 🚪 [AUTH-READY-GATE] Sistema para evitar llamadas prematuras a getIdToken()
+class AuthReadyGate {
+  private authReady: Promise<boolean>;
+  private isReady: boolean = false;
   
-  // CRÍTICO: Deshabilitar verificación automática para evitar STS token requests
+  constructor() {
+    console.log('🚪 [AUTH-READY-GATE] Inicializando gate de autenticación...');
+    
+    this.authReady = new Promise((resolve) => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        console.log('🚪 [AUTH-READY-GATE] Estado de auth recibido:', user ? 'autenticado' : 'no autenticado');
+        this.isReady = true;
+        unsubscribe();
+        resolve(true);
+      });
+      
+      // Timeout fallback después de 10 segundos
+      setTimeout(() => {
+        if (!this.isReady) {
+          console.warn('⚠️ [AUTH-READY-GATE] Timeout alcanzado, permitiendo acceso');
+          this.isReady = true;
+          unsubscribe();
+          resolve(true);
+        }
+      }, 10000);
+    });
+  }
+  
+  async waitForAuth(): Promise<boolean> {
+    if (this.isReady) return true;
+    return await this.authReady;
+  }
+  
+  isAuthReady(): boolean {
+    return this.isReady;
+  }
+}
+
+// Instancia global del gate
+export const authReadyGate = new AuthReadyGate();
+
+// 🛡️ [SAFE-TOKEN-WRAPPER] Wrapper seguro para getIdToken() que usa AuthReady gate
+export const safeGetIdToken = async (user: any, forceRefresh: boolean = false): Promise<string | null> => {
   try {
-    // Configuración específica para development/testing
+    console.log('🛡️ [SAFE-TOKEN] Esperando AuthReady gate...');
+    await authReadyGate.waitForAuth();
+    
+    if (!user) {
+      console.warn('⚠️ [SAFE-TOKEN] No user provided');
+      return null;
+    }
+    
+    console.log('🛡️ [SAFE-TOKEN] Obteniendo token de forma segura...');
+    const token = await user.getIdToken(forceRefresh);
+    console.log('✅ [SAFE-TOKEN] Token obtenido exitosamente');
+    return token;
+  } catch (tokenError: any) {
+    console.error('❌ [SAFE-TOKEN] Error obteniendo token:', tokenError);
+    
+    // Si es error de red, no reintentar inmediatamente
+    if (tokenError.code === 'auth/network-request-failed') {
+      console.warn('🚑 [SAFE-TOKEN] Error de red - evitando retry inmediato');
+      return null;
+    }
+    
+    throw tokenError;
+  }
+};
+
+// 🔧 SOLUCIÓN ROBUSTA: Configurar Firebase Auth con fallbacks múltiples para STS
+if (typeof window !== 'undefined') {
+  console.log('🔧 [STS-FIX] Iniciando configuración robusta de persistencia...');
+  
+  // 🛡️ PERSISTENCIA CON MÚLTIPLES FALLBACKS
+  const configurePersistence = async () => {
+    try {
+      // Intento 1: browserLocalPersistence
+      await setPersistence(auth, browserLocalPersistence);
+      console.log('✅ [STS-FIX] browserLocalPersistence configurado exitosamente');
+    } catch (localError) {
+      console.warn('⚠️ [STS-FIX] browserLocalPersistence falló, intentando sessionPersistence:', localError);
+      try {
+        // Fallback 1: browserSessionPersistence
+        await setPersistence(auth, browserSessionPersistence);
+        console.log('✅ [STS-FIX] browserSessionPersistence configurado como fallback');
+      } catch (sessionError) {
+        console.error('❌ [STS-FIX] Ambas persistencias fallaron:', sessionError);
+        // Fallback 2: Limpiar storage corrupto
+        try {
+          console.log('🧹 [STS-FIX] Limpiando storage corrupto...');
+          localStorage.removeItem(`firebase:authUser:${firebaseConfig.apiKey}:[DEFAULT]`);
+          sessionStorage.removeItem(`firebase:authUser:${firebaseConfig.apiKey}:[DEFAULT]`);
+          indexedDB.deleteDatabase(`firebaseLocalStorageDb`);
+          console.log('✅ [STS-FIX] Storage limpiado, reintentando persistence...');
+          await setPersistence(auth, browserSessionPersistence);
+        } catch (cleanupError) {
+          console.error('❌ [STS-FIX] Limpieza falló, intentando inMemoryPersistence:', cleanupError);
+          try {
+            // Fallback final: inMemoryPersistence para navegadores restringidos
+            const { inMemoryPersistence } = await import('firebase/auth');
+            await setPersistence(auth, inMemoryPersistence);
+            console.log('✅ [STS-FIX] inMemoryPersistence configurado como último fallback');
+          } catch (memoryError) {
+            console.error('❌ [STS-FIX] Todos los tipos de persistencia fallaron:', memoryError);
+          }
+        }
+      }
+    }
+  };
+  
+  configurePersistence();
+  
+  // 🚫 DESHABILITAR VERIFICACIONES AUTOMÁTICAS PARA EVITAR STS CALLS
+  try {
     if (window.location.hostname.includes('replit') || 
+        window.location.hostname.includes('riker.replit.dev') ||
         window.location.hostname === 'localhost') {
-      // @ts-ignore - Configuración interna de Firebase para development
-      if (auth.settings && typeof auth.settings === 'object') {
+      
+      console.log('🚫 [STS-FIX] Deshabilitando verificaciones automáticas en Replit...');
+      
+      // @ts-ignore - Configuración interna de Firebase
+      if (auth.settings) {
         Object.defineProperty(auth.settings, 'appVerificationDisabledForTesting', {
           value: true,
           writable: true
         });
       }
+      
+      // Configurar tenantId para evitar llamadas innecesarias
+      // @ts-ignore
+      auth.tenantId = null;
+      
+      console.log('✅ [STS-FIX] Verificaciones automáticas deshabilitadas');
     }
   } catch (configError) {
-    console.debug('🔧 [FIREBASE-CONFIG] Settings config applied via fallback');
+    console.warn('⚠️ [STS-FIX] No se pudo deshabilitar verificaciones:', configError);
   }
   
-  console.log('🔧 [FIREBASE-CONFIG] Auth configurado con refreshes mínimos');
+  console.log('🔧 [STS-FIX] Configuración robusta de Auth completada');
+  
+  // 🚫 [CORS-CSP-CHECK] Verificaciones de CORS y CSP
+  const checkCorsAndCSP = () => {
+    console.log('🚫 [CORS-CSP-CHECK] Verificando configuración CORS/CSP...');
+    
+    // Verificar CSP
+    const metaCSP = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+    if (metaCSP) {
+      const cspContent = metaCSP.getAttribute('content');
+      console.log('🚫 [CORS-CSP-CHECK] CSP encontrado:', cspContent);
+      
+      if (cspContent && !cspContent.includes('googleapis.com')) {
+        console.warn('⚠️ [CORS-CSP-CHECK] CSP puede estar bloqueando googleapis.com');
+      }
+    }
+    
+    // Test de conectividad a STS
+    const testSTSConnectivity = async () => {
+      try {
+        console.log('🚫 [CORS-CSP-CHECK] Probando conectividad a STS...');
+        const testResponse = await fetch('https://securetoken.googleapis.com/v1/projects/owl-fenc', {
+          method: 'HEAD',
+          mode: 'no-cors'
+        });
+        console.log('✅ [CORS-CSP-CHECK] STS alcanzable');
+      } catch (stsError: any) {
+        console.error('❌ [CORS-CSP-CHECK] STS no alcanzable:', stsError);
+        
+        // Verificar si es problema de extensiones
+        if (stsError.message.includes('blocked-by-client')) {
+          console.warn('⚠️ [CORS-CSP-CHECK] Request bloqueado por extensión del navegador');
+        }
+      }
+    };
+    
+    // Ejecutar test después de un pequeño delay
+    setTimeout(testSTSConnectivity, 2000);
+  };
+  
+  checkCorsAndCSP();
 }
 
 

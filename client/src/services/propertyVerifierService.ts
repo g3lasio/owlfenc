@@ -1,6 +1,6 @@
 
 import axios from 'axios';
-import { auth } from '@/lib/firebase';
+import { auth, safeGetIdToken } from '@/lib/firebase';
 
 export interface OwnerHistoryEntry {
   owner: string;
@@ -49,7 +49,7 @@ class PropertyVerifierService {
         throw new Error('Usuario no autenticado. Por favor inicia sesión.');
       }
       
-      const token = await auth.currentUser.getIdToken();
+      const token = await safeGetIdToken(auth.currentUser);
       console.log('🔐 Firebase token obtained for property verification');
       
       // Preparar parámetros con información completa si está disponible
