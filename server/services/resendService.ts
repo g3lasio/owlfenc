@@ -324,8 +324,10 @@ export class ResendEmailService {
       <head>
         <meta charset="utf-8">
         <style>
+          @import url('https://fonts.googleapis.com/css2?family=Quantico:wght@400;700&display=swap');
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .header { background: #1a365d; color: white; padding: 20px; text-align: center; }
+          h1, .brand-name { font-family: 'Quantico', sans-serif; }
           .content { padding: 20px; }
           .estimate-details { background: #f7fafc; padding: 15px; border-radius: 8px; margin: 20px 0; }
           .footer { background: #2d3748; color: white; padding: 20px; text-align: center; }
@@ -410,8 +412,10 @@ export class ResendEmailService {
       <head>
         <meta charset="utf-8">
         <style>
+          @import url('https://fonts.googleapis.com/css2?family=Quantico:wght@400;700&display=swap');
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .header { background: #065f46; color: white; padding: 20px; text-align: center; }
+          h1, .brand-name { font-family: 'Quantico', sans-serif; }
           .content { padding: 20px; }
           .contract-details { background: #ecfdf5; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981; }
           .legal-notice { background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b; }
@@ -512,8 +516,10 @@ export class ResendEmailService {
       <head>
         <meta charset="utf-8">
         <style>
+          @import url('https://fonts.googleapis.com/css2?family=Quantico:wght@400;700&display=swap');
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .header { background: #7c3aed; color: white; padding: 20px; text-align: center; }
+          h1, .brand-name { font-family: 'Quantico', sans-serif; }
           .content { padding: 20px; }
           .payment-card { background: #f8fafc; padding: 20px; border-radius: 12px; margin: 20px 0; border: 2px solid #e2e8f0; text-align: center; }
           .payment-button { display: inline-block; background: #10b981; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 10px 0; }
