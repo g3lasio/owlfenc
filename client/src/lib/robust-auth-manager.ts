@@ -4,7 +4,7 @@
  * Diseñado para miles de usuarios comerciales
  */
 
-import { auth } from './firebase';
+import { auth, safeGetIdToken } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
 interface UserSession {
