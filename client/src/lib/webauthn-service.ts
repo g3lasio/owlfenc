@@ -18,6 +18,7 @@ export interface WebAuthnCredential {
 
 export interface WebAuthnRegistrationOptions {
   challenge: string;
+  challengeKey: string; // CRÍTICO: Identificador del challenge del servidor
   rp: {
     name: string;
     id: string;
@@ -42,6 +43,7 @@ export interface WebAuthnRegistrationOptions {
 
 export interface WebAuthnAuthenticationOptions {
   challenge: string;
+  challengeKey: string; // CRÍTICO: Identificador del challenge del servidor
   allowCredentials?: Array<{
     id: string;
     type: string;
@@ -108,7 +110,7 @@ export class WebAuthnService {
       // Preparar credencial para enviar al servidor
       const webauthnCredential = this.processRegistrationCredential(credential);
 
-      // Completar registro en el servidor
+      // CRÍTICO: Completar registro en el servidor con challengeKey
       const completeResponse = await fetch('/api/webauthn/register/complete', {
         method: 'POST',
         headers: {
@@ -116,7 +118,8 @@ export class WebAuthnService {
         },
         body: JSON.stringify({
           email,
-          credential: webauthnCredential
+          credential: webauthnCredential,
+          challengeKey: options.challengeKey // CRUCIAL: Incluir challengeKey del servidor
         }),
       });
 
@@ -199,10 +202,10 @@ export class WebAuthnService {
       // Preparar assertion para enviar al servidor
       const webauthnCredential = this.processAuthenticationCredential(assertion);
 
-      // Retornar credencial, challengeKey y opciones para que el componente los use
+      // CRÍTICO: Retornar credencial con challengeKey correcto del servidor
       return {
         credential: webauthnCredential,
-        challengeKey: options.challenge,
+        challengeKey: options.challengeKey, // CRUCIAL: challengeKey del servidor, NO el challenge
         options: options
       };
 
