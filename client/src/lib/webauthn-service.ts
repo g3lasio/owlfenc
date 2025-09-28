@@ -326,21 +326,26 @@ export class WebAuthnService {
 
   /**
    * Verifica soporte de WebAuthn antes de usar
+   * Usa el mismo método que la detección inicial para consistencia
    */
   private async verifyWebAuthnSupport(): Promise<void> {
     if (!window.PublicKeyCredential) {
       throw new Error('WebAuthn no soportado en este navegador');
     }
 
+    // CRÍTICO: No usar isUserVerifyingPlatformAuthenticatorAvailable() 
+    // que puede fallar en iOS Safari, usar el método robusto de detección
+    console.log('🔍 [WEBAUTHN] Verificando soporte con método robusto...');
+    
+    // Método robusto: Solo verificar que WebAuthn existe
+    // La detección biométrica ya se hizo exitosamente antes
     try {
-      const available = await Promise.race([
-        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(),
-        new Promise<boolean>(resolve => setTimeout(() => resolve(false), 3000))
-      ]);
-      
-      if (!available) {
-        throw new Error('Autenticador biométrico no disponible');
+      // Verificación mínima: WebAuthn API existe
+      if (typeof window.PublicKeyCredential.create !== 'function') {
+        throw new Error('WebAuthn API incompleta');
       }
+      
+      console.log('✅ [WEBAUTHN] Verificación de soporte exitosa');
     } catch (error) {
       console.error('❌ [WEBAUTHN] Error verificando soporte:', error);
       throw new Error('Error verificando capacidades biométricas');
