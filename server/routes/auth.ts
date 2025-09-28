@@ -595,13 +595,7 @@ router.get('/account/email/confirm', async (req: Request, res: Response) => {
     const { uid, newEmail } = verification;
     
     try {
-      // Mark token as used immediately to prevent race conditions
-      const tokenData = emailChangeTokens.get(token);
-      if (tokenData) {
-        tokenData.used = true;
-      }
-      
-      // Update user email in Firebase
+      // Update user email in Firebase first (before marking token as used)
       await admin.auth().updateUser(uid!, {
         email: newEmail,
         emailVerified: false // Force re-verification
@@ -610,7 +604,13 @@ router.get('/account/email/confirm', async (req: Request, res: Response) => {
       // Revoke all refresh tokens to force re-authentication
       await admin.auth().revokeRefreshTokens(uid!);
       
-      // Clean up token
+      // Mark token as used ONLY after successful Firebase operations
+      const tokenData = emailChangeTokens.get(token);
+      if (tokenData) {
+        tokenData.used = true;
+      }
+      
+      // Clean up token after successful confirmation
       emailChangeTokens.delete(token);
       
       console.log('✅ [EMAIL-CONFIRM] Email successfully changed', { uid, newEmail });
