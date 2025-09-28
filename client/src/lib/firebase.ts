@@ -311,27 +311,8 @@ if (typeof window !== 'undefined') {
       }
     }
     
-    // Test de conectividad a STS
-    const testSTSConnectivity = async () => {
-      try {
-        console.log('🚫 [CORS-CSP-CHECK] Probando conectividad a STS...');
-        const testResponse = await fetch('https://securetoken.googleapis.com/v1/projects/owl-fenc', {
-          method: 'HEAD',
-          mode: 'no-cors'
-        });
-        console.log('✅ [CORS-CSP-CHECK] STS alcanzable');
-      } catch (stsError: any) {
-        console.error('❌ [CORS-CSP-CHECK] STS no alcanzable:', stsError);
-        
-        // Verificar si es problema de extensiones
-        if (stsError.message.includes('blocked-by-client')) {
-          console.warn('⚠️ [CORS-CSP-CHECK] Request bloqueado por extensión del navegador');
-        }
-      }
-    };
-    
-    // Ejecutar test después de un pequeño delay
-    setTimeout(testSTSConnectivity, 2000);
+    // ✅ REMOVED: Test de conectividad STS innecesario que causaba "Failed to fetch"
+    console.log('✅ [CORS-CSP-CHECK] Verificación completada sin test STS problemático');
   };
   
   checkCorsAndCSP();
