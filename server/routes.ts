@@ -3346,7 +3346,7 @@ Output must be between 200-900 characters in English.`;
       // Prepare email data
       const emailData = {
         to: to,
-        from: companyEmail || "noreply@owlfence.com",
+        from: companyEmail || "noreply@owlfenc.com",
         subject: subject,
         html: emailHtml,
         text: message,

@@ -152,7 +152,7 @@ export class ResendEmailDifferentiated {
   private generateContractorEmailTemplate(params: any): string {
     const testModeBanner = !this.isDomainVerified() ? `
       <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 8px; text-align: center;">
-        <h3 style="color: #856404; margin: 0 0 10px 0;">🔧 Development Environment - Owl Fence</h3>
+        <h3 style="color: #856404; margin: 0 0 10px 0;">🔧 Development Environment - Owl Fenc</h3>
         <p style="color: #856404; margin: 0; font-size: 14px;">
           <strong>Original Recipient:</strong> ${params.to}<br>
           Email routed through testing system for development purposes.
@@ -603,7 +603,7 @@ export class ResendEmailDifferentiated {
             </div>
             
             <div class="footer">
-              <p><strong>Owl Fence Legal Services</strong></p>
+              <p><strong>Owl Fenc Legal Services</strong></p>
               <p>Secure Contract Management for Construction Professionals</p>
               <p style="margin-top: 15px;">
                 📧 legal@owlfenc.com | 🌐 owlfenc.com<br>
@@ -624,7 +624,7 @@ export class ResendEmailDifferentiated {
   private generateClientEmailTemplate(params: any): string {
     const testModeBanner = !this.isDomainVerified() ? `
       <div style="background: #e3f2fd; border: 2px solid #2196f3; padding: 15px; margin-bottom: 20px; border-radius: 8px; text-align: center;">
-        <h3 style="color: #1565c0; margin: 0 0 10px 0;">🔧 Development Environment - Owl Fence</h3>
+        <h3 style="color: #1565c0; margin: 0 0 10px 0;">🔧 Development Environment - Owl Fenc</h3>
         <p style="color: #0d47a1; margin: 0; font-size: 14px;">
           <strong>Original Recipient:</strong> ${params.to}<br>
           Email routed through testing system for development purposes.
@@ -1204,7 +1204,7 @@ export class ResendEmailDifferentiated {
             </div>
             
             <div class="footer">
-              <p><strong>Owl Fence Contract Services</strong></p>
+              <p><strong>Owl Fenc Contract Services</strong></p>
               <p>Secure digital contracts for construction projects</p>
               <p style="margin-top: 15px;">
                 📧 sign.legal@owlfenc.com | 🌐 owlfenc.com<br>

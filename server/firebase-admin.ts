@@ -14,7 +14,7 @@ function initializeFirebaseAdmin() {
     // En producción, usar variables de entorno para las credenciales
     // Por ahora, usar la configuración del cliente para acceder a los mismos datos
     adminApp = initializeApp({
-      projectId: process.env.FIREBASE_PROJECT_ID || "owlfence-f4570",
+      projectId: process.env.FIREBASE_PROJECT_ID || "owl-fenc",
     });
   } else {
     adminApp = getApps()[0];

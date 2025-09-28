@@ -76,7 +76,7 @@ export class EstimateEmailService {
    * Generar HTML profesional para el estimado
    */
   static generateEstimateHTML(data: EstimateData): string {
-    const appUrl = process.env.APP_URL || 'https://owlfence.replit.app';
+    const appUrl = process.env.APP_URL || 'https://owlfenc.replit.app';
     
     return `
     <!DOCTYPE html>

@@ -13,7 +13,7 @@ export class NodemailerEmailService {
     this.transporter = nodemailer.createTransporter({
       service: 'gmail',
       auth: {
-        user: process.env.GMAIL_USER || 'noreply.owlfence@gmail.com',
+        user: process.env.GMAIL_USER || 'noreply@owlfenc.com',
         pass: process.env.GMAIL_APP_PASSWORD || ''
       }
     });
@@ -32,7 +32,7 @@ export class NodemailerEmailService {
       console.log('📧 [NODEMAILER] Asunto:', options.subject);
 
       const mailOptions = {
-        from: options.from || 'Owl Fenc <noreply.owlfence@gmail.com>',
+        from: options.from || 'Owl Fenc <noreply@owlfenc.com>',
         to: options.to,
         subject: options.subject,
         html: options.html,

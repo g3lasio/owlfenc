@@ -674,7 +674,7 @@ router.post("/create", isAuthenticated, async (req: Request, res: Response) => {
       clientEmail,
       clientName,
       dueDate,
-      paymentLinkUrl: `https://owlfence.com/pay/${Math.random().toString(36).substr(2, 9)}`,
+      paymentLinkUrl: `https://owlfenc.com/pay/${Math.random().toString(36).substr(2, 9)}`,
       createdAt: new Date().toISOString(),
     };
 
