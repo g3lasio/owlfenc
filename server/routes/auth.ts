@@ -5,11 +5,112 @@ import { db } from '../db';
 import { users, webauthnCredentials } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import admin from 'firebase-admin';
+import crypto from 'crypto';
+import rateLimit from 'express-rate-limit';
+import { resendService } from '../services/resendService';
 const router = Router();
 
 const JWT_SECRET =
   "b3e1cf944dc640cd8d33b1b8aee2f4302fc3fd8b30a84720b98e4dc8e5ae6720";
 const JWT_EXPIRES_IN = "1d";
+
+// Email change specific configuration
+const EMAIL_CHANGE_SECRET = process.env.EMAIL_CHANGE_SECRET || "email-change-secret-2025";
+const EMAIL_CHANGE_TTL = 30 * 60 * 1000; // 30 minutes
+
+// Rate limiting for email change operations
+const emailChangeRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 3, // Maximum 3 email change requests per 15 minutes per IP
+  message: {
+    error: "Too many email change requests. Please try again later.",
+    retryAfter: 15 * 60 // 15 minutes in seconds
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req): string => {
+    // Rate limit by both IP and user if authenticated
+    const ip = req.ip || 'unknown';
+    const uid = req.headers['x-user-uid'] as string;
+    return uid ? `${ip}:${uid}` : ip;
+  }
+});
+
+// In-memory store for email change tokens (in production, use Redis)
+const emailChangeTokens = new Map<string, {
+  uid: string;
+  newEmail: string;
+  timestamp: number;
+  used: boolean;
+}>();
+
+// Clean up expired tokens every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  emailChangeTokens.forEach((data, token) => {
+    if (now - data.timestamp > EMAIL_CHANGE_TTL) {
+      emailChangeTokens.delete(token);
+    }
+  });
+}, 5 * 60 * 1000);
+
+// Email change token utilities
+function generateEmailChangeToken(uid: string, newEmail: string): string {
+  const timestamp = Date.now();
+  const nonce = crypto.randomBytes(16).toString('hex');
+  const payload = `${uid}:${newEmail}:${timestamp}:${nonce}`;
+  const signature = crypto.createHmac('sha256', EMAIL_CHANGE_SECRET).update(payload).digest('hex');
+  const token = Buffer.from(`${payload}:${signature}`).toString('base64url');
+  
+  // Store token data for validation
+  emailChangeTokens.set(token, {
+    uid,
+    newEmail,
+    timestamp,
+    used: false
+  });
+  
+  return token;
+}
+
+function verifyEmailChangeToken(token: string): { valid: boolean; uid?: string; newEmail?: string; error?: string } {
+  try {
+    const tokenData = emailChangeTokens.get(token);
+    if (!tokenData) {
+      return { valid: false, error: 'Token not found or expired' };
+    }
+    
+    if (tokenData.used) {
+      return { valid: false, error: 'Token already used' };
+    }
+    
+    const now = Date.now();
+    if (now - tokenData.timestamp > EMAIL_CHANGE_TTL) {
+      emailChangeTokens.delete(token);
+      return { valid: false, error: 'Token expired' };
+    }
+    
+    // Verify HMAC signature
+    const payload = Buffer.from(token, 'base64url').toString();
+    const parts = payload.split(':');
+    if (parts.length !== 5) {
+      return { valid: false, error: 'Invalid token format' };
+    }
+    
+    const [uid, newEmail, timestamp, nonce, signature] = parts;
+    const expectedPayload = `${uid}:${newEmail}:${timestamp}:${nonce}`;
+    const expectedSignature = crypto.createHmac('sha256', EMAIL_CHANGE_SECRET).update(expectedPayload).digest('hex');
+    
+    if (signature !== expectedSignature) {
+      return { valid: false, error: 'Invalid token signature' };
+    }
+    
+    return { valid: true, uid, newEmail };
+  } catch (error) {
+    return { valid: false, error: 'Token verification failed' };
+  }
+}
+
 const generateToken = (payload: {
   id: number;
   name: string;
@@ -181,6 +282,387 @@ router.post('/refresh-session', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('❌ [REFRESH-SESSION] Error:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Email change confirmation email template
+function generateEmailChangeConfirmationEmail(newEmail: string, confirmationLink: string): { subject: string; html: string } {
+  const subject = 'Confirma tu nuevo email - Owl Fence';
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <style>
+        body {
+          font-family: 'Arial', sans-serif;
+          line-height: 1.6;
+          color: #333;
+          margin: 0;
+          padding: 0;
+          background-color: #f4f4f4;
+        }
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          background-color: #ffffff;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 30px 20px;
+          text-align: center;
+        }
+        .header h1 {
+          margin: 0;
+          font-size: 24px;
+          font-weight: bold;
+        }
+        .content {
+          padding: 40px 30px;
+        }
+        .confirmation-box {
+          background: #f8f9fa;
+          border-left: 4px solid #667eea;
+          padding: 20px;
+          margin: 20px 0;
+          border-radius: 4px;
+        }
+        .button {
+          display: inline-block;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          text-decoration: none;
+          padding: 15px 30px;
+          border-radius: 6px;
+          font-weight: bold;
+          text-align: center;
+          margin: 20px 0;
+          transition: transform 0.2s;
+        }
+        .button:hover {
+          transform: translateY(-2px);
+        }
+        .security-notice {
+          background: #fff3cd;
+          border: 1px solid #ffeaa7;
+          padding: 15px;
+          border-radius: 6px;
+          margin: 20px 0;
+        }
+        .footer {
+          background: #2c3e50;
+          color: #ecf0f1;
+          text-align: center;
+          padding: 20px;
+          font-size: 14px;
+        }
+        .expiry-info {
+          color: #6c757d;
+          font-size: 14px;
+          text-align: center;
+          margin-top: 20px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>🔐 Confirma tu nuevo email</h1>
+        </div>
+        
+        <div class="content">
+          <h2>¡Estás a un paso de completar el cambio!</h2>
+          
+          <p>Has solicitado cambiar tu email a: <strong>${newEmail}</strong></p>
+          
+          <div class="confirmation-box">
+            <h3>📧 Confirma tu nuevo email</h3>
+            <p>Para completar el cambio de email y mantener tu cuenta segura, haz clic en el botón de abajo:</p>
+            
+            <div style="text-align: center;">
+              <a href="${confirmationLink}" class="button">
+                ✅ Confirmar nuevo email
+              </a>
+            </div>
+          </div>
+          
+          <div class="security-notice">
+            <h4>🛡️ Medidas de seguridad implementadas:</h4>
+            <ul>
+              <li>✅ Token de confirmación único y seguro</li>
+              <li>🕐 Enlace válido por 30 minutos solamente</li>
+              <li>🔒 Una sola confirmación permitida</li>
+              <li>🔄 Tokens de sesión renovados automáticamente</li>
+            </ul>
+          </div>
+          
+          <h3>⚠️ ¿No solicitaste este cambio?</h3>
+          <p>Si no iniciaste este cambio de email, <strong>ignora este mensaje</strong>. Tu cuenta permanecerá segura y el enlace expirará automáticamente.</p>
+          
+          <div class="expiry-info">
+            ⏰ Este enlace expirará en 30 minutos por seguridad
+          </div>
+        </div>
+        
+        <div class="footer">
+          <p>&copy; ${new Date().getFullYear()} Owl Fence LLC. Todos los derechos reservados.</p>
+          <p>Sistema de cambio de email seguro | Encriptación HMAC</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+  
+  return { subject, html };
+}
+
+// Middleware to verify Firebase authentication
+async function verifyFirebaseAuth(req: Request, res: Response, next: any) {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authorization token required' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    req.user = decodedToken;
+    next();
+  } catch (error) {
+    console.error('❌ [AUTH-VERIFICATION] Error:', error);
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+/**
+ * POST /api/account/email/change
+ * Initiate email change process
+ */
+router.post('/account/email/change', emailChangeRateLimit, verifyFirebaseAuth, async (req: Request, res: Response) => {
+  try {
+    const { newEmail } = req.body;
+    const uid = req.user?.uid;
+    
+    console.log('📧 [EMAIL-CHANGE] Initiating email change request', { uid, newEmail });
+    
+    // Validation
+    if (!newEmail || typeof newEmail !== 'string') {
+      return res.status(400).json({
+        error: 'Valid email address is required',
+        code: 'INVALID_EMAIL'
+      });
+    }
+    
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      return res.status(400).json({
+        error: 'Please provide a valid email address',
+        code: 'INVALID_EMAIL_FORMAT'
+      });
+    }
+    
+    if (!uid) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+    
+    // Get current user from Firebase
+    try {
+      const currentUser = await admin.auth().getUser(uid);
+      
+      // Check if new email is the same as current
+      if (currentUser.email === newEmail) {
+        return res.status(400).json({
+          error: 'New email must be different from current email',
+          code: 'SAME_EMAIL'
+        });
+      }
+      
+      // Check if email is already in use
+      try {
+        await admin.auth().getUserByEmail(newEmail);
+        return res.status(409).json({
+          error: 'Email address is already in use by another account',
+          code: 'EMAIL_IN_USE'
+        });
+      } catch (emailCheckError: any) {
+        // Email not found is good - we can proceed
+        if (emailCheckError.code !== 'auth/user-not-found') {
+          throw emailCheckError;
+        }
+      }
+      
+      // Generate secure token
+      const token = generateEmailChangeToken(uid, newEmail);
+      
+      // Build confirmation URL  
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? 'https://app.owlfenc.com' 
+        : `http://localhost:5000`;
+      const confirmationLink = `${baseUrl}/api/auth/account/email/confirm?token=${token}`;
+      
+      // Generate email content
+      const { subject, html } = generateEmailChangeConfirmationEmail(newEmail, confirmationLink);
+      
+      // Send confirmation email using Resend
+      const emailSent = await resendService.sendEmail({
+        to: newEmail,
+        subject,
+        html,
+        from: 'noreply@owlfenc.com',
+        replyTo: 'support@owlfenc.com'
+      });
+      
+      if (!emailSent) {
+        return res.status(500).json({
+          error: 'Failed to send confirmation email. Please try again.',
+          code: 'EMAIL_SEND_FAILED'
+        });
+      }
+      
+      console.log('✅ [EMAIL-CHANGE] Confirmation email sent successfully', { uid, newEmail });
+      
+      res.json({
+        success: true,
+        message: `Confirmation email sent to ${newEmail}. Please check your inbox and click the confirmation link within 30 minutes.`,
+        expiresIn: EMAIL_CHANGE_TTL / 1000 // seconds
+      });
+      
+    } catch (userError: any) {
+      console.error('❌ [EMAIL-CHANGE] Firebase user error:', userError);
+      return res.status(404).json({
+        error: 'User not found',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+    
+  } catch (error: any) {
+    console.error('❌ [EMAIL-CHANGE] Unexpected error:', error);
+    res.status(500).json({
+      error: 'Internal server error. Please try again later.',
+      code: 'INTERNAL_ERROR'
+    });
+  }
+});
+
+/**
+ * GET /api/account/email/confirm
+ * Confirm email change
+ */
+router.get('/account/email/confirm', async (req: Request, res: Response) => {
+  try {
+    const { token } = req.query;
+    
+    console.log('🔐 [EMAIL-CONFIRM] Processing email confirmation', { hasToken: !!token });
+    
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({
+        error: 'Confirmation token is required',
+        code: 'TOKEN_REQUIRED'
+      });
+    }
+    
+    // Verify token
+    const verification = verifyEmailChangeToken(token);
+    if (!verification.valid) {
+      console.log('❌ [EMAIL-CONFIRM] Token verification failed:', verification.error);
+      
+      // Return 410 for expired/used tokens with resend option
+      if (verification.error?.includes('expired') || verification.error?.includes('used')) {
+        return res.status(410).json({
+          error: verification.error,
+          code: 'TOKEN_EXPIRED_OR_USED',
+          canResend: true,
+          message: 'Token has expired or been used. Please request a new email change.'
+        });
+      }
+      
+      return res.status(400).json({
+        error: verification.error || 'Invalid token',
+        code: 'INVALID_TOKEN'
+      });
+    }
+    
+    const { uid, newEmail } = verification;
+    
+    try {
+      // Mark token as used immediately to prevent race conditions
+      const tokenData = emailChangeTokens.get(token);
+      if (tokenData) {
+        tokenData.used = true;
+      }
+      
+      // Update user email in Firebase
+      await admin.auth().updateUser(uid!, {
+        email: newEmail,
+        emailVerified: false // Force re-verification
+      });
+      
+      // Revoke all refresh tokens to force re-authentication
+      await admin.auth().revokeRefreshTokens(uid!);
+      
+      // Clean up token
+      emailChangeTokens.delete(token);
+      
+      console.log('✅ [EMAIL-CONFIRM] Email successfully changed', { uid, newEmail });
+      
+      // Generate audit log entry
+      console.log('📋 [AUDIT] Email changed', {
+        uid,
+        oldEmail: 'previous-email', // In production, log the old email
+        newEmail,
+        timestamp: new Date().toISOString(),
+        requestId: `email-change-${Date.now()}`
+      });
+      
+      // Return success response with redirect suggestion
+      res.json({
+        success: true,
+        message: 'Email address successfully updated! Please sign in again with your new email.',
+        newEmail,
+        requiresReauth: true,
+        redirectTo: '/login'
+      });
+      
+    } catch (updateError: any) {
+      console.error('❌ [EMAIL-CONFIRM] Firebase update error:', updateError);
+      
+      // Handle specific Firebase errors
+      if (updateError.code === 'auth/user-not-found') {
+        return res.status(404).json({
+          error: 'User account not found',
+          code: 'USER_NOT_FOUND'
+        });
+      }
+      
+      if (updateError.code === 'auth/email-already-exists') {
+        return res.status(409).json({
+          error: 'Email address is already in use',
+          code: 'EMAIL_IN_USE'
+        });
+      }
+      
+      return res.status(500).json({
+        error: 'Failed to update email address. Please try again.',
+        code: 'UPDATE_FAILED'
+      });
+    }
+    
+  } catch (error: any) {
+    console.error('❌ [EMAIL-CONFIRM] Unexpected error:', error);
+    res.status(500).json({
+      error: 'Internal server error. Please try again later.',
+      code: 'INTERNAL_ERROR'
+    });
   }
 });
 
