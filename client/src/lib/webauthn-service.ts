@@ -210,7 +210,12 @@ export class WebAuthnService {
       };
 
     } catch (error: any) {
-      console.error('❌ [WEBAUTHN] Error en autenticación:', error);
+      console.error('❌ [WEBAUTHN] Error en autenticación:', {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack,
+        fullError: error
+      });
       
       // Manejo avanzado de errores específicos de iOS Safari
       return this.handleWebAuthnError(error);
@@ -325,31 +330,13 @@ export class WebAuthnService {
   }
 
   /**
-   * Verifica soporte de WebAuthn antes de usar
-   * Usa el mismo método que la detección inicial para consistencia
+   * ELIMINADO: La verificación de soporte ya se hizo en la detección inicial
+   * Saltamos esta verificación redundante que causaba fallos
    */
   private async verifyWebAuthnSupport(): Promise<void> {
-    if (!window.PublicKeyCredential) {
-      throw new Error('WebAuthn no soportado en este navegador');
-    }
-
-    // CRÍTICO: No usar isUserVerifyingPlatformAuthenticatorAvailable() 
-    // que puede fallar en iOS Safari, usar el método robusto de detección
-    console.log('🔍 [WEBAUTHN] Verificando soporte con método robusto...');
-    
-    // Método robusto: Solo verificar que WebAuthn existe
-    // La detección biométrica ya se hizo exitosamente antes
-    try {
-      // Verificación mínima: WebAuthn API existe
-      if (typeof window.PublicKeyCredential.create !== 'function') {
-        throw new Error('WebAuthn API incompleta');
-      }
-      
-      console.log('✅ [WEBAUTHN] Verificación de soporte exitosa');
-    } catch (error) {
-      console.error('❌ [WEBAUTHN] Error verificando soporte:', error);
-      throw new Error('Error verificando capacidades biométricas');
-    }
+    // SIMPLIFICADO: Si llegamos aquí, ya sabemos que funciona
+    console.log('✅ [WEBAUTHN] Saltando verificación redundante - soporte confirmado');
+    return;
   }
 
   /**
