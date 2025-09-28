@@ -86,10 +86,6 @@ export class WebAuthnService {
         throw new Error(`Server error: ${optionsResponse.status} - ${errorData}`);
       }
 
-      if (!optionsResponse.ok) {
-        throw new Error(`Error obteniendo opciones: ${optionsResponse.statusText}`);
-      }
-
       const options: WebAuthnRegistrationOptions = await optionsResponse.json();
       console.log('📝 [WEBAUTHN] Opciones de registro recibidas');
 
@@ -154,7 +150,7 @@ export class WebAuthnService {
   /**
    * Autentica al usuario usando credencial biométrica
    */
-  async authenticateUser(email?: string): Promise<WebAuthnCredential> {
+  async authenticateUser(email?: string): Promise<{ credential: WebAuthnCredential, challengeKey: string, options: any }> {
     console.log('🔐 [WEBAUTHN] Iniciando autenticación biométrica');
 
     try {
@@ -193,25 +189,12 @@ export class WebAuthnService {
       // Preparar assertion para enviar al servidor
       const webauthnCredential = this.processAuthenticationCredential(assertion);
 
-      // Completar autenticación en el servidor
-      const completeResponse = await fetch('/api/webauthn/authenticate/complete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          credential: webauthnCredential
-        }),
-      });
-
-      if (!completeResponse.ok) {
-        throw new Error(`Error completando autenticación: ${completeResponse.statusText}`);
-      }
-
-      const result = await completeResponse.json();
-      console.log('🎉 [WEBAUTHN] Autenticación completada exitosamente');
-
-      return webauthnCredential;
+      // Retornar credencial, challengeKey y opciones para que el componente los use
+      return {
+        credential: webauthnCredential,
+        challengeKey: options.challenge,
+        options: options
+      };
 
     } catch (error: any) {
       console.error('❌ [WEBAUTHN] Error en autenticación:', error);

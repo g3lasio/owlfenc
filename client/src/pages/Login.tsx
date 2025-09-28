@@ -652,39 +652,37 @@ export default function AuthPage() {
                         {isLoading ? t("auth.login") + "..." : t("auth.login")}
                       </Button>
 
-                      {/* 🔐 BIOMETRIC LOGIN BUTTON - Mostrar automáticamente si el dispositivo lo soporta */}
-                      {showBiometricOption && (
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-3">
-                            <Separator className="flex-1 bg-muted-foreground/30" />
-                            <span className="text-xs text-muted-foreground">or</span>
-                            <Separator className="flex-1 bg-muted-foreground/30" />
-                          </div>
+                      {/* 🔐 OPCIONES ALTERNATIVAS - Biometric y OTP en paralelo */}
+                      <div className="flex items-center gap-3">
+                        <Separator className="flex-1 bg-muted-foreground/30" />
+                        <span className="text-xs text-muted-foreground">or</span>
+                        <Separator className="flex-1 bg-muted-foreground/30" />
+                      </div>
 
+                      {/* Container para botones en paralelo */}
+                      <div className="flex gap-3">
+                        {/* Botón biométrico - solo si está disponible */}
+                        {showBiometricOption && (
                           <BiometricLoginButton
                             onSuccess={handleBiometricLoginSuccess}
                             onError={handleBiometricLoginError}
                             email={loginForm.getValues('email')}
                             disabled={isLoading}
-                            className="w-full"
+                            className="flex-1"
                           />
-
-                          <div className="flex items-center gap-3">
-                            <Separator className="flex-1 bg-muted-foreground/30" />
-                            <span className="text-xs text-muted-foreground">or continue with</span>
-                            <Separator className="flex-1 bg-muted-foreground/30" />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Fallback - siempre mostrar opción "or" si no hay biometría */}
-                      {!showBiometricOption && (
-                        <div className="flex items-center gap-3">
-                          <Separator className="flex-1 bg-muted-foreground/30" />
-                          <span className="text-xs text-muted-foreground">or</span>
-                          <Separator className="flex-1 bg-muted-foreground/30" />
-                        </div>
-                      )}
+                        )}
+                        
+                        {/* Botón OTP - siempre disponible */}
+                        <button
+                          type="button"
+                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 hover:from-blue-500/20 hover:to-purple-500/20 text-primary text-sm font-medium transition-all duration-300 border border-primary/30 justify-center flex-1"
+                          onClick={() => setLoginMethod("otp")}
+                          title="Login with OTP Code"
+                        >
+                          <RiShieldKeyholeLine className="h-5 w-5" />
+                          <span>OTP Code</span>
+                        </button>
+                      </div>
                     </form>
                   </Form>
                 ) : (

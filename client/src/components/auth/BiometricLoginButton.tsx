@@ -89,9 +89,9 @@ export function BiometricLoginButton({
       
       // Intentar autenticación biométrica con manejo de errores mejorado
       console.log('🔐 [BIOMETRIC-BUTTON] Llamando a webauthnService.authenticateUser');
-      const credential = await webauthnService.authenticateUser(loginEmail);
+      const authResult = await webauthnService.authenticateUser(loginEmail);
       
-      if (!credential) {
+      if (!authResult || !authResult.credential) {
         console.log('❌ [BIOMETRIC-BUTTON] No se obtuvo credencial');
         toast({
           title: "Error biométrico",
@@ -100,12 +100,11 @@ export function BiometricLoginButton({
         });
         return;
       }
-      
-      if (!credential) {
-        throw new Error('No se recibió credencial de autenticación');
-      }
 
       console.log('✅ [BIOMETRIC-BUTTON] Credencial biométrica obtenida');
+
+      // Usar challengeKey del resultado
+      const { credential, challengeKey } = authResult;
 
       // Procesar respuesta del servidor que incluye custom Firebase token
       const response = await fetch('/api/webauthn/authenticate/complete', {
@@ -115,7 +114,7 @@ export function BiometricLoginButton({
         },
         body: JSON.stringify({
           credential,
-          challengeKey: challengeKeyRef.current, // CRÍTICO: Incluir challengeKey requerido
+          challengeKey, // CRÍTICO: Incluir challengeKey requerido
           email: loginEmail
         }),
       });
