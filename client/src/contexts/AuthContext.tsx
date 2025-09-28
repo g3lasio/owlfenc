@@ -30,7 +30,7 @@ type User = {
   photoURL: string | null;
   phoneNumber: string | null;
   emailVerified: boolean;
-  getIdToken: () => Promise<string>;
+  getIdToken: (forceRefresh?: boolean) => Promise<string>;
 };
 
 interface AuthContextType {
@@ -59,6 +59,75 @@ const useAuth = () => {
     throw new Error("useAuth debe ser usado dentro de un AuthProvider");
   }
   return context;
+};
+
+// 🔐 ROBUST AUTHENTICATION HELPER: Handles token failures with automatic reauthentication
+export const getValidToken = async (currentUser: User | null, retryCount = 0): Promise<string> => {
+  const maxRetries = 2;
+  
+  try {
+    if (!currentUser) {
+      throw new Error('User not authenticated');
+    }
+    
+    console.log(`🔐 [TOKEN-MANAGER] Attempting to get token (attempt ${retryCount + 1}/${maxRetries + 1})`);
+    
+    // Try to get token (force refresh if this is a retry)
+    const forceRefresh = retryCount > 0;
+    const token = await currentUser.getIdToken(forceRefresh);
+    
+    console.log(`✅ [TOKEN-MANAGER] Token obtained successfully (forceRefresh: ${forceRefresh})`);
+    return token;
+    
+  } catch (tokenError: any) {
+    console.error(`❌ [TOKEN-MANAGER] Token error (attempt ${retryCount + 1}):`, tokenError);
+    
+    // If we haven't exhausted retries and this looks like an auth issue
+    if (retryCount < maxRetries && (
+      tokenError?.code === 'auth/user-token-expired' ||
+      tokenError?.code === 'auth/id-token-expired' ||
+      tokenError?.message?.includes('token') ||
+      tokenError?.message?.includes('expired') ||
+      tokenError?.message?.includes('auth')
+    )) {
+      console.log(`🔄 [TOKEN-MANAGER] Attempting recovery (retry ${retryCount + 1})`);
+      
+      // Exponential backoff delay
+      const backoffDelay = Math.min(1000 * Math.pow(2, retryCount), 5000);
+      console.log(`🔄 [TOKEN-MANAGER] Waiting ${backoffDelay}ms before retry...`);
+      
+      await new Promise(resolve => setTimeout(resolve, backoffDelay));
+      
+      try {
+        const { auth } = await import('../lib/firebase');
+        
+        // Try to reload current user and refresh token
+        if (auth.currentUser) {
+          console.log('🔄 [TOKEN-MANAGER] Attempting user reload and token refresh...');
+          await auth.currentUser.reload();
+          
+          // Recursive call with incremented retry count
+          return await getValidToken(currentUser, retryCount + 1);
+        } else {
+          console.log('❌ [TOKEN-MANAGER] No Firebase current user found');
+          throw new Error('Firebase user not found - reauthentication required');
+        }
+        
+      } catch (reauthError) {
+        console.error('❌ [TOKEN-MANAGER] Recovery attempt failed:', reauthError);
+        
+        // If this is the last attempt, prompt for complete reauthentication
+        if (retryCount >= maxRetries - 1) {
+          throw new Error('Session expired - reauthentication required');
+        }
+        
+        throw reauthError;
+      }
+    }
+    
+    // If we've exhausted retries or this isn't an auth error, throw the original error
+    throw tokenError;
+  }
 };
 
 // Exportamos useAuth como una constante
@@ -225,19 +294,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
               photoURL: user.photoURL,
               phoneNumber: user.phoneNumber,
               emailVerified: user.emailVerified,
-              getIdToken: async () => {
+              getIdToken: async (forceRefresh?: boolean) => {
                 try {
-                  // ✅ FIXED: Usar token real de Firebase
-                  return await user.getIdToken();
+                  // ✅ ROBUST: Usar token real de Firebase con soporte para forceRefresh
+                  return await user.getIdToken(forceRefresh);
                 } catch (error) {
                   console.error("❌ Error obteniendo token Firebase:", error);
-                  // ✅ FIXED: Retry con force refresh, luego re-throw error si falla
-                  try {
-                    console.log("🔄 Intentando refresh forzado del token...");
-                    return await user.getIdToken(true); // Force refresh
-                  } catch (retryError) {
-                    console.error("❌ Error en retry del token Firebase:", retryError);
-                    throw retryError; // Re-throw para manejo apropiado upstream
+                  // ✅ ROBUST: Retry con force refresh automático si no se especificó
+                  if (!forceRefresh) {
+                    try {
+                      console.log("🔄 Intentando refresh forzado del token...");
+                      return await user.getIdToken(true); // Force refresh
+                    } catch (retryError) {
+                      console.error("❌ Error en retry del token Firebase:", retryError);
+                      throw retryError; // Re-throw para manejo apropiado upstream
+                    }
+                  } else {
+                    // Si ya era force refresh y falló, re-throw directamente
+                    throw error;
                   }
                 }
               },

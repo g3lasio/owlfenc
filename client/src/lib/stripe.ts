@@ -43,7 +43,7 @@ export const getStripe = (): Promise<Stripe | null> => {
       return Promise.resolve(null);
     }
 
-    console.log('🔧 [STRIPE] Loading Stripe.js with key:', stripeKey.substring(0, 20) + '...');
+    console.log('🔧 [STRIPE] Loading Stripe.js with key: [REDACTED-FOR-SECURITY]');
 
     // Create the promise with enhanced error handling and timeout
     stripePromise = new Promise((resolve) => {
@@ -181,7 +181,7 @@ export const resetStripe = (): void => {
 export const getStripeConfig = () => ({
   productionMode: STRIPE_CONFIG.productionMode,
   keyLength: STRIPE_CONFIG.publicKey?.length || 0,
-  keyPrefix: STRIPE_CONFIG.publicKey?.substring(0, 7) || 'Not set',
+  keyPrefix: STRIPE_CONFIG.publicKey ? '[REDACTED-FOR-SECURITY]' : 'Not set',
   available: !!stripePromise && !loadingError,
   error: loadingError,
 });

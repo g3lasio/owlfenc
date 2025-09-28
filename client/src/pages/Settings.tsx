@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, getValidToken } from "@/contexts/AuthContext";
 import {
   Bell,
   Shield,
@@ -75,8 +75,10 @@ export default function Settings() {
       if (!currentUser?.uid) {
         throw new Error('User not authenticated');
       }
-      // Ensure token is ready before making request
-      await currentUser.getIdToken();
+      // 🔐 Use centralized robust token manager to ensure valid token
+      console.log('🔐 [SETTINGS-QUERY] Using robust token manager for settings fetch...');
+      await getValidToken(currentUser);
+      console.log('✅ [SETTINGS-QUERY] Token obtained via robust manager');
       // Use apiRequest helper that returns parsed JSON
       return await apiRequest.get('/api/settings');
     },
@@ -98,6 +100,11 @@ export default function Settings() {
       if (!currentUser) {
         throw new Error('Authentication required for settings updates');
       }
+      
+      // 🔐 Use centralized robust token manager to ensure valid token before mutation
+      console.log('🔐 [SETTINGS-MUTATION] Using robust token manager for settings update...');
+      await getValidToken(currentUser);
+      console.log('✅ [SETTINGS-MUTATION] Token obtained via robust manager');
       
       // Use standard apiRequest for consistent auth/error handling
       // apiRequest already returns parsed JSON, no need to call .json()
@@ -243,7 +250,9 @@ export default function Settings() {
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [isReauthenticating, setIsReauthenticating] = useState(false);
 
+  // Use centralized robust authentication helper from AuthContext
 
   // Handlers with batched backend persistence  
   const handleLanguageChange = (value: 'en' | 'es' | 'fr') => {
@@ -304,7 +313,7 @@ export default function Settings() {
 
 
   const handleChangePassword = async () => {
-    console.log('🔐 [PASSWORD-RESET] Iniciando proceso de reset de password');
+    console.log('🔐 [PASSWORD-RESET] Initiating server-side robust password reset process');
     
     if (!currentUser?.email) {
       console.error('❌ [PASSWORD-RESET] No email found for user:', currentUser);
@@ -316,55 +325,50 @@ export default function Settings() {
       return;
     }
 
-    console.log('🔐 [PASSWORD-RESET] Enviando email a:', currentUser.email);
+    console.log('🔐 [PASSWORD-RESET] Target email:', currentUser.email);
 
     try {
-      const { sendPasswordResetEmail } = await import('firebase/auth');
-      const { auth } = await import('@/lib/firebase');
-      
-      console.log('🔐 [PASSWORD-RESET] Firebase auth inicializado, enviando email...');
-      
-      // Add detailed logging for Firebase auth status
-      console.log('🔐 [PASSWORD-RESET] Auth status:', {
-        currentUser: auth.currentUser?.uid,
-        targetEmail: currentUser.email,
-        authReady: !!auth.currentUser
+      // 🔐 Ensure valid token before server request using centralized robust token manager
+      console.log('🔐 [PASSWORD-RESET] Ensuring valid token with robust authentication system...');
+      await getValidToken(currentUser);
+      console.log('✅ [PASSWORD-RESET] Token validated successfully for server request');
+
+      // Use server-side password reset endpoint with built-in retry/backoff and verification
+      console.log('🔐 [PASSWORD-RESET] Calling hardened server-side password reset endpoint...');
+      const response = await apiRequest('POST', '/api/auth/password-reset', {
+        email: currentUser.email
       });
-      
-      await sendPasswordResetEmail(auth, currentUser.email);
-      
-      console.log('✅ [PASSWORD-RESET] Email enviado exitosamente a:', currentUser.email);
+
+      console.log('✅ [PASSWORD-RESET] Server-side password reset succeeded:', response);
       
       toast({
         title: "Password Reset Email Sent",
         description: `A password reset link has been sent to ${currentUser.email}. Please check your inbox and spam folder.`,
       });
+
     } catch (error: any) {
-      console.error('❌ [PASSWORD-RESET] Error completo:', {
+      console.error('❌ [PASSWORD-RESET] Server-side password reset failed:', {
         error: error,
-        code: error?.code,
         message: error?.message,
         userEmail: currentUser.email
       });
       
       let errorMessage = "Failed to send password reset email. Please try again.";
       
-      if (error.code === 'auth/user-not-found') {
+      if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+        errorMessage = "Authentication required. Please sign in again and try.";
+      } else if (error.message?.includes('user-not-found') || error.message?.includes('not found')) {
         errorMessage = "No account found with this email address.";
-        console.error('❌ [PASSWORD-RESET] Usuario no encontrado:', currentUser.email);
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = "Too many requests. Please try again later.";
-        console.error('❌ [PASSWORD-RESET] Demasiadas solicitudes');
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = "Invalid email address.";
-        console.error('❌ [PASSWORD-RESET] Email inválido:', currentUser.email);
-      } else if (error.code === 'auth/network-request-failed') {
+      } else if (error.message?.includes('too-many-requests') || error.message?.includes('rate limit')) {
+        errorMessage = "Too many requests. Please try again in a few minutes.";
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
         errorMessage = "Network error. Please check your connection and try again.";
-        console.error('❌ [PASSWORD-RESET] Error de red');
+      } else if (error.message?.includes('invalid-email')) {
+        errorMessage = "Invalid email address format.";
       }
-      
+
       toast({
-        title: "Password Reset Error",
+        title: "Password Reset Failed",
         description: errorMessage,
         variant: "destructive",
       });
@@ -402,31 +406,31 @@ export default function Settings() {
       return;
     }
 
-    console.log('🔧 [EMAIL-CHANGE] Validaciones pasadas, obteniendo token de autenticación...');
+    console.log('🔧 [EMAIL-CHANGE] Validaciones pasadas, obteniendo token de autenticación robusto...');
     setIsChangingEmail(true);
     
     let token: string;
     try {
-      // Get Firebase token for authentication with robust error handling
-      console.log('🔧 [EMAIL-CHANGE] Intentando obtener Firebase token...');
-      token = await currentUser.getIdToken();
-      console.log('✅ [EMAIL-CHANGE] Token obtenido exitosamente');
+      // Use robust token manager with automatic reauthentication fallbacks
+      console.log('🔧 [EMAIL-CHANGE] Usando sistema robusto de autenticación...');
+      token = await getValidToken(currentUser);
+      console.log('✅ [EMAIL-CHANGE] Token robusto obtenido exitosamente');
     } catch (tokenError: any) {
-      console.error('❌ [EMAIL-CHANGE] Error obteniendo token Firebase:', tokenError);
+      console.error('❌ [EMAIL-CHANGE] Error con sistema robusto de autenticación:', tokenError);
       
       // Handle specific token errors with user-friendly messages
-      let errorMessage = "Authentication error. Please sign in again.";
+      let errorMessage = "Authentication failed. Please sign in again to continue.";
       
-      if (tokenError?.code === 'auth/network-request-failed') {
-        errorMessage = "Network error. Please check your connection and try again.";
-      } else if (tokenError?.message?.includes('token') || tokenError?.message?.includes('expired')) {
+      if (tokenError?.message?.includes('Reauthentication required')) {
         errorMessage = "Your session has expired. Please sign out and sign in again.";
-      } else if (tokenError?.message?.includes('user')) {
-        errorMessage = "User authentication failed. Please sign in again.";
+      } else if (tokenError?.code === 'auth/network-request-failed') {
+        errorMessage = "Network error. Please check your connection and try again.";
+      } else if (tokenError?.message?.includes('User not authenticated')) {
+        errorMessage = "Please sign in again to change your email.";
       }
       
       toast({
-        title: "Authentication Error",
+        title: "Authentication Required",
         description: errorMessage,
         variant: "destructive",
       });
