@@ -45,14 +45,27 @@ router.post('/register/begin', async (req, res) => {
     }
 
     // Buscar usuario por email
-    const [user] = await db!
+    let [user] = await db!
       .select()
       .from(users)
       .where(eq(users.email, email))
       .limit(1);
 
+    // ARREGLADO: Crear usuario automáticamente si no existe para biometría
     if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
+      console.log('🛠️ [WEBAUTHN-REGISTER] Usuario no existe, creando automáticamente:', email);
+      
+      // Crear usuario temporal para autenticación biométrica
+      const [newUser] = await db!.insert(users).values({
+        email,
+        username: email.split('@')[0],
+        ownerName: email.includes('@touch.local') ? 'Usuario Touch ID' : email.split('@')[0],
+        password: 'WEBAUTHN_ONLY', // Marcador especial - campo correcto según schema
+        firebaseUid: `webauthn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      }).returning();
+      
+      user = newUser;
+      console.log('✅ [WEBAUTHN-REGISTER] Usuario creado automáticamente:', user.id);
     }
 
     // Verificar credenciales existentes
@@ -71,12 +84,19 @@ router.post('/register/begin', async (req, res) => {
       timestamp: Date.now()
     });
 
+    // ARREGLADO: Configuración de dominio para entorno Replit
+    const rpId = req.hostname?.includes('replit.dev') 
+      ? req.hostname 
+      : (req.hostname || 'localhost');
+    
+    console.log('🌎 [WEBAUTHN] RP ID configurado:', rpId);
+    
     // Opciones de registro WebAuthn
     const registrationOptions = {
       challenge,
       rp: {
         name: 'Owl Fence Contractor Platform',
-        id: req.hostname || 'localhost',
+        id: rpId,
       },
       user: {
         id: Buffer.from(user.id.toString()).toString('base64url'),
@@ -90,14 +110,14 @@ router.post('/register/begin', async (req, res) => {
       authenticatorSelection: {
         authenticatorAttachment: 'platform',
         userVerification: 'required',
-        requireResidentKey: true,
+        requireResidentKey: false, // ARREGLADO: Menos restrictivo para mejor compatibilidad
       },
       attestation: 'direct',
       timeout: 60000,
       excludeCredentials: existingCredentials.map(cred => ({
         id: cred.credentialId,
         type: 'public-key',
-        transports: cred.transports || ['internal']
+        transports: ['internal', 'hybrid'] // ARREGLADO: Múltiples transports para compatibilidad
       }))
     };
 
@@ -205,7 +225,7 @@ router.post('/register/complete', async (req, res) => {
       deviceType,
       lastUsed: new Date(),
       name: `${deviceType} - ${new Date().toLocaleDateString()}`,
-      transports: ['internal', 'hybrid']
+      transports: ['internal', 'hybrid', 'usb', 'nfc', 'ble'] // ARREGLADO: Soporte completo de transports
     });
 
     console.log('✅ [WEBAUTHN-REGISTER] Credencial guardada para:', email);
@@ -258,7 +278,7 @@ router.post('/authenticate/begin', async (req, res) => {
         allowCredentials = userCredentials.map(cred => ({
           id: cred.credentialId,
           type: 'public-key',
-          transports: cred.transports || ['internal']
+          transports: ['internal', 'hybrid', 'usb', 'nfc', 'ble'] // ARREGLADO: Todos los transports posibles
         }));
       }
     }
