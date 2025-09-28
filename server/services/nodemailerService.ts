@@ -32,7 +32,7 @@ export class NodemailerEmailService {
       console.log('📧 [NODEMAILER] Asunto:', options.subject);
 
       const mailOptions = {
-        from: options.from || 'Owl Fence <noreply.owlfence@gmail.com>',
+        from: options.from || 'Owl Fenc <noreply.owlfence@gmail.com>',
         to: options.to,
         subject: options.subject,
         html: options.html,

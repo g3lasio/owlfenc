@@ -35,7 +35,7 @@ export const twilioService = {
         `Your contract is ready for signature.\n\n` +
         `🔐 Secure Link (expires in 72 hours):\n${params.secureLink}\n\n` +
         `This is a single-use link for your security.\n\n` +
-        `- Owl Fence Contract Management`;
+        `- Owl Fenc Contract Management`;
       
       const result = await client.messages.create({
         body: message,
@@ -80,7 +80,7 @@ export const twilioService = {
       const message = `Hi ${params.recipientName},\n\n` +
         `✅ Contract ${params.contractId} has been fully signed!\n\n` +
         `You'll receive the signed PDF via email shortly.\n\n` +
-        `Thank you for using Owl Fence Contract Management.`;
+        `Thank you for using Owl Fenc Contract Management.`;
       
       const result = await client.messages.create({
         body: message,

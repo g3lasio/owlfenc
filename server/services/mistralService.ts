@@ -344,7 +344,7 @@ Tu tarea es generar un contrato completo y profesional utilizando la siguiente i
 ${JSON.stringify(datosCompletos, null, 2)}
 
 REQUISITOS CRÍTICOS:
-- Si falta la información del contratista, asume que es "Owl Fence Co." con dirección en "2901 Owens Ct, Fairfield, CA 94534 US" y número (202) 549-3519.
+- Si falta la información del contratista, asume que es "Owl Fenc" con dirección en "2901 Owens Ct, Fairfield, CA 94534 US" y número (202) 549-3519.
 - Si falta alguna información importante del cliente, MARCA CLARAMENTE esos datos faltantes con [FALTA: dato] para que puedan ser completados manualmente.
 - Si existen cláusulas adicionales, debes incluirlas exactamente como se proporcionan sin alterarlas, incluso si parecen inusuales.
 
@@ -424,7 +424,7 @@ Mantén un diseño limpio y profesional adecuado para un documento legal.
           messages: [
             {
               role: "system",
-              content: "Eres un abogado experto especializado en contratos de construcción. Tu tarea es generar contratos legalmente vinculantes que incluyan toda la información necesaria. Debes marcar claramente la información faltante como [FALTA: dato] para que pueda ser completada manualmente. Si el contratista no se menciona, asume que es 'Owl Fence Co.' Si se incluyen cláusulas adicionales, agrégalas exactamente como se proporcionan sin juzgarlas."
+              content: "Eres un abogado experto especializado en contratos de construcción. Tu tarea es generar contratos legalmente vinculantes que incluyan toda la información necesaria. Debes marcar claramente la información faltante como [FALTA: dato] para que pueda ser completada manualmente. Si el contratista no se menciona, asume que es 'Owl Fenc'. Si se incluyen cláusulas adicionales, agrégalas exactamente como se proporcionan sin juzgarlas."
             },
             {
               role: "user",

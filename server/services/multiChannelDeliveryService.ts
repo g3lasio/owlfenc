@@ -171,7 +171,7 @@ class MultiChannelDeliveryService {
         </div>
         
         <div class="footer">
-            <p style="margin: 0;">Powered by Owl Fence Professional Contract System</p>
+            <p style="margin: 0;">Powered by Owl Fenc Professional Contract System</p>
             <p style="margin: 5px 0 0 0;">Secure • Professional • Reliable</p>
         </div>
     </div>
@@ -251,7 +251,7 @@ class MultiChannelDeliveryService {
       `• Timestamp verification\n\n` +
       `⏰ This secure link expires in 72 hours.\n\n` +
       `If you have questions, please contact ${contractData.contractorCompany} directly.\n\n` +
-      `_Professional Contract Management System by Owl Fence_`
+      `_Professional Contract Management System by Owl Fenc_`
     );
     
     return `https://wa.me/${cleanPhone}?text=${message}`;
