@@ -374,42 +374,58 @@ export default function Settings() {
 
     setIsChangingEmail(true);
     try {
-      // Usar Firebase auth directamente (evitando imports dinámicos innecesarios)
-      const { verifyBeforeUpdateEmail } = await import('firebase/auth');
-      const { auth } = await import('@/lib/firebase');
+      // Get Firebase token for authentication
+      const token = await currentUser.getIdToken();
       
-      if (auth.currentUser) {
-        await verifyBeforeUpdateEmail(auth.currentUser, newEmail);
-        
-        toast({
-          title: "Verification Email Sent",
-          description: `A verification email has been sent to ${newEmail}. Please verify your new email address to complete the change.`,
-        });
-        
-        // Synchronize with backend settings (as pending email until verified)
-        scheduleBatchedUpdate({ companyEmail: newEmail });
-        
-        // Invalidate queries to refresh data
-        queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
-        
-        setIsEmailDialogOpen(false);
-        setNewEmail("");
-      } else {
-        throw new Error("No authenticated user found");
+      // Use new secure email change endpoint
+      const response = await fetch('/api/auth/account/email/change', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'x-user-uid': currentUser.uid
+        },
+        body: JSON.stringify({ newEmail: newEmail.trim() })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `Server error: ${response.status}`);
       }
+
+      toast({
+        title: "🔐 Confirmation Email Sent",
+        description: data.message || `A secure confirmation email has been sent to ${newEmail}. Please check your inbox and click the confirmation link within 30 minutes.`,
+      });
+
+      // Clear form and close dialog on success
+      setIsEmailDialogOpen(false);
+      setNewEmail("");
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      
     } catch (error: any) {
       console.error('❌ [SETTINGS] Error updating email:', error);
       
       let errorMessage = "Failed to change email. Please try again.";
       
-      if (error.code === 'auth/email-already-in-use') {
+      // Handle specific API error codes
+      if (error.message?.includes('EMAIL_IN_USE') || error.message?.includes('already in use')) {
         errorMessage = "This email is already in use by another account.";
-      } else if (error.code === 'auth/invalid-email') {
+      } else if (error.message?.includes('INVALID_EMAIL') || error.message?.includes('valid email')) {
         errorMessage = "Please enter a valid email address.";
-      } else if (error.code === 'auth/requires-recent-login') {
-        errorMessage = "Please log out and log back in before changing your email.";
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = "Too many requests. Please try again later.";
+      } else if (error.message?.includes('SAME_EMAIL') || error.message?.includes('same as current')) {
+        errorMessage = "New email must be different from your current email.";
+      } else if (error.message?.includes('AUTH_REQUIRED') || error.message?.includes('401')) {
+        errorMessage = "Authentication required. Please sign in again.";
+      } else if (error.message?.includes('Too many') || error.message?.includes('rate limit')) {
+        errorMessage = "Too many requests. Please try again in 15 minutes.";
+      } else if (error.message?.includes('EMAIL_SEND_FAILED')) {
+        errorMessage = "Failed to send confirmation email. Please try again.";
+      } else if (error.message?.includes('USER_NOT_FOUND')) {
+        errorMessage = "User account not found. Please contact support.";
       }
       
       toast({

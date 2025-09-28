@@ -423,7 +423,7 @@ function generateEmailChangeConfirmationEmail(newEmail: string, confirmationLink
 }
 
 // Middleware to verify Firebase authentication
-async function verifyFirebaseAuth(req: Request, res: Response, next: any) {
+async function verifyFirebaseAuth(req: Request & { user?: any }, res: Response, next: any) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -444,7 +444,7 @@ async function verifyFirebaseAuth(req: Request, res: Response, next: any) {
  * POST /api/account/email/change
  * Initiate email change process
  */
-router.post('/account/email/change', emailChangeRateLimit, verifyFirebaseAuth, async (req: Request, res: Response) => {
+router.post('/account/email/change', emailChangeRateLimit, verifyFirebaseAuth, async (req: Request & { user?: any }, res: Response) => {
   try {
     const { newEmail } = req.body;
     const uid = req.user?.uid;
