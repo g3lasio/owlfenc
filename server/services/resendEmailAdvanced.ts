@@ -142,7 +142,7 @@ export class ResendEmailAdvanced {
 
     const banner = `
       <div style="background: #e3f2fd; border: 2px solid #2196f3; padding: 15px; margin-bottom: 20px; border-radius: 8px; text-align: center;">
-        <h3 style="color: #1565c0; margin: 0 0 10px 0;">🔧 Resend Test Mode - Owl Fence</h3>
+        <h3 style="color: #1565c0; margin: 0 0 10px 0;">🔧 Resend Test Mode - Owl Fenc</h3>
         <p style="color: #0d47a1; margin: 0; font-size: 14px;">
           <strong>Original Recipient:</strong> ${originalRecipient}<br>
           <strong>Test Mode:</strong> Resend can only send to gelasio@chyrris.com until domain is verified<br>
@@ -257,7 +257,9 @@ export class ResendEmailAdvanced {
           <title>Contract Review & Signature - ${params.contractorCompany}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
+            @import url('https://fonts.googleapis.com/css2?family=Quantico:wght@400;700&display=swap');
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; background: #f5f7fa; }
+            h1, h2, h3, .brand-name { font-family: 'Quantico', sans-serif; }
             .email-container { max-width: 100%; width: 100%; margin: 0 auto; background: white; box-shadow: 0 8px 32px rgba(0,0,0,0.1); box-sizing: border-box; }
             @media (min-width: 600px) { .email-container { max-width: 700px; } }
             .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; text-align: center; }
@@ -705,7 +707,7 @@ export class ResendEmailAdvanced {
             </div>
             
             <div class="footer">
-              <p><strong>Powered by Owl Fence Legal Defense System</strong></p>
+              <p><strong>Powered by Owl Fenc Legal Defense System</strong></p>
               <p style="margin: 10px 0;">Secure • Compliant • Professional • Legally Binding</p>
               <p style="font-size: 12px; opacity: 0.8;">
                 This email contains a complete legally binding contract. Digital signatures are legally equivalent to handwritten signatures.
@@ -907,7 +909,7 @@ export class ResendEmailAdvanced {
             <p><strong>Contract ID:</strong> ${params.contractId}</p>
             <p><strong>Client:</strong> ${params.clientName}</p>
             <p>Please review and sign the contract using the link provided.</p>
-            <p>Best regards,<br>Owl Fence Legal Team</p>
+            <p>Best regards,<br>Owl Fenc Legal Team</p>
           </div>
         </body>
       </html>
@@ -932,7 +934,7 @@ export class ResendEmailAdvanced {
             <p><strong>Contract ID:</strong> ${params.contractId}</p>
             <p><strong>Contractor:</strong> ${params.contractorName}</p>
             <p>Please review and sign the contract using the secure link provided.</p>
-            <p>Best regards,<br>Owl Fence Legal Team</p>
+            <p>Best regards,<br>Owl Fenc Legal Team</p>
           </div>
         </body>
       </html>
