@@ -860,17 +860,7 @@ export default function AuthPage() {
           </CardContent>
 
           <CardFooter className="px-6 py-4 flex items-center justify-center border-t border-primary/20 bg-muted/10">
-            {authMode === "login" && loginMethod === "email" ? (
-              <button
-                type="button"
-                className="flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 hover:from-blue-500/20 hover:to-purple-500/20 text-primary text-sm font-medium transition-all duration-300 border border-primary/30 justify-center"
-                onClick={() => setLoginMethod("otp")}
-                title="Login with OTP Code"
-              >
-                <RiShieldKeyholeLine className="h-5 w-5" />
-                <span>OTP Code</span>
-              </button>
-            ) : authMode === "login" && loginMethod === "otp" ? (
+            {authMode === "login" && loginMethod === "otp" ? (
               <button
                 type="button"
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-sm font-medium transition-all duration-300 border border-primary/30 min-w-[90px] justify-center"
