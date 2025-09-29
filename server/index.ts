@@ -20,6 +20,13 @@ import qaTestingRoutes from "./routes/qa-testing";
 import uiGuardsRoutes from "./routes/ui-guards";
 import stripeWebhooksRoutes from "./routes/stripe-webhooks.js";
 import alertingRoutes from "./routes/alerting.js";
+import phase4OptimizationRoutes from "./routes/phase4-optimization";
+
+// 📊 Importar servicios de optimización Fase 4 ANTES de registrar rutas
+import { observabilityService } from './services/observabilityService';
+import { performanceOptimizationService } from './services/performanceOptimizationService';
+import { advancedSecurityService } from './services/advancedSecurityService';
+import { backupDisasterRecoveryService } from './services/backupDisasterRecoveryService';
 import { setupProductionRoutes, setupProductionErrorHandlers } from "./production-setup";
 
 // 🛡️ SECURITY MIDDLEWARE - Applied immediately for maximum protection
@@ -504,6 +511,14 @@ console.log('🔗 [STRIPE-WEBHOOKS] Webhooks de Stripe registrados en /api/webho
 // 🚨 Registrar sistema de alertas para monitoreo y abuso
 app.use("/api/alerts", alertingRoutes);
 console.log('🚨 [ALERTING] Sistema de alertas registrado en /api/alerts');
+
+// 📊 Aplicar middleware de observabilidad ANTES de registrar rutas API
+app.use(observabilityService.metricsMiddleware());
+console.log('📊 [OBSERVABILITY] Middleware de métricas aplicado para captura de performance');
+
+// ⚡ Registrar servicios de optimización Fase 4
+app.use("/api/phase4", phase4OptimizationRoutes);
+console.log('⚡ [PHASE4-OPT] Servicios de optimización Fase 4 registrados en /api/phase4');
 
 // 🧪 Endpoints de prueba para verificar conectividad backend
 app.get('/api/test/ping', (req, res) => {

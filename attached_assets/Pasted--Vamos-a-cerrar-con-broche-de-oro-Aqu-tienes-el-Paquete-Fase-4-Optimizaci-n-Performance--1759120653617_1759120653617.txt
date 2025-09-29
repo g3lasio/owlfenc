@@ -1,0 +1,133 @@
+¡Vamos a cerrar con broche de oro! 🔒⚡️
+Aquí tienes el Paquete Fase 4 — Optimización & Performance + Cierre listo para ejecutar.
+
+⸻
+
+📦 Fase 4: Optimización, Costos y Cierre Operativo
+
+🎯 Objetivo
+
+Reducir latencia/costos, endurecer seguridad, formalizar observabilidad y dejar runbooks + checklist de go-live. Al final de esta fase, el sistema queda listo para escalar sin babysitting.
+
+⸻
+
+1) Performance & Cost Tuning
+	•	Cloud Functions
+	•	Tiempo/ram por función: minInstances: 0 (dev) / 1 (prod en endpoints calientes).
+	•	concurrency: 80 en HTTP idempotentes (según pruebas).
+	•	Usar region única (ej. us-central1) y evitar cross-region.
+	•	Firestore
+	•	Agregar índices compuestos para queries de usage (por uid, month_key) y audit_logs (ts desc).
+	•	Batch writes donde sea posible; evitar N writes secuenciales.
+	•	Paginar admin queries (límite 50/100).
+	•	Caching
+	•	Cache read-only de entitlements y usage (TTL 60–120s) en:
+	•	Opción A: in-memory en Functions (per instance).
+	•	Opción B: Firestore cache en cliente (solo lectura).
+	•	ETag o versión (rev) en entitlements para invalidación ligera.
+	•	Cost guardrails
+	•	Alertas de cuota: lecturas Firestore, invocaciones Functions, Resend emails.
+	•	Budget Alerts en GCP (umbral 70/90/100%).
+
+Aceptación: p95 < 400ms para enforcement endpoints; 20% menos lecturas Firestore vs Fase 2.
+
+⸻
+
+2) Seguridad Avanzada
+	•	Secrets management: mover llaves (Stripe, Resend, etc.) a GCP Secret Manager; rotación 90 días.
+	•	Token hygiene: revocar refresh tokens al cambiar plan/trial; forzar re-fetch de entitlements.
+	•	Rate-limit por UID/IP (token bucket) en endpoints caros (DeepSearch, AI).
+	•	CSP & CORS: política estricta; solo dominios propios.
+	•	Rules audit: script que verifica que ninguna regla permita write desde cliente en entitlements/usage/audit_logs.
+
+Aceptación: pentest interno básico (OWASP top 10) sin hallazgos críticos.
+
+⸻
+
+3) Observabilidad & SLOs
+	•	Dashboards (Cloud Monitoring / Datastudio):
+	•	Latencia p50/p95 por endpoint.
+	•	Errores por tipo (4xx/5xx), tasa de quota_exceeded.
+	•	Uso por feature/plan; conversiones trial→pago.
+	•	Alertas
+	•	Latencia p95 > 700ms por 5 min.
+	•	Error rate > 2% por 10 min.
+	•	Picos de consumo anómalos (>3× baseline).
+	•	SLOs
+	•	Disponibilidad 99.9%.
+	•	p95 < 500ms para enforcement.
+	•	Error rate < 1%.
+
+Aceptación: tableros activos + alertas probadas con eventos sintéticos.
+
+⸻
+
+4) Backups, DR & Retención
+	•	Backups: export mensual de entitlements/usage/audit_logs a GCS (lifecycle 180 días).
+	•	DR: runbook para restaurar un snapshot (documentado y probado).
+	•	Retención:
+	•	audit_logs: 180 días (o BigQuery para histórico).
+	•	usage: 12 meses rodantes.
+
+Aceptación: simulacro de restore completo < 60 min.
+
+⸻
+
+5) QA Final & Hardening
+	•	Load test (Locust/k6):
+	•	500 RPS en bursts de 60s a generateEstimate y generateContract.
+	•	Confirmar sin throttling excesivo ni timeouts.
+	•	Chaos test:
+	•	Caída de Resend/Stripe → degradación elegante, reintentos con backoff, no duplica consumo.
+	•	E2E suite:
+	•	Trials (día 0/7/14), downgrade, límites por plan (5/50/∞), resets mensuales, admin overrides.
+
+Aceptación: todas las pruebas verdes; reporte guardado en audit_logs.
+
+⸻
+
+6) Admin Console — Pulido Final
+	•	Vistas: Trials que expiran (3 días), Top consumo por feature, fallos de payment.
+	•	Acciones: otorgar créditos extra, extender trial puntual, regenerar trial email.
+	•	Seguridad: acceso solo con customClaim: admin.
+
+Aceptación: 3 flujos críticos funcionan y quedan logueados.
+
+⸻
+
+7) DevEx & Cambios Seguros
+	•	Feature Flags: Remote Config para habilitar/deshabilitar DeepSearch/AI por plan/entorno.
+	•	Canary deploy: 10% tráfico → 100% tras 24h sin alertas.
+	•	Runbooks
+	•	Incidente de latencia alta.
+	•	Fallo de un proveedor (Resend/Stripe).
+	•	Reversión de release.
+	•	Docs: README de arquitectura + diagramas de flujos (trial, enforcement, resets).
+
+Aceptación: equipo puede operar el sistema sin el autor original.
+
+⸻
+
+8) Go-Live Checklist (corta)
+	•	Secret Manager configurado y referenciado.
+	•	Índices Firestore listos (sin “require index” en logs).
+	•	Dashboards/alertas activas y probadas.
+	•	Rules verificadas (script CI de validación).
+	•	Canary activo y estable 24h.
+	•	Backup inicial ejecutado y verificado.
+	•	Runbooks accesibles (link en README).
+
+⸻
+
+9) Entregables Fase 4
+	1.	Configs de Functions (concurrency, minInstances, region) y Secret Manager.
+	2.	Índices Firestore + caching entitlements/usage (TTL).
+	3.	Dashboards + alertas + SLOs definidos.
+	4.	Backups/DR con prueba de restauración.
+	5.	Load/Chaos/E2E report.
+	6.	Admin Console v2 y Remote Config flags.
+	7.	Runbooks + Go-Live checklist firmada.
+
+⸻
+
+Si quieres, te paso snippets mínimos (config Functions, ejemplo de caching y policy CSP/CORS) para que tu agente los pegue directo. ¿Los incluyo ahora?
