@@ -5,6 +5,7 @@
  */
 
 import { db, admin } from '../lib/firebase-admin.js';
+import { alertingService } from './alertingService.js';
 
 export interface RateLimit {
   uid: string;
@@ -85,6 +86,16 @@ export class AntiAbuseService {
       if (rateLimit.tokens <= 0) {
         // Rate limit exceeded
         await this.handleRateLimitViolation(rateLimit);
+        
+        // Send abuse alert for repeated violations
+        if (rateLimit.violations > 5) {
+          await alertingService.sendAbuseAlert(
+            uid, 
+            ip, 
+            rateLimit.violations, 
+            endpoint
+          );
+        }
         
         const nextRefill = rateLimit.lastRefill.toMillis() + (60000 / rateLimit.refillRate);
         return {

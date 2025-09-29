@@ -15,10 +15,11 @@ import secureEnforcementRoutes from "./routes/secure-enforcement";
 import secureTestingRoutes from "./routes/secure-testing";
 import productionFeaturesRoutes from "./routes/production-features";
 import monthlyResetRoutes from "./routes/monthly-reset";
-import trialNotificationsRoutes from "./routes/trial-notifications";
 import adminPanelRoutes from "./routes/admin-panel";
 import qaTestingRoutes from "./routes/qa-testing";
 import uiGuardsRoutes from "./routes/ui-guards";
+import stripeWebhooksRoutes from "./routes/stripe-webhooks.js";
+import alertingRoutes from "./routes/alerting.js";
 import { setupProductionRoutes, setupProductionErrorHandlers } from "./production-setup";
 
 // 🛡️ SECURITY MIDDLEWARE - Applied immediately for maximum protection
@@ -482,9 +483,7 @@ console.log('🔥 [PRODUCTION-FEATURES] Rutas de features con usage tracking reg
 app.use("/api/monthly-reset", monthlyResetRoutes);
 console.log('🔄 [MONTHLY-RESET] Rutas de reset mensual registradas en /api/monthly-reset');
 
-// 📧 Registrar rutas de notificaciones de trial
-app.use("/api/trial-notifications", trialNotificationsRoutes);
-console.log('📧 [TRIAL-NOTIFICATIONS] Rutas de notificaciones de trial registradas en /api/trial-notifications');
+// 📧 Trial notifications are now registered via registerTrialNotificationRoutes() in routes.ts
 
 // 👑 Registrar panel de admin con controles de negocio
 app.use("/api/admin", adminPanelRoutes);
@@ -497,6 +496,14 @@ console.log('🧪 [QA-TESTING] Sistema de testing QA registrado en /api/qa');
 // 🎨 Registrar guards de UI para frontend
 app.use("/api/ui-guards", uiGuardsRoutes);
 console.log('🎨 [UI-GUARDS] Guards de UI para límites registrados en /api/ui-guards');
+
+// 🔗 Registrar webhooks de Stripe para automatización de pagos
+app.use("/api/webhooks", stripeWebhooksRoutes);
+console.log('🔗 [STRIPE-WEBHOOKS] Webhooks de Stripe registrados en /api/webhooks');
+
+// 🚨 Registrar sistema de alertas para monitoreo y abuso
+app.use("/api/alerts", alertingRoutes);
+console.log('🚨 [ALERTING] Sistema de alertas registrado en /api/alerts');
 
 // 🧪 Endpoints de prueba para verificar conectividad backend
 app.get('/api/test/ping', (req, res) => {

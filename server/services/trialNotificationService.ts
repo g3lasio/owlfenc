@@ -63,25 +63,44 @@ export class TrialNotificationService {
       
       console.log(`📊 [TRIAL-NOTIFICATIONS] Processing ${result.processed} active trials`);
       
-      // 2. Process each user
-      for (const entitlementsDoc of entitlementsSnapshot.docs) {
-        try {
-          const uid = entitlementsDoc.id;
-          const entitlements = entitlementsDoc.data();
-          
-          const notificationProcessed = await this.processUserTrialNotification(uid, entitlements);
-          
-          if (notificationProcessed.notificationSent) {
-            result.notificationsSent++;
+      // 2. Process users in batches with concurrency control for scalability
+      const allUsers = entitlementsSnapshot.docs.map(doc => ({
+        uid: doc.id,
+        entitlements: doc.data()
+      }));
+      
+      const batches = this.createBatches(allUsers, 25); // Smaller batches for better control
+      const concurrencyLimit = 3; // Process 3 batches concurrently
+      
+      console.log(`📊 [TRIAL-NOTIFICATIONS] Processing ${batches.length} batches with ${concurrencyLimit} concurrent workers`);
+      
+      for (let i = 0; i < batches.length; i += concurrencyLimit) {
+        const concurrentBatches = batches.slice(i, i + concurrencyLimit);
+        
+        // Process batches concurrently with Promise.allSettled for error isolation
+        const batchResults = await Promise.allSettled(
+          concurrentBatches.map((batch, index) => 
+            this.processBatchWithRetry(batch, i + index + 1)
+          )
+        );
+        
+        // Aggregate results and handle errors
+        batchResults.forEach((batchResult, index) => {
+          if (batchResult.status === 'fulfilled') {
+            const batchData = batchResult.value;
+            result.notificationsSent += batchData.notificationsSent;
+            result.downgrades += batchData.downgrades;
+            result.errors.push(...batchData.errors);
+          } else {
+            console.error(`❌ [TRIAL-NOTIFICATIONS] Batch ${i + index + 1} failed:`, batchResult.reason);
+            result.errors.push(`Batch ${i + index + 1} failed: ${batchResult.reason}`);
           }
-          
-          if (notificationProcessed.downgraded) {
-            result.downgrades++;
-          }
-          
-        } catch (userError) {
-          console.error(`❌ [TRIAL-NOTIFICATIONS] Error processing user ${entitlementsDoc.id}:`, userError);
-          result.errors.push(`User ${entitlementsDoc.id}: ${userError instanceof Error ? userError.message : 'Unknown error'}`);
+        });
+        
+        // Rate limiting between batch groups to avoid overwhelming email/Firestore
+        if (i + concurrencyLimit < batches.length) {
+          console.log(`⏳ [TRIAL-NOTIFICATIONS] Rate limiting: waiting 2s before next batch group...`);
+          await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
         }
       }
       
@@ -100,6 +119,96 @@ export class TrialNotificationService {
       result.success = false;
       return result;
     }
+  }
+  
+  /**
+   * Create batches from user array for parallel processing
+   */
+  private createBatches<T>(items: T[], batchSize: number): T[][] {
+    const batches: T[][] = [];
+    for (let i = 0; i < items.length; i += batchSize) {
+      batches.push(items.slice(i, i + batchSize));
+    }
+    return batches;
+  }
+  
+  /**
+   * Process batch with retry logic for production reliability
+   */
+  private async processBatchWithRetry(batch: Array<{ uid: string; entitlements: any }>, batchNumber: number): Promise<{
+    notificationsSent: number;
+    downgrades: number;
+    errors: string[];
+  }> {
+    const maxRetries = 2;
+    let attempt = 0;
+    
+    while (attempt <= maxRetries) {
+      try {
+        return await this.processBatch(batch, batchNumber);
+      } catch (error) {
+        attempt++;
+        console.error(`❌ [TRIAL-NOTIFICATIONS] Batch ${batchNumber} attempt ${attempt} failed:`, error);
+        
+        if (attempt <= maxRetries) {
+          // Exponential backoff
+          const delay = Math.pow(2, attempt) * 1000;
+          console.log(`⏳ [TRIAL-NOTIFICATIONS] Retrying batch ${batchNumber} in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          throw error;
+        }
+      }
+    }
+    
+    throw new Error(`Batch ${batchNumber} failed after ${maxRetries} retries`);
+  }
+  
+  /**
+   * Process a batch of users concurrently
+   */
+  private async processBatch(batch: Array<{ uid: string; entitlements: any }>, batchNumber: number): Promise<{
+    notificationsSent: number;
+    downgrades: number;
+    errors: string[];
+  }> {
+    console.log(`📤 [TRIAL-NOTIFICATIONS] Processing batch ${batchNumber} with ${batch.length} users`);
+    
+    const batchResult = {
+      notificationsSent: 0,
+      downgrades: 0,
+      errors: [] as string[]
+    };
+    
+    // Process users in batch concurrently
+    const userResults = await Promise.allSettled(
+      batch.map(async ({ uid, entitlements }) => {
+        try {
+          return await this.processUserTrialNotification(uid, entitlements);
+        } catch (error) {
+          throw new Error(`User ${uid}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      })
+    );
+    
+    // Aggregate batch results
+    userResults.forEach((userResult, index) => {
+      if (userResult.status === 'fulfilled') {
+        const userData = userResult.value;
+        if (userData.notificationSent) {
+          batchResult.notificationsSent++;
+        }
+        if (userData.downgraded) {
+          batchResult.downgrades++;
+        }
+      } else {
+        console.error(`❌ [TRIAL-NOTIFICATIONS] User processing failed:`, userResult.reason);
+        batchResult.errors.push(userResult.reason.message || userResult.reason);
+      }
+    });
+    
+    console.log(`✅ [TRIAL-NOTIFICATIONS] Batch ${batchNumber} completed: ${batchResult.notificationsSent} notifications, ${batchResult.downgrades} downgrades`);
+    return batchResult;
   }
   
   /**
@@ -308,11 +417,222 @@ export class TrialNotificationService {
       
       await db.collection('entitlements').doc(uid).update(updatedEntitlements);
       
+      // Send downgrade notification email
+      await this.sendDowngradeNotificationEmail(uid, currentEntitlements.planName || 'trial');
+      
+      // Create audit log for downgrade
+      await this.createDowngradeAuditLog(uid, currentEntitlements);
+      
       console.log(`✅ [TRIAL-NOTIFICATIONS] User ${uid} downgraded to primo plan`);
       
     } catch (error) {
       console.error(`❌ [TRIAL-NOTIFICATIONS] Error downgrading user ${uid}:`, error);
       throw error;
+    }
+  }
+  
+  /**
+   * Send downgrade notification email (called automatically on downgrade)
+   */
+  async sendDowngradeNotificationEmail(uid: string, fromPlan: string = 'trial'): Promise<void> {
+    try {
+      console.log(`📧 [TRIAL-NOTIFICATIONS] Sending downgrade notification to ${uid}`);
+      
+      // Get user email
+      const userDoc = await db.collection('users').doc(uid).get();
+      const userEmail = userDoc.exists() ? userDoc.data()?.email : null;
+      
+      if (!userEmail) {
+        console.warn(`⚠️ [TRIAL-NOTIFICATIONS] No email found for user ${uid} - skipping downgrade notification`);
+        return;
+      }
+      
+      const subject = '🔄 Account Plan Changed - Important Information';
+      const emailContent = this.generateDowngradeEmailHTML(fromPlan);
+      
+      const { data, error } = await resend.emails.send({
+        from: 'Owl Fence AI <noreply@owlfenc.com>',
+        to: [userEmail],
+        subject,
+        html: emailContent,
+        tags: [
+          { name: 'type', value: 'plan_downgrade' },
+          { name: 'from_plan', value: fromPlan },
+          { name: 'to_plan', value: 'primo' },
+          { name: 'uid', value: uid }
+        ]
+      });
+      
+      if (error) {
+        throw new Error(`Downgrade email failed: ${error.message}`);
+      }
+      
+      console.log(`✅ [TRIAL-NOTIFICATIONS] Downgrade email sent to ${userEmail}:`, data?.id);
+      
+      // Save notification record
+      const notificationId = `${uid}_downgrade_${new Date().toISOString().slice(0, 10)}`;
+      await db.collection('notifications').doc(notificationId).set({
+        uid,
+        email: userEmail,
+        type: 'plan_downgrade',
+        fromPlan,
+        toPlan: 'primo',
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        status: 'sent'
+      });
+      
+    } catch (error) {
+      console.error(`❌ [TRIAL-NOTIFICATIONS] Error sending downgrade email:`, error);
+      // Don't throw - downgrade should succeed even if email fails
+    }
+  }
+  
+  /**
+   * Generate downgrade notification email HTML
+   */
+  private generateDowngradeEmailHTML(fromPlan: string): string {
+    const isTrialDowngrade = fromPlan === 'trial';
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+          .cta-button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; margin: 20px 0; }
+          .info-box { background: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0; border-radius: 4px; }
+          .warning-box { background: #fff3e0; border-left: 4px solid #FF9800; padding: 15px; margin: 20px 0; border-radius: 4px; }
+          .features-comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
+          .plan-column { padding: 15px; border-radius: 8px; }
+          .free-plan { background: #f5f5f5; border: 2px solid #ddd; }
+          .paid-plan { background: #e8f5e8; border: 2px solid #4CAF50; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>📋 Plan Update Notification</h1>
+            <p>Your account status has been updated</p>
+          </div>
+          <div class="content">
+            <h2>${isTrialDowngrade ? '🔄 Trial Period Completed' : '🔄 Plan Change Notification'}</h2>
+            
+            ${isTrialDowngrade ? `
+              <div class="info-box">
+                <p><strong>Your 14-day trial has ended.</strong> Your account has been automatically moved to our free "Primo" plan so you can continue using Owl Fence AI with basic features.</p>
+              </div>
+            ` : `
+              <div class="warning-box">
+                <p><strong>Your account has been downgraded</strong> from ${fromPlan.charAt(0).toUpperCase() + fromPlan.slice(1)} to Primo plan due to payment processing issues.</p>
+              </div>
+            `}
+            
+            <h3>What's Available on Your Current Plan</h3>
+            
+            <div class="features-comparison">
+              <div class="plan-column free-plan">
+                <h4>🆓 Primo Plan (Current)</h4>
+                <ul>
+                  <li>✅ 5 Basic Estimates</li>
+                  <li>✅ 2 AI Estimates</li>
+                  <li>✅ 2 Contracts</li>
+                  <li>✅ 3 Property Verifications</li>
+                  <li>✅ 3 Permit Advisory queries</li>
+                  <li>✅ 5 Projects</li>
+                  <li>✅ Basic Support</li>
+                </ul>
+              </div>
+              
+              <div class="plan-column paid-plan">
+                <h4>🚀 Mero Plan (Upgrade)</h4>
+                <ul>
+                  <li>✅ 50 Basic Estimates</li>
+                  <li>✅ 25 AI Estimates</li>
+                  <li>✅ 25 Contracts</li>
+                  <li>✅ 20 Property Verifications</li>
+                  <li>✅ 30 Permit Advisory queries</li>
+                  <li>✅ Unlimited Projects</li>
+                  <li>✅ Priority Support</li>
+                </ul>
+              </div>
+            </div>
+            
+            <h3>🎯 Ready to Upgrade?</h3>
+            <p>Get back to full productivity with significantly higher limits and priority support. Perfect for contractors managing multiple projects.</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="https://app.owlfenc.com/billing" class="cta-button">
+                Upgrade to Mero - $37/month
+              </a>
+            </div>
+            
+            ${isTrialDowngrade ? `
+              <div class="info-box">
+                <h4>🔥 Limited Time Offer</h4>
+                <p><strong>Get 20% off your first month</strong> when you upgrade within 7 days. Use code: <strong>TRIAL20</strong></p>
+              </div>
+            ` : `
+              <div class="warning-box">
+                <h4>🔧 Payment Issue?</h4>
+                <p>If this downgrade was unexpected, please check your payment method or contact support. We're here to help restore your plan quickly.</p>
+              </div>
+            `}
+            
+            <p style="color: #666; font-size: 14px;">
+              Your existing projects and data remain safe and accessible. Need help or have questions? Just reply to this email.
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+  
+  /**
+   * Create audit log for downgrade action
+   */
+  private async createDowngradeAuditLog(uid: string, previousEntitlements: any): Promise<void> {
+    try {
+      await db.collection('audit_logs').add({
+        uid,
+        action: 'plan_downgrade',
+        details: {
+          fromPlan: {
+            planId: previousEntitlements.planId,
+            planName: previousEntitlements.planName,
+            limits: previousEntitlements.limits
+          },
+          toPlan: {
+            planId: 1,
+            planName: 'primo',
+            limits: {
+              basicEstimates: 5,
+              aiEstimates: 2,
+              contracts: 2,
+              propertyVerifications: 3,
+              permitAdvisor: 3,
+              projects: 5,
+              invoices: 10,
+              paymentTracking: 20,
+              deepsearch: 5
+            }
+          },
+          reason: previousEntitlements.trial?.isTrialing ? 'trial_expired' : 'payment_failed',
+          automated: true
+        },
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        ipAddress: null,
+        userAgent: null,
+        source: 'trial_notification_service'
+      });
+      
+    } catch (error) {
+      console.error(`❌ [TRIAL-NOTIFICATIONS] Error creating downgrade audit log:`, error);
+      // Don't throw - audit log failure shouldn't stop downgrade
     }
   }
   

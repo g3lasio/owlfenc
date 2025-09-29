@@ -126,6 +126,8 @@ import { registerLaborDeepSearchRoutes } from "./routes/laborDeepSearchRoutes"; 
 import { deepSearchService } from "./services/deepSearchService"; // Import DeepSearch service
 import { GeneralContractorIntelligenceService } from "./services/generalContractorIntelligenceService"; // Import GC service
 import { registerUsageRoutes } from "./routes/usage"; // Import Usage & Permissions routes
+import { registerSecurityOptimizationRoutes } from "./routes/security-optimization"; // Import Security Optimization routes
+import { registerTrialNotificationRoutes } from "./routes/trial-notifications"; // Import Trial Notification routes
 import { analyticsRouter } from './analytics-service'; // Import analytics service for system monitoring
 // import legalDefenseRoutes from "./routes/legal-defense-routes"; // Temporarily disabled for horizontal navigation
 import unifiedContractRoutes from "./routes/unifiedContractRoutes"; // Import Unified Contract Management routes
@@ -7391,6 +7393,14 @@ Output must be between 200-900 characters in English.`;
   
   // Registrar rutas del sistema de permisos y uso (LEGACY - por compatibilidad)
   registerUsageRoutes(app);
+  
+  // 🔐 SECURITY OPTIMIZATION: Advanced security features and token management
+  console.log("🔐 [SECURITY-OPTIMIZATION] Registrando endpoints de optimización de seguridad...");
+  registerSecurityOptimizationRoutes(app);
+  
+  // 📧 TRIAL NOTIFICATIONS: Automated trial lifecycle management
+  console.log("📧 [TRIAL-NOTIFICATIONS] Registrando endpoints de notificaciones de trial...");
+  registerTrialNotificationRoutes(app);
   
   // ✅ FASE 3: Analytics and monitoring endpoints
   app.use("/api/analytics", analyticsRouter);
