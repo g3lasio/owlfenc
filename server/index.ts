@@ -10,6 +10,7 @@ import otpRoutes from "./routes/otp-routes";
 import oauthConfigRoutes from "./routes/oauth-config";
 import webauthnRoutes from "./routes/webauthn";
 import sessionAuthRoutes from "./routes/session-auth";
+import secureTrialRoutes from "./routes/secure-trial";
 import { setupProductionRoutes, setupProductionErrorHandlers } from "./production-setup";
 
 // 🛡️ SECURITY MIDDLEWARE - Applied immediately for maximum protection
@@ -452,6 +453,10 @@ import smsRoutes from './routes/sms';
 
 app.use("/api/sms", smsRoutes);
 console.log('📱 [SMS] Rutas registradas en /api/sms');
+
+// 🔒 Registrar rutas de trial seguro con serverTimestamp
+app.use("/api/secure-trial", secureTrialRoutes);
+console.log('🔒 [SECURE-TRIAL] Rutas de trial seguro registradas en /api/secure-trial');
 
 // 🧪 Endpoints de prueba para verificar conectividad backend
 app.get('/api/test/ping', (req, res) => {
