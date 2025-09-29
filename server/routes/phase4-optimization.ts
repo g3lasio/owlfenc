@@ -13,10 +13,7 @@ import { performanceOptimizationService } from '../services/performanceOptimizat
 import { advancedSecurityService } from '../services/advancedSecurityService';
 import { observabilityService } from '../services/observabilityService';
 import { backupDisasterRecoveryService } from '../services/backupDisasterRecoveryService';
-import { verifyFirebaseAuth } from '../middleware/firebase-auth';
-
-// Para endpoints de admin, usar autenticación Firebase verificada
-const verifyAdminAuth = verifyFirebaseAuth;
+import { verifyAdminAuth } from '../middleware/firebase-auth-middleware';
 
 const router = express.Router();
 
@@ -67,7 +64,7 @@ router.get('/performance/cost-guardrails', verifyAdminAuth, async (req, res) => 
 /**
  * Check Performance SLOs
  */
-router.get('/performance/slos', authenticateFirebaseAdmin, async (req, res) => {
+router.get('/performance/slos', verifyAdminAuth, async (req, res) => {
   try {
     const slos = await performanceOptimizationService.checkPerformanceSLOs();
     res.json({
@@ -87,7 +84,7 @@ router.get('/performance/slos', authenticateFirebaseAdmin, async (req, res) => {
 /**
  * Get Cloud Functions configuration
  */
-router.get('/performance/functions-config', authenticateFirebaseAdmin, async (req, res) => {
+router.get('/performance/functions-config', verifyAdminAuth, async (req, res) => {
   try {
     const config = performanceOptimizationService.getCloudFunctionsConfig();
     res.json({
@@ -107,7 +104,7 @@ router.get('/performance/functions-config', authenticateFirebaseAdmin, async (re
 /**
  * Get Firestore indexes configuration
  */
-router.get('/performance/firestore-indexes', authenticateFirebaseAdmin, async (req, res) => {
+router.get('/performance/firestore-indexes', verifyAdminAuth, async (req, res) => {
   try {
     const indexes = performanceOptimizationService.getFirestoreIndexes();
     res.json({
@@ -131,7 +128,7 @@ router.get('/performance/firestore-indexes', authenticateFirebaseAdmin, async (r
 /**
  * Get security statistics
  */
-router.get('/security/stats', authenticateFirebaseAdmin, async (req, res) => {
+router.get('/security/stats', verifyAdminAuth, async (req, res) => {
   try {
     const stats = advancedSecurityService.getSecurityStats();
     res.json({
@@ -151,7 +148,7 @@ router.get('/security/stats', authenticateFirebaseAdmin, async (req, res) => {
 /**
  * Audit Firestore security rules
  */
-router.post('/security/audit-rules', authenticateFirebaseAdmin, async (req, res) => {
+router.post('/security/audit-rules', verifyAdminAuth, async (req, res) => {
   try {
     const audit = await advancedSecurityService.auditFirestoreRules();
     res.json({
@@ -171,7 +168,7 @@ router.post('/security/audit-rules', authenticateFirebaseAdmin, async (req, res)
 /**
  * Revoke refresh tokens for user (admin only)
  */
-router.post('/security/revoke-tokens', authenticateFirebaseAdmin, async (req, res) => {
+router.post('/security/revoke-tokens', verifyAdminAuth, async (req, res) => {
   try {
     const { uid, reason } = req.body;
     
@@ -201,7 +198,7 @@ router.post('/security/revoke-tokens', authenticateFirebaseAdmin, async (req, re
 /**
  * Get CORS configuration
  */
-router.get('/security/cors-config', authenticateFirebaseAdmin, async (req, res) => {
+router.get('/security/cors-config', verifyAdminAuth, async (req, res) => {
   try {
     const corsConfig = advancedSecurityService.getCorsConfig();
     res.json({
@@ -290,7 +287,7 @@ router.get('/observability/alerts', async (req, res) => {
 /**
  * Resolve an alert (admin only)
  */
-router.post('/observability/alerts/:alertId/resolve', authenticateFirebaseAdmin, async (req, res) => {
+router.post('/observability/alerts/:alertId/resolve', verifyAdminAuth, async (req, res) => {
   try {
     const { alertId } = req.params;
     const resolved = await observabilityService.resolveAlert(alertId);
@@ -343,7 +340,7 @@ router.get('/observability/stats', async (req, res) => {
 /**
  * Get backup jobs history
  */
-router.get('/backup/jobs', authenticateFirebaseAdmin, async (req, res) => {
+router.get('/backup/jobs', verifyAdminAuth, async (req, res) => {
   try {
     const jobs = await backupDisasterRecoveryService.getBackupJobs();
     res.json({
@@ -364,7 +361,7 @@ router.get('/backup/jobs', authenticateFirebaseAdmin, async (req, res) => {
 /**
  * Get restore jobs history
  */
-router.get('/backup/restore-jobs', authenticateFirebaseAdmin, async (req, res) => {
+router.get('/backup/restore-jobs', verifyAdminAuth, async (req, res) => {
   try {
     const jobs = await backupDisasterRecoveryService.getRestoreJobs();
     res.json({
@@ -385,7 +382,7 @@ router.get('/backup/restore-jobs', authenticateFirebaseAdmin, async (req, res) =
 /**
  * Get DR metrics and status
  */
-router.get('/backup/dr-metrics', authenticateFirebaseAdmin, async (req, res) => {
+router.get('/backup/dr-metrics', verifyAdminAuth, async (req, res) => {
   try {
     const metrics = await backupDisasterRecoveryService.getDRMetrics();
     res.json({
@@ -405,7 +402,7 @@ router.get('/backup/dr-metrics', authenticateFirebaseAdmin, async (req, res) => 
 /**
  * Get backup configuration
  */
-router.get('/backup/config', authenticateFirebaseAdmin, async (req, res) => {
+router.get('/backup/config', verifyAdminAuth, async (req, res) => {
   try {
     const config = await backupDisasterRecoveryService.getBackupConfig();
     res.json({
@@ -425,7 +422,7 @@ router.get('/backup/config', authenticateFirebaseAdmin, async (req, res) => {
 /**
  * Trigger manual backup (admin only)
  */
-router.post('/backup/trigger', authenticateFirebaseAdmin, async (req, res) => {
+router.post('/backup/trigger', verifyAdminAuth, async (req, res) => {
   try {
     console.log('📦 [PHASE4-BACKUP] Manual backup triggered by admin');
     const job = await backupDisasterRecoveryService.triggerManualBackup();
@@ -448,7 +445,7 @@ router.post('/backup/trigger', authenticateFirebaseAdmin, async (req, res) => {
 /**
  * Trigger DR test (admin only)
  */
-router.post('/backup/dr-test', authenticateFirebaseAdmin, async (req, res) => {
+router.post('/backup/dr-test', verifyAdminAuth, async (req, res) => {
   try {
     console.log('🧪 [PHASE4-BACKUP] DR test triggered by admin');
     const result = await backupDisasterRecoveryService.triggerDRTest();
@@ -471,7 +468,7 @@ router.post('/backup/dr-test', authenticateFirebaseAdmin, async (req, res) => {
 /**
  * Trigger retention cleanup (admin only)
  */
-router.post('/backup/retention-cleanup', authenticateFirebaseAdmin, async (req, res) => {
+router.post('/backup/retention-cleanup', verifyAdminAuth, async (req, res) => {
   try {
     console.log('🗑️ [PHASE4-BACKUP] Retention cleanup triggered by admin');
     const result = await backupDisasterRecoveryService.triggerRetentionCleanup();
