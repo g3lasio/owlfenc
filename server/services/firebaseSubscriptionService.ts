@@ -322,11 +322,11 @@ export class FirebaseSubscriptionService {
   }
 
   /**
-   * Create 21-day Trial Master subscription for new users
+   * Create 14-day Trial Master subscription for new users
    */
   async createTrialMasterSubscription(userId: string): Promise<void> {
     try {
-      console.log(`🧪 [FIREBASE-SUBSCRIPTION] Creating 21-day Trial Master for user: ${userId}`);
+      console.log(`🧪 [FIREBASE-SUBSCRIPTION] Creating 14-day Trial Master for user: ${userId}`);
       
       // Obtener el user_id interno desde Firebase UID
       const internalUserId = await userMappingService.getInternalUserId(userId);
@@ -361,7 +361,7 @@ export class FirebaseSubscriptionService {
       
       const currentDate = new Date();
       const trialEndDate = new Date(currentDate);
-      trialEndDate.setDate(currentDate.getDate() + 21); // 21 days trial
+      trialEndDate.setDate(currentDate.getDate() + 14); // 14 days trial
       
       // Crear o actualizar suscripción en la base de datos
       await db!

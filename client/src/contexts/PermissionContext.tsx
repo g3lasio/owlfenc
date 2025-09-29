@@ -141,9 +141,9 @@ const PLANS: Plan[] = [
   {
     id: 4,
     name: "Trial Master",
-    motto: "Prueba el poder total por 21 días",
+    motto: "Prueba el poder total por 14 días",
     price: 0,
-    trialDays: 21,
+    trialDays: 14,
     limits: {
       basicEstimates: -1,
       aiEstimates: -1,
@@ -156,7 +156,7 @@ const PLANS: Plan[] = [
       deepsearch: -1  // Unlimited during trial
     },
     features: [
-      "ACCESO TOTAL por 21 días",
+      "ACCESO TOTAL por 14 días",
       "Todas las funciones premium",
       "Sin marcas de agua",
       "Soporte premium"

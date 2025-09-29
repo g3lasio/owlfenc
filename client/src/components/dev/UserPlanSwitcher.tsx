@@ -18,7 +18,7 @@ export function UserPlanSwitcher() {
       name: 'Prueba Gratis',
       icon: User,
       color: 'bg-gray-100 text-gray-700',
-      description: '21 días gratis con acceso completo'
+      description: '14 días gratis con acceso completo'
     },
     {
       id: 'primo-chambeador',

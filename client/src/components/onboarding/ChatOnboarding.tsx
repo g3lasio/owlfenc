@@ -54,7 +54,7 @@ const ChatOnboarding: React.FC<{ onComplete: () => void }> = ({ onComplete }) =>
       if (response.ok) {
         toast({
           title: "🎉 Trial activado",
-          description: "Tienes 21 días de acceso completo a todas las funciones premium",
+          description: "Tienes 14 días de acceso completo a todas las funciones premium",
         });
       }
     } catch (error) {
@@ -92,7 +92,7 @@ const ChatOnboarding: React.FC<{ onComplete: () => void }> = ({ onComplete }) =>
                   </h1>
                   <Badge className="bg-green-100 text-green-700 border-green-300 text-xs px-2 py-1">
                     <Zap className="h-3 w-3 mr-1" />
-                    Trial Master - 21 Días Gratis
+                    Trial Master - 14 Días Gratis
                   </Badge>
                 </div>
               </div>
