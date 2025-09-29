@@ -1,0 +1,55 @@
+	4.	Trials
+	•	Trial de 21 días atado a uid con fecha de inicio serverTimestamp.
+	•	Nunca se resetea aunque el usuario cambie de dispositivo.
+	•	Expira automáticamente con Cloud Functions/Cloud Scheduler.
+	5.	Enforcement (donde importa)
+	•	Toda acción sensible (generar contrato, estimado, etc) debe ejecutarse a través de Callable Functions:
+	1.	Verifica plan y trial.
+	2.	Verifica cuota con usage.
+	3.	Incrementa contador en transacción.
+	4.	Ejecuta acción real.
+	•	El frontend solo muestra/oculta botones, pero nunca valida límites.
+	6.	Resets mensuales
+	•	Uso se resetea creando nuevo usage doc con month_key = YYYY-MM.
+	•	Se ejecuta automáticamente con Cloud Scheduler.
+	7.	Seguridad
+	•	Firestore Rules:
+	•	entitlements: solo lectura para el dueño (request.auth.uid == uid), nunca escritura.
+	•	usage: solo lectura para el dueño, nunca escritura.
+	•	Todo update de entitlements/usage es via backend (Admin SDK).
+	8.	Beneficios y escalabilidad
+	•	✅ Evitamos reseteos de trial.
+	•	✅ Control exacto de límites por plan.
+	•	✅ Fácil escalar a miles de usuarios.
+	•	✅ Agregar/quitar features se hace solo en entitlements, no en el código.
+	•	✅ Auditoría con audit_logs.
+
+⸻
+
+Plan de acción solicitado
+	1.	Auditar la implementación actual (login, free trial, permisos, contadores).
+	2.	Comparar con el esqueleto anterior (opción A).
+	3.	Proponer un plan paso a paso para migrar:
+	•	Migrar datos de usuarios actuales a entitlements y usage.
+	•	Implementar trials con serverTimestamp.
+	•	Implementar Cloud Functions de enforcement y transacciones.
+	•	Configurar reglas de seguridad en Firestore.
+	•	Configurar resets automáticos (Cloud Scheduler).
+	•	Opcional: preparar audit_logs.
+	4.	Entregar un esqueleto técnico de lo que ofrecemos a los usuarios según plan (ejemplo):
+	•	Free Trial (21 días)
+	•	5 contratos
+	•	5 estimados IA
+	•	Primo Chambeador (gratis)
+	•	5 contratos/mes
+	•	5 estimados IA/mes
+	•	Mero Patrón (pago medio)
+	•	50 contratos/mes
+	•	50 estimados IA/mes
+	•	Master Contractor ($99/mes)
+	•	Ilimitado todo
+	5.	Beneficio esperado: un sistema robusto, confiable, escalable, sin reseteos por dispositivo y con enforcement fuerte en backend.
+
+⸻
+
+👉 Agente: necesito que me devuelvas un plan detallado de implementación basado en este esqueleto, asegurándome que cada parte quede clara y lista para producción.
