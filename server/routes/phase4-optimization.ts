@@ -13,6 +13,7 @@ import { performanceOptimizationService } from '../services/performanceOptimizat
 import { advancedSecurityService } from '../services/advancedSecurityService';
 import { observabilityService } from '../services/observabilityService';
 import { backupDisasterRecoveryService } from '../services/backupDisasterRecoveryService';
+import { qaHardeningService } from '../services/qaHardeningService';
 import { verifyAdminAuth } from '../middleware/firebase-auth-middleware';
 
 const router = express.Router();
@@ -502,6 +503,7 @@ router.get('/health', async (req, res) => {
       security: advancedSecurityService.getSecurityStats(),
       observability: observabilityService.getServiceStats(),
       backup: await backupDisasterRecoveryService.getDRMetrics(),
+      qa: await qaHardeningService.getTestSummary(),
       timestamp: new Date().toISOString()
     };
 
@@ -561,6 +563,160 @@ router.get('/status', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to get comprehensive status'
+    });
+  }
+});
+
+// ================================
+// PHASE 4 - QA & HARDENING ENDPOINTS
+// ================================
+
+/**
+ * Run load test (admin only)
+ */
+router.post('/qa/load-test', verifyAdminAuth, async (req, res) => {
+  try {
+    const { configName } = req.body;
+    console.log(`🚀 [PHASE4-QA] Load test triggered by admin: ${configName || 'standard'}`);
+    
+    const result = await qaHardeningService.runLoadTest(configName);
+    
+    res.json({
+      success: true,
+      data: result,
+      message: 'Load test completed',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[PHASE4-QA] Error running load test:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to run load test'
+    });
+  }
+});
+
+/**
+ * Run chaos test (admin only)
+ */
+router.post('/qa/chaos-test', verifyAdminAuth, async (req, res) => {
+  try {
+    const { scenarioName } = req.body;
+    console.log(`💥 [PHASE4-QA] Chaos test triggered by admin: ${scenarioName || 'random'}`);
+    
+    const result = await qaHardeningService.runChaosTest(scenarioName);
+    
+    res.json({
+      success: true,
+      data: result,
+      message: 'Chaos test completed',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[PHASE4-QA] Error running chaos test:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to run chaos test'
+    });
+  }
+});
+
+/**
+ * Run E2E test suite (admin only)
+ */
+router.post('/qa/e2e-test', verifyAdminAuth, async (req, res) => {
+  try {
+    console.log('🔄 [PHASE4-QA] E2E test suite triggered by admin');
+    
+    const result = await qaHardeningService.runE2ETests();
+    
+    res.json({
+      success: true,
+      data: result,
+      message: 'E2E test suite completed',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[PHASE4-QA] Error running E2E tests:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to run E2E tests'
+    });
+  }
+});
+
+/**
+ * Run security tests (admin only)
+ */
+router.post('/qa/security-test', verifyAdminAuth, async (req, res) => {
+  try {
+    console.log('🔒 [PHASE4-QA] Security test triggered by admin');
+    
+    const result = await qaHardeningService.runSecurityTests();
+    
+    res.json({
+      success: true,
+      data: result,
+      message: 'Security test completed',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[PHASE4-QA] Error running security tests:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to run security tests'
+    });
+  }
+});
+
+/**
+ * Get QA test results and summary
+ */
+router.get('/qa/results', verifyAdminAuth, async (req, res) => {
+  try {
+    const [loadTests, chaosTests, e2eTests, summary] = await Promise.all([
+      qaHardeningService.getLoadTests(),
+      qaHardeningService.getChaosTests(),
+      qaHardeningService.getE2ETests(),
+      qaHardeningService.getTestSummary()
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        loadTests,
+        chaosTests,
+        e2eTests,
+        summary
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[PHASE4-QA] Error getting QA results:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get QA results'
+    });
+  }
+});
+
+/**
+ * Get QA test summary only
+ */
+router.get('/qa/summary', verifyAdminAuth, async (req, res) => {
+  try {
+    const summary = await qaHardeningService.getTestSummary();
+    
+    res.json({
+      success: true,
+      data: summary,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[PHASE4-QA] Error getting QA summary:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get QA summary'
     });
   }
 });
