@@ -5,23 +5,21 @@
 
 import { Router } from 'express';
 import { secureTrialService } from '../services/secureTrialService.js';
+import { verifyFirebaseAuth, AuthenticatedRequest } from '../middleware/firebase-auth-middleware.js';
 
 const router = Router();
 
 /**
  * POST /api/secure-trial/activate
  * Activate secure 14-day trial with serverTimestamp (IMMUTABLE)
+ * REQUIRES FIREBASE AUTHENTICATION - NO BYPASS POSSIBLE
  */
-router.post('/activate', async (req, res) => {
+router.post('/activate', verifyFirebaseAuth, async (req, res) => {
   try {
-    const { uid } = req.body;
+    // SECURITY: Get UID from verified Firebase token, not request body
+    const uid = (req as AuthenticatedRequest).uid;
     
-    if (!uid) {
-      return res.status(400).json({
-        success: false,
-        error: 'Firebase UID is required'
-      });
-    }
+    // UID is guaranteed to exist from Firebase auth middleware
     
     console.log(`🔒 [SECURE-TRIAL-API] Activating secure trial for: ${uid}`);
     
@@ -51,12 +49,14 @@ router.post('/activate', async (req, res) => {
 });
 
 /**
- * GET /api/secure-trial/status/:uid
+ * GET /api/secure-trial/status
  * Get trial status (protected by serverTimestamp)
+ * REQUIRES FIREBASE AUTHENTICATION - NO BYPASS POSSIBLE
  */
-router.get('/status/:uid', async (req, res) => {
+router.get('/status', verifyFirebaseAuth, async (req, res) => {
   try {
-    const { uid } = req.params;
+    // SECURITY: Get UID from verified Firebase token, not URL params
+    const uid = (req as AuthenticatedRequest).uid;
     
     console.log(`🔍 [SECURE-TRIAL-API] Getting trial status for: ${uid}`);
     
@@ -97,15 +97,18 @@ router.get('/status/:uid', async (req, res) => {
 /**
  * POST /api/secure-trial/use-feature
  * Use feature with atomic enforcement (STRONG ENFORCEMENT)
+ * REQUIRES FIREBASE AUTHENTICATION - NO BYPASS POSSIBLE
  */
-router.post('/use-feature', async (req, res) => {
+router.post('/use-feature', verifyFirebaseAuth, async (req, res) => {
   try {
-    const { uid, feature, action = 'increment' } = req.body;
+    // SECURITY: Get UID from verified Firebase token, not request body
+    const uid = (req as AuthenticatedRequest).uid;
+    const { feature, action = 'increment' } = req.body;
     
-    if (!uid || !feature) {
+    if (!feature) {
       return res.status(400).json({
         success: false,
-        error: 'UID and feature are required'
+        error: 'Feature is required'
       });
     }
     
@@ -164,15 +167,18 @@ router.post('/use-feature', async (req, res) => {
 /**
  * POST /api/secure-trial/check-feature
  * Check if user can use feature (without incrementing)
+ * REQUIRES FIREBASE AUTHENTICATION - NO BYPASS POSSIBLE
  */
-router.post('/check-feature', async (req, res) => {
+router.post('/check-feature', verifyFirebaseAuth, async (req, res) => {
   try {
-    const { uid, feature } = req.body;
+    // SECURITY: Get UID from verified Firebase token, not request body
+    const uid = (req as AuthenticatedRequest).uid;
+    const { feature } = req.body;
     
-    if (!uid || !feature) {
+    if (!feature) {
       return res.status(400).json({
         success: false,
-        error: 'UID and feature are required'
+        error: 'Feature is required'
       });
     }
     
@@ -199,12 +205,14 @@ router.post('/check-feature', async (req, res) => {
 });
 
 /**
- * POST /api/secure-trial/expire/:uid
+ * POST /api/secure-trial/expire
  * Manually expire trial (admin only)
+ * REQUIRES FIREBASE AUTHENTICATION - NO BYPASS POSSIBLE
  */
-router.post('/expire/:uid', async (req, res) => {
+router.post('/expire', verifyFirebaseAuth, async (req, res) => {
   try {
-    const { uid } = req.params;
+    // SECURITY: Get UID from verified Firebase token, not URL params
+    const uid = (req as AuthenticatedRequest).uid;
     
     console.log(`⏰ [SECURE-TRIAL-API] Manually expiring trial for: ${uid}`);
     

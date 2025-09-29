@@ -6,23 +6,22 @@
 
 import { Router } from 'express';
 import { secureTrialService } from '../services/secureTrialService.js';
+import { verifyFirebaseAuth, AuthenticatedRequest } from '../middleware/firebase-auth-middleware.js';
 
 const router = Router();
 
 /**
  * POST /api/secure-enforcement/generate-contract
  * Generate contract with STRONG enforcement (cannot be bypassed)
+ * REQUIRES FIREBASE AUTHENTICATION - NO BYPASS POSSIBLE
  */
-router.post('/generate-contract', async (req, res) => {
+router.post('/generate-contract', verifyFirebaseAuth, async (req, res) => {
   try {
-    const { uid, contractData } = req.body;
+    // SECURITY: Get UID from verified Firebase token, not request body
+    const uid = (req as AuthenticatedRequest).uid;
+    const { contractData } = req.body;
     
-    if (!uid) {
-      return res.status(400).json({
-        success: false,
-        error: 'Firebase UID is required'
-      });
-    }
+    // UID is guaranteed to exist from Firebase auth middleware
     
     console.log(`🛡️ [SECURE-ENFORCEMENT] Generating contract for: ${uid}`);
     
@@ -89,17 +88,15 @@ router.post('/generate-contract', async (req, res) => {
 /**
  * POST /api/secure-enforcement/generate-estimate
  * Generate estimate with STRONG enforcement
+ * REQUIRES FIREBASE AUTHENTICATION - NO BYPASS POSSIBLE
  */
-router.post('/generate-estimate', async (req, res) => {
+router.post('/generate-estimate', verifyFirebaseAuth, async (req, res) => {
   try {
-    const { uid, estimateData, useAI = false } = req.body;
+    // SECURITY: Get UID from verified Firebase token, not request body
+    const uid = (req as AuthenticatedRequest).uid;
+    const { estimateData, useAI = false } = req.body;
     
-    if (!uid) {
-      return res.status(400).json({
-        success: false,
-        error: 'Firebase UID is required'
-      });
-    }
+    // UID is guaranteed to exist from Firebase auth middleware
     
     const feature = useAI ? 'aiEstimates' : 'basicEstimates';
     console.log(`🛡️ [SECURE-ENFORCEMENT] Generating ${feature} for: ${uid}`);
@@ -167,17 +164,15 @@ router.post('/generate-estimate', async (req, res) => {
 /**
  * POST /api/secure-enforcement/property-verification
  * Property verification with STRONG enforcement
+ * REQUIRES FIREBASE AUTHENTICATION - NO BYPASS POSSIBLE
  */
-router.post('/property-verification', async (req, res) => {
+router.post('/property-verification', verifyFirebaseAuth, async (req, res) => {
   try {
-    const { uid, propertyData } = req.body;
+    // SECURITY: Get UID from verified Firebase token, not request body
+    const uid = (req as AuthenticatedRequest).uid;
+    const { propertyData } = req.body;
     
-    if (!uid) {
-      return res.status(400).json({
-        success: false,
-        error: 'Firebase UID is required'
-      });
-    }
+    // UID is guaranteed to exist from Firebase auth middleware
     
     console.log(`🛡️ [SECURE-ENFORCEMENT] Property verification for: ${uid}`);
     
@@ -238,17 +233,15 @@ router.post('/property-verification', async (req, res) => {
 /**
  * POST /api/secure-enforcement/permit-advisor
  * Permit advisor with STRONG enforcement
+ * REQUIRES FIREBASE AUTHENTICATION - NO BYPASS POSSIBLE
  */
-router.post('/permit-advisor', async (req, res) => {
+router.post('/permit-advisor', verifyFirebaseAuth, async (req, res) => {
   try {
-    const { uid, projectData } = req.body;
+    // SECURITY: Get UID from verified Firebase token, not request body
+    const uid = (req as AuthenticatedRequest).uid;
+    const { projectData } = req.body;
     
-    if (!uid) {
-      return res.status(400).json({
-        success: false,
-        error: 'Firebase UID is required'
-      });
-    }
+    // UID is guaranteed to exist from Firebase auth middleware
     
     console.log(`🛡️ [SECURE-ENFORCEMENT] Permit advisor for: ${uid}`);
     
@@ -307,12 +300,14 @@ router.post('/permit-advisor', async (req, res) => {
 });
 
 /**
- * GET /api/secure-enforcement/usage-summary/:uid
+ * GET /api/secure-enforcement/usage-summary
  * Get complete usage summary for user
+ * REQUIRES FIREBASE AUTHENTICATION - NO BYPASS POSSIBLE
  */
-router.get('/usage-summary/:uid', async (req, res) => {
+router.get('/usage-summary', verifyFirebaseAuth, async (req, res) => {
   try {
-    const { uid } = req.params;
+    // SECURITY: Get UID from verified Firebase token, not URL params
+    const uid = (req as AuthenticatedRequest).uid;
     
     console.log(`📊 [SECURE-ENFORCEMENT] Getting usage summary for: ${uid}`);
     
