@@ -7,6 +7,7 @@
 import { Router } from 'express';
 import { verifyFirebaseAuth, AuthenticatedRequest } from '../middleware/firebase-auth-middleware.js';
 import { productionUsageService } from '../services/productionUsageService.js';
+import { rateLimiters } from '../middleware/rate-limit-middleware.js';
 
 const router = Router();
 
@@ -14,7 +15,7 @@ const router = Router();
  * POST /api/features/generate-estimate
  * Generate basic estimate with usage tracking
  */
-router.post('/generate-estimate', verifyFirebaseAuth, async (req, res) => {
+router.post('/generate-estimate', verifyFirebaseAuth, rateLimiters.basicEstimates, async (req, res) => {
   try {
     const uid = (req as AuthenticatedRequest).uid;
     const { projectData, clientInfo } = req.body;
@@ -73,7 +74,7 @@ router.post('/generate-estimate', verifyFirebaseAuth, async (req, res) => {
  * POST /api/features/generate-ai-estimate
  * Generate AI-powered estimate with usage tracking
  */
-router.post('/generate-ai-estimate', verifyFirebaseAuth, async (req, res) => {
+router.post('/generate-ai-estimate', verifyFirebaseAuth, rateLimiters.aiEstimates, async (req, res) => {
   try {
     const uid = (req as AuthenticatedRequest).uid;
     const { projectData, clientInfo, aiPrompt } = req.body;
@@ -136,7 +137,7 @@ router.post('/generate-ai-estimate', verifyFirebaseAuth, async (req, res) => {
  * POST /api/features/generate-contract
  * Generate contract with usage tracking
  */
-router.post('/generate-contract', verifyFirebaseAuth, async (req, res) => {
+router.post('/generate-contract', verifyFirebaseAuth, rateLimiters.contracts, async (req, res) => {
   try {
     const uid = (req as AuthenticatedRequest).uid;
     const { contractData, clientInfo, templateType } = req.body;
@@ -199,7 +200,7 @@ router.post('/generate-contract', verifyFirebaseAuth, async (req, res) => {
  * POST /api/features/property-verification
  * Verify property with usage tracking
  */
-router.post('/property-verification', verifyFirebaseAuth, async (req, res) => {
+router.post('/property-verification', verifyFirebaseAuth, rateLimiters.propertyVerification, async (req, res) => {
   try {
     const uid = (req as AuthenticatedRequest).uid;
     const { propertyAddress, verificationType } = req.body;
@@ -261,7 +262,7 @@ router.post('/property-verification', verifyFirebaseAuth, async (req, res) => {
  * POST /api/features/permit-advisor
  * Get permit advice with usage tracking
  */
-router.post('/permit-advisor', verifyFirebaseAuth, async (req, res) => {
+router.post('/permit-advisor', verifyFirebaseAuth, rateLimiters.permitAdvisor, async (req, res) => {
   try {
     const uid = (req as AuthenticatedRequest).uid;
     const { projectData, location, permitType } = req.body;
@@ -324,7 +325,7 @@ router.post('/permit-advisor', verifyFirebaseAuth, async (req, res) => {
  * GET /api/features/usage-summary
  * Get current usage summary for authenticated user
  */
-router.get('/usage-summary', verifyFirebaseAuth, async (req, res) => {
+router.get('/usage-summary', verifyFirebaseAuth, rateLimiters.readOnly, async (req, res) => {
   try {
     const uid = (req as AuthenticatedRequest).uid;
     
@@ -384,7 +385,7 @@ router.get('/usage-summary', verifyFirebaseAuth, async (req, res) => {
  * POST /api/features/check-quota
  * Check if user can consume a specific feature (without consuming)
  */
-router.post('/check-quota', verifyFirebaseAuth, async (req, res) => {
+router.post('/check-quota', verifyFirebaseAuth, rateLimiters.readOnly, async (req, res) => {
   try {
     const uid = (req as AuthenticatedRequest).uid;
     const { feature } = req.body;

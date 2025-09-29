@@ -15,6 +15,10 @@ import secureEnforcementRoutes from "./routes/secure-enforcement";
 import secureTestingRoutes from "./routes/secure-testing";
 import productionFeaturesRoutes from "./routes/production-features";
 import monthlyResetRoutes from "./routes/monthly-reset";
+import trialNotificationsRoutes from "./routes/trial-notifications";
+import adminPanelRoutes from "./routes/admin-panel";
+import qaTestingRoutes from "./routes/qa-testing";
+import uiGuardsRoutes from "./routes/ui-guards";
 import { setupProductionRoutes, setupProductionErrorHandlers } from "./production-setup";
 
 // 🛡️ SECURITY MIDDLEWARE - Applied immediately for maximum protection
@@ -477,6 +481,22 @@ console.log('🔥 [PRODUCTION-FEATURES] Rutas de features con usage tracking reg
 // 🔄 Registrar rutas de reset mensual (Cloud Scheduler)
 app.use("/api/monthly-reset", monthlyResetRoutes);
 console.log('🔄 [MONTHLY-RESET] Rutas de reset mensual registradas en /api/monthly-reset');
+
+// 📧 Registrar rutas de notificaciones de trial
+app.use("/api/trial-notifications", trialNotificationsRoutes);
+console.log('📧 [TRIAL-NOTIFICATIONS] Rutas de notificaciones de trial registradas en /api/trial-notifications');
+
+// 👑 Registrar panel de admin con controles de negocio
+app.use("/api/admin", adminPanelRoutes);
+console.log('👑 [ADMIN-PANEL] Panel de admin con métricas y controles registrado en /api/admin');
+
+// 🧪 Registrar sistema de QA testing
+app.use("/api/qa", qaTestingRoutes);
+console.log('🧪 [QA-TESTING] Sistema de testing QA registrado en /api/qa');
+
+// 🎨 Registrar guards de UI para frontend
+app.use("/api/ui-guards", uiGuardsRoutes);
+console.log('🎨 [UI-GUARDS] Guards de UI para límites registrados en /api/ui-guards');
 
 // 🧪 Endpoints de prueba para verificar conectividad backend
 app.get('/api/test/ping', (req, res) => {
