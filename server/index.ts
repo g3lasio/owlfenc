@@ -13,6 +13,8 @@ import sessionAuthRoutes from "./routes/session-auth";
 import secureTrialRoutes from "./routes/secure-trial";
 import secureEnforcementRoutes from "./routes/secure-enforcement";
 import secureTestingRoutes from "./routes/secure-testing";
+import productionFeaturesRoutes from "./routes/production-features";
+import monthlyResetRoutes from "./routes/monthly-reset";
 import { setupProductionRoutes, setupProductionErrorHandlers } from "./production-setup";
 
 // 🛡️ SECURITY MIDDLEWARE - Applied immediately for maximum protection
@@ -467,6 +469,14 @@ console.log('🛡️ [SECURE-ENFORCEMENT] Rutas de enforcement fuerte registrada
 // 🧪 Registrar rutas de testing de seguridad
 app.use("/api/secure-testing", secureTestingRoutes);
 console.log('🧪 [SECURE-TESTING] Rutas de testing de seguridad registradas en /api/secure-testing');
+
+// 🔥 Registrar rutas de features de producción con usage tracking
+app.use("/api/features", productionFeaturesRoutes);
+console.log('🔥 [PRODUCTION-FEATURES] Rutas de features con usage tracking registradas en /api/features');
+
+// 🔄 Registrar rutas de reset mensual (Cloud Scheduler)
+app.use("/api/monthly-reset", monthlyResetRoutes);
+console.log('🔄 [MONTHLY-RESET] Rutas de reset mensual registradas en /api/monthly-reset');
 
 // 🧪 Endpoints de prueba para verificar conectividad backend
 app.get('/api/test/ping', (req, res) => {
