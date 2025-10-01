@@ -1,6 +1,8 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 import {
   insertProjectSchema,
   insertTemplateSchema,
@@ -99,7 +101,7 @@ import openrouterAPI from "./routes/openrouter-api"; // Import OpenRouter API fo
 // PDF routes removed - using only premiumPdfService
 import paymentRoutes from "./routes/payment-routes"; // Import payment routes
 import usageLimitsRoutes from "./routes/usage-limits"; // Import usage limits routes
-import { AuthMiddleware, requireAuthenticatedUser, requireAuth } from './middleware/authMiddleware';
+import { AuthMiddleware, requireAuthenticatedUser, requireAuth, AuthenticatedRequest } from './middleware/authMiddleware';
 import { initSecureUserHelper } from './utils/secureUserHelper';
 import { DataIntegrityChecker } from './utils/dataIntegrityChecker';
 import { registerSubscriptionControlRoutes } from "./routes/subscription-control"; // Import ROBUST subscription control
@@ -6626,37 +6628,29 @@ Output must be between 200-900 characters in English.`;
   // 🛡️ ENDPOINTS SEGUROS PARA HISTORIAL DE BÚSQUEDA DE PROPIEDADES
   app.get("/api/property/history", requireAuth, async (req: Request, res: Response) => {
     try {
-      // 🔐 OBTENER userId REAL DEL TOKEN AUTENTICADO 
-      const firebaseUid = (req as any).firebaseUser?.uid;
-      if (!firebaseUid) {
+      // 🔐 OBTENER userId del AuthMiddleware
+      const authReq = req as AuthenticatedRequest;
+      const userId = authReq.userId;
+      const firebaseUid = authReq.firebaseUid;
+      
+      if (!userId || !firebaseUid) {
         return res.status(401).json({ error: "Usuario no autenticado" });
       }
 
-      // Obtener el usuario de la base de datos
-      const user = await storage.getUserByFirebaseUid(firebaseUid);
-      if (!user) {
-        return res.status(404).json({ error: "Usuario no encontrado en base de datos" });
+      console.log(`🔍 [PROPERTY-HISTORY-SECURED] Obteniendo historial para usuario autenticado: ${firebaseUid} (ID: ${userId})`);
+
+      // 🔒 QUERY usando drizzle sql template tag
+      if (!db) {
+        return res.status(500).json({ error: "Database not initialized" });
       }
-
-      console.log(`🔍 [PROPERTY-HISTORY-SECURED] Obteniendo historial para usuario autenticado: ${firebaseUid} (ID: ${user.id})`);
-
-      // 🔒 QUERY DIRECTA PARA EVITAR PROBLEMAS CON DatabaseStorage - TEMPORAL FIX
-      // Import Pool from pg at the top level if not already imported
-      const { Pool } = require('pg');
       
-      // Use the DATABASE_URL from environment
-      const pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-      });
-      
-      const query = `
+      const result = await db.execute(sql`
         SELECT id, user_id, address, owner_name, parcel_number, results, title, notes, tags, is_favorite, created_at, search_date
         FROM property_search_history 
-        WHERE user_id = $1 
+        WHERE user_id = ${userId}
         ORDER BY search_date DESC
-      `;
+      `);
       
-      const result = await pool.query(query, [user.id]);
       const history = result.rows || [];
       
       // Transform snake_case to camelCase for frontend compatibility
@@ -6675,7 +6669,7 @@ Output must be between 200-900 characters in English.`;
         searchDate: item.search_date
       }));
       
-      console.log(`✅ [PROPERTY-HISTORY-SECURED] Devolviendo ${transformedHistory.length} búsquedas del usuario ${user.id}`);
+      console.log(`✅ [PROPERTY-HISTORY-SECURED] Devolviendo ${transformedHistory.length} búsquedas del usuario ${userId}`);
       res.json(transformedHistory);
     } catch (error) {
       console.error("❌ [PROPERTY-HISTORY-SECURED] Error:", error);
