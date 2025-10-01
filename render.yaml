@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: owl-fence-ai
+    env: node
+    region: oregon
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_API_KEY
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false

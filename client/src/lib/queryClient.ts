@@ -102,60 +102,81 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  // Obtener headers de autenticación con retry
-  const authHeaders = await getAuthHeaders();
+  const maxRetries = method === 'GET' ? 3 : 1; // Reintentos solo para GET (idempotente)
+  let lastError: any;
   
-  // Combinar headers
-  const headers = {
-    ...authHeaders,
-    ...(data ? { "Content-Type": "application/json" } : {}),
-  };
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Obtener headers de autenticación con retry
+      const authHeaders = await getAuthHeaders();
+      
+      // Combinar headers
+      const headers = {
+        ...authHeaders,
+        ...(data ? { "Content-Type": "application/json" } : {}),
+      };
 
-  // Solo log en modo debug para reducir spam de console
-  if (window.location.search.includes('debug=api')) {
-    console.debug(`🔧 [API-DEBUG] ${method} ${url.substring(0, 30)} - Auth: ${!!authHeaders.Authorization}`);
-  }
+      // Solo log en modo debug para reducir spam de console
+      if (window.location.search.includes('debug=api')) {
+        console.debug(`🔧 [API-DEBUG] ${method} ${url.substring(0, 30)} - Attempt ${attempt}/${maxRetries} - Auth: ${!!authHeaders.Authorization}`);
+      }
 
-  try {
-    // Fetch simplificado con timeout silencioso
-    const fetchPromise = fetch(url, {
-      method,
-      headers,
-      body: data ? JSON.stringify(data) : undefined,
-      credentials: "include",
-    });
-
-    // Timeout EXTENDIDO para operaciones DeepSearch intensivas (Reality Validation puede tomar hasta 2 minutos)
-    const timeoutMs = url.includes('deepsearch') || url.includes('labor-deepsearch') ? 120000 : 10000;
-    const res = await safeTimeout(fetchPromise, timeoutMs);
-    
-    if (!res) {
-      const errorMsg = url.includes('deepsearch') || url.includes('labor-deepsearch') 
-        ? 'DeepSearch request timeout (2min) - Reality Validation took too long'
-        : 'Request timeout or failed';
-      throw new Error(errorMsg);
-    }
-
-    await throwIfResNotOk(res);
-    return res;
-  } catch (error: any) {
-    // Usar el manejador de errores unificado
-    const handledError = unifiedErrorHandler.handleError(error, `API ${method} ${url}`);
-    if (!handledError) {
-      // Error fue silenciado, retornar respuesta mock
-      return new Response('{"error": "Network error handled silently", "offline": true}', { 
-        status: 503,
-        headers: { 'Content-Type': 'application/json' }
+      // Fetch con timeout de 15 segundos
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      
+      const fetchPromise = fetch(url, {
+        method,
+        headers,
+        body: data ? JSON.stringify(data) : undefined,
+        credentials: "include",
+        signal: controller.signal,
       });
+
+      // Timeout EXTENDIDO para operaciones DeepSearch intensivas (Reality Validation puede tomar hasta 2 minutos)
+      const timeoutMs = url.includes('deepsearch') || url.includes('labor-deepsearch') ? 120000 : 10000;
+      const res = await safeTimeout(fetchPromise, timeoutMs);
+      
+      clearTimeout(timeoutId); // Limpiar timeout
+      
+      if (!res) {
+        const errorMsg = url.includes('deepsearch') || url.includes('labor-deepsearch') 
+          ? 'DeepSearch request timeout (2min) - Reality Validation took too long'
+          : 'Request timeout or failed';
+        throw new Error(errorMsg);
+      }
+
+      await throwIfResNotOk(res);
+      return res;
+    } catch (error: any) {
+      lastError = error;
+      
+      // Si no es el último intento Y es un GET, esperar antes de reintentar
+      if (attempt < maxRetries && method === 'GET') {
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Backoff exponencial
+        continue;
+      }
+      
+      // Usar el manejador de errores unificado en el último intento
+      const handledError = unifiedErrorHandler.handleError(error, `API ${method} ${url}`);
+      if (!handledError) {
+        // Error fue silenciado, retornar respuesta mock
+        return new Response('{"error": "Network error handled silently", "offline": true}', { 
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      // Solo log en modo debug explícito
+      if (window.location.search.includes('debug=network')) {
+        console.debug(`🔧 [NETWORK-DEBUG] ${method} ${url}:`, error?.message?.substring(0, 30) || 'error');
+      }
+      
+      throw handledError;
     }
-    
-    // Solo log en modo debug explícito
-    if (window.location.search.includes('debug=network')) {
-      console.debug(`🔧 [NETWORK-DEBUG] ${method} ${url}:`, error?.message?.substring(0, 30) || 'error');
-    }
-    
-    throw handledError;
   }
+  
+  throw lastError;
 }
 
 // Métodos para facilitar el uso de las llamadas API
