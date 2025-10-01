@@ -298,6 +298,42 @@ export class UserMappingService {
       return false;
     }
   }
+
+  /**
+   * Obtener o crear user_id para Firebase UID
+   * FUNCIÓN REQUERIDA: Combina getInternalUserId y createMapping
+   */
+  async getOrCreateUserIdForFirebaseUid(firebaseUid: string, email?: string): Promise<number> {
+    try {
+      console.log(`🔍 [USER-MAPPING] getOrCreateUserIdForFirebaseUid para: ${firebaseUid}`);
+      
+      // Primero intentar obtener el user_id existente
+      let userId = await this.getInternalUserId(firebaseUid);
+      
+      if (userId) {
+        console.log(`✅ [USER-MAPPING] Usuario existente encontrado: ${userId}`);
+        return userId;
+      }
+      
+      // Si no existe y tenemos email, crear el mapeo
+      if (email) {
+        const normalizedEmail = email.trim().toLowerCase();
+        const mappingResult = await this.createMapping(firebaseUid, normalizedEmail);
+        
+        if (mappingResult) {
+          console.log(`✅ [USER-MAPPING] Usuario creado/mapeado: ${mappingResult.id}`);
+          return mappingResult.id;
+        }
+      }
+      
+      // Si llegamos aquí sin email, lanzar error
+      throw new Error(`No se pudo obtener o crear user_id para Firebase UID ${firebaseUid}. Email requerido para crear nuevo usuario.`);
+      
+    } catch (error) {
+      console.error('❌ [USER-MAPPING] Error en getOrCreateUserIdForFirebaseUid:', error);
+      throw error;
+    }
+  }
 }
 
 // Create singleton instance
