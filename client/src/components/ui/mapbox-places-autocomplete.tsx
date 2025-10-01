@@ -115,7 +115,10 @@ export default function MapboxPlacesAutocomplete({
       
       const startTime = Date.now();
       const response = await fetch(url, {
-        signal: controller.signal
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
       // Verificar si este request sigue siendo el más reciente

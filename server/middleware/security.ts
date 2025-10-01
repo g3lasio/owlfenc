@@ -15,7 +15,7 @@ export const securityHeaders = helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://maps.googleapis.com", "https://api.mapbox.com", "https://js.stripe.com", "https://appleid.cdn-apple.com", "https://cdn.jsdelivr.net", "https://replit.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https://api.openai.com", "https://api.anthropic.com", "https://api.stripe.com", "https://firestore.googleapis.com", "https://identitytoolkit.googleapis.com", "https://securetoken.googleapis.com", "https://*.googleapis.com", "wss:"],
+      connectSrc: ["'self'", "https://api.openai.com", "https://api.anthropic.com", "https://api.stripe.com", "https://firestore.googleapis.com", "https://identitytoolkit.googleapis.com", "https://securetoken.googleapis.com", "https://*.googleapis.com", "https://api.mapbox.com", "https://*.tiles.mapbox.com", "https://events.mapbox.com", "wss:"],
       frameSrc: ["'self'", "https://js.stripe.com"],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: [],
