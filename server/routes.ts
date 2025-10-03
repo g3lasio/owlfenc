@@ -5019,6 +5019,7 @@ Output must be between 200-900 characters in English.`;
 
   app.post(
     "/api/subscription/create-portal",
+    requireAuth,
     async (req: Request, res: Response) => {
       try {
         console.log(
@@ -5043,8 +5044,28 @@ Output must be between 200-900 characters in English.`;
 
         const { successUrl } = validationResult.data;
 
-        // En una app real, obtendríamos el userId de la sesión
-        const userId = 1;
+        // Verify authentication and get user data
+        if (!req.firebaseUser?.uid || !req.firebaseUser?.email) {
+          return res.status(401).json({ 
+            message: "Usuario no autenticado",
+            error: "Se requiere autenticación para acceder al portal" 
+          });
+        }
+
+        // Use authenticated user's Firebase UID
+        const firebaseUid = req.firebaseUser.uid;
+
+        // Get PostgreSQL user_id from Firebase UID using secure mapping
+        const dbUser = await storage.getUserByFirebaseUid(firebaseUid);
+        if (!dbUser) {
+          console.error(`No se encontró usuario en DB para Firebase UID: ${firebaseUid}`);
+          return res.status(404).json({ 
+            message: "Usuario no encontrado en la base de datos" 
+          });
+        }
+
+        const userId = dbUser.id;
+        console.log(`✅ Usuario autenticado: ${req.firebaseUser.email}, DB ID: ${userId}`);
 
         // Verificar que el usuario tiene una suscripción activa
         const subscription = await storage.getUserSubscriptionByUserId(userId);
