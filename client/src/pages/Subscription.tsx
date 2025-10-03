@@ -106,8 +106,19 @@ export default function Subscription() {
       queryFn: async () => {
         if (!currentUser) throw new Error("User authentication required");
         
-        // Obtener token de autenticación de Firebase
-        const token = await currentUser.getIdToken();
+        // Obtener token directamente del usuario actual
+        let token: string;
+        try {
+          token = await currentUser.getIdToken(false);
+        } catch (tokenError) {
+          // Intentar con force refresh si falla
+          try {
+            token = await currentUser.getIdToken(true);
+          } catch (retryError) {
+            throw new Error("No se pudo obtener token de autenticación");
+          }
+        }
+        
         if (!token) throw new Error("No se pudo obtener token de autenticación");
         
         const response = await fetch("/api/subscription/user-subscription", {
@@ -133,6 +144,10 @@ export default function Subscription() {
     setIsLoading(true);
 
     try {
+      if (!currentUser) {
+        throw new Error("Debes iniciar sesión para continuar");
+      }
+
       // Construir los parámetros para la solicitud
       const params = {
         userEmail,
@@ -151,8 +166,25 @@ export default function Subscription() {
         JSON.stringify(params),
       );
 
-      // Obtener token de autenticación de Firebase
-      const token = await currentUser?.getIdToken();
+      // Obtener token directamente del usuario actual
+      let token: string;
+      try {
+        console.log("🔐 [SUBSCRIPTION] Obteniendo token de Firebase...");
+        token = await currentUser.getIdToken(false);
+        console.log("✅ [SUBSCRIPTION] Token obtenido exitosamente");
+      } catch (tokenError) {
+        console.error("❌ [SUBSCRIPTION] Error obteniendo token:", tokenError);
+        // Intentar con force refresh
+        try {
+          console.log("🔄 [SUBSCRIPTION] Reintentando con force refresh...");
+          token = await currentUser.getIdToken(true);
+          console.log("✅ [SUBSCRIPTION] Token obtenido con force refresh");
+        } catch (retryError) {
+          console.error("❌ [SUBSCRIPTION] Error en segundo intento:", retryError);
+          throw new Error("No se pudo obtener token de autenticación. Por favor, cierra sesión y vuelve a iniciarla.");
+        }
+      }
+
       if (!token) {
         throw new Error("No se pudo obtener token de autenticación");
       }
@@ -222,14 +254,35 @@ export default function Subscription() {
     setIsLoading(true);
 
     try {
+      if (!currentUser) {
+        throw new Error("Debes iniciar sesión para continuar");
+      }
+
       const params = {
         successUrl: window.location.origin + "/subscription",
       };
 
       console.log("Enviando solicitud para crear portal de cliente");
 
-      // Obtener token de autenticación de Firebase
-      const token = await currentUser?.getIdToken();
+      // Obtener token directamente del usuario actual
+      let token: string;
+      try {
+        console.log("🔐 [SUBSCRIPTION] Obteniendo token de Firebase...");
+        token = await currentUser.getIdToken(false);
+        console.log("✅ [SUBSCRIPTION] Token obtenido exitosamente");
+      } catch (tokenError) {
+        console.error("❌ [SUBSCRIPTION] Error obteniendo token:", tokenError);
+        // Intentar con force refresh
+        try {
+          console.log("🔄 [SUBSCRIPTION] Reintentando con force refresh...");
+          token = await currentUser.getIdToken(true);
+          console.log("✅ [SUBSCRIPTION] Token obtenido con force refresh");
+        } catch (retryError) {
+          console.error("❌ [SUBSCRIPTION] Error en segundo intento:", retryError);
+          throw new Error("No se pudo obtener token de autenticación. Por favor, cierra sesión y vuelve a iniciarla.");
+        }
+      }
+
       if (!token) {
         throw new Error("No se pudo obtener token de autenticación");
       }
