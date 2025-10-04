@@ -112,12 +112,6 @@ export const navigationGroups: NavigationGroup[] = [
         id: "profile",
         label: "navigation.companyProfile",
         path: "/profile",
-        icon: "lucide-building"
-      },
-      {
-        id: "settings",
-        label: "navigation.settings",
-        path: "/settings",
         icon: "lucide-settings"
       },
       {

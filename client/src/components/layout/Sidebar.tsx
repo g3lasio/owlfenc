@@ -496,8 +496,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                                   case "permit-advisor": return <Bot className="h-4 w-4 mr-3" />;
                                   case "ai-project-manager": return <BrainIcon className="h-4 w-4 mr-3" />;
                                   case "owl-funding": return <TrendingUp className="h-4 w-4 mr-3" />;
-                                  case "profile": return <Building className="h-4 w-4 mr-3" />;
-                                  case "settings": return <Settings className="h-4 w-4 mr-3" />;
+                                  case "profile": return <Settings className="h-4 w-4 mr-3" />;
                                   case "billing": return <CreditCard className="h-4 w-4 mr-3" />;
                                   case "subscription": return <Crown className="h-4 w-4 mr-3" />;
                                   case "about-mervin": return <Bot className="h-4 w-4 mr-3" />;
@@ -578,8 +577,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                                     case "permit-advisor": return <Bot className="h-4 w-4" />;
                                     case "ai-project-manager": return <BrainIcon className="h-4 w-4" />;
                                     case "owl-funding": return <TrendingUp className="h-4 w-4" />;
-                                    case "profile": return <Building className="h-4 w-4" />;
-                                    case "settings": return <Settings className="h-4 w-4" />;
+                                    case "profile": return <Settings className="h-4 w-4" />;
                                     case "billing": return <CreditCard className="h-4 w-4" />;
                                     case "subscription": return <Crown className="h-4 w-4" />;
                                     case "about-mervin": return <Bot className="h-4 w-4" />;
