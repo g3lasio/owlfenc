@@ -11,7 +11,6 @@ import NuevoClientes from "./pages/NuevoClientes";
 import Materials from "./pages/Materials";
 import EstimatesWizard from "./pages/EstimatesWizard";
 import ChatInterface from "@/components/chat/ChatInterface";
-import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
 import PropertyOwnershipVerifier from "@/pages/PropertyOwnershipVerifier";
 import PermitAdvisor from "@/pages/PermitAdvisor";
@@ -40,7 +39,6 @@ import AuthPage from "@/pages/Login"; // Renombrado el import aunque el archivo 
 import RecuperarPassword from "@/pages/RecuperarPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import EmailLinkCallback from "@/pages/EmailLinkCallback";
-import SecuritySettings from "@/pages/SecuritySettings";
 import CyberpunkContractGenerator from "@/pages/CyberpunkContractGenerator";
 import { setupGlobalErrorHandlers } from "@/lib/error-handlers";
 
@@ -193,9 +191,6 @@ function MainAppRouter() {
               <Route path="/materials">
                 {() => <ProtectedRoute component={Materials} />}
               </Route>
-              <Route path="/settings">
-                {() => <ProtectedRoute component={Settings} />}
-              </Route>
               <Route path="/profile">
                 {() => <ProtectedRoute component={Profile} />}
               </Route>
@@ -235,9 +230,6 @@ function MainAppRouter() {
               </Route>
               <Route path="/history">
                 {() => <ProtectedRoute component={History} />}
-              </Route>
-              <Route path="/security">
-                {() => <ProtectedRoute component={SecuritySettings} />}
               </Route>
 
               <Route path="/smart-contract-wizard">
