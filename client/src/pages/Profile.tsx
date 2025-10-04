@@ -8,7 +8,9 @@ import {
 } from "@/components/ui/card";
 import { useProfile } from "@/hooks/use-profile";
 import { usePermissions } from "@/contexts/PermissionContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, getValidToken } from "@/contexts/AuthContext";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -38,6 +40,13 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
+  Moon,
+  Sun,
+  Bell,
+  Shield,
+  User as UserIcon,
+  ShieldAlert,
+  Info,
 } from "lucide-react";
 import { SubscriptionInfo } from "@/components/ui/subscription-info";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
@@ -48,6 +57,24 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import PhoneAuth from "@/components/auth/PhoneAuth";
+import { multiFactor } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 
 type SocialMediaLinks = Record<string, string>;
 
@@ -108,6 +135,70 @@ export default function Profile() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
   const [lastVerifiedEmail, setLastVerifiedEmail] = useState("");
+
+  // ===== USER SETTINGS STATES =====
+  // Types for settings
+  interface UserSettings {
+    language?: 'en' | 'es' | 'fr';
+    emailNotifications?: boolean;
+    smsNotifications?: boolean;
+    darkMode?: boolean;
+  }
+
+  // Local state for user settings
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [language, setLanguage] = useState<'en' | 'es' | 'fr'>('en');
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [smsNotifications, setSmsNotifications] = useState(false);
+
+  // 2FA state
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [enrolling, setEnrolling] = useState(false);
+  const [mfaError, setMfaError] = useState<string | null>(null);
+
+  // Email change state
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+
+  // Batched updates
+  const pendingUpdatesRef = useRef<Partial<UserSettings>>({});
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Load settings from backend
+  const { data: settings, isLoading: settingsLoading } = useQuery<UserSettings>({
+    queryKey: ['/api/settings'],
+    queryFn: async () => {
+      if (!currentUser?.uid) throw new Error('User not authenticated');
+      await getValidToken(currentUser);
+      return await apiRequest.get('/api/settings');
+    },
+    enabled: !!currentUser?.uid,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  // Update settings mutation
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (updates: Partial<UserSettings>) => {
+      if (!currentUser) throw new Error('Authentication required');
+      await getValidToken(currentUser);
+      return await apiRequest('PATCH', '/api/settings', updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      toast({
+        title: "Settings Updated",
+        description: "Your preferences have been saved successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save settings",
+        variant: "destructive",
+      });
+    }
+  });
 
   useEffect(() => {
     if (profile) {
@@ -433,11 +524,301 @@ export default function Profile() {
     }
   };
 
-  const handleChangePassword = () => {
-    // Add your password change logic here
-    console.log("Change password clicked!");
-    //Example:  You would typically make an API call here to update the password.
+  // ===== USER SETTINGS HANDLERS =====
+  
+  // Batched update function to reduce Firestore writes
+  const scheduleBatchedUpdate = (newUpdates: Partial<UserSettings>) => {
+    if (!currentUser) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to save your settings",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    pendingUpdatesRef.current = {
+      ...pendingUpdatesRef.current,
+      ...newUpdates
+    };
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      const updatesToSend = { ...pendingUpdatesRef.current };
+      pendingUpdatesRef.current = {};
+      
+      if (Object.keys(updatesToSend).length > 0) {
+        updateSettingsMutation.mutate(updatesToSend);
+      }
+    }, 1500);
   };
+
+  const handleLanguageChange = (value: 'en' | 'es' | 'fr') => {
+    setLanguage(value);
+    scheduleBatchedUpdate({ language: value });
+    toast({
+      title: "Language Updated",
+      description: `Language changed to ${value === "en" ? "English" : value === "es" ? "Español" : "Français"}`,
+    });
+  };
+
+  const handleDarkModeToggle = (checked: boolean) => {
+    setIsDarkMode(checked);
+    localStorage.setItem('darkMode', checked.toString());
+    scheduleBatchedUpdate({ darkMode: checked });
+    toast({
+      title: checked ? "Dark Mode Enabled" : "Light Mode Enabled",
+      description: "Theme preference will be saved",
+    });
+  };
+
+  const handleEmailNotificationsToggle = (checked: boolean) => {
+    setEmailNotifications(checked);
+    scheduleBatchedUpdate({ emailNotifications: checked });
+    toast({
+      title: checked ? "Email Notifications Enabled" : "Email Notifications Disabled",
+      description: "Notification preference will be saved",
+    });
+  };
+
+  const handleSmsNotificationsToggle = (checked: boolean) => {
+    setSmsNotifications(checked);
+    scheduleBatchedUpdate({ smsNotifications: checked });
+    toast({
+      title: checked ? "SMS Notifications Enabled" : "SMS Notifications Disabled", 
+      description: "Notification preference will be saved",
+    });
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentUser?.email) {
+      toast({
+        title: "Error",
+        description: "No email found for password reset",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await getValidToken(currentUser);
+      await apiRequest('POST', '/api/auth/password-reset', {
+        email: currentUser.email
+      });
+      
+      toast({
+        title: "Password Reset Email Sent",
+        description: `A password reset link has been sent to ${currentUser.email}. Please check your inbox and spam folder.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Password Reset Failed",
+        description: "Failed to send password reset email. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEmailChange = async () => {
+    if (!newEmail.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newEmail === currentUser?.email) {
+      toast({
+        title: "Error",
+        description: "The new email is the same as your current email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!currentUser) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to change your email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsChangingEmail(true);
+    
+    try {
+      const token = await getValidToken(currentUser);
+      
+      const response = await fetch('/api/auth/account/email/change', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'x-user-uid': currentUser.uid
+        },
+        body: JSON.stringify({ newEmail: newEmail.trim() })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `Server error: ${response.status}`);
+      }
+
+      toast({
+        title: "Confirmation Email Sent",
+        description: data.message || `A secure confirmation email has been sent to ${newEmail}. Please check your inbox and click the confirmation link within 30 minutes.`,
+      });
+
+      setIsEmailDialogOpen(false);
+      setNewEmail("");
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      
+    } catch (error: any) {
+      let errorMessage = "Failed to change email. Please try again.";
+      
+      if (error.message?.includes('EMAIL_IN_USE') || error.message?.includes('already in use')) {
+        errorMessage = "This email is already in use by another account.";
+      } else if (error.message?.includes('INVALID_EMAIL')) {
+        errorMessage = "Please enter a valid email address.";
+      } else if (error.message?.includes('AUTH_REQUIRED') || error.message?.includes('401')) {
+        errorMessage = "Authentication required. Please sign in again.";
+      }
+      
+      toast({
+        title: "Email Change Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsChangingEmail(false);
+    }
+  };
+
+  // 2FA Handlers
+  const handleStartEnrollment = () => {
+    if (!currentUser) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "You must be logged in to enable two-factor authentication."
+      });
+      return;
+    }
+    setEnrolling(true);
+  };
+
+  const handleCancelEnrollment = () => {
+    setEnrolling(false);
+  };
+
+  const handleEnrollmentSuccess = () => {
+    setEnrolling(false);
+    setMfaEnabled(true);
+    toast({
+      title: "Configuration Successful",
+      description: "Two-factor authentication has been enabled successfully."
+    });
+  };
+
+  const handleDisableMfa = async () => {
+    if (!currentUser || !auth.currentUser) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "You must be logged in to perform this action."
+      });
+      return;
+    }
+    
+    try {
+      const multiFactorUser = multiFactor(auth.currentUser);
+      
+      if (multiFactorUser.enrolledFactors.length === 0) {
+        setMfaEnabled(false);
+        return;
+      }
+      
+      const factorId = multiFactorUser.enrolledFactors[0].uid;
+      
+      await multiFactorUser.unenroll(factorId);
+      setMfaEnabled(false);
+      
+      toast({
+        title: "2FA Disabled",
+        description: "Two-factor authentication has been disabled successfully."
+      });
+    } catch (error: any) {
+      console.error("Error disabling 2FA:", error);
+      setMfaError(error.message || "An error occurred while disabling two-factor authentication.");
+      
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Could not disable two-factor authentication."
+      });
+    }
+  };
+
+  // Apply dark mode theme whenever isDarkMode changes
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode);
+  }, [isDarkMode]);
+
+  // Sync state with loaded settings
+  useEffect(() => {
+    if (settings) {
+      setLanguage(settings.language || 'en');
+      setEmailNotifications(settings.emailNotifications ?? true);
+      setSmsNotifications(settings.smsNotifications ?? false);
+      setIsDarkMode(settings.darkMode ?? false);
+    }
+    
+    // Load dark mode from localStorage for immediate application
+    const savedDarkMode = localStorage.getItem('darkMode');
+    if (savedDarkMode && !settings?.darkMode) {
+      setIsDarkMode(savedDarkMode === 'true');
+    }
+  }, [settings]);
+
+  // Check MFA status
+  useEffect(() => {
+    const checkMfaStatus = async () => {
+      try {
+        if (currentUser && auth.currentUser) {
+          const multiFactorUser = multiFactor(auth.currentUser);
+          const enrolledFactors = multiFactorUser.enrolledFactors;
+          setMfaEnabled(enrolledFactors.length > 0);
+        }
+      } catch (error) {
+        console.error("Error checking MFA status:", error);
+      }
+    };
+    
+    checkMfaStatus();
+  }, [currentUser]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      
+      if (Object.keys(pendingUpdatesRef.current).length > 0 && currentUser) {
+        updateSettingsMutation.mutateAsync(pendingUpdatesRef.current).catch((error) => {
+          console.warn('Failed to save settings on unmount:', error);
+          localStorage.setItem('pendingSettingsUpdates', JSON.stringify(pendingUpdatesRef.current));
+        });
+      }
+    };
+  }, []);
 
   // Check email verification status when email changes
   useEffect(() => {
@@ -651,7 +1032,7 @@ export default function Profile() {
 
         <Tabs defaultValue="info" className="space-y-8">
           <div className="border border-gray-700 rounded-lg bg-gray-900/50 p-1">
-            <TabsList className="w-full bg-transparent grid grid-cols-3 gap-1">
+            <TabsList className="w-full bg-transparent grid grid-cols-4 gap-1">
               <TabsTrigger 
                 value="info" 
                 className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300"
@@ -669,6 +1050,12 @@ export default function Profile() {
                 className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300"
               >
                 Specialties
+              </TabsTrigger>
+              <TabsTrigger 
+                value="settings"
+                className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300"
+              >
+                User Settings
               </TabsTrigger>
             </TabsList>
           </div>
@@ -1357,6 +1744,274 @@ export default function Profile() {
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* USER SETTINGS TAB */}
+          <TabsContent value="settings" className="space-y-6">
+            <Card className="border-gray-700 bg-gray-900">
+              <CardHeader>
+                <CardTitle className="text-cyan-400 flex items-center gap-2">
+                  <UserIcon className="h-5 w-5" />
+                  User Settings
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Manage your personal preferences and security settings
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Language */}
+                <div className="space-y-2">
+                  <Label className="text-gray-300">Language</Label>
+                  <Select 
+                    value={language} 
+                    onValueChange={handleLanguageChange}
+                    disabled={updateSettingsMutation.isPending}
+                  >
+                    <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="es">Español</SelectItem>
+                      <SelectItem value="fr">Français</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator className="bg-gray-700" />
+
+                {/* Dark Mode */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-gray-300 flex items-center gap-2">
+                      {isDarkMode ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                      Dark Mode
+                    </Label>
+                    <p className="text-sm text-gray-400">
+                      Toggle dark mode for the entire application
+                    </p>
+                  </div>
+                  <Switch
+                    checked={isDarkMode}
+                    onCheckedChange={handleDarkModeToggle}
+                    disabled={updateSettingsMutation.isPending}
+                  />
+                </div>
+
+                <Separator className="bg-gray-700" />
+
+                {/* Notifications */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-cyan-400 flex items-center gap-2">
+                    <Bell className="h-5 w-5" />
+                    Notifications
+                  </h3>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-gray-300">Email Notifications</Label>
+                      <p className="text-sm text-gray-400">
+                        Receive updates via email
+                      </p>
+                    </div>
+                    <Switch
+                      checked={emailNotifications}
+                      onCheckedChange={handleEmailNotificationsToggle}
+                      disabled={updateSettingsMutation.isPending}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-gray-300">SMS Notifications</Label>
+                      <p className="text-sm text-gray-400">
+                        Receive updates via text message
+                      </p>
+                    </div>
+                    <Switch
+                      checked={smsNotifications}
+                      onCheckedChange={handleSmsNotificationsToggle}
+                      disabled={updateSettingsMutation.isPending}
+                    />
+                  </div>
+                </div>
+
+                <Separator className="bg-gray-700" />
+
+                {/* Change Email */}
+                <div className="space-y-2">
+                  <Label className="text-gray-300 flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Email Address
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={currentUser?.email || ""}
+                      disabled
+                      className="bg-gray-800 border-gray-600 text-gray-400"
+                    />
+                    <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          className="bg-gray-800 border-gray-600 text-cyan-400 hover:bg-gray-700"
+                        >
+                          Change
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-gray-900 border-gray-700 text-white">
+                        <DialogHeader>
+                          <DialogTitle className="text-cyan-400">Change Email Address</DialogTitle>
+                          <DialogDescription className="text-gray-400">
+                            Enter your new email address. You'll need to verify it before the change takes effect.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="new-email" className="text-gray-300">New Email</Label>
+                            <Input
+                              id="new-email"
+                              type="email"
+                              placeholder="new.email@example.com"
+                              value={newEmail}
+                              onChange={(e) => setNewEmail(e.target.value)}
+                              className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => setIsEmailDialogOpen(false)}
+                              className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              onClick={handleEmailChange}
+                              disabled={isChangingEmail}
+                              className="bg-cyan-400 hover:bg-cyan-300 text-black"
+                            >
+                              {isChangingEmail ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Changing...
+                                </>
+                              ) : (
+                                "Change Email"
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
+
+                <Separator className="bg-gray-700" />
+
+                {/* Change Password */}
+                <div className="space-y-2">
+                  <Label className="text-gray-300 flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Password
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="password"
+                      value="••••••••"
+                      disabled
+                      className="bg-gray-800 border-gray-600 text-gray-400"
+                    />
+                    <Button
+                      onClick={handleChangePassword}
+                      variant="outline"
+                      className="bg-gray-800 border-gray-600 text-cyan-400 hover:bg-gray-700"
+                    >
+                      Change Password
+                    </Button>
+                  </div>
+                </div>
+
+                <Separator className="bg-gray-700" />
+
+                {/* 2FA Settings */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-lg font-medium text-cyan-400 flex items-center gap-2">
+                        <ShieldAlert className="h-5 w-5" />
+                        Two-Factor Authentication (2FA)
+                      </Label>
+                      <p className="text-sm text-gray-400">
+                        Add an extra layer of security using SMS verification
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {mfaEnabled && (
+                        <span className="px-2 py-1 text-xs bg-green-500/20 text-green-400 border border-green-500/30 rounded-full">
+                          Active
+                        </span>
+                      )}
+                      <Switch 
+                        checked={mfaEnabled} 
+                        onCheckedChange={(checked) => {
+                          if (!checked && mfaEnabled) {
+                            if (confirm("Are you sure you want to disable two-factor authentication? This may reduce your account security.")) {
+                              handleDisableMfa();
+                            }
+                          } else if (checked && !mfaEnabled) {
+                            handleStartEnrollment();
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {enrolling && (
+                    <Card className="border-cyan-400/30 bg-cyan-400/5">
+                      <CardHeader>
+                        <CardTitle className="text-base text-cyan-400">Set Up Two-Factor Authentication</CardTitle>
+                        <CardDescription className="text-gray-400">
+                          Add your phone number to receive verification codes via SMS
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <PhoneAuth />
+                        
+                        <div className="mt-4 text-right">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={handleCancelEnrollment}
+                            className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {!enrolling && !mfaEnabled && (
+                    <Alert className="border-gray-700 bg-gray-800/50">
+                      <Info className="h-4 w-4 text-cyan-400" />
+                      <AlertTitle className="text-cyan-400">Security Recommendation</AlertTitle>
+                      <AlertDescription className="text-gray-400">
+                        Enable two-factor authentication to increase your account security.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {mfaError && (
+                    <Alert variant="destructive" className="border-red-500/30 bg-red-500/10">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Error</AlertTitle>
+                      <AlertDescription>{mfaError}</AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               </CardContent>
             </Card>
