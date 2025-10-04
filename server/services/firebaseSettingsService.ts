@@ -144,6 +144,19 @@ class FirebaseSettingsService {
   }
 
   /**
+   * Filtrar valores undefined de un objeto (Firestore no los acepta)
+   */
+  private removeUndefinedValues(obj: any): any {
+    const filtered: any = {};
+    for (const key in obj) {
+      if (obj[key] !== undefined) {
+        filtered[key] = obj[key];
+      }
+    }
+    return filtered;
+  }
+
+  /**
    * Crear o actualizar configuración del usuario
    * @param userId Firebase UID del usuario
    * @param settings Configuraciones a guardar
@@ -160,6 +173,9 @@ class FirebaseSettingsService {
       delete settings.userId;
       delete settings.createdAt;
 
+      // Filtrar valores undefined (Firestore no los acepta)
+      const cleanSettings = this.removeUndefinedValues(settings);
+
       const docRef = db.collection(this.collection).doc(userId).collection('settings').doc('preferences');
       
       // Verificar si existe
@@ -168,7 +184,7 @@ class FirebaseSettingsService {
       if (existing.exists) {
         // Actualizar configuración existente
         await docRef.update({
-          ...settings,
+          ...cleanSettings,
           updatedAt: FieldValue.serverTimestamp()
         });
         
@@ -176,9 +192,10 @@ class FirebaseSettingsService {
       } else {
         // Crear nueva configuración
         const defaultSettings = this.getDefaultSettings(userId);
+        const cleanDefaultSettings = this.removeUndefinedValues(defaultSettings);
         const newSettings = {
-          ...defaultSettings,
-          ...settings,
+          ...cleanDefaultSettings,
+          ...cleanSettings,
           createdAt: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp()
         };

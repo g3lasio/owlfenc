@@ -170,8 +170,8 @@ export default function Profile() {
     queryKey: ['/api/settings'],
     queryFn: async () => {
       if (!currentUser?.uid) throw new Error('User not authenticated');
-      await getValidToken(currentUser);
-      return await apiRequest.get('/api/settings');
+      const res = await apiRequest('GET', '/api/settings');
+      return await res.json();
     },
     enabled: !!currentUser?.uid,
     staleTime: 1000 * 60 * 5,
