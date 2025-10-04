@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getAuthHeaders } from "@/lib/queryClient";
 import {
   Select,
   SelectContent,
@@ -951,9 +951,9 @@ export default function Profile() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                    <div className="col-span-2">
+                    <div className="col-span-2 space-y-2">
+                      <Label htmlFor="address" className="text-gray-300">Address</Label>
                       <AddressAutocomplete
-                        label="Address"
                         value={companyInfo.address}
                         onChange={(address: string, details?: any) => {
                           setCompanyInfo((prev) => ({
@@ -965,6 +965,7 @@ export default function Profile() {
                           }));
                         }}
                         placeholder="Enter your company address"
+                        className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                       />
                     </div>
                     <div className="space-y-2">
