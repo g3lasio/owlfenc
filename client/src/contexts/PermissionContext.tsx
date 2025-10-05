@@ -60,13 +60,36 @@ export interface PermissionContextValue {
   getUpgradeReason: (feature: string) => string;
 }
 
-// Planes predefinidos
+// Planes predefinidos (IDs actualizados para coincidir con PostgreSQL)
 const PLANS: Plan[] = [
   {
-    id: 1,
+    id: 8,
+    name: "Free",
+    motto: "Comienza gratis",
+    price: 0,
+    limits: {
+      basicEstimates: 1,
+      aiEstimates: 0,
+      contracts: 0,
+      propertyVerifications: 0,
+      permitAdvisor: 0,
+      projects: 1,
+      invoices: 0,
+      paymentTracking: 0,
+      deepsearch: 0
+    },
+    features: [
+      "1 estimado básico/mes (con marca de agua)",
+      "0 estimados con IA",
+      "0 contratos",
+      "Vista demo de funciones premium"
+    ]
+  },
+  {
+    id: 5,
     name: "Primo Chambeador",
     motto: "Ningún trabajo es pequeño cuando tu espíritu es grande",
-    price: 0,
+    price: 31000,
     limits: {
       basicEstimates: 5,
       aiEstimates: 1,
@@ -76,20 +99,18 @@ const PLANS: Plan[] = [
       projects: 5,
       invoices: 0,
       paymentTracking: 0,
-      deepsearch: 0  // Free users can see dropdown but not use
+      deepsearch: 0
     },
     features: [
       "5 estimados básicos/mes (con marca de agua)",
       "1 estimado con IA/mes (con marca de agua)",
       "2 contratos/mes (con marca de agua)",
       "2 Property Verification/mes",
-      "0 Permit Advisor/mes",
-      "5 proyectos/mes",
-      "Vista demo de funciones premium"
+      "5 proyectos/mes"
     ]
   },
   {
-    id: 2,
+    id: 9,
     name: "Mero Patrón",
     motto: "No eres solo un patrón, eres el estratega que transforma el reto en victoria",
     price: 4999,
@@ -102,7 +123,7 @@ const PLANS: Plan[] = [
       projects: 30,
       invoices: -1,
       paymentTracking: 1,
-      deepsearch: 50  // 50 queries per estimate for Mero Patrón
+      deepsearch: 50
     },
     features: [
       "50 estimados básicos/mes (sin marca de agua)",
@@ -115,10 +136,10 @@ const PLANS: Plan[] = [
     ]
   },
   {
-    id: 3,
+    id: 6,
     name: "Master Contractor",
     motto: "Tu voluntad es acero, tu obra es ley. Lidera como un verdadero campeón",
-    price: 9999,
+    price: 9900,
     limits: {
       basicEstimates: -1,
       aiEstimates: -1,
@@ -128,7 +149,7 @@ const PLANS: Plan[] = [
       projects: -1,
       invoices: -1,
       paymentTracking: 2,
-      deepsearch: -1  // Unlimited for Master Contractor
+      deepsearch: -1
     },
     features: [
       "TODO ILIMITADO",
@@ -140,26 +161,27 @@ const PLANS: Plan[] = [
   },
   {
     id: 4,
-    name: "Trial Master",
-    motto: "Prueba el poder total por 14 días",
+    name: "Free Trial",
+    motto: "Prueba antes de comprar",
     price: 0,
-    trialDays: 14,
+    trialDays: 7,
     limits: {
-      basicEstimates: -1,
-      aiEstimates: -1,
-      contracts: -1,
-      propertyVerifications: -1,
-      permitAdvisor: -1,
-      projects: -1,
-      invoices: -1,
-      paymentTracking: 2,
-      deepsearch: -1  // Unlimited during trial
+      basicEstimates: 2,
+      aiEstimates: 1,
+      contracts: 1,
+      propertyVerifications: 1,
+      permitAdvisor: 0,
+      projects: 2,
+      invoices: 0,
+      paymentTracking: 0,
+      deepsearch: 0
     },
     features: [
-      "ACCESO TOTAL por 14 días",
-      "Todas las funciones premium",
-      "Sin marcas de agua",
-      "Soporte premium"
+      "7 días gratis",
+      "2 estimados básicos",
+      "1 estimado con IA",
+      "1 contrato",
+      "2 proyectos"
     ]
   }
 ];
@@ -210,12 +232,13 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         if (data.success && data.subscription) {
           const { planName, daysRemaining, isTrialing } = data.subscription;
           
-          // Map backend plan name to frontend plan
-          let planId = 1; // Default to Primo Chambeador
-          if (planName === 'Primo Chambeador') planId = 1;
-          else if (planName === 'Mero Patrón') planId = 2;
-          else if (planName === 'Master Contractor') planId = 3;
+          // Map backend plan name to frontend plan (PostgreSQL IDs)
+          let planId = 8; // Default to Free plan
+          if (planName === 'Primo Chambeador') planId = 5;
+          else if (planName === 'Mero Patrón') planId = 9;
+          else if (planName === 'Master Contractor') planId = 6;
           else if (planName === 'Free Trial' || planName === 'Trial Master') planId = 4;
+          else if (planName === 'Free') planId = 8;
           
           const plan = PLANS.find(p => p.id === planId) || PLANS[0];
           setUserPlan(plan);
@@ -234,15 +257,16 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
       if (devSimulation && process.env.NODE_ENV === 'development') {
         const simData = JSON.parse(devSimulation);
         
-        // Mapear IDs de string a IDs numéricos
+        // Mapear IDs de string a IDs numéricos (PostgreSQL IDs)
         const planIdMapping: { [key: string]: number } = {
-          'free-trial': 4,          // Trial Master
-          'primo-chambeador': 1,    // Primo Chambeador  
-          'mero-patron': 2,         // Mero Patrón
-          'emperador-del-negocio': 3 // Master Contractor
+          'free-trial': 4,          // Free Trial
+          'primo-chambeador': 5,    // Primo Chambeador  
+          'mero-patron': 9,         // Mero Patrón
+          'emperador-del-negocio': 6, // Master Contractor
+          'free': 8                 // Free
         };
         
-        const numericPlanId = planIdMapping[simData.currentPlan] || 1;
+        const numericPlanId = planIdMapping[simData.currentPlan] || 8;
         const simulatedPlan = PLANS.find(p => p.id === numericPlanId) || PLANS[0];
         
         console.log(`🧪 [DEV-SIMULATION] API failed, usando plan simulado: ${simulatedPlan.name} (ID: ${numericPlanId})`);

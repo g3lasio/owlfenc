@@ -212,16 +212,24 @@ export default function SimpleContractGenerator() {
 
   // Get current plan information for UI restrictions
   const currentPlan = userPlan;
-  const isPrimoChambeador = currentPlan?.id === 1;
-  const isMeroPatron = currentPlan?.id === 2;
-  const isMasterContractor = currentPlan?.id === 3;
+  const isFreePlan = currentPlan?.id === 8 || !currentPlan;
+  const isPrimoChambeador = currentPlan?.id === 5;
+  const isMeroPatron = currentPlan?.id === 9;
+  const isMasterContractor = currentPlan?.id === 6;
   const isTrialMaster = currentPlan?.id === 4;
-  const isFreePlan = currentPlan?.id === 0 || !currentPlan;
   
-  // Contract limits by plan
-  const contractLimit = isMeroPatron ? 50 : isPrimoChambeador ? 5 : null;
+  // Contract limits by plan (-1 means unlimited)
+  const contractLimit = isMasterContractor 
+    ? -1 
+    : isMeroPatron 
+      ? 50 
+      : isPrimoChambeador 
+        ? 5 
+        : isTrialMaster
+          ? 1
+          : 0;
   const contractsUsed = userUsage?.contracts || 0;
-  const hasReachedContractLimit = contractLimit && contractsUsed >= contractLimit;
+  const hasReachedContractLimit = contractLimit !== -1 && contractLimit !== null && contractsUsed >= contractLimit;
   
   // Check if signature protocol is available (Master Contractor and Trial Master)
   const isSignatureProtocolAvailable = () => isMasterContractor || isTrialMaster || isTrialUser;
