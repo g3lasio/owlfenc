@@ -23,15 +23,15 @@ export class FirebaseSubscriptionService {
   
   // OWNER PRIVILEGES: Platform owner gets unlimited Master Contractor access
   // SISTEMA UNIFICADO: Owner identificado por Firebase UID, no email-based ID
-  private readonly OWNER_EMAILS = ['shkwahab60@gmail.com', 'truthbackpack@gmail.com'];
+  private readonly OWNER_EMAILS = ['truthbackpack@gmail.com'];
   
   private isOwnerUser(userId: string, email?: string): boolean {
     // Verificar si el usuario es owner por email si está disponible
     if (email && this.OWNER_EMAILS.includes(email.toLowerCase())) {
       return true;
     }
-    // Mantener compatibilidad temporal con ID legacy para owners existentes
-    return userId === 'user_shkwahab60_gmail_com';
+    // No legacy IDs - only real owner
+    return false;
   }
   private readonly OWNER_FIREBASE_UID = 'qztot1YEy3UWz605gIH2iwwWhW53'; // Real Firebase UID
   

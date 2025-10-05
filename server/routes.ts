@@ -5700,7 +5700,7 @@ Output must be between 200-900 characters in English.`;
         console.log(`👤 [USER-SUBSCRIPTION-UNIFIED] Getting subscription for Firebase UID: ${unifiedUserId}`);
       } else {
         // Fallback para compatibilidad temporal (será removido)
-        const email = (req.query.email as string) || "shkwahab60@gmail.com";
+        const email = (req.query.email as string) || "truthbackpack@gmail.com";
         const legacyUserId = `user_${email.replace(/[@.]/g, "_")}`;
         console.warn(`⚠️ [USER-SUBSCRIPTION-LEGACY] Usando ID legacy: ${legacyUserId}`);
       }
