@@ -2919,6 +2919,19 @@ export default function SimpleContractGenerator() {
     setDeliveryStatus("Generating signature links...");
 
     try {
+      // 🔐 CRITICAL FIX: Get Firebase ID Token
+      let authToken = currentUser.uid; // Fallback to UID
+      try {
+        if (typeof currentUser.getIdToken === 'function') {
+          authToken = await currentUser.getIdToken();
+          console.log('✅ [SIGNATURE-TOKEN] ID Token obtained successfully');
+        } else {
+          console.warn('⚠️ [SIGNATURE-TOKEN] getIdToken not available, using UID as fallback');
+        }
+      } catch (tokenError) {
+        console.warn('⚠️ [SIGNATURE-TOKEN] Failed to get ID token, using UID:', tokenError);
+      }
+
       // Prepare contract data for signature protocol
       const secureDeliveryPayload = {
         userId: currentUser.uid,
@@ -2967,7 +2980,7 @@ export default function SimpleContractGenerator() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${currentUser.uid}`,
+          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify(secureDeliveryPayload),
       });

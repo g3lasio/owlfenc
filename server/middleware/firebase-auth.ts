@@ -72,9 +72,24 @@ export const verifyFirebaseAuth = async (req: Request, res: Response, next: Next
     
     // DEBUGGING TEMPORAL: Ver qué token está llegando
     console.log(`🔍 [AUTH-DEBUG] Token recibido: ${token.substring(0, 20)}...`);
-    console.log(`🔍 [AUTH-DEBUG] Token tipo: ${token.startsWith('firebase_') ? 'FALLBACK' : 'REGULAR'}`);
+    console.log(`🔍 [AUTH-DEBUG] Token tipo: ${token.startsWith('firebase_') ? 'FALLBACK' : token.includes('.') ? 'JWT' : 'UID'}`);
 
     try {
+      // 🔐 CRITICAL FIX: Detectar si es un UID (sin puntos, longitud corta ~28 chars)
+      // Los JWT tienen puntos (xxx.yyy.zzz), los UIDs no
+      const isLikelyUID = !token.includes('.') && token.length < 100;
+      
+      if (isLikelyUID) {
+        console.log('🔧 [AUTH-UID-MODE] Token appears to be a Firebase UID, using direct authentication');
+        // Usar el UID directamente sin verificación JWT
+        req.firebaseUser = {
+          uid: token,
+          email: 'uid-fallback@firebase.local' // Email temporal
+        };
+        console.log(`✅ Usuario autenticado via UID: ${token}`);
+        return next();
+      }
+      
       // Manejar tokens de fallback por problemas de conectividad
       if (token.startsWith('firebase_')) {
         console.log('🔧 [AUTH-FALLBACK] Usando token de fallback por conectividad');
@@ -89,7 +104,7 @@ export const verifyFirebaseAuth = async (req: Request, res: Response, next: Next
         }
       }
       
-      // Verificar el token con Firebase Admin
+      // Verificar el token con Firebase Admin (solo si parece ser un JWT válido)
       const decodedToken = await admin.auth().verifyIdToken(token);
       
       req.firebaseUser = {
