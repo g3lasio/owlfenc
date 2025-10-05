@@ -464,6 +464,11 @@ import customTokenRoutes from './routes/custom-token-routes';
 app.use('/api/auth', customTokenRoutes);
 console.log('🔐 [CUSTOM-TOKEN] Rutas de tokens personalizados registradas en /api/auth');
 
+// Registrar rutas de autenticación (email/password update, password reset)
+import authRoutes from './routes/auth';
+app.use('/api/auth', authRoutes);
+console.log('🔐 [AUTH-ROUTES] Rutas de autenticación (update-email, update-password) registradas en /api/auth');
+
 // 📱 Registrar rutas de SMS
 import smsRoutes from './routes/sms';
 

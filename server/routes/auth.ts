@@ -27,13 +27,8 @@ const emailChangeRateLimit = rateLimit({
     retryAfter: 15 * 60 // 15 minutes in seconds
   },
   standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req): string => {
-    // Rate limit by both IP and user if authenticated
-    const ip = req.ip || 'unknown';
-    const uid = req.headers['x-user-uid'] as string;
-    return uid ? `${ip}:${uid}` : ip;
-  }
+  legacyHeaders: false
+  // Using default keyGenerator for proper IPv6 handling
 });
 
 // In-memory store for email change tokens (in production, use Redis)
