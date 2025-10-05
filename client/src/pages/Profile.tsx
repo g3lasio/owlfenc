@@ -161,6 +161,13 @@ export default function Profile() {
   const [newEmail, setNewEmail] = useState("");
   const [isChangingEmail, setIsChangingEmail] = useState(false);
 
+  // Password change state
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
   // Batched updates
   const pendingUpdatesRef = useRef<Partial<UserSettings>>({});
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -593,40 +600,124 @@ export default function Profile() {
     });
   };
 
+  const handleOpenPasswordDialog = () => {
+    setIsPasswordDialogOpen(true);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+  };
+
   const handleChangePassword = async () => {
-    if (!currentUser?.email) {
+    // Validate fields
+    if (!currentPassword || !newPassword || !confirmPassword) {
       toast({
         title: "Error",
-        description: "No email found for password reset",
+        description: "Please fill in all password fields",
         variant: "destructive",
       });
       return;
     }
 
-    try {
-      await getValidToken(currentUser);
-      await apiRequest('POST', '/api/auth/password-reset', {
-        email: currentUser.email
-      });
-      
+    if (newPassword !== confirmPassword) {
       toast({
-        title: "Password Reset Email Sent",
-        description: `A password reset link has been sent to ${currentUser.email}. Please check your inbox and spam folder.`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Password Reset Failed",
-        description: "Failed to send password reset email. Please try again.",
+        title: "Error",
+        description: "New passwords do not match",
         variant: "destructive",
       });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!currentUser) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to change your password",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsChangingPassword(true);
+    
+    try {
+      const token = await getValidToken(currentUser);
+      
+      const response = await fetch('/api/auth/update-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'x-user-uid': currentUser.uid
+        },
+        body: JSON.stringify({ 
+          newPassword,
+          currentPassword // Optional for backend logging
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `Server error: ${response.status}`);
+      }
+
+      toast({
+        title: "Password Updated",
+        description: data.message || "Your password has been changed successfully. Please sign in again.",
+      });
+
+      setIsPasswordDialogOpen(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      
+      // Optional: Sign out user to force re-authentication
+      // await auth.signOut();
+      
+    } catch (error: any) {
+      let errorMessage = "Failed to change password. Please try again.";
+      
+      if (error.message?.includes('WEAK_PASSWORD')) {
+        errorMessage = "Password is too weak. Please use a stronger password.";
+      } else if (error.message?.includes('AUTH_REQUIRED') || error.message?.includes('401')) {
+        errorMessage = "Authentication required. Please sign in again.";
+      }
+      
+      toast({
+        title: "Password Change Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
   const handleEmailChange = async () => {
+    // Validation
     if (!newEmail.trim()) {
       toast({
         title: "Error",
         description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail.trim())) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email format",
         variant: "destructive",
       });
       return;
@@ -655,7 +746,7 @@ export default function Profile() {
     try {
       const token = await getValidToken(currentUser);
       
-      const response = await fetch('/api/auth/account/email/change', {
+      const response = await fetch('/api/auth/update-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -672,13 +763,16 @@ export default function Profile() {
       }
 
       toast({
-        title: "Confirmation Email Sent",
-        description: data.message || `A secure confirmation email has been sent to ${newEmail}. Please check your inbox and click the confirmation link within 30 minutes.`,
+        title: "Email Updated Successfully",
+        description: data.message || `Your email has been changed to ${newEmail}. Please sign in again with your new email.`,
       });
 
       setIsEmailDialogOpen(false);
       setNewEmail("");
       queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      
+      // Optional: Sign out user to force re-authentication with new email
+      // await auth.signOut();
       
     } catch (error: any) {
       let errorMessage = "Failed to change email. Please try again.";
@@ -1925,13 +2019,83 @@ export default function Profile() {
                       disabled
                       className="bg-gray-800 border-gray-600 text-gray-400"
                     />
-                    <Button
-                      onClick={handleChangePassword}
-                      variant="outline"
-                      className="bg-gray-800 border-gray-600 text-cyan-400 hover:bg-gray-700"
-                    >
-                      Change Password
-                    </Button>
+                    <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="bg-gray-800 border-gray-600 text-cyan-400 hover:bg-gray-700"
+                          onClick={handleOpenPasswordDialog}
+                        >
+                          Change Password
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-gray-900 border-gray-700 text-white">
+                        <DialogHeader>
+                          <DialogTitle className="text-cyan-400">Change Password</DialogTitle>
+                          <DialogDescription className="text-gray-400">
+                            Enter your current password and choose a new one. Password must be at least 6 characters.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="current-password" className="text-gray-300">Current Password</Label>
+                            <Input
+                              id="current-password"
+                              type="password"
+                              placeholder="Enter current password"
+                              value={currentPassword}
+                              onChange={(e) => setCurrentPassword(e.target.value)}
+                              className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="new-password" className="text-gray-300">New Password</Label>
+                            <Input
+                              id="new-password"
+                              type="password"
+                              placeholder="Enter new password (min 6 characters)"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="confirm-password" className="text-gray-300">Confirm New Password</Label>
+                            <Input
+                              id="confirm-password"
+                              type="password"
+                              placeholder="Confirm new password"
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => setIsPasswordDialogOpen(false)}
+                              className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              onClick={handleChangePassword}
+                              disabled={isChangingPassword}
+                              className="bg-cyan-400 hover:bg-cyan-300 text-black"
+                            >
+                              {isChangingPassword ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Changing...
+                                </>
+                              ) : (
+                                "Change Password"
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
 
