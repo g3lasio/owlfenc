@@ -333,19 +333,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
                   // ✅ ROBUST: Usar token real de Firebase con soporte para forceRefresh
                   return await user.getIdToken(forceRefresh);
                 } catch (error) {
-                  console.error("❌ Error obteniendo token Firebase:", error);
+                  const errorMsg = error instanceof Error ? error.message : 'Unknown error obtaining Firebase token';
+                  console.error("❌ Error obteniendo token Firebase:", errorMsg, error);
+                  
                   // ✅ ROBUST: Retry con force refresh automático si no se especificó
                   if (!forceRefresh) {
                     try {
                       console.log("🔄 Intentando refresh forzado del token...");
                       return await user.getIdToken(true); // Force refresh
                     } catch (retryError) {
-                      console.error("❌ Error en retry del token Firebase:", retryError);
-                      throw retryError; // Re-throw para manejo apropiado upstream
+                      const retryMsg = retryError instanceof Error ? retryError.message : 'Unknown retry error';
+                      console.error("❌ Error en retry del token Firebase:", retryMsg, retryError);
+                      // ✅ ROBUST: Throw informative error instead of empty object
+                      throw new Error(`Failed to obtain Firebase authentication token: ${retryMsg}`);
                     }
                   } else {
-                    // Si ya era force refresh y falló, re-throw directamente
-                    throw error;
+                    // Si ya era force refresh y falló, throw con información
+                    throw new Error(`Failed to refresh Firebase authentication token: ${errorMsg}`);
                   }
                 }
               },
@@ -477,17 +481,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
         photoURL: (user as any).photoURL || null,
         phoneNumber: (user as any).phoneNumber || null,
         emailVerified: (user as any).emailVerified || false,
-        getIdToken: async () => {
+        getIdToken: async (forceRefresh?: boolean) => {
           try {
             // ✅ FIXED: Usar token JWT real de Firebase
             const firebaseUser = auth.currentUser;
             if (firebaseUser) {
-              return await firebaseUser.getIdToken();
+              return await firebaseUser.getIdToken(forceRefresh);
             }
             throw new Error('No authenticated Firebase user found');
           } catch (error) {
-            console.error("❌ Error obteniendo token Firebase:", error);
-            throw error; // Re-throw para manejo apropiado upstream
+            const errorMsg = error instanceof Error ? error.message : 'Unknown error obtaining Firebase token';
+            console.error("❌ Error obteniendo token Firebase:", errorMsg, error);
+            // ✅ ROBUST: Throw informative error instead of empty object
+            throw new Error(`Failed to obtain Firebase authentication token: ${errorMsg}`);
           }
         },
       };
@@ -547,17 +553,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
         photoURL: user.photoURL || null,
         phoneNumber: user.phoneNumber || null,
         emailVerified: user.emailVerified || false,
-        getIdToken: async () => {
+        getIdToken: async (forceRefresh?: boolean) => {
           try {
             // ✅ FIXED: Usar token JWT real de Firebase
             const firebaseUser = auth.currentUser;
             if (firebaseUser) {
-              return await firebaseUser.getIdToken();
+              return await firebaseUser.getIdToken(forceRefresh);
             }
             throw new Error('No authenticated Firebase user found');
           } catch (error) {
-            console.error("❌ Error obteniendo token Firebase:", error);
-            throw error; // Re-throw para manejo apropiado upstream
+            const errorMsg = error instanceof Error ? error.message : 'Unknown error obtaining Firebase token';
+            console.error("❌ Error obteniendo token Firebase:", errorMsg, error);
+            // ✅ ROBUST: Throw informative error instead of empty object
+            throw new Error(`Failed to obtain Firebase authentication token: ${errorMsg}`);
           }
         },
       };
