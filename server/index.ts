@@ -193,7 +193,7 @@ app.use('/api', paymentRoutes);
 app.use('/api', emailRoutes);
 app.use('/api/contractor-email', contractorEmailRoutes);
 app.use('/api/estimate-email', estimateEmailRoutes);
-app.use('/api/estimates', estimateEmailRoutes);
+// REMOVED: app.use('/api/estimates', estimateEmailRoutes); - Conflicted with Firebase estimates routes in routes.ts
 app.use('/api/simple-estimate', simpleEstimateRoutes);
 console.log('📧 [ESTIMATE-EMAIL] Sistema de estimados HTML profesionales registrado en /api/estimate-email/send');
 console.log('📱 [SIMPLE-ESTIMATE] Sistema móvil-responsivo de aprobación registrado en /api/simple-estimate');
