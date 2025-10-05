@@ -18,12 +18,12 @@ const JWT_EXPIRES_IN = "1d";
 const EMAIL_CHANGE_SECRET = process.env.EMAIL_CHANGE_SECRET || "email-change-secret-2025";
 const EMAIL_CHANGE_TTL = 30 * 60 * 1000; // 30 minutes
 
-// Rate limiting for email change operations
+// Rate limiting for account security operations (email/password changes)
 const emailChangeRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 3, // Maximum 3 email change requests per 15 minutes per IP
+  max: 3, // Maximum 3 account security requests per 15 minutes per IP
   message: {
-    error: "Too many email change requests. Please try again later.",
+    error: "Too many account security requests. Please try again later.",
     retryAfter: 15 * 60 // 15 minutes in seconds
   },
   standardHeaders: true,
@@ -773,7 +773,7 @@ router.post('/update-email', emailChangeRateLimit, verifyFirebaseAuth, async (re
  * Note: This allows password changes without knowing the current password
  * For production, consider requiring current password verification
  */
-router.post('/update-password', verifyFirebaseAuth, async (req: Request & { user?: any }, res: Response) => {
+router.post('/update-password', emailChangeRateLimit, verifyFirebaseAuth, async (req: Request & { user?: any }, res: Response) => {
   try {
     const { newPassword, currentPassword } = req.body;
     const uid = req.user?.uid;
