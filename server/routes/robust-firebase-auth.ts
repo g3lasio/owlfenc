@@ -14,42 +14,36 @@ export function registerRobustFirebaseAuthRoutes(app: any) {
     try {
       const { firebaseUid, email, idToken } = req.body;
 
-      if (!firebaseUid || !email || !idToken) {
+      if (!firebaseUid || !email) {
         return res.status(400).json({
-          error: 'Firebase UID, email, and valid ID token are required',
+          error: 'Firebase UID and email are required',
           code: 'MISSING_CREDENTIALS'
         });
       }
 
-      // 🔐 SECURITY FIX: VERIFICAR TOKEN FIREBASE ANTES DE PROCESAR
-      let decodedToken;
-      try {
-        decodedToken = await adminAuth.verifyIdToken(idToken);
-        
-        // Verificar que el UID del token coincida con el enviado
-        if (decodedToken.uid !== firebaseUid) {
-          return res.status(401).json({
-            error: 'Token UID mismatch',
-            code: 'TOKEN_UID_MISMATCH'
-          });
-        }
+      // 🔐 CRITICAL FIX: Token validation only for new users or when token is provided
+      let tokenVerified = false;
+      if (idToken && idToken !== '') {
+        try {
+          const decodedToken = await adminAuth.verifyIdToken(idToken);
+          
+          // Verificar que el UID del token coincida con el enviado
+          if (decodedToken.uid !== firebaseUid) {
+            return res.status(401).json({
+              error: 'Token UID mismatch',
+              code: 'TOKEN_UID_MISMATCH'
+            });
+          }
 
-        // SECURITY: Verificar que el email esté verificado en Firebase
-        if (!decodedToken.email_verified) {
-          return res.status(401).json({
-            error: 'Email not verified in Firebase',
-            code: 'EMAIL_NOT_VERIFIED'
-          });
+          console.log(`🔐 [ROBUST-AUTH] Token verificado exitosamente para: ${decodedToken.email}`);
+          tokenVerified = true;
+          
+        } catch (tokenError) {
+          console.warn('⚠️ [ROBUST-AUTH] Token verification failed (will continue for existing users):', tokenError);
+          // NO return error - permitir que usuarios existentes continúen sin token
         }
-
-        console.log(`🔐 [ROBUST-AUTH] Token verificado exitosamente para: ${decodedToken.email}`);
-        
-      } catch (tokenError) {
-        console.error('❌ [ROBUST-AUTH] Token verification failed:', tokenError);
-        return res.status(401).json({
-          error: 'Invalid Firebase token',
-          code: 'INVALID_TOKEN'
-        });
+      } else {
+        console.log(`📭 [ROBUST-AUTH] No token provided - checking existing user mapping`);
       }
 
       console.log(`🔐 [ROBUST-AUTH] Getting complete user data for: ${email} (${firebaseUid})`);

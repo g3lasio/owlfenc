@@ -42,7 +42,7 @@ class RobustAuthService {
       if (firebaseUser) {
         console.log('🔐 [ROBUST-AUTH] Firebase user signed in, getting complete data...');
         try {
-          const userData = await this.getUserData(firebaseUser.uid, firebaseUser.email!);
+          const userData = await this.getUserData(firebaseUser);
           this.currentUser = userData;
           this.notifyListeners(userData);
         } catch (error) {
@@ -58,13 +58,25 @@ class RobustAuthService {
     });
   }
 
-  private async getUserData(firebaseUid: string, email: string): Promise<RobustUserData> {
+  private async getUserData(firebaseUser: User): Promise<RobustUserData> {
+    // 🔐 CRITICAL FIX: Obtener idToken del usuario autenticado
+    let idToken: string | undefined;
+    try {
+      idToken = await firebaseUser.getIdToken();
+    } catch (tokenError) {
+      console.error('❌ [ROBUST-AUTH] Error getting ID token:', tokenError);
+    }
+
     const response = await fetch('/api/auth/user-data', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ firebaseUid, email })
+      body: JSON.stringify({ 
+        firebaseUid: firebaseUser.uid, 
+        email: firebaseUser.email,
+        idToken: idToken || ''
+      })
     });
 
     if (!response.ok) {

@@ -214,6 +214,15 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     }
 
     try {
+      // 🔐 CRITICAL FIX: Obtener idToken del usuario autenticado
+      let idToken: string | undefined;
+      try {
+        idToken = await currentUser.getIdToken();
+      } catch (tokenError) {
+        console.error('❌ [PERMISSION-CONTEXT] Error getting ID token:', tokenError);
+        // Continuar sin token - el sistema usará fallback
+      }
+
       // PRIORITY: Use robust backend system
       const response = await fetch(`/api/auth/user-data`, {
         method: 'POST',
@@ -222,7 +231,8 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         },
         body: JSON.stringify({
           firebaseUid: currentUser.uid,
-          email: currentUser.email
+          email: currentUser.email,
+          idToken: idToken || '' // Enviar token si está disponible
         })
       });
 
@@ -295,6 +305,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         propertyVerifications: 0,
         permitAdvisor: 0,
         projects: 0,
+        deepsearch: 0,
         month: new Date().toISOString().slice(0, 7)
       });
       setLoading(false);
@@ -372,6 +383,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         propertyVerifications: 0,
         permitAdvisor: 0,
         projects: 0,
+        deepsearch: 0,
         month: new Date().toISOString().slice(0, 7)
       });
       setLoading(false);

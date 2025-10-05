@@ -212,15 +212,6 @@ export default function SimpleContractGenerator() {
 
   // Get current plan information for UI restrictions
   const currentPlan = userPlan;
-  
-  // 🔍 DEBUG: Log plan info
-  console.log('🔍 [CONTRACT-GENERATOR] Current plan:', {
-    planId: currentPlan?.id,
-    planName: currentPlan?.name,
-    userEmail: currentUser?.email,
-    fullPlan: currentPlan
-  });
-  
   const isFreePlan = currentPlan?.id === 8 || !currentPlan;
   const isPrimoChambeador = currentPlan?.id === 5;
   const isMeroPatron = currentPlan?.id === 9;
