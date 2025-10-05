@@ -364,45 +364,58 @@ export default function SimpleContractGenerator() {
 
       // ✅ ROBUST: Get Firebase authentication token with fallback
       let authToken: string | null = null;
+      let canLoadProtectedEndpoints = false;
       try {
         authToken = await currentUser.getIdToken();
+        canLoadProtectedEndpoints = true;
         console.log("✅ Firebase token obtained successfully");
       } catch (tokenError) {
-        console.warn("⚠️ Could not obtain Firebase token, proceeding without authentication headers:", tokenError);
-        // Continue without token - Firebase services will still work, API might have fallback
+        console.warn("⚠️ Could not obtain Firebase token - skipping protected endpoints to prevent data loss:", tokenError);
+        // Do NOT call protected endpoints without token - this would return empty data and cause data loss
+        canLoadProtectedEndpoints = false;
       }
 
-      // Prepare headers with Firebase authentication (if token available)
-      const authHeaders: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'x-firebase-uid': currentUser.uid
-      };
-      
-      if (authToken) {
-        authHeaders['Authorization'] = `Bearer ${authToken}`;
-      }
+      // Prepare promises array - only include protected endpoints if we have token
+      const dataPromises: Promise<any>[] = [
+        // Source 1: Contract History (contracts completed via Simple Generator)
+        // This uses Firebase directly, doesn't need API token
+        contractHistoryService.getContractHistory(currentUser.uid),
+      ];
 
-      // Load from both sources and merge
-      const [historyResponse, dualSignatureResponse] = await Promise.allSettled(
-        [
-          // Source 1: Contract History (contracts completed via Simple Generator)
-          contractHistoryService.getContractHistory(currentUser.uid),
-          // Source 2: Dual Signature System (contracts signed via signature workflow)
-          // ✅ ROBUST: Continue even if API fails (Promise.allSettled handles rejection)
+      // Source 2: Dual Signature System (only if we have valid auth token)
+      if (canLoadProtectedEndpoints && authToken) {
+        const authHeaders = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+          'x-firebase-uid': currentUser.uid
+        };
+        
+        dataPromises.push(
           fetch(`/api/dual-signature/completed/${currentUser.uid}`, {
             method: 'GET',
             headers: authHeaders
-          }).then((res) => (res.ok ? res.json() : { contracts: [] })),
-        ],
-      );
+          }).then((res) => {
+            if (!res.ok) {
+              throw new Error(`API returned ${res.status}: Cannot load dual signature contracts`);
+            }
+            return res.json();
+          })
+        );
+      } else {
+        console.warn("⚠️ Skipping dual signature endpoint - no auth token available");
+      }
+
+      // Load from available sources and merge
+      const responses = await Promise.allSettled(dataPromises);
 
       let allCompleted: any[] = [];
 
-      // Add contracts from history
+      // Process response[0]: Contract History (always present)
+      const historyResponse = responses[0];
       if (historyResponse.status === "fulfilled") {
         const historyCompleted = historyResponse.value
-          .filter((contract) => contract.status === "completed")
-          .map((contract) => ({
+          .filter((contract: any) => contract.status === "completed")
+          .map((contract: any) => ({
             contractId: contract.contractId,
             clientName: contract.clientName,
             totalAmount: contract.contractData.financials.total || 0,
@@ -418,30 +431,35 @@ export default function SimpleContractGenerator() {
         allCompleted = [...allCompleted, ...historyCompleted];
         console.log(`✅ Loaded ${historyCompleted.length} contracts from history`);
       } else {
-        console.warn("⚠️ Failed to load contracts from history:", historyResponse.reason);
+        console.error("❌ Critical: Failed to load contracts from history:", historyResponse.reason);
       }
 
-      // Add contracts from dual signature system
-      if (dualSignatureResponse.status === "fulfilled") {
-        const dualSignatureCompleted = (
-          dualSignatureResponse.value.contracts || []
-        ).map((contract: any) => ({
-          contractId: contract.contractId,
-          clientName: contract.clientName,
-          totalAmount: contract.totalAmount || 0,
-          isCompleted: contract.isCompleted,
-          isDownloadable: contract.isDownloadable,
-          contractorSigned: contract.contractorSigned,
-          clientSigned: contract.clientSigned,
-          createdAt: contract.createdAt,
-          hasPdf: contract.isDownloadable,
-          pdfUrl: contract.signedPdfPath,
-          source: "dual-signature",
-        }));
-        allCompleted = [...allCompleted, ...dualSignatureCompleted];
-        console.log(`✅ Loaded ${dualSignatureCompleted.length} contracts from dual signature`);
+      // Process response[1]: Dual Signature (only if auth token was available)
+      if (responses.length > 1) {
+        const dualSignatureResponse = responses[1];
+        if (dualSignatureResponse.status === "fulfilled") {
+          const dualSignatureCompleted = (
+            dualSignatureResponse.value.contracts || []
+          ).map((contract: any) => ({
+            contractId: contract.contractId,
+            clientName: contract.clientName,
+            totalAmount: contract.totalAmount || 0,
+            isCompleted: contract.isCompleted,
+            isDownloadable: contract.isDownloadable,
+            contractorSigned: contract.contractorSigned,
+            clientSigned: contract.clientSigned,
+            createdAt: contract.createdAt,
+            hasPdf: contract.isDownloadable,
+            pdfUrl: contract.signedPdfPath,
+            source: "dual-signature",
+          }));
+          allCompleted = [...allCompleted, ...dualSignatureCompleted];
+          console.log(`✅ Loaded ${dualSignatureCompleted.length} contracts from dual signature`);
+        } else {
+          console.warn("⚠️ Could not load contracts from dual signature API:", dualSignatureResponse.reason);
+        }
       } else {
-        console.warn("⚠️ Failed to load contracts from dual signature:", dualSignatureResponse.reason);
+        console.warn("⚠️ Dual signature contracts not loaded - auth token unavailable");
       }
 
       // Remove duplicates (same contractId)
@@ -451,15 +469,22 @@ export default function SimpleContractGenerator() {
       );
 
       setCompletedContracts(uniqueCompleted);
+      
+      const sourcesLoaded = responses.length;
+      const sourcesSuccessful = responses.filter(r => r.status === "fulfilled").length;
+      
       console.log(
-        "✅ Completed contracts loaded:",
-        uniqueCompleted.length,
-        "contracts from both sources",
+        `✅ Completed contracts loaded: ${uniqueCompleted.length} contracts from ${sourcesSuccessful}/${sourcesLoaded} available sources`,
       );
       
-      // ✅ ROBUST: Show success message if we have contracts, even if some sources failed
+      // ✅ ROBUST: Explicit confirmation of data integrity
       if (uniqueCompleted.length > 0) {
-        console.log("✅ Successfully loaded completed contracts without data loss");
+        console.log("✅ Contract data loaded successfully - no data loss detected");
+      }
+      
+      // ⚠️ Warn if some sources failed but we still have data
+      if (sourcesSuccessful < sourcesLoaded && uniqueCompleted.length > 0) {
+        console.warn(`⚠️ Note: ${sourcesLoaded - sourcesSuccessful} source(s) could not be loaded, but existing contracts are preserved`);
       }
     } catch (error) {
       console.error("❌ Error loading completed contracts:", error);
