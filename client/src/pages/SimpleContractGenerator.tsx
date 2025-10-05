@@ -65,7 +65,7 @@ import {
   orderBy,
   getDocs,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import {
   contractHistoryService,
   ContractHistoryEntry,
@@ -2919,17 +2919,18 @@ export default function SimpleContractGenerator() {
     setDeliveryStatus("Generating signature links...");
 
     try {
-      // 🔐 CRITICAL FIX: Get Firebase ID Token
-      let authToken = currentUser.uid; // Fallback to UID
+      // 🔐 CRITICAL FIX: Get Firebase ID Token from real Firebase Auth
+      let authToken = currentUser?.uid || ''; // Fallback to UID
       try {
-        if (typeof currentUser.getIdToken === 'function') {
-          authToken = await currentUser.getIdToken();
+        const firebaseUser = auth.currentUser;
+        if (firebaseUser && typeof firebaseUser.getIdToken === 'function') {
+          authToken = await firebaseUser.getIdToken();
           console.log('✅ [SIGNATURE-TOKEN] ID Token obtained successfully');
         } else {
-          console.warn('⚠️ [SIGNATURE-TOKEN] getIdToken not available, using UID as fallback');
+          console.warn('⚠️ [SIGNATURE-TOKEN] No Firebase user, using UID as fallback');
         }
       } catch (tokenError) {
-        console.warn('⚠️ [SIGNATURE-TOKEN] Failed to get ID token, using UID:', tokenError);
+        console.error('❌ [SIGNATURE-TOKEN] Failed to get ID token, using UID:', tokenError);
       }
 
       // Prepare contract data for signature protocol
@@ -3003,6 +3004,7 @@ export default function SimpleContractGenerator() {
     } catch (error) {
       console.error("❌ [SIGNATURE-PROTOCOL] Error:", error);
       setDeliveryStatus("Failed to generate signature links");
+      setIsMultiChannelActive(false); // 🔧 CRITICAL FIX: Reset state to allow retry
       toast({
         title: "Signature Protocol Error",
         description: `Failed to generate signature links: ${(error as Error).message}`,

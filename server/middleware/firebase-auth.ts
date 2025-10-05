@@ -75,12 +75,14 @@ export const verifyFirebaseAuth = async (req: Request, res: Response, next: Next
     console.log(`🔍 [AUTH-DEBUG] Token tipo: ${token.startsWith('firebase_') ? 'FALLBACK' : token.includes('.') ? 'JWT' : 'UID'}`);
 
     try {
-      // 🔐 CRITICAL FIX: Detectar si es un UID (sin puntos, longitud corta ~28 chars)
-      // Los JWT tienen puntos (xxx.yyy.zzz), los UIDs no
-      const isLikelyUID = !token.includes('.') && token.length < 100;
+      // 🔐 CRITICAL FIX: Detectar si es un UID (sin puntos, longitud 20-30 chars típicamente)
+      // Los JWT tienen puntos (xxx.yyy.zzz), los UIDs no y son más cortos
+      const hasNoDots = !token.includes('.');
+      const isShortLength = token.length >= 20 && token.length <= 40;
+      const isLikelyUID = hasNoDots && isShortLength;
       
       if (isLikelyUID) {
-        console.log('🔧 [AUTH-UID-MODE] Token appears to be a Firebase UID, using direct authentication');
+        console.log('🔧 [AUTH-UID-MODE] Token appears to be a Firebase UID (no dots, short length), using direct authentication');
         // Usar el UID directamente sin verificación JWT
         req.firebaseUser = {
           uid: token,
