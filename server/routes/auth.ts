@@ -666,4 +666,198 @@ router.get('/account/email/confirm', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/auth/update-email
+ * Direct email update using Firebase Admin SDK (no confirmation required)
+ * This is a simpler approach that changes email immediately
+ */
+router.post('/update-email', emailChangeRateLimit, verifyFirebaseAuth, async (req: Request & { user?: any }, res: Response) => {
+  try {
+    const { newEmail } = req.body;
+    const uid = req.user?.uid;
+    
+    console.log('📧 [UPDATE-EMAIL-DIRECT] Direct email update request', { uid, newEmail });
+    
+    // Validation
+    if (!newEmail || typeof newEmail !== 'string') {
+      return res.status(400).json({
+        error: 'Valid email address is required',
+        code: 'INVALID_EMAIL'
+      });
+    }
+    
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      return res.status(400).json({
+        error: 'Please provide a valid email address',
+        code: 'INVALID_EMAIL_FORMAT'
+      });
+    }
+    
+    if (!uid) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+    
+    // Check if email is already in use
+    try {
+      await admin.auth().getUserByEmail(newEmail);
+      return res.status(409).json({
+        error: 'Email address is already in use by another account',
+        code: 'EMAIL_IN_USE'
+      });
+    } catch (emailCheckError: any) {
+      // Email not found is good - we can proceed
+      if (emailCheckError.code !== 'auth/user-not-found') {
+        throw emailCheckError;
+      }
+    }
+    
+    // Update email directly using Admin SDK
+    try {
+      const userRecord = await admin.auth().updateUser(uid, {
+        email: newEmail,
+        emailVerified: false // User should verify the new email
+      });
+      
+      console.log('✅ [UPDATE-EMAIL-DIRECT] Email updated successfully', { 
+        uid, 
+        oldEmail: req.user.email,
+        newEmail: userRecord.email 
+      });
+      
+      // Optionally revoke refresh tokens to force re-authentication
+      await admin.auth().revokeRefreshTokens(uid);
+      
+      res.json({
+        success: true,
+        message: 'Email updated successfully. Please sign in again with your new email.',
+        newEmail: userRecord.email
+      });
+      
+    } catch (updateError: any) {
+      console.error('❌ [UPDATE-EMAIL-DIRECT] Firebase update error:', updateError);
+      
+      if (updateError.code === 'auth/email-already-exists') {
+        return res.status(409).json({
+          error: 'Email address is already in use',
+          code: 'EMAIL_IN_USE'
+        });
+      }
+      
+      if (updateError.code === 'auth/user-not-found') {
+        return res.status(404).json({
+          error: 'User not found',
+          code: 'USER_NOT_FOUND'
+        });
+      }
+      
+      throw updateError;
+    }
+    
+  } catch (error: any) {
+    console.error('❌ [UPDATE-EMAIL-DIRECT] Unexpected error:', error);
+    res.status(500).json({
+      error: 'Failed to update email. Please try again.',
+      code: 'INTERNAL_ERROR'
+    });
+  }
+});
+
+/**
+ * POST /api/auth/update-password
+ * Direct password update using Firebase Admin SDK
+ * Note: This allows password changes without knowing the current password
+ * For production, consider requiring current password verification
+ */
+router.post('/update-password', verifyFirebaseAuth, async (req: Request & { user?: any }, res: Response) => {
+  try {
+    const { newPassword, currentPassword } = req.body;
+    const uid = req.user?.uid;
+    
+    console.log('🔐 [UPDATE-PASSWORD-DIRECT] Direct password update request', { uid });
+    
+    // Validation
+    if (!newPassword || typeof newPassword !== 'string') {
+      return res.status(400).json({
+        error: 'New password is required',
+        code: 'INVALID_PASSWORD'
+      });
+    }
+    
+    // Password strength validation
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        error: 'Password must be at least 6 characters long',
+        code: 'WEAK_PASSWORD'
+      });
+    }
+    
+    if (!uid) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+    
+    // Optional: Verify current password if provided (more secure)
+    if (currentPassword) {
+      try {
+        const user = await admin.auth().getUser(uid);
+        // Note: Admin SDK cannot verify password directly
+        // For production, you may want to use client-side reauthentication
+        console.log('⚠️ [UPDATE-PASSWORD-DIRECT] Current password provided but cannot be verified server-side');
+      } catch (error) {
+        console.error('❌ [UPDATE-PASSWORD-DIRECT] Error getting user:', error);
+      }
+    }
+    
+    // Update password using Admin SDK
+    try {
+      await admin.auth().updateUser(uid, {
+        password: newPassword
+      });
+      
+      console.log('✅ [UPDATE-PASSWORD-DIRECT] Password updated successfully', { uid });
+      
+      // Optionally revoke refresh tokens to force re-authentication
+      await admin.auth().revokeRefreshTokens(uid);
+      
+      res.json({
+        success: true,
+        message: 'Password updated successfully. Please sign in again with your new password.'
+      });
+      
+    } catch (updateError: any) {
+      console.error('❌ [UPDATE-PASSWORD-DIRECT] Firebase update error:', updateError);
+      
+      if (updateError.code === 'auth/user-not-found') {
+        return res.status(404).json({
+          error: 'User not found',
+          code: 'USER_NOT_FOUND'
+        });
+      }
+      
+      if (updateError.code === 'auth/weak-password') {
+        return res.status(400).json({
+          error: 'Password is too weak. Please use a stronger password.',
+          code: 'WEAK_PASSWORD'
+        });
+      }
+      
+      throw updateError;
+    }
+    
+  } catch (error: any) {
+    console.error('❌ [UPDATE-PASSWORD-DIRECT] Unexpected error:', error);
+    res.status(500).json({
+      error: 'Failed to update password. Please try again.',
+      code: 'INTERNAL_ERROR'
+    });
+  }
+});
+
 export default router;
