@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -18,8 +18,10 @@ import {
   ExternalLink,
   DollarSign,
   TrendingUp,
+  BarChart3,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface PaymentSettingsProps {
   stripeAccountStatus?: {
@@ -42,6 +44,35 @@ export default function PaymentSettings({
   onConnectStripe,
 }: PaymentSettingsProps) {
   const { toast } = useToast();
+  const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
+
+  const handleViewDashboard = async () => {
+    try {
+      setIsLoadingDashboard(true);
+      const response = await apiRequest("POST", "/api/contractor-payments/stripe/dashboard", {});
+      
+      if (!response.ok) {
+        throw new Error("Failed to get dashboard link");
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.url) {
+        // Open Stripe dashboard in new tab
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error(data.message || "Failed to get dashboard link");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to open Stripe dashboard",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingDashboard(false);
+    }
+  };
 
   const getStripeStatusBadge = () => {
     if (!stripeAccountStatus?.hasStripeAccount) {
@@ -67,6 +98,12 @@ export default function PaymentSettings({
       </Badge>
     );
   };
+
+  const isAccountActive = stripeAccountStatus?.hasStripeAccount && 
+                          stripeAccountStatus?.accountDetails?.chargesEnabled;
+  
+  const needsSetup = stripeAccountStatus?.hasStripeAccount && 
+                     !stripeAccountStatus?.accountDetails?.chargesEnabled;
 
   return (
     <div className="space-y-6">
@@ -101,17 +138,31 @@ export default function PaymentSettings({
             </div>
             <div className="flex flex-col items-end gap-3">
               {getStripeStatusBadge()}
-              <Button
-                onClick={onConnectStripe}
-                className="bg-cyan-400 text-black hover:bg-cyan-300"
-                disabled={stripeAccountStatus?.hasStripeAccount && stripeAccountStatus?.accountDetails?.chargesEnabled}
-              >
-                {stripeAccountStatus?.hasStripeAccount 
-                  ? (stripeAccountStatus?.accountDetails?.chargesEnabled ? "View Dashboard" : "Complete Setup")
-                  : "Connect Bank Account"
-                }
-                <ExternalLink className="h-4 w-4 ml-2" />
-              </Button>
+              <div className="flex gap-2">
+                {isAccountActive && (
+                  <Button
+                    onClick={handleViewDashboard}
+                    className="bg-blue-600 text-white hover:bg-blue-700"
+                    disabled={isLoadingDashboard}
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    {isLoadingDashboard ? "Loading..." : "View Dashboard"}
+                  </Button>
+                )}
+                <Button
+                  onClick={onConnectStripe}
+                  className="bg-cyan-400 text-black hover:bg-cyan-300"
+                  disabled={isAccountActive}
+                >
+                  {!stripeAccountStatus?.hasStripeAccount 
+                    ? "Connect Bank Account"
+                    : needsSetup
+                    ? "Complete Setup"
+                    : "Reconnect"
+                  }
+                  <ExternalLink className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
             </div>
           </div>
 
