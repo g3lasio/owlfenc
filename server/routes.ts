@@ -1404,8 +1404,8 @@ ${extractedText}`,
   // Use payment routes for general payments
   app.use("/api", paymentRoutes);
 
-  // Use contractor payment routes for Stripe Connect functionality
-  app.use("/api/contractor-payments", paymentRoutes);
+  // REMOVED: Incorrect OAuth implementation - using Account Links implementation in contractor-payment-routes.ts instead
+  // app.use("/api/contractor-payments", paymentRoutes);
 
   // Registro del endpoint simple para autoguardado de estimados
   console.log("🔧 Registrando endpoint simple para estimados...");
