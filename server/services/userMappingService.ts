@@ -55,23 +55,35 @@ export class UserMappingService {
       const normalizedEmail = email.trim().toLowerCase();
       console.log(`🔄 [USER-MAPPING] Creando mapeo para ${normalizedEmail} (${firebaseUid})`);
       
-      // Primero intentar encontrar usuario por email NORMALIZADO
+      // 🔧 CRITICAL FIX: Búsqueda CASE-INSENSITIVE para prevenir duplicados
+      // Usar sql`LOWER(email)` para comparar sin importar mayúsculas/minúsculas
       const existingUserResult = await db!
-        .select({ id: users.id, email: users.email })
+        .select({ id: users.id, email: users.email, firebaseUid: users.firebaseUid })
         .from(users)
-        .where(eq(users.email, normalizedEmail))
+        .where(sql`LOWER(${users.email}) = ${normalizedEmail}`)
         .limit(1);
       
       if (existingUserResult.length > 0) {
         const existingUser = existingUserResult[0];
         
-        // Actualizar el Firebase UID del usuario existente
-        await db!
-          .update(users)
-          .set({ firebaseUid })
-          .where(eq(users.id, existingUser.id));
+        // 🛡️ PROTECCIÓN: Verificar si ya tiene Firebase UID diferente
+        if (existingUser.firebaseUid && existingUser.firebaseUid !== firebaseUid) {
+          console.warn(`⚠️ [USER-MAPPING-CONFLICT] Usuario ${existingUser.id} (${normalizedEmail}) ya tiene Firebase UID diferente: ${existingUser.firebaseUid} vs ${firebaseUid}`);
+          console.warn(`⚠️ [USER-MAPPING-CONFLICT] Esto puede indicar múltiples cuentas Firebase para el mismo email`);
+        }
         
-        console.log(`✅ [USER-MAPPING] Mapeo actualizado: ${normalizedEmail} -> user_id ${existingUser.id} (USUARIO EXISTENTE)`);
+        // Solo actualizar si no tiene Firebase UID o es diferente
+        if (!existingUser.firebaseUid || existingUser.firebaseUid !== firebaseUid) {
+          await db!
+            .update(users)
+            .set({ firebaseUid })
+            .where(eq(users.id, existingUser.id));
+          
+          console.log(`✅ [USER-MAPPING] Firebase UID actualizado: ${normalizedEmail} -> user_id ${existingUser.id}`);
+        } else {
+          console.log(`✅ [USER-MAPPING] Usuario ya mapeado correctamente: ${normalizedEmail} -> user_id ${existingUser.id}`);
+        }
+        
         return { id: existingUser.id, wasCreated: false }; // Usuario existente, no crear trial
       }
       
