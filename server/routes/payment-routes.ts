@@ -29,8 +29,9 @@ const connectAccountSchema = z.object({
 
 const router = Router();
 
+// DEPRECATED: Using contractor-payment-routes.ts instead for Stripe Connect
 // Get Stripe account status - simplified version for testing
-router.get('/stripe/account-status', async (req: Request, res: Response) => {
+router.get('/stripe/account-status-OLD', async (req: Request, res: Response) => {
   try {
     // For now, return a default status that indicates no Stripe account
     // This allows the frontend to work and show the "Connect Bank Account" button
@@ -47,8 +48,9 @@ router.get('/stripe/account-status', async (req: Request, res: Response) => {
   }
 });
 
+// DEPRECATED: Using contractor-payment-routes.ts Account Links implementation instead
 // Create Stripe Connect account using OAuth
-router.post('/stripe/connect', async (req: Request, res: Response) => {
+router.post('/stripe/connect-OLD', async (req: Request, res: Response) => {
   try {
     console.log('Initiating Stripe Connect OAuth flow');
     
@@ -96,8 +98,9 @@ router.post('/stripe/connect', async (req: Request, res: Response) => {
   }
 });
 
-// Handle OAuth callback from Stripe Connect
-router.get('/stripe/oauth/callback', async (req: Request, res: Response) => {
+// DEPRECATED: Using contractor-payment-routes.ts implementation
+// Handle OAuth callback from Stripe Connect  
+router.get('/stripe/oauth/callback-OLD', async (req: Request, res: Response) => {
   try {
     const { code, state, error } = req.query;
 
@@ -128,8 +131,9 @@ router.get('/stripe/oauth/callback', async (req: Request, res: Response) => {
   }
 });
 
+// DEPRECATED: Using contractor-payment-routes.ts implementation
 // Get Stripe Connect dashboard link
-router.get('/stripe/dashboard', isAuthenticated, async (req: Request, res: Response) => {
+router.get('/stripe/dashboard-OLD', isAuthenticated, async (req: Request, res: Response) => {
   try {
     if (!req.user || typeof req.user === 'string') {
       return res.status(401).json({ message: 'Usuario no autenticado' });
