@@ -81,10 +81,18 @@ router.post('/stripe/connect', async (req: Request, res: Response) => {
     }
     
     console.log(`Stripe Connect OAuth URL generated: ${oauthUrl.toString()}`);
-    res.json({ url: oauthUrl.toString() });
+    res.json({ 
+      success: true,
+      url: oauthUrl.toString(),
+      message: "Stripe Connect OAuth URL generated successfully"
+    });
   } catch (error) {
     console.error('Error creating Stripe Connect OAuth URL:', error);
-    return res.status(500).json({ message: 'Error creating Stripe Connect OAuth URL' });
+    return res.status(500).json({ 
+      success: false,
+      message: 'Error creating Stripe Connect OAuth URL',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 

@@ -498,12 +498,13 @@ const ProjectPayments: React.FC = () => {
       const data = await response.json();
       console.log("💳 [STRIPE-CONNECT] Response data:", data);
       
-      if (data.success && data.url) {
-        console.log("💳 [STRIPE-CONNECT] Redirecting to Stripe:", data.url);
+      // ROBUST: Check for URL with or without success field
+      if (data.url) {
+        console.log("💳 [STRIPE-CONNECT] ✅ Redirecting to Stripe:", data.url);
         // Open Stripe onboarding in current window
         window.location.href = data.url;
       } else {
-        console.error("💳 [STRIPE-CONNECT] Missing URL in response:", data);
+        console.error("💳 [STRIPE-CONNECT] ❌ Missing URL in response:", data);
         throw new Error(data.message || "Failed to get Stripe Connect URL");
       }
     } catch (error: any) {
