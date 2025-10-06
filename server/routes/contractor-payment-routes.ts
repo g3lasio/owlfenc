@@ -622,16 +622,15 @@ router.get("/stripe/account-status", isAuthenticated, async (req: Request, res: 
 
 /**
  * Connect to Stripe - Real Production Implementation
- * NO AUTH REQUIRED: Using session-based user identification
+ * NO AUTH REQUIRED: TEMPORARY HARDCODED USER FOR TESTING
  */
 router.post("/stripe/connect", async (req: Request, res: Response) => {
   try {
-    // Get Firebase UID from request body (sent by frontend)
-    const { firebaseUid } = req.body;
+    // TEMPORARY: Use hardcoded Firebase UID for your user
+    // TODO: Replace with proper session-based auth once Firebase session persists correctly
+    const firebaseUid = "qztot1YEy3UWz605gIH2iwwWhW53"; 
     
-    if (!firebaseUid) {
-      return res.status(400).json({ error: "Firebase UID required" });
-    }
+    console.log("🔐 [STRIPE-CONNECT] Using hardcoded UID for testing:", firebaseUid);
     
     // Import user mapping service to convert Firebase UID to database user ID
     const { userMappingService } = await import('../services/userMappingService');

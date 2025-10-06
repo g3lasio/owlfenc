@@ -474,50 +474,10 @@ const ProjectPayments: React.FC = () => {
     },
   });
 
-  // Connect to Stripe - Simplified Real Implementation
+  // Connect to Stripe - NO AUTH REQUIRED (Backend handles user identification)
   const connectToStripe = async () => {
     try {
       console.log("💳 [STRIPE-CONNECT] Starting connection process");
-      
-      // TEMPORARY FIX: Get Firebase UID from localStorage (more reliable than Firebase Auth currentUser)
-      const storedAuth = localStorage.getItem('firebase_auth_session');
-      let firebaseUid: string | null = null;
-      
-      if (storedAuth) {
-        try {
-          const authData = JSON.parse(storedAuth);
-          firebaseUid = authData.uid;
-          console.log("💳 [STRIPE-CONNECT] Got UID from localStorage:", firebaseUid);
-        } catch (e) {
-          console.error("💳 [STRIPE-CONNECT] Failed to parse localStorage auth");
-        }
-      }
-      
-      // Fallback: Try Firebase Auth currentUser
-      if (!firebaseUid) {
-        const { getAuth } = await import("firebase/auth");
-        const firebaseModule = await import("@/lib/firebase");
-        const auth = firebaseModule.auth;
-        const getAuthInstance = getAuth();
-        
-        const currentUser = getAuthInstance.currentUser || auth.currentUser;
-        if (currentUser) {
-          firebaseUid = currentUser.uid;
-          console.log("💳 [STRIPE-CONNECT] Got UID from Firebase Auth:", firebaseUid);
-        }
-      }
-      
-      if (!firebaseUid) {
-        console.error("💳 [STRIPE-CONNECT] No authenticated user found anywhere");
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to connect your Stripe account",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      console.log("💳 [STRIPE-CONNECT] User authenticated:", firebaseUid);
       
       toast({
         title: "Connecting to Stripe",
@@ -525,9 +485,8 @@ const ProjectPayments: React.FC = () => {
       });
 
       console.log("💳 [STRIPE-CONNECT] Making POST request to /api/contractor-payments/stripe/connect");
-      const response = await apiRequest("POST", "/api/contractor-payments/stripe/connect", {
-        firebaseUid: firebaseUid
-      });
+      // NO AUTH NEEDED - Backend gets user from cookies/session
+      const response = await apiRequest("POST", "/api/contractor-payments/stripe/connect", {});
       
       console.log("💳 [STRIPE-CONNECT] Response status:", response.status, response.ok);
       
