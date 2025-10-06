@@ -113,113 +113,7 @@ const ProjectPayments: React.FC = () => {
   const hasPaymentTrackingAccess = hasAccess('paymentTracking');
   const canUsePaymentTracking = hasPaymentTrackingAccess;
   
-  // Si el usuario no tiene acceso, mostrar mensaje de upgrade completo
-  if (!canUsePaymentTracking) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="max-w-4xl mx-auto">
-          <Card className="border-red-900/50 bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
-            <CardHeader className="text-center pb-8">
-              <div className="mx-auto mb-4 relative">
-                <div className="w-20 h-20 rounded-full bg-red-900/20 flex items-center justify-center">
-                  <Lock className="w-10 h-10 text-red-400" />
-                </div>
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
-              </div>
-              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
-                Payment Tracker Dashboard
-              </CardTitle>
-              <CardDescription className="text-lg text-gray-400 mt-2">
-                Sistema de Pagos Premium - Requiere Plan Pagado
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="bg-gradient-to-r from-red-900/10 to-orange-900/10 border border-red-900/30 rounded-lg p-6">
-                <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                  <CreditCard className="w-6 h-6 text-cyan-400" />
-                  ¿Qué incluye Payment Tracker?
-                </h3>
-                <ul className="space-y-3 text-gray-300">
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-1">✓</span>
-                    <span>Dashboard avanzado para seguimiento de pagos en tiempo real</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-1">✓</span>
-                    <span>Workflows de pago automatizados con recordatorios inteligentes</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-1">✓</span>
-                    <span>Historial completo de transacciones y reportes detallados</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-1">✓</span>
-                    <span>Integración con Stripe para pagos en línea seguros</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-1">✓</span>
-                    <span>Análisis de flujo de efectivo y proyecciones financieras</span>
-                  </li>
-                </ul>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                  <DollarSign className="w-8 h-8 mx-auto mb-2 text-green-400" />
-                  <p className="text-sm text-gray-400">Rastrea</p>
-                  <p className="text-2xl font-bold text-white">∞</p>
-                  <p className="text-xs text-gray-500">Pagos ilimitados</p>
-                </div>
-                <div className="text-center p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                  <Clock className="w-8 h-8 mx-auto mb-2 text-blue-400" />
-                  <p className="text-sm text-gray-400">Ahorra</p>
-                  <p className="text-2xl font-bold text-white">10h</p>
-                  <p className="text-xs text-gray-500">Por semana</p>
-                </div>
-                <div className="text-center p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                  <TrendingUp className="w-8 h-8 mx-auto mb-2 text-purple-400" />
-                  <p className="text-sm text-gray-400">Mejora</p>
-                  <p className="text-2xl font-bold text-white">95%</p>
-                  <p className="text-xs text-gray-500">Tasa de cobro</p>
-                </div>
-              </div>
-              
-              <div className="text-center space-y-4">
-                <p className="text-gray-400">
-                  Tu plan actual: <span className="font-semibold text-white">{userPlan?.name || 'Primo Chambeador'}</span>
-                </p>
-                <p className="text-sm text-gray-500">
-                  Actualiza a <span className="text-cyan-400 font-semibold">Mero Patrón</span> o <span className="text-purple-400 font-semibold">Master Contractor</span> para gestionar pagos profesionalmente
-                </p>
-              </div>
-              
-              <div className="flex gap-4 justify-center pt-4">
-                <Button
-                  onClick={() => navigate('/subscription')}
-                  className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white font-semibold px-6 py-3"
-                  size="lg"
-                >
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  Ver Planes y Precios
-                </Button>
-                <Button
-                  onClick={() => showUpgradeModal('paymentTracking', 'Gestiona todos tus pagos y cobros como un profesional')}
-                  variant="outline"
-                  className="border-gray-700 hover:bg-gray-800"
-                  size="lg"
-                >
-                  Más Información
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   // Fetch projects data from BOTH Firebase collections (same as Estimate Wizard History)
   const {
     data: projects,
@@ -627,6 +521,113 @@ const ProjectPayments: React.FC = () => {
   // Check for data loading errors
   const hasDataErrors = projectsError || paymentsError;
 
+  // Si el usuario no tiene acceso, mostrar mensaje de upgrade completo
+  if (!canUsePaymentTracking) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="max-w-4xl mx-auto">
+          <Card className="border-red-900/50 bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+            <CardHeader className="text-center pb-8">
+              <div className="mx-auto mb-4 relative">
+                <div className="w-20 h-20 rounded-full bg-red-900/20 flex items-center justify-center">
+                  <Lock className="w-10 h-10 text-red-400" />
+                </div>
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+              </div>
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
+                Payment Tracker Dashboard
+              </CardTitle>
+              <CardDescription className="text-lg text-gray-400 mt-2">
+                Sistema de Pagos Premium - Requiere Plan Pagado
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="bg-gradient-to-r from-red-900/10 to-orange-900/10 border border-red-900/30 rounded-lg p-6">
+                <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                  <CreditCard className="w-6 h-6 text-cyan-400" />
+                  ¿Qué incluye Payment Tracker?
+                </h3>
+                <ul className="space-y-3 text-gray-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Dashboard avanzado para seguimiento de pagos en tiempo real</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Workflows de pago automatizados con recordatorios inteligentes</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Historial completo de transacciones y reportes detallados</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Integración con Stripe para pagos en línea seguros</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Análisis de flujo de efectivo y proyecciones financieras</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                  <DollarSign className="w-8 h-8 mx-auto mb-2 text-green-400" />
+                  <p className="text-sm text-gray-400">Rastrea</p>
+                  <p className="text-2xl font-bold text-white">∞</p>
+                  <p className="text-xs text-gray-500">Pagos ilimitados</p>
+                </div>
+                <div className="text-center p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                  <Clock className="w-8 h-8 mx-auto mb-2 text-blue-400" />
+                  <p className="text-sm text-gray-400">Ahorra</p>
+                  <p className="text-2xl font-bold text-white">10h</p>
+                  <p className="text-xs text-gray-500">Por semana</p>
+                </div>
+                <div className="text-center p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                  <TrendingUp className="w-8 h-8 mx-auto mb-2 text-purple-400" />
+                  <p className="text-sm text-gray-400">Mejora</p>
+                  <p className="text-2xl font-bold text-white">95%</p>
+                  <p className="text-xs text-gray-500">Tasa de cobro</p>
+                </div>
+              </div>
+              
+              <div className="text-center space-y-4">
+                <p className="text-gray-400">
+                  Tu plan actual: <span className="font-semibold text-white">{userPlan?.name || 'Primo Chambeador'}</span>
+                </p>
+                <p className="text-sm text-gray-500">
+                  Actualiza a <span className="text-cyan-400 font-semibold">Mero Patrón</span> o <span className="text-purple-400 font-semibold">Master Contractor</span> para gestionar pagos profesionalmente
+                </p>
+              </div>
+              
+              <div className="flex gap-4 justify-center pt-4">
+                <Button
+                  onClick={() => navigate('/subscription')}
+                  className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white font-semibold px-6 py-3"
+                  size="lg"
+                >
+                  <CreditCard className="w-5 h-5 mr-2" />
+                  Ver Planes y Precios
+                </Button>
+                <Button
+                  onClick={() => showUpgradeModal('paymentTracking', 'Gestiona todos tus pagos y cobros como un profesional')}
+                  variant="outline"
+                  className="border-gray-700 hover:bg-gray-800"
+                  size="lg"
+                >
+                  Más Información
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-black min-h-screen font-['Quantico'] text-white">
       <div className="container mx-auto px-4 py-8">
@@ -639,31 +640,6 @@ const ProjectPayments: React.FC = () => {
             <p className="text-gray-400 text-lg">
               Simplified payment workflow with guided steps and complete tracking
             </p>
-            
-            {/* Payment Tracking Access Notice */}
-            {!canUsePaymentTracking && (
-              <div className="mt-4 p-4 bg-gradient-to-r from-purple-900/20 to-cyan-900/20 border border-purple-500/30 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-cyan-400 flex items-center justify-center">
-                      <span className="text-sm font-bold text-black">✨</span>
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-sm font-medium text-white">¡Rastrea todos tus pagos como un Master Contractor!</h3>
-                    <p className="text-xs text-gray-300 mt-1">
-                      Accede a seguimiento de pagos avanzado, reportes detallados y automatización completa
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => showUpgradeModal('paymentTracking', 'Monitorea el estado de tus proyectos y pagos pendientes en tiempo real')}
-                    className="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-400 text-black text-sm font-medium rounded-lg hover:from-purple-600 hover:to-cyan-300 transition-all duration-200"
-                  >
-                    Upgrade ↗
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
           <Button
             onClick={refreshData}
