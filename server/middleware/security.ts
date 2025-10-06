@@ -118,7 +118,7 @@ export const validateEnvironment = () => {
   }
   
   // Check for exposed keys
-  const sensitiveVars = ['STRIPE_API_KEY', 'DATABASE_URL', 'SESSION_SECRET'];
+  const sensitiveVars = ['STRIPE_SECRET_KEY', 'DATABASE_URL', 'SESSION_SECRET'];
   sensitiveVars.forEach(varName => {
     const value = process.env[varName];
     if (value && (value.includes('demo') || value.includes('test') || value.includes('placeholder'))) {

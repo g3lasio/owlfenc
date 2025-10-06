@@ -286,14 +286,46 @@ export class ContractorPaymentService {
   /**
    * Get Stripe account status for user from REAL data
    */
-  async getStripeAccountStatus(userId: string) {
+  async getStripeAccountStatus(firebaseUid: string) {
     try {
-      // TODO: Implement real Stripe account status check
-      // For now return basic status until Stripe Connect is fully implemented
+      // Convert Firebase UID to internal user ID
+      const { userMappingService } = await import('../services/userMappingService');
+      const dbUserId = await userMappingService.getInternalUserId(firebaseUid);
+      
+      if (!dbUserId) {
+        return {
+          hasStripeAccount: false,
+          accountDetails: null,
+          needsOnboarding: true
+        };
+      }
+
+      // Get user from database to check for Stripe Connect account ID
+      const user = await storage.getUser(dbUserId);
+      
+      if (!user || !user.stripeConnectAccountId) {
+        return {
+          hasStripeAccount: false,
+          accountDetails: null,
+          needsOnboarding: true
+        };
+      }
+
+      // Fetch real Stripe account status
+      const account = await stripe.accounts.retrieve(user.stripeConnectAccountId);
+      
       return {
-        hasStripeAccount: false,
-        accountDetails: null,
-        needsOnboarding: true
+        hasStripeAccount: true,
+        accountDetails: {
+          id: account.id,
+          email: account.email || undefined,
+          businessType: account.business_type || undefined,
+          chargesEnabled: account.charges_enabled,
+          payoutsEnabled: account.payouts_enabled,
+          defaultCurrency: account.default_currency || undefined,
+          country: account.country || undefined,
+        },
+        needsOnboarding: !account.charges_enabled || !account.payouts_enabled
       };
     } catch (error) {
       console.error('Error fetching Stripe account status:', error);
