@@ -6385,7 +6385,7 @@ Output must be between 200-900 characters in English.`;
 
       console.log("🔍 [PROFILE-POST] Actualizando perfil para user_id:", userId);
 
-      // Update user profile in PostgreSQL
+      // Update user profile in PostgreSQL using storage service
       const updateData: any = {};
       if (req.body.company !== undefined) updateData.company = req.body.company;
       if (req.body.ownerName !== undefined) updateData.ownerName = req.body.ownerName;
@@ -6408,11 +6408,8 @@ Output must be between 200-900 characters in English.`;
       if (req.body.socialMedia !== undefined) updateData.socialMedia = req.body.socialMedia;
       if (req.body.logo !== undefined) updateData.logo = req.body.logo;
 
-      // Update in database
-      await db!
-        .update(users)
-        .set(updateData)
-        .where(eq(users.id, userId));
+      // Update in database using storage service
+      await storage.updateUser(userId, updateData);
 
       console.log(
         "✅ [PROFILE-POST] Perfil actualizado en PostgreSQL para user_id:",
