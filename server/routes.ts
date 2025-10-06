@@ -6210,7 +6210,7 @@ Output must be between 200-900 characters in English.`;
             email: user.email,
           });
 
-          // Return actual user data from database
+          // Return actual user data from database (PostgreSQL only, no memory merge)
           const profileData = {
             id: user.id,
             company: user.company || "",
@@ -6235,21 +6235,7 @@ Output must be between 200-900 characters in English.`;
             logo: user.logo || "",
           };
 
-          // Check for any updates stored in memory
-          try {
-            const storedData = global.profileStorage || {};
-            if (storedData.company || storedData.logo) {
-              const updatedProfile = { ...profileData, ...storedData };
-              console.log(
-                "📋 Profile merged with stored data, logo length:",
-                storedData.logo?.length || 0,
-              );
-              return res.json(updatedProfile);
-            }
-          } catch (err) {
-            console.warn("Could not merge stored profile data:", err);
-          }
-
+          console.log("✅ [PROFILE-GET] Returning profile from PostgreSQL, logo length:", user.logo?.length || 0);
           return res.json(profileData);
         }
       } catch (dbError) {
@@ -6361,7 +6347,7 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
-  // POST endpoint for profile updates
+  // POST endpoint for profile updates - FIXED: Save to PostgreSQL
   app.post("/api/profile", async (req: Request, res: Response) => {
     try {
       console.log(
@@ -6369,19 +6355,97 @@ Output must be between 200-900 characters in English.`;
         req.body.logo?.length || 0,
       );
 
-      // Store profile data in memory for development
-      global.profileStorage = {
-        ...(global.profileStorage || {}),
-        ...req.body,
-        updatedAt: new Date().toISOString(),
-      };
+      // Get Firebase UID from authorization header
+      let firebaseUserId;
+      const authHeader = req.headers.authorization;
 
-      const profileData = global.profileStorage;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        try {
+          const token = authHeader.substring(7);
+          const decodedToken = await admin.auth().verifyIdToken(token);
+          firebaseUserId = decodedToken.uid;
+          console.log("✅ [PROFILE-POST] Token Firebase verificado, UID:", firebaseUserId);
+        } catch (authError) {
+          console.warn("⚠️ [PROFILE-POST] No se pudo verificar token:", authError.message);
+          return res.status(401).json({ success: false, error: "Unauthorized" });
+        }
+      } else {
+        console.warn("⚠️ [PROFILE-POST] No authorization header");
+        return res.status(401).json({ success: false, error: "Unauthorized" });
+      }
+
+      // Get user_id using UserMappingService
+      const { userMappingService } = await import('./services/userMappingService');
+      const userId = await userMappingService.getInternalUserId(firebaseUserId);
+
+      if (!userId) {
+        console.error("❌ [PROFILE-POST] No se encontró user_id para Firebase UID:", firebaseUserId);
+        return res.status(404).json({ success: false, error: "User not found" });
+      }
+
+      console.log("🔍 [PROFILE-POST] Actualizando perfil para user_id:", userId);
+
+      // Update user profile in PostgreSQL
+      const updateData: any = {};
+      if (req.body.company !== undefined) updateData.company = req.body.company;
+      if (req.body.ownerName !== undefined) updateData.ownerName = req.body.ownerName;
+      if (req.body.role !== undefined) updateData.role = req.body.role;
+      if (req.body.email !== undefined) updateData.email = req.body.email;
+      if (req.body.phone !== undefined) updateData.phone = req.body.phone;
+      if (req.body.mobilePhone !== undefined) updateData.mobilePhone = req.body.mobilePhone;
+      if (req.body.address !== undefined) updateData.address = req.body.address;
+      if (req.body.city !== undefined) updateData.city = req.body.city;
+      if (req.body.state !== undefined) updateData.state = req.body.state;
+      if (req.body.zipCode !== undefined) updateData.zipCode = req.body.zipCode;
+      if (req.body.license !== undefined) updateData.license = req.body.license;
+      if (req.body.insurancePolicy !== undefined) updateData.insurancePolicy = req.body.insurancePolicy;
+      if (req.body.ein !== undefined) updateData.ein = req.body.ein;
+      if (req.body.businessType !== undefined) updateData.businessType = req.body.businessType;
+      if (req.body.yearEstablished !== undefined) updateData.yearEstablished = req.body.yearEstablished;
+      if (req.body.website !== undefined) updateData.website = req.body.website;
+      if (req.body.description !== undefined) updateData.description = req.body.description;
+      if (req.body.specialties !== undefined) updateData.specialties = req.body.specialties;
+      if (req.body.socialMedia !== undefined) updateData.socialMedia = req.body.socialMedia;
+      if (req.body.logo !== undefined) updateData.logo = req.body.logo;
+
+      // Update in database
+      await db!
+        .update(users)
+        .set(updateData)
+        .where(eq(users.id, userId));
 
       console.log(
-        "✅ [POST /api/profile] Perfil guardado, logo length:",
-        profileData.logo?.length || 0,
+        "✅ [PROFILE-POST] Perfil actualizado en PostgreSQL para user_id:",
+        userId,
+        "logo length:",
+        updateData.logo?.length || 0,
       );
+
+      // Return updated profile
+      const updatedUser = await storage.getUserByFirebaseUid(firebaseUserId);
+      const profileData = {
+        id: updatedUser?.id,
+        company: updatedUser?.company || "",
+        ownerName: updatedUser?.ownerName || "",
+        role: updatedUser?.role || "",
+        email: updatedUser?.email || "",
+        phone: updatedUser?.phone || "",
+        mobilePhone: updatedUser?.mobilePhone || "",
+        address: updatedUser?.address || "",
+        city: updatedUser?.city || "",
+        state: updatedUser?.state || "",
+        zipCode: updatedUser?.zipCode || "",
+        license: updatedUser?.license || "",
+        insurancePolicy: updatedUser?.insurancePolicy || "",
+        ein: updatedUser?.ein || "",
+        businessType: updatedUser?.businessType || "",
+        yearEstablished: updatedUser?.yearEstablished || "",
+        website: updatedUser?.website || "",
+        description: updatedUser?.description || "",
+        specialties: updatedUser?.specialties || [],
+        socialMedia: updatedUser?.socialMedia || {},
+        logo: updatedUser?.logo || "",
+      };
 
       res.json({
         success: true,
