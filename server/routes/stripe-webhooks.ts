@@ -30,8 +30,8 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
 if (!STRIPE_WEBHOOK_SECRET) {
   if (process.env.NODE_ENV === 'production') {
-    console.error('❌ [STRIPE-WEBHOOKS] STRIPE_WEBHOOK_SECRET is required but not configured in production');
-    process.exit(1);
+    console.warn('⚠️ [STRIPE-WEBHOOKS] STRIPE_WEBHOOK_SECRET not configured - webhooks will be disabled in production');
+    console.warn('⚠️ [STRIPE-WEBHOOKS] To enable webhooks, add STRIPE_WEBHOOK_SECRET in Deployments > Configuration > Secrets');
   } else {
     console.warn('⚠️ [STRIPE-WEBHOOKS] STRIPE_WEBHOOK_SECRET not configured - webhooks will be disabled in development');
   }
