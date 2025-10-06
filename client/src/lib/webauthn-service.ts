@@ -72,13 +72,9 @@ export class WebAuthnService {
     console.log('🔐 [WEBAUTHN] Iniciando registro de credencial para:', email);
 
     try {
-      // CRÍTICO: Detectar si estamos en iframe
+      // Detectar contexto de ventana para logging (pero NO bloquear aún)
       const windowContext = detectWindowContext();
-      
-      if (windowContext.isIframe) {
-        console.log('🚫 [WEBAUTHN] Detectado iframe - WebAuthn bloqueado por seguridad del navegador');
-        throw new Error('IFRAME_DETECTED_NEED_POPUP');
-      }
+      console.log('🔍 [WEBAUTHN-CONTEXT] Ejecutando en:', windowContext.context, windowContext);
       
       // Solicitar opciones de registro al servidor con manejo de errores
       console.log('🌐 [WEBAUTHN] Solicitando opciones de registro al servidor');
@@ -168,13 +164,9 @@ export class WebAuthnService {
     console.log('🔐 [WEBAUTHN] Iniciando autenticación biométrica');
 
     try {
-      // CRÍTICO: Detectar si estamos en iframe
+      // Detectar contexto de ventana para logging (pero NO bloquear aún)
       const windowContext = detectWindowContext();
-      
-      if (windowContext.isIframe) {
-        console.log('🚫 [WEBAUTHN] Detectado iframe - WebAuthn bloqueado por seguridad del navegador');
-        throw new Error('IFRAME_DETECTED_NEED_POPUP');
-      }
+      console.log('🔍 [WEBAUTHN-CONTEXT] Ejecutando en:', windowContext.context, windowContext);
       
       // Verificar soporte antes de proceder
       await this.verifyWebAuthnSupport();

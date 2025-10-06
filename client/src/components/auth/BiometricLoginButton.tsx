@@ -260,23 +260,47 @@ export function BiometricLoginButton({
       
       let authResult: { credential: any; challengeKey: string };
       
-      // Intentar autenticación biométrica con manejo de iframe
+      // Intentar autenticación biométrica directa (con Permissions-Policy headers)
       try {
         console.log('🔐 [BIOMETRIC-BUTTON] Llamando a webauthnService.authenticateUser');
         authResult = await webauthnService.authenticateUser(loginEmail);
+        console.log('✅ [BIOMETRIC-BUTTON] WebAuthn directo exitoso en iframe (Permissions-Policy funcionando)');
       } catch (webauthnError: any) {
-        // Detectar error de iframe
-        if (webauthnError.message === 'IFRAME_DETECTED_NEED_POPUP') {
-          console.log('🪟 [BIOMETRIC-BUTTON] Iframe detectado, usando flujo de popup');
+        console.log('⚠️ [BIOMETRIC-BUTTON] WebAuthn directo falló:', webauthnError);
+        
+        // Detectar errores específicos de iframe que requieren popup
+        const errorMessage = webauthnError?.message || webauthnError?.toString() || '';
+        const errorName = webauthnError?.name || '';
+        
+        // Errores que indican restricción de iframe:
+        // - NotAllowedError: Usuario canceló o iframe bloqueado
+        // - SecurityError: Iframe sin permisos
+        // - NotSupportedError: API no disponible en este contexto
+        const isIframeError = 
+          errorMessage.includes('not enabled in this document') ||
+          errorMessage.includes('not the same as its ancestors') ||
+          errorMessage.includes('cross-origin') ||
+          (errorName === 'NotAllowedError' && errorMessage.includes('document')) ||
+          errorName === 'SecurityError';
+        
+        if (isIframeError) {
+          console.log('🪟 [BIOMETRIC-BUTTON] Error de iframe detectado, intentando flujo de popup como fallback');
           toast({
             title: "Abriendo ventana de autenticación",
-            description: "Se abrirá una nueva ventana para autenticación biométrica",
+            description: "Tu navegador requiere una ventana separada para autenticación biométrica",
           });
           
-          // Usar flujo de popup
-          authResult = await handlePopupAuth(loginEmail);
+          // Usar flujo de popup como fallback
+          try {
+            authResult = await handlePopupAuth(loginEmail);
+            console.log('✅ [BIOMETRIC-BUTTON] Popup fallback exitoso');
+          } catch (popupError: any) {
+            console.error('❌ [BIOMETRIC-BUTTON] Popup fallback también falló:', popupError);
+            throw popupError; // Re-lanzar para manejo general
+          }
         } else {
-          // Re-lanzar otros errores
+          // Re-lanzar otros errores (no relacionados con iframe)
+          console.log('❌ [BIOMETRIC-BUTTON] Error no relacionado con iframe, re-lanzando');
           throw webauthnError;
         }
       }
