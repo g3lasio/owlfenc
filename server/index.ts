@@ -378,27 +378,27 @@ app.post('/api/generate-contract-html', async (req, res) => {
     const { default: PremiumPdfService } = await import('./services/premiumPdfService');
     const premiumPdfService = PremiumPdfService.getInstance();
 
-    // Use request body data or mock data for testing
-    const contractData = req.body.contractData || {
+    // 🔧 CRITICAL FIX: Handle both payload formats correctly
+    const contractData = req.body.contractData || req.body || {
       client: {
-        name: req.body.clientName || "Test Client",
-        address: req.body.clientAddress || "123 Test St, Test City, CA 12345",
-        phone: req.body.clientPhone || "(555) 123-4567",
-        email: req.body.clientEmail || "client@example.com"
+        name: req.body.client?.name || req.body.clientName || "Test Client",
+        address: req.body.client?.address || req.body.clientAddress || "123 Test St, Test City, CA 12345",
+        phone: req.body.client?.phone || req.body.clientPhone || "(555) 123-4567",
+        email: req.body.client?.email || req.body.clientEmail || "client@example.com"
       },
       contractor: {
-        name: "OWL FENC LLC",
-        address: "2901 Owens Ct, Fairfield, CA 94534 US",
-        phone: "2025493519",
-        email: "gelasio@chyrris.com"
+        name: req.body.contractor?.name || "OWL FENC LLC",
+        address: req.body.contractor?.address || "2901 Owens Ct, Fairfield, CA 94534 US",
+        phone: req.body.contractor?.phone || "2025493519",
+        email: req.body.contractor?.email || "gelasio@chyrris.com"
       },
       project: {
-        type: req.body.projectType || "Fence Installation",
-        description: req.body.projectDescription || "Professional fence installation project",
-        location: req.body.projectLocation || req.body.clientAddress || "Project location"
+        type: req.body.project?.type || req.body.projectType || "Fence Installation",
+        description: req.body.project?.description || req.body.projectDescription || "Professional fence installation project",
+        location: req.body.project?.location || req.body.projectLocation || req.body.clientAddress || "Project location"
       },
       financials: {
-        total: parseFloat(req.body.totalAmount) || 5000
+        total: req.body.financials?.total || parseFloat(req.body.totalAmount) || 5000
       },
       protectionClauses: req.body.protectionClauses || [],
       timeline: req.body.timeline || {},
