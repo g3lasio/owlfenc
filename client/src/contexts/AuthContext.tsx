@@ -212,32 +212,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   useEffect(() => {
-    // Verificar autenticación persistida de OTP primero
-    const checkPersistedAuth = async () => {
-      try {
-        // Verificar sesión persistente mejorada (30 días)
-        const { enhancedPersistenceService } = await import('../lib/enhanced-persistence');
-        const sessionValidation = enhancedPersistenceService.validatePersistentSession();
-        
-        if (sessionValidation.valid && sessionValidation.session) {
-          console.log('🔄 [PERSISTENCE] Sesión persistente válida encontrada:', sessionValidation.session.email);
-          // Firebase onAuthStateChanged manejará la autenticación automática
-          enhancedPersistenceService.initActivityMonitoring();
-          return;
-        } else if (sessionValidation.reason) {
-          console.log('⚠️ [PERSISTENCE] Sesión inválida:', sessionValidation.reason);
-        }
-        
-        // ✅ FIXED: Removed redundant OTP localStorage fallbacks
-        // Enhanced persistence service now handles all session recovery
-        console.log('🧹 [SIMPLIFICATION] Using enhanced persistence only - removed redundant OTP fallbacks');
-      } catch (error) {
-        console.error('Error checking persisted auth:', error);
-      }
-    };
-
-    // Verificar autenticación persistida primero (async)
-    checkPersistedAuth();
+    // Ya no verificamos la persistencia local al inicio
+    // Dejamos que Firebase Auth maneje toda la persistencia con su propio sistema
+    // Esto evita conflictos entre la persistencia local y Firebase
+    console.log('🔐 [AUTH-INIT] Iniciando AuthProvider - Firebase manejará la persistencia');
 
     // Primero verificamos si hay algún resultado de redirección pendiente
     const checkRedirectResult = async () => {
@@ -367,35 +345,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
               // No es una condición crítica - el usuario puede usar la app, pero con limitaciones
             });
           } else {
-            // ✅ FIXED: Simplified auth check using enhanced persistence only
-            let fallbackValid = false;
+            console.log("🔓 Usuario no autenticado - Firebase signOut detectado");
+            console.log("🔐 [AUTH-SECURITY] USER_SIGNED_OUT:", {
+              timestamp: new Date().toISOString(),
+              userAgent: navigator.userAgent
+            });
+            
+            // Limpiar la persistencia local cuando Firebase indica que no hay usuario (sin bloquear)
             try {
               const { enhancedPersistenceService } = require('../lib/enhanced-persistence');
-              fallbackValid = enhancedPersistenceService.validatePersistentSession().valid;
+              enhancedPersistenceService.clearPersistentSession();
+              console.log('🧹 [AUTH-CLEANUP] Sesión persistente limpiada al cerrar sesión de Firebase');
             } catch (e) {
               // Enhanced persistence not available, continue
             }
-            const isDevelopment = window.location.hostname.includes('replit') || 
-                                 window.location.hostname === 'localhost';
             
-            if (!fallbackValid && !isDevelopment) {
-              console.log("🔓 Usuario no autenticado - Firebase signOut detectado");
-              
-              // En desarrollo, mantener sesión por más tiempo antes de limpiar
-              if (isDevelopment && currentUser) {
-                console.log("🛠️ [DEV-MODE] Manteniendo usuario en desarrollo por posible reconexión");
-                
-                // Dar tiempo para reconexión automática antes de limpiar
-                setTimeout(() => {
-                  if (!auth.currentUser) {
-                    console.log("🛠️ [DEV-MODE] Timeout alcanzado - limpiando usuario");
-                    setCurrentUser(null);
-                  }
-                }, 3000); // 3 segundos en desarrollo
-              } else {
-                setCurrentUser(null);
-              }
-            }
+            setCurrentUser(null);
           }
           setLoading(false);
           if (!isInitializing) setIsInitializing(false); // ✅ FIXED: Ensure initialization completes
