@@ -1,14 +1,16 @@
 /**
  * Componente de Botón de Login Biométrico
  * Maneja Face ID, Touch ID y autenticación por huella digital
+ * Soporta flujo de popup para entornos iframe
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Fingerprint, Smartphone, Shield, Loader2 } from 'lucide-react';
 import { detectBiometricCapabilities, getBiometricMethodDescription } from '@/lib/biometric-detection';
 import { webauthnService } from '@/lib/webauthn-service';
 import { useToast } from '@/hooks/use-toast';
+import { getExpectedPopupOrigin } from '@/lib/window-context';
 
 interface BiometricLoginButtonProps {
   onSuccess: (userData: any) => void;
@@ -16,6 +18,16 @@ interface BiometricLoginButtonProps {
   email?: string;
   className?: string;
   disabled?: boolean;
+}
+
+interface PopupMessage {
+  type: 'WEBAUTHN_INIT' | 'WEBAUTHN_SUCCESS' | 'WEBAUTHN_ERROR';
+  nonce?: string;
+  email?: string;
+  action?: 'authenticate' | 'register';
+  credential?: any;
+  challengeKey?: string;
+  error?: string;
 }
 
 export function BiometricLoginButton({ 
@@ -30,9 +42,26 @@ export function BiometricLoginButton({
   const [methodDescription, setMethodDescription] = useState('');
   const [isDetecting, setIsDetecting] = useState(true);
   const { toast } = useToast();
+  
+  // Referencias para manejo de popup
+  const popupWindowRef = useRef<Window | null>(null);
+  const popupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const popupNonceRef = useRef<string>('');
 
   useEffect(() => {
     detectSupport();
+  }, []);
+
+  // Cleanup: Cerrar popup y limpiar timeouts al desmontar
+  useEffect(() => {
+    return () => {
+      if (popupWindowRef.current && !popupWindowRef.current.closed) {
+        popupWindowRef.current.close();
+      }
+      if (popupTimeoutRef.current) {
+        clearTimeout(popupTimeoutRef.current);
+      }
+    };
   }, []);
 
   const detectSupport = async () => {
@@ -57,6 +86,143 @@ export function BiometricLoginButton({
     } finally {
       setIsDetecting(false);
     }
+  };
+
+  /**
+   * Flujo de autenticación mediante popup (para entornos iframe)
+   */
+  const handlePopupAuth = async (loginEmail: string): Promise<{ credential: any; challengeKey: string }> => {
+    console.log('🪟 [POPUP-AUTH] Iniciando autenticación en popup');
+    
+    return new Promise((resolve, reject) => {
+      // Generar nonce para seguridad
+      const nonce = `nonce_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+      popupNonceRef.current = nonce;
+      
+      // Abrir popup
+      const popupWidth = 500;
+      const popupHeight = 600;
+      const left = (window.screen.width - popupWidth) / 2;
+      const top = (window.screen.height - popupHeight) / 2;
+      
+      const popupUrl = `/webauthn-popup`;
+      const popupFeatures = `width=${popupWidth},height=${popupHeight},left=${left},top=${top},resizable=no,scrollbars=no,status=no,toolbar=no,menubar=no`;
+      
+      console.log('🪟 [POPUP-AUTH] Abriendo popup:', popupUrl);
+      const popupWindow = window.open(popupUrl, 'webauthn_popup', popupFeatures);
+      
+      if (!popupWindow) {
+        console.error('❌ [POPUP-AUTH] Popup bloqueado por el navegador');
+        toast({
+          title: "Popup bloqueado",
+          description: "Por favor, permite popups para este sitio y vuelve a intentar",
+          variant: "destructive",
+        });
+        reject(new Error('Popup bloqueado por el navegador'));
+        return;
+      }
+      
+      popupWindowRef.current = popupWindow;
+      
+      // Timeout de 90 segundos
+      popupTimeoutRef.current = setTimeout(() => {
+        console.error('❌ [POPUP-AUTH] Timeout esperando respuesta del popup');
+        popupWindow.close();
+        window.removeEventListener('message', messageHandler);
+        toast({
+          title: "Tiempo agotado",
+          description: "La autenticación biométrica tardó demasiado. Intenta de nuevo",
+          variant: "destructive",
+        });
+        reject(new Error('Timeout de autenticación'));
+      }, 90000);
+      
+      // Escuchar mensajes del popup
+      const messageHandler = (event: MessageEvent) => {
+        // Validar origen
+        const expectedOrigin = getExpectedPopupOrigin();
+        if (event.origin !== expectedOrigin) {
+          console.warn('⚠️ [POPUP-AUTH] Origen no confiable:', event.origin);
+          return;
+        }
+        
+        const message: PopupMessage = event.data;
+        console.log('📨 [POPUP-AUTH] Mensaje recibido del popup:', message.type);
+        
+        // Manejar mensaje INIT (popup está listo)
+        if (message.type === 'WEBAUTHN_INIT') {
+          console.log('✅ [POPUP-AUTH] Popup listo, enviando instrucciones');
+          
+          // Enviar mensaje INIT con parámetros
+          const initMessage: PopupMessage = {
+            type: 'WEBAUTHN_INIT',
+            nonce: nonce,
+            email: loginEmail,
+            action: 'authenticate'
+          };
+          
+          popupWindow.postMessage(initMessage, expectedOrigin);
+        }
+        
+        // Manejar resultado exitoso
+        else if (message.type === 'WEBAUTHN_SUCCESS') {
+          // Validar nonce
+          if (message.nonce !== nonce) {
+            console.error('❌ [POPUP-AUTH] Nonce no coincide');
+            return;
+          }
+          
+          console.log('✅ [POPUP-AUTH] Autenticación exitosa desde popup');
+          
+          // Limpiar
+          if (popupTimeoutRef.current) {
+            clearTimeout(popupTimeoutRef.current);
+          }
+          window.removeEventListener('message', messageHandler);
+          
+          // Resolver promesa con credencial
+          resolve({
+            credential: message.credential,
+            challengeKey: message.challengeKey!
+          });
+        }
+        
+        // Manejar error
+        else if (message.type === 'WEBAUTHN_ERROR') {
+          // Validar nonce
+          if (message.nonce !== nonce) {
+            console.error('❌ [POPUP-AUTH] Nonce no coincide en error');
+            return;
+          }
+          
+          console.error('❌ [POPUP-AUTH] Error desde popup:', message.error);
+          
+          // Limpiar
+          if (popupTimeoutRef.current) {
+            clearTimeout(popupTimeoutRef.current);
+          }
+          window.removeEventListener('message', messageHandler);
+          
+          // Rechazar promesa
+          reject(new Error(message.error || 'Error desconocido desde popup'));
+        }
+      };
+      
+      window.addEventListener('message', messageHandler);
+      
+      // Polling para detectar si el popup fue cerrado manualmente
+      const pollInterval = setInterval(() => {
+        if (popupWindow.closed) {
+          console.log('🔒 [POPUP-AUTH] Popup cerrado por el usuario');
+          clearInterval(pollInterval);
+          if (popupTimeoutRef.current) {
+            clearTimeout(popupTimeoutRef.current);
+          }
+          window.removeEventListener('message', messageHandler);
+          reject(new Error('Popup cerrado por el usuario'));
+        }
+      }, 500);
+    });
   };
 
   const handleBiometricLogin = async () => {
@@ -92,9 +258,28 @@ export function BiometricLoginButton({
         localStorage.setItem('last_biometric_email', loginEmail);
       }
       
-      // Intentar autenticación biométrica con manejo de errores mejorado
-      console.log('🔐 [BIOMETRIC-BUTTON] Llamando a webauthnService.authenticateUser');
-      const authResult = await webauthnService.authenticateUser(loginEmail);
+      let authResult: { credential: any; challengeKey: string };
+      
+      // Intentar autenticación biométrica con manejo de iframe
+      try {
+        console.log('🔐 [BIOMETRIC-BUTTON] Llamando a webauthnService.authenticateUser');
+        authResult = await webauthnService.authenticateUser(loginEmail);
+      } catch (webauthnError: any) {
+        // Detectar error de iframe
+        if (webauthnError.message === 'IFRAME_DETECTED_NEED_POPUP') {
+          console.log('🪟 [BIOMETRIC-BUTTON] Iframe detectado, usando flujo de popup');
+          toast({
+            title: "Abriendo ventana de autenticación",
+            description: "Se abrirá una nueva ventana para autenticación biométrica",
+          });
+          
+          // Usar flujo de popup
+          authResult = await handlePopupAuth(loginEmail);
+        } else {
+          // Re-lanzar otros errores
+          throw webauthnError;
+        }
+      }
       
       if (!authResult || !authResult.credential) {
         console.log('❌ [BIOMETRIC-BUTTON] No se obtuvo credencial');
@@ -200,26 +385,20 @@ export function BiometricLoginButton({
       
       if (errorString.includes('cancelado') || errorString.includes('canceled') || errorString.includes('abort')) {
         errorMessage = 'Autenticación cancelada por el usuario';
+      } else if (errorString.includes('Popup bloqueado')) {
+        errorMessage = 'Popup bloqueado. Por favor permite popups para este sitio';
+      } else if (errorString.includes('Popup cerrado')) {
+        errorMessage = 'Autenticación cancelada';
+      } else if (errorString.includes('Timeout')) {
+        errorMessage = 'Tiempo agotado. Por favor intenta de nuevo';
       } else if (errorString.includes('no autorizado') || errorString.includes('not allowed') || errorString.includes('NotAllowedError')) {
         errorMessage = 'Acceso biométrico no autorizado. Verifica que tu dispositivo tenga configurada autenticación biométrica';
       } else if (errorString.includes('no soportada') || errorString.includes('not supported') || errorString.includes('NotSupportedError')) {
         errorMessage = 'Autenticación biométrica no soportada en este dispositivo';
       } else if (errorString.includes('no encontraron credenciales') || errorString.includes('no credentials') || errorString.includes('InvalidStateError') || errorString.includes('Credencial no encontrada') || errorString.includes('no encontrada')) {
-        // ARREGLADO: Mejor manejo de registro automático
-        console.log('🛠️ [BIOMETRIC-BUTTON] No hay credenciales, intentando registro automático');
-        
-        toast({
-          title: "Configurando autenticación biométrica",
-          description: "No hay credenciales guardadas. Configurando acceso biométrico...",
-          variant: "default",
-        });
-        
-        await handleAutoRegister(loginEmail);
-        return;
+        errorMessage = 'No hay credenciales biométricas registradas. Inicia sesión primero con email/contraseña';
       } else if (errorString.includes('Network') || errorString.includes('fetch')) {
         errorMessage = 'Error de conexión. Verifica tu internet e intenta de nuevo';
-      } else if (errorString.includes('timeout') || errorString.includes('TimeoutError')) {
-        errorMessage = 'La autenticación expiró. Intenta de nuevo';
       }
 
       toast({
@@ -233,63 +412,6 @@ export function BiometricLoginButton({
       }
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // ARREGLADO: Registro automático mejorado con mejor manejo de errores
-  const handleAutoRegister = async (email: string) => {
-    // ARREGLADO: Permitir registro incluso con emails generados
-    if (!email) {
-      toast({
-        title: "Error de registro",
-        description: "Email requerido para configurar autenticación biométrica.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      console.log('🔐 [BIOMETRIC-REGISTER] Iniciando registro automático para:', email);
-      
-      // ARREGLADO: Simplificado - no verificar usuario, crear si es necesario en servidor
-      toast({
-        title: "Configurando Touch ID",
-        description: "Coloca tu dedo en el sensor Touch ID cuando se solicite...",
-        variant: "default",
-      });
-
-      // Registrar credencial biométrica directamente
-      const credential = await webauthnService.registerCredential(email);
-      
-      if (credential) {
-        console.log('✅ [BIOMETRIC-REGISTER] Credencial registrada exitosamente');
-        
-        toast({
-          title: "✅ Touch ID configurado",
-          description: "Autenticación biométrica lista. Intentando login...",
-          variant: "default",
-        });
-
-        // Intentar login inmediatamente después del registro
-        setTimeout(() => {
-          handleBiometricLogin();
-        }, 1500); // ARREGLADO: Más tiempo para que se complete el registro
-      }
-    } catch (error: any) {
-      console.error('❌ [BIOMETRIC-REGISTER] Error en registro automático:', error);
-      
-      let errorMsg = 'Error configurando autenticación biométrica';
-      if (error.message?.includes('cancelado') || error.message?.includes('canceled')) {
-        errorMsg = 'Configuración cancelada';
-      } else if (error.message?.includes('no autorizado') || error.message?.includes('NotAllowedError')) {
-        errorMsg = 'Acceso biométrico denegado';
-      }
-      
-      toast({
-        title: "Error de configuración",
-        description: errorMsg,
-        variant: "destructive",
-      });
     }
   };
 
@@ -325,6 +447,7 @@ export function BiometricLoginButton({
       onClick={handleBiometricLogin}
       disabled={isLoading || disabled}
       title={isCompactMode ? `Sign in with ${methodDescription}` : undefined}
+      data-testid="button-biometric-login"
     >
       {isLoading ? (
         <>

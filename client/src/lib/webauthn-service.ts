@@ -3,6 +3,8 @@
  * Maneja registro y autenticación con Face ID, Touch ID y huella digital
  */
 
+import { needsPopupForWebAuthn, detectWindowContext } from './window-context';
+
 export interface WebAuthnCredential {
   id: string;
   rawId: string;
@@ -70,6 +72,14 @@ export class WebAuthnService {
     console.log('🔐 [WEBAUTHN] Iniciando registro de credencial para:', email);
 
     try {
+      // CRÍTICO: Detectar si estamos en iframe
+      const windowContext = detectWindowContext();
+      
+      if (windowContext.isIframe) {
+        console.log('🚫 [WEBAUTHN] Detectado iframe - WebAuthn bloqueado por seguridad del navegador');
+        throw new Error('IFRAME_DETECTED_NEED_POPUP');
+      }
+      
       // Solicitar opciones de registro al servidor con manejo de errores
       console.log('🌐 [WEBAUTHN] Solicitando opciones de registro al servidor');
       const optionsResponse = await fetch('/api/webauthn/register/begin', {
@@ -158,6 +168,14 @@ export class WebAuthnService {
     console.log('🔐 [WEBAUTHN] Iniciando autenticación biométrica');
 
     try {
+      // CRÍTICO: Detectar si estamos en iframe
+      const windowContext = detectWindowContext();
+      
+      if (windowContext.isIframe) {
+        console.log('🚫 [WEBAUTHN] Detectado iframe - WebAuthn bloqueado por seguridad del navegador');
+        throw new Error('IFRAME_DETECTED_NEED_POPUP');
+      }
+      
       // Verificar soporte antes de proceder
       await this.verifyWebAuthnSupport();
 
