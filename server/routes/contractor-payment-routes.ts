@@ -597,7 +597,7 @@ router.get("/stripe/account-status", isAuthenticated, async (req: Request, res: 
 });
 
 /**
- * Connect to Stripe - Real Implementation
+ * Connect to Stripe - Real Production Implementation
  */
 router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Response) => {
   try {
@@ -605,29 +605,87 @@ router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Respon
       return res.status(401).json({ error: "User not authenticated" });
     }
 
+    const firebaseUid = req.firebaseUser.uid;
+    
+    // Import user mapping service to convert Firebase UID to database user ID
+    const { userMappingService } = await import('../services/userMappingService');
+    const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
+    
+    // Get user from database to check for existing Stripe Connect account
+    const user = await storage.getUser(dbUserId);
+    
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
     // Get Stripe instance
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     
-    // Create Stripe Connect account
+    // Determine the base URL for redirects
+    const baseUrl = process.env.REPLIT_DOMAINS 
+      ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
+      : (process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000');
+    
+    const refreshUrl = `${baseUrl}/project-payments?tab=settings&refresh=true`;
+    const returnUrl = `${baseUrl}/project-payments?tab=settings&connected=true`;
+    
+    let accountId = user.stripeConnectAccountId;
+    
+    // If user already has a Stripe Connect account, create a new onboarding link
+    if (accountId) {
+      try {
+        // Verify the account still exists
+        await stripe.accounts.retrieve(accountId);
+        
+        // Create a new account link for re-onboarding
+        const accountLink = await stripe.accountLinks.create({
+          account: accountId,
+          refresh_url: refreshUrl,
+          return_url: returnUrl,
+          type: 'account_onboarding',
+        });
+        
+        return res.json({
+          success: true,
+          url: accountLink.url,
+          accountId: accountId,
+          message: "Stripe Connect onboarding link refreshed",
+        });
+      } catch (stripeError) {
+        // If account doesn't exist anymore, we'll create a new one below
+        console.log("Existing Stripe account not found, creating new one");
+        accountId = null;
+      }
+    }
+    
+    // Create a new Stripe Connect account
     const account = await stripe.accounts.create({
       type: 'express',
+      email: user.email,
       country: 'US', // Default to US, can be made configurable
       capabilities: {
         card_payments: { requested: true },
         transfers: { requested: true },
       },
+      business_type: 'individual', // Can be made configurable
+      metadata: {
+        firebase_uid: firebaseUid,
+        user_id: dbUserId.toString(),
+      }
+    });
+
+    // Store the Stripe Connect account ID in the database
+    await storage.updateUser(dbUserId, {
+      stripeConnectAccountId: account.id
     });
 
     // Create account link for onboarding
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
-      refresh_url: `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/payments?tab=settings&refresh=true`,
-      return_url: `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/payments?tab=settings&connected=true`,
+      refresh_url: refreshUrl,
+      return_url: returnUrl,
       type: 'account_onboarding',
     });
-
-    // Store account ID for this user (you'll need to implement this storage)
-    // For now, just return the URL
     
     res.json({
       success: true,
@@ -649,7 +707,7 @@ router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Respon
  */
 router.post("/create", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.firebaseUser) {
       return res.status(401).json({ error: "User not authenticated" });
     }
 
@@ -662,11 +720,15 @@ router.post("/create", isAuthenticated, async (req: Request, res: Response) => {
       });
     }
 
+    // Convert Firebase UID to database user ID
+    const { userMappingService } = await import('../services/userMappingService');
+    const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
+
     // For now, return mock payment creation
     const mockPayment = {
       id: Math.floor(Math.random() * 1000000),
       projectId,
-      userId: req.user.id,
+      userId: dbUserId,
       amount,
       type,
       status: "pending",
@@ -697,7 +759,7 @@ router.post("/create", isAuthenticated, async (req: Request, res: Response) => {
  */
 router.post("/send-invoice", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.firebaseUser) {
       return res.status(401).json({ error: "User not authenticated" });
     }
 
