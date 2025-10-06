@@ -8168,107 +8168,88 @@ This link provides a professional view of your estimate that you can access anyt
 
             {/* External Sharing Options */}
             {currentShareUrl && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-cyan-400 text-center">🌐 Share with External Apps</h3>
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-cyan-400 text-center">🌐 Share</h3>
                 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {/* Copy to Clipboard */}
-                  <Button
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <button
                     onClick={async () => {
                       try {
                         await navigator.clipboard.writeText(currentShareUrl);
-                        toast({
-                          title: "✅ Copied!",
-                          description: "URL copied to clipboard",
-                        });
+                        toast({ title: "✅ Copied!", description: "URL copied to clipboard" });
                       } catch (error) {
-                        toast({
-                          title: "❌ Error",
-                          description: "Failed to copy URL",
-                          variant: "destructive",
-                        });
+                        toast({ title: "❌ Error", description: "Failed to copy URL", variant: "destructive" });
                       }
                     }}
-                    className="bg-gray-700 hover:bg-gray-600 text-white border border-gray-600 h-16 flex flex-col items-center justify-center gap-1"
+                    className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-colors"
                     data-testid="button-copy-url"
+                    title="Copy URL"
                   >
-                    <Copy className="h-5 w-5" />
-                    <span className="text-xs">Copy URL</span>
-                  </Button>
+                    <Copy className="h-4 w-4" />
+                  </button>
 
-                  {/* WhatsApp */}
-                  <Button
+                  <button
                     onClick={() => {
                       const message = `Professional Estimate - ${estimate.client?.name || 'Client'}\n\n${currentShareUrl}`;
-                      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-                      window.open(whatsappUrl, '_blank');
+                      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
                     }}
-                    className="bg-green-600 hover:bg-green-700 text-white h-16 flex flex-col items-center justify-center gap-1"
+                    className="p-2 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors"
                     data-testid="button-share-whatsapp"
+                    title="WhatsApp"
                   >
-                    <MessageSquare className="h-5 w-5" />
-                    <span className="text-xs">WhatsApp</span>
-                  </Button>
+                    <MessageSquare className="h-4 w-4" />
+                  </button>
 
-                  {/* Email */}
-                  <Button
+                  <button
                     onClick={() => {
                       const subject = `Professional Estimate - ${estimate.client?.name || 'Client'}`;
                       const body = `Hi,\n\nPlease review your professional estimate:\n\n${currentShareUrl}\n\nBest regards`;
-                      const emailUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                      window.open(emailUrl, '_blank');
+                      window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
                     }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white h-16 flex flex-col items-center justify-center gap-1"
+                    className="p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
                     data-testid="button-share-email"
+                    title="Email"
                   >
-                    <Mail className="h-5 w-5" />
-                    <span className="text-xs">Email</span>
-                  </Button>
+                    <Mail className="h-4 w-4" />
+                  </button>
 
-                  {/* SMS */}
-                  <Button
+                  <button
                     onClick={() => {
                       const message = `Professional Estimate: ${currentShareUrl}`;
-                      const smsUrl = `sms:?body=${encodeURIComponent(message)}`;
-                      window.open(smsUrl, '_blank');
+                      window.open(`sms:?body=${encodeURIComponent(message)}`, '_blank');
                     }}
-                    className="bg-purple-600 hover:bg-purple-700 text-white h-16 flex flex-col items-center justify-center gap-1"
+                    className="p-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors"
                     data-testid="button-share-sms"
+                    title="SMS"
                   >
-                    <Smartphone className="h-5 w-5" />
-                    <span className="text-xs">SMS</span>
-                  </Button>
+                    <Smartphone className="h-4 w-4" />
+                  </button>
 
-                  {/* Twitter */}
-                  <Button
+                  <button
                     onClick={() => {
                       const tweet = `Professional Estimate Ready 📊 ${currentShareUrl}`;
-                      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`;
-                      window.open(twitterUrl, '_blank');
+                      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`, '_blank');
                     }}
-                    className="bg-sky-500 hover:bg-sky-600 text-white h-16 flex flex-col items-center justify-center gap-1"
+                    className="p-2 rounded-lg bg-sky-500 hover:bg-sky-600 text-white transition-colors"
                     data-testid="button-share-twitter"
+                    title="Twitter"
                   >
-                    <Twitter className="h-5 w-5" />
-                    <span className="text-xs">Twitter</span>
-                  </Button>
+                    <Twitter className="h-4 w-4" />
+                  </button>
 
-                  {/* LinkedIn */}
-                  <Button
+                  <button
                     onClick={() => {
-                      const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentShareUrl)}`;
-                      window.open(linkedinUrl, '_blank');
+                      window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentShareUrl)}`, '_blank');
                     }}
-                    className="bg-blue-700 hover:bg-blue-800 text-white h-16 flex flex-col items-center justify-center gap-1"
+                    className="p-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white transition-colors"
                     data-testid="button-share-linkedin"
+                    title="LinkedIn"
                   >
-                    <Globe className="h-5 w-5" />
-                    <span className="text-xs">LinkedIn</span>
-                  </Button>
+                    <Globe className="h-4 w-4" />
+                  </button>
 
-                  {/* Native Share (if supported) */}
                   {navigator.share && (
-                    <Button
+                    <button
                       onClick={async () => {
                         try {
                           await navigator.share({
@@ -8277,30 +8258,25 @@ This link provides a professional view of your estimate that you can access anyt
                             url: currentShareUrl,
                           });
                         } catch (error) {
-                          if (error.name !== 'AbortError') {
-                            console.error('Share error:', error);
-                          }
+                          if (error.name !== 'AbortError') console.error('Share error:', error);
                         }
                       }}
-                      className="bg-orange-600 hover:bg-orange-700 text-white h-16 flex flex-col items-center justify-center gap-1"
+                      className="p-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white transition-colors"
                       data-testid="button-share-native"
+                      title="Share"
                     >
-                      <ExternalLink className="h-5 w-5" />
-                      <span className="text-xs">Share</span>
-                    </Button>
+                      <Share2 className="h-4 w-4" />
+                    </button>
                   )}
 
-                  {/* Open in New Tab */}
-                  <Button
-                    onClick={() => {
-                      window.open(currentShareUrl, '_blank');
-                    }}
-                    className="bg-cyan-600 hover:bg-cyan-700 text-white h-16 flex flex-col items-center justify-center gap-1"
+                  <button
+                    onClick={() => window.open(currentShareUrl, '_blank')}
+                    className="p-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white transition-colors"
                     data-testid="button-open-url"
+                    title="Open in new tab"
                   >
-                    <ExternalLink className="h-5 w-5" />
-                    <span className="text-xs">Open</span>
-                  </Button>
+                    <ExternalLink className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             )}
