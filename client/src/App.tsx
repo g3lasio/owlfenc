@@ -62,6 +62,7 @@ import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
 import SimpleContractGenerator from './pages/SimpleContractGenerator';
 import ContractSignature from './pages/ContractSignature';
 import SharedEstimate from './pages/SharedEstimate';
+import WebAuthnPopup from './pages/WebAuthnPopup';
 
 
 import { Redirect } from "wouter";
@@ -162,6 +163,7 @@ function MainAppRouter() {
               <Route path="/forgot-password" component={RecuperarPassword} />
               <Route path="/reset-password" component={ResetPassword} />
               <Route path="/login/email-link-callback" component={EmailLinkCallback} />
+              <Route path="/webauthn-popup" component={WebAuthnPopup} />
               <Route path="/auth-diagnostic" component={AuthDiagnostic} />
               
               <Route path="/about-owlfenc" component={AboutOwlFence} />
