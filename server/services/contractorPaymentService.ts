@@ -220,14 +220,10 @@ export class ContractorPaymentService {
   /**
    * Get all payments for a specific user from REAL database
    */
-  async getUserPayments(firebaseUid: string): Promise<ProjectPayment[]> {
+  async getUserPayments(userId: number): Promise<ProjectPayment[]> {
     try {
-      // Import the user mapping service to convert Firebase UID to database user ID
-      const { userMappingService } = await import('../services/userMappingService');
-      const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
-      
       // Fetch real payments from database instead of empty array
-      const payments = await storage.getProjectPaymentsByUserId(dbUserId);
+      const payments = await storage.getProjectPaymentsByUserId(userId);
       return payments || [];
     } catch (error) {
       console.error('Error fetching user payments:', error);
@@ -238,13 +234,9 @@ export class ContractorPaymentService {
   /**
    * Get payment summary for dashboard with REAL data
    */
-  async getPaymentSummary(firebaseUid: string) {
+  async getPaymentSummary(userId: number) {
     try {
-      // Import the user mapping service to convert Firebase UID to database user ID
-      const { userMappingService } = await import('../services/userMappingService');
-      const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
-      
-      const payments = await storage.getProjectPaymentsByUserId(dbUserId);
+      const payments = await storage.getProjectPaymentsByUserId(userId);
     
     const totalPending = payments
       .filter(p => p.status === 'pending')
@@ -286,22 +278,10 @@ export class ContractorPaymentService {
   /**
    * Get Stripe account status for user from REAL data
    */
-  async getStripeAccountStatus(firebaseUid: string) {
+  async getStripeAccountStatus(userId: number) {
     try {
-      // Convert Firebase UID to internal user ID
-      const { userMappingService } = await import('../services/userMappingService');
-      const dbUserId = await userMappingService.getInternalUserId(firebaseUid);
-      
-      if (!dbUserId) {
-        return {
-          hasStripeAccount: false,
-          accountDetails: null,
-          needsOnboarding: true
-        };
-      }
-
       // Get user from database to check for Stripe Connect account ID
-      const user = await storage.getUser(dbUserId);
+      const user = await storage.getUser(userId);
       
       if (!user || !user.stripeConnectAccountId) {
         return {
@@ -341,17 +321,13 @@ export class ContractorPaymentService {
   /**
    * Generates a unique invoice number
    */
-  private async generateInvoiceNumber(userId: string): Promise<string> {
+  private async generateInvoiceNumber(userId: number): Promise<string> {
     const year = new Date().getFullYear();
     
-    // Convert Firebase UID to database user ID for storage query
-    const { userMappingService } = await import('../services/userMappingService');
-    const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(userId);
-    
-    const userPayments = await storage.getProjectPaymentsByUserId(dbUserId);
+    const userPayments = await storage.getProjectPaymentsByUserId(userId);
     const count = userPayments.length + 1;
     
-    return `INV-${year}-${userId.slice(0, 8)}-${count.toString().padStart(4, '0')}`;
+    return `INV-${year}-${userId.toString().padStart(8, '0')}-${count.toString().padStart(4, '0')}`;
   }
 
   /**

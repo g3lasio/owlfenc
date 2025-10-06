@@ -59,7 +59,11 @@ router.post(
       if (!req.firebaseUser) {
         return res.status(401).json({ error: "User not authenticated" });
       }
-      const userId = req.firebaseUser.uid; // Firebase UID
+      
+      // Convert Firebase UID to database user ID
+      const { userMappingService } = await import('../services/userMappingService');
+      const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
+      
       const projectId = parseInt(req.params.projectId);
       const validatedData = createPaymentStructureSchema.parse({
         ...req.body,
@@ -99,7 +103,11 @@ router.post("/create", isAuthenticated, requireSubscriptionLevel(PermissionLevel
     if (!req.firebaseUser) {
       return res.status(401).json({ error: "User not authenticated" });
     }
-    const userId = req.firebaseUser.uid; // Firebase UID
+    
+    // Convert Firebase UID to database user ID
+    const { userMappingService } = await import('../services/userMappingService');
+    const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
+    
     const validatedData = createPaymentSchema.parse(req.body);
 
     const result = await contractorPaymentService.createProjectPayment({
@@ -140,7 +148,11 @@ router.post(
       if (!req.firebaseUser) {
         return res.status(401).json({ error: "User not authenticated" });
       }
-      const userId = req.firebaseUser.uid; // Firebase UID
+      
+      // Convert Firebase UID to database user ID
+      const { userMappingService } = await import('../services/userMappingService');
+      const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
+      
       const validatedData = createPaymentSchema.parse(req.body);
 
       const result = await contractorPaymentService.createProjectPayment({
@@ -320,7 +332,10 @@ router.get(
   isAuthenticated,
   async (req: Request, res: Response) => {
     try {
-      const userId = req.firebaseUser.uid; // Firebase UID
+      // Convert Firebase UID to database user ID
+      const { userMappingService } = await import('../services/userMappingService');
+      const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
+      
       const summary = await contractorPaymentService.getPaymentSummary(userId);
 
       res.json({
@@ -345,12 +360,11 @@ router.get(
   isAuthenticated,
   async (req: Request, res: Response) => {
     try {
-      const userId = req.firebaseUser.uid; // Firebase UID
       const { status, type, projectId } = req.query;
 
-      // Convert Firebase UID to internal user_id for database query
-      const userMapping = await import('../services/UserMappingService');
-      const internalUserId = await userMapping.UserMappingService.getOrCreateUserIdForFirebaseUid(userId);
+      // Convert Firebase UID to database user ID
+      const { userMappingService } = await import('../services/userMappingService');
+      const internalUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
       
       let payments = await storage.getProjectPaymentsByUserId(internalUserId);
 
@@ -530,7 +544,10 @@ router.get("/payments", isAuthenticated, requireSubscriptionLevel(PermissionLeve
     if (!req.firebaseUser) {
       return res.status(401).json({ error: "User not authenticated" });
     }
-    const userId = req.firebaseUser.uid;
+    
+    // Convert Firebase UID to database user ID
+    const { userMappingService } = await import('../services/userMappingService');
+    const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
 
     // Fetch REAL payments from database instead of empty array
     const payments = await contractorPaymentService.getUserPayments(userId);
@@ -556,7 +573,10 @@ router.get("/dashboard/summary", isAuthenticated, requireSubscriptionLevel(Permi
     if (!req.firebaseUser) {
       return res.status(401).json({ error: "User not authenticated" });
     }
-    const userId = req.firebaseUser.uid;
+    
+    // Convert Firebase UID to database user ID
+    const { userMappingService } = await import('../services/userMappingService');
+    const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
 
     // Fetch REAL payment summary from database instead of mock data
     const summary = await contractorPaymentService.getPaymentSummary(userId);
@@ -583,8 +603,12 @@ router.get("/stripe/account-status", isAuthenticated, async (req: Request, res: 
       return res.status(401).json({ error: "User not authenticated" });
     }
 
+    // Convert Firebase UID to database user ID
+    const { userMappingService } = await import('../services/userMappingService');
+    const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
+
     // Fetch REAL Stripe account status from service
-    const stripeStatus = await contractorPaymentService.getStripeAccountStatus(req.firebaseUser.uid);
+    const stripeStatus = await contractorPaymentService.getStripeAccountStatus(userId);
 
     res.json(stripeStatus);
   } catch (error) {
