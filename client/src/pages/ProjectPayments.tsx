@@ -474,45 +474,69 @@ const ProjectPayments: React.FC = () => {
     },
   });
 
-  // Connect to Stripe - NO AUTH REQUIRED (Backend handles user identification)
+  // Connect to Stripe Express - Simplified onboarding
   const connectToStripe = async () => {
     try {
-      console.log("💳 [STRIPE-CONNECT] Starting connection process");
+      console.log("💳 [STRIPE-CONNECT-EXPRESS] Iniciando configuración de pagos");
       
       toast({
-        title: "Connecting to Stripe",
-        description: "Creating your Stripe Connect account...",
+        title: "Conectando con Stripe",
+        description: "Preparando tu cuenta de pagos...",
       });
 
-      console.log("💳 [STRIPE-CONNECT] Making POST request to /api/contractor-payments/stripe/connect");
-      // NO AUTH NEEDED - Backend gets user from cookies/session
       const response = await apiRequest("POST", "/api/contractor-payments/stripe/connect", {});
       
-      console.log("💳 [STRIPE-CONNECT] Response status:", response.status, response.ok);
-      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("💳 [STRIPE-CONNECT] Error response:", errorText);
-        throw new Error(`Failed to create Stripe Connect account: ${response.status} ${errorText}`);
+        const errorData = await response.json();
+        console.error("💳 [STRIPE-CONNECT-EXPRESS] Error:", errorData);
+        
+        // Check if needs Connect activation
+        if (errorData.needsConnectActivation) {
+          toast({
+            title: "⚙️ Configuración Necesaria",
+            description: "Por favor activa Stripe Connect en tu cuenta. Sigue la guía que se mostrará.",
+            variant: "destructive",
+            duration: 8000,
+          });
+          
+          // Show activation guide
+          setTimeout(() => {
+            alert(
+              "📋 GUÍA RÁPIDA: Activar Stripe Connect\n\n" +
+              "1. Ve a: https://dashboard.stripe.com/connect\n" +
+              "2. Haz clic en 'Get Started' o 'Comenzar'\n" +
+              "3. Completa el formulario (tipo de plataforma: Marketplace/Platform)\n" +
+              "4. Una vez activado, regresa aquí y presiona 'Connect Bank Account' nuevamente\n\n" +
+              "⏱️ Tiempo estimado: 2-3 minutos"
+            );
+          }, 500);
+          return;
+        }
+        
+        throw new Error(errorData.error || "Error al conectar con Stripe");
       }
 
       const data = await response.json();
-      console.log("💳 [STRIPE-CONNECT] Response data:", data);
+      console.log("💳 [STRIPE-CONNECT-EXPRESS] Success:", data);
       
-      // ROBUST: Check for URL with or without success field
       if (data.url) {
-        console.log("💳 [STRIPE-CONNECT] ✅ Redirecting to Stripe:", data.url);
-        // Open Stripe onboarding in current window
-        window.location.href = data.url;
+        toast({
+          title: "✅ Redirigiendo a Stripe",
+          description: data.message || "Abriendo configuración de pagos...",
+        });
+        
+        // Redirect to Stripe onboarding
+        setTimeout(() => {
+          window.location.href = data.url;
+        }, 1000);
       } else {
-        console.error("💳 [STRIPE-CONNECT] ❌ Missing URL in response:", data);
-        throw new Error(data.message || "Failed to get Stripe Connect URL");
+        throw new Error("No se recibió URL de configuración");
       }
     } catch (error: any) {
-      console.error("💳 [STRIPE-CONNECT] Error:", error);
+      console.error("💳 [STRIPE-CONNECT-EXPRESS] Error:", error);
       toast({
-        title: "Connection Failed",
-        description: error.message || "Failed to connect to Stripe. Please try again.",
+        title: "Error al Conectar",
+        description: error.message || "No se pudo conectar con Stripe. Intenta de nuevo.",
         variant: "destructive",
       });
     }

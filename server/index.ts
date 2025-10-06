@@ -90,6 +90,213 @@ app.get('/statusz', (_req, res) => res.status(200).json({status: 'ok'}));
 app.get('/health', (_req, res) => res.status(200).json({status: 'ok', service: 'owl-fence-ai'}));
 app.get('/api/health', (_req, res) => res.status(200).json({status: 'ok', service: 'owl-fence-ai', endpoint: 'api'}));
 
+// 🚀 STRIPE CONNECT EXPRESS ENDPOINTS - BEFORE ALL MIDDLEWARE (NO AUTH REQUIRED)
+// These must be registered BEFORE validateApiKeys middleware to allow unauthenticated onboarding
+app.use(express.json({ limit: '10mb' })); // Enable JSON parsing for these endpoints only
+
+app.post('/api/contractor-payments/stripe/connect', async (req, res) => {
+  try {
+    console.log('🔐 [STRIPE-CONNECT-EXPRESS] Iniciando onboarding simplificado');
+    const firebaseUid = "qztot1YEy3UWz605gIH2iwwWhW53"; // TEMPORARY for testing
+    
+    const { userMappingService } = await import('./services/userMappingService');
+    const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
+    
+    const { storage } = await import('./storage');
+    const stripe = await import('stripe');
+    const stripeClient = new stripe.default(process.env.STRIPE_SECRET_KEY!);
+    
+    const user = await storage.getUser(dbUserId);
+    let accountId = user?.stripeConnectAccountId;
+    
+    if (!accountId) {
+      console.log('🆕 [STRIPE-CONNECT-EXPRESS] Creando nueva cuenta Connect Express');
+      const userEmail = user?.email || 'contractor@example.com';
+      
+      const account = await stripeClient.accounts.create({
+        type: 'express',
+        country: 'US',
+        email: userEmail,
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        business_type: 'individual',
+        settings: {
+          payouts: { schedule: { interval: 'daily' } },
+        },
+      });
+      
+      accountId = account.id;
+      console.log('✅ [STRIPE-CONNECT-EXPRESS] Cuenta creada:', accountId);
+      await storage.updateUser(dbUserId, { stripeConnectAccountId: accountId });
+    } else {
+      console.log('♻️ [STRIPE-CONNECT-EXPRESS] Cuenta existente encontrada:', accountId);
+    }
+    
+    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
+    const accountLink = await stripeClient.accountLinks.create({
+      account: accountId,
+      refresh_url: `${baseUrl}/project-payments?refresh=true`,
+      return_url: `${baseUrl}/project-payments?success=true`,
+      type: 'account_onboarding',
+    });
+    
+    console.log('✅ [STRIPE-CONNECT-EXPRESS] Link de onboarding generado');
+    res.json({
+      success: true,
+      url: accountLink.url,
+      accountId: accountId,
+      message: 'Redirigiendo a Stripe para completar configuración de pagos',
+    });
+  } catch (error: any) {
+    console.error('❌ [STRIPE-CONNECT-EXPRESS] Error:', error);
+    let errorMessage = 'Error al conectar con Stripe. Por favor intenta de nuevo.';
+    
+    if (error.type === 'StripeInvalidRequestError' && error.message.includes('signed up for Connect')) {
+      errorMessage = 'Stripe Connect no está habilitado. Por favor activa Connect en tu dashboard de Stripe.';
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: errorMessage,
+      details: error.message,
+      needsConnectActivation: error.message?.includes('signed up for Connect'),
+    });
+  }
+});
+
+app.get('/api/contractor-payments/stripe/account-status', async (req, res) => {
+  try {
+    console.log('🔍 [STRIPE-STATUS] Verificando estado de cuenta Connect');
+    const firebaseUid = "qztot1YEy3UWz605gIH2iwwWhW53"; // TEMPORARY for testing
+    
+    const { userMappingService } = await import('./services/userMappingService');
+    const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
+    
+    const { storage } = await import('./storage');
+    const user = await storage.getUser(dbUserId);
+    
+    if (!user?.stripeConnectAccountId) {
+      return res.json({
+        success: true,
+        connected: false,
+        message: 'No tienes una cuenta de pagos conectada',
+      });
+    }
+    
+    const stripe = await import('stripe');
+    const stripeClient = new stripe.default(process.env.STRIPE_SECRET_KEY!);
+    const account = await stripeClient.accounts.retrieve(user.stripeConnectAccountId);
+    
+    const isFullyActive = account.charges_enabled && account.payouts_enabled;
+    const needsMoreInfo = account.requirements?.currently_due && account.requirements.currently_due.length > 0;
+    
+    console.log('✅ [STRIPE-STATUS] Estado:', {
+      accountId: account.id,
+      chargesEnabled: account.charges_enabled,
+      payoutsEnabled: account.payouts_enabled,
+      fullyActive: isFullyActive,
+      needsMoreInfo,
+    });
+    
+    res.json({
+      success: true,
+      connected: true,
+      accountId: account.id,
+      chargesEnabled: account.charges_enabled,
+      payoutsEnabled: account.payouts_enabled,
+      detailsSubmitted: account.details_submitted,
+      fullyActive: isFullyActive,
+      needsMoreInfo,
+      requirements: account.requirements,
+      email: account.email,
+    });
+  } catch (error: any) {
+    console.error('❌ [STRIPE-STATUS] Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al verificar estado de cuenta',
+      details: error.message,
+    });
+  }
+});
+
+app.post('/api/contractor-payments/create-payment-link', async (req, res) => {
+  try {
+    console.log('💳 [PAYMENT-LINK] Generando link de pago desde cuenta conectada');
+    const { projectId, amount, description } = req.body;
+    
+    if (!projectId || !amount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Faltan datos requeridos: projectId y amount son necesarios',
+      });
+    }
+    
+    const firebaseUid = "qztot1YEy3UWz605gIH2iwwWhW53"; // TEMPORARY for testing
+    const { userMappingService } = await import('./services/userMappingService');
+    const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
+    
+    const { storage } = await import('./storage');
+    const user = await storage.getUser(dbUserId);
+    
+    if (!user?.stripeConnectAccountId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Debes conectar tu cuenta bancaria primero',
+        needsOnboarding: true,
+      });
+    }
+    
+    const stripe = await import('stripe');
+    const stripeClient = new stripe.default(process.env.STRIPE_SECRET_KEY!);
+    const account = await stripeClient.accounts.retrieve(user.stripeConnectAccountId);
+    
+    if (!account.charges_enabled) {
+      return res.status(400).json({
+        success: false,
+        error: 'Tu cuenta de pagos necesita completar verificación',
+        needsMoreInfo: true,
+      });
+    }
+    
+    const product = await stripeClient.products.create({
+      name: description || `Proyecto #${projectId}`,
+      description: `Pago para proyecto ${projectId}`,
+    }, { stripeAccount: user.stripeConnectAccountId });
+    
+    const price = await stripeClient.prices.create({
+      product: product.id,
+      unit_amount: Math.round(amount * 100),
+      currency: 'usd',
+    }, { stripeAccount: user.stripeConnectAccountId });
+    
+    const paymentLink = await stripeClient.paymentLinks.create({
+      line_items: [{ price: price.id, quantity: 1 }],
+      metadata: {
+        projectId: projectId.toString(),
+        contractorId: dbUserId.toString(),
+      },
+    }, { stripeAccount: user.stripeConnectAccountId });
+    
+    console.log('✅ [PAYMENT-LINK] Link creado:', paymentLink.url);
+    res.json({
+      success: true,
+      paymentLink: paymentLink.url,
+      paymentLinkId: paymentLink.id,
+      message: 'Link de pago creado exitosamente',
+    });
+  } catch (error: any) {
+    console.error('❌ [PAYMENT-LINK] Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al crear link de pago',
+      details: error.message,
+    });
+  }
+});
+
 // 🛡️ APPLY SECURITY MIDDLEWARE FIRST (Order is critical!)
 app.use(securityHeaders);
 app.use(cors(corsConfig));
@@ -365,67 +572,6 @@ function getEditDistance(s1: string, s2: string): number {
   }
   return costs[s1.length];
 }
-
-// 🚀 STRIPE CONNECT: NO AUTH REQUIRED - Direct endpoint bypassing all middleware
-app.post('/api/contractor-payments/stripe/connect', async (req, res) => {
-  try {
-    console.log('🔐 [STRIPE-CONNECT-DIRECT] NO AUTH - Hardcoded user for testing');
-    
-    // TEMPORARY: Use hardcoded Firebase UID for testing
-    const firebaseUid = "qztot1YEy3UWz605gIH2iwwWhW53";
-    
-    // Import user mapping service
-    const { userMappingService } = await import('./services/userMappingService');
-    const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
-    
-    // Import Stripe service
-    const stripe = await import('stripe');
-    const stripeClient = new stripe.default(process.env.STRIPE_SECRET_KEY!);
-    
-    console.log('🔐 [STRIPE-CONNECT] Creating Stripe Connect account for user:', dbUserId);
-    
-    // Create Stripe Connect account
-    const account = await stripeClient.accounts.create({
-      type: 'express',
-      country: 'US',
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true },
-      },
-    });
-    
-    console.log('✅ [STRIPE-CONNECT] Stripe account created:', account.id);
-    
-    // Create account link for onboarding
-    const accountLink = await stripeClient.accountLinks.create({
-      account: account.id,
-      refresh_url: `${process.env.FRONTEND_URL || 'http://localhost:5000'}/project-payments?refresh=true`,
-      return_url: `${process.env.FRONTEND_URL || 'http://localhost:5000'}/project-payments?success=true`,
-      type: 'account_onboarding',
-    });
-    
-    console.log('✅ [STRIPE-CONNECT] Account link created:', accountLink.url);
-    
-    // Save account ID to database
-    const { storage } = await import('./storage');
-    await storage.updateUser(dbUserId, {
-      stripeConnectAccountId: account.id,
-    });
-    
-    res.json({
-      success: true,
-      url: accountLink.url,
-      accountId: account.id,
-    });
-    
-  } catch (error) {
-    console.error('❌ [STRIPE-CONNECT] Error:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-  }
-});
 
 // 🚨 CRITICAL FIX: Add contract HTML generation endpoint directly due to routes.ts TypeScript errors
 app.post('/api/generate-contract-html', async (req, res) => {
