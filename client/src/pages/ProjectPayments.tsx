@@ -477,26 +477,37 @@ const ProjectPayments: React.FC = () => {
   // Connect to Stripe - Simplified Real Implementation
   const connectToStripe = async () => {
     try {
+      console.log("💳 [STRIPE-CONNECT] Starting connection process");
+      
       toast({
         title: "Connecting to Stripe",
         description: "Creating your Stripe Connect account...",
       });
 
+      console.log("💳 [STRIPE-CONNECT] Making POST request to /api/contractor-payments/stripe/connect");
       const response = await apiRequest("POST", "/api/contractor-payments/stripe/connect", {});
       
+      console.log("💳 [STRIPE-CONNECT] Response status:", response.status, response.ok);
+      
       if (!response.ok) {
-        throw new Error("Failed to create Stripe Connect account");
+        const errorText = await response.text();
+        console.error("💳 [STRIPE-CONNECT] Error response:", errorText);
+        throw new Error(`Failed to create Stripe Connect account: ${response.status} ${errorText}`);
       }
 
       const data = await response.json();
+      console.log("💳 [STRIPE-CONNECT] Response data:", data);
       
       if (data.success && data.url) {
+        console.log("💳 [STRIPE-CONNECT] Redirecting to Stripe:", data.url);
         // Open Stripe onboarding in current window
         window.location.href = data.url;
       } else {
+        console.error("💳 [STRIPE-CONNECT] Missing URL in response:", data);
         throw new Error(data.message || "Failed to get Stripe Connect URL");
       }
     } catch (error: any) {
+      console.error("💳 [STRIPE-CONNECT] Error:", error);
       toast({
         title: "Connection Failed",
         description: error.message || "Failed to connect to Stripe. Please try again.",

@@ -100,7 +100,8 @@ export default function PaymentSettings({
   };
 
   const isAccountActive = stripeAccountStatus?.hasStripeAccount && 
-                          stripeAccountStatus?.accountDetails?.chargesEnabled;
+                          stripeAccountStatus?.accountDetails?.chargesEnabled &&
+                          stripeAccountStatus?.accountDetails?.payoutsEnabled;
   
   const needsSetup = stripeAccountStatus?.hasStripeAccount && 
                      !stripeAccountStatus?.accountDetails?.chargesEnabled;
@@ -150,14 +151,24 @@ export default function PaymentSettings({
                   </Button>
                 )}
                 <Button
-                  onClick={onConnectStripe}
+                  onClick={() => {
+                    console.log("💳 [STRIPE-CONNECT] Button clicked", {
+                      hasAccount: stripeAccountStatus?.hasStripeAccount,
+                      isActive: isAccountActive,
+                      accountDetails: stripeAccountStatus?.accountDetails
+                    });
+                    onConnectStripe();
+                  }}
                   className="bg-cyan-400 text-black hover:bg-cyan-300"
-                  disabled={isAccountActive}
+                  disabled={false}
+                  data-testid="button-connect-stripe"
                 >
                   {!stripeAccountStatus?.hasStripeAccount 
                     ? "Connect Bank Account"
                     : needsSetup
                     ? "Complete Setup"
+                    : isAccountActive
+                    ? "Manage Account"
                     : "Reconnect"
                   }
                   <ExternalLink className="h-4 w-4 ml-2" />
