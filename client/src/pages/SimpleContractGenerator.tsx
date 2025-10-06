@@ -5088,7 +5088,7 @@ export default function SimpleContractGenerator() {
                               <div className="bg-black/60 rounded p-2 border border-green-400/30">
                               <button
                                 onClick={()=>{
-                                  openUrl(contractorSignUrl)
+                                  openUrl(clientSignUrl)
                                 }}
                                   className="text-green-300 hover:text-green-200 underline text-xs break-all font-mono"
                                 >
