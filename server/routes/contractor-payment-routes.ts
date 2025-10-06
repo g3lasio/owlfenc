@@ -703,6 +703,50 @@ router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Respon
 });
 
 /**
+ * Get Stripe Dashboard login link for connected accounts
+ */
+router.post("/stripe/dashboard", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.firebaseUser) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    const firebaseUid = req.firebaseUser.uid;
+    
+    // Convert Firebase UID to database user ID
+    const { userMappingService } = await import('../services/userMappingService');
+    const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
+    
+    // Get user from database
+    const user = await storage.getUser(dbUserId);
+    
+    if (!user || !user.stripeConnectAccountId) {
+      return res.status(404).json({ 
+        error: "No Stripe Connect account found. Please connect your account first." 
+      });
+    }
+
+    // Get Stripe instance
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    
+    // Create Express Dashboard login link
+    const loginLink = await stripe.accounts.createLoginLink(user.stripeConnectAccountId);
+    
+    res.json({
+      success: true,
+      url: loginLink.url,
+      message: "Stripe Dashboard link created successfully",
+    });
+  } catch (error) {
+    console.error("Error creating Stripe dashboard link:", error);
+    res.status(500).json({
+      message: "Error creating Stripe dashboard link",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+/**
  * Create payment
  */
 router.post("/create", isAuthenticated, async (req: Request, res: Response) => {
