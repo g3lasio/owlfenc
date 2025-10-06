@@ -48,7 +48,8 @@ export const sanitizeRequest = (req: Request, res: Response, next: NextFunction)
   
   // 🔐 WEBAUTHN SUPPORT: Enable WebAuthn API in iframes (Chrome 123+, Safari 18+)
   // Allows biometric authentication (Face ID, Touch ID, fingerprint) to work in same-origin iframes
-  res.setHeader('Permissions-Policy', 'publickey-credentials-get=*, publickey-credentials-create=*');
+  // Spec-compliant syntax: use parentheses and explicit origins
+  res.setHeader('Permissions-Policy', 'publickey-credentials-get=(self), publickey-credentials-create=(self)');
   
   next();
 };
