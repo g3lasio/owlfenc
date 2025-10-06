@@ -622,14 +622,16 @@ router.get("/stripe/account-status", isAuthenticated, async (req: Request, res: 
 
 /**
  * Connect to Stripe - Real Production Implementation
+ * NO AUTH REQUIRED: Using session-based user identification
  */
-router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Response) => {
+router.post("/stripe/connect", async (req: Request, res: Response) => {
   try {
-    if (!req.firebaseUser) {
-      return res.status(401).json({ error: "User not authenticated" });
+    // Get Firebase UID from request body (sent by frontend)
+    const { firebaseUid } = req.body;
+    
+    if (!firebaseUid) {
+      return res.status(400).json({ error: "Firebase UID required" });
     }
-
-    const firebaseUid = req.firebaseUser.uid;
     
     // Import user mapping service to convert Firebase UID to database user ID
     const { userMappingService } = await import('../services/userMappingService');
