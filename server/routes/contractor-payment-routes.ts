@@ -601,12 +601,12 @@ router.get("/stripe/account-status", isAuthenticated, async (req: Request, res: 
  */
 router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.firebaseUser) {
       return res.status(401).json({ error: "User not authenticated" });
     }
 
     // Get Stripe instance
-    const stripe = require('stripe')(process.env.STRIPE_API_KEY);
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     
     // Create Stripe Connect account
     const account = await stripe.accounts.create({

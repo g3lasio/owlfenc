@@ -3,12 +3,12 @@ import { ProjectPayment, InsertProjectPayment, Project } from '@shared/schema';
 import { storage } from '../storage';
 
 // Verify that the Stripe secret key is configured
-if (!process.env.STRIPE_API_KEY) {
-  console.warn('⚠️ STRIPE_API_KEY is not configured. Payment functions will not work correctly.');
+if (!process.env.STRIPE_SECRET_KEY) {
+  console.warn('⚠️ STRIPE_SECRET_KEY is not configured. Payment functions will not work correctly.');
 }
 
 // Initialize Stripe with PRODUCTION secret key
-const stripe = new Stripe(process.env.STRIPE_API_KEY!, {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16' as any, // Use a compatible version
 });
 

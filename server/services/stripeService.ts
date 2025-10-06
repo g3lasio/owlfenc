@@ -8,14 +8,14 @@ import { storage } from "../storage";
 import { firebaseSubscriptionService } from "./firebaseSubscriptionService";
 
 // Verificar que la clave secreta de Stripe esté configurada
-// MODO PRODUCCIÓN - usar STRIPE_API_KEY
-const stripeKey = process.env.STRIPE_API_KEY;
+// MODO PRODUCCIÓN - usar STRIPE_SECRET_KEY
+const stripeKey = process.env.STRIPE_SECRET_KEY;
 
 if (!stripeKey) {
   console.error(
-    "❌ STRIPE_API_KEY no está configurada. Las funciones de pago no funcionarán correctamente.",
+    "❌ STRIPE_SECRET_KEY no está configurada. Las funciones de pago no funcionarán correctamente.",
   );
-  throw new Error("STRIPE_API_KEY is required");
+  throw new Error("STRIPE_SECRET_KEY is required");
 }
 
 // Inicializar Stripe con la clave de PRODUCCIÓN
@@ -31,7 +31,7 @@ console.log(
 console.log("🔑 [STRIPE-CONFIG] Environment: PRODUCTION MODE");
 console.log(
   "🔑 [STRIPE-CONFIG] Production key available:",
-  !!process.env.STRIPE_API_KEY,
+  !!process.env.STRIPE_SECRET_KEY,
 );
 
 interface SubscriptionCheckoutOptions {
