@@ -220,92 +220,180 @@ const ProjectPayments: React.FC = () => {
     );
   }
 
-  // Fetch projects data directly from Firebase with authentication check
+  // Fetch projects data from BOTH Firebase collections (same as Estimate Wizard History)
   const {
     data: projects,
     isLoading: projectsLoading,
     error: projectsError,
   } = useQuery<Project[]>({
-    queryKey: ["/firebase/projects"],
+    queryKey: ["/firebase/projects-and-estimates"],
     queryFn: async () => {
       try {
-        // Import Firebase functions and auth
-        const { getProjects, auth } = await import("@/lib/firebase");
+        // Import Firebase functions
+        const { collection, query, where, getDocs } = await import("firebase/firestore");
+        const { db, auth } = await import("@/lib/firebase");
         const { onAuthStateChanged } = await import("firebase/auth");
 
         // Wait for authentication state to be ready
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           const unsubscribe = onAuthStateChanged(auth, async (user) => {
             unsubscribe(); // Clean up listener
 
             if (!user) {
-              console.log("No user authenticated, returning empty array");
+              console.log("💳 [PAYMENT-TRACKER] No user authenticated, returning empty array");
               resolve([]);
               return;
             }
 
             try {
-              // Get all projects (not just approved ones for payment processing)
-              const firebaseProjects = await getProjects();
+              console.log("💳 [PAYMENT-TRACKER] Loading projects from Firebase for user:", user.uid);
+              let allProjects: any[] = [];
 
-              // Convert Firebase projects to our Project type with REAL user mapping
-              const convertedProjects = firebaseProjects.map(
-                (project: any) => ({
-                  id: project.id || Math.random(),
-                  userId: user.uid, // Use authenticated Firebase UID
-                  projectId: project.id || project.projectId || "",
-                  clientName:
-                    project.clientName ||
-                    project.customerName ||
-                    "Unknown Client",
-                  clientEmail:
-                    project.clientEmail || project.customerEmail || "",
-                  clientPhone:
-                    project.clientPhone || project.customerPhone || "",
-                  address: project.address || project.projectAddress || "",
-                  projectType:
-                    project.projectType || project.fenceType || "Fence Project",
-                  projectSubtype:
-                    project.projectSubtype || project.fenceStyle || "",
-                  projectCategory: project.projectCategory || "Fencing",
-                  projectDescription:
-                    project.projectDescription || project.description || "",
-                  projectScope: project.projectScope || "",
-                  estimateHtml: project.estimateHtml || "",
-                  contractHtml: project.contractHtml || "",
-                  totalPrice: project.totalPrice
-                    ? Number(project.totalPrice) * 100
-                    : 0, // Convert to cents
-                  status: project.status || "approved",
-                  projectProgress: project.projectProgress || "approved",
-                  paymentStatus: project.paymentStatus || "pending",
-                  paymentDetails: project.paymentDetails || {},
-                  createdAt: project.createdAt?.toDate
-                    ? project.createdAt.toDate().toISOString()
-                    : new Date().toISOString(),
-                  updatedAt: project.updatedAt?.toDate
-                    ? project.updatedAt.toDate().toISOString()
-                    : new Date().toISOString(),
-                }),
-              );
+              // 1. Load from PROJECTS collection (same as Estimate Wizard)
+              try {
+                const projectsQuery = query(
+                  collection(db, "projects"),
+                  where("firebaseUserId", "==", user.uid)
+                );
 
-              console.log(
-                `Successfully loaded ${convertedProjects.length} projects from Firebase`,
-              );
-              resolve(convertedProjects);
+                const projectsSnapshot = await getDocs(projectsQuery);
+                const projectData = projectsSnapshot.docs.map((doc) => {
+                  const data = doc.data();
+                  
+                  // Extract client info with multiple fallbacks
+                  const clientName = data.clientInformation?.name || 
+                                   data.clientName || 
+                                   data.client?.name || 
+                                   "Unknown Client";
+                  
+                  const clientEmail = data.clientInformation?.email || 
+                                    data.clientEmail || 
+                                    data.client?.email || 
+                                    "";
+
+                  // Calculate total with multiple fallback paths
+                  const totalValue = data.projectTotalCosts?.totalSummary?.finalTotal ||
+                                   data.projectTotalCosts?.total ||
+                                   data.total ||
+                                   data.estimateAmount ||
+                                   data.totalPrice ||
+                                   0;
+
+                  return {
+                    id: doc.id,
+                    userId: user.uid,
+                    projectId: doc.id,
+                    clientName,
+                    clientEmail,
+                    clientPhone: data.clientInformation?.phone || data.clientPhone || "",
+                    address: data.projectDetails?.address || data.address || data.projectAddress || "",
+                    projectType: data.projectType || data.projectDetails?.type || data.fenceType || "Project",
+                    projectSubtype: data.projectSubtype || data.fenceStyle || "",
+                    projectCategory: data.projectCategory || "General",
+                    projectDescription: data.projectDescription || data.description || "",
+                    projectScope: data.projectScope || "",
+                    estimateHtml: data.estimateHtml || "",
+                    contractHtml: data.contractHtml || "",
+                    totalPrice: totalValue, // Keep in original format (already in cents if from estimates)
+                    status: data.status || "draft",
+                    projectProgress: data.projectProgress || data.status || "draft",
+                    paymentStatus: data.paymentStatus || "pending",
+                    paymentDetails: data.paymentDetails || {},
+                    createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+                    updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : new Date().toISOString(),
+                  };
+                });
+
+                allProjects = [...allProjects, ...projectData];
+                console.log(`💳 [PAYMENT-TRACKER] Loaded ${projectData.length} from projects collection`);
+              } catch (projectError) {
+                console.warn("💳 [PAYMENT-TRACKER] Error loading from projects:", projectError);
+              }
+
+              // 2. Load from ESTIMATES collection (same as Estimate Wizard)
+              try {
+                const estimatesQuery = query(
+                  collection(db, "estimates"),
+                  where("firebaseUserId", "==", user.uid)
+                );
+
+                const estimatesSnapshot = await getDocs(estimatesQuery);
+                const estimateData = estimatesSnapshot.docs.map((doc) => {
+                  const data = doc.data();
+                  
+                  // Extract client info with multiple fallbacks
+                  const clientName = data.clientInformation?.name || 
+                                   data.clientName || 
+                                   data.client?.name || 
+                                   "Unknown Client";
+                  
+                  const clientEmail = data.clientInformation?.email || 
+                                    data.clientEmail || 
+                                    data.client?.email || 
+                                    "";
+
+                  // Calculate total with multiple fallback paths
+                  const totalValue = data.projectTotalCosts?.totalSummary?.finalTotal ||
+                                   data.projectTotalCosts?.total ||
+                                   data.total ||
+                                   data.estimateAmount ||
+                                   0;
+
+                  return {
+                    id: doc.id,
+                    userId: user.uid,
+                    projectId: doc.id,
+                    clientName,
+                    clientEmail,
+                    clientPhone: data.clientInformation?.phone || data.clientPhone || "",
+                    address: data.projectDetails?.address || data.address || "",
+                    projectType: data.projectType || data.projectDetails?.type || "Estimate",
+                    projectSubtype: data.projectSubtype || "",
+                    projectCategory: data.projectCategory || "General",
+                    projectDescription: data.projectDescription || data.description || "",
+                    projectScope: data.projectScope || "",
+                    estimateHtml: data.estimateHtml || "",
+                    contractHtml: data.contractHtml || "",
+                    totalPrice: totalValue, // Keep in original format
+                    status: data.status || "estimate",
+                    projectProgress: data.projectProgress || "estimate",
+                    paymentStatus: data.paymentStatus || "pending",
+                    paymentDetails: data.paymentDetails || {},
+                    createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+                    updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : new Date().toISOString(),
+                  };
+                });
+
+                allProjects = [...allProjects, ...estimateData];
+                console.log(`💳 [PAYMENT-TRACKER] Loaded ${estimateData.length} from estimates collection`);
+              } catch (estimateError) {
+                console.warn("💳 [PAYMENT-TRACKER] Error loading from estimates:", estimateError);
+              }
+
+              // Remove duplicates based on projectId
+              const uniqueProjects = allProjects.reduce((acc: any[], current) => {
+                const exists = acc.find(item => item.projectId === current.projectId);
+                if (!exists) {
+                  acc.push(current);
+                }
+                return acc;
+              }, []);
+
+              console.log(`💳 [PAYMENT-TRACKER] Total unique projects loaded: ${uniqueProjects.length}`);
+              resolve(uniqueProjects);
             } catch (error) {
-              console.error("Error fetching projects from Firebase:", error);
-              resolve([]); // Return empty array instead of rejecting to avoid breaking the UI
+              console.error("💳 [PAYMENT-TRACKER] Error fetching projects:", error);
+              resolve([]);
             }
           });
         });
       } catch (error) {
-        console.error("Error setting up Firebase auth listener:", error);
+        console.error("💳 [PAYMENT-TRACKER] Error setting up Firebase:", error);
         return [];
       }
     },
-    retry: 1, // Only retry once
-    retryDelay: 1000, // Wait 1 second before retry
+    retry: 1,
+    retryDelay: 1000,
   });
 
   // Fetch payment data
