@@ -42,9 +42,13 @@ export const sanitizeRequest = (req: Request, res: Response, next: NextFunction)
   
   // Add security response headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN'); // Changed from DENY to allow same-origin iframes
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  // 🔐 WEBAUTHN SUPPORT: Enable WebAuthn API in iframes (Chrome 123+, Safari 18+)
+  // Allows biometric authentication (Face ID, Touch ID, fingerprint) to work in same-origin iframes
+  res.setHeader('Permissions-Policy', 'publickey-credentials-get=*, publickey-credentials-create=*');
   
   next();
 };
