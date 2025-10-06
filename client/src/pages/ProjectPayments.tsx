@@ -69,8 +69,8 @@ type ProjectPayment = {
 };
 
 type Project = {
-  id: number;
-  userId: number;
+  id: string | number; // Firebase uses string IDs
+  userId: string; // Firebase UID is string
   projectId: string;
   clientName: string;
   clientEmail?: string;
@@ -121,6 +121,7 @@ const ProjectPayments: React.FC = () => {
     error: projectsError,
   } = useQuery<Project[]>({
     queryKey: ["/firebase/projects-and-estimates"],
+    enabled: canUsePaymentTracking, // Only fetch if user has access
     queryFn: async () => {
       try {
         // Import Firebase functions
@@ -128,9 +129,12 @@ const ProjectPayments: React.FC = () => {
         const { db, auth } = await import("@/lib/firebase");
         const { onAuthStateChanged } = await import("firebase/auth");
 
-        // Wait for authentication state to be ready
+        // Wait for authentication state to be ready (with timeout)
         return new Promise((resolve) => {
+          let timeout: NodeJS.Timeout | null = null;
+          
           const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (timeout) clearTimeout(timeout);
             unsubscribe(); // Clean up listener
 
             if (!user) {

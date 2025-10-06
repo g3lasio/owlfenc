@@ -36,8 +36,8 @@ import { useToast } from "@/hooks/use-toast";
 
 // Types (same as in ProjectPayments.tsx)
 type Project = {
-  id: number;
-  userId: number;
+  id: string | number; // Firebase uses string IDs
+  userId: string; // Firebase UID is string
   projectId: string;
   clientName: string;
   clientEmail?: string;
@@ -256,6 +256,14 @@ export default function ProjectPaymentWorkflow({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {(() => {
+              console.log("💳 [WORKFLOW] Rendering projects:", {
+                hasProjects: !!projects,
+                count: projects?.length || 0,
+                projects: projects
+              });
+              return null;
+            })()}
             {projects && projects.length > 0 ? (
               <div className="grid gap-4">
                 {projects.slice(0, 10).map((project) => (
