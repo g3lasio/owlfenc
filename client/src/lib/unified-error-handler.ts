@@ -55,9 +55,9 @@ class UnifiedErrorHandler {
   private shouldSilenceError(error: any): boolean {
     if (!error) return false;
     
-    const errorMessage = error?.message || error?.toString() || '';
-    const errorStack = error?.stack || '';
-    const errorCode = error?.code || '';
+    const errorMessage = String(error?.message || error?.toString() || '');
+    const errorStack = String(error?.stack || '');
+    const errorCode = String(error?.code || '');
     
     // Check against silent patterns
     return this.SILENT_PATTERNS.some(pattern => 
