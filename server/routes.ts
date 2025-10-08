@@ -102,7 +102,7 @@ import openrouterAPI from "./routes/openrouter-api"; // Import OpenRouter API fo
 import paymentRoutes from "./routes/payment-routes"; // Import payment routes
 import usageLimitsRoutes from "./routes/usage-limits"; // Import usage limits routes
 import { AuthMiddleware, requireAuthenticatedUser, AuthenticatedRequest } from './middleware/authMiddleware';
-import { requireAuth } from './middleware/unified-session-auth';
+import { requireAuth, optionalAuth } from './middleware/unified-session-auth';
 import { initSecureUserHelper } from './utils/secureUserHelper';
 import { DataIntegrityChecker } from './utils/dataIntegrityChecker';
 import { registerSubscriptionControlRoutes } from "./routes/subscription-control"; // Import ROBUST subscription control
@@ -1643,7 +1643,7 @@ Output must be between 200-900 characters in English.`;
   // Registrar rutas específicas
   registerPromptTemplateRoutes(app);
   registerEstimateRoutes(app);
-  registerPropertyRoutes(app);
+  // registerPropertyRoutes(app); // COMENTADO: Endpoint duplicado con requireAuth - usando versión corregida con optionalAuth arriba
   setupTemplatesRoutes(app);
 
   // Registrar rutas de facturación
@@ -6709,18 +6709,20 @@ Output must be between 200-900 characters in English.`;
 
   // Endpoint para obtener detalles de una propiedad por dirección
   // 🛡️ ENDPOINTS SEGUROS PARA HISTORIAL DE BÚSQUEDA DE PROPIEDADES
-  app.get("/api/property/history", requireAuth, async (req: Request, res: Response) => {
+  app.get("/api/property/history", optionalAuth, async (req: Request, res: Response) => {
     try {
-      // 🔐 OBTENER userId del AuthMiddleware
+      // 🔐 OBTENER userId del AuthMiddleware (opcional)
       const authReq = req as AuthenticatedRequest;
       const userId = authReq.userId;
       const firebaseUid = authReq.firebaseUid;
       
+      // Si no hay usuario autenticado, retornar array vacío
       if (!userId || !firebaseUid) {
-        return res.status(401).json({ error: "Usuario no autenticado" });
+        console.log(`ℹ️ [PROPERTY-HISTORY] Usuario no autenticado - retornando historial vacío`);
+        return res.json([]);
       }
 
-      console.log(`🔍 [PROPERTY-HISTORY-SECURED] Obteniendo historial para usuario autenticado: ${firebaseUid} (ID: ${userId})`);
+      console.log(`🔍 [PROPERTY-HISTORY] Obteniendo historial para usuario: ${firebaseUid} (ID: ${userId})`);
 
       // 🔒 QUERY usando drizzle sql template tag
       if (!db) {
@@ -6752,10 +6754,10 @@ Output must be between 200-900 characters in English.`;
         searchDate: item.search_date
       }));
       
-      console.log(`✅ [PROPERTY-HISTORY-SECURED] Devolviendo ${transformedHistory.length} búsquedas del usuario ${userId}`);
+      console.log(`✅ [PROPERTY-HISTORY] Devolviendo ${transformedHistory.length} búsquedas del usuario ${userId}`);
       res.json(transformedHistory);
     } catch (error) {
-      console.error("❌ [PROPERTY-HISTORY-SECURED] Error:", error);
+      console.error("❌ [PROPERTY-HISTORY] Error:", error);
       res.status(500).json({
         message: "Error al obtener historial de búsqueda de propiedades",
       });
@@ -6899,18 +6901,7 @@ Output must be between 200-900 characters in English.`;
     },
   );
 
-  app.get("/api/property/details", requireAuth, async (req: Request, res: Response) => {
-    // 🔐 VERIFICAR AUTENTICACIÓN ANTES DE CUALQUIER OPERACIÓN
-    const firebaseUid = (req as any).firebaseUser?.uid;
-    if (!firebaseUid) {
-      return res.status(401).json({ error: "Usuario no autenticado para verificación de propiedad" });
-    }
-
-    const user = await storage.getUserByFirebaseUid(firebaseUid);
-    if (!user) {
-      return res.status(404).json({ error: "Usuario no encontrado en base de datos" });
-    }
-
+  app.get("/api/property/details", optionalAuth, async (req: Request, res: Response) => {
     const address = req.query.address as string;
     const city = req.query.city as string;
     const state = req.query.state as string;
@@ -6922,17 +6913,27 @@ Output must be between 200-900 characters in English.`;
       });
     }
 
-    console.log(`🔍 [PROPERTY-API-SECURED] Starting property verification for address: ${address} (User: ${firebaseUid})`);
+    // 🔐 VERIFICAR SI HAY USUARIO AUTENTICADO (OPCIONAL)
+    const firebaseUid = (req as any).firebaseUser?.uid;
+    let user = null;
+    
+    if (firebaseUid) {
+      user = await storage.getUserByFirebaseUid(firebaseUid);
+      console.log(`🔍 [PROPERTY-API] Verificación para usuario autenticado: ${firebaseUid} (ID: ${user?.id})`);
+    } else {
+      console.log(`🔍 [PROPERTY-API] Verificación para usuario no autenticado - acceso básico`);
+    }
+
     if (city || state || zip) {
-      console.log("🏠 [PROPERTY-API-SECURED] Enhanced address components:", { city, state, zip });
+      console.log("🏠 [PROPERTY-API] Enhanced address components:", { city, state, zip });
     }
 
     try {
       // Import and use the secure ATTOM service
-      console.log("📦 [PROPERTY-API-SECURED] Loading secure ATTOM service");
+      console.log("📦 [PROPERTY-API] Loading secure ATTOM service");
       const { secureAttomService } = await import('./services/secure-attom-service-clean');
       
-      console.log("🌐 [PROPERTY-API-SECURED] Calling ATTOM service");
+      console.log("🌐 [PROPERTY-API] Calling ATTOM service");
       const propertyData = await secureAttomService.getPropertyDetails(address, { city, state, zip });
 
       if (!propertyData) {
@@ -6943,29 +6944,33 @@ Output must be between 200-900 characters in English.`;
         });
       }
 
-      console.log(`✅ [PROPERTY-API-SECURED] Property verification successful for user ${user.id}`);
+      console.log(`✅ [PROPERTY-API] Property verification successful${user ? ` for user ${user.id}` : ''}`);
 
-      // 🛡️ SAVE SEARCH TO HISTORY WITH AUTHENTICATED USER ID
-      try {
-        const title = `Propiedad en ${address}`;
+      // 🛡️ SAVE SEARCH TO HISTORY ONLY IF USER IS AUTHENTICATED
+      if (user) {
+        try {
+          const title = `Propiedad en ${address}`;
 
-        const historyData = {
-          userId: user.id, // 🔒 USAR userId REAL DEL USUARIO AUTENTICADO
-          address,
-          ownerName: propertyData.owner,
-          results: propertyData,
-          title,
-          isFavorite: false,
-          parcelNumber: "",
-          tags: [],
-        };
+          const historyData = {
+            userId: user.id,
+            address,
+            ownerName: propertyData.owner,
+            results: propertyData,
+            title,
+            isFavorite: false,
+            parcelNumber: "",
+            tags: [],
+          };
 
-        const validHistoryData = insertPropertySearchHistorySchema.parse(historyData);
-        await storage.createPropertySearchHistory(validHistoryData);
-        console.log(`📝 [PROPERTY-API-SECURED] Search saved to history for user ${user.id}`);
-      } catch (historyError) {
-        console.error("⚠️ [PROPERTY-API-SECURED] Error saving to property history:", historyError);
-        // Don't fail the request if history save fails
+          const validHistoryData = insertPropertySearchHistorySchema.parse(historyData);
+          await storage.createPropertySearchHistory(validHistoryData);
+          console.log(`📝 [PROPERTY-API] Search saved to history for user ${user.id}`);
+        } catch (historyError) {
+          console.error("⚠️ [PROPERTY-API] Error saving to property history:", historyError);
+          // Don't fail the request if history save fails
+        }
+      } else {
+        console.log(`ℹ️ [PROPERTY-API] Historial no guardado - usuario no autenticado`);
       }
 
       return res.json(propertyData);
