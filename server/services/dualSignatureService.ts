@@ -466,33 +466,43 @@ export class DualSignatureService {
         `🔍 [DUAL-SIGNATURE] Signature check: ${submission.party} signing, other party signed: ${bothSigned}`
       );
 
-      const newStatus = bothSigned
-        ? "both_signed"
-        : submission.party === "contractor"
-          ? "contractor_signed"
-          : "client_signed";
+      let finalStatus: string;
 
-      // Update status
-      await db
-        .update(digitalContracts)
-        .set({
-          status: newStatus,
-          updatedAt: new Date(),
-        })
-        .where(eq(digitalContracts.contractId, submission.contractId));
-
-      console.log(
-        `✅ [DUAL-SIGNATURE] ${submission.party} signature processed successfully`
-      );
-      console.log(`📊 [DUAL-SIGNATURE] New status:`, newStatus);
-
-      // If both signed, trigger completion workflow
+      // If both signed, trigger completion workflow IMMEDIATELY (don't set intermediate status)
       if (bothSigned) {
         console.log(
           "🎉 [DUAL-SIGNATURE] Both parties signed! Triggering completion workflow..."
         );
+        
+        // completeContract() will set status to "completed" and save completionDate
         await this.completeContract(submission.contractId);
+        finalStatus = "completed";
+        
+        console.log(
+          `✅ [DUAL-SIGNATURE] ${submission.party} signature processed successfully`
+        );
+        console.log(`📊 [DUAL-SIGNATURE] Contract completed - both parties signed`);
       } else {
+        // Only one party signed - update status accordingly
+        const newStatus = submission.party === "contractor"
+          ? "contractor_signed"
+          : "client_signed";
+
+        await db
+          .update(digitalContracts)
+          .set({
+            status: newStatus,
+            updatedAt: new Date(),
+          })
+          .where(eq(digitalContracts.contractId, submission.contractId));
+
+        finalStatus = newStatus;
+
+        console.log(
+          `✅ [DUAL-SIGNATURE] ${submission.party} signature processed successfully`
+        );
+        console.log(`📊 [DUAL-SIGNATURE] New status:`, newStatus);
+
         // Notify the other party that signature is pending
         await this.notifyRemainingParty(
           submission.contractId,
@@ -503,7 +513,7 @@ export class DualSignatureService {
       return {
         success: true,
         message: `${submission.party} signature recorded successfully`,
-        status: newStatus,
+        status: finalStatus,
         bothSigned,
       };
     } catch (error: any) {
