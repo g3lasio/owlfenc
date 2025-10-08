@@ -50,11 +50,12 @@ import {
   PropertyDetails,
   OwnerHistoryEntry,
 } from "@/services/propertyVerifierService";
-// Removed PropertySearchHistory import - implementing directly
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from 'date-fns';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 // Simple step tracking
 interface Step {
@@ -236,29 +237,140 @@ export default function PropertyOwnershipVerifier() {
   }, [toast]);
 
   // Export property details
-  const handleExportReport = useCallback(() => {
+  const handleExportReport = useCallback(async () => {
     if (!propertyDetails) return;
     
-    const reportData = {
-      property: propertyDetails,
-      exportDate: new Date().toISOString(),
-      searchedAddress: address,
-    };
-    
-    const dataStr = JSON.stringify(reportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `property-report-${propertyDetails.address?.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: "✅ Reporte Exportado",
-      description: "El reporte de propiedad ha sido descargado exitosamente.",
+    // Mostrar toast de procesamiento
+    const processingToast = toast({
+      title: "⏳ Generando PDF",
+      description: "Por favor espera mientras se genera el reporte...",
+      duration: 30000, // Mantener visible por 30 segundos
     });
-  }, [propertyDetails, address, toast]);
+    
+    try {
+      // Buscar el elemento del reporte para capturar
+      const reportElement = document.querySelector('[data-report-section]');
+      
+      if (!reportElement) {
+        throw new Error('No se encontró la sección del reporte');
+      }
+
+      // Capturar el elemento como imagen usando html2canvas
+      const canvas = await html2canvas(reportElement as HTMLElement, {
+        scale: 2, // Alta calidad para móviles
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#0f172a', // slate-900
+      });
+
+      // Crear PDF con jsPDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
+      // Calcular dimensiones para ajustar la imagen al PDF
+      const imgWidth = pageWidth - 20; // Margen de 10mm a cada lado
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Agregar header
+      pdf.setFillColor(15, 23, 42); // slate-900
+      pdf.rect(0, 0, pageWidth, 25, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Property Verification Report', pageWidth / 2, 12, { align: 'center' });
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(format(new Date(), 'PPP'), pageWidth / 2, 18, { align: 'center' });
+
+      // Agregar la captura del reporte
+      const imgData = canvas.toDataURL('image/png');
+      let yPosition = 30;
+      
+      // Si la imagen es más alta que la página, dividirla en múltiples páginas
+      if (imgHeight > pageHeight - 40) {
+        let remainingHeight = imgHeight;
+        let sourceY = 0;
+        
+        while (remainingHeight > 0) {
+          const sliceHeight = Math.min(pageHeight - 40, remainingHeight);
+          const sourceHeight = (sliceHeight * canvas.height) / imgHeight;
+          
+          if (sourceY > 0) {
+            pdf.addPage();
+            yPosition = 10;
+          }
+          
+          // Crear canvas temporal para el slice
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = canvas.width;
+          tempCanvas.height = sourceHeight;
+          const tempCtx = tempCanvas.getContext('2d');
+          
+          if (tempCtx) {
+            tempCtx.drawImage(
+              canvas,
+              0, sourceY,
+              canvas.width, sourceHeight,
+              0, 0,
+              canvas.width, sourceHeight
+            );
+            
+            const sliceData = tempCanvas.toDataURL('image/png');
+            pdf.addImage(sliceData, 'PNG', 10, yPosition, imgWidth, sliceHeight);
+          }
+          
+          sourceY += sourceHeight;
+          remainingHeight -= sliceHeight;
+        }
+      } else {
+        pdf.addImage(imgData, 'PNG', 10, yPosition, imgWidth, imgHeight);
+      }
+
+      // Footer en última página
+      const totalPages = pdf.internal.pages.length - 1;
+      pdf.setPage(totalPages);
+      const footerY = pageHeight - 10;
+      pdf.setFontSize(7);
+      pdf.setTextColor(148, 163, 184);
+      pdf.setFont('helvetica', 'italic');
+      pdf.text('Owl Fence AI - Property Verification System', pageWidth / 2, footerY, { align: 'center' });
+
+      // Generar nombre de archivo seguro - coercer address a string de manera segura
+      const addressStr = String(propertyDetails.address || '');
+      const addressPart = addressStr && addressStr.trim()
+        ? addressStr.replace(/\s+/g, '-').substring(0, 50).toLowerCase()
+        : 'property';
+      const datePart = new Date().toISOString().split('T')[0];
+      const fileName = `property-report-${addressPart}-${datePart}.pdf`;
+      
+      // Descargar PDF
+      pdf.save(fileName);
+
+      // Esperar un momento para asegurar que la descarga haya comenzado
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Dismiss el toast de procesamiento y mostrar éxito
+      processingToast.dismiss();
+      toast({
+        title: "✅ Reporte PDF Exportado",
+        description: "El reporte ha sido descargado exitosamente. Compatible con todos los dispositivos.",
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      processingToast.dismiss();
+      toast({
+        title: "❌ Error al Exportar",
+        description: "Hubo un problema al generar el PDF. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
+  }, [propertyDetails, toast]);
 
   // Filter history items based on search term
   const filteredHistoryItems = useMemo(() => {
@@ -493,7 +605,7 @@ export default function PropertyOwnershipVerifier() {
                 </div>
 
                 {/* Compact Verification Summary */}
-                <div className="relative group">
+                <div className="relative group" data-report-section>
                   <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 rounded-xl blur-sm group-hover:blur-md transition-all duration-300"></div>
                   <Card className="relative border-2 border-cyan-400/60 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm hover:border-cyan-300/80 transition-all duration-300">
                     <CardHeader className="pb-3">
@@ -517,14 +629,14 @@ export default function PropertyOwnershipVerifier() {
                           <Users className="h-4 w-4 text-cyan-400 flex-shrink-0" />
                           <div className="min-w-0 flex-1">
                             <div className="text-xs text-slate-400 uppercase tracking-wider">Propietario</div>
-                            <div className="text-white font-medium text-sm truncate">{propertyDetails.owner}</div>
+                            <div className="text-white font-medium text-sm break-words leading-tight">{propertyDetails.owner}</div>
                           </div>
                         </div>
                         <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
                           <MapPin className="h-4 w-4 text-cyan-400 flex-shrink-0" />
                           <div className="min-w-0 flex-1">
                             <div className="text-xs text-slate-400 uppercase tracking-wider">Dirección</div>
-                            <div className="text-white font-medium text-sm truncate">{propertyDetails.address}</div>
+                            <div className="text-white font-medium text-sm break-words leading-tight">{propertyDetails.address}</div>
                           </div>
                         </div>
                       </div>
