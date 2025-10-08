@@ -390,7 +390,7 @@ router.get("/completed/:userId", verifyFirebaseAuth, async (req, res) => {
       .select()
       .from(digitalContracts)
       .where(eq(digitalContracts.userId, userId))
-      .orderBy(digitalContracts.updatedAt);
+      .orderBy(desc(digitalContracts.updatedAt));
 
     console.log(
       `✅ [API] Found ${completedContracts.length} contracts for user`,
@@ -412,11 +412,7 @@ router.get("/completed/:userId", verifyFirebaseAuth, async (req, res) => {
       );
     });
 
-    // ✅ PERMANENT ACCESS: All completed contracts are accessible without plan restrictions
-    // Contractors have unlimited, permanent access to their completed contracts
-    console.log(`✅ [PERMANENT-ACCESS] Providing unlimited access to all ${fullyCompletedContracts.length} completed contracts`);
-    
-    // Transform data for frontend - all fully signed contracts with permanent access
+    // Transform data for frontend - all fully signed contracts
     const contractsForFrontend = fullyCompletedContracts.map((contract) => ({
       contractId: contract.contractId,
       status: contract.status,
@@ -439,8 +435,7 @@ router.get("/completed/:userId", verifyFirebaseAuth, async (req, res) => {
     res.json({
       success: true,
       contracts: contractsForFrontend,
-      total: contractsForFrontend.length,
-      message: `Unlimited permanent access to ${contractsForFrontend.length} completed contracts`
+      total: contractsForFrontend.length
     });
   } catch (error: any) {
     console.error("❌ [API] Error in /completed/:userId:", error);
