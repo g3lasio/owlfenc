@@ -6952,6 +6952,7 @@ Output must be between 200-900 characters in English.`;
           const title = `Propiedad en ${address}`;
 
           const historyData = {
+            id: crypto.randomUUID(), // Generate unique ID for the history record
             userId: user.id,
             address,
             ownerName: propertyData.owner,

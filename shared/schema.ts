@@ -553,7 +553,6 @@ export const insertPermitSearchHistorySchema = createInsertSchema(permitSearchHi
 });
 
 export const insertPropertySearchHistorySchema = createInsertSchema(propertySearchHistory).omit({
-  id: true,
   searchDate: true,
 });
 

@@ -372,6 +372,157 @@ export default function PropertyOwnershipVerifier() {
     }
   }, [propertyDetails, toast]);
 
+  // Export history item to PDF
+  const handleExportHistoryItem = useCallback(async (item: PropertySearchHistoryItem, event: React.MouseEvent) => {
+    // Stop propagation to prevent selecting the history item
+    event.stopPropagation();
+
+    if (!item.results) {
+      toast({
+        title: "❌ No se puede exportar",
+        description: "Este elemento del historial no tiene datos para exportar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Show processing toast
+    const processingToast = toast({
+      title: "⏳ Generando PDF",
+      description: "Por favor espera mientras se genera el reporte...",
+      duration: 30000,
+    });
+
+    try {
+      // Create a temporary container for the report
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.width = '800px';
+      document.body.appendChild(tempContainer);
+
+      // Create the report HTML
+      tempContainer.innerHTML = `
+        <div style="padding: 20px; background: #0f172a; color: white; font-family: system-ui;">
+          <div style="margin-bottom: 20px;">
+            <h2 style="font-size: 24px; font-weight: bold; color: #38bdf8; margin-bottom: 10px;">Resumen de Verificación</h2>
+            <span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 4px 8px; border-radius: 4px; font-size: 12px;">✓ Verificado</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+            <div style="background: rgba(30, 41, 59, 0.5); padding: 12px; border-radius: 8px; border: 1px solid rgba(71, 85, 105, 0.5);">
+              <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Propietario</div>
+              <div style="font-weight: 500; color: white; font-size: 14px;">${item.ownerName || 'N/A'}</div>
+            </div>
+            <div style="background: rgba(30, 41, 59, 0.5); padding: 12px; border-radius: 8px; border: 1px solid rgba(71, 85, 105, 0.5);">
+              <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Dirección</div>
+              <div style="font-weight: 500; color: white; font-size: 14px;">${item.address}</div>
+            </div>
+          </div>
+          ${item.results.yearBuilt || item.results.sqft || item.results.bedrooms || item.results.purchasePrice ? `
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+            ${item.results.yearBuilt ? `
+            <div style="background: rgba(30, 41, 59, 0.3); padding: 8px; border-radius: 8px;">
+              <div style="font-size: 10px; color: #94a3b8;">Año</div>
+              <div style="color: white; font-size: 14px; font-weight: 500;">${item.results.yearBuilt}</div>
+            </div>
+            ` : ''}
+            ${item.results.sqft ? `
+            <div style="background: rgba(30, 41, 59, 0.3); padding: 8px; border-radius: 8px;">
+              <div style="font-size: 10px; color: #94a3b8;">Área</div>
+              <div style="color: white; font-size: 14px; font-weight: 500;">${item.results.sqft.toLocaleString()}</div>
+            </div>
+            ` : ''}
+            ${item.results.bedrooms ? `
+            <div style="background: rgba(30, 41, 59, 0.3); padding: 8px; border-radius: 8px;">
+              <div style="font-size: 10px; color: #94a3b8;">Cuartos</div>
+              <div style="color: white; font-size: 14px; font-weight: 500;">${item.results.bedrooms}</div>
+            </div>
+            ` : ''}
+            ${item.results.purchasePrice ? `
+            <div style="background: rgba(30, 41, 59, 0.3); padding: 8px; border-radius: 8px;">
+              <div style="font-size: 10px; color: #94a3b8;">Precio</div>
+              <div style="color: white; font-size: 14px; font-weight: 500;">$${(item.results.purchasePrice / 1000).toFixed(0)}k</div>
+            </div>
+            ` : ''}
+          </div>
+          ` : ''}
+        </div>
+      `;
+
+      // Capture the temporary container as an image
+      const canvas = await html2canvas(tempContainer, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#0f172a',
+      });
+
+      // Remove temporary container
+      document.body.removeChild(tempContainer);
+
+      // Create PDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      // Add header
+      pdf.setFillColor(15, 23, 42);
+      pdf.rect(0, 0, pageWidth, 25, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Property Verification Report', pageWidth / 2, 12, { align: 'center' });
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(format(new Date(item.createdAt), 'PPP'), pageWidth / 2, 18, { align: 'center' });
+
+      // Add the report image
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = pageWidth - 20;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 10, 30, imgWidth, imgHeight);
+
+      // Add footer
+      const footerY = pageHeight - 10;
+      pdf.setFontSize(7);
+      pdf.setTextColor(148, 163, 184);
+      pdf.setFont('helvetica', 'italic');
+      pdf.text('Owl Fence AI - Property Verification System', pageWidth / 2, footerY, { align: 'center' });
+
+      // Generate safe filename
+      const addressStr = String(item.address || '');
+      const addressPart = addressStr && addressStr.trim()
+        ? addressStr.replace(/\s+/g, '-').substring(0, 50).toLowerCase()
+        : 'property';
+      const datePart = format(new Date(item.createdAt), 'yyyy-MM-dd');
+      const fileName = `property-report-${addressPart}-${datePart}.pdf`;
+
+      // Download PDF
+      pdf.save(fileName);
+
+      // Wait and then show success
+      await new Promise(resolve => setTimeout(resolve, 500));
+      processingToast.dismiss();
+      toast({
+        title: "✅ Reporte PDF Exportado",
+        description: "El reporte histórico ha sido descargado exitosamente.",
+      });
+    } catch (error) {
+      console.error('Error generating history PDF:', error);
+      processingToast.dismiss();
+      toast({
+        title: "❌ Error al Exportar",
+        description: "Hubo un problema al generar el PDF. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
   // Filter history items based on search term
   const filteredHistoryItems = useMemo(() => {
     if (!historyItems || !Array.isArray(historyItems)) return [];
@@ -468,7 +619,7 @@ export default function PropertyOwnershipVerifier() {
               value="history" 
               className="text-xs sm:text-sm py-3 px-2 sm:px-4 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600/20 data-[state=active]:to-pink-600/20 data-[state=active]:text-purple-300 data-[state=active]:border data-[state=active]:border-purple-400/50"
             >
-              <span className="hidden sm:inline">Data Archives</span>
+              <span className="hidden sm:inline">History</span>
               <span className="sm:hidden flex items-center gap-1">📊 History</span>
             </TabsTrigger>
           </TabsList>
@@ -862,10 +1013,23 @@ export default function PropertyOwnershipVerifier() {
                                 
                                 {/* Action */}
                                 <div className="pt-2 border-t border-slate-700/50">
-                                  <div className="flex items-center justify-between text-xs text-purple-400">
-                                    <span className="hidden sm:inline">Click to load verification</span>
-                                    <span className="sm:hidden">Tap to load</span>
-                                    <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center text-xs text-purple-400">
+                                      <span className="hidden sm:inline">Click to load verification</span>
+                                      <span className="sm:hidden">Tap to load</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        onClick={(e) => handleExportHistoryItem(item, e)}
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 px-2 text-xs text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 border border-cyan-400/30"
+                                      >
+                                        <Download className="h-3 w-3 mr-1" />
+                                        <span className="hidden sm:inline">Export</span>
+                                      </Button>
+                                      <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform flex-shrink-0 text-purple-400" />
+                                    </div>
                                   </div>
                                 </div>
                               </div>
