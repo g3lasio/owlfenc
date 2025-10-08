@@ -1,6 +1,6 @@
 
 import axios from 'axios';
-import { auth, safeGetIdToken } from '@/lib/firebase';
+import { auth, safeGetIdToken, authReadyGate } from '@/lib/firebase';
 
 export interface OwnerHistoryEntry {
   owner: string;
@@ -45,6 +45,9 @@ class PropertyVerifierService {
       console.log('📡 Sending request to secure backend API');
       
       // 🔐 GET FIREBASE AUTHENTICATION TOKEN (OPCIONAL)
+      // Esperar a que Firebase Auth esté completamente inicializado
+      await authReadyGate.waitForAuth();
+      
       let token = null;
       if (auth.currentUser) {
         try {
