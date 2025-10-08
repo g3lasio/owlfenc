@@ -44,13 +44,18 @@ class PropertyVerifierService {
     try {
       console.log('📡 Sending request to secure backend API');
       
-      // 🔐 GET FIREBASE AUTHENTICATION TOKEN
-      if (!auth.currentUser) {
-        throw new Error('Usuario no autenticado. Por favor inicia sesión.');
+      // 🔐 GET FIREBASE AUTHENTICATION TOKEN (OPCIONAL)
+      let token = null;
+      if (auth.currentUser) {
+        try {
+          token = await safeGetIdToken(auth.currentUser);
+          console.log('🔐 Firebase token obtained for property verification');
+        } catch (tokenError) {
+          console.warn('⚠️ Could not get Firebase token, continuing without authentication');
+        }
+      } else {
+        console.log('ℹ️ No authenticated user - continuing without authentication');
       }
-      
-      const token = await safeGetIdToken(auth.currentUser);
-      console.log('🔐 Firebase token obtained for property verification');
       
       // Preparar parámetros con información completa si está disponible
       const params: any = { address: address.trim() };
@@ -68,14 +73,20 @@ class PropertyVerifierService {
         console.log('🏠 Enhanced address components:', { city, state, zip });
       }
       
+      // Construir headers - solo incluir Authorization si hay token
+      const headers: any = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await axios.get('/api/property/details', {
         params,
         timeout: 25000, // 25 seconds timeout
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}` // 🔐 INCLUDE FIREBASE AUTH TOKEN
-        }
+        headers
       });
       
       console.log('✅ Backend response received:', {
