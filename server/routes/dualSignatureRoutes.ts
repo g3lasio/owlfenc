@@ -384,21 +384,7 @@ router.get("/completed/:userId", verifyFirebaseAuth, async (req, res) => {
     // Import database here to avoid circular dependencies
     const { db } = await import("../db");
     const { digitalContracts } = await import("../../shared/schema");
-    const { eq } = await import("drizzle-orm");
-    
-    // PLAN RESTRICTIONS: Get user's plan to enforce contract limits
-    const userPlanResponse = await fetch(`http://localhost:5000/api/user/subscription`, {
-      headers: {
-        'Authorization': `Bearer ${authenticatedUserId}`,
-        'x-firebase-uid': authenticatedUserId
-      }
-    });
-    
-    let userPlan = null;
-    if (userPlanResponse.ok) {
-      const planData = await userPlanResponse.json();
-      userPlan = planData.subscription;
-    }
+    const { eq, desc } = await import("drizzle-orm");
 
     const completedContracts = await db
       .select()
@@ -426,22 +412,12 @@ router.get("/completed/:userId", verifyFirebaseAuth, async (req, res) => {
       );
     });
 
-    // PLAN RESTRICTIONS: Apply contract access limits based on user plan
-    let filteredContracts = fullyCompletedContracts;
+    // ✅ PERMANENT ACCESS: All completed contracts are accessible without plan restrictions
+    // Contractors have unlimited, permanent access to their completed contracts
+    console.log(`✅ [PERMANENT-ACCESS] Providing unlimited access to all ${fullyCompletedContracts.length} completed contracts`);
     
-    if (userPlan?.id === 1) {
-      // Primo Chambeador: Limited access (up to 5 contracts)
-      console.log(`📋 [PLAN-RESTRICTION] Applying Primo Chambeador limits: showing max 5 contracts`);
-      filteredContracts = fullyCompletedContracts.slice(0, 5);
-    } else if (userPlan?.id === 2) {
-      // Mero Patrón: Limited access (up to 50 contracts)
-      console.log(`📋 [PLAN-RESTRICTION] Applying Mero Patrón limits: showing max 50 contracts`);
-      filteredContracts = fullyCompletedContracts.slice(0, 50);
-    }
-    // Master Contractor (id === 3): No restrictions
-    
-    // Transform data for frontend - all fully signed contracts
-    const contractsForFrontend = filteredContracts.map((contract) => ({
+    // Transform data for frontend - all fully signed contracts with permanent access
+    const contractsForFrontend = fullyCompletedContracts.map((contract) => ({
       contractId: contract.contractId,
       status: contract.status,
       contractorName: contract.contractorName,
@@ -453,6 +429,7 @@ router.get("/completed/:userId", verifyFirebaseAuth, async (req, res) => {
       clientSignedAt: contract.clientSignedAt,
       createdAt: contract.createdAt,
       updatedAt: contract.updatedAt,
+      completionDate: contract.completionDate || contract.clientSignedAt || contract.updatedAt, // Use saved completion date
       signedPdfPath: contract.signedPdfPath,
       isCompleted: true,
       isDownloadable: true, // All signed contracts are downloadable (PDF generated on demand)
@@ -463,13 +440,7 @@ router.get("/completed/:userId", verifyFirebaseAuth, async (req, res) => {
       success: true,
       contracts: contractsForFrontend,
       total: contractsForFrontend.length,
-      planInfo: {
-        planId: userPlan?.id || 'free',
-        planName: userPlan?.name || 'Free Trial',
-        totalAvailable: fullyCompletedContracts.length,
-        shownCount: contractsForFrontend.length,
-        isLimited: userPlan?.id === 1 || userPlan?.id === 2
-      }
+      message: `Unlimited permanent access to ${contractsForFrontend.length} completed contracts`
     });
   } catch (error: any) {
     console.error("❌ [API] Error in /completed/:userId:", error);

@@ -743,12 +743,14 @@ export class DualSignatureService {
       }
 
       // Update database with completion status (with or without PDF)
+      const completionDate = new Date();
       await db
         .update(digitalContracts)
         .set({
           status: "completed",
           signedPdfPath: signedPdfPath,
-          updatedAt: new Date(),
+          completionDate: completionDate, // ✅ Save completion date when both parties sign
+          updatedAt: completionDate,
         })
         .where(eq(digitalContracts.contractId, contractId));
 
