@@ -208,10 +208,25 @@ export const getClients = async (userId?: string, filters?: { tag?: string, sour
 };
 
 // Obtener un cliente específico por ID
+// Helper function to wait for auth to be ready
+const waitForAuth = (): Promise<any> => {
+  return new Promise((resolve) => {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      resolve(currentUser);
+    } else {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        unsubscribe();
+        resolve(user);
+      });
+    }
+  });
+};
+
 export const getClientById = async (id: string) => {
   try {
-    // CRITICAL SECURITY: Get current authenticated user
-    const currentUser = auth.currentUser;
+    // CRITICAL SECURITY: Wait for auth to be ready and get current authenticated user
+    const currentUser = await waitForAuth();
     if (!currentUser) {
       console.warn("🔒 SECURITY: No authenticated user - access denied");
       throw new Error("Authentication required");
@@ -261,8 +276,8 @@ export const getClientById = async (id: string) => {
 // Actualizar un cliente existente
 export const updateClient = async (id: string, clientData: Partial<Client>) => {
   try {
-    // CRITICAL SECURITY: Get current authenticated user
-    const currentUser = auth.currentUser;
+    // CRITICAL SECURITY: Wait for auth to be ready and get current authenticated user
+    const currentUser = await waitForAuth();
     if (!currentUser) {
       console.warn("🔒 SECURITY: No authenticated user - access denied");
       throw new Error("Authentication required");
@@ -311,8 +326,8 @@ export const updateClient = async (id: string, clientData: Partial<Client>) => {
 // Eliminar un cliente
 export const deleteClient = async (id: string) => {
   try {
-    // CRITICAL SECURITY: Get current authenticated user
-    const currentUser = auth.currentUser;
+    // CRITICAL SECURITY: Wait for auth to be ready and get current authenticated user
+    const currentUser = await waitForAuth();
     if (!currentUser) {
       console.warn("🔒 SECURITY: No authenticated user - access denied");
       throw new Error("Authentication required");

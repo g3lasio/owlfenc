@@ -193,7 +193,16 @@ interface PermissionProviderProps {
 }
 
 export function PermissionProvider({ children }: PermissionProviderProps) {
-  const { currentUser } = useAuth();
+  // ✅ SAFE AUTH ACCESS: Handle case when AuthContext is not yet available
+  let currentUser = null;
+  try {
+    const auth = useAuth();
+    currentUser = auth.currentUser;
+  } catch (error) {
+    // AuthContext not yet available - this is expected during initialization
+    console.log("🔄 [PERMISSION-CONTEXT] No hay usuario - usando estado por defecto");
+  }
+  
   const [userPlan, setUserPlan] = useState<Plan | null>(null);
   const [userUsage, setUserUsage] = useState<UserUsage | null>(null);
   const [loading, setLoading] = useState(false); // ✅ FIXED: Start with false for better UX

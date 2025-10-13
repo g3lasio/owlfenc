@@ -385,25 +385,11 @@ export const saveProject = async (projectData: any) => {
 
 export const getProjects = async (filters?: { status?: string, fenceType?: string }) => {
   try {
-    // CRITICAL SECURITY: Get current authenticated user
-    const currentUser = auth.currentUser;
+    // CRITICAL SECURITY: Wait for auth to be ready and get current authenticated user
+    const currentUser = await waitForAuth();
     if (!currentUser) {
-      console.warn("🔧 [PROJECTS-DEBUG] auth.currentUser is null, checking state...");
-      
-      // SOLUTION: Wait for auth state to be ready
-      return new Promise((resolve) => {
-        const unsubscribe = onAuthStateChanged(auth, (user: any) => {
-          unsubscribe();
-          if (user) {
-            console.log("🔧 [PROJECTS-DEBUG] Auth state restored, user found:", user.uid);
-            // Recursively call with authenticated user
-            getProjects(filters).then(resolve);
-          } else {
-            console.warn("🔒 SECURITY: No authenticated user - returning empty array");
-            resolve([]);
-          }
-        });
-      });
+      console.warn("🔒 SECURITY: No authenticated user - returning empty array");
+      return [];
     }
 
     // Verifica si estamos en modo de desarrollo
@@ -482,10 +468,25 @@ export const getProjects = async (filters?: { status?: string, fenceType?: strin
   }
 };
 
+// Helper function to wait for auth to be ready
+const waitForAuth = (): Promise<any> => {
+  return new Promise((resolve) => {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      resolve(currentUser);
+    } else {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        unsubscribe();
+        resolve(user);
+      });
+    }
+  });
+};
+
 export const getProjectById = async (id: string) => {
   try {
-    // CRITICAL SECURITY: Get current authenticated user
-    const currentUser = auth.currentUser;
+    // CRITICAL SECURITY: Wait for auth to be ready and get current authenticated user
+    const currentUser = await waitForAuth();
     if (!currentUser) {
       console.warn("🔒 SECURITY: No authenticated user - access denied");
       throw new Error("Authentication required");
@@ -614,8 +615,8 @@ export const updateProjectProgress = async (id: string, progress: string) => {
   try {
     console.log("🔄 [FIREBASE REAL] Actualizando progreso del proyecto con ID:", id, progress);
     
-    // Obtener usuario actual
-    const currentUser = auth.currentUser;
+    // CRITICAL SECURITY: Wait for auth to be ready and get current authenticated user
+    const currentUser = await waitForAuth();
     if (!currentUser) {
       throw new Error("Usuario no autenticado");
     }
