@@ -834,12 +834,13 @@ export class DualSignatureService {
               permits: contractData?.permitResponsibility || "contractor",
             },
           },
-          pdfUrl: signedPdfPath || undefined,
+          // ✅ FIX: Use download endpoint URL instead of filesystem path
+          pdfUrl: signedPdfPath ? `/api/dual-signature/download/${contract.contractId}` : undefined,
         };
 
         await contractHistoryService.saveContract(historyEntry);
         console.log(
-          "✅ [DUAL-SIGNATURE] Contract history updated successfully"
+          "✅ [DUAL-SIGNATURE] Contract history updated with PDF download URL"
         );
       } catch (historyError: any) {
         console.error(
