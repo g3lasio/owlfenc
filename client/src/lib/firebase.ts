@@ -483,25 +483,28 @@ const waitForAuth = (): Promise<any> => {
     
     // Set up auth state listener with timeout
     let resolved = false;
+    let unsubscribe: (() => void) | null = null;
+    
     const timeout = setTimeout(() => {
       if (!resolved) {
-        console.warn("🔐 [WAIT-AUTH] Timeout - no user found after waiting");
+        console.warn("🔐 [WAIT-AUTH] Timeout - no user found after 5 seconds");
         resolved = true;
+        if (unsubscribe) unsubscribe();
         resolve(null);
       }
-    }, 3000); // 3 second timeout
+    }, 5000); // 5 second timeout - longer to accommodate slower session restore
     
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!resolved) {
+    unsubscribe = onAuthStateChanged(auth, (user) => {
+      // Only resolve when we get a non-null user OR timeout occurs
+      if (!resolved && user) {
+        console.log("🔐 [WAIT-AUTH] Auth initialized with user:", user.uid);
         clearTimeout(timeout);
-        unsubscribe();
+        if (unsubscribe) unsubscribe();
         resolved = true;
-        if (user) {
-          console.log("🔐 [WAIT-AUTH] Auth initialized with user:", user.uid);
-        } else {
-          console.log("🔐 [WAIT-AUTH] Auth initialized - no user");
-        }
         resolve(user);
+      } else if (!resolved && !user) {
+        // Log transient null but keep waiting
+        console.log("🔐 [WAIT-AUTH] Transient null user - continuing to wait for session restore...");
       }
     });
   });
