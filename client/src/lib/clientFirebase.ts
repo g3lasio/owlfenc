@@ -208,18 +208,42 @@ export const getClients = async (userId?: string, filters?: { tag?: string, sour
 };
 
 // Obtener un cliente específico por ID
-// Helper function to wait for auth to be ready
+// Helper function to wait for auth to be ready - with timeout
 const waitForAuth = (): Promise<any> => {
   return new Promise((resolve) => {
+    // First check if user is already available
     const currentUser = auth.currentUser;
     if (currentUser) {
+      console.log("🔐 [WAIT-AUTH-CLIENT] User already available:", currentUser.uid);
       resolve(currentUser);
-    } else {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        unsubscribe();
-        resolve(user);
-      });
+      return;
     }
+    
+    console.log("🔐 [WAIT-AUTH-CLIENT] Waiting for auth state to initialize...");
+    
+    // Set up auth state listener with timeout
+    let resolved = false;
+    const timeout = setTimeout(() => {
+      if (!resolved) {
+        console.warn("🔐 [WAIT-AUTH-CLIENT] Timeout - no user found after waiting");
+        resolved = true;
+        resolve(null);
+      }
+    }, 3000); // 3 second timeout
+    
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!resolved) {
+        clearTimeout(timeout);
+        unsubscribe();
+        resolved = true;
+        if (user) {
+          console.log("🔐 [WAIT-AUTH-CLIENT] Auth initialized with user:", user.uid);
+        } else {
+          console.log("🔐 [WAIT-AUTH-CLIENT] Auth initialized - no user");
+        }
+        resolve(user);
+      }
+    });
   });
 };
 

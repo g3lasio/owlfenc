@@ -468,30 +468,55 @@ export const getProjects = async (filters?: { status?: string, fenceType?: strin
   }
 };
 
-// Helper function to wait for auth to be ready
+// Helper function to wait for auth to be ready - with timeout
 const waitForAuth = (): Promise<any> => {
   return new Promise((resolve) => {
+    // First check if user is already available
     const currentUser = auth.currentUser;
     if (currentUser) {
+      console.log("🔐 [WAIT-AUTH] User already available:", currentUser.uid);
       resolve(currentUser);
-    } else {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        unsubscribe();
-        resolve(user);
-      });
+      return;
     }
+    
+    console.log("🔐 [WAIT-AUTH] Waiting for auth state to initialize...");
+    
+    // Set up auth state listener with timeout
+    let resolved = false;
+    const timeout = setTimeout(() => {
+      if (!resolved) {
+        console.warn("🔐 [WAIT-AUTH] Timeout - no user found after waiting");
+        resolved = true;
+        resolve(null);
+      }
+    }, 3000); // 3 second timeout
+    
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!resolved) {
+        clearTimeout(timeout);
+        unsubscribe();
+        resolved = true;
+        if (user) {
+          console.log("🔐 [WAIT-AUTH] Auth initialized with user:", user.uid);
+        } else {
+          console.log("🔐 [WAIT-AUTH] Auth initialized - no user");
+        }
+        resolve(user);
+      }
+    });
   });
 };
 
 export const getProjectById = async (id: string) => {
   try {
-    // CRITICAL SECURITY: Wait for auth to be ready and get current authenticated user
+    // Wait for auth to be ready
     const currentUser = await waitForAuth();
+    
     if (!currentUser) {
       console.warn("🔒 SECURITY: No authenticated user - access denied");
       throw new Error("Authentication required");
     }
-
+    
     if (devMode) {
       console.log("🔒 SECURITY: Buscando proyecto con ID para usuario:", id, currentUser.uid);
       
