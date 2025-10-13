@@ -698,9 +698,14 @@ router.get("/download-html/:contractId", async (req, res) => {
       
       const { db: firebaseDb } = await import("../lib/firebase-admin");
       
-      const contractDoc = await firebaseDb.collection("contractHistory").doc(contractId).get();
+      // FIXED: Query by contractId field, not document ID
+      const contractSnapshot = await firebaseDb
+        .collection("contractHistory")
+        .where("contractId", "==", contractId)
+        .limit(1)
+        .get();
       
-      if (!contractDoc.exists()) {
+      if (contractSnapshot.empty) {
         console.error("❌ [API] Contract not found in PostgreSQL or Firebase:", contractId);
         return res.status(404).json({
           success: false,
@@ -708,6 +713,7 @@ router.get("/download-html/:contractId", async (req, res) => {
         });
       }
       
+      const contractDoc = contractSnapshot.docs[0];
       const firebaseContract = contractDoc.data();
       console.log("✅ [API] Contract found in Firebase:", contractId);
       
