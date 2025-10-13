@@ -481,6 +481,183 @@ router.get("/drafts/:userId", verifyFirebaseAuth, async (req, res) => {
 });
 
 /**
+ * GET /api/dual-signature/all/:userId
+ * Obtener TODOS los contratos del usuario (draft, progress, completed)
+ * SECURED: Requires authentication and ownership verification
+ * HYBRID: Combina contratos de PostgreSQL (dual-signature) y Firebase (contractHistory)
+ */
+router.get("/all/:userId", verifyFirebaseAuth, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const authenticatedUserId = req.firebaseUser?.uid;
+
+    // SECURITY: Verify that the authenticated user matches the requested userId
+    if (authenticatedUserId !== userId) {
+      console.warn(`🚨 [SECURITY] User ${authenticatedUserId} attempted to access all contracts for user ${userId}`);
+      return res.status(403).json({
+        success: false,
+        message: "Access denied: You can only view your own contracts"
+      });
+    }
+
+    console.log("📋 [API] Getting ALL contracts (unified) for user:", userId);
+
+    // Import database and services
+    const { db } = await import("../db");
+    const { digitalContracts } = await import("../../shared/schema");
+    const { eq } = await import("drizzle-orm");
+    const { firebaseContractService } = await import("../services/firebaseContractService");
+    const { db: firebaseDb } = await import("../lib/firebase-admin");
+
+    // 1. Get contracts from PostgreSQL (dual-signature system)
+    const postgresContracts = await db
+      .select()
+      .from(digitalContracts)
+      .where(eq(digitalContracts.userId, userId))
+      .orderBy(digitalContracts.createdAt);
+
+    console.log(`✅ [POSTGRES] Found ${postgresContracts.length} contracts`);
+
+    // 2. Get contracts from Firebase contractHistory collection (using Admin SDK)
+    let firebaseHistoryContracts: any[] = [];
+    try {
+      const historySnapshot = await firebaseDb
+        .collection('contractHistory')
+        .where('userId', '==', userId)
+        .get();
+      
+      firebaseHistoryContracts = historySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          contractId: data.contractId || doc.id,
+          clientName: data.clientName || '',
+          projectType: data.projectType || '',
+          status: data.status || 'draft',
+          contractData: data.contractData || { financials: { total: 0 }, project: {} },
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          pdfUrl: data.pdfUrl || null
+        };
+      });
+      console.log(`✅ [FIREBASE-HISTORY] Found ${firebaseHistoryContracts.length} contracts`);
+    } catch (error) {
+      console.warn("⚠️ [FIREBASE-HISTORY] Error getting contracts:", error);
+    }
+
+    // 3. Get contracts from new Firebase system (firebaseContractService)
+    let firebaseServiceContracts: any[] = [];
+    try {
+      firebaseServiceContracts = await firebaseContractService.getUserContracts(userId);
+      console.log(`✅ [FIREBASE-SERVICE] Found ${firebaseServiceContracts.length} contracts`);
+    } catch (error) {
+      console.warn("⚠️ [FIREBASE-SERVICE] Error getting contracts:", error);
+    }
+
+    // Transform PostgreSQL contracts
+    const postgresContractsFormatted = postgresContracts.map((contract) => ({
+      id: contract.id,
+      contractId: contract.contractId,
+      title: `${contract.contractorCompany || 'Contrato'} - ${contract.clientName}`,
+      clientName: contract.clientName,
+      status: contract.contractorSigned && contract.clientSigned 
+        ? 'completed' 
+        : (contract.contractorSigned || contract.clientSigned) 
+          ? 'signed' 
+          : 'sent',
+      contractType: contract.projectDescription || 'Contrato General',
+      totalAmount: parseFloat(contract.totalAmount),
+      createdAt: contract.createdAt?.toISOString() || new Date().toISOString(),
+      updatedAt: contract.updatedAt?.toISOString() || new Date().toISOString(),
+      source: 'postgres',
+      isDownloadable: !!contract.signedPdfPath,
+      pdfDownloadUrl: contract.signedPdfPath ? `/api/dual-signature/download/${contract.contractId}` : null,
+      contractorSigned: contract.contractorSigned,
+      clientSigned: contract.clientSigned,
+    }));
+
+    // Transform Firebase history contracts
+    const firebaseHistoryFormatted = firebaseHistoryContracts.map((contract) => ({
+      id: contract.id,
+      contractId: contract.contractId,
+      title: `${contract.projectType} - ${contract.clientName}`,
+      clientName: contract.clientName,
+      status: contract.status, // 'draft', 'completed', 'processing', 'error'
+      contractType: contract.projectType,
+      totalAmount: contract.contractData.financials.total,
+      createdAt: contract.createdAt.toISOString(),
+      updatedAt: contract.updatedAt.toISOString(),
+      source: 'firebase-history',
+      isDownloadable: !!contract.pdfUrl,
+      pdfDownloadUrl: contract.pdfUrl || null,
+      contractData: contract.contractData,
+    }));
+
+    // Transform Firebase service contracts
+    const firebaseServiceFormatted = firebaseServiceContracts.map((contract) => ({
+      id: contract.contractId,
+      contractId: contract.contractId,
+      title: `${contract.contractorCompany || 'Contrato'} - ${contract.clientName}`,
+      clientName: contract.clientName,
+      status: contract.status, // 'pending', 'contractor_signed', 'client_signed', 'completed'
+      contractType: contract.projectDescription || 'Contrato General',
+      totalAmount: parseFloat(contract.totalAmount || '0'),
+      createdAt: contract.createdAt?.toISOString() || new Date().toISOString(),
+      updatedAt: contract.updatedAt?.toISOString() || new Date().toISOString(),
+      source: 'firebase-service',
+      isDownloadable: !!contract.signedPdfBase64,
+      contractorSigned: contract.contractorSigned,
+      clientSigned: contract.clientSigned,
+    }));
+
+    // Combine all contracts and remove duplicates (by contractId)
+    const allContracts = [...postgresContractsFormatted, ...firebaseHistoryFormatted, ...firebaseServiceFormatted];
+    
+    // Deduplicate by contractId (prefer newer source: firebase-service > postgres > firebase-history)
+    const uniqueContracts = new Map();
+    const sourcePriority: Record<string, number> = { 'firebase-service': 3, 'postgres': 2, 'firebase-history': 1 };
+    
+    allContracts.forEach(contract => {
+      const existing = uniqueContracts.get(contract.contractId);
+      if (!existing || (sourcePriority[contract.source] || 0) > (sourcePriority[existing.source] || 0)) {
+        uniqueContracts.set(contract.contractId, contract);
+      }
+    });
+
+    const finalContracts = Array.from(uniqueContracts.values())
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    console.log(`✅ [UNIFIED] Returning ${finalContracts.length} total contracts (deduplicated)`);
+    console.log(`   - PostgreSQL: ${postgresContractsFormatted.length}`);
+    console.log(`   - Firebase History: ${firebaseHistoryFormatted.length}`);
+    console.log(`   - Firebase Service: ${firebaseServiceFormatted.length}`);
+
+    res.json({
+      success: true,
+      contracts: finalContracts,
+      stats: {
+        total: finalContracts.length,
+        draft: finalContracts.filter(c => c.status === 'draft').length,
+        progress: finalContracts.filter(c => c.status === 'sent' || c.status === 'signed' || c.status === 'contractor_signed' || c.status === 'client_signed').length,
+        completed: finalContracts.filter(c => c.status === 'completed').length,
+        sources: {
+          postgres: postgresContractsFormatted.length,
+          firebaseHistory: firebaseHistoryFormatted.length,
+          firebaseService: firebaseServiceFormatted.length
+        }
+      }
+    });
+  } catch (error: any) {
+    console.error("❌ [API] Error getting all contracts:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+});
+
+/**
  * GET /api/dual-signature/download-html/:contractId
  * Download signed contract as HTML
  * HYBRID: Busca en PostgreSQL y Firebase para soportar ambos sistemas

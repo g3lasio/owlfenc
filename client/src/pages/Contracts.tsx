@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { auth } from "@/lib/firebase";
+import { User as FirebaseUser, onAuthStateChanged } from "firebase/auth";
 import { 
   Card, 
   CardContent, 
@@ -48,26 +50,48 @@ const Contracts = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [contractHtml, setContractHtml] = useState<string>("");
+  const [user, setUser] = useState<FirebaseUser | null>(null);
 
-  // Cargar la lista de contratos
+  // Listen to authentication state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Cargar la lista de contratos del usuario autenticado
   const contractsQuery = useQuery({
-    queryKey: ['/api/contracts'],
+    queryKey: ['/api/dual-signature/all', user?.uid],
+    enabled: !!user?.uid, // Solo ejecutar si hay usuario autenticado
     queryFn: async () => {
+      if (!user?.uid) {
+        return { success: false, contracts: [], stats: { total: 0, draft: 0, progress: 0, completed: 0 } };
+      }
+
       try {
-        const response = await fetch('/api/contracts');
+        const token = await user.getIdToken();
+        const response = await fetch(`/api/dual-signature/all/${user.uid}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
         if (!response.ok) {
           throw new Error('Error al cargar contratos');
         }
         
-        // Si estamos en development, devolver datos simulados si no hay respuesta real
-        if (process.env.NODE_ENV === 'development' && !response.ok) {
-          return sampleContracts;
-        }
-        
-        return await response.json();
+        const data = await response.json();
+        console.log('📋 [CONTRACTS] Loaded contracts:', data);
+        return data.contracts || [];
       } catch (error) {
         console.error("Error fetching contracts:", error);
-        return process.env.NODE_ENV === 'development' ? sampleContracts : [];
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los contratos",
+          variant: "destructive"
+        });
+        return [];
       }
     }
   });
@@ -131,7 +155,7 @@ const Contracts = () => {
     onSuccess: (data) => {
       // Actualizar la caché de contratos
       queryClient.invalidateQueries({
-        queryKey: ['/api/contracts'],
+        queryKey: ['/api/dual-signature/all', user?.uid],
       });
       
       // Mostrar mensaje de éxito
@@ -344,9 +368,10 @@ const Contracts = () => {
                       <Badge 
                         variant={
                           contract.status === 'signed' ? 'default' :
-                          contract.status === 'completed' ? 'success' :
+                          contract.status === 'completed' ? 'default' :
                           contract.status === 'sent' ? 'outline' : 'secondary'
                         }
+                        className={contract.status === 'completed' ? 'bg-green-500' : ''}
                       >
                         {
                           contract.status === 'draft' ? 'Borrador' :
