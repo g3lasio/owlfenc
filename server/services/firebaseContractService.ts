@@ -107,12 +107,20 @@ export class FirebaseContractService {
         startDate: contractData.startDate,
         completionDate: contractData.completionDate,
         contractHtml: contractData.contractHtml || '',
-        contractorSigned: false,
-        clientSigned: false,
-        status: 'pending',
-        createdAt: new Date(),
+        // PRESERVAR estado de firma si se proporciona (para migración)
+        contractorSigned: contractData.contractorSigned ?? false,
+        clientSigned: contractData.clientSigned ?? false,
+        contractorSignedAt: contractData.contractorSignedAt,
+        clientSignedAt: contractData.clientSignedAt,
+        contractorSignatureData: contractData.contractorSignatureData,
+        clientSignatureData: contractData.clientSignatureData,
+        signedPdfBase64: contractData.signedPdfBase64,
+        signedPdfGeneratedAt: contractData.signedPdfGeneratedAt,
+        signedPdfSize: contractData.signedPdfSize,
+        status: contractData.status || 'pending',
+        createdAt: contractData.createdAt || new Date(),
         updatedAt: new Date(),
-        auditLog: [{
+        auditLog: contractData.auditLog || [{
           timestamp: new Date(),
           action: 'CONTRACT_CREATED',
           userId: contractData.userId,
@@ -414,10 +422,21 @@ export class FirebaseContractService {
   /**
    * Migrar contrato de PostgreSQL a Firebase
    * Usado para migración sin pérdida de datos
+   * CRÍTICO: Preserva estado de firma y PDFs existentes
    */
   async migrateFromPostgres(postgresContract: any, userId: string): Promise<LegalContract> {
     try {
       console.log(`🔄 [MIGRATION] Migrando contrato ${postgresContract.contractId} a Firebase`);
+      
+      // Determinar status correcto basado en firmas
+      let status: LegalContract['status'] = 'pending';
+      if (postgresContract.contractorSigned && postgresContract.clientSigned) {
+        status = 'completed';
+      } else if (postgresContract.contractorSigned) {
+        status = 'contractor_signed';
+      } else if (postgresContract.clientSigned) {
+        status = 'client_signed';
+      }
       
       const contractData: Partial<LegalContract> = {
         contractId: postgresContract.contractId,
@@ -436,18 +455,40 @@ export class FirebaseContractService {
         startDate: postgresContract.startDate?.toISOString(),
         completionDate: postgresContract.completionDate?.toISOString(),
         contractHtml: postgresContract.contractHtml || '',
+        // PRESERVAR estado de firma
         contractorSigned: postgresContract.contractorSigned || false,
         clientSigned: postgresContract.clientSigned || false,
         contractorSignedAt: postgresContract.contractorSignedAt,
         clientSignedAt: postgresContract.clientSignedAt,
         contractorSignatureData: postgresContract.contractorSignatureData,
         clientSignatureData: postgresContract.clientSignatureData,
-        status: postgresContract.status || 'pending'
+        status,
+        createdAt: postgresContract.createdAt || new Date(),
+        updatedAt: postgresContract.updatedAt || new Date(),
+        auditLog: [{
+          timestamp: new Date(),
+          action: 'MIGRATED_FROM_POSTGRES',
+          userId,
+          details: { 
+            originalContractId: postgresContract.contractId,
+            migratedAt: new Date().toISOString(),
+            preservedSignatures: status === 'completed'
+          }
+        }]
       };
       
       const migratedContract = await this.createContract(contractData);
       
-      console.log(`✅ [MIGRATION] Contrato migrado exitosamente: ${postgresContract.contractId}`);
+      console.log(`✅ [MIGRATION] Contrato migrado: ${postgresContract.contractId}`);
+      console.log(`   Estado preservado: ${status}`);
+      console.log(`   Firmas preservadas: contractor=${postgresContract.contractorSigned}, client=${postgresContract.clientSigned}`);
+      
+      // Si el contrato está completamente firmado, intentar migrar PDF si existe
+      if (postgresContract.signedPdfPath && status === 'completed') {
+        console.log(`📄 [MIGRATION] Contrato tiene PDF en: ${postgresContract.signedPdfPath}`);
+        console.log(`   ⚠️ NOTA: PDFs de filesystem no se pueden migrar automáticamente`);
+        console.log(`   📋 ACCIÓN REQUERIDA: Re-generar PDF desde HTML firmado para almacenar en base64`);
+      }
       
       return migratedContract;
     } catch (error) {

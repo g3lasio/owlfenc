@@ -347,6 +347,9 @@ import contractManagementRoutes from './routes/contract-management';
 // 🖊️ DUAL SIGNATURE SYSTEM - Contract Signing Workflow
 import dualSignatureRoutes from './routes/dualSignatureRoutes';
 
+// 🔄 CONTRACT MIGRATION SYSTEM - PostgreSQL to Firebase Migration
+import contractMigrationRoutes from './routes/contractMigration';
+
 // 🔐 PASSWORD RESET SYSTEM - Secure Email-based Password Recovery
 import { passwordResetRoutes } from './routes/password-reset-routes';
 
@@ -420,6 +423,10 @@ console.log('🤖 [ANTHROPIC] Sistema inteligente de contratos registrado en /ap
 // 🖊️ Registrar sistema de firma dual
 app.use('/api/dual-signature', dualSignatureRoutes);
 console.log('🖊️ [DUAL-SIGNATURE] Sistema de firma dual registrado en /api/dual-signature');
+
+// 🔄 Registrar sistema de migración de contratos
+app.use('/api/contract-migration', contractMigrationRoutes);
+console.log('🔄 [CONTRACT-MIGRATION] Sistema de migración PostgreSQL → Firebase registrado en /api/contract-migration');
 
 // 🔐 Registrar sistema de restablecimiento de contraseña
 app.use('/api/password-reset', passwordResetRoutes);
