@@ -519,14 +519,11 @@ router.get("/download-html/:contractId", async (req, res) => {
       // Try Firebase (legacy contractHistory system)
       console.log("🔍 [API] Contract not in PostgreSQL, checking Firebase:", contractId);
       
-      const admin = await import("firebase-admin");
-      const { getFirebaseAdmin } = await import("../lib/firebase-admin");
-      const firebaseAdmin = getFirebaseAdmin();
-      const db = firebaseAdmin.firestore();
+      const { db: firebaseDb } = await import("../lib/firebase-admin");
       
-      const contractDoc = await db.collection("contractHistory").doc(contractId).get();
+      const contractDoc = await firebaseDb.collection("contractHistory").doc(contractId).get();
       
-      if (!contractDoc.exists) {
+      if (!contractDoc.exists()) {
         console.error("❌ [API] Contract not found in PostgreSQL or Firebase:", contractId);
         return res.status(404).json({
           success: false,
