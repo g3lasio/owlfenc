@@ -483,6 +483,7 @@ router.get("/drafts/:userId", verifyFirebaseAuth, async (req, res) => {
 /**
  * GET /api/dual-signature/download-html/:contractId
  * Download signed contract as HTML
+ * HYBRID: Busca en PostgreSQL y Firebase para soportar ambos sistemas
  */
 router.get("/download-html/:contractId", async (req, res) => {
   try {
@@ -491,6 +492,7 @@ router.get("/download-html/:contractId", async (req, res) => {
 
     console.log("📄 [API] HTML download request for contract:", contractId);
 
+    // Try PostgreSQL first (new dual-signature system)
     const { db } = await import("../db");
     const { digitalContracts } = await import("../../shared/schema");
     const { eq } = await import("drizzle-orm");
@@ -501,18 +503,55 @@ router.get("/download-html/:contractId", async (req, res) => {
       .where(eq(digitalContracts.contractId, contractId))
       .limit(1);
 
-    if (!contract) {
-      return res.status(404).json({
-        success: false,
-        message: "Contract not found",
-      });
-    }
+    if (contract) {
+      // Contract found in PostgreSQL
+      console.log("✅ [API] Contract found in PostgreSQL:", contractId);
 
-    if (requestingUserId && contract.userId !== requestingUserId) {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied",
-      });
+      if (requestingUserId && contract.userId !== requestingUserId) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied",
+        });
+      }
+
+      // Continue with PostgreSQL contract (existing code below)
+    } else {
+      // Try Firebase (legacy contractHistory system)
+      console.log("🔍 [API] Contract not in PostgreSQL, checking Firebase:", contractId);
+      
+      const admin = await import("firebase-admin");
+      const { getFirebaseAdmin } = await import("../lib/firebase-admin");
+      const firebaseAdmin = getFirebaseAdmin();
+      const db = firebaseAdmin.firestore();
+      
+      const contractDoc = await db.collection("contractHistory").doc(contractId).get();
+      
+      if (!contractDoc.exists) {
+        console.error("❌ [API] Contract not found in PostgreSQL or Firebase:", contractId);
+        return res.status(404).json({
+          success: false,
+          message: "Contract not found in any system",
+        });
+      }
+      
+      const firebaseContract = contractDoc.data();
+      console.log("✅ [API] Contract found in Firebase:", contractId);
+      
+      // Check ownership for Firebase contracts
+      if (requestingUserId && firebaseContract?.userId !== requestingUserId) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied",
+        });
+      }
+      
+      // Return HTML from Firebase contract
+      const htmlContent = firebaseContract?.contractHTML || 
+        firebaseContract?.signedHtml ||
+        "<p>Contract content not available</p>";
+      
+      res.setHeader("Content-Type", "text/html");
+      return res.send(htmlContent);
     }
 
     let htmlContent =
