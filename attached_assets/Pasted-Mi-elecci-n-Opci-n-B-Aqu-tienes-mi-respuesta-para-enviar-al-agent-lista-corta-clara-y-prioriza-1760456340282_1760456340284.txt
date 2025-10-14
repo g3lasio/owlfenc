@@ -1,0 +1,73 @@
+Mi elección: Opción B.
+
+Aquí tienes mi respuesta para enviar al agent (lista corta, clara y priorizada):
+
+✅ Decisión
+
+Sigue con un MVP crítico (Opción B). Quiero lo mínimo indispensable para que el flujo completo de firma → “Completed” funcione en producción con sesión estable.
+
+🎯 Alcance del MVP (obligatorio)
+
+processSignature transaccional e idempotente
+
+Guarda firma, verifica ambas, genera PDF sellado (folio+hash+fecha+IP), cambia a COMPLETED, y escribe en contract_audit_log.
+
+Tokens de firma en rutas públicas
+
+/sign/:contractId/:party?token=<opaque> con sign_tokens (exp, 1 uso, scope, bound_to opcional).
+
+Rechazo correcto: token usado/expirado → 401.
+
+Auth robusta para contratista
+
+AuthGuard en rutas privadas (/legal-defense, /contracts/*) → redirige a /login?continueUrl=….
+
+Remember Me + auto-refresh del Firebase ID token.
+
+Si es viable ahora: Session Cookie 14d cuando “Remember me” esté activo (en dominio propio).
+
+UX mínima de firma pública
+
+Tras firmar → mensaje “Firmado” + botón “Ver en Dashboard (requiere login)” → /login?continueUrl=/contracts/completed?focus=<contractId>.
+
+Anti-IDOR y CORS
+
+Todas las lecturas privadas filtran por ownerId === uid.
+
+CORS/allowed domains incluyen https://app.owlfenc.com.
+
+📦 Entregables del MVP
+
+Endpoints actualizados (firma pública y lectura privada).
+
+PDF final sellado y almacenado.
+
+Dashboard mostrando Completed con View/Download/Share funcionando.
+
+Logs en contract_audit_log por cada evento clave.
+
+Breve README_MVP.md con cómo probar y criterios de aceptación.
+
+✅ Criterios de aceptación (QA)
+
+Secuencia cliente→contratista o contratista→cliente ⇒ contrato pasa a COMPLETED automáticamente; pdfFinal presente.
+
+Token reutilizado o expirado ⇒ 401.
+
+GET /contracts/completed sin Bearer ⇒ 401.
+
+Acceso a contrato de otro usuario ⇒ 403.
+
+PDF final contiene folio, hash, fecha e IP; audit_log correcto.
+
+Con “Remember me”, el usuario permanece logeado navegando History→Completed sin re-login repetido.
+
+🗂️ Lo que puede quedar para la siguiente iteración
+
+Rate-limiting público.
+
+Tokens “read-only” post-firma para vista del cliente.
+
+Mejoras de UI (resaltado por focus, toasts, etc.).
+
+Documentación ampliada y pruebas automatizadas.

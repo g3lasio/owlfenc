@@ -1,10 +1,13 @@
 /**
  * Dual Signature API Routes
  * Endpoints para el Sistema de Firma Dual Automática
+ * MVP: Secure tokens, transactional processing, legal seals
  */
 
 import { Router } from "express";
 import { dualSignatureService } from "../services/dualSignatureService";
+import { transactionalContractService } from "../services/transactionalContractService";
+import { signTokenService } from "../services/signTokenService";
 import { verifyFirebaseAuth } from "../middleware/firebase-auth";
 import { requireAuth } from "../middleware/unified-session-auth";
 import { z } from "zod";
@@ -144,52 +147,122 @@ router.get("/contract/:contractId/:party", async (req, res) => {
 });
 
 /**
+ * POST /api/dual-signature/generate-token
+ * Generate secure one-time token for signing
+ * MVP: Requires authentication
+ */
+router.post("/generate-token", requireAuth, async (req, res) => {
+  try {
+    const { contractId, party, scope, expirationHours } = req.body;
+    
+    if (!contractId || !party || !scope) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: contractId, party, scope"
+      });
+    }
+
+    const token = await signTokenService.generateToken({
+      contractId,
+      party,
+      scope,
+      expirationHours: expirationHours || 72,
+    });
+
+    res.json({
+      success: true,
+      token,
+      signUrl: `/sign/${contractId}/${party}?token=${token}`,
+      expiresIn: `${expirationHours || 72} hours`,
+    });
+  } catch (error: any) {
+    console.error("❌ [API] Error generating token:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+/**
  * POST /api/dual-signature/sign
- * Procesar firma enviada
- * INCLUYE VERIFICACIÓN DE SEGURIDAD OPCIONAL
+ * Process signature with token validation
+ * MVP: Validates token before processing
  */
 router.post("/sign", async (req, res) => {
   try {
-    console.log("✍️ [API] Processing signature submission...");
+    console.log("✍️ [MVP-API] Processing signature with REQUIRED token validation...");
     
-    // 🚨 CRITICAL DEBUG: Log exact request body received
-    console.log("🚨 [CRITICAL-DEBUG] RAW req.body:", JSON.stringify(req.body));
-    console.log("🚨 [CRITICAL-DEBUG] RAW party from body:", req.body.party);
-    console.log("🚨 [CRITICAL-DEBUG] RAW contractId from body:", req.body.contractId);
+    const { signatureData, signatureType, token } = req.body;
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] as string || 'unknown';
+    const userAgent = req.headers['user-agent'];
 
-    const validatedData = signatureSubmissionSchema.parse(req.body);
-    console.log("🚨 [CRITICAL-DEBUG] VALIDATED party:", validatedData.party);
-    console.log("🚨 [CRITICAL-DEBUG] VALIDATED contractId:", validatedData.contractId);
-    
-    const requestingUserId = req.headers["x-user-id"] as string; // Para verificación de seguridad opcional
+    // 1. SECURITY: Token is REQUIRED for public signing
+    if (!token) {
+      console.warn(`🚨 [MVP-API] Missing required token`);
+      return res.status(401).json({
+        success: false,
+        message: "Token is required for signing",
+        code: "TOKEN_REQUIRED",
+      });
+    }
 
-    console.log(
-      `🔐 [API] Requesting user ID:`,
-      requestingUserId || "No user ID provided",
+    // 2. SECURITY: Validate token and get trusted contractId and party from token
+    // This prevents IDOR attacks where token from contract A is used for contract B
+    const validation = await signTokenService.validateToken(
+      token,
+      req.body.party || 'client', // Party hint for initial validation
+      'sign',
+      ipAddress
     );
 
-    const result = await dualSignatureService.processSignature(
-      validatedData,
-      requestingUserId,
-    );
+    if (!validation.isValid || !validation.token) {
+      console.warn(`🚨 [MVP-API] Token validation failed: ${validation.errorCode}`);
+      return res.status(401).json({
+        success: false,
+        message: validation.error,
+        code: validation.errorCode,
+      });
+    }
 
+    // 3. SECURITY: Use contractId and party from TOKEN, not from request body
+    const trustedContractId = validation.token.contractId;
+    const trustedParty = validation.token.party;
+
+    console.log(`✅ [MVP-API] Token validated: ${trustedContractId} (${trustedParty})`);
+
+    // 4. Process signature using transactional service with trusted data
+    const result = await transactionalContractService.processSignature({
+      contractId: trustedContractId,
+      party: trustedParty as 'contractor' | 'client',
+      signatureData,
+      signatureType,
+      ipAddress,
+      userAgent,
+    });
+
+    // 5. SECURITY: Only mark token as used AFTER successful processing
     if (result.success) {
-      console.log("✅ [API] Signature processed successfully");
+      await signTokenService.markTokenAsUsed(token, ipAddress);
+      
+      console.log("✅ [MVP-API] Signature processed and token consumed");
       res.json({
         success: true,
         message: result.message,
         status: result.status,
         bothSigned: result.bothSigned,
+        isCompleted: result.isCompleted,
       });
     } else {
-      console.error("❌ [API] Failed to process signature:", result.message);
+      // Don't consume token on failure - allow retry
       res.status(400).json({
         success: false,
         message: result.message,
       });
     }
   } catch (error: any) {
-    console.error("❌ [API] Error in /sign:", error);
+    console.error("❌ [MVP-API] Error in /sign:", error);
+    // Don't consume token on error - allow retry
     res.status(500).json({
       success: false,
       message: "Internal server error",
