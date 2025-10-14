@@ -370,48 +370,28 @@ export default function SimpleContractGenerator() {
     try {
       console.log("📋 Loading completed contracts for user:", currentUser?.uid || 'profile_user');
 
-      // ✅ ROBUST: Get Firebase authentication token with fallback
-      let authToken: string | null = null;
-      let canLoadProtectedEndpoints = false;
-      try {
-        authToken = await currentUser.getIdToken();
-        canLoadProtectedEndpoints = true;
-        console.log("✅ Firebase token obtained successfully");
-      } catch (tokenError) {
-        console.warn("⚠️ Could not obtain Firebase token - skipping protected endpoints to prevent data loss:", tokenError);
-        // Do NOT call protected endpoints without token - this would return empty data and cause data loss
-        canLoadProtectedEndpoints = false;
-      }
-
-      // Prepare promises array - only include protected endpoints if we have token
+      // ✅ ROBUST: Use new unified endpoint that doesn't require Firebase token
+      // The backend endpoint uses x-user-id header instead of Firebase token
       const dataPromises: Promise<any>[] = [
         // Source 1: Contract History (contracts completed via Simple Generator)
         // This uses Firebase directly, doesn't need API token
         contractHistoryService.getContractHistory(currentUser.uid),
-      ];
-
-      // Source 2: Dual Signature System (only if we have valid auth token)
-      if (canLoadProtectedEndpoints && authToken) {
-        const authHeaders = {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-          'x-firebase-uid': currentUser.uid
-        };
         
-        dataPromises.push(
-          fetch(`/api/dual-signature/completed/${currentUser.uid}`, {
-            method: 'GET',
-            headers: authHeaders
-          }).then((res) => {
-            if (!res.ok) {
-              throw new Error(`API returned ${res.status}: Cannot load dual signature contracts`);
-            }
-            return res.json();
-          })
-        );
-      } else {
-        console.warn("⚠️ Skipping dual signature endpoint - no auth token available");
-      }
+        // Source 2: Unified Dual Signature System (robust, no token required)
+        // Uses x-user-id header which always works
+        fetch(`/api/dual-signature/completed/${currentUser.uid}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': currentUser.uid
+          }
+        }).then((res) => {
+          if (!res.ok) {
+            throw new Error(`API returned ${res.status}: Cannot load dual signature contracts`);
+          }
+          return res.json();
+        })
+      ];
 
       // Load from available sources and merge
       const responses = await Promise.allSettled(dataPromises);
@@ -1120,9 +1100,14 @@ export default function SimpleContractGenerator() {
           variant: "default",
         });
 
-        // CRITICAL FIX: Get the signed HTML content first (same as viewContractHtml)
+        // CRITICAL FIX: Get the signed HTML content first with authentication headers
         const htmlResponse = await fetch(
           `/api/dual-signature/download-html/${contractId}`,
+          {
+            headers: {
+              "x-user-id": currentUser.uid,
+            },
+          },
         );
 
         if (!htmlResponse.ok) {

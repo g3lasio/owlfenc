@@ -481,6 +481,139 @@ router.get("/drafts/:userId", verifyFirebaseAuth, async (req, res) => {
 });
 
 /**
+ * GET /api/dual-signature/completed/:userId
+ * Obtener SOLO contratos completados/firmados del usuario
+ * ROBUST: Funciona con o sin token Firebase - usa x-user-id header como fallback
+ * HYBRID: Combina contratos de PostgreSQL (dual-signature) y Firebase (contractHistory)
+ */
+router.get("/completed/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const requestingUserId = req.headers["x-user-id"] as string;
+
+    // SECURITY: x-user-id header is REQUIRED
+    if (!requestingUserId) {
+      console.warn(`🚨 [SECURITY] Missing x-user-id header for completed contracts request`);
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required: x-user-id header missing"
+      });
+    }
+
+    // SECURITY: Verify ownership - requesting user must match the userId
+    if (requestingUserId !== userId) {
+      console.warn(`🚨 [SECURITY] User ${requestingUserId} attempted to access completed contracts for user ${userId}`);
+      return res.status(403).json({
+        success: false,
+        message: "Access denied: You can only view your own contracts"
+      });
+    }
+
+    console.log("📋 [API] Getting COMPLETED contracts (unified) for user:", userId);
+
+    // Import database and services
+    const { db } = await import("../db");
+    const { digitalContracts } = await import("../../shared/schema");
+    const { eq, and } = await import("drizzle-orm");
+    const { db: firebaseDb } = await import("../lib/firebase-admin");
+
+    // 1. Get COMPLETED contracts from PostgreSQL (both parties signed)
+    const postgresContracts = await db
+      .select()
+      .from(digitalContracts)
+      .where(
+        and(
+          eq(digitalContracts.userId, userId),
+          eq(digitalContracts.contractorSigned, true),
+          eq(digitalContracts.clientSigned, true)
+        )
+      )
+      .orderBy(digitalContracts.createdAt);
+
+    console.log(`✅ [POSTGRES-COMPLETED] Found ${postgresContracts.length} completed contracts`);
+
+    // 2. Get COMPLETED contracts from Firebase contractHistory
+    let firebaseHistoryContracts: any[] = [];
+    try {
+      const historySnapshot = await firebaseDb
+        .collection('contractHistory')
+        .where('userId', '==', userId)
+        .where('status', 'in', ['completed', 'signed'])
+        .get();
+      
+      firebaseHistoryContracts = historySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          contractId: data.contractId || doc.id,
+          clientName: data.clientName || '',
+          totalAmount: data.totalAmount || data.contractData?.financials?.total || 0,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          isDownloadable: true,
+          hasPdf: true,
+          source: 'firebase-history'
+        };
+      });
+      console.log(`✅ [FIREBASE-HISTORY-COMPLETED] Found ${firebaseHistoryContracts.length} completed contracts`);
+    } catch (error) {
+      console.warn("⚠️ [FIREBASE-HISTORY] Error getting completed contracts:", error);
+    }
+
+    // Transform PostgreSQL contracts
+    const postgresCompletedFormatted = postgresContracts.map((contract) => ({
+      contractId: contract.contractId,
+      clientName: contract.clientName,
+      totalAmount: parseFloat(contract.totalAmount),
+      isCompleted: true,
+      isDownloadable: true,
+      contractorSigned: true,
+      clientSigned: true,
+      createdAt: contract.createdAt?.toISOString() || new Date().toISOString(),
+      hasPdf: !!contract.signedPdfPath,
+      pdfUrl: contract.signedPdfPath || null,
+      source: 'dual-signature'
+    }));
+
+    // Transform Firebase history contracts
+    const firebaseCompletedFormatted = firebaseHistoryContracts.map((contract) => ({
+      contractId: contract.contractId,
+      clientName: contract.clientName,
+      totalAmount: contract.totalAmount,
+      isCompleted: true,
+      isDownloadable: true,
+      createdAt: contract.createdAt.toISOString(),
+      hasPdf: true,
+      source: 'history'
+    }));
+
+    // Combine and deduplicate
+    const allCompleted = [...postgresCompletedFormatted, ...firebaseCompletedFormatted];
+    const uniqueCompleted = allCompleted.filter(
+      (contract, index, self) =>
+        index === self.findIndex((c) => c.contractId === contract.contractId)
+    );
+
+    console.log(`✅ [COMPLETED-UNIFIED] Returning ${uniqueCompleted.length} unique completed contracts`);
+
+    res.json({
+      success: true,
+      contracts: uniqueCompleted,
+      count: uniqueCompleted.length,
+      sources: {
+        postgres: postgresCompletedFormatted.length,
+        firebaseHistory: firebaseCompletedFormatted.length
+      }
+    });
+  } catch (error: any) {
+    console.error("❌ [API] Error getting completed contracts:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/dual-signature/all/:userId
  * Obtener TODOS los contratos del usuario (draft, progress, completed)
  * SECURED: Requires authentication and ownership verification
