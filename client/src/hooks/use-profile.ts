@@ -41,35 +41,30 @@ export function useProfile() {
                     window.location.hostname.includes('replit.app')) &&
                     !window.location.hostname.includes('owlfenc.com');
   
-  // Consulta para obtener el perfil de usuario (primero localStorage en dev, Firebase en prod, API como respaldo)
+  // Consulta para obtener el perfil de usuario (FIREBASE PRIMERO para sincronización entre dispositivos)
   const { data: profile, isLoading, error } = useQuery<UserProfile>({
     queryKey: ["userProfile", currentUser?.uid],
     queryFn: async () => {
-      // En modo desarrollo, verificar localStorage primero con clave específica del usuario
-      if (isDevMode) {
+      // CRITICAL FIX: ALWAYS try Firebase FIRST for cross-device sync
+      // localStorage should only be a local cache, NOT the source of truth
+      if (currentUser) {
         try {
-          const userId = currentUser?.uid;
-          const profileKey = `userProfile_${userId}`;
-          const localProfile = localStorage.getItem(profileKey);
-          if (localProfile) {
-            console.log("Perfil cargado desde localStorage con clave:", profileKey);
-            return JSON.parse(localProfile) as UserProfile;
-          }
-        } catch (localErr) {
-          console.error("Error cargando perfil desde localStorage:", localErr);
-        }
-      }
-      
-      // Si estamos en Firebase mode y no hay datos en localStorage (o no estamos en dev)
-      if (currentUser && !isDevMode) {
-        try {
-          // Intentar obtener el perfil de Firebase
+          console.log("🔥 [PROFILE] Cargando desde Firebase (fuente de verdad)...");
           const firebaseProfile = await getUserProfile(currentUser.uid);
           if (firebaseProfile) {
+            console.log("✅ [PROFILE] Perfil cargado desde Firebase - sincronizado entre dispositivos");
+            
+            // Update localStorage cache after loading from Firebase
+            if (isDevMode) {
+              const profileKey = `userProfile_${currentUser.uid}`;
+              localStorage.setItem(profileKey, JSON.stringify(firebaseProfile));
+              console.log("💾 [PROFILE] Cache local actualizado");
+            }
+            
             return firebaseProfile as UserProfile;
           }
         } catch (err) {
-          console.error("Error obteniendo perfil desde Firebase:", err);
+          console.error("❌ [PROFILE] Error obteniendo perfil desde Firebase:", err);
         }
       }
       
@@ -142,49 +137,43 @@ export function useProfile() {
     retry: 3
   });
 
-  // Mutación para actualizar el perfil (en Firebase, API o localStorage)
+  // Mutación para actualizar el perfil (FIREBASE PRIMERO para sincronización entre dispositivos)
   const updateProfile = useMutation({
     mutationFn: async (newProfile: Partial<UserProfile>) => {
-      // Si tenemos un usuario autenticado y no estamos en modo dev, guardar en Firebase
-      if (currentUser && !isDevMode) {
+      let savedProfile: any = null;
+      
+      // CRITICAL FIX: ALWAYS save to Firebase FIRST for cross-device sync
+      if (currentUser) {
         try {
+          console.log("🔥 [PROFILE] Guardando en Firebase (fuente de verdad)...");
           await saveUserProfile(currentUser.uid, newProfile);
+          
+          // Get the complete updated profile from Firebase
+          const updatedFirebaseProfile = await getUserProfile(currentUser.uid);
+          savedProfile = updatedFirebaseProfile;
+          
+          console.log("✅ [PROFILE] Perfil guardado en Firebase - sincronizado entre dispositivos");
+          
+          // Update localStorage cache after saving to Firebase
+          if (isDevMode && savedProfile) {
+            const profileKey = `userProfile_${currentUser.uid}`;
+            localStorage.setItem(profileKey, JSON.stringify(savedProfile));
+            console.log("💾 [PROFILE] Cache local actualizado después de guardar");
+          }
         } catch (err) {
-          console.error("Error guardando perfil en Firebase:", err);
+          console.error("❌ [PROFILE] Error guardando perfil en Firebase:", err);
+          throw err; // Throw to show error to user
         }
       }
       
-      // En modo desarrollo, guardar en localStorage
-      if (isDevMode) {
-        try {
-          // Usar clave específica por usuario para localStorage
-          const userId = currentUser?.uid;
-          const profileKey = `userProfile_${userId}`;
-          
-          // Obtener el perfil actual del localStorage si existe
-          const currentLocalProfile = localStorage.getItem(profileKey);
-          const parsedLocalProfile = currentLocalProfile ? JSON.parse(currentLocalProfile) : {};
-          
-          // Mezclar el perfil actual con los nuevos datos
-          const updatedProfile = {
-            ...parsedLocalProfile,
-            ...newProfile,
-            updatedAt: new Date().toISOString()
-          };
-          
-          // Guardar en localStorage con clave específica del usuario
-          localStorage.setItem(profileKey, JSON.stringify(updatedProfile));
-          
-          console.log("Perfil guardado en localStorage:", updatedProfile);
-          
-          return updatedProfile;
-        } catch (localErr) {
-          console.error("Error guardando perfil en localStorage:", localErr);
-        }
+      // If Firebase save succeeded, return the saved profile
+      if (savedProfile) {
+        return savedProfile;
       }
       
-      // También intentar guardar en la API
+      // Fallback: Also try to save to API (but Firebase is the source of truth)
       try {
+        console.log("🔄 [PROFILE] Intentando guardar en API como respaldo...");
         const response = await fetch("/api/profile", {
           method: "POST",
           headers: {
@@ -198,17 +187,15 @@ export function useProfile() {
           throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
         
-        return await response.json();
+        const apiProfile = await response.json();
+        console.log("✅ [PROFILE] Perfil guardado en API");
+        return apiProfile;
       } catch (err) {
-        console.error("Error guardando perfil en API:", err);
-        // Si estamos en modo desarrollo y fallamos en guardar en la API, devolver los datos que guardamos en localStorage
-        if (isDevMode) {
-          const userId = currentUser?.uid;
-          const profileKey = `userProfile_${userId}`;
-          const localProfile = localStorage.getItem(profileKey);
-          if (localProfile) {
-            return JSON.parse(localProfile);
-          }
+        console.error("❌ [PROFILE] Error guardando perfil en API:", err);
+        // If we have savedProfile from Firebase, return it even if API fails
+        if (savedProfile) {
+          console.log("✅ [PROFILE] Retornando perfil de Firebase aunque API falló");
+          return savedProfile;
         }
         throw err;
       }
