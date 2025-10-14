@@ -6,6 +6,7 @@
 import { Router } from "express";
 import { dualSignatureService } from "../services/dualSignatureService";
 import { verifyFirebaseAuth } from "../middleware/firebase-auth";
+import { requireAuth } from "../middleware/unified-session-auth";
 import { z } from "zod";
 
 const router = Router();
@@ -405,26 +406,18 @@ router.get("/drafts/:userId", verifyFirebaseAuth, async (req, res) => {
 /**
  * GET /api/dual-signature/completed/:userId
  * Obtener SOLO contratos completados/firmados del usuario
- * ROBUST: Funciona con o sin token Firebase - usa x-user-id header como fallback
+ * SECURITY: Uses unified-session-auth middleware (session cookie OR Authorization header)
+ * ROBUST: Works with session fallback when Firebase token unavailable
  * HYBRID: Combina contratos de PostgreSQL (dual-signature) y Firebase (contractHistory)
  */
-router.get("/completed/:userId", async (req, res) => {
+router.get("/completed/:userId", requireAuth, async (req, res) => {
   try {
     const { userId } = req.params;
-    const requestingUserId = req.headers["x-user-id"] as string;
+    const authenticatedUserId = req.authUser?.uid || req.firebaseUser?.uid;
 
-    // SECURITY: x-user-id header is REQUIRED
-    if (!requestingUserId) {
-      console.warn(`🚨 [SECURITY] Missing x-user-id header for completed contracts request`);
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required: x-user-id header missing"
-      });
-    }
-
-    // SECURITY: Verify ownership - requesting user must match the userId
-    if (requestingUserId !== userId) {
-      console.warn(`🚨 [SECURITY] User ${requestingUserId} attempted to access completed contracts for user ${userId}`);
+    // SECURITY: Verify ownership - authenticated user must match the requested userId
+    if (!authenticatedUserId || authenticatedUserId !== userId) {
+      console.warn(`🚨 [SECURITY] User ${authenticatedUserId} attempted to access completed contracts for user ${userId}`);
       return res.status(403).json({
         success: false,
         message: "Access denied: You can only view your own contracts"
