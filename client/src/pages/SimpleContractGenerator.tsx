@@ -3132,6 +3132,37 @@ export default function SimpleContractGenerator() {
     }
   }, [currentUser?.uid, loadContractHistory, loadCompletedContracts]);
 
+  // AUTO-REFRESH: Polling system to keep contract tabs updated
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    console.log("🔄 [AUTO-REFRESH] Starting auto-refresh polling (15s interval)...");
+    
+    // Refresh function that updates all tabs
+    const refreshAllTabs = () => {
+      console.log("🔄 [AUTO-REFRESH] Refreshing all contract tabs...");
+      loadDraftContracts();
+      loadInProgressContracts();
+      loadCompletedContracts();
+      loadContractHistory();
+    };
+
+    // Set up polling interval (15 seconds)
+    const pollInterval = setInterval(refreshAllTabs, 15000);
+
+    // Cleanup interval on unmount or when user changes
+    return () => {
+      console.log("🛑 [AUTO-REFRESH] Stopping auto-refresh polling");
+      clearInterval(pollInterval);
+    };
+  }, [
+    currentUser?.uid,
+    loadDraftContracts,
+    loadInProgressContracts,
+    loadCompletedContracts,
+    loadContractHistory,
+  ]);
+
   // Load in-progress contracts when switching to in-progress tab
   useEffect(() => {
     if (currentUser?.uid) {
