@@ -1,0 +1,61 @@
+Completar contrato en el BACKEND (no en el front)
+
+Cuando entra cualquier firma, el backend guarda la firma y verifica si ya están las dos.
+
+Si sí → genera y sella el PDF final, cambia estado a COMPLETED, registra en auditLog.
+
+Debe ser idempotente y ejecutarse dentro de una transacción.
+
+2️⃣ Links públicos de firma con token de 1 uso
+
+Reemplazar URLs abiertas por: /sign/:contractId/:party?token=<opaque>.
+
+Tabla sign_tokens → campos:
+contractId, party (client|contractor), scope (view|sign), exp, used, opcional bound_to.
+
+Validación backend → token válido, no vencido, no usado, alcance correcto.
+
+Tras firmar: used=true.
+
+Tokens deben tener expiración corta y uso único.
+
+3️⃣ Rutas privadas con login obligatorio (contratista)
+
+Cualquier listado o descarga del contratista (ej: /contracts/completed) exige sesión activa.
+
+Front: implementar AuthGuard que redirija a /login?continueUrl=….
+
+Requests al backend → siempre con Authorization: Bearer <FirebaseIdToken> (sin cookies).
+
+4️⃣ Sistema de sesión robusto (“Remember Me” + persistencia)
+
+Activar Firebase browserLocalPersistence cuando el usuario marca Remember me.
+
+Implementar auto-refresh de token con onIdTokenChanged; renovar si expira pronto.
+
+Si Remember me está activo → crear Firebase Session Cookie (14 días) mediante Admin SDK.
+
+Permitir re-autenticación rápida con Windows Hello / OTP Code / WebAuthn solo cuando sea necesario.
+
+Esto evita relogin constante y mantiene la sesión estable incluso entre reinicios.
+
+5️⃣ Flujo UX
+
+En página pública (firma): mostrar mensaje de éxito “✅ Contrato firmado” + botón
+“Ver en Dashboard (requiere login)” → /login?continueUrl=/contracts/completed?focus=<contractId>.
+
+En dashboard, mostrar contratos completados con opciones: View PDF, Download, Share.
+
+Dashboard solo muestra contratos ya completados.
+
+6️⃣ Seguridad obligatoria
+
+Anti-IDOR: toda consulta privada filtra por ownerId === uid.
+
+Tokens opacos, expiran y son de 1 solo uso.
+
+Rate-limit en endpoints públicos.
+
+PDF final incluye folio, hash, fecha e IP como sello legal.
+
+Logs detallados en auditLog (firma, timestamps, IP, evento, hash).

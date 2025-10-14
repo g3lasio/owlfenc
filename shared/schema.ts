@@ -463,9 +463,55 @@ export const digitalContracts = pgTable('digital_contracts', {
   emailSent: boolean('email_sent').notNull().default(false),
   emailSentAt: timestamp('email_sent_at'),
   
+  // Legal seal fields
+  folio: varchar('folio', { length: 50 }), // Unique legal folio number
+  pdfHash: varchar('pdf_hash', { length: 64 }), // SHA-256 hash of final PDF for verification
+  signingIp: varchar('signing_ip', { length: 45 }), // IP address of final signing (supports IPv6)
+  finalPdfPath: text('final_pdf_path'), // Path to legally sealed final PDF
+  
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  contractIdIdx: index('contract_id_idx').on(table.contractId),
+  userIdIdx: index('user_id_idx').on(table.userId),
+  statusIdx: index('status_idx').on(table.status),
+}));
+
+// Sign tokens table for secure one-time signature links
+export const signTokens = pgTable('sign_tokens', {
+  id: serial('id').primaryKey(),
+  contractId: text('contract_id').notNull().references(() => digitalContracts.contractId),
+  party: varchar('party', { length: 20 }).notNull(), // 'client' or 'contractor'
+  scope: varchar('scope', { length: 20 }).notNull(), // 'view' or 'sign'
+  token: varchar('token', { length: 128 }).notNull().unique(), // Opaque token (crypto.randomBytes(64).toString('hex'))
+  expiresAt: timestamp('expires_at').notNull(),
+  used: boolean('used').notNull().default(false),
+  usedAt: timestamp('used_at'),
+  boundTo: varchar('bound_to', { length: 45 }), // Optional: IP address binding
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  contractIdIdx: index('sign_tokens_contract_id_idx').on(table.contractId),
+  tokenIdx: index('sign_tokens_token_idx').on(table.token),
+  expiresAtIdx: index('sign_tokens_expires_at_idx').on(table.expiresAt),
+}));
+
+// Contract audit log for detailed signature event tracking
+export const contractAuditLog = pgTable('contract_audit_log', {
+  id: serial('id').primaryKey(),
+  contractId: text('contract_id').notNull().references(() => digitalContracts.contractId),
+  event: varchar('event', { length: 50 }).notNull(), // 'contract_created', 'contractor_signed', 'client_signed', 'completed', 'pdf_generated'
+  party: varchar('party', { length: 20 }), // 'contractor', 'client', 'system'
+  ipAddress: varchar('ip_address', { length: 45 }),
+  userAgent: text('user_agent'),
+  signatureHash: varchar('signature_hash', { length: 64 }), // Hash of signature data for verification
+  pdfHash: varchar('pdf_hash', { length: 64 }), // Hash of generated PDF
+  metadata: jsonb('metadata'), // Additional event data
+  timestamp: timestamp('timestamp').defaultNow().notNull(),
+}, (table) => ({
+  contractIdIdx: index('audit_contract_id_idx').on(table.contractId),
+  eventIdx: index('audit_event_idx').on(table.event),
+  timestampIdx: index('audit_timestamp_idx').on(table.timestamp),
+}));
 
 // Insert schemas for all tables
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -492,6 +538,17 @@ export const passwordResetTokens = pgTable('password_reset_tokens', {
 export const insertDigitalContractSchema = createInsertSchema(digitalContracts).omit({
   createdAt: true,
   updatedAt: true,
+});
+
+export const insertSignTokenSchema = createInsertSchema(signTokens).omit({
+  id: true,
+  createdAt: true,
+  usedAt: true,
+});
+
+export const insertContractAuditLogSchema = createInsertSchema(contractAuditLog).omit({
+  id: true,
+  timestamp: true,
 });
 
 export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({
