@@ -544,9 +544,26 @@ export default function SimpleContractGenerator() {
         currentUser.uid,
       );
 
+      // Try to get Firebase token for authentication
+      let authHeaders: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+      
+      try {
+        const token = await currentUser.getIdToken();
+        authHeaders['Authorization'] = `Bearer ${token}`;
+      } catch (tokenError) {
+        console.warn("⚠️ Could not get Firebase token for in-progress - relying on session cookie:", tokenError);
+      }
+
       // Load from dual signature system (contracts with signature links sent)
       const response = await fetch(
         `/api/dual-signature/in-progress/${currentUser.uid}`,
+        {
+          method: 'GET',
+          headers: authHeaders,
+          credentials: 'include' // Include session cookies
+        }
       );
 
       if (response.ok) {
