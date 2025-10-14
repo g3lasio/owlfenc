@@ -337,86 +337,8 @@ router.get("/in-progress/:userId", verifyFirebaseAuth, async (req, res) => {
   }
 });
 
-/**
- * GET /api/dual-signature/completed/:userId
- * Obtener todos los contratos completados (ambas firmas) de un usuario
- * SECURED: Requires authentication and ownership verification
- */
-router.get("/completed/:userId", verifyFirebaseAuth, async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const authenticatedUserId = req.firebaseUser?.uid;
-
-    // SECURITY: Verify that the authenticated user matches the requested userId
-    if (authenticatedUserId !== userId) {
-      console.warn(`🚨 [SECURITY] User ${authenticatedUserId} attempted to access completed contracts for user ${userId}`);
-      return res.status(403).json({
-        success: false,
-        message: "Access denied: You can only view your own contracts"
-      });
-    }
-
-    console.log("✅ [API] Getting completed contracts for user:", userId);
-
-    // Import database here to avoid circular dependencies
-    const { db } = await import("../db");
-    const { digitalContracts } = await import("../../shared/schema");
-    const { eq, and } = await import("drizzle-orm");
-
-    // Get contracts that are fully signed (both parties signed)
-    const completedContracts = await db
-      .select()
-      .from(digitalContracts)
-      .where(
-        and(
-          eq(digitalContracts.userId, userId),
-          eq(digitalContracts.contractorSigned, true),
-          eq(digitalContracts.clientSigned, true)
-        )
-      )
-      .orderBy(digitalContracts.createdAt);
-
-    console.log(
-      `✅ [API] Found ${completedContracts.length} completed contracts for user`,
-    );
-
-    // Transform data for frontend - add useful metadata
-    const contractsForFrontend = completedContracts.map((contract) => ({
-      contractId: contract.contractId,
-      status: contract.status,
-      contractorName: contract.contractorName,
-      clientName: contract.clientName,
-      totalAmount: parseFloat(contract.totalAmount),
-      contractorSigned: contract.contractorSigned,
-      clientSigned: contract.clientSigned,
-      contractorSignedAt: contract.contractorSignedAt,
-      clientSignedAt: contract.clientSignedAt,
-      contractorEmail: contract.contractorEmail,
-      clientEmail: contract.clientEmail,
-      contractorPhone: contract.contractorPhone,
-      clientPhone: contract.clientPhone,
-      createdAt: contract.createdAt,
-      updatedAt: contract.updatedAt,
-      isCompleted: true,
-      isDownloadable: !!contract.signedPdfPath,
-      hasPdf: !!contract.signedPdfPath,
-      // ✅ FIX: Provide download URL using the API endpoint
-      pdfDownloadUrl: contract.signedPdfPath ? `/api/dual-signature/download/${contract.contractId}` : null,
-    }));
-
-    res.json({
-      success: true,
-      contracts: contractsForFrontend,
-    });
-  } catch (error: any) {
-    console.error("❌ [API] Error getting completed contracts:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
-  }
-});
+// OLD ENDPOINT REMOVED - replaced by unified /completed/:userId endpoint below (line ~492)
+// The new endpoint combines PostgreSQL + Firebase sources and uses x-user-id header
 
 /**
  * GET /api/dual-signature/drafts/:userId
