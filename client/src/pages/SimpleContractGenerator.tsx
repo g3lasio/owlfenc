@@ -370,25 +370,34 @@ export default function SimpleContractGenerator() {
     try {
       console.log("📋 Loading completed contracts for user:", currentUser?.uid || 'profile_user');
 
-      // ✅ IFRAME-COMPATIBLE: Use x-user-id header for identification
-      // Works in iframe/cross-domain scenarios where cookies may be blocked
+      // ✅ SECURE & ROBUST: Use unified endpoint with proper authentication
+      // The backend uses unified-session-auth middleware (session cookie OR token)
       
-      const apiHeaders: HeadersInit = {
-        'Content-Type': 'application/json',
-        'x-user-id': currentUser.uid // Simple header-based identification
+      // Try to get Firebase token for authentication
+      let authHeaders: HeadersInit = {
+        'Content-Type': 'application/json'
       };
+      
+      try {
+        const token = await currentUser.getIdToken();
+        authHeaders['Authorization'] = `Bearer ${token}`;
+        console.log("✅ Firebase token obtained for API authentication");
+      } catch (tokenError) {
+        console.warn("⚠️ Could not get Firebase token - relying on session cookie:", tokenError);
+        // Session cookie will be sent automatically by browser if available
+      }
 
       const dataPromises: Promise<any>[] = [
         // Source 1: Contract History (contracts completed via Simple Generator)
         // This uses Firebase directly, doesn't need API token
         contractHistoryService.getContractHistory(currentUser.uid),
         
-        // Source 2: Unified Dual Signature System (FLEXIBLE with x-user-id)
-        // Uses x-user-id header for identification (iframe-compatible)
+        // Source 2: Unified Dual Signature System (SECURE with auth)
+        // Uses Firebase token OR session cookie for authentication
         fetch(`/api/dual-signature/completed/${currentUser.uid}`, {
           method: 'GET',
-          headers: apiHeaders,
-          credentials: 'include' // Include session cookies if available
+          headers: authHeaders,
+          credentials: 'include' // Include session cookies
         }).then((res) => {
           if (!res.ok) {
             throw new Error(`API returned ${res.status}: Cannot load dual signature contracts`);
