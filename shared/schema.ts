@@ -472,9 +472,9 @@ export const digitalContracts = pgTable('digital_contracts', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
-  contractIdIdx: index('contract_id_idx').on(table.contractId),
-  userIdIdx: index('user_id_idx').on(table.userId),
-  statusIdx: index('status_idx').on(table.status),
+  contractIdIdx: index('digital_contracts_contract_id_idx').on(table.contractId),
+  userIdIdx: index('digital_contracts_user_id_idx').on(table.userId),
+  statusIdx: index('digital_contracts_status_idx').on(table.status),
 }));
 
 // Sign tokens table for secure one-time signature links
