@@ -257,6 +257,26 @@ curl -X POST http://localhost:5000/api/dual-signature/sign \
 
 ## 🚀 Deployment Requirements
 
+### Database Configuration (CRITICAL)
+```typescript
+// ✅ FIXED: Using WebSocket driver for transaction support
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import ws from 'ws';
+
+// Configure WebSocket mode - REQUIRED for transactions
+neonConfig.webSocketConstructor = ws;
+
+// Create pool with transaction support
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const db = drizzle(pool, { schema });
+```
+
+**Why WebSocket?** Neon HTTP driver doesn't support transactions. WebSocket driver is required for:
+- `db.transaction()` support
+- Atomic operations
+- ACID compliance
+
 ### CORS Configuration
 ```typescript
 // Required for production domain
@@ -278,6 +298,7 @@ PDF_STORAGE_PATH=/path/to/pdfs
 2. **Token Storage**: Securely store tokens in database
 3. **PDF Storage**: Ensure finalPdfPath is accessible
 4. **Audit Trail**: Never delete audit_log entries (legal requirement)
+5. **Transactions**: WebSocket driver required for transaction support
 
 ## 📊 Success Criteria
 

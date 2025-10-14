@@ -1,9 +1,11 @@
-import { neon, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-http';
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-serverless';
 import * as schema from "@shared/schema";
 import { resilientDb } from './lib/resilient-db-wrapper';
+import ws from 'ws';
 
-// Configure Neon for HTTP mode - more reliable for serverless than WebSocket
+// Configure Neon for WebSocket mode - REQUIRED for transaction support
+neonConfig.webSocketConstructor = ws;
 neonConfig.fetchConnectionCache = true;
 
 if (!process.env.DATABASE_URL) {
@@ -19,9 +21,9 @@ if (!process.env.DATABASE_URL) {
   }
 }
 
-// Create HTTP-based connection that avoids pooling issues
-export const sql = process.env.DATABASE_URL ? neon(process.env.DATABASE_URL) : null;
-export const db = sql ? drizzle(sql, { schema }) : null;
+// Create WebSocket-based connection with transaction support
+export const pool = process.env.DATABASE_URL ? new Pool({ connectionString: process.env.DATABASE_URL }) : null;
+export const db = pool ? drizzle(pool, { schema }) : null;
 
 // Export resilient wrapper for services that need retry logic
 export { resilientDb };
