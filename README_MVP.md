@@ -183,6 +183,78 @@ Response (Token Error):
   6. PDF with legal seal generated
   7. Both parties can access (after login)
 
+## 🧪 How to Test the Backend MVP
+
+### 1. Generate a Signing Token (Authenticated)
+```bash
+curl -X POST http://localhost:5000/api/dual-signature/generate-token \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_FIREBASE_TOKEN" \
+  -d '{
+    "contractId": "your-contract-id",
+    "party": "client",
+    "scope": "sign",
+    "expirationHours": 72
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "token": "a1b2c3d4e5f6...",
+  "signUrl": "/sign/your-contract-id/client?token=a1b2c3d4e5f6...",
+  "expiresIn": "72 hours"
+}
+```
+
+### 2. Sign with Token (Public - No Auth Required)
+```bash
+curl -X POST http://localhost:5000/api/dual-signature/sign \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "a1b2c3d4e5f6...",
+    "signatureData": "data:image/png;base64,...",
+    "signatureType": "drawing"
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "status": "completed",
+  "bothSigned": true,
+  "isCompleted": true
+}
+```
+
+### 3. Test Token Security
+
+#### Missing Token (Should Fail)
+```bash
+curl -X POST http://localhost:5000/api/dual-signature/sign \
+  -H "Content-Type: application/json" \
+  -d '{
+    "signatureData": "...",
+    "signatureType": "drawing"
+  }'
+```
+**Expected:** 401 Unauthorized - "Token is required for signing"
+
+#### Expired/Used Token (Should Fail)
+```bash
+# Use same token twice
+curl -X POST http://localhost:5000/api/dual-signature/sign \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "already-used-token",
+    "signatureData": "...",
+    "signatureType": "drawing"
+  }'
+```
+**Expected:** 401 Unauthorized - "TOKEN_USED" or "TOKEN_EXPIRED"
+
 ## 🚀 Deployment Requirements
 
 ### CORS Configuration
