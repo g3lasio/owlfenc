@@ -299,12 +299,12 @@ export class DualSignatureService {
 
   /**
    * Obtener datos del contrato para mostrar en la página de firma
-   * INCLUYE VERIFICACIÓN DE SEGURIDAD PARA PREVENIR ACCESO CRUZADO
+   * PUBLIC ENDPOINT - No authentication required
+   * Security: Contract needs both signatures to be valid
    */
   async getContractForSigning(
     contractId: string,
-    party: "contractor" | "client",
-    requestingUserId?: string
+    party: "contractor" | "client"
   ): Promise<{
     success: boolean;
     contract?: DigitalContract;
@@ -312,7 +312,7 @@ export class DualSignatureService {
   }> {
     try {
       console.log(
-        `🔍 [DUAL-SIGNATURE] Getting contract for ${party} signing:`,
+        `🔍 [PUBLIC-SIGNATURE] Getting contract for ${party} signing:`,
         contractId
       );
 
@@ -329,18 +329,6 @@ export class DualSignatureService {
         };
       }
 
-      // CRÍTICO: Verificar que el usuario tenga permiso para acceder a este contrato
-      // NOTA: Para firma pública, no siempre tendremos requestingUserId, así que es opcional
-      if (requestingUserId && contract.userId !== requestingUserId) {
-        console.error(
-          `🚫 [SECURITY-VIOLATION] User ${requestingUserId} attempted to access contract ${contractId} owned by ${contract.userId}`
-        );
-        return {
-          success: false,
-          message: "Unauthorized access to contract",
-        };
-      }
-
       // Check if already signed
       const alreadySigned =
         party === "contractor"
@@ -349,7 +337,7 @@ export class DualSignatureService {
 
       if (alreadySigned) {
         console.log(
-          `⚠️ [DUAL-SIGNATURE] ${party} has already signed this contract - returning completed status`
+          `⚠️ [PUBLIC-SIGNATURE] ${party} has already signed this contract`
         );
         return {
           success: true,
@@ -359,7 +347,7 @@ export class DualSignatureService {
       }
 
       console.log(
-        `✅ [DUAL-SIGNATURE] Contract retrieved for ${party} signing`
+        `✅ [PUBLIC-SIGNATURE] Contract retrieved for ${party} signing`
       );
       return {
         success: true,
@@ -367,7 +355,7 @@ export class DualSignatureService {
         message: "Contract ready for signing",
       };
     } catch (error: any) {
-      console.error("❌ [DUAL-SIGNATURE] Error getting contract:", error);
+      console.error("❌ [PUBLIC-SIGNATURE] Error getting contract:", error);
       return {
         success: false,
         message: `Error retrieving contract: ${error.message}`,

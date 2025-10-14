@@ -2,13 +2,13 @@
 
 ## ✅ Backend Implementation Status (COMPLETED)
 
-### 🔐 Security Architecture (ARCHITECT-APPROVED)
+### 🔐 Security Architecture (USER-APPROVED)
 
-#### Token-Based Public Signing
-- **Opaque Tokens**: Cryptographically secure one-time tokens
-- **Required Validation**: No signing without valid token (401 if missing)
-- **IDOR Prevention**: ContractId extracted from token, not request body
-- **Delayed Consumption**: Token consumed only after successful signature
+#### Public Access Signing (No Authentication)
+- **Completely Public**: Both contractor and client sign without authentication
+- **Legal Protection**: Contract has NO validity until BOTH parties sign
+- **Dual-Signature Security**: Security from requiring both signatures, not access control
+- **Transactional Processing**: Atomic dual-signature updates ensure data integrity
 
 #### Database Schema
 ```typescript
@@ -87,11 +87,12 @@ Response:
 }
 ```
 
-#### POST `/api/dual-signature/sign` (Public - Token Required)
+#### POST `/api/dual-signature/sign` (PUBLIC - No Authentication)
 ```json
 Request:
 {
-  "token": "required-opaque-token",
+  "contractId": "CNT-xxx",
+  "party": "contractor" | "client",
   "signatureData": "base64-image",
   "signatureType": "drawing" | "cursive"
 }
@@ -104,11 +105,20 @@ Response (Success):
   "isCompleted": true
 }
 
-Response (Token Error):
+Response (Error):
 {
   "success": false,
-  "code": "TOKEN_REQUIRED" | "TOKEN_EXPIRED" | "TOKEN_USED",
   "message": "Error details"
+}
+```
+
+#### GET `/api/dual-signature/contract/:contractId/:party` (PUBLIC)
+```json
+Response:
+{
+  "success": true,
+  "contract": { ... },
+  "message": "Contract ready for signing"
 }
 ```
 

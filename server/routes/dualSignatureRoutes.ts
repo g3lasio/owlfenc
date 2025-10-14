@@ -89,39 +89,25 @@ router.post("/initiate", async (req, res) => {
 
 /**
  * GET /api/dual-signature/contract/:contractId/:party
- * Obtener datos del contrato para firma
- * INCLUYE VERIFICACIÓN DE SEGURIDAD OPCIONAL
+ * Obtener datos del contrato para firma - PUBLIC ENDPOINT
+ * No authentication required - contract needs both signatures to be valid
  */
 router.get("/contract/:contractId/:party", async (req, res) => {
   try {
     const { contractId, party } = req.params;
-    const requestingUserId = req.headers["x-user-id"] as string; // Para verificación de seguridad opcional
 
-    // 🚨 CRITICAL DEBUG: Log exact params received
-    console.log("🚨 [CRITICAL-DEBUG] RAW req.params:", JSON.stringify(req.params));
-    console.log("🚨 [CRITICAL-DEBUG] RAW req.url:", req.url);
-    console.log("🚨 [CRITICAL-DEBUG] RAW contractId:", contractId);
-    console.log("🚨 [CRITICAL-DEBUG] RAW party:", party);
-    console.log("🚨 [CRITICAL-DEBUG] RAW party type:", typeof party);
+    console.log(`🔍 [PUBLIC-API] Getting contract for ${party} signing:`, contractId);
 
     if (!["contractor", "client"].includes(party)) {
-      console.log("🚨 [CRITICAL-DEBUG] Invalid party detected:", party);
       return res.status(400).json({
         success: false,
         message: `Invalid party. Must be "contractor" or "client", received: ${party}`,
       });
     }
 
-    console.log(`🔍 [API] Getting contract for ${party} signing:`, contractId);
-    console.log(
-      `🔐 [API] Requesting user ID:`,
-      requestingUserId || "No user ID provided",
-    );
-
     const result = await dualSignatureService.getContractForSigning(
       contractId,
       party as "contractor" | "client",
-      requestingUserId,
     );
 
     if (result.success) {
@@ -137,7 +123,7 @@ router.get("/contract/:contractId/:party", async (req, res) => {
       });
     }
   } catch (error: any) {
-    console.error("❌ [API] Error in /contract/:contractId/:party:", error);
+    console.error("❌ [PUBLIC-API] Error in /contract/:contractId/:party:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -186,66 +172,49 @@ router.post("/generate-token", requireAuth, async (req, res) => {
 
 /**
  * POST /api/dual-signature/sign
- * Process signature with token validation
- * MVP: Validates token before processing
+ * Process signature - PUBLIC ENDPOINT (No authentication required)
+ * Security: Contract has no legal validity until BOTH parties sign
  */
 router.post("/sign", async (req, res) => {
   try {
-    console.log("✍️ [MVP-API] Processing signature with REQUIRED token validation...");
+    console.log("✍️ [PUBLIC-API] Processing public signature (no auth required)...");
     
-    const { signatureData, signatureType, token } = req.body;
+    const { contractId, party, signatureData, signatureType } = req.body;
     const ipAddress = req.ip || req.headers['x-forwarded-for'] as string || 'unknown';
     const userAgent = req.headers['user-agent'];
 
-    // 1. SECURITY: Token is REQUIRED for public signing
-    if (!token) {
-      console.warn(`🚨 [MVP-API] Missing required token`);
-      return res.status(401).json({
+    // 1. Basic validation
+    if (!contractId || !party || !signatureData || !signatureType) {
+      console.warn(`🚨 [PUBLIC-API] Missing required fields`);
+      return res.status(400).json({
         success: false,
-        message: "Token is required for signing",
-        code: "TOKEN_REQUIRED",
+        message: "Missing required fields: contractId, party, signatureData, signatureType",
       });
     }
 
-    // 2. SECURITY: Validate token and get trusted contractId and party from token
-    // This prevents IDOR attacks where token from contract A is used for contract B
-    const validation = await signTokenService.validateToken(
-      token,
-      req.body.party || 'client', // Party hint for initial validation
-      'sign',
-      ipAddress
-    );
-
-    if (!validation.isValid || !validation.token) {
-      console.warn(`🚨 [MVP-API] Token validation failed: ${validation.errorCode}`);
-      return res.status(401).json({
+    // 2. Validate party value
+    if (!["contractor", "client"].includes(party)) {
+      return res.status(400).json({
         success: false,
-        message: validation.error,
-        code: validation.errorCode,
+        message: "Invalid party. Must be 'contractor' or 'client'",
       });
     }
 
-    // 3. SECURITY: Use contractId and party from TOKEN, not from request body
-    const trustedContractId = validation.token.contractId;
-    const trustedParty = validation.token.party;
+    console.log(`✅ [PUBLIC-API] Processing signature for ${party} on contract ${contractId}`);
 
-    console.log(`✅ [MVP-API] Token validated: ${trustedContractId} (${trustedParty})`);
-
-    // 4. Process signature using transactional service with trusted data
+    // 3. Process signature using transactional service
     const result = await transactionalContractService.processSignature({
-      contractId: trustedContractId,
-      party: trustedParty as 'contractor' | 'client',
+      contractId,
+      party: party as 'contractor' | 'client',
       signatureData,
       signatureType,
       ipAddress,
       userAgent,
     });
 
-    // 5. SECURITY: Only mark token as used AFTER successful processing
+    // 4. Return result
     if (result.success) {
-      await signTokenService.markTokenAsUsed(token, ipAddress);
-      
-      console.log("✅ [MVP-API] Signature processed and token consumed");
+      console.log("✅ [PUBLIC-API] Signature processed successfully");
       res.json({
         success: true,
         message: result.message,
@@ -254,15 +223,13 @@ router.post("/sign", async (req, res) => {
         isCompleted: result.isCompleted,
       });
     } else {
-      // Don't consume token on failure - allow retry
       res.status(400).json({
         success: false,
         message: result.message,
       });
     }
   } catch (error: any) {
-    console.error("❌ [MVP-API] Error in /sign:", error);
-    // Don't consume token on error - allow retry
+    console.error("❌ [PUBLIC-API] Error in /sign:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
