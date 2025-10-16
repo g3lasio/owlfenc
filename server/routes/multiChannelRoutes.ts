@@ -9,7 +9,7 @@
 
 import express from 'express';
 import multiChannelDeliveryService from '../services/multiChannelDeliveryService';
-import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { requireAuth } from '../middleware/unified-session-auth';
 import { userMappingService } from '../services/userMappingService';
 
 const router = express.Router();
@@ -17,9 +17,9 @@ const router = express.Router();
 /**
  * POST /api/multi-channel/initiate
  * Initiate secure multi-channel contract delivery
- * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger entrega de contratos
+ * ✅ SIMPLIFIED AUTH: Uses session-based auth (no manual tokens required)
  */
-router.post('/initiate', verifyFirebaseAuth, async (req, res) => {
+router.post('/initiate', requireAuth, async (req, res) => {
   try {
     console.log('🔐 [MULTI-CHANNEL API] Initiate request received');
     
@@ -30,17 +30,18 @@ router.post('/initiate', verifyFirebaseAuth, async (req, res) => {
       securityFeatures 
     } = req.body;
 
-    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden iniciar entrega
-    const firebaseUid = req.firebaseUser?.uid;
+    // ✅ SIMPLIFIED: User is already authenticated via session cookie
+    const firebaseUid = req.authUser?.uid || req.firebaseUser?.uid;
     if (!firebaseUid) {
       return res.status(401).json({ 
         error: 'Usuario no autenticado',
         code: 'UNAUTHORIZED'
       });
     }
+    
     let userId = await userMappingService.getInternalUserId(firebaseUid);
     if (!userId) {
-      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      userId = await userMappingService.createMapping(firebaseUid, req.authUser?.email || req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
     }
     if (!userId) {
       return res.status(500).json({ 
@@ -48,7 +49,7 @@ router.post('/initiate', verifyFirebaseAuth, async (req, res) => {
         code: 'USER_MAPPING_FAILED'
       });
     }
-    console.log(`🔐 [SECURITY] Initiating contract delivery for REAL user_id: ${userId}`);
+    console.log(`✅ [AUTH-SIMPLE] Contract delivery for user_id: ${userId}`);
 
     // Validate required fields
 

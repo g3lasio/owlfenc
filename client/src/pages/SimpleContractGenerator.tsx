@@ -3008,39 +3008,14 @@ export default function SimpleContractGenerator() {
     setDeliveryStatus("Generating signature links...");
 
     try {
-      // 🔐 CRITICAL FIX: Get Firebase ID Token from real Firebase Auth
-      let authToken = '';
-      try {
-        // Try to get the Firebase user from auth instance
-        const firebaseUser = auth.currentUser;
-        if (firebaseUser && typeof firebaseUser.getIdToken === 'function') {
-          authToken = await firebaseUser.getIdToken();
-          console.log('✅ [SIGNATURE-TOKEN] ID Token obtained successfully from auth.currentUser');
-        } else {
-          console.warn('⚠️ [SIGNATURE-TOKEN] auth.currentUser is null, trying to refresh auth state...');
-          
-          // Force auth state refresh and wait a bit
-          await new Promise(resolve => setTimeout(resolve, 100));
-          const refreshedUser = auth.currentUser;
-          
-          if (refreshedUser && typeof refreshedUser.getIdToken === 'function') {
-            authToken = await refreshedUser.getIdToken();
-            console.log('✅ [SIGNATURE-TOKEN] ID Token obtained successfully after refresh');
-          } else {
-            console.error('❌ [SIGNATURE-TOKEN] Firebase auth.currentUser is still null after refresh');
-            throw new Error('Firebase authentication not available. Please refresh the page and try again.');
-          }
-        }
-      } catch (tokenError) {
-        console.error('❌ [SIGNATURE-TOKEN] Failed to get ID token:', tokenError);
-        throw new Error('Failed to authenticate. Please refresh the page and try again.');
-      }
-
+      // ✅ SIMPLIFIED AUTH: No need to get tokens manually!
+      // Session cookie handles authentication automatically
+      
       // Prepare contract data for signature protocol
       const secureDeliveryPayload = {
         userId: currentUser.uid,
         contractHTML: contractHTML,
-        deliveryMethods: { email: false, sms: false, whatsapp: false }, // Not using delivery methods anymore
+        deliveryMethods: { email: false, sms: false, whatsapp: false },
         contractData: {
           contractorName:
             profile?.company || profile?.ownerName || "Contractor Name",
@@ -3076,16 +3051,15 @@ export default function SimpleContractGenerator() {
       };
 
       console.log(
-        "🔐 [SIGNATURE-PROTOCOL] Generating signature links:",
-        secureDeliveryPayload,
+        "✅ [SIGNATURE-SIMPLE] Starting signature protocol (session-based auth)...",
       );
 
       const response = await fetch("/api/multi-channel/initiate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
         },
+        credentials: 'include', // ✅ Include session cookie
         body: JSON.stringify(secureDeliveryPayload),
       });
 
