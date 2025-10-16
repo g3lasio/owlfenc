@@ -3009,17 +3009,31 @@ export default function SimpleContractGenerator() {
 
     try {
       // 🔐 CRITICAL FIX: Get Firebase ID Token from real Firebase Auth
-      let authToken = currentUser?.uid || ''; // Fallback to UID
+      let authToken = '';
       try {
+        // Try to get the Firebase user from auth instance
         const firebaseUser = auth.currentUser;
         if (firebaseUser && typeof firebaseUser.getIdToken === 'function') {
           authToken = await firebaseUser.getIdToken();
-          console.log('✅ [SIGNATURE-TOKEN] ID Token obtained successfully');
+          console.log('✅ [SIGNATURE-TOKEN] ID Token obtained successfully from auth.currentUser');
         } else {
-          console.warn('⚠️ [SIGNATURE-TOKEN] No Firebase user, using UID as fallback');
+          console.warn('⚠️ [SIGNATURE-TOKEN] auth.currentUser is null, trying to refresh auth state...');
+          
+          // Force auth state refresh and wait a bit
+          await new Promise(resolve => setTimeout(resolve, 100));
+          const refreshedUser = auth.currentUser;
+          
+          if (refreshedUser && typeof refreshedUser.getIdToken === 'function') {
+            authToken = await refreshedUser.getIdToken();
+            console.log('✅ [SIGNATURE-TOKEN] ID Token obtained successfully after refresh');
+          } else {
+            console.error('❌ [SIGNATURE-TOKEN] Firebase auth.currentUser is still null after refresh');
+            throw new Error('Firebase authentication not available. Please refresh the page and try again.');
+          }
         }
       } catch (tokenError) {
-        console.error('❌ [SIGNATURE-TOKEN] Failed to get ID token, using UID:', tokenError);
+        console.error('❌ [SIGNATURE-TOKEN] Failed to get ID token:', tokenError);
+        throw new Error('Failed to authenticate. Please refresh the page and try again.');
       }
 
       // Prepare contract data for signature protocol
@@ -3076,7 +3090,14 @@ export default function SimpleContractGenerator() {
       });
 
       if (!response.ok) {
-        throw new Error(`Signature protocol failed: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `Signature protocol failed: ${response.status}`;
+        
+        if (response.status === 401) {
+          throw new Error('Authentication failed. Please refresh the page and try again.');
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
