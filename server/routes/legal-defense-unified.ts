@@ -1,11 +1,20 @@
 /**
  * Unified Legal Defense Routes - Consolidated Contract Generation
  * Consolidates all contract generation endpoints into a single optimized pipeline
+ * 
+ * 🔐 ENTERPRISE SECURITY UPDATE (2025-10-16):
+ * All endpoints now protected with enterprise-grade security middlewares
  */
 
 import { Router } from 'express';
 import multer from 'multer';
 import { HybridContractGenerator } from '../services/hybridContractGenerator';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { 
+  requireLegalDefenseAccess,
+  validateUsageLimit,
+  incrementUsageOnSuccess 
+} from '../middleware/subscription-auth';
 
 const router = Router();
 
@@ -28,8 +37,14 @@ const contractGenerator = new HybridContractGenerator();
 /**
  * UNIFIED CONTRACT GENERATION ENDPOINT
  * Consolidates all previous endpoints into one optimized pipeline
+ * 🔐 ENTERPRISE SECURITY: CRITICAL - Now fully protected
  */
-router.post('/generate-contract', async (req, res) => {
+router.post('/generate-contract',
+  verifyFirebaseAuth, // ✅ Auth required
+  requireLegalDefenseAccess, // ✅ Bloquea Primo Chambeador
+  validateUsageLimit('contracts'), // ✅ Valida límite
+  incrementUsageOnSuccess('contracts'), // ✅ Cuenta el uso
+  async (req, res) => {
   console.log('🛡️ [UNIFIED] Starting optimized contract generation...');
   const startTime = Date.now();
   
@@ -104,8 +119,13 @@ router.post('/generate-contract', async (req, res) => {
 
 /**
  * EXTRACT PDF ENDPOINT (for Legal Defense frontend compatibility)
+ * 🔐 ENTERPRISE SECURITY: CRITICAL - Now fully protected
  */
-router.post('/extract-pdf', upload.single('pdf'), async (req, res) => {
+router.post('/extract-pdf', 
+  upload.single('pdf'),
+  verifyFirebaseAuth, // ✅ Auth required
+  requireLegalDefenseAccess, // ✅ Bloquea Primo Chambeador
+  async (req, res) => {
   console.log('🔍 [LEGAL-DEFENSE] Starting PDF extraction for Legal Defense...');
   
   try {
@@ -150,8 +170,13 @@ router.post('/extract-pdf', upload.single('pdf'), async (req, res) => {
 
 /**
  * UNIFIED PDF EXTRACTION AND VALIDATION (legacy endpoint)
+ * 🔐 ENTERPRISE SECURITY: CRITICAL - Now fully protected
  */
-router.post('/extract-and-process', upload.single('pdf'), async (req, res) => {
+router.post('/extract-and-process', 
+  upload.single('pdf'),
+  verifyFirebaseAuth, // ✅ Auth required
+  requireLegalDefenseAccess, // ✅ Bloquea Primo Chambeador
+  async (req, res) => {
   console.log('🔍 [UNIFIED] Starting PDF extraction and processing...');
   
   try {
