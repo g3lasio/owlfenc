@@ -161,23 +161,24 @@ router.post('/initiate', requireAuth, async (req, res) => {
 /**
  * GET /api/multi-channel/status/:contractId
  * Get delivery status for a contract
- * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger estado de contratos
+ * ✅ SIMPLIFIED AUTH: Uses session-based auth
  */
-router.get('/status/:contractId', verifyFirebaseAuth, async (req, res) => {
+router.get('/status/:contractId', requireAuth, async (req, res) => {
   try {
     const { contractId } = req.params;
     
-    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden ver estado de contratos
-    const firebaseUid = req.firebaseUser?.uid;
+    // ✅ SIMPLIFIED: User is already authenticated via session cookie
+    const firebaseUid = req.authUser?.uid || req.firebaseUser?.uid;
     if (!firebaseUid) {
       return res.status(401).json({ 
         error: 'Usuario no autenticado',
         code: 'UNAUTHORIZED'
       });
     }
+    
     let userId = await userMappingService.getInternalUserId(firebaseUid);
     if (!userId) {
-      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      userId = await userMappingService.createMapping(firebaseUid, req.authUser?.email || req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
     }
     if (!userId) {
       return res.status(500).json({ 
@@ -185,7 +186,7 @@ router.get('/status/:contractId', verifyFirebaseAuth, async (req, res) => {
         code: 'USER_MAPPING_FAILED'
       });
     }
-    console.log(`🔐 [SECURITY] Getting contract status for REAL user_id: ${userId}`);
+    console.log(`✅ [AUTH-SIMPLE] Contract status for user_id: ${userId}`);
     
     // For now, return a mock status
     // In production, this would query a database for actual status
