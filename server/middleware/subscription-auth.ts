@@ -22,12 +22,13 @@ const PLAN_PERMISSIONS: Record<number, PermissionLevel[]> = {
   4: [PermissionLevel.FREE, PermissionLevel.BASIC, PermissionLevel.PREMIUM, PermissionLevel.TRIAL] // trial (acceso completo)
 };
 
-// Límites por plan
+// 🔐 ENTERPRISE-GRADE PLAN LIMITS
+// Updated: 2025-10-14 - Security Hardening for Legal Defense
 const PLAN_LIMITS = {
-  1: { // primo_chambeador - FREE
+  1: { // primo_chambeador - FREE (NO Legal Defense Access)
     estimatesBasic: 10,
     estimatesAI: 3,
-    contracts: 3,
+    contracts: 0, // ❌ NO ACCESO a Legal Defense
     propertyVerification: 5,
     permitAdvisor: 5,
     hasWatermark: true,
@@ -36,12 +37,13 @@ const PLAN_LIMITS = {
     hasOwlFunding: false,
     hasOwlAcademy: false,
     hasAIProjectManager: false,
+    hasLegalDefense: false, // ❌ Bloquear completamente Legal Defense
     supportLevel: 'community'
   },
-  2: { // mero_patron - BASIC
+  2: { // mero_patron - BASIC ($49.99/month - 50 contracts)
     estimatesBasic: -1, // ilimitado
     estimatesAI: 50,
-    contracts: -1, // ilimitado
+    contracts: 50, // ✅ 50 contratos/mes
     propertyVerification: 50,
     permitAdvisor: 50,
     hasWatermark: false,
@@ -50,12 +52,13 @@ const PLAN_LIMITS = {
     hasOwlFunding: true,
     hasOwlAcademy: true,
     hasAIProjectManager: true,
+    hasLegalDefense: true, // ✅ Acceso completo a Legal Defense
     supportLevel: 'priority'
   },
-  3: { // master_contractor - PREMIUM
+  3: { // master_contractor - PREMIUM ($99/month - unlimited)
     estimatesBasic: -1, // ilimitado
     estimatesAI: -1, // ilimitado
-    contracts: -1, // ilimitado
+    contracts: -1, // ✅ Contratos ILIMITADOS
     propertyVerification: -1, // ilimitado
     permitAdvisor: -1, // ilimitado
     hasWatermark: false,
@@ -64,12 +67,13 @@ const PLAN_LIMITS = {
     hasOwlFunding: true,
     hasOwlAcademy: true,
     hasAIProjectManager: true,
+    hasLegalDefense: true, // ✅ Acceso completo a Legal Defense
     supportLevel: 'vip'
   },
-  4: { // trial - TRIAL (acceso completo temporal)
+  4: { // trial - FREE TRIAL (14 días - acceso completo temporal)
     estimatesBasic: -1, // ilimitado durante trial
     estimatesAI: -1, // ilimitado durante trial
-    contracts: -1, // ilimitado durante trial
+    contracts: -1, // ✅ Contratos ILIMITADOS durante trial (14 días)
     propertyVerification: -1, // ilimitado durante trial
     permitAdvisor: -1, // ilimitado durante trial
     hasWatermark: false,
@@ -78,7 +82,9 @@ const PLAN_LIMITS = {
     hasOwlFunding: true,
     hasOwlAcademy: true,
     hasAIProjectManager: true,
-    supportLevel: 'premium'
+    hasLegalDefense: true, // ✅ Acceso completo a Legal Defense
+    supportLevel: 'premium',
+    trialDurationDays: 14 // 14 días de trial
   }
 };
 
@@ -239,14 +245,12 @@ export const validateUsageLimit = (feature: string) => {
 
 /**
  * Middleware que incrementa automáticamente el uso después de una operación exitosa
+ * 🔧 FIXED: Wrapper setup moved BEFORE next() to catch synchronous responses
  */
 export const incrementUsageOnSuccess = (feature: string) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Continuar con la operación normal
-      next();
-      
-      // Interceptar la respuesta para incrementar solo si es exitosa
+      // 🔧 FIX: Interceptar la respuesta ANTES de next() para capturar respuestas síncronas
       const originalSend = res.send;
       res.send = function(data) {
         // Solo incrementar si la respuesta es exitosa (status 200-299)
@@ -267,6 +271,9 @@ export const incrementUsageOnSuccess = (feature: string) => {
         
         return originalSend.call(this, data);
       };
+      
+      // Continuar con la operación normal (ahora con el wrapper ya instalado)
+      next();
       
     } catch (error) {
       console.error('❌ [USAGE-INCREMENT] Error setting up usage increment:', error);
@@ -309,6 +316,73 @@ export const requirePremiumFeature = (feature: string) => {
       });
     }
   };
+};
+
+/**
+ * 🔐 ENTERPRISE SECURITY: Legal Defense Access Validator
+ * Validates that user has explicit access to Legal Defense features
+ * Blocks Primo Chambeador (FREE) users completely
+ */
+export const requireLegalDefenseAccess = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // 1. Verificar autenticación
+    if (!req.firebaseUser?.uid) {
+      console.warn('🚨 [LEGAL-DEFENSE-SECURITY] Unauthenticated access attempt blocked');
+      return res.status(401).json({
+        success: false,
+        error: 'Autenticación requerida para acceder a Legal Defense',
+        code: 'AUTH_REQUIRED',
+        message: 'Por favor inicia sesión para continuar'
+      });
+    }
+
+    const userId = req.firebaseUser.uid;
+    const subscription = await getUserActiveSubscription(userId);
+
+    // 2. Determinar plan del usuario
+    let userSubscription = subscription;
+    if (!userSubscription) {
+      userSubscription = { planId: 1, status: 'free' }; // Default: Primo Chambeador
+    }
+
+    const planId = userSubscription.planId;
+    const limits = PLAN_LIMITS[planId as keyof typeof PLAN_LIMITS];
+
+    // 3. Validar acceso a Legal Defense
+    if (!limits || !limits.hasLegalDefense) {
+      console.warn(`🚨 [LEGAL-DEFENSE-SECURITY] User ${userId} (Plan ${planId}) blocked - NO Legal Defense access`);
+      
+      return res.status(403).json({
+        success: false,
+        error: 'Legal Defense requiere suscripción de paga',
+        code: 'LEGAL_DEFENSE_PREMIUM_REQUIRED',
+        userPlan: planId,
+        requiredPlans: [2, 3, 4], // Mero Patrón, Master Contractor, Free Trial
+        upgradeUrl: '/subscription',
+        message: planId === 1 
+          ? 'Usuarios de Primo Chambeador no tienen acceso a Legal Defense. Actualiza a Mero Patrón ($49.99/mes) para desbloquear 50 contratos mensuales.'
+          : 'Tu suscripción no incluye acceso a Legal Defense. Por favor actualiza tu plan.'
+      });
+    }
+
+    // 4. Añadir información al request
+    req.userSubscription = {
+      planId: planId,
+      level: PLAN_PERMISSIONS[planId as keyof typeof PLAN_PERMISSIONS] || [PermissionLevel.FREE],
+      limits: limits
+    };
+
+    console.log(`✅ [LEGAL-DEFENSE-SECURITY] User ${userId} (Plan ${planId}) authorized for Legal Defense`);
+    next();
+
+  } catch (error) {
+    console.error('❌ [LEGAL-DEFENSE-SECURITY] Validation error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Error interno validando acceso a Legal Defense',
+      code: 'LEGAL_DEFENSE_VALIDATION_ERROR'
+    });
+  }
 };
 
 // Extender el tipo Request para incluir información de suscripción

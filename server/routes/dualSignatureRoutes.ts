@@ -10,6 +10,11 @@ import { transactionalContractService } from "../services/transactionalContractS
 import { signTokenService } from "../services/signTokenService";
 import { verifyFirebaseAuth } from "../middleware/firebase-auth";
 import { requireAuth } from "../middleware/unified-session-auth";
+import { 
+  requireLegalDefenseAccess,
+  validateUsageLimit,
+  incrementUsageOnSuccess 
+} from "../middleware/subscription-auth";
 import { z } from "zod";
 
 const router = Router();
@@ -45,8 +50,14 @@ const signatureSubmissionSchema = z.object({
 /**
  * POST /api/dual-signature/initiate
  * Iniciar el proceso de firma dual
+ * 🔐 ENTERPRISE SECURITY: CRITICAL - Now protected (was PUBLIC!)
  */
-router.post("/initiate", async (req, res) => {
+router.post("/initiate", 
+  verifyFirebaseAuth, // ✅ Autenticación requerida
+  requireLegalDefenseAccess, // ✅ Bloquea Primo Chambeador
+  validateUsageLimit('contracts'), // ✅ Valida límite de contratos
+  incrementUsageOnSuccess('contracts'), // ✅ Cuenta el uso
+  async (req, res) => {
   try {
     console.log("🚀 [API] Initiating dual signature workflow...");
 

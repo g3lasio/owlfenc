@@ -9,7 +9,13 @@ import pdf from 'pdf-parse';
 import sharp from 'sharp';
 import { determineJurisdiction } from '../utils/jurisdictionDetector';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
-import { requireSubscriptionLevel, PermissionLevel } from '../middleware/subscription-auth';
+import { 
+  requireSubscriptionLevel, 
+  PermissionLevel, 
+  requireLegalDefenseAccess,
+  validateUsageLimit,
+  incrementUsageOnSuccess 
+} from '../middleware/subscription-auth';
 import { userMappingService } from '../services/userMappingService';
 
 const router = express.Router();
@@ -35,8 +41,12 @@ const anthropic = new Anthropic({
 });
 
 // PDF OCR extraction endpoint
-// 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger extracción de PDFs legales
-router.post('/extract-pdf', upload.single('pdf'), verifyFirebaseAuth, async (req, res) => {
+// 🔐 ENTERPRISE SECURITY: Legal Defense access required + subscription validation
+router.post('/extract-pdf', 
+  upload.single('pdf'), 
+  verifyFirebaseAuth, 
+  requireLegalDefenseAccess, // ✅ Bloquea Primo Chambeador
+  async (req, res) => {
   try {
     // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden procesar documentos legales
     const firebaseUid = req.firebaseUser?.uid;
@@ -289,7 +299,11 @@ Analyze this document thoroughly and extract all relevant project data:
 });
 
 // Get approved projects for user
-router.get('/approved-projects', verifyFirebaseAuth, async (req, res) => {
+// 🔐 ENTERPRISE SECURITY: Legal Defense access required
+router.get('/approved-projects', 
+  verifyFirebaseAuth, 
+  requireLegalDefenseAccess, // ✅ Bloquea Primo Chambeador
+  async (req, res) => {
   try {
     // 🔐 SECURITY FIX: Usar user_id real del usuario autenticado
     const firebaseUid = req.firebaseUser?.uid;
@@ -331,8 +345,13 @@ router.get('/approved-projects', verifyFirebaseAuth, async (req, res) => {
 });
 
 // Create project from extracted data
-// 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger creación de proyectos
-router.post('/create-project', verifyFirebaseAuth, async (req, res) => {
+// 🔐 ENTERPRISE SECURITY: Legal Defense + Usage Limit Validation
+router.post('/create-project', 
+  verifyFirebaseAuth, 
+  requireLegalDefenseAccess, // ✅ Bloquea Primo Chambeador
+  validateUsageLimit('contracts'), // ✅ Valida límite (50 para Mero Patrón)
+  incrementUsageOnSuccess('contracts'), // ✅ Cuenta el uso
+  async (req, res) => {
   try {
     const { extractedData } = req.body;
     
@@ -411,7 +430,13 @@ router.get('/approved-projects', async (req, res) => {
 });
 
 // Generate contract from project data
-router.post('/generate-contract', async (req, res) => {
+// 🔐 ENTERPRISE SECURITY: CRITICAL - Was PUBLIC, now protected
+router.post('/generate-contract', 
+  verifyFirebaseAuth, // ✅ Auth required (was missing!)
+  requireLegalDefenseAccess, // ✅ Bloquea Primo Chambeador
+  validateUsageLimit('contracts'), // ✅ Valida límite
+  incrementUsageOnSuccess('contracts'), // ✅ Cuenta el uso
+  async (req, res) => {
   try {
     const { projectId, contractType } = req.body;
     
@@ -460,7 +485,13 @@ router.post('/generate-contract', async (req, res) => {
 });
 
 // Generate defensive contract from extracted data
-router.post('/generate-defensive-contract', async (req, res) => {
+// 🔐 ENTERPRISE SECURITY: CRITICAL - Was PUBLIC, now protected
+router.post('/generate-defensive-contract', 
+  verifyFirebaseAuth, // ✅ Auth required (was missing!)
+  requireLegalDefenseAccess, // ✅ Bloquea Primo Chambeador
+  validateUsageLimit('contracts'), // ✅ Valida límite
+  incrementUsageOnSuccess('contracts'), // ✅ Cuenta el uso
+  async (req, res) => {
   try {
     const { extractedData } = req.body;
     
