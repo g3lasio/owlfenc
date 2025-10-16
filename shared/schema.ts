@@ -445,7 +445,8 @@ export const digitalContracts = pgTable('digital_contracts', {
   // Contract HTML and PDF storage
   contractHtml: text('contract_html').notNull(),
   originalPdfPath: text('original_pdf_path'),
-  signedPdfPath: text('signed_pdf_path'),
+  signedPdfPath: text('signed_pdf_path'), // DEPRECATED: Local filesystem path (non-permanent)
+  permanentPdfUrl: text('permanent_pdf_url'), // ✅ PERMANENT: Firebase Storage URL (never expires)
   
   // Signature tracking
   contractorSigned: boolean('contractor_signed').notNull().default(false),
