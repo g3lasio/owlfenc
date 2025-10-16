@@ -93,8 +93,8 @@ const PLANS: Plan[] = [
     limits: {
       basicEstimates: 5,
       aiEstimates: 1,
-      contracts: 2,
-      propertyVerifications: 2,
+      contracts: 0, // 🔐 NO Legal Defense access - Demo Mode only
+      propertyVerifications: 0, // 🔐 NO Legal Defense access
       permitAdvisor: 0,
       projects: 5,
       invoices: 0,
@@ -104,8 +104,8 @@ const PLANS: Plan[] = [
     features: [
       "5 estimados básicos/mes (con marca de agua)",
       "1 estimado con IA/mes (con marca de agua)",
-      "2 contratos/mes (con marca de agua)",
-      "2 Property Verification/mes",
+      "0 contratos (Demo Mode - upgrade para generar)",
+      "0 Property Verification (upgrade requerido)",
       "5 proyectos/mes"
     ]
   },
@@ -117,7 +117,7 @@ const PLANS: Plan[] = [
     limits: {
       basicEstimates: 50,
       aiEstimates: 20,
-      contracts: 25,
+      contracts: 50, // ✅ Matches backend Legal Defense limits
       propertyVerifications: 15,
       permitAdvisor: 10,
       projects: 30,
@@ -128,7 +128,7 @@ const PLANS: Plan[] = [
     features: [
       "50 estimados básicos/mes (sin marca de agua)",
       "20 estimados con IA/mes (sin marca de agua)",
-      "25 contratos/mes (sin marca de agua)",
+      "50 contratos/mes (sin marca de agua)",
       "15 Property Verification/mes",
       "10 Permit Advisor/mes",
       "30 proyectos AI/mes",
@@ -164,24 +164,24 @@ const PLANS: Plan[] = [
     name: "Free Trial",
     motto: "Prueba antes de comprar",
     price: 0,
-    trialDays: 7,
+    trialDays: 14, // ✅ Matches backend trial period
     limits: {
-      basicEstimates: 2,
-      aiEstimates: 1,
-      contracts: 1,
-      propertyVerifications: 1,
-      permitAdvisor: 0,
-      projects: 2,
-      invoices: 0,
-      paymentTracking: 0,
-      deepsearch: 0
+      basicEstimates: -1, // ✅ Unlimited during trial
+      aiEstimates: -1, // ✅ Unlimited during trial
+      contracts: -1, // ✅ Unlimited during trial (matches backend)
+      propertyVerifications: -1, // ✅ Unlimited during trial
+      permitAdvisor: -1, // ✅ Unlimited during trial
+      projects: -1, // ✅ Unlimited during trial
+      invoices: -1, // ✅ Unlimited during trial
+      paymentTracking: 2, // ✅ Full access during trial
+      deepsearch: -1 // ✅ Unlimited during trial
     },
     features: [
-      "7 días gratis",
-      "2 estimados básicos",
-      "1 estimado con IA",
-      "1 contrato",
-      "2 proyectos"
+      "14 días gratis - TODO ILIMITADO",
+      "Estimados ilimitados (con marca de agua)",
+      "Estimados con IA ilimitados (con marca de agua)",
+      "Contratos ilimitados (con marca de agua)",
+      "Acceso completo a todas las funciones"
     ]
   }
 ];
@@ -323,41 +323,44 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     }
 
     try {
-      // Get real usage data from robust backend
-      const response = await fetch(`/api/auth/can-access/${currentUser.uid}/basicEstimates`);
+      // 🔧 SECURITY FIX: Load all feature usage from backend
+      const [estimatesResponse, contractsResponse] = await Promise.all([
+        fetch(`/api/auth/can-access/${currentUser.uid}/basicEstimates`),
+        fetch(`/api/auth/can-access/${currentUser.uid}/contracts`)
+      ]);
       
-      if (response.ok) {
-        const data = await response.json();
-        
-        if (data.success && data.usage) {
-          // Map backend usage to frontend format
-          const usage = {
-            basicEstimates: data.usage.used || 0,
-            aiEstimates: 0, // Will be loaded separately if needed
-            contracts: 0,   // Will be loaded separately if needed
-            propertyVerifications: 0, // Will be loaded separately if needed
-            permitAdvisor: 0, // Will be loaded separately if needed
-            projects: 0,
-            deepsearch: 0,
-            month: new Date().toISOString().slice(0, 7)
-          };
-          
-          setUserUsage(usage);
-          console.log(`✅ [PERMISSION-CONTEXT] Usage loaded: ${data.usage.used}/${data.usage.limit} for basicEstimates`);
+      let basicEstimatesUsed = 0;
+      let contractsUsed = 0;
+      
+      // Load basic estimates usage
+      if (estimatesResponse.ok) {
+        const estimatesData = await estimatesResponse.json();
+        if (estimatesData.success && estimatesData.usage) {
+          basicEstimatesUsed = estimatesData.usage.used || 0;
         }
-      } else {
-        // Fallback to empty usage
-        setUserUsage({
-          basicEstimates: 0,
-          aiEstimates: 0,
-          contracts: 0,
-          propertyVerifications: 0,
-          permitAdvisor: 0,
-          projects: 0,
-          deepsearch: 0,
-          month: new Date().toISOString().slice(0, 7)
-        });
       }
+      
+      // Load contracts usage
+      if (contractsResponse.ok) {
+        const contractsData = await contractsResponse.json();
+        if (contractsData.success && contractsData.usage) {
+          contractsUsed = contractsData.usage.used || 0;
+        }
+      }
+      
+      const usage = {
+        basicEstimates: basicEstimatesUsed,
+        aiEstimates: 0, // Will be loaded separately if needed
+        contracts: contractsUsed, // ✅ Now loaded from backend
+        propertyVerifications: 0, // Will be loaded separately if needed
+        permitAdvisor: 0, // Will be loaded separately if needed
+        projects: 0,
+        deepsearch: 0,
+        month: new Date().toISOString().slice(0, 7)
+      };
+      
+      setUserUsage(usage);
+      console.log(`✅ [PERMISSION-CONTEXT] Usage loaded - estimates: ${basicEstimatesUsed}, contracts: ${contractsUsed}`);
     } catch (error) {
       console.error('Error loading user usage:', error);
       setUserUsage({

@@ -218,16 +218,8 @@ export default function SimpleContractGenerator() {
   const isMasterContractor = currentPlan?.id === 6;
   const isTrialMaster = currentPlan?.id === 4;
   
-  // Contract limits by plan (-1 means unlimited)
-  const contractLimit = isMasterContractor 
-    ? -1 
-    : isMeroPatron 
-      ? 50 
-      : isPrimoChambeador 
-        ? 5 
-        : isTrialMaster
-          ? 1
-          : 0;
+  // 🔧 SECURITY FIX: Use limits directly from userPlan (synced with backend)
+  const contractLimit = currentPlan?.limits?.contracts ?? 0; // -1 = unlimited, 0 = no access
   const contractsUsed = userUsage?.contracts || 0;
   const hasReachedContractLimit = contractLimit !== -1 && contractLimit !== null && contractsUsed >= contractLimit;
   
@@ -2481,13 +2473,68 @@ export default function SimpleContractGenerator() {
   const handleGenerateContract = useCallback(async () => {
     if (!selectedProject || !currentUser?.uid) return;
 
-    // Check contract access permissions (Trial Master has full access)
+    // 🎨 DEMO MODE for Primo Chambeador - Show preview without backend call
     if (isPrimoChambeador) {
-      toast({
-        title: "Upgrade Required",
-        description: "Upgrade to Mero Patrón to unlock contract generation",
-        variant: "destructive",
-      });
+      setIsLoading(true);
+      
+      try {
+        // Generate local demo preview (no backend call)
+        const demoContractHTML = `
+          <div style="position: relative; padding: 40px; font-family: Arial, sans-serif; background: white; color: black;">
+            <!-- DEMO WATERMARK -->
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 120px; color: rgba(255, 193, 7, 0.15); font-weight: bold; pointer-events: none; z-index: 999;">
+              DEMO MODE
+            </div>
+            
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #1a1a1a; margin-bottom: 10px;">CONSTRUCTION CONTRACT</h1>
+              <p style="color: #666;">Demo Preview - Upgrade to Generate Real Contracts</p>
+            </div>
+            
+            <div style="margin: 20px 0; padding: 15px; background: #f5f5f5; border-left: 4px solid #ffc107;">
+              <h3 style="margin: 0 0 10px 0; color: #1a1a1a;">Project Details</h3>
+              <p style="margin: 5px 0;"><strong>Client:</strong> ${editableData.clientName || selectedProject.clientName || 'Client Name'}</p>
+              <p style="margin: 5px 0;"><strong>Project:</strong> ${selectedProject.projectType || 'Construction Project'}</p>
+              <p style="margin: 5px 0;"><strong>Total Amount:</strong> $${getCorrectProjectTotal(selectedProject).toLocaleString()}</p>
+            </div>
+            
+            <div style="margin: 30px 0;">
+              <h3 style="color: #1a1a1a;">Contract Terms (Demo Preview)</h3>
+              <p style="line-height: 1.6; color: #333;">
+                This is a demo preview showing how your professional contract would appear. 
+                Upgrade to <strong>Mero Patrón</strong> or higher to generate real, legally-binding contracts 
+                with AI-powered legal defense clauses, dual-signature capabilities, and full customization.
+              </p>
+            </div>
+            
+            <div style="margin-top: 40px; padding: 20px; background: #fff3cd; border: 2px dashed #ffc107; border-radius: 8px; text-align: center;">
+              <h3 style="margin: 0 0 10px 0; color: #856404;">🔒 Upgrade to Unlock</h3>
+              <p style="margin: 0; color: #856404;">Get access to real contract generation, legal defense, and dual signatures</p>
+            </div>
+          </div>
+        `;
+        
+        setGeneratedContract(demoContractHTML);
+        setContractHTML(demoContractHTML);
+        setIsContractReady(true);
+        setCurrentStep(3);
+        
+        toast({
+          title: "📋 Demo Preview Generated",
+          description: "This is a preview. Upgrade to Mero Patrón to generate real contracts.",
+          variant: "default",
+        });
+        
+      } catch (error) {
+        console.error("❌ [DEMO-MODE] Error generating demo:", error);
+        toast({
+          title: "Error",
+          description: "Could not generate demo preview",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -2883,6 +2930,28 @@ export default function SimpleContractGenerator() {
       });
 
       if (!response.ok) {
+        // 🔐 ENTERPRISE SECURITY: Handle permission errors with upgrade CTAs
+        if (response.status === 403) {
+          const errorData = await response.json().catch(() => ({ message: 'Access denied' }));
+          
+          // Personalized upgrade message based on plan
+          let upgradeMessage = "Upgrade to access contract generation";
+          if (isPrimoChambeador) {
+            upgradeMessage = "Upgrade to Mero Patrón ($49.99/mo) to generate real contracts with Legal Defense";
+          } else if (isMeroPatron && errorData.message?.includes('limit reached')) {
+            upgradeMessage = "You've used all 50 contracts this month. Upgrade to Master Contractor for unlimited contracts.";
+          }
+          
+          toast({
+            title: "🔒 Upgrade Required",
+            description: upgradeMessage,
+            variant: "destructive",
+            duration: 6000,
+          });
+          
+          throw new Error(upgradeMessage);
+        }
+        
         throw new Error(`Dual signature initiation failed: ${response.status}`);
       }
 
@@ -3393,9 +3462,44 @@ export default function SimpleContractGenerator() {
   return (
     <div className="min-h-screen bg-black text-white p-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold mb-8 text-center text-cyan-400">
+        <h1 className="text-2xl md:text-3xl font-bold mb-4 text-center text-cyan-400">
           Legal Defense Contract Generator
         </h1>
+
+        {/* Usage Counter for Limited Plans */}
+        {(isMeroPatron || isTrialMaster) && contractLimit !== -1 && (
+          <div className="mb-6 flex justify-center">
+            <div className={`inline-flex items-center gap-3 px-4 py-2 rounded-lg border ${
+              hasReachedContractLimit 
+                ? 'bg-red-900/20 border-red-500/50 text-red-400' 
+                : contractsUsed >= contractLimit * 0.8
+                  ? 'bg-yellow-900/20 border-yellow-500/50 text-yellow-400'
+                  : 'bg-cyan-900/20 border-cyan-500/50 text-cyan-400'
+            }`}>
+              <FileCheck className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                {contractsUsed} / {contractLimit} contracts used this month
+              </span>
+              {hasReachedContractLimit && (
+                <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded">
+                  LIMIT REACHED
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Unlimited Badge for Master Contractor */}
+        {isMasterContractor && (
+          <div className="mb-6 flex justify-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-900/30 to-cyan-900/30 border border-purple-500/50">
+              <Sparkles className="h-4 w-4 text-purple-400" />
+              <span className="text-sm font-medium text-purple-400">
+                Unlimited Contracts - Master Contractor
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* View Navigation */}
         <div className="flex justify-center mb-6">
