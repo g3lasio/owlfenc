@@ -47,17 +47,6 @@ if (!admin.apps.length) {
  */
 export const verifyFirebaseAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // TEMPORARY BYPASS: Allow access for troubleshooting user
-    const BYPASS_UID = 'qztot1YEy3UWz605gIH2iwwWhW53';
-    if (req.query.bypass_uid === BYPASS_UID || req.headers['x-bypass-uid'] === BYPASS_UID) {
-      console.log(`🔧 [AUTH-BYPASS] Temporary access granted for: ${BYPASS_UID}`);
-      req.firebaseUser = {
-        uid: BYPASS_UID,
-        email: 'truthbackpack@gmail.com'
-      };
-      return next();
-    }
-    
     // Obtener el token del header Authorization
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -70,43 +59,9 @@ export const verifyFirebaseAuth = async (req: Request, res: Response, next: Next
 
     const token = authHeader.substring(7); // Remover "Bearer "
     
-    // DEBUGGING TEMPORAL: Ver qué token está llegando
-    console.log(`🔍 [AUTH-DEBUG] Token recibido: ${token.substring(0, 20)}...`);
-    console.log(`🔍 [AUTH-DEBUG] Token tipo: ${token.startsWith('firebase_') ? 'FALLBACK' : token.includes('.') ? 'JWT' : 'UID'}`);
-
     try {
-      // 🔐 CRITICAL FIX: Detectar si es un UID (sin puntos, longitud 20-30 chars típicamente)
-      // Los JWT tienen puntos (xxx.yyy.zzz), los UIDs no y son más cortos
-      const hasNoDots = !token.includes('.');
-      const isShortLength = token.length >= 20 && token.length <= 40;
-      const isLikelyUID = hasNoDots && isShortLength;
-      
-      if (isLikelyUID) {
-        console.log('🔧 [AUTH-UID-MODE] Token appears to be a Firebase UID (no dots, short length), using direct authentication');
-        // Usar el UID directamente sin verificación JWT
-        req.firebaseUser = {
-          uid: token,
-          email: 'uid-fallback@firebase.local' // Email temporal
-        };
-        console.log(`✅ Usuario autenticado via UID: ${token}`);
-        return next();
-      }
-      
-      // Manejar tokens de fallback por problemas de conectividad
-      if (token.startsWith('firebase_')) {
-        console.log('🔧 [AUTH-FALLBACK] Usando token de fallback por conectividad');
-        const uidMatch = token.match(/firebase_([^_]+)_/);
-        if (uidMatch) {
-          req.firebaseUser = {
-            uid: uidMatch[1],
-            email: 'fallback@example.com' // Email de fallback
-          };
-          console.log(`✅ Usuario autenticado (fallback): ${uidMatch[1]}`);
-          return next();
-        }
-      }
-      
-      // Verificar el token con Firebase Admin (solo si parece ser un JWT válido)
+      // 🔐 ENTERPRISE SECURITY: ONLY accept valid Firebase JWT tokens
+      // NO BYPASSES - NO FALLBACKS - NO UID HEURISTICS
       const decodedToken = await admin.auth().verifyIdToken(token);
       
       req.firebaseUser = {

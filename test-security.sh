@@ -74,8 +74,8 @@ echo ""
 
 # Test 5: Verificar create-project protegido
 echo "📋 TEST 5: Create Project protegido"
-echo "   Verificando /api/legal-defense/create-project"
-project_response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/api/legal-defense/create-project" \
+echo "   Verificando /api/legal-defense-legacy/create-project"
+project_response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/api/legal-defense-legacy/create-project" \
   -H "Content-Type: application/json" \
   -d '{"extractedData":{}}')
 project_status=$(echo "$project_response" | tail -n 1)
