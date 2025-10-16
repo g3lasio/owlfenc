@@ -1,5 +1,5 @@
 /**
- * FIREBASE STORAGE SERVICE
+ * FIREBASE STORAGE SERVICE (ADMIN SDK - SERVER-SIDE)
  * Almacenamiento permanente de PDFs firmados en Firebase Storage
  * 
  * CARACTERÍSTICAS:
@@ -7,36 +7,30 @@
  * - PDFs accesibles 24/7 incluso después de reiniciar el servidor
  * - Backup automático en la nube
  * - Escalable y confiable
+ * 
+ * ✅ FIXED: Usa Firebase Admin SDK para Node.js (no Web SDK)
  */
 
-import { initializeApp, getApps } from 'firebase/app';
-import { 
-  getStorage, 
-  ref, 
-  uploadBytes, 
-  getDownloadURL, 
-  deleteObject 
-} from 'firebase/storage';
+import * as admin from 'firebase-admin';
 
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY,
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.FIREBASE_PROJECT_ID || 'owl-fence-mervin',
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'owl-fence-mervin.appspot.com',
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.FIREBASE_APP_ID
-};
+// Initialize Firebase Admin if not already initialized
+if (!admin.apps.length) {
+  try {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
+    
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'owl-fence-mervin.appspot.com'
+    });
+    
+    console.log('✅ [FIREBASE-ADMIN-STORAGE] Firebase Admin SDK initialized for storage');
+  } catch (error: any) {
+    console.error('❌ [FIREBASE-ADMIN-STORAGE] Failed to initialize Firebase Admin:', error.message);
+    console.warn('⚠️ [FIREBASE-ADMIN-STORAGE] Falling back to local storage only');
+  }
+}
 
-// Initialize Firebase only if not already initialized
-const app = getApps().length === 0 
-  ? initializeApp(firebaseConfig, 'storage-app')
-  : getApps()[0];
-
-const storage = getStorage(app);
-
-console.log('✅ [FIREBASE-STORAGE] Firebase Storage initialized');
-console.log('📦 [FIREBASE-STORAGE] Bucket:', firebaseConfig.storageBucket);
+const bucket = admin.apps.length > 0 ? admin.storage().bucket() : null;
 
 export class FirebaseStorageService {
   /**
@@ -46,34 +40,46 @@ export class FirebaseStorageService {
    * @returns Permanent download URL
    */
   async uploadContractPdf(pdfBuffer: Buffer, contractId: string): Promise<string> {
+    if (!bucket) {
+      throw new Error('Firebase Storage not initialized - check FIREBASE_SERVICE_ACCOUNT env variable');
+    }
+
     try {
       console.log(`📤 [FIREBASE-STORAGE] Uploading PDF for contract: ${contractId}`);
       console.log(`📦 [FIREBASE-STORAGE] PDF size: ${(pdfBuffer.length / 1024).toFixed(2)} KB`);
 
       // Create reference with path: signed_contracts/{contractId}.pdf
       const storagePath = `signed_contracts/${contractId}.pdf`;
-      const storageRef = ref(storage, storagePath);
+      const file = bucket.file(storagePath);
 
       console.log(`📁 [FIREBASE-STORAGE] Storage path: ${storagePath}`);
 
       // Upload PDF with metadata
-      const metadata = {
-        contentType: 'application/pdf',
-        customMetadata: {
-          contractId: contractId,
-          uploadedAt: new Date().toISOString(),
-          type: 'dual-signature-contract'
-        }
-      };
+      await file.save(pdfBuffer, {
+        metadata: {
+          contentType: 'application/pdf',
+          metadata: {
+            contractId: contractId,
+            uploadedAt: new Date().toISOString(),
+            type: 'dual-signature-contract'
+          }
+        },
+        public: false, // Keep private, require authentication for download
+        resumable: false // For small files, use simple upload
+      });
 
-      await uploadBytes(storageRef, pdfBuffer, metadata);
       console.log(`✅ [FIREBASE-STORAGE] PDF uploaded successfully`);
 
-      // Get permanent download URL
-      const downloadURL = await getDownloadURL(storageRef);
-      console.log(`🔗 [FIREBASE-STORAGE] Permanent URL generated: ${downloadURL.substring(0, 100)}...`);
+      // Make the file publicly accessible with a signed URL (valid for 50 years)
+      const [signedUrl] = await file.getSignedUrl({
+        action: 'read',
+        expires: Date.now() + (50 * 365 * 24 * 60 * 60 * 1000) // 50 years from now
+      });
 
-      return downloadURL;
+      console.log(`🔗 [FIREBASE-STORAGE] Permanent signed URL generated (valid 50 years)`);
+      console.log(`🔗 [FIREBASE-STORAGE] URL preview: ${signedUrl.substring(0, 100)}...`);
+
+      return signedUrl;
     } catch (error: any) {
       console.error(`❌ [FIREBASE-STORAGE] Error uploading PDF:`, error);
       throw new Error(`Failed to upload PDF to Firebase Storage: ${error.message}`);
@@ -85,13 +91,17 @@ export class FirebaseStorageService {
    * @param contractId - Contract identifier
    */
   async deleteContractPdf(contractId: string): Promise<void> {
+    if (!bucket) {
+      throw new Error('Firebase Storage not initialized');
+    }
+
     try {
       console.log(`🗑️ [FIREBASE-STORAGE] Deleting PDF for contract: ${contractId}`);
 
       const storagePath = `signed_contracts/${contractId}.pdf`;
-      const storageRef = ref(storage, storagePath);
+      const file = bucket.file(storagePath);
 
-      await deleteObject(storageRef);
+      await file.delete();
       console.log(`✅ [FIREBASE-STORAGE] PDF deleted successfully`);
     } catch (error: any) {
       console.error(`❌ [FIREBASE-STORAGE] Error deleting PDF:`, error);
@@ -105,17 +115,19 @@ export class FirebaseStorageService {
    * @returns True if PDF exists
    */
   async pdfExists(contractId: string): Promise<boolean> {
+    if (!bucket) {
+      return false;
+    }
+
     try {
       const storagePath = `signed_contracts/${contractId}.pdf`;
-      const storageRef = ref(storage, storagePath);
+      const file = bucket.file(storagePath);
 
-      await getDownloadURL(storageRef);
-      return true;
+      const [exists] = await file.exists();
+      return exists;
     } catch (error: any) {
-      if (error.code === 'storage/object-not-found') {
-        return false;
-      }
-      throw error;
+      console.error(`❌ [FIREBASE-STORAGE] Error checking PDF existence:`, error);
+      return false;
     }
   }
 
@@ -125,18 +137,30 @@ export class FirebaseStorageService {
    * @returns Download URL if exists, null otherwise
    */
   async getContractPdfUrl(contractId: string): Promise<string | null> {
+    if (!bucket) {
+      return null;
+    }
+
     try {
       const storagePath = `signed_contracts/${contractId}.pdf`;
-      const storageRef = ref(storage, storagePath);
+      const file = bucket.file(storagePath);
 
-      const downloadURL = await getDownloadURL(storageRef);
-      return downloadURL;
-    } catch (error: any) {
-      if (error.code === 'storage/object-not-found') {
+      const [exists] = await file.exists();
+      if (!exists) {
         console.warn(`⚠️ [FIREBASE-STORAGE] PDF not found for contract: ${contractId}`);
         return null;
       }
-      throw error;
+
+      // Generate signed URL valid for 50 years
+      const [signedUrl] = await file.getSignedUrl({
+        action: 'read',
+        expires: Date.now() + (50 * 365 * 24 * 60 * 60 * 1000)
+      });
+
+      return signedUrl;
+    } catch (error: any) {
+      console.error(`❌ [FIREBASE-STORAGE] Error getting PDF URL:`, error);
+      return null;
     }
   }
 }

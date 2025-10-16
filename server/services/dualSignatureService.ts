@@ -515,6 +515,8 @@ export class DualSignatureService {
 
   /**
    * Download signed PDF
+   * ✅ PRIORITY 1: Firebase Storage (permanent)
+   * FALLBACK 2: Local filesystem (temporary, legacy)
    */
   async downloadSignedPdf(
     contractId: string,
@@ -561,32 +563,55 @@ export class DualSignatureService {
         };
       }
 
-      if (!contract.signedPdfPath) {
-        return {
-          success: false,
-          message: "Signed PDF not available",
-        };
+      // ✅ PRIORITY 1: Try Firebase Storage (PERMANENT)
+      if (contract.permanentPdfUrl) {
+        try {
+          console.log("☁️ [DUAL-SIGNATURE] Fetching PDF from Firebase Storage...");
+          const fetch = (await import("node-fetch")).default;
+          const response = await fetch(contract.permanentPdfUrl);
+          
+          if (response.ok) {
+            const pdfBuffer = Buffer.from(await response.arrayBuffer());
+            console.log("✅ [DUAL-SIGNATURE] PDF downloaded from Firebase Storage successfully");
+            return {
+              success: true,
+              pdfBuffer,
+              message: "PDF downloaded successfully from permanent storage",
+            };
+          } else {
+            console.warn("⚠️ [DUAL-SIGNATURE] Failed to fetch from Firebase Storage, trying local fallback...");
+          }
+        } catch (storageError: any) {
+          console.warn("⚠️ [DUAL-SIGNATURE] Firebase Storage fetch failed:", storageError.message);
+        }
       }
 
-      // Read PDF file
-      const fs = await import("fs");
-      const path = await import("path");
-      const fullPath = path.join(process.cwd(), contract.signedPdfPath);
+      // FALLBACK 2: Try local filesystem (TEMPORARY, legacy)
+      if (contract.signedPdfPath) {
+        try {
+          console.log("💾 [DUAL-SIGNATURE] Trying local filesystem (fallback)...");
+          const fs = await import("fs");
+          const path = await import("path");
+          const fullPath = path.join(process.cwd(), contract.signedPdfPath);
 
-      if (!fs.existsSync(fullPath)) {
-        return {
-          success: false,
-          message: "Signed PDF file not found",
-        };
+          if (fs.existsSync(fullPath)) {
+            const pdfBuffer = fs.readFileSync(fullPath);
+            console.log("✅ [DUAL-SIGNATURE] PDF downloaded from local filesystem (fallback)");
+            return {
+              success: true,
+              pdfBuffer,
+              message: "PDF downloaded successfully from local storage",
+            };
+          }
+        } catch (localError: any) {
+          console.warn("⚠️ [DUAL-SIGNATURE] Local filesystem fetch failed:", localError.message);
+        }
       }
 
-      const pdfBuffer = fs.readFileSync(fullPath);
-      console.log("✅ [DUAL-SIGNATURE] PDF downloaded successfully");
-
+      // Both methods failed
       return {
-        success: true,
-        pdfBuffer,
-        message: "PDF downloaded successfully",
+        success: false,
+        message: "Signed PDF not available - please contact support",
       };
     } catch (error: any) {
       console.error("❌ [DUAL-SIGNATURE] Error downloading PDF:", error);
@@ -685,6 +710,7 @@ export class DualSignatureService {
 
       let pdfBuffer: Buffer | null = null;
       let signedPdfPath: string | null = null;
+      let permanentPdfUrl: string | null = null;
 
       try {
         // Import PDF service
@@ -716,7 +742,22 @@ export class DualSignatureService {
           },
         });
 
-        // Save PDF to file system
+        console.log("✅ [DUAL-SIGNATURE] PDF generated successfully");
+
+        // ✅ NEW: Upload PDF to Firebase Storage for PERMANENT storage
+        try {
+          const { firebaseStorageService } = await import("./firebaseStorageService");
+          
+          console.log("☁️ [DUAL-SIGNATURE] Uploading PDF to Firebase Storage for permanent storage...");
+          permanentPdfUrl = await firebaseStorageService.uploadContractPdf(pdfBuffer, contractId);
+          console.log("✅ [DUAL-SIGNATURE] PDF uploaded to Firebase Storage successfully");
+          console.log("🔗 [DUAL-SIGNATURE] Permanent URL:", permanentPdfUrl.substring(0, 100) + "...");
+        } catch (storageError: any) {
+          console.error("❌ [DUAL-SIGNATURE] Failed to upload to Firebase Storage:", storageError.message);
+          // Continue with local storage as fallback
+        }
+
+        // FALLBACK: Save PDF to local file system (temporary, for backward compatibility)
         const fs = await import("fs");
         const path = await import("path");
         signedPdfPath = `signed_contracts/contract_${contractId}_signed.pdf`;
@@ -729,7 +770,7 @@ export class DualSignatureService {
         }
 
         fs.writeFileSync(fullPath, pdfBuffer);
-        console.log("💾 [DUAL-SIGNATURE] Signed PDF saved to:", signedPdfPath);
+        console.log("💾 [DUAL-SIGNATURE] Signed PDF saved locally (fallback):", signedPdfPath);
       } catch (pdfError: any) {
         console.error(
           "⚠️ [DUAL-SIGNATURE] PDF generation failed, completing contract without PDF:",
@@ -738,6 +779,7 @@ export class DualSignatureService {
         // Contract will still be marked as completed but without PDF
         pdfBuffer = null;
         signedPdfPath = null;
+        permanentPdfUrl = null;
       }
 
       // Update database with completion status (with or without PDF)
@@ -746,7 +788,8 @@ export class DualSignatureService {
         .update(digitalContracts)
         .set({
           status: "completed",
-          signedPdfPath: signedPdfPath,
+          signedPdfPath: signedPdfPath, // DEPRECATED: Local path (for backward compatibility)
+          permanentPdfUrl: permanentPdfUrl, // ✅ PERMANENT: Firebase Storage URL
           completionDate: completionDate, // ✅ Save completion date when both parties sign
           updatedAt: completionDate,
         })

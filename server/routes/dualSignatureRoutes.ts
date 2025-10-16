@@ -516,8 +516,9 @@ router.get("/completed/:userId", async (req, res) => {
       contractorSigned: true,
       clientSigned: true,
       createdAt: contract.createdAt?.toISOString() || new Date().toISOString(),
-      hasPdf: !!contract.signedPdfPath,
-      pdfUrl: contract.signedPdfPath || null,
+      hasPdf: !!(contract.permanentPdfUrl || contract.signedPdfPath), // ✅ Check permanent URL first
+      pdfUrl: contract.permanentPdfUrl || contract.signedPdfPath || null, // ✅ PRIORITY: Firebase Storage URL
+      permanentPdfUrl: contract.permanentPdfUrl, // ✅ PERMANENT: Never expires
       source: 'dual-signature'
     }));
 
