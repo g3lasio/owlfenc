@@ -33,6 +33,7 @@ This project is an AI-powered legal document and permit management platform feat
 - AGENT FUNCTIONS HEADER INTEGRATION
 - DATA CONSISTENCY SECURITY CRITICAL: Sistema robusto de mapeo de usuarios eliminando inconsistencias de datos entre dispositivos
 - PROFILE SYNC FIX CRITICAL: Corregida sincronización de perfil contractor entre dispositivos - Firebase como fuente de verdad, localStorage solo como caché
+- ENTERPRISE CONTRACT SECURITY SYSTEM (2025-10-16): Sistema de seguridad enterprise-grade completo para Legal Defense con validación backend robusta, Demo Mode para usuarios gratuitos, contadores de uso en tiempo real y manejo personalizado de errores 403
 
 ## System Architecture
 
@@ -61,6 +62,62 @@ This project is an AI-powered legal document and permit management platform feat
 - **API Design**: Secure API endpoints for subscription management, usage tracking, authentication, and password reset functionality, enforced with middleware for access controls and usage limits. Critical legal defense functionalities have integrated robust authentication and token verification.
 - **Holographic Sharing System**: Futuristic Iron Man-style interface for PDF generation and URL sharing with complete accessibility support, motion optimization, and robust error handling. Features holographic buttons, matrix effects, scanning lines, and corner frames with professional-grade visual design.
 - **Public URL Sharing System**: Simplified estimate sharing system converting decorative buttons to functional direct URL sharing. Generates permanent, stable URLs that work in both development and deployment environments without authentication requirements. Uses Firebase Admin SDK for data persistence, crypto-secure shareId generation (64-byte hex), and dynamic URL building via `url-builder.ts`. Features public routes (`/shared-estimate/:shareId`) with access tracking and permanent link storage (no expiration).
+- **Enterprise Contract Security System (2025-10-16)**: Comprehensive tiered subscription-based access control for Legal Defense features with backend enforcement, frontend Demo Mode, and real-time usage tracking.
+
+## Enterprise Contract Security System
+
+### Security Architecture (2025-10-16)
+**Triple-layer enterprise-grade security preventing expert hackers from bypassing subscription restrictions:**
+
+#### Backend Protection (Impenetrable)
+- **Subscription Middleware** (`server/middleware/subscription-auth.ts`):
+  - `requireLegalDefenseAccess`: Blocks users without Legal Defense (Primo Chambeador gets 403)
+  - `validateUsageLimit`: Checks usage before allowing action (Mero Patrón blocked at 50 contracts)
+  - `incrementUsageOnSuccess`: Counts usage ONLY on successful 2xx responses (fixed critical bug where wrapper was installed after next())
+- **Protected Endpoints**:
+  - `/api/legal-defense/*`: ALL endpoints protected (extract-pdf, create-project, generate-contract, generate-defensive-contract)
+  - `/api/dual-signature/initiate`: Dual-signature contract creation protected
+- **Plan Structure**:
+  - Free Trial (14 days): contracts: -1 (unlimited), hasLegalDefense: true
+  - Primo Chambeador (FREE): contracts: 0, hasLegalDefense: false (BLOCKED)
+  - Mero Patrón ($49.99): contracts: 50, hasLegalDefense: true
+  - Master Contractor ($99): contracts: -1 (unlimited), hasLegalDefense: true
+
+#### Frontend Protection (User Experience)
+- **Demo Mode for Primo Chambeador** (`client/src/pages/SimpleContractGenerator.tsx`):
+  - Generates local HTML preview with "DEMO MODE" watermark
+  - Shows project data without backend calls
+  - Blocks download and signature actions
+  - Clear upgrade CTAs ($49.99/mo to Mero Patrón)
+- **403 Error Handling**:
+  - Personalized messages per plan
+  - Primo: "Upgrade to Mero Patrón ($49.99/mo)"
+  - Mero (limit): "50 contracts used, upgrade to Master"
+  - Extended duration toasts (6000ms)
+- **Real-time Usage Counter**:
+  - Displays "X / 50 contracts used" for Mero Patrón
+  - Color coding: cyan → yellow (80%) → red (100%)
+  - "LIMIT REACHED" badge when exhausted
+  - "Unlimited Contracts" badge for Master
+
+#### Data Synchronization (Consistency)
+- **PermissionContext** (`client/src/contexts/PermissionContext.tsx`):
+  - Plan limits synced with backend (Primo: 0, Mero: 50, Trial: -1, Master: -1)
+  - Loads contract usage from `/api/auth/can-access/{uid}/contracts`
+  - Real-time updates via `robustSubscriptionService`
+- **SimpleContractGenerator**:
+  - Uses `currentPlan.limits.contracts` (no hardcoded limits)
+  - Respects backend validation
+  - Prevents bypass attempts
+
+### Security Testing Checklist
+1. ✅ Primo Chambeador cannot create real contracts (Demo Mode only)
+2. ✅ Free Trial has full access for 14 days
+3. ✅ Mero Patrón blocked at 50 contracts
+4. ✅ Master Contractor has unlimited access
+5. ✅ Direct API calls blocked with 403 (not just UI disabled)
+6. ✅ Usage counter updates in real-time
+7. ✅ Frontend-backend limits fully synchronized
 
 ## External Dependencies
 - Firebase (Firestore, Admin SDK)
