@@ -150,6 +150,7 @@ export default function SimpleContractGenerator() {
     permitRequired: "",
     permitResponsibility: "contractor",
     warrantyYears: "1",
+    projectTotal: 0, // Editable project total
     paymentMilestones: [
       { id: 1, description: "Initial deposit", percentage: 50, amount: 0 },
       { id: 2, description: "Project completion", percentage: 50, amount: 0 },
@@ -1675,6 +1676,7 @@ export default function SimpleContractGenerator() {
             "contractor",
           warrantyYears:
             (contractDataFromHistory.formFields as any)?.warrantyYears || "1",
+          projectTotal: contractTotal, // Editable project total from history
           paymentMilestones: paymentMilestones as any,
         });
 
@@ -2177,6 +2179,7 @@ export default function SimpleContractGenerator() {
         setContractData(contractData);
 
         // Initialize editable data with comprehensive project data
+        const projectTotal = getCorrectProjectTotal(project);
         setEditableData({
           clientName,
           clientEmail,
@@ -2187,18 +2190,19 @@ export default function SimpleContractGenerator() {
           permitRequired: "",
           permitResponsibility: "contractor",
           warrantyYears: "1",
+          projectTotal, // Editable project total
           paymentMilestones: [
             {
               id: 1,
               description: "Initial deposit",
               percentage: 50,
-              amount: getCorrectProjectTotal(project) * 0.5,
+              amount: projectTotal * 0.5,
             },
             {
               id: 2,
               description: "Project completion",
               percentage: 50,
-              amount: getCorrectProjectTotal(project) * 0.5,
+              amount: projectTotal * 0.5,
             },
           ],
         });
@@ -2842,6 +2846,7 @@ export default function SimpleContractGenerator() {
       permitRequired: "",
       permitResponsibility: "contractor",
       warrantyYears: "1",
+      projectTotal: 0, // Reset editable project total
       paymentMilestones: [
         { id: 1, description: "Initial deposit", percentage: 50, amount: 0 },
         { id: 2, description: "Project completion", percentage: 50, amount: 0 },
@@ -4395,16 +4400,31 @@ export default function SimpleContractGenerator() {
                           Payment Milestones (Customizable)
                         </h3>
                         <div className="bg-green-900/30 border border-green-400 rounded-lg px-4 py-2">
-                          <p className="text-sm text-gray-400">Project Total</p>
-                          <p className="text-xl font-bold text-green-400">
-                            $
-                            {getCorrectProjectTotal(
-                              selectedProject,
-                            ).toLocaleString("en-US", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </p>
+                          <Label className="text-sm text-gray-400 mb-1">Project Total (Editable)</Label>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl font-bold text-green-400">$</span>
+                            <Input
+                              type="number"
+                              value={editableData.projectTotal}
+                              onChange={(e) => {
+                                const newTotal = parseFloat(e.target.value) || 0;
+                                // Recalculate all milestone amounts based on percentages
+                                const updatedMilestones = editableData.paymentMilestones.map(milestone => ({
+                                  ...milestone,
+                                  amount: newTotal * (milestone.percentage / 100)
+                                }));
+                                setEditableData((prev) => ({
+                                  ...prev,
+                                  projectTotal: newTotal,
+                                  paymentMilestones: updatedMilestones
+                                }));
+                              }}
+                              className="bg-gray-800 border-green-400 text-green-400 font-bold text-xl w-32"
+                              min="0"
+                              step="0.01"
+                              placeholder="0.00"
+                            />
+                          </div>
                         </div>
                       </div>
                       <div className="space-y-4">
@@ -4483,12 +4503,9 @@ export default function SimpleContractGenerator() {
                                           parseInt(e.target.value) || 0;
                                         newMilestones[index].percentage =
                                           newPercentage;
-                                        const totalAmount =
-                                          getCorrectProjectTotal(
-                                            selectedProject,
-                                          );
+                                        // Use editable projectTotal instead of getCorrectProjectTotal
                                         newMilestones[index].amount =
-                                          totalAmount * (newPercentage / 100);
+                                          editableData.projectTotal * (newPercentage / 100);
                                         setEditableData((prev) => ({
                                           ...prev,
                                           paymentMilestones: newMilestones,
@@ -4532,8 +4549,7 @@ export default function SimpleContractGenerator() {
                                   (sum, m) => sum + m.percentage,
                                   0,
                                 );
-                              const totalAmount =
-                                getCorrectProjectTotal(selectedProject);
+                              // Use editable projectTotal instead of getCorrectProjectTotal
                               const newMilestone = {
                                 id: newId,
                                 description: `Milestone ${newId}`,
@@ -4542,7 +4558,7 @@ export default function SimpleContractGenerator() {
                                     ? remainingPercentage
                                     : 0,
                                 amount:
-                                  totalAmount * (remainingPercentage / 100),
+                                  editableData.projectTotal * (remainingPercentage / 100),
                               };
                               setEditableData((prev) => ({
                                 ...prev,
