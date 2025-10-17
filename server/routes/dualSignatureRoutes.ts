@@ -461,10 +461,11 @@ router.get("/completed/:userId", async (req, res) => {
     // Import database and services
     const { db } = await import("../db");
     const { digitalContracts } = await import("../../shared/schema");
-    const { eq, and } = await import("drizzle-orm");
+    const { eq, and, desc } = await import("drizzle-orm");
     const { db: firebaseDb } = await import("../lib/firebase-admin");
 
     // 1. Get COMPLETED contracts from PostgreSQL (both parties signed)
+    // ✅ FIXED: Order DESC to show most recent first
     const postgresContracts = await db
       .select()
       .from(digitalContracts)
@@ -475,32 +476,37 @@ router.get("/completed/:userId", async (req, res) => {
           eq(digitalContracts.clientSigned, true)
         )
       )
-      .orderBy(digitalContracts.createdAt);
+      .orderBy(desc(digitalContracts.createdAt));
 
     console.log(`✅ [POSTGRES-COMPLETED] Found ${postgresContracts.length} completed contracts`);
 
     // 2. Get COMPLETED contracts from Firebase contractHistory
+    // ✅ FIXED: Firebase query cannot use .where() twice - simplified
     let firebaseHistoryContracts: any[] = [];
     try {
       const historySnapshot = await firebaseDb
         .collection('contractHistory')
         .where('userId', '==', userId)
-        .where('status', 'in', ['completed', 'signed'])
         .get();
       
-      firebaseHistoryContracts = historySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          contractId: data.contractId || doc.id,
-          clientName: data.clientName || '',
-          totalAmount: data.totalAmount || data.contractData?.financials?.total || 0,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          isDownloadable: true,
-          hasPdf: true,
-          source: 'firebase-history'
-        };
-      });
+      firebaseHistoryContracts = historySnapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            contractId: data.contractId || doc.id,
+            clientName: data.clientName || '',
+            totalAmount: data.totalAmount || data.contractData?.financials?.total || 0,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            status: data.status || '',
+            isDownloadable: true,
+            hasPdf: true,
+            source: 'firebase-history'
+          };
+        })
+        .filter(contract => 
+          contract.status === 'completed' || contract.status === 'signed'
+        );
       console.log(`✅ [FIREBASE-HISTORY-COMPLETED] Found ${firebaseHistoryContracts.length} completed contracts`);
     } catch (error) {
       console.warn("⚠️ [FIREBASE-HISTORY] Error getting completed contracts:", error);
@@ -536,10 +542,17 @@ router.get("/completed/:userId", async (req, res) => {
 
     // Combine and deduplicate
     const allCompleted = [...postgresCompletedFormatted, ...firebaseCompletedFormatted];
-    const uniqueCompleted = allCompleted.filter(
-      (contract, index, self) =>
-        index === self.findIndex((c) => c.contractId === contract.contractId)
-    );
+    const uniqueCompleted = allCompleted
+      .filter(
+        (contract, index, self) =>
+          index === self.findIndex((c) => c.contractId === contract.contractId)
+      )
+      // ✅ FIXED: Sort DESC by createdAt (most recent first)
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA; // DESC order
+      });
 
     console.log(`✅ [COMPLETED-UNIFIED] Returning ${uniqueCompleted.length} unique completed contracts`);
 
