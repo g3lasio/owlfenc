@@ -356,12 +356,15 @@ export default function SimpleContractGenerator() {
 
   // Load completed contracts from both contract history and dual signature system
   const loadCompletedContracts = useCallback(async () => {
+    // ✅ FIXED: Get effective UID from Firebase Auth OR profile
+    const effectiveUid = currentUser?.uid || profile?.firebaseUid;
+    
     // ✅ FIXED: Resilient auth check  
-    if (!currentUser?.uid && !profile?.email) return;
+    if (!effectiveUid && !profile?.email) return;
 
     setIsLoadingCompleted(true);
     try {
-      console.log("📋 Loading completed contracts for user:", currentUser?.uid || 'profile_user');
+      console.log("📋 Loading completed contracts for user:", effectiveUid || 'profile_user');
 
       // ✅ SECURE & ROBUST: Use unified endpoint with proper authentication
       // The backend uses unified-session-auth middleware (session cookie OR token)
@@ -371,23 +374,28 @@ export default function SimpleContractGenerator() {
         'Content-Type': 'application/json'
       };
       
-      try {
-        const token = await currentUser.getIdToken();
-        authHeaders['Authorization'] = `Bearer ${token}`;
-        console.log("✅ Firebase token obtained for API authentication");
-      } catch (tokenError) {
-        console.warn("⚠️ Could not get Firebase token - relying on session cookie:", tokenError);
-        // Session cookie will be sent automatically by browser if available
+      // ✅ FIX: Verify currentUser exists before trying to get token
+      if (currentUser && typeof currentUser.getIdToken === 'function') {
+        try {
+          const token = await currentUser.getIdToken();
+          authHeaders['Authorization'] = `Bearer ${token}`;
+          console.log("✅ Firebase token obtained for API authentication");
+        } catch (tokenError) {
+          console.warn("⚠️ Could not get Firebase token - relying on session cookie:", tokenError);
+          // Session cookie will be sent automatically by browser if available
+        }
+      } else {
+        console.warn("⚠️ Firebase user not fully initialized - relying on session cookie");
       }
 
       const dataPromises: Promise<any>[] = [
         // Source 1: Contract History (contracts completed via Simple Generator)
         // This uses Firebase directly, doesn't need API token
-        contractHistoryService.getContractHistory(currentUser.uid),
+        contractHistoryService.getContractHistory(effectiveUid),
         
         // Source 2: Unified Dual Signature System (SECURE with auth)
         // Uses Firebase token OR session cookie for authentication
-        fetch(`/api/dual-signature/completed/${currentUser.uid}`, {
+        fetch(`/api/dual-signature/completed/${effectiveUid}`, {
           method: 'GET',
           headers: authHeaders,
           credentials: 'include' // Include session cookies
@@ -495,7 +503,7 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoadingCompleted(false);
     }
-  }, [currentUser?.uid, toast]);
+  }, [currentUser?.uid, profile?.firebaseUid, toast]);
 
   // Load draft contracts from contract history
   const loadDraftContracts = useCallback(async () => {
@@ -3365,18 +3373,20 @@ export default function SimpleContractGenerator() {
 
   // Load contract history on component mount
   useEffect(() => {
-    if (currentUser?.uid) {
+    // ✅ FIX: Execute when Firebase Auth OR profile is available
+    if (currentUser?.uid || profile?.firebaseUid) {
       loadContractHistory();
       loadCompletedContracts();
     }
-  }, [currentUser?.uid, loadContractHistory, loadCompletedContracts]);
+  }, [currentUser?.uid, profile?.firebaseUid, loadContractHistory, loadCompletedContracts]);
 
   // ✅ AUTO-REFRESH REMOVED: Manual refresh prevents annoying auto-scrolling
   // Users can refresh manually if needed by switching tabs or using refresh button
 
   // Load in-progress contracts when switching to in-progress tab
   useEffect(() => {
-    if (currentUser?.uid) {
+    // ✅ FIX: Execute when Firebase Auth OR profile is available
+    if (currentUser?.uid || profile?.firebaseUid) {
       if (historyTab === "drafts") {
         loadDraftContracts();
       } else if (historyTab === "in-progress") {
@@ -3388,6 +3398,7 @@ export default function SimpleContractGenerator() {
   }, [
     historyTab,
     currentUser?.uid,
+    profile?.firebaseUid,
     loadDraftContracts,
     loadInProgressContracts,
     loadCompletedContracts,
