@@ -21,6 +21,7 @@ import uiGuardsRoutes from "./routes/ui-guards";
 import stripeWebhooksRoutes from "./routes/stripe-webhooks.js";
 import alertingRoutes from "./routes/alerting.js";
 import phase4OptimizationRoutes from "./routes/phase4-optimization";
+import adminContractsRoutes from "./routes/admin-contracts";
 
 // 📊 Importar servicios de optimización Fase 4 ANTES de registrar rutas
 import { observabilityService } from './services/observabilityService';
@@ -427,6 +428,10 @@ console.log('🖊️ [DUAL-SIGNATURE] Sistema de firma dual registrado en /api/d
 // 🔄 Registrar sistema de migración de contratos
 app.use('/api/contract-migration', contractMigrationRoutes);
 console.log('🔄 [CONTRACT-MIGRATION] Sistema de migración PostgreSQL → Firebase registrado en /api/contract-migration');
+
+// 🧹 Registrar sistema temporal de administración de contratos
+app.use('/api/admin-contracts', adminContractsRoutes);
+console.log('🧹 [ADMIN-CONTRACTS] Sistema temporal de administración registrado en /api/admin-contracts');
 
 // 🔐 Registrar sistema de restablecimiento de contraseña
 app.use('/api/password-reset', passwordResetRoutes);
