@@ -940,8 +940,36 @@ export default function SimpleContractGenerator() {
   // View contract HTML in new window with embedded signatures
   const viewContractHtml = useCallback(
     async (contractId: string, clientName: string) => {
+      // ✅ POPUP BLOCKER FIX: Open window BEFORE async fetch
+      // This maintains the direct connection to user click event
+      const newWindow = window.open(
+        "",
+        "_blank",
+        "width=800,height=1000,scrollbars=yes,resizable=yes",
+      );
+      
+      if (!newWindow) {
+        toast({
+          title: "Popup Blocked",
+          description: "Please allow popups for this site to view contracts",
+          variant: "destructive",
+        });
+        return;
+      }
+
       try {
         console.log("👀 Opening signed contract view for:", contractId);
+
+        // Show loading message while fetching
+        newWindow.document.write(`
+          <html>
+            <head><title>Loading Contract...</title></head>
+            <body style="font-family: system-ui; padding: 40px; text-align: center;">
+              <h2>Loading signed contract...</h2>
+              <p>Please wait...</p>
+            </body>
+          </html>
+        `);
 
         // Prepare headers with authentication
         const headers: Record<string, string> = {
@@ -962,31 +990,30 @@ export default function SimpleContractGenerator() {
 
         if (!htmlResponse.ok) {
           const errorData = await htmlResponse.json();
+          newWindow.close();
           throw new Error(errorData.message || "Failed to load contract");
         }
 
         const htmlContent = await htmlResponse.text();
 
-        // Open in new window with proper styling
-        const newWindow = window.open(
-          "",
-          "_blank",
-          "width=800,height=1000,scrollbars=yes,resizable=yes",
-        );
-        if (newWindow) {
-          newWindow.document.write(htmlContent);
-          newWindow.document.close();
-          newWindow.document.title = `Signed Contract - ${clientName}`;
+        // Replace loading content with actual contract
+        newWindow.document.open();
+        newWindow.document.write(htmlContent);
+        newWindow.document.close();
+        newWindow.document.title = `Signed Contract - ${clientName}`;
 
-          toast({
-            title: "Contract Opened",
-            description: `Signed contract for ${clientName} opened in new window`,
-          });
-        } else {
-          throw new Error("Popup blocked. Please allow popups for this site.");
-        }
+        toast({
+          title: "Contract Opened",
+          description: `Signed contract for ${clientName} opened in new window`,
+        });
       } catch (error: any) {
         console.error("❌ Error viewing contract:", error);
+        
+        // ✅ CRITICAL FIX: Always close window on error to prevent orphaned loading windows
+        if (newWindow && !newWindow.closed) {
+          newWindow.close();
+        }
+        
         toast({
           title: "View Error",
           description:
@@ -995,7 +1022,7 @@ export default function SimpleContractGenerator() {
         });
       }
     },
-    [toast],
+    [toast, currentUser],
   );
 
   // Function to generate PDF for completed contract
@@ -3218,36 +3245,8 @@ export default function SimpleContractGenerator() {
     }
   }, [currentUser?.uid, loadContractHistory, loadCompletedContracts]);
 
-  // AUTO-REFRESH: Polling system to keep contract tabs updated
-  useEffect(() => {
-    if (!currentUser?.uid) return;
-
-    console.log("🔄 [AUTO-REFRESH] Starting auto-refresh polling (15s interval)...");
-    
-    // Refresh function that updates all tabs
-    const refreshAllTabs = () => {
-      console.log("🔄 [AUTO-REFRESH] Refreshing all contract tabs...");
-      loadDraftContracts();
-      loadInProgressContracts();
-      loadCompletedContracts();
-      loadContractHistory();
-    };
-
-    // Set up polling interval (15 seconds)
-    const pollInterval = setInterval(refreshAllTabs, 15000);
-
-    // Cleanup interval on unmount or when user changes
-    return () => {
-      console.log("🛑 [AUTO-REFRESH] Stopping auto-refresh polling");
-      clearInterval(pollInterval);
-    };
-  }, [
-    currentUser?.uid,
-    loadDraftContracts,
-    loadInProgressContracts,
-    loadCompletedContracts,
-    loadContractHistory,
-  ]);
+  // ✅ AUTO-REFRESH REMOVED: Manual refresh prevents annoying auto-scrolling
+  // Users can refresh manually if needed by switching tabs or using refresh button
 
   // Load in-progress contracts when switching to in-progress tab
   useEffect(() => {
