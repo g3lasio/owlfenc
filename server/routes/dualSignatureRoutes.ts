@@ -1419,4 +1419,58 @@ router.post("/resend-links", async (req, res) => {
   }
 });
 
+/**
+ * POST /api/dual-signature/migrate
+ * Migrate all contracts from PostgreSQL to Firebase
+ * 🔐 ADMIN ONLY - For architectural migration
+ */
+router.post("/migrate", async (req, res) => {
+  try {
+    console.log('🔄 [API] Starting contract migration...');
+    
+    const { contractMigrationService } = await import('../services/contractMigrationService');
+    const result = await contractMigrationService.migrateAllContracts();
+    
+    res.json({
+      success: result.success,
+      summary: {
+        total: result.totalContracts,
+        migrated: result.migratedContracts,
+        skipped: result.skippedContracts,
+        errors: result.errors.length
+      },
+      details: result.details,
+      errors: result.errors
+    });
+  } catch (error: any) {
+    console.error('❌ [API] Migration failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/dual-signature/verify-migration
+ * Verify migration integrity
+ */
+router.get("/verify-migration", async (req, res) => {
+  try {
+    const { contractMigrationService } = await import('../services/contractMigrationService');
+    const verification = await contractMigrationService.verifyMigration();
+    
+    res.json({
+      success: true,
+      ...verification
+    });
+  } catch (error: any) {
+    console.error('❌ [API] Verification failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 export default router;
