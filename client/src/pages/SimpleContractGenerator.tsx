@@ -4388,15 +4388,15 @@ export default function SimpleContractGenerator() {
 
                     {/* Dynamic Payment Milestones */}
                     <div className="border border-gray-600 rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-4">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
                         <h3 className="text-lg font-semibold text-cyan-400 flex items-center gap-2">
                           <DollarSign className="h-4 w-4" />
                           Payment Milestones (Customizable)
                         </h3>
-                        <div className="bg-green-900/30 border border-green-400 rounded-lg px-4 py-2">
-                          <Label className="text-sm text-gray-400 mb-1">Project Total (Editable)</Label>
+                        <div className="bg-green-900/30 border border-green-400 rounded-lg px-3 py-2 sm:px-4">
+                          <Label className="text-xs sm:text-sm text-gray-400 mb-1 block">Project Total (Editable)</Label>
                           <div className="flex items-center gap-2">
-                            <span className="text-xl font-bold text-green-400">$</span>
+                            <span className="text-lg sm:text-xl font-bold text-green-400">$</span>
                             <Input
                               type="number"
                               value={editableData.projectTotal}
@@ -4413,7 +4413,7 @@ export default function SimpleContractGenerator() {
                                   paymentMilestones: updatedMilestones
                                 }));
                               }}
-                              className="bg-gray-800 border-green-400 text-green-400 font-bold text-xl w-32"
+                              className="bg-gray-800 border-green-400 text-green-400 font-bold text-lg sm:text-xl w-28 sm:w-32"
                               min="0"
                               step="0.01"
                               placeholder="0.00"
