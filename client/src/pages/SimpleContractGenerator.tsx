@@ -5691,6 +5691,14 @@ export default function SimpleContractGenerator() {
                       </Button>
                     </div>
 
+                    {(() => {
+                      console.log(`🔍 [RENDER-DEBUG] Completed Tab - isLoading: ${isLoadingCompleted}, completedContracts.length: ${completedContracts.length}`);
+                      if (completedContracts.length > 0) {
+                        console.log(`🔍 [RENDER-DEBUG] First 3 contracts:`, completedContracts.slice(0, 3).map(c => ({ id: c.contractId, name: c.clientName, amount: c.totalAmount })));
+                      }
+                      return null;
+                    })()}
+
                     {isLoadingCompleted ? (
                       <div className="text-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400 mx-auto"></div>
