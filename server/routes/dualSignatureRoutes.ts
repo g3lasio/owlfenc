@@ -341,9 +341,24 @@ router.get("/status/:contractId", async (req, res) => {
  */
 router.get("/in-progress/:userId", async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { userId: firebaseUid } = req.params;
 
-    console.log("📋 [PUBLIC-API] Getting in-progress contracts for user:", userId);
+    console.log("📋 [PUBLIC-API] Getting in-progress contracts for Firebase user:", firebaseUid);
+
+    // ✅ CRITICAL FIX: Convert Firebase UID to PostgreSQL user_id
+    const { getUserIdForFirebaseUid } = await import("../services/userMappingService");
+    let postgresUserId: number | null = null;
+    
+    try {
+      postgresUserId = await getUserIdForFirebaseUid(firebaseUid);
+      console.log(`✅ [USER-MAPPING] Firebase UID ${firebaseUid} → PostgreSQL user_id ${postgresUserId}`);
+    } catch (mappingError) {
+      console.warn(`⚠️ [USER-MAPPING] Could not find user_id for Firebase UID: ${firebaseUid}`);
+      return res.json({
+        success: true,
+        contracts: []
+      });
+    }
 
     // Import database here to avoid circular dependencies
     const { db } = await import("../db");
@@ -353,7 +368,7 @@ router.get("/in-progress/:userId", async (req, res) => {
     const inProgressContracts = await db
       .select()
       .from(digitalContracts)
-      .where(eq(digitalContracts.userId, userId))
+      .where(eq(digitalContracts.userId, postgresUserId))
       .orderBy(digitalContracts.createdAt);
 
     // Filter for contracts that are truly in progress (missing at least one signature)
@@ -452,11 +467,21 @@ router.get("/drafts/:userId", verifyFirebaseAuth, async (req, res) => {
  */
 router.get("/completed/:userId", async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { userId: firebaseUid } = req.params;
     
-    console.log(`📋 [PUBLIC-API] Getting COMPLETED contracts for user: ${userId}`);
+    console.log(`📋 [PUBLIC-API] Getting COMPLETED contracts for Firebase user: ${firebaseUid}`);
 
-    console.log("📋 [API] Getting COMPLETED contracts (unified) for user:", userId);
+    // ✅ CRITICAL FIX: Convert Firebase UID to PostgreSQL user_id
+    const { getUserIdForFirebaseUid } = await import("../services/userMappingService");
+    let postgresUserId: number | null = null;
+    
+    try {
+      postgresUserId = await getUserIdForFirebaseUid(firebaseUid);
+      console.log(`✅ [USER-MAPPING] Firebase UID ${firebaseUid} → PostgreSQL user_id ${postgresUserId}`);
+    } catch (mappingError) {
+      console.warn(`⚠️ [USER-MAPPING] Could not find user_id for Firebase UID: ${firebaseUid}`);
+      // Continue without PostgreSQL data - will only return Firebase contracts
+    }
 
     // Import database and services
     const { db } = await import("../db");
@@ -465,28 +490,31 @@ router.get("/completed/:userId", async (req, res) => {
     const { db: firebaseDb } = await import("../lib/firebase-admin");
 
     // 1. Get COMPLETED contracts from PostgreSQL (both parties signed)
-    // ✅ FIXED: Order DESC to show most recent first
-    const postgresContracts = await db
-      .select()
-      .from(digitalContracts)
-      .where(
-        and(
-          eq(digitalContracts.userId, userId),
-          eq(digitalContracts.contractorSigned, true),
-          eq(digitalContracts.clientSigned, true)
+    // ✅ FIXED: Use PostgreSQL user_id instead of Firebase UID
+    let postgresContracts: any[] = [];
+    if (postgresUserId) {
+      postgresContracts = await db
+        .select()
+        .from(digitalContracts)
+        .where(
+          and(
+            eq(digitalContracts.userId, postgresUserId),
+            eq(digitalContracts.contractorSigned, true),
+            eq(digitalContracts.clientSigned, true)
+          )
         )
-      )
-      .orderBy(desc(digitalContracts.createdAt));
+        .orderBy(desc(digitalContracts.createdAt));
+    }
 
     console.log(`✅ [POSTGRES-COMPLETED] Found ${postgresContracts.length} completed contracts`);
 
     // 2. Get COMPLETED contracts from Firebase contractHistory
-    // ✅ FIXED: Firebase query cannot use .where() twice - simplified
+    // ✅ FIXED: Use Firebase UID (not PostgreSQL user_id)
     let firebaseHistoryContracts: any[] = [];
     try {
       const historySnapshot = await firebaseDb
         .collection('contractHistory')
-        .where('userId', '==', userId)
+        .where('userId', '==', firebaseUid)
         .get();
       
       firebaseHistoryContracts = historySnapshot.docs
