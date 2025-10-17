@@ -103,42 +103,7 @@ export class DualSignatureService {
 
       // Generate unique contract ID
       const contractId = this.generateUniqueContractId();
-      console.log("🆔 [DUAL-SIGNATURE] Contract ID generated:", contractId);
-
-      // Prepare contract data for database
-      const contractRecord: InsertDigitalContract = {
-        id: contractId, // CRITICAL FIX: Set the primary key ID
-        userId: request.userId,
-        contractId,
-        contractorName: request.contractData.contractorName,
-        contractorEmail: request.contractData.contractorEmail,
-        contractorPhone: request.contractData.contractorPhone || null,
-        contractorCompany: request.contractData.contractorCompany,
-        clientName: request.contractData.clientName,
-        clientEmail: request.contractData.clientEmail,
-        clientPhone: request.contractData.clientPhone || null,
-        clientAddress: request.contractData.clientAddress || null,
-        projectDescription: request.contractData.projectDescription,
-        totalAmount: request.contractData.totalAmount.toString(),
-        startDate: request.contractData.startDate
-          ? new Date(request.contractData.startDate)
-          : null,
-        completionDate: request.contractData.completionDate
-          ? new Date(request.contractData.completionDate)
-          : null,
-        contractHtml: request.contractHTML,
-        status: "pending",
-      };
-
-      // Save to database
-      const [savedContract] = await db
-        .insert(digitalContracts)
-        .values(contractRecord)
-        .returning();
-      console.log(
-        "💾 [DUAL-SIGNATURE] Contract saved to database:",
-        savedContract.contractId
-      );
+      console.log("🆔 [FIREBASE-ONLY] Contract ID generated:", contractId);
 
       // Generate signature URLs using production domain
       const getBaseUrl = () => {
@@ -180,6 +145,64 @@ export class DualSignatureService {
       console.log("🏗️ [DUAL-SIGNATURE] Contractor URL:", contractorSignUrl);
       console.log("👥 [DUAL-SIGNATURE] Client URL:", clientSignUrl);
 
+      // ✅ FIREBASE-ONLY: Save contract to Firebase dualSignatureContracts collection
+      const { db: firebaseDb } = await import("../lib/firebase-admin");
+      
+      const firebaseContract = {
+        contractId,
+        userId: request.userId,
+        
+        // Client data
+        clientName: request.contractData.clientName,
+        clientEmail: request.contractData.clientEmail,
+        clientPhone: request.contractData.clientPhone || '',
+        clientAddress: request.contractData.clientAddress || '',
+        
+        // Contractor data
+        contractorName: request.contractData.contractorName,
+        contractorEmail: request.contractData.contractorEmail,
+        contractorPhone: request.contractData.contractorPhone || '',
+        contractorCompany: request.contractData.contractorCompany,
+        
+        // Project details
+        projectDescription: request.contractData.projectDescription,
+        projectType: "Construction", // ✅ FIXED: Default value (projectType not in request type)
+        totalAmount: request.contractData.totalAmount,
+        startDate: request.contractData.startDate || '',
+        completionDate: request.contractData.completionDate || '',
+        
+        // Contract content
+        contractHtml: request.contractHTML,
+        
+        // Signature data
+        contractorSigned: false,
+        clientSigned: false,
+        contractorSignature: null,
+        clientSignature: null,
+        contractorSignedAt: null,
+        clientSignedAt: null,
+        contractorSignUrl,
+        clientSignUrl,
+        
+        // Status and metadata
+        status: 'draft', // ✅ FIXED: Start as draft (links generated but not signed)
+        permanentPdfUrl: null,
+        signedPdfPath: null,
+        emailSent: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      await firebaseDb
+        .collection('dualSignatureContracts')
+        .doc(contractId)
+        .set(firebaseContract);
+
+      console.log(
+        "✅ [FIREBASE-ONLY] Contract saved to Firebase:",
+        contractId
+      );
+
       // Send dual notifications
       await this.sendDualNotifications({
         contractId,
@@ -194,89 +217,19 @@ export class DualSignatureService {
         clientSignUrl,
       });
 
-      // Update email sent status
-      await db
-        .update(digitalContracts)
-        .set({
+      // Update email sent status in Firebase
+      await firebaseDb
+        .collection('dualSignatureContracts')
+        .doc(contractId)
+        .update({
           emailSent: true,
           emailSentAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(digitalContracts.contractId, contractId));
+          updatedAt: new Date()
+        });
 
       console.log(
-        "✅ [DUAL-SIGNATURE] Dual signature workflow initiated successfully"
+        "✅ [FIREBASE-ONLY] Dual signature workflow initiated successfully"
       );
-
-      // CRITICAL FIX: Save to contract history when signature workflow starts
-      try {
-        console.log("📋 [DUAL-SIGNATURE] Saving to contract history...");
-
-        // Import contract history service
-        const { contractHistoryService } = await import(
-          "../../client/src/services/contractHistoryService"
-        );
-
-        const historyEntry = {
-          userId: request.userId,
-          contractId,
-          clientName: request.contractData.clientName,
-          projectType: request.contractData.projectType || "Construction",
-          status: "processing" as const,
-          contractData: {
-            client: {
-              name: request.contractData.clientName,
-              address: request.contractData.clientAddress || "",
-              email: request.contractData.clientEmail,
-              phone: request.contractData.clientPhone || "",
-            },
-            contractor: {
-              name: request.contractData.contractorName,
-              address: request.contractData.contractorAddress || "",
-              email: request.contractData.contractorEmail,
-              phone: request.contractData.contractorPhone || "",
-              license: request.contractData.contractorLicense || "",
-              company: request.contractData.contractorCompany,
-            },
-            project: {
-              type: request.contractData.projectType || "Construction",
-              description: request.contractData.projectDescription,
-              location: request.contractData.clientAddress || "",
-              scope: request.contractData.projectDescription,
-            },
-            financials: {
-              total: request.contractData.totalAmount,
-              subtotal: request.contractData.totalAmount,
-              tax: 0,
-              materials: 0,
-              labor: 0,
-              permits: 0,
-              other: 0,
-            },
-            protections: [],
-            timeline: {
-              startDate: request.contractData.startDate || "",
-              completionDate: request.contractData.completionDate || "",
-              estimatedDuration: "As specified in contract",
-            },
-            terms: {
-              warranty: "1",
-              permits: "contractor",
-            },
-          },
-        };
-
-        await contractHistoryService.saveContract(historyEntry);
-        console.log(
-          "✅ [DUAL-SIGNATURE] Contract saved to history successfully"
-        );
-      } catch (historyError: any) {
-        console.error(
-          "❌ [DUAL-SIGNATURE] Error saving to contract history:",
-          historyError
-        );
-        // Don't fail the signature process if history save fails
-      }
 
       return {
         success: true,
@@ -307,37 +260,40 @@ export class DualSignatureService {
     party: "contractor" | "client"
   ): Promise<{
     success: boolean;
-    contract?: DigitalContract;
+    contract?: any;
     message: string;
   }> {
     try {
       console.log(
-        `🔍 [PUBLIC-SIGNATURE] Getting contract for ${party} signing:`,
+        `🔍 [FIREBASE-ONLY] Getting contract for ${party} signing:`,
         contractId
       );
 
-      const [contract] = await db
-        .select()
-        .from(digitalContracts)
-        .where(eq(digitalContracts.contractId, contractId))
-        .limit(1);
+      const { db: firebaseDb } = await import("../lib/firebase-admin");
+      
+      const contractDoc = await firebaseDb
+        .collection('dualSignatureContracts')
+        .doc(contractId)
+        .get();
 
-      if (!contract) {
+      if (!contractDoc.exists) {
         return {
           success: false,
           message: "Contract not found",
         };
       }
 
+      const contract = contractDoc.data();
+
       // Check if already signed
       const alreadySigned =
         party === "contractor"
-          ? contract.contractorSigned
-          : contract.clientSigned;
+          ? contract?.contractorSigned
+          : contract?.clientSigned;
 
       if (alreadySigned) {
         console.log(
-          `⚠️ [PUBLIC-SIGNATURE] ${party} has already signed this contract`
+          `⚠️ [FIREBASE-ONLY] ${party} has already signed this contract`
         );
         return {
           success: true,
@@ -347,7 +303,7 @@ export class DualSignatureService {
       }
 
       console.log(
-        `✅ [PUBLIC-SIGNATURE] Contract retrieved for ${party} signing`
+        `✅ [FIREBASE-ONLY] Contract retrieved for ${party} signing`
       );
       return {
         success: true,
@@ -355,7 +311,7 @@ export class DualSignatureService {
         message: "Contract ready for signing",
       };
     } catch (error: any) {
-      console.error("❌ [PUBLIC-SIGNATURE] Error getting contract:", error);
+      console.error("❌ [FIREBASE-ONLY] Error getting contract:", error);
       return {
         success: false,
         message: `Error retrieving contract: ${error.message}`,
@@ -378,28 +334,32 @@ export class DualSignatureService {
   }> {
     try {
       console.log(
-        `✍️ [DUAL-SIGNATURE] Processing ${submission.party} signature:`,
+        `✍️ [FIREBASE-ONLY] Processing ${submission.party} signature:`,
         submission.contractId
       );
 
-      // Get current contract
-      const [contract] = await db
-        .select()
-        .from(digitalContracts)
-        .where(eq(digitalContracts.contractId, submission.contractId))
-        .limit(1);
+      const { db: firebaseDb } = await import("../lib/firebase-admin");
+      
+      // Get current contract from Firebase
+      const contractRef = firebaseDb
+        .collection('dualSignatureContracts')
+        .doc(submission.contractId);
+      
+      const contractDoc = await contractRef.get();
 
-      if (!contract) {
+      if (!contractDoc.exists) {
         return {
           success: false,
           message: "Contract not found",
         };
       }
 
+      const contract = contractDoc.data();
+
       // CRÍTICO: Verificar que el usuario tenga permiso para acceder a este contrato
-      if (requestingUserId && contract.userId !== requestingUserId) {
+      if (requestingUserId && contract?.userId !== requestingUserId) {
         console.error(
-          `🚫 [SECURITY-VIOLATION] User ${requestingUserId} attempted to process signature for contract ${submission.contractId} owned by ${contract.userId}`
+          `🚫 [SECURITY-VIOLATION] User ${requestingUserId} attempted to process signature for contract ${submission.contractId} owned by ${contract?.userId}`
         );
         return {
           success: false,
@@ -410,8 +370,8 @@ export class DualSignatureService {
       // Check if already signed
       const alreadySigned =
         submission.party === "contractor"
-          ? contract.contractorSigned
-          : contract.clientSigned;
+          ? contract?.contractorSigned
+          : contract?.clientSigned;
 
       if (alreadySigned) {
         return {
@@ -438,28 +398,25 @@ export class DualSignatureService {
               updatedAt: new Date(),
             };
 
-      // Update signature in database
-      await db
-        .update(digitalContracts)
-        .set(updateData)
-        .where(eq(digitalContracts.contractId, submission.contractId));
+      // Update signature in Firebase
+      await contractRef.update(updateData);
 
       // Check if both parties will be signed after this signature
       const bothSigned =
         submission.party === "contractor"
-          ? contract.clientSigned // Contractor just signed, check if client was already signed
-          : contract.contractorSigned; // Client just signed, check if contractor was already signed
+          ? contract?.clientSigned // Contractor just signed, check if client was already signed
+          : contract?.contractorSigned; // Client just signed, check if contractor was already signed
 
       console.log(
-        `🔍 [DUAL-SIGNATURE] Signature check: ${submission.party} signing, other party signed: ${bothSigned}`
+        `🔍 [FIREBASE-ONLY] Signature check: ${submission.party} signing, other party signed: ${bothSigned}`
       );
 
       let finalStatus: string;
 
-      // If both signed, trigger completion workflow IMMEDIATELY (don't set intermediate status)
+      // If both signed, trigger completion workflow IMMEDIATELY
       if (bothSigned) {
         console.log(
-          "🎉 [DUAL-SIGNATURE] Both parties signed! Triggering completion workflow..."
+          "🎉 [FIREBASE-ONLY] Both parties signed! Triggering completion workflow..."
         );
         
         // completeContract() will set status to "completed" and save completionDate
@@ -467,29 +424,22 @@ export class DualSignatureService {
         finalStatus = "completed";
         
         console.log(
-          `✅ [DUAL-SIGNATURE] ${submission.party} signature processed successfully`
+          `✅ [FIREBASE-ONLY] ${submission.party} signature processed successfully`
         );
-        console.log(`📊 [DUAL-SIGNATURE] Contract completed - both parties signed`);
+        console.log(`📊 [FIREBASE-ONLY] Contract completed - both parties signed`);
       } else {
-        // Only one party signed - update status accordingly
-        const newStatus = submission.party === "contractor"
-          ? "contractor_signed"
-          : "client_signed";
+        // Only one party signed - update status to 'progress'
+        await contractRef.update({
+          status: 'progress', // ✅ FIXED: Use 'progress' status (not 'contractor_signed' or 'client_signed')
+          updatedAt: new Date(),
+        });
 
-        await db
-          .update(digitalContracts)
-          .set({
-            status: newStatus,
-            updatedAt: new Date(),
-          })
-          .where(eq(digitalContracts.contractId, submission.contractId));
-
-        finalStatus = newStatus;
+        finalStatus = 'progress';
 
         console.log(
-          `✅ [DUAL-SIGNATURE] ${submission.party} signature processed successfully`
+          `✅ [FIREBASE-ONLY] ${submission.party} signature processed successfully`
         );
-        console.log(`📊 [DUAL-SIGNATURE] New status:`, newStatus);
+        console.log(`📊 [FIREBASE-ONLY] New status: progress`);
 
         // Notify the other party that signature is pending
         await this.notifyRemainingParty(
@@ -505,7 +455,7 @@ export class DualSignatureService {
         bothSigned,
       };
     } catch (error: any) {
-      console.error("❌ [DUAL-SIGNATURE] Error processing signature:", error);
+      console.error("❌ [FIREBASE-ONLY] Error processing signature:", error);
       return {
         success: false,
         message: `Error processing signature: ${error.message}`,
@@ -679,26 +629,29 @@ export class DualSignatureService {
    */
   private async completeContract(contractId: string): Promise<void> {
     try {
-      console.log("🏁 [DUAL-SIGNATURE] Completing contract:", contractId);
+      console.log("🏁 [FIREBASE-ONLY] Completing contract:", contractId);
 
-      // Get contract data with signatures
-      const [contract] = await db
-        .select()
-        .from(digitalContracts)
-        .where(eq(digitalContracts.contractId, contractId))
-        .limit(1);
+      const { db: firebaseDb } = await import("../lib/firebase-admin");
+      
+      // Get contract data with signatures from Firebase
+      const contractDoc = await firebaseDb
+        .collection('dualSignatureContracts')
+        .doc(contractId)
+        .get();
 
-      if (!contract) {
+      if (!contractDoc.exists) {
         console.error(
-          "❌ [DUAL-SIGNATURE] Contract not found for completion:",
+          "❌ [FIREBASE-ONLY] Contract not found for completion:",
           contractId
         );
         return;
       }
 
-      if (!contract.contractorSigned || !contract.clientSigned) {
+      const contract = contractDoc.data();
+
+      if (!contract?.contractorSigned || !contract?.clientSigned) {
         console.error(
-          "❌ [DUAL-SIGNATURE] Contract is not fully signed:",
+          "❌ [FIREBASE-ONLY] Contract is not fully signed:",
           contractId
         );
         return;
@@ -782,18 +735,18 @@ export class DualSignatureService {
         permanentPdfUrl = null;
       }
 
-      // Update database with completion status (with or without PDF)
+      // Update Firebase with completion status (with or without PDF)
       const completionDate = new Date();
-      await db
-        .update(digitalContracts)
-        .set({
+      await firebaseDb
+        .collection('dualSignatureContracts')
+        .doc(contractId)
+        .update({
           status: "completed",
           signedPdfPath: signedPdfPath, // DEPRECATED: Local path (for backward compatibility)
           permanentPdfUrl: permanentPdfUrl, // ✅ PERMANENT: Firebase Storage URL
           completionDate: completionDate, // ✅ Save completion date when both parties sign
           updatedAt: completionDate,
-        })
-        .where(eq(digitalContracts.contractId, contractId));
+        });
 
       console.log(
         "📧 [DUAL-SIGNATURE] Sending completed contract to both parties..."

@@ -339,50 +339,66 @@ router.get("/status/:contractId", async (req, res) => {
  * Obtener todos los contratos en progreso (pendientes de firma) de un usuario
  * PUBLIC - User-specific data filtering
  */
-router.get("/in-progress/:userId", async (req, res) => {
+/**
+ * GET /api/dual-signature/in-progress/:userId
+ * Obtener contratos pendientes de firma (en progreso)
+ * ✅ FIREBASE-ONLY: Single source of truth (PostgreSQL deprecated)
+ * 🔐 SECURED: Requires authentication and ownership verification
+ */
+router.get("/in-progress/:userId", verifyFirebaseAuth, async (req, res) => {
   try {
     const { userId: firebaseUid } = req.params;
+    const authenticatedUserId = req.firebaseUser?.uid;
 
-    console.log("📋 [PUBLIC-API] Getting in-progress contracts for Firebase user:", firebaseUid);
-
-    // ✅ CRITICAL FIX: Convert Firebase UID to PostgreSQL user_id
-    const { getUserIdForFirebaseUid } = await import("../services/userMappingService");
-    let postgresUserId: number | null = null;
-    
-    try {
-      postgresUserId = await getUserIdForFirebaseUid(firebaseUid);
-      console.log(`✅ [USER-MAPPING] Firebase UID ${firebaseUid} → PostgreSQL user_id ${postgresUserId}`);
-    } catch (mappingError) {
-      console.warn(`⚠️ [USER-MAPPING] Could not find user_id for Firebase UID: ${firebaseUid}`);
-      return res.json({
-        success: true,
-        contracts: []
+    // SECURITY: Verify that the authenticated user matches the requested userId
+    if (authenticatedUserId !== firebaseUid) {
+      console.warn(`🚨 [SECURITY] User ${authenticatedUserId} attempted to access contracts for user ${firebaseUid}`);
+      return res.status(403).json({
+        success: false,
+        message: "Access denied: You can only view your own contracts"
       });
     }
 
-    // Import database here to avoid circular dependencies
-    const { db } = await import("../db");
-    const { digitalContracts } = await import("../../shared/schema");
-    const { eq, ne } = await import("drizzle-orm");
+    console.log("📋 [FIREBASE-ONLY] Getting in-progress contracts for user:", firebaseUid);
 
-    const inProgressContracts = await db
-      .select()
-      .from(digitalContracts)
-      .where(eq(digitalContracts.userId, postgresUserId))
-      .orderBy(digitalContracts.createdAt);
+    const { db: firebaseDb } = await import("../lib/firebase-admin");
 
-    // Filter for contracts that are truly in progress (missing at least one signature)
-    const filteredContracts = inProgressContracts.filter(
-      (contract) => !contract.contractorSigned || !contract.clientSigned,
-    );
+    // Get IN-PROGRESS contracts from Firebase dualSignatureContracts
+    const snapshot = await firebaseDb
+      .collection('dualSignatureContracts')
+      .where('userId', '==', firebaseUid)
+      .where('status', '==', 'progress')
+      .orderBy('createdAt', 'desc')
+      .get();
+
+    const contracts = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        contractId: data.contractId || doc.id,
+        clientName: data.clientName || '',
+        clientEmail: data.clientEmail || '',
+        clientPhone: data.clientPhone || '',
+        totalAmount: data.totalAmount || 0,
+        contractorSigned: data.contractorSigned || false,
+        clientSigned: data.clientSigned || false,
+        contractorSignedAt: data.contractorSignedAt,
+        clientSignedAt: data.clientSignedAt,
+        contractorSignUrl: data.contractorSignUrl || '',
+        clientSignUrl: data.clientSignUrl || '',
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        status: data.status,
+        source: 'firebase'
+      };
+    });
 
     console.log(
-      `✅ [API] Found ${filteredContracts.length} in-progress contracts for user`,
+      `✅ [FIREBASE-PROGRESS] Found ${contracts.length} in-progress contracts`
     );
 
     res.json({
       success: true,
-      contracts: filteredContracts,
+      contracts,
+      count: contracts.length
     });
   } catch (error: any) {
     console.error("❌ [API] Error getting in-progress contracts:", error);
@@ -402,6 +418,11 @@ router.get("/in-progress/:userId", async (req, res) => {
  * Obtener todos los contratos en borrador de un usuario
  * SECURED: Requires authentication and ownership verification
  */
+/**
+ * GET /api/dual-signature/drafts/:userId
+ * Obtener contratos en borrador (draft) del usuario
+ * ✅ FIREBASE-ONLY: Single source of truth (PostgreSQL deprecated)
+ */
 router.get("/drafts/:userId", verifyFirebaseAuth, async (req, res) => {
   try {
     const { userId } = req.params;
@@ -416,39 +437,47 @@ router.get("/drafts/:userId", verifyFirebaseAuth, async (req, res) => {
       });
     }
 
-    console.log("📋 [API] Getting draft contracts for user:", userId);
+    console.log("📋 [FIREBASE-ONLY] Getting draft contracts for user:", userId);
 
-    // Import contract history service to get drafts
-    const { contractHistoryService } = await import(
-      "../../client/src/services/contractHistoryService"
-    );
+    const { db: firebaseDb } = await import("../lib/firebase-admin");
 
-    const allHistory = await contractHistoryService.getContractHistory(userId);
-    const draftContracts = allHistory.filter(
-      (contract) => contract.status === "draft",
-    );
+    // Get DRAFT contracts from Firebase dualSignatureContracts
+    const snapshot = await firebaseDb
+      .collection('dualSignatureContracts')
+      .where('userId', '==', userId)
+      .where('status', '==', 'draft')
+      .orderBy('createdAt', 'desc')
+      .get();
+
+    const contracts = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        contractId: data.contractId || doc.id,
+        clientName: data.clientName || '',
+        clientEmail: data.clientEmail || '',
+        clientPhone: data.clientPhone || '',
+        projectType: data.projectType || '',
+        totalAmount: data.totalAmount || 0,
+        projectDescription: data.projectDescription || '',
+        contractorSignUrl: data.contractorSignUrl || '',
+        clientSignUrl: data.clientSignUrl || '',
+        status: data.status,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString(),
+        contractData: data.contractData || {},
+        source: 'firebase'
+      };
+    });
 
     console.log(
-      `✅ [API] Found ${draftContracts.length} draft contracts for user`,
+      `✅ [FIREBASE-DRAFTS] Found ${contracts.length} draft contracts`
     );
-
-    // Transform data for frontend
-    const contractsForFrontend = draftContracts.map((contract) => ({
-      id: contract.id,
-      contractId: contract.contractId,
-      clientName: contract.clientName,
-      projectType: contract.projectType,
-      totalAmount: contract.contractData.financials.total || 0,
-      projectDescription: contract.contractData.project?.description || "",
-      status: contract.status,
-      createdAt: contract.createdAt,
-      updatedAt: contract.updatedAt,
-      contractData: contract.contractData,
-    }));
 
     res.json({
       success: true,
-      contracts: contractsForFrontend,
+      contracts,
+      count: contracts.length
     });
   } catch (error: any) {
     console.error("❌ [API] Error getting draft contracts:", error);
@@ -462,136 +491,64 @@ router.get("/drafts/:userId", verifyFirebaseAuth, async (req, res) => {
 /**
  * GET /api/dual-signature/completed/:userId
  * Obtener SOLO contratos completados/firmados del usuario
- * PUBLIC with ownership verification via Firebase Admin
- * HYBRID: Combina contratos de PostgreSQL (dual-signature) y Firebase (contractHistory)
+ * ✅ FIREBASE-ONLY: Single source of truth (PostgreSQL deprecated)
+ * 🔐 SECURED: Requires authentication and ownership verification
  */
-router.get("/completed/:userId", async (req, res) => {
+router.get("/completed/:userId", verifyFirebaseAuth, async (req, res) => {
   try {
     const { userId: firebaseUid } = req.params;
-    
-    console.log(`📋 [PUBLIC-API] Getting COMPLETED contracts for Firebase user: ${firebaseUid}`);
+    const authenticatedUserId = req.firebaseUser?.uid;
 
-    // ✅ CRITICAL FIX: Convert Firebase UID to PostgreSQL user_id
-    const { getUserIdForFirebaseUid } = await import("../services/userMappingService");
-    let postgresUserId: number | null = null;
-    
-    try {
-      postgresUserId = await getUserIdForFirebaseUid(firebaseUid);
-      console.log(`✅ [USER-MAPPING] Firebase UID ${firebaseUid} → PostgreSQL user_id ${postgresUserId}`);
-    } catch (mappingError) {
-      console.warn(`⚠️ [USER-MAPPING] Could not find user_id for Firebase UID: ${firebaseUid}`);
-      // Continue without PostgreSQL data - will only return Firebase contracts
+    // SECURITY: Verify that the authenticated user matches the requested userId
+    if (authenticatedUserId !== firebaseUid) {
+      console.warn(`🚨 [SECURITY] User ${authenticatedUserId} attempted to access contracts for user ${firebaseUid}`);
+      return res.status(403).json({
+        success: false,
+        message: "Access denied: You can only view your own contracts"
+      });
     }
+    
+    console.log(`📋 [FIREBASE-ONLY] Getting COMPLETED contracts for user: ${firebaseUid}`);
 
-    // Import database and services
-    const { db } = await import("../db");
-    const { digitalContracts } = await import("../../shared/schema");
-    const { eq, and, desc } = await import("drizzle-orm");
     const { db: firebaseDb } = await import("../lib/firebase-admin");
 
-    // 1. Get COMPLETED contracts from PostgreSQL (both parties signed)
-    // ✅ FIXED: Use PostgreSQL user_id instead of Firebase UID
-    let postgresContracts: any[] = [];
-    if (postgresUserId) {
-      postgresContracts = await db
-        .select()
-        .from(digitalContracts)
-        .where(
-          and(
-            eq(digitalContracts.userId, postgresUserId),
-            eq(digitalContracts.contractorSigned, true),
-            eq(digitalContracts.clientSigned, true)
-          )
-        )
-        .orderBy(desc(digitalContracts.createdAt));
-    }
+    // Get COMPLETED contracts from Firebase dualSignatureContracts
+    const snapshot = await firebaseDb
+      .collection('dualSignatureContracts')
+      .where('userId', '==', firebaseUid)
+      .where('status', '==', 'completed')
+      .orderBy('createdAt', 'desc')
+      .get();
 
-    console.log(`✅ [POSTGRES-COMPLETED] Found ${postgresContracts.length} completed contracts`);
+    const contracts = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        contractId: data.contractId || doc.id,
+        clientName: data.clientName || '',
+        clientEmail: data.clientEmail || '',
+        clientPhone: data.clientPhone || '',
+        totalAmount: data.totalAmount || 0,
+        isCompleted: true,
+        isDownloadable: true,
+        contractorSigned: data.contractorSigned || false,
+        clientSigned: data.clientSigned || false,
+        contractorSignedAt: data.contractorSignedAt,
+        clientSignedAt: data.clientSignedAt,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        hasPdf: !!data.permanentPdfUrl,
+        pdfUrl: data.permanentPdfUrl || null,
+        permanentPdfUrl: data.permanentPdfUrl || null,
+        status: data.status,
+        source: 'firebase'
+      };
+    });
 
-    // 2. Get COMPLETED contracts from Firebase contractHistory
-    // ✅ FIXED: Use Firebase UID (not PostgreSQL user_id)
-    let firebaseHistoryContracts: any[] = [];
-    try {
-      const historySnapshot = await firebaseDb
-        .collection('contractHistory')
-        .where('userId', '==', firebaseUid)
-        .get();
-      
-      firebaseHistoryContracts = historySnapshot.docs
-        .map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            contractId: data.contractId || doc.id,
-            clientName: data.clientName || '',
-            totalAmount: data.totalAmount || data.contractData?.financials?.total || 0,
-            createdAt: data.createdAt?.toDate() || new Date(),
-            status: data.status || '',
-            isDownloadable: true,
-            hasPdf: true,
-            source: 'firebase-history'
-          };
-        })
-        .filter(contract => 
-          contract.status === 'completed' || contract.status === 'signed'
-        );
-      console.log(`✅ [FIREBASE-HISTORY-COMPLETED] Found ${firebaseHistoryContracts.length} completed contracts`);
-    } catch (error) {
-      console.warn("⚠️ [FIREBASE-HISTORY] Error getting completed contracts:", error);
-    }
-
-    // Transform PostgreSQL contracts
-    const postgresCompletedFormatted = postgresContracts.map((contract) => ({
-      contractId: contract.contractId,
-      clientName: contract.clientName,
-      totalAmount: parseFloat(contract.totalAmount),
-      isCompleted: true,
-      isDownloadable: true,
-      contractorSigned: true,
-      clientSigned: true,
-      createdAt: contract.createdAt?.toISOString() || new Date().toISOString(),
-      hasPdf: !!(contract.permanentPdfUrl || contract.signedPdfPath), // ✅ Check permanent URL first
-      pdfUrl: contract.permanentPdfUrl || contract.signedPdfPath || null, // ✅ PRIORITY: Firebase Storage URL
-      permanentPdfUrl: contract.permanentPdfUrl, // ✅ PERMANENT: Never expires
-      source: 'dual-signature'
-    }));
-
-    // Transform Firebase history contracts
-    const firebaseCompletedFormatted = firebaseHistoryContracts.map((contract) => ({
-      contractId: contract.contractId,
-      clientName: contract.clientName,
-      totalAmount: contract.totalAmount,
-      isCompleted: true,
-      isDownloadable: true,
-      createdAt: contract.createdAt.toISOString(),
-      hasPdf: true,
-      source: 'history'
-    }));
-
-    // Combine and deduplicate
-    const allCompleted = [...postgresCompletedFormatted, ...firebaseCompletedFormatted];
-    const uniqueCompleted = allCompleted
-      .filter(
-        (contract, index, self) =>
-          index === self.findIndex((c) => c.contractId === contract.contractId)
-      )
-      // ✅ FIXED: Sort DESC by createdAt (most recent first)
-      .sort((a, b) => {
-        const dateA = new Date(a.createdAt).getTime();
-        const dateB = new Date(b.createdAt).getTime();
-        return dateB - dateA; // DESC order
-      });
-
-    console.log(`✅ [COMPLETED-UNIFIED] Returning ${uniqueCompleted.length} unique completed contracts`);
+    console.log(`✅ [FIREBASE-COMPLETED] Found ${contracts.length} completed contracts`);
 
     res.json({
       success: true,
-      contracts: uniqueCompleted,
-      count: uniqueCompleted.length,
-      sources: {
-        postgres: postgresCompletedFormatted.length,
-        firebaseHistory: firebaseCompletedFormatted.length
-      }
+      contracts,
+      count: contracts.length
     });
   } catch (error: any) {
     console.error("❌ [API] Error getting completed contracts:", error);
