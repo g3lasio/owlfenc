@@ -70,10 +70,11 @@ router.post('/sessionLogin', async (req: Request, res: Response) => {
     }
 
     // Set secure cookie options
+    // ✅ FIX: sameSite='lax' for same-origin development, 'none' requires secure=true (HTTPS)
     const cookieOptions = {
       httpOnly: true, // Prevent XSS attacks
       secure: process.env.NODE_ENV === 'production', // HTTPS in production
-      sameSite: 'none' as const, // Required for cross-origin requests
+      sameSite: process.env.NODE_ENV === 'production' ? ('none' as const) : ('lax' as const),
       maxAge: expiresIn,
       path: '/'
     };
@@ -120,7 +121,7 @@ router.post('/sessionLogout', (req: Request, res: Response) => {
     res.clearCookie('__session', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       path: '/'
     });
 
@@ -179,7 +180,7 @@ router.get('/sessionStatus', async (req: Request, res: Response) => {
       res.clearCookie('__session', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'none',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/'
       });
       

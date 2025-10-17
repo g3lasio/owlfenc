@@ -47,6 +47,11 @@ if (!admin.apps.length) {
  */
 export const verifyFirebaseAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    // 🔍 DEBUG: Log all available cookies
+    console.log('🔍 [AUTH-DEBUG] Cookies disponibles:', Object.keys(req.cookies || {}));
+    console.log('🔍 [AUTH-DEBUG] __session cookie exists:', !!req.cookies?.__session);
+    console.log('🔍 [AUTH-DEBUG] Authorization header:', req.headers.authorization ? 'Present' : 'Missing');
+    
     // Strategy 1: Try Firebase token from Authorization header
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -73,6 +78,7 @@ export const verifyFirebaseAuth = async (req: Request, res: Response, next: Next
     // Strategy 2: Firebase Session Cookie (primary session mechanism)
     const sessionCookie = req.cookies?.__session;
     if (sessionCookie) {
+      console.log('🔍 [AUTH-DEBUG] Session cookie found, attempting verification...');
       try {
         // Verify the Firebase session cookie
         const decodedClaims = await admin.auth().verifySessionCookie(sessionCookie);
@@ -86,13 +92,14 @@ export const verifyFirebaseAuth = async (req: Request, res: Response, next: Next
         console.log(`✅ [AUTH-SESSION-COOKIE] Usuario autenticado via session cookie: ${decodedClaims.uid} (${decodedClaims.email})`);
         return next();
       } catch (cookieError) {
-        console.warn('⚠️ [AUTH-SESSION-COOKIE] Invalid or expired session cookie');
+        console.warn('⚠️ [AUTH-SESSION-COOKIE] Invalid or expired session cookie:', (cookieError as Error).message);
         // Fall through to rejection
       }
     }
 
     // No valid authentication found
     console.log('❌ [AUTH] No valid token or session cookie found');
+    console.log('🔍 [AUTH-DEBUG] All cookies:', JSON.stringify(req.cookies));
     return res.status(401).json({ 
       error: 'Autenticación requerida - Por favor inicia sesión',
       code: 'AUTH_REQUIRED'
