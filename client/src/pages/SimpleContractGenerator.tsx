@@ -5119,48 +5119,6 @@ export default function SimpleContractGenerator() {
                                   >
                                     <Share2 className="h-3 w-3" />
                                   </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                      handleEmailShare(
-                                        contractorSignUrl,
-                                        "Contractor",
-                                      )
-                                    }
-                                    className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
-                                    title="Share via email"
-                                  >
-                                    <Mail className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                      handleWhatsAppShare(
-                                        contractorSignUrl,
-                                        "Contractor",
-                                      )
-                                    }
-                                    className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
-                                    title="Share via WhatsApp"
-                                  >
-                                    <MessageCircle className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                      handleSMSShare(
-                                        contractorSignUrl,
-                                        "Contractor",
-                                      )
-                                    }
-                                    className="h-6 w-6 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
-                                    title="Share via SMS"
-                                  >
-                                    <Phone className="h-3 w-3" />
-                                  </Button>
                                 </div>
                               </div>
                               <div className="bg-black/60 rounded p-2 border border-cyan-400/30">
@@ -5220,42 +5178,6 @@ export default function SimpleContractGenerator() {
                                     title="Share link"
                                   >
                                     <Share2 className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                      handleEmailShare(clientSignUrl, "Client")
-                                    }
-                                    className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
-                                    title="Share via email"
-                                  >
-                                    <Mail className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                      handleWhatsAppShare(
-                                        clientSignUrl,
-                                        "Client",
-                                      )
-                                    }
-                                    className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
-                                    title="Share via WhatsApp"
-                                  >
-                                    <MessageCircle className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                      handleSMSShare(clientSignUrl, "Client")
-                                    }
-                                    className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-400/10"
-                                    title="Share via SMS"
-                                  >
-                                    <Phone className="h-3 w-3" />
                                   </Button>
                                 </div>
                               </div>
