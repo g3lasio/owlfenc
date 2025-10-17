@@ -70,24 +70,29 @@ export const verifyFirebaseAuth = async (req: Request, res: Response, next: Next
       }
     }
 
-    // Strategy 2: Fallback to session-based auth (for users without active Firebase token)
-    // @ts-ignore - session is added by express-session middleware
-    if (req.session && req.session.user && req.session.user.firebaseUid) {
-      // @ts-ignore
-      const sessionUser = req.session.user;
-      
-      req.firebaseUser = {
-        uid: sessionUser.firebaseUid,
-        email: sessionUser.email,
-        name: sessionUser.displayName || sessionUser.name
-      };
+    // Strategy 2: Firebase Session Cookie (primary session mechanism)
+    const sessionCookie = req.cookies?.__session;
+    if (sessionCookie) {
+      try {
+        // Verify the Firebase session cookie
+        const decodedClaims = await admin.auth().verifySessionCookie(sessionCookie);
+        
+        req.firebaseUser = {
+          uid: decodedClaims.uid,
+          email: decodedClaims.email,
+          name: decodedClaims.name
+        };
 
-      console.log(`✅ [AUTH-SESSION] Usuario autenticado via sesión: ${sessionUser.firebaseUid} (${sessionUser.email})`);
-      return next();
+        console.log(`✅ [AUTH-SESSION-COOKIE] Usuario autenticado via session cookie: ${decodedClaims.uid} (${decodedClaims.email})`);
+        return next();
+      } catch (cookieError) {
+        console.warn('⚠️ [AUTH-SESSION-COOKIE] Invalid or expired session cookie');
+        // Fall through to rejection
+      }
     }
 
     // No valid authentication found
-    console.log('❌ [AUTH] No valid token or session found');
+    console.log('❌ [AUTH] No valid token or session cookie found');
     return res.status(401).json({ 
       error: 'Autenticación requerida - Por favor inicia sesión',
       code: 'AUTH_REQUIRED'
