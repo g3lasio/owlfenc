@@ -1132,10 +1132,73 @@ export default function SimpleContractGenerator() {
   // View contract in new window/tab - ALWAYS uses signed HTML for PDF generation
   const viewContract = useCallback(
     async (contractId: string, clientName: string) => {
+      // ✅ POPUP BLOCKER FIX: Open window IMMEDIATELY before ANY async operations
+      // This maintains direct connection to user click event
+      const newWindow = window.open(
+        "",
+        "_blank",
+        "width=900,height=1100,scrollbars=yes,resizable=yes",
+      );
+
+      if (!newWindow) {
+        toast({
+          title: "Popup Blocked",
+          description: "Please allow popups for this site to view contracts",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Show loading message in the new window
+      newWindow.document.write(`
+        <html>
+          <head>
+            <title>Loading Contract PDF...</title>
+            <style>
+              body {
+                font-family: system-ui, -apple-system, sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+              }
+              .loader {
+                text-align: center;
+              }
+              .spinner {
+                border: 4px solid rgba(255,255,255,0.3);
+                border-radius: 50%;
+                border-top: 4px solid white;
+                width: 50px;
+                height: 50px;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 20px;
+              }
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="loader">
+              <div class="spinner"></div>
+              <h2>Loading Contract PDF...</h2>
+              <p>Generating PDF from signed contract...</p>
+              <p style="opacity: 0.8; font-size: 14px;">Please wait, this may take a moment</p>
+            </div>
+          </body>
+        </html>
+      `);
+
       try {
         console.log("👀 Opening signed contract PDF view for:", contractId);
 
         if (!currentUser) {
+          newWindow.close();
           toast({
             title: "Authentication Required",
             description: "Please log in to view contracts",
@@ -1144,13 +1207,7 @@ export default function SimpleContractGenerator() {
           return;
         }
 
-        toast({
-          title: "Generating PDF",
-          description: "Creating PDF from signed contract...",
-          variant: "default",
-        });
-
-        // CRITICAL FIX: Get the signed HTML content first with authentication headers
+        // Get the signed HTML content first with authentication headers
         const htmlResponse = await fetch(
           `/api/dual-signature/download-html/${contractId}`,
           {
@@ -1186,29 +1243,22 @@ export default function SimpleContractGenerator() {
         );
 
         if (pdfResponse.ok) {
-          // Get the PDF blob and open in new window
+          // Get the PDF blob and replace window content
           const pdfBlob = await pdfResponse.blob();
           const pdfUrl = window.URL.createObjectURL(pdfBlob);
 
-          const newWindow = window.open(pdfUrl, "_blank");
+          // Replace the loading page with the PDF
+          newWindow.location.href = pdfUrl;
 
-          if (newWindow) {
-            newWindow.focus();
+          toast({
+            title: "PDF Opened",
+            description: `Viewing signed contract PDF for ${clientName}`,
+          });
 
-            toast({
-              title: "PDF Opened",
-              description: `Viewing signed contract PDF for ${clientName}`,
-            });
-
-            // Clean up URL after 10 seconds
-            setTimeout(() => {
-              window.URL.revokeObjectURL(pdfUrl);
-            }, 10000);
-          } else {
-            throw new Error(
-              "Popup blocked. Please allow popups for this site.",
-            );
-          }
+          // Clean up URL after window is closed or 30 seconds
+          setTimeout(() => {
+            window.URL.revokeObjectURL(pdfUrl);
+          }, 30000);
         } else {
           const errorData = await pdfResponse.json();
           throw new Error(
@@ -1217,6 +1267,68 @@ export default function SimpleContractGenerator() {
         }
       } catch (error: any) {
         console.error("❌ Error viewing contract PDF:", error);
+        
+        // Show error in the opened window
+        newWindow.document.write(`
+          <html>
+            <head>
+              <title>Error Loading PDF</title>
+              <style>
+                body {
+                  font-family: system-ui, -apple-system, sans-serif;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  height: 100vh;
+                  margin: 0;
+                  background: #f3f4f6;
+                  color: #1f2937;
+                }
+                .error {
+                  text-align: center;
+                  background: white;
+                  padding: 40px;
+                  border-radius: 12px;
+                  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                  max-width: 500px;
+                }
+                .error h2 {
+                  color: #dc2626;
+                  margin-bottom: 16px;
+                }
+                .error-icon {
+                  font-size: 48px;
+                  margin-bottom: 20px;
+                }
+                button {
+                  margin-top: 20px;
+                  padding: 10px 24px;
+                  background: #3b82f6;
+                  color: white;
+                  border: none;
+                  border-radius: 6px;
+                  cursor: pointer;
+                  font-size: 16px;
+                }
+                button:hover {
+                  background: #2563eb;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="error">
+                <div class="error-icon">⚠️</div>
+                <h2>Error Loading PDF</h2>
+                <p>${(error as Error).message || "Failed to view signed contract as PDF"}</p>
+                <p style="font-size: 14px; color: #6b7280; margin-top: 12px;">
+                  Please try again or contact support if the issue persists.
+                </p>
+                <button onclick="window.close()">Close Window</button>
+              </div>
+            </body>
+          </html>
+        `);
+
         toast({
           title: "PDF View Error",
           description:
