@@ -35,6 +35,7 @@ This project is an AI-powered legal document and permit management platform feat
 - PROFILE SYNC FIX CRITICAL: Corregida sincronización de perfil contractor entre dispositivos - Firebase como fuente de verdad, localStorage solo como caché
 - ENTERPRISE CONTRACT SECURITY SYSTEM (2025-10-16): Sistema de seguridad enterprise-grade completo para Legal Defense con validación backend robusta, Demo Mode para usuarios gratuitos, contadores de uso en tiempo real y manejo personalizado de errores 403
 - CONTRACTOR EMAIL ROUTES CLEANUP (2025-10-16): Corrección crítica eliminando 5 endpoints rotos que causaban errores 500 en runtime (verifyContractorEmail, completeEmailVerification, createContractTemplate, createPaymentTemplate, checkVerificationStatus) - manteniendo solo endpoints funcionales alineados con capacidades reales del servicio
+- UX CRITICAL IMPROVEMENTS (2025-10-17): Eliminación completa de auto-refresh fastidioso de 15 segundos en Legal Defense History/Completed que causaba scroll automático disruptivo; Fix de popup blocker en "View Document" abriendo ventana sincronicamente antes de fetch asíncrono con manejo robusto de errores para prevenir ventanas huérfanas
 
 ## System Architecture
 
