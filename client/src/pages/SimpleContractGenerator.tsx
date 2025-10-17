@@ -3081,12 +3081,26 @@ export default function SimpleContractGenerator() {
         "✅ [SIGNATURE-SIMPLE] Starting signature protocol (session-based auth)...",
       );
 
+      // ✅ CRITICAL FIX: Include Firebase token in Authorization header
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      // Add Firebase token if available
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          headers['Authorization'] = `Bearer ${token}`;
+          console.log('✅ [AUTH-TOKEN] Firebase token added to request');
+        } catch (tokenError) {
+          console.warn('⚠️ [AUTH-TOKEN] Could not get Firebase token:', tokenError);
+        }
+      }
+
       const response = await fetch("/api/multi-channel/initiate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: 'include', // ✅ Include session cookie
+        headers,
+        credentials: 'include', // ✅ Include session cookie as fallback
         body: JSON.stringify(secureDeliveryPayload),
       });
 
