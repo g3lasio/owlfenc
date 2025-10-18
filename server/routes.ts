@@ -6949,6 +6949,7 @@ Output must be between 200-900 characters in English.`;
       // 🛡️ SAVE SEARCH TO HISTORY ONLY IF USER IS AUTHENTICATED
       if (user) {
         try {
+          console.log(`📝 [PROPERTY-HISTORY-DEBUG] Intentando guardar en historial para usuario ${user.id}`);
           const title = `Propiedad en ${address}`;
 
           const historyData = {
@@ -6963,11 +6964,28 @@ Output must be between 200-900 characters in English.`;
             tags: [],
           };
 
+          console.log(`📝 [PROPERTY-HISTORY-DEBUG] Datos del historial preparados:`, {
+            id: historyData.id,
+            userId: historyData.userId,
+            address: historyData.address,
+            ownerName: historyData.ownerName,
+            hasResults: !!historyData.results,
+          });
+
           const validHistoryData = insertPropertySearchHistorySchema.parse(historyData);
-          await storage.createPropertySearchHistory(validHistoryData);
-          console.log(`📝 [PROPERTY-API] Search saved to history for user ${user.id}`);
-        } catch (historyError) {
-          console.error("⚠️ [PROPERTY-API] Error saving to property history:", historyError);
+          console.log(`📝 [PROPERTY-HISTORY-DEBUG] Validación de schema completada`);
+          
+          const savedHistory = await storage.createPropertySearchHistory(validHistoryData);
+          console.log(`✅ [PROPERTY-HISTORY-SUCCESS] Búsqueda guardada exitosamente en historial:`, {
+            historyId: savedHistory.id,
+            userId: user.id,
+            address: savedHistory.address,
+          });
+        } catch (historyError: any) {
+          console.error("❌ [PROPERTY-HISTORY-ERROR] Error detallado al guardar en historial:");
+          console.error("❌ Error message:", historyError?.message);
+          console.error("❌ Error stack:", historyError?.stack);
+          console.error("❌ Error completo:", JSON.stringify(historyError, null, 2));
           // Don't fail the request if history save fails
         }
       } else {
