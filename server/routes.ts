@@ -4744,7 +4744,7 @@ Output must be between 200-900 characters in English.`;
     },
   );
 
-  // API endpoint to activate 21-day trial subscription (SECURE VERSION)
+  // API endpoint to activate trial subscription (SECURE VERSION WITH ANTI-DUPLICATE PROTECTION)
   app.post(
     "/api/subscription/activate-trial",
     requireAuth,
@@ -4756,25 +4756,54 @@ Output must be between 200-900 characters in English.`;
 
         const userId = req.firebaseUser.uid; // USAR Firebase UID directamente
         
-        // Verificar que el usuario no tenga ya una suscripción premium
+        // 🛡️ PROTECCIÓN COMPLETA: Verificar CUALQUIER suscripción existente (trial actual, trial expirado, o plan premium)
         const existingSubscription = await firebaseSubscriptionService.getUserSubscription(userId);
         
-        if (existingSubscription && existingSubscription.planId > 1) {
-          return res.status(400).json({ 
-            error: "El usuario ya tiene una suscripción activa",
-            currentPlan: existingSubscription.planId
-          });
+        if (existingSubscription) {
+          // Si ya tiene plan premium, no permitir trial
+          if (existingSubscription.planId > 1 && existingSubscription.planId !== 4) {
+            console.log(`🚫 [ACTIVATE-TRIAL] Usuario ${userId} ya tiene plan premium: ${existingSubscription.planId}`);
+            return res.status(400).json({ 
+              error: "Ya tienes una suscripción activa",
+              currentPlan: existingSubscription.planId,
+              message: "No puedes activar un trial cuando ya tienes un plan premium"
+            });
+          }
+          
+          // Si ya tiene trial (activo o expirado), no permitir otro
+          if (existingSubscription.planId === 4) {
+            const isActive = existingSubscription.currentPeriodEnd && 
+                           new Date(existingSubscription.currentPeriodEnd) > new Date();
+            
+            if (isActive) {
+              console.log(`⚠️ [ACTIVATE-TRIAL] Usuario ${userId} ya tiene trial ACTIVO hasta ${existingSubscription.currentPeriodEnd}`);
+              return res.status(400).json({
+                error: "Ya tienes un trial activo",
+                currentPeriodEnd: existingSubscription.currentPeriodEnd,
+                message: `Tu trial está activo hasta ${new Date(existingSubscription.currentPeriodEnd).toLocaleDateString()}`
+              });
+            } else {
+              console.log(`🚫 [ACTIVATE-TRIAL] Usuario ${userId} ya USABA trial (expiró: ${existingSubscription.currentPeriodEnd})`);
+              return res.status(400).json({
+                error: "Ya usaste tu período de prueba",
+                expiredAt: existingSubscription.currentPeriodEnd,
+                message: "El período de prueba solo se puede usar una vez. Por favor suscríbete a un plan premium."
+              });
+            }
+          }
         }
 
-        // Crear Trial Master subscription para usuarios elegibles
+        // ✅ SOLO CREAR SI NUNCA HA TENIDO TRIAL
         await firebaseSubscriptionService.createTrialMasterSubscription(userId);
         
         const trialSubscription = await firebaseSubscriptionService.getUserSubscription(userId);
         const trialDaysRemaining = await firebaseSubscriptionService.getTrialDaysRemaining(userId);
 
+        console.log(`✅ [ACTIVATE-TRIAL] Trial creado exitosamente para ${userId} - expira: ${trialSubscription?.currentPeriodEnd}`);
+
         res.json({
           success: true,
-          message: "Trial Master de 21 días activado exitosamente",
+          message: "Trial Master de 14 días activado exitosamente",
           subscription: trialSubscription,
           trialDaysRemaining,
           features: [
