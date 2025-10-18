@@ -33,6 +33,7 @@ This project is an AI-powered legal document and permit management platform that
 - AGENT FUNCTIONS HEADER INTEGRATION
 - DATA CONSISTENCY SECURITY CRITICAL: Sistema robusto de mapeo de usuarios eliminando inconsistencias de datos entre dispositivos
 - PROFILE SYNC FIX CRITICAL: Corregida sincronización de perfil contractor entre dispositivos - Firebase como fuente de verdad, localStorage solo como caché
+- TRIAL PERIOD ANTI-RESET SYSTEM (2025-10-18): Sistema enterprise-grade de protección contra trial duplicados; Eliminado `.onConflictDoUpdate` que reseteaba fechas de trial; Implementada columna PERMANENTE `hasUsedTrial` en tabla users que sobrevive upgrades a planes premium; Protección quad-capa atómica: (1) Row-level locking con SELECT FOR UPDATE, (2) Verificación flag hasUsedTrial, (3) Verificación trials históricos en userSubscriptions, (4) Auto-reparación de inconsistencias; Backfill migration ejecutado marcando 11 usuarios históricos; Endpoint /api/subscription/activate-trial con mensajes de error personalizados; Trial de 14 días único por Firebase UID - una vez usado no se renueva JAMÁS; Validado por arquitecto después de 3 iteraciones corrigiendo race conditions
 
 ## System Architecture
 
