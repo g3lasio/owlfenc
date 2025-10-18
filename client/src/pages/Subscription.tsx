@@ -562,7 +562,7 @@ export default function Subscription() {
                 ⬆️ Hacer Upgrade
               </Button>
               <p className="text-xs text-muted-foreground self-center">
-                Recomendado: El Mero Patrón ($49.99/mes)
+                Recomendado: El Mero Patrón ($100/mes)
               </p>
             </div>
           ) : (

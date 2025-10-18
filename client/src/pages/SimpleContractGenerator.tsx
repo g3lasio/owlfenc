@@ -3089,7 +3089,7 @@ export default function SimpleContractGenerator() {
           // Personalized upgrade message based on plan
           let upgradeMessage = "Upgrade to access contract generation";
           if (isPrimoChambeador) {
-            upgradeMessage = "Upgrade to Mero Patrón ($49.99/mo) to generate real contracts with Legal Defense";
+            upgradeMessage = "Upgrade to Mero Patrón ($100/mo) to generate real contracts with Legal Defense";
           } else if (isMeroPatron && errorData.message?.includes('limit reached')) {
             upgradeMessage = "You've used all 50 contracts this month. Upgrade to Master Contractor for unlimited contracts.";
           }
