@@ -86,6 +86,20 @@ export class FirebaseSubscriptionService {
         throw new Error(`No internal user ID found for Firebase UID: ${userId}`);
       }
       
+      // 🛡️ CRITICAL SECURITY: Si es un trial, verificar hasUsedTrial
+      if (subscriptionData.planId === TRIAL_PLAN_ID) {
+        const userRecord = await db!
+          .select()
+          .from(users)
+          .where(eq(users.id, internalUserId))
+          .limit(1);
+        
+        if (userRecord.length > 0 && userRecord[0].hasUsedTrial === true) {
+          console.error(`🚨 [SECURITY] User ${userId} attempted to create another trial but hasUsedTrial=true`);
+          throw new Error('User has already used their one-time trial. Trials cannot be reset or renewed.');
+        }
+      }
+      
       // Verificar si ya existe una suscripción
       const existing = await db!
         .select()
