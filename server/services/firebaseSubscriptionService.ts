@@ -115,21 +115,54 @@ export class FirebaseSubscriptionService {
           throw new Error('Plan upgrades must be processed through Stripe');
         }
         
-        // Actualizar suscripción existente
-        await db!
-          .update(userSubscriptions)
-          .set({
-            planId: subscriptionData.planId || existing[0].planId,
-            status: subscriptionData.status || existing[0].status,
-            stripeSubscriptionId: subscriptionData.stripeSubscriptionId || existing[0].stripeSubscriptionId,
-            stripeCustomerId: subscriptionData.stripeCustomerId || existing[0].stripeCustomerId,
-            currentPeriodStart: subscriptionData.currentPeriodStart || existing[0].currentPeriodStart,
-            currentPeriodEnd: subscriptionData.currentPeriodEnd || existing[0].currentPeriodEnd,
-            cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd ?? existing[0].cancelAtPeriodEnd,
-            billingCycle: subscriptionData.billingCycle || existing[0].billingCycle,
-            updatedAt: new Date()
-          })
-          .where(eq(userSubscriptions.userId, internalUserId));
+        // 🛡️ CRITICAL: Si están actualizando a trial, establecer hasUsedTrial
+        if (newPlanId === TRIAL_PLAN_ID && existing[0].planId !== TRIAL_PLAN_ID) {
+          await db!.transaction(async (tx) => {
+            // Marcar hasUsedTrial como true PERMANENTEMENTE
+            const updateResult = await tx
+              .update(users)
+              .set({ hasUsedTrial: true })
+              .where(eq(users.id, internalUserId));
+            
+            if (!updateResult.rowCount || updateResult.rowCount === 0) {
+              throw new Error('User not found in database - cannot update to trial');
+            }
+            
+            // Actualizar suscripción a trial solo después de marcar hasUsedTrial
+            await tx
+              .update(userSubscriptions)
+              .set({
+                planId: subscriptionData.planId || existing[0].planId,
+                status: subscriptionData.status || 'trialing',
+                stripeSubscriptionId: subscriptionData.stripeSubscriptionId || existing[0].stripeSubscriptionId,
+                stripeCustomerId: subscriptionData.stripeCustomerId || existing[0].stripeCustomerId,
+                currentPeriodStart: subscriptionData.currentPeriodStart || existing[0].currentPeriodStart,
+                currentPeriodEnd: subscriptionData.currentPeriodEnd || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+                cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd ?? existing[0].cancelAtPeriodEnd,
+                billingCycle: subscriptionData.billingCycle || existing[0].billingCycle,
+                updatedAt: new Date()
+              })
+              .where(eq(userSubscriptions.userId, internalUserId));
+            
+            console.log(`✅ [SECURITY] Subscription updated to trial with hasUsedTrial=true for user ${userId}`);
+          });
+        } else {
+          // Actualizar suscripción normal (no trial)
+          await db!
+            .update(userSubscriptions)
+            .set({
+              planId: subscriptionData.planId || existing[0].planId,
+              status: subscriptionData.status || existing[0].status,
+              stripeSubscriptionId: subscriptionData.stripeSubscriptionId || existing[0].stripeSubscriptionId,
+              stripeCustomerId: subscriptionData.stripeCustomerId || existing[0].stripeCustomerId,
+              currentPeriodStart: subscriptionData.currentPeriodStart || existing[0].currentPeriodStart,
+              currentPeriodEnd: subscriptionData.currentPeriodEnd || existing[0].currentPeriodEnd,
+              cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd ?? existing[0].cancelAtPeriodEnd,
+              billingCycle: subscriptionData.billingCycle || existing[0].billingCycle,
+              updatedAt: new Date()
+            })
+            .where(eq(userSubscriptions.userId, internalUserId));
+        }
       } else {
         // 🛡️ CRITICAL: Si es un trial, marcar hasUsedTrial ANTES de crear suscripción
         if (subscriptionData.planId === TRIAL_PLAN_ID) {
