@@ -451,36 +451,12 @@ export class FirebaseSubscriptionService {
     }
   }
 
-  /**
-   * Create subscription with current date - API method
-   */
-  async createCurrentSubscription(userId: string, planId: number): Promise<void> {
-    try {
-      console.log(`📧 [FIREBASE-SUBSCRIPTION] Creating current subscription for user: ${userId}, plan: ${planId}`);
-      
-      const currentDate = new Date();
-      const nextMonth = new Date(currentDate);
-      nextMonth.setMonth(currentDate.getMonth() + 1); // Same day next month
-      
-      const subscriptionData = {
-        status: 'active' as const,
-        planId: planId,
-        stripeSubscriptionId: `sub_prod_${Date.now()}`,
-        stripeCustomerId: `cus_prod_${Date.now()}`,
-        currentPeriodStart: currentDate,
-        currentPeriodEnd: nextMonth,
-        cancelAtPeriodEnd: false,
-        billingCycle: 'monthly' as const
-      };
-
-      await this.createOrUpdateSubscription(userId, subscriptionData);
-      
-      console.log(`✅ [FIREBASE-SUBSCRIPTION] Current subscription created in PostgreSQL - expires: ${nextMonth.toISOString()}`);
-    } catch (error) {
-      console.error('❌ [FIREBASE-SUBSCRIPTION] Error creating current subscription:', error);
-      throw error;
-    }
-  }
+  // 🚨 REMOVED FOR SECURITY: createCurrentSubscription method was allowing payment bypass
+  // All subscription creations must go through:
+  // 1. Stripe checkout for paid plans (planId 2 or 3) → updateSubscriptionFromStripe()
+  // 2. secureTrialService.activateTrial() for trial plans (planId 4)  
+  // 3. Webhook-verified updates only for premium subscriptions
+  // Never create subscriptions directly without payment verification!
 
   /**
    * Check if trial has expired and downgrade to free plan

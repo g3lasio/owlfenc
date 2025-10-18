@@ -4844,84 +4844,22 @@ Output must be between 200-900 characters in English.`;
     },
   );
 
-  // 🚨 DEPRECATED - SECURITY VULNERABILITY FIXED
-  // This endpoint was allowing subscription bypass without payment verification
-  // Now restricted to admin/internal use only with proper authentication
+  // 🚨 CRITICAL SECURITY: This endpoint was completely removed to prevent payment bypass
+  // All subscription upgrades MUST go through Stripe checkout process
+  // Previous vulnerability allowed users to upgrade to $100/month plans without payment
   app.post(
     "/api/subscription/create-current",
-    requireAuth,
-    async (req: Request, res: Response) => {
-      try {
-        // 🛡️ SECURITY: Only allow admin or internal system calls
-        const isAdmin = req.firebaseUser?.customClaims?.admin === true;
-        const isInternalCall = req.headers['x-internal-key'] === process.env.INTERNAL_API_KEY;
-        
-        if (!isAdmin && !isInternalCall) {
-          console.error(`🚨 [SECURITY] Unauthorized attempt to create subscription by user: ${req.firebaseUser?.uid}`);
-          return res.status(403).json({ 
-            error: "Forbidden: This endpoint requires admin privileges",
-            message: "Subscriptions must be created through Stripe checkout process"
-          });
-        }
-        
-        const { userId, planId } = req.body;
-
-        if (!userId || !planId) {
-          return res
-            .status(400)
-            .json({ error: "userId and planId are required" });
-        }
-        
-        // 🛡️ SECURITY: Only allow trial or free plans through this endpoint
-        if (planId !== 1 && planId !== TRIAL_PLAN_ID) {
-          return res.status(403).json({ 
-            error: "Paid plans must be created through Stripe",
-            message: "Use /api/subscription/create-checkout for premium plans"
-          });
-        }
-
-        // Create subscription with current date
-        await firebaseSubscriptionService.createCurrentSubscription(
-          userId,
-          planId,
-        );
-
-        // Return the created subscription
-        const subscription =
-          await firebaseSubscriptionService.getUserSubscription(userId);
-        const plan = {
-          id: subscription?.planId,
-          name:
-            subscription?.planId === 2 ? "Mero Patrón" : "Master Contractor",
-          price: subscription?.planId === 2 ? 10000 : 10000, // $100/mes para ambos planes premium
-          interval: subscription?.billingCycle,
-          features:
-            subscription?.planId === 2
-              ? [
-                  "Unlimited basic estimates",
-                  "50 AI estimates/month",
-                  "Complete invoicing",
-                  "Mervin AI 7.0",
-                ]
-              : [
-                  "Complete management features",
-                  "Automated reminders",
-                  "QuickBooks integration",
-                  "Predictive analysis",
-                ],
-        };
-
-        res.json({
-          success: true,
-          message: "Subscription created with current date",
-          subscription: subscription,
-          plan: plan,
-        });
-      } catch (error) {
-        console.error("Error creating current subscription:", error);
-        res.status(500).json({ error: "Error creating subscription" });
-      }
-    },
+    (req: Request, res: Response) => {
+      console.error(`🚨 [SECURITY-BLOCKED] Attempt to access removed endpoint /api/subscription/create-current by IP: ${req.ip}`);
+      console.error(`🚨 [SECURITY-BLOCKED] User Agent: ${req.headers['user-agent']}`);
+      console.error(`🚨 [SECURITY-BLOCKED] Request Body:`, req.body);
+      
+      return res.status(410).json({ 
+        error: "Gone: This endpoint has been permanently removed for security reasons",
+        message: "All subscriptions must be created through Stripe checkout at /api/subscription/create-checkout",
+        securityNotice: "This attempt has been logged for security monitoring"
+      });
+    }
   );
 
   app.post(
