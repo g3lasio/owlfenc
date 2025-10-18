@@ -185,9 +185,27 @@ export class UserMappingService {
         wasUserCreated = mappingResult.wasCreated;
       }
       
-      // PROTECCIÓN ANTI-DUPLICADOS: Verificar si YA EXISTE CUALQUIER SUSCRIPCIÓN (activa, cancelada, trial previa)
-      // USANDO TRANSACCIÓN para evitar race conditions
+      // 🛡️ PROTECCIÓN PERMANENTE ANTI-DUPLICADOS usando flag hasUsedTrial
       return await db!.transaction(async (tx) => {
+        // 1. LOCK the user row FOR UPDATE to prevent concurrent race conditions
+        const userRecord = await tx
+          .select({ hasUsedTrial: users.hasUsedTrial })
+          .from(users)
+          .where(eq(users.id, internalUserId))
+          .for('update') // 🔒 ROW-LEVEL LOCK prevents concurrent access
+          .limit(1);
+        
+        if (userRecord.length === 0) {
+          throw new Error(`User with ID ${internalUserId} not found`);
+        }
+        
+        // 2. Verificar el flag PERMANENTE hasUsedTrial
+        if (userRecord[0].hasUsedTrial) {
+          console.log(`🚫 [TRIAL-PROTECTION] Usuario ${internalUserId} has PERMANENT flag hasUsedTrial=true - NO RENEWAL EVER`);
+          return null; // Usuario ya usó su trial - incluso si hizo upgrade después
+        }
+        
+        // 3. Verificar también si existe suscripción histórica (doble check)
         const anyExistingSubscription = await tx
           .select()
           .from(userSubscriptions)
@@ -195,17 +213,24 @@ export class UserMappingService {
           .limit(1);
         
         if (anyExistingSubscription.length > 0) {
-          console.log(`🚫 [TRIAL-PROTECTION] Usuario ${internalUserId} ya tiene historial de suscripción - NO crear nuevo trial`);
+          console.log(`⚠️ [TRIAL-PROTECTION] Found subscription in DB - marking flag for safety`);
+          
+          // Marcar el flag si no estaba marcado (reparar inconsistencias)
+          await tx
+            .update(users)
+            .set({ hasUsedTrial: true })
+            .where(eq(users.id, internalUserId));
+          
           return anyExistingSubscription[0];
         }
 
-        // SOLO CREAR TRIAL si es usuario verdaderamente nuevo O se fuerza explícitamente
+        // 4. SOLO CREAR TRIAL si es usuario verdaderamente nuevo O se fuerza explícitamente
         if (!wasUserCreated && !forceCreateForNewUser) {
           console.log(`🚫 [TRIAL-PROTECTION] Usuario ${internalUserId} es existente por email - NO crear trial automático`);
           return null;
         }
 
-        // Obtener plan Free Trial
+        // 5. Obtener plan Free Trial
         const trialPlan = await tx
           .select()
           .from(subscriptionPlans)
@@ -216,7 +241,7 @@ export class UserMappingService {
           throw new Error('Free Trial plan not found');
         }
         
-        // Crear suscripción trial de 14 días DENTRO DE LA TRANSACCIÓN
+        // 6. Crear suscripción trial de 14 días
         const trialStart = new Date();
         const trialEnd = new Date(Date.now() + (14 * 24 * 60 * 60 * 1000)); // 14 días
         
@@ -230,9 +255,16 @@ export class UserMappingService {
             currentPeriodEnd: trialEnd,
             billingCycle: 'monthly'
           })
+          .onConflictDoNothing() // Prevenir duplicados en caso de race condition
           .returning();
         
-        console.log(`✅ [USER-MAPPING] Trial creado de forma IDEMPOTENTE para user_id ${internalUserId}`);
+        // 7. Marcar PERMANENTEMENTE que el usuario ya usó su trial
+        await tx
+          .update(users)
+          .set({ hasUsedTrial: true })
+          .where(eq(users.id, internalUserId));
+        
+        console.log(`✅ [USER-MAPPING] Trial creado de forma ATÓMICA + hasUsedTrial flag SET PERMANENTLY para user_id ${internalUserId}`);
         return newSubscription[0];
       });
       
