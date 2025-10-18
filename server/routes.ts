@@ -4626,7 +4626,7 @@ Output must be between 200-900 characters in English.`;
               defaultPlan = {
                 id: updatedSubscription.planId,
                 name: updatedSubscription.planId === 2 ? "Mero Patrón" : "Master Contractor",
-                price: updatedSubscription.planId === 2 ? 4999 : 9999,
+                price: 10000, // $100.00 USD/month for both premium plans
                 interval: updatedSubscription.billingCycle,
                 features:
                   updatedSubscription.planId === 2
@@ -4844,17 +4844,40 @@ Output must be between 200-900 characters in English.`;
     },
   );
 
-  // API endpoint to create current subscription with real dates
+  // 🚨 DEPRECATED - SECURITY VULNERABILITY FIXED
+  // This endpoint was allowing subscription bypass without payment verification
+  // Now restricted to admin/internal use only with proper authentication
   app.post(
     "/api/subscription/create-current",
+    requireAuth,
     async (req: Request, res: Response) => {
       try {
+        // 🛡️ SECURITY: Only allow admin or internal system calls
+        const isAdmin = req.firebaseUser?.customClaims?.admin === true;
+        const isInternalCall = req.headers['x-internal-key'] === process.env.INTERNAL_API_KEY;
+        
+        if (!isAdmin && !isInternalCall) {
+          console.error(`🚨 [SECURITY] Unauthorized attempt to create subscription by user: ${req.firebaseUser?.uid}`);
+          return res.status(403).json({ 
+            error: "Forbidden: This endpoint requires admin privileges",
+            message: "Subscriptions must be created through Stripe checkout process"
+          });
+        }
+        
         const { userId, planId } = req.body;
 
         if (!userId || !planId) {
           return res
             .status(400)
             .json({ error: "userId and planId are required" });
+        }
+        
+        // 🛡️ SECURITY: Only allow trial or free plans through this endpoint
+        if (planId !== 1 && planId !== TRIAL_PLAN_ID) {
+          return res.status(403).json({ 
+            error: "Paid plans must be created through Stripe",
+            message: "Use /api/subscription/create-checkout for premium plans"
+          });
         }
 
         // Create subscription with current date
@@ -4870,7 +4893,7 @@ Output must be between 200-900 characters in English.`;
           id: subscription?.planId,
           name:
             subscription?.planId === 2 ? "Mero Patrón" : "Master Contractor",
-          price: subscription?.planId === 2 ? 4999 : 9999,
+          price: subscription?.planId === 2 ? 10000 : 10000, // $100/mes para ambos planes premium
           interval: subscription?.billingCycle,
           features:
             subscription?.planId === 2
@@ -4958,8 +4981,8 @@ Output must be between 200-900 characters in English.`;
           {
             id: 2,
             name: "Mero Patrón",
-            price: 4999, // $49.99 in cents (monthly)
-            yearlyPrice: 49999, // $499.99 in cents (yearly)
+            price: 10000, // $100.00 USD/month
+            yearlyPrice: 120000, // $1200.00 USD/year (12 months)
             interval: "monthly",
             features: [
               "Unlimited basic estimates",
@@ -4971,8 +4994,8 @@ Output must be between 200-900 characters in English.`;
           {
             id: 3,
             name: "Master Contractor",
-            price: 9999, // $99.99 in cents (monthly)
-            yearlyPrice: 99999, // $999.99 in cents (yearly)
+            price: 10000, // $100.00 USD/month
+            yearlyPrice: 120000, // $1200.00 USD/year (12 months)
             interval: "monthly",
             features: [
               "Complete management features",
