@@ -150,18 +150,30 @@ export class SecureTrialService {
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       };
       
-      // Store in Firestore entitlements collection
-      await db.collection('entitlements').doc(uid).set(trialEntitlements);
-      
-      // 🛡️ MARCAR PERMANENTEMENTE hasUsedTrial=true en PostgreSQL para prevenir duplicados
+      // 🛡️ CRITICAL: Marcar hasUsedTrial ANTES de crear trial en Firebase
+      // Si el UPDATE falla (user no existe en PostgreSQL), abortar completamente
       if (pgDb) {
-        await pgDb
+        const updateResult = await pgDb
           .update(users)
           .set({ hasUsedTrial: true })
           .where(eq(users.firebaseUid, uid));
         
-        console.log(`✅ [SECURE-TRIAL] hasUsedTrial flag PERMANENTLY set in PostgreSQL for ${uid}`);
+        // VERIFICACIÓN CRÍTICA: Si el UPDATE afectó 0 filas, el usuario no existe en PostgreSQL
+        // Esto viola la garantía de atomicidad - ABORT trial creation
+        if (updateResult.rowCount === 0) {
+          console.error(`🚨 [SECURE-TRIAL] CRITICAL: User ${uid} not found in PostgreSQL - ABORTING trial creation`);
+          throw new Error('User not found in database. Please contact support to complete account setup.');
+        }
+        
+        console.log(`✅ [SECURE-TRIAL] hasUsedTrial flag PERMANENTLY set in PostgreSQL for ${uid} (rowCount: ${updateResult.rowCount})`);
+      } else {
+        // Si PostgreSQL no está disponible, NO crear trial - seguridad primero
+        console.error(`🚨 [SECURE-TRIAL] CRITICAL: PostgreSQL unavailable - ABORTING trial creation for ${uid}`);
+        throw new Error('Database temporarily unavailable. Please try again later.');
       }
+      
+      // Store in Firestore entitlements collection (DESPUÉS de verificar PostgreSQL)
+      await db.collection('entitlements').doc(uid).set(trialEntitlements);
       
       // Initialize usage for current month
       await this.initializeTrialUsage(uid);
