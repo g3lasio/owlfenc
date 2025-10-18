@@ -44,31 +44,10 @@ class PropertyVerifierService {
     try {
       console.log('📡 Sending request to secure backend API');
       
-      // 🔐 GET FIREBASE AUTHENTICATION TOKEN (OPCIONAL)
-      // Esperar a que Firebase Auth esté completamente inicializado
-      await authReadyGate.waitForAuth();
-      
-      let token = null;
-      
-      // 🔄 RETRY LOGIC: Esperar hasta 3 segundos por el usuario autenticado
-      // Esto resuelve el problema de timing cuando el usuario acaba de hacer login
-      let retries = 6; // 6 intentos x 500ms = 3 segundos máximo
-      while (retries > 0 && !auth.currentUser) {
-        console.log(`⏳ Esperando autenticación... (intentos restantes: ${retries})`);
-        await new Promise(resolve => setTimeout(resolve, 500));
-        retries--;
-      }
-      
-      if (auth.currentUser) {
-        try {
-          token = await safeGetIdToken(auth.currentUser);
-          console.log('🔐 Firebase token obtained for property verification');
-        } catch (tokenError) {
-          console.warn('⚠️ Could not get Firebase token, continuing without authentication');
-        }
-      } else {
-        console.log('ℹ️ No authenticated user - continuing without authentication');
-      }
+      // 🍪 SIMPLIFIED AUTH: El navegador automáticamente envía la session cookie __session
+      // No necesitamos verificar auth.currentUser ni enviar Authorization header
+      // El backend usa optionalAuth que detecta la cookie automáticamente
+      console.log('🍪 Using automatic session cookie authentication');
       
       // Preparar parámetros con información completa si está disponible
       const params: any = { address: address.trim() };
@@ -86,20 +65,10 @@ class PropertyVerifierService {
         console.log('🏠 Enhanced address components:', { city, state, zip });
       }
       
-      // Construir headers - solo incluir Authorization si hay token
-      const headers: any = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
       const response = await axios.get('/api/property/details', {
         params,
         timeout: 25000, // 25 seconds timeout
-        headers
+        withCredentials: true // CRÍTICO: Esto asegura que las cookies se envíen
       });
       
       console.log('✅ Backend response received:', {
