@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { userSubscriptions, subscriptionPlans } from '@shared/schema';
+import { userSubscriptions, subscriptionPlans, users } from '@shared/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { userMappingService } from './userMappingService';
 
@@ -340,51 +340,81 @@ export class FirebaseSubscriptionService {
         }
       }
       
-      // 🛡️ PROTECCIÓN ANTI-DUPLICADOS: Verificar si ALGUNA VEZ ha tenido trial (activo o expirado)
-      const anyExistingTrial = await db!
-        .select()
-        .from(userSubscriptions)
-        .where(and(
-          eq(userSubscriptions.userId, internalUserId!),
-          eq(userSubscriptions.planId, 4) // Trial plan
-        ))
-        .limit(1);
-      
-      if (anyExistingTrial.length > 0) {
-        const existingTrial = anyExistingTrial[0];
-        const isActive = existingTrial.currentPeriodEnd && new Date(existingTrial.currentPeriodEnd) > new Date();
+      // 🛡️ PROTECCIÓN PERMANENTE ANTI-DUPLICADOS: Verificar flag hasUsedTrial que NUNCA se resetea
+      await db!.transaction(async (tx) => {
+        // 1. LOCK the user row FOR UPDATE to prevent concurrent race conditions
+        const userRecord = await tx
+          .select({ hasUsedTrial: users.hasUsedTrial })
+          .from(users)
+          .where(eq(users.id, internalUserId!))
+          .for('update') // 🔒 ROW-LEVEL LOCK prevents concurrent access
+          .limit(1);
         
-        if (isActive) {
-          console.log(`⚠️ [FIREBASE-SUBSCRIPTION] User already has ACTIVE trial until ${existingTrial.currentPeriodEnd}`);
-        } else {
-          console.log(`🚫 [FIREBASE-SUBSCRIPTION] User ALREADY HAD trial (expired: ${existingTrial.currentPeriodEnd}) - NO RENEWAL`);
+        if (userRecord.length === 0) {
+          throw new Error(`User with ID ${internalUserId} not found`);
         }
-        return; // NO crear nuevo trial si ya tuvo uno antes
-      }
-      
-      // ✅ SOLO CREAR SI NUNCA HA TENIDO TRIAL
-      const currentDate = new Date();
-      const trialEndDate = new Date(currentDate);
-      trialEndDate.setDate(currentDate.getDate() + 14); // 14 days trial
-      
-      // Crear suscripción trial ÚNICA (sin onConflictDoUpdate para evitar reinicio)
-      await db!
-        .insert(userSubscriptions)
-        .values({
-          userId: internalUserId!,
-          planId: 4, // Trial Master plan
-          status: 'trialing',
-          stripeSubscriptionId: `trial_prod_${Date.now()}`,
-          stripeCustomerId: `cus_trial_${Date.now()}`,
-          currentPeriodStart: currentDate,
-          currentPeriodEnd: trialEndDate,
-          cancelAtPeriodEnd: true, // Automatically cancel after trial
-          billingCycle: 'monthly',
-          createdAt: currentDate,
-          updatedAt: currentDate
-        });
-      
-      console.log(`✅ [FIREBASE-SUBSCRIPTION] Trial Master created in PostgreSQL - expires: ${trialEndDate.toISOString()}`);
+        
+        if (userRecord[0].hasUsedTrial) {
+          console.log(`🚫 [FIREBASE-SUBSCRIPTION] User ${internalUserId} has PERMANENT flag hasUsedTrial=true - NO RENEWAL EVER`);
+          return; // El usuario ya usó su trial - incluso si hizo upgrade después
+        }
+        
+        // 2. Verificar también si existe trial en la tabla de subscripciones (protección adicional)
+        const anyExistingTrial = await tx
+          .select()
+          .from(userSubscriptions)
+          .where(and(
+            eq(userSubscriptions.userId, internalUserId!),
+            eq(userSubscriptions.planId, 4) // Trial plan
+          ))
+          .limit(1);
+        
+        if (anyExistingTrial.length > 0) {
+          const existingTrial = anyExistingTrial[0];
+          const isActive = existingTrial.currentPeriodEnd && new Date(existingTrial.currentPeriodEnd) > new Date();
+          
+          console.log(`⚠️ [FIREBASE-SUBSCRIPTION] Found trial in DB (active: ${isActive}) - marking flag for safety`);
+          
+          // Marcar el flag si no estaba marcado (reparar inconsistencias)
+          await tx
+            .update(users)
+            .set({ hasUsedTrial: true })
+            .where(eq(users.id, internalUserId!));
+          
+          return; // NO crear nuevo trial
+        }
+        
+        // ✅ SOLO CREAR SI NUNCA HA TENIDO TRIAL (dentro de transacción atómica)
+        const currentDate = new Date();
+        const trialEndDate = new Date(currentDate);
+        trialEndDate.setDate(currentDate.getDate() + 14); // 14 days trial
+        
+        // 3. Crear suscripción trial
+        await tx
+          .insert(userSubscriptions)
+          .values({
+            userId: internalUserId!,
+            planId: 4, // Trial Master plan
+            status: 'trialing',
+            stripeSubscriptionId: `trial_prod_${Date.now()}`,
+            stripeCustomerId: `cus_trial_${Date.now()}`,
+            currentPeriodStart: currentDate,
+            currentPeriodEnd: trialEndDate,
+            cancelAtPeriodEnd: true, // Automatically cancel after trial
+            billingCycle: 'monthly',
+            createdAt: currentDate,
+            updatedAt: currentDate
+          })
+          .onConflictDoNothing(); // Si hay conflicto, no hacer nada (previene duplicados)
+        
+        // 4. Marcar PERMANENTEMENTE que el usuario ya usó su trial
+        await tx
+          .update(users)
+          .set({ hasUsedTrial: true })
+          .where(eq(users.id, internalUserId!));
+        
+        console.log(`✅ [FIREBASE-SUBSCRIPTION] Trial created atomically + hasUsedTrial flag SET PERMANENTLY - expires: ${trialEndDate.toISOString()}`);
+      });
     } catch (error) {
       console.error('❌ [FIREBASE-SUBSCRIPTION] Error creating trial subscription:', error);
       throw error;

@@ -78,6 +78,7 @@ export const users = pgTable('users', {
   socialMedia: jsonb('social_media'),
   documents: jsonb('documents'),
   logo: text('logo'),
+  hasUsedTrial: boolean('has_used_trial').default(false).notNull(), // PERMANENT FLAG - never reset after trial created
   createdAt: timestamp('created_at').defaultNow().notNull(),
   stripeConnectAccountId: text('stripe_connect_account_id'),
   defaultPaymentTerms: integer('default_payment_terms').default(30), // días para pago
