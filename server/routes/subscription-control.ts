@@ -35,14 +35,23 @@ export function registerSubscriptionControlRoutes(app: any) {
       const status = await subscriptionControlService.getUserSubscriptionStatus(userId.toString());
       
       if (!status) {
-        // Usuario nuevo - crear trial automáticamente
-        await subscriptionControlService.createTrialSubscription(userId.toString());
-        const newStatus = await subscriptionControlService.getUserSubscriptionStatus(userId.toString());
+        // 🚨 SECURITY: NO crear trial automático - usuarios deben activarlo explícitamente
+        // Prevenir bypass donde usuarios pueden obtener trials infinitos
+        console.warn(`⚠️ [SECURITY] New user ${userId} has no subscription - returning free plan status`);
         
         return res.json({
           success: true,
-          status: newStatus,
-          message: 'Trial created for new user'
+          status: {
+            planId: 1, // Primo Chambeador (free)
+            planName: 'Primo Chambeador',
+            status: 'active',
+            limits: {
+              estimatesPerMonth: 5,
+              contractsPerMonth: 0,
+              advancedFeatures: false
+            },
+            message: 'Free plan - upgrade to access premium features'
+          }
         });
       }
       

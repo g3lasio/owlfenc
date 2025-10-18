@@ -244,27 +244,14 @@ export class SubscriptionControlService {
   }
 
   /**
-   * Crear suscripción de trial para nuevo usuario
+   * 🚨 DEPRECATED - SECURITY VULNERABILITY
+   * Este método NO verifica hasUsedTrial y permite trials infinitos
+   * Usar secureTrialService.activateTrial() en su lugar
    */
   async createTrialSubscription(userId: string): Promise<void> {
-    try {
-      const trialEnd = new Date();
-      trialEnd.setDate(trialEnd.getDate() + 7); // 7 días de trial
-
-      await db.insert(userSubscriptions).values({
-        userId,
-        planId: 1, // Asumir que plan 1 es "Free Trial"
-        status: 'trialing',
-        currentPeriodStart: new Date(),
-        currentPeriodEnd: trialEnd,
-        trialDaysUsed: 0
-      });
-
-      console.log(`✅ [SUBSCRIPTION-CONTROL] Trial subscription created for user ${userId}`);
-    } catch (error) {
-      console.error('❌ [SUBSCRIPTION-CONTROL] Error creating trial:', error);
-      throw error;
-    }
+    // 🛡️ SECURITY: Bloquear completamente este método vulnerable
+    console.error(`🚨 [SECURITY-BLOCKED] Attempted to use deprecated createTrialSubscription for user: ${userId}`);
+    throw new Error('createTrialSubscription is deprecated for security. Use secureTrialService.activateTrial() instead');
   }
 }
 

@@ -47,9 +47,9 @@ export class RobustSubscriptionService {
         .limit(1);
 
       if (!result.length) {
-        console.log(`📭 [ROBUST-SUBSCRIPTION] No subscription found - creating trial for: ${userId}`);
-        await this.createTrialSubscription(userId);
-        return this.getUserSubscription(userId); // Reintento recursivo
+        // 🚨 SECURITY: NO crear trial automático - prevenir bypass
+        console.warn(`⚠️ [SECURITY] No subscription found for ${userId} - returning null (no auto-trial)`);
+        return null; // Retornar null en lugar de crear trial automático
       }
 
       const { subscription, plan } = result[0];
@@ -193,52 +193,14 @@ export class RobustSubscriptionService {
   }
 
   /**
-   * Crear trial de 7 días para nuevo usuario
+   * 🚨 DEPRECATED - SECURITY VULNERABILITY
+   * Este método NO verifica hasUsedTrial y permite bypass de trials
+   * Usar secureTrialService.activateTrial() que tiene verificación completa
    */
   private async createTrialSubscription(userId: string): Promise<void> {
-    try {
-      const trialStart = new Date();
-      const trialEnd = new Date();
-      trialEnd.setDate(trialStart.getDate() + 7); // 7 días
-
-      // Buscar el plan Free Trial
-      if (!db) {
-        throw new Error('Database connection not available');
-      }
-      
-      const trialPlan = await db
-        .select()
-        .from(subscriptionPlans)
-        .where(eq(subscriptionPlans.code, 'FREE_TRIAL'))
-        .limit(1);
-
-      if (!trialPlan.length) {
-        throw new Error('Free Trial plan not found');
-      }
-
-      // Crear un user_id numérico único basado en el Firebase UID
-      const numericUserId = Math.abs(userId.split('').reduce((hash, char) => 
-        ((hash << 5) - hash) + char.charCodeAt(0), 0
-      ));
-
-      if (!db) {
-        throw new Error('Database connection not available');
-      }
-      
-      await db.insert(userSubscriptions).values({
-        userId: numericUserId,
-        planId: trialPlan[0].id,
-        status: 'trialing',
-        currentPeriodStart: trialStart,
-        currentPeriodEnd: trialEnd,
-        billingCycle: 'monthly'
-      });
-
-      console.log(`✅ [ROBUST-SUBSCRIPTION] Trial created for ${userId} (7 days)`);
-    } catch (error) {
-      console.error('❌ [ROBUST-SUBSCRIPTION] Error creating trial:', error);
-      throw error;
-    }
+    // 🛡️ SECURITY: Bloquear este método vulnerable
+    console.error(`🚨 [SECURITY-BLOCKED] Attempted to use vulnerable createTrialSubscription in robustSubscriptionService for user: ${userId}`);
+    throw new Error('createTrialSubscription is vulnerable. Use secureTrialService.activateTrial() with hasUsedTrial verification');
   }
 
   /**
