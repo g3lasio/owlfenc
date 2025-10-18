@@ -2,8 +2,12 @@
  * SECURE TRIAL SERVICE
  * Firebase-native trial system with serverTimestamp protection
  * Prevents trial resets across devices
+ * 🛡️ PROTEGIDO CON FLAG PERMANENTE hasUsedTrial de PostgreSQL
  */
 
+import { db as pgDb } from '../db';
+import { users } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 import { db, admin } from '../lib/firebase-admin.js';
 
 export interface SecureTrialData {
@@ -67,18 +71,33 @@ export class SecureTrialService {
   
   /**
    * Create secure 14-day trial using serverTimestamp (IMMUTABLE)
+   * 🛡️ PROTEGIDO: Verifica flag PERMANENTE hasUsedTrial de PostgreSQL
    */
   async createSecureTrial(uid: string): Promise<TrialEntitlements> {
     try {
       console.log(`🔒 [SECURE-TRIAL] Creating secure 14-day trial for: ${uid}`);
       
-      // Check if trial already exists
+      // 🛡️ VERIFICACIÓN CRÍTICA: Consultar flag PERMANENTE hasUsedTrial en PostgreSQL
+      if (pgDb) {
+        const userRecord = await pgDb
+          .select({ hasUsedTrial: users.hasUsedTrial })
+          .from(users)
+          .where(eq(users.firebaseUid, uid))
+          .limit(1);
+        
+        if (userRecord.length > 0 && userRecord[0].hasUsedTrial) {
+          console.log(`🚫 [SECURE-TRIAL] User ${uid} has PERMANENT flag hasUsedTrial=true in PostgreSQL - BLOCKED`);
+          throw new Error('Trial period already used. Upgrade to a premium plan to continue.');
+        }
+      }
+      
+      // Check if trial already exists in Firebase
       const existingTrialDoc = await db.collection('entitlements').doc(uid).get();
       
       if (existingTrialDoc.exists()) {
         const data = existingTrialDoc.data();
         if (data?.trial?.isTrialing) {
-          console.log(`⚠️ [SECURE-TRIAL] User ${uid} already has active trial`);
+          console.log(`⚠️ [SECURE-TRIAL] User ${uid} already has active trial in Firebase`);
           return this.getTrialEntitlements(uid);
         }
       }
@@ -133,6 +152,16 @@ export class SecureTrialService {
       
       // Store in Firestore entitlements collection
       await db.collection('entitlements').doc(uid).set(trialEntitlements);
+      
+      // 🛡️ MARCAR PERMANENTEMENTE hasUsedTrial=true en PostgreSQL para prevenir duplicados
+      if (pgDb) {
+        await pgDb
+          .update(users)
+          .set({ hasUsedTrial: true })
+          .where(eq(users.firebaseUid, uid));
+        
+        console.log(`✅ [SECURE-TRIAL] hasUsedTrial flag PERMANENTLY set in PostgreSQL for ${uid}`);
+      }
       
       // Initialize usage for current month
       await this.initializeTrialUsage(uid);
