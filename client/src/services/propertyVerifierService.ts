@@ -49,6 +49,16 @@ class PropertyVerifierService {
       await authReadyGate.waitForAuth();
       
       let token = null;
+      
+      // 🔄 RETRY LOGIC: Esperar hasta 3 segundos por el usuario autenticado
+      // Esto resuelve el problema de timing cuando el usuario acaba de hacer login
+      let retries = 6; // 6 intentos x 500ms = 3 segundos máximo
+      while (retries > 0 && !auth.currentUser) {
+        console.log(`⏳ Esperando autenticación... (intentos restantes: ${retries})`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        retries--;
+      }
+      
       if (auth.currentUser) {
         try {
           token = await safeGetIdToken(auth.currentUser);
