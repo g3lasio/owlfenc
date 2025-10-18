@@ -2,6 +2,7 @@ import { db } from '../db';
 import { userSubscriptions, subscriptionPlans, users } from '@shared/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { userMappingService } from './userMappingService';
+import { TRIAL_PLAN_ID } from '../constants/subscription';
 
 // IMPORTANT: Using PostgreSQL database for persistent storage across devices
 
@@ -365,7 +366,7 @@ export class FirebaseSubscriptionService {
           .from(userSubscriptions)
           .where(and(
             eq(userSubscriptions.userId, internalUserId!),
-            eq(userSubscriptions.planId, 4) // Trial plan
+            eq(userSubscriptions.planId, TRIAL_PLAN_ID) // Trial plan
           ))
           .limit(1);
         
@@ -394,7 +395,7 @@ export class FirebaseSubscriptionService {
           .insert(userSubscriptions)
           .values({
             userId: internalUserId!,
-            planId: 4, // Trial Master plan
+            planId: TRIAL_PLAN_ID, // Trial Master plan
             status: 'trialing',
             stripeSubscriptionId: `trial_prod_${Date.now()}`,
             stripeCustomerId: `cus_trial_${Date.now()}`,

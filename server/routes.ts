@@ -45,6 +45,7 @@ import { determineJurisdiction } from "./utils/jurisdictionDetector";
 import { jurisdictionDetector } from "./services/nationwide/JurisdictionDetector";
 import { getCompanyConfig, getCompanyAddress } from "./config/company-config";
 import { registerPromptTemplateRoutes } from "./routes/prompt-templates";
+import { TRIAL_PLAN_ID, SUBSCRIPTION_PLAN_IDS } from "./constants/subscription";
 
 // 🗺️ FUNCIÓN HELPER PARA LEGAL COMPLIANCE NATIONWIDE
 async function getNationwideLegalCompliance(address: string) {
@@ -4605,10 +4606,10 @@ Output must be between 200-900 characters in English.`;
             let defaultPlan;
             let trialDaysRemaining = 0;
             
-            if (updatedSubscription.planId === 4) {
+            if (updatedSubscription.planId === TRIAL_PLAN_ID) {
               // Trial Master plan
               defaultPlan = {
-                id: 4,
+                id: TRIAL_PLAN_ID,
                 name: "Trial Master",
                 price: 0,
                 interval: "trial",
@@ -4658,7 +4659,7 @@ Output must be between 200-900 characters in English.`;
             };
             
             // Add trial info if it's a trial plan
-            if (updatedSubscription.planId === 4) {
+            if (updatedSubscription.planId === TRIAL_PLAN_ID) {
               responseData.trialDaysRemaining = trialDaysRemaining;
             }
             
@@ -4761,7 +4762,7 @@ Output must be between 200-900 characters in English.`;
         
         if (existingSubscription) {
           // Si ya tiene plan premium, no permitir trial
-          if (existingSubscription.planId > 1 && existingSubscription.planId !== 4) {
+          if (existingSubscription.planId > 1 && existingSubscription.planId !== TRIAL_PLAN_ID) {
             console.log(`🚫 [ACTIVATE-TRIAL] Usuario ${userId} ya tiene plan premium: ${existingSubscription.planId}`);
             return res.status(400).json({ 
               error: "Ya tienes una suscripción activa",
@@ -4771,7 +4772,7 @@ Output must be between 200-900 characters in English.`;
           }
           
           // Si ya tiene trial (activo o expirado), no permitir otro
-          if (existingSubscription.planId === 4) {
+          if (existingSubscription.planId === TRIAL_PLAN_ID) {
             const isActive = existingSubscription.currentPeriodEnd && 
                            new Date(existingSubscription.currentPeriodEnd) > new Date();
             
@@ -4831,7 +4832,7 @@ Output must be between 200-900 characters in English.`;
         const trialDaysRemaining = await firebaseSubscriptionService.getTrialDaysRemaining(userId);
         
         res.json({
-          isTrialUser: subscription?.planId === 4,
+          isTrialUser: subscription?.planId === TRIAL_PLAN_ID,
           trialDaysRemaining,
           trialStatus: subscription?.status,
           trialEndDate: subscription?.currentPeriodEnd
