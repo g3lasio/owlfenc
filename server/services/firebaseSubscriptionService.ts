@@ -340,8 +340,8 @@ export class FirebaseSubscriptionService {
         }
       }
       
-      // Verificar si ya tiene una suscripción trial activa
-      const existing = await db!
+      // 🛡️ PROTECCIÓN ANTI-DUPLICADOS: Verificar si ALGUNA VEZ ha tenido trial (activo o expirado)
+      const anyExistingTrial = await db!
         .select()
         .from(userSubscriptions)
         .where(and(
@@ -350,20 +350,24 @@ export class FirebaseSubscriptionService {
         ))
         .limit(1);
       
-      if (existing.length > 0) {
-        const existingTrial = existing[0];
-        // Si ya tiene trial, verificar si aún está vigente
-        if (existingTrial.currentPeriodEnd && new Date(existingTrial.currentPeriodEnd) > new Date()) {
-          console.log(`⚠️ [FIREBASE-SUBSCRIPTION] User already has active trial until ${existingTrial.currentPeriodEnd}`);
-          return; // No crear nuevo trial si ya tiene uno activo
+      if (anyExistingTrial.length > 0) {
+        const existingTrial = anyExistingTrial[0];
+        const isActive = existingTrial.currentPeriodEnd && new Date(existingTrial.currentPeriodEnd) > new Date();
+        
+        if (isActive) {
+          console.log(`⚠️ [FIREBASE-SUBSCRIPTION] User already has ACTIVE trial until ${existingTrial.currentPeriodEnd}`);
+        } else {
+          console.log(`🚫 [FIREBASE-SUBSCRIPTION] User ALREADY HAD trial (expired: ${existingTrial.currentPeriodEnd}) - NO RENEWAL`);
         }
+        return; // NO crear nuevo trial si ya tuvo uno antes
       }
       
+      // ✅ SOLO CREAR SI NUNCA HA TENIDO TRIAL
       const currentDate = new Date();
       const trialEndDate = new Date(currentDate);
       trialEndDate.setDate(currentDate.getDate() + 14); // 14 days trial
       
-      // Crear o actualizar suscripción en la base de datos
+      // Crear suscripción trial ÚNICA (sin onConflictDoUpdate para evitar reinicio)
       await db!
         .insert(userSubscriptions)
         .values({
@@ -378,17 +382,6 @@ export class FirebaseSubscriptionService {
           billingCycle: 'monthly',
           createdAt: currentDate,
           updatedAt: currentDate
-        })
-        .onConflictDoUpdate({
-          target: [userSubscriptions.userId],
-          set: {
-            planId: 4,
-            status: 'trialing',
-            currentPeriodStart: currentDate,
-            currentPeriodEnd: trialEndDate,
-            cancelAtPeriodEnd: true,
-            updatedAt: currentDate
-          }
         });
       
       console.log(`✅ [FIREBASE-SUBSCRIPTION] Trial Master created in PostgreSQL - expires: ${trialEndDate.toISOString()}`);
