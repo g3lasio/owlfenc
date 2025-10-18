@@ -1,6 +1,5 @@
 
-import axios from 'axios';
-import { auth, safeGetIdToken, authReadyGate } from '@/lib/firebase';
+import axios from '@/lib/axios-config'; // Use configured axios with auth interceptors
 
 export interface OwnerHistoryEntry {
   owner: string;

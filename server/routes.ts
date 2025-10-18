@@ -6702,10 +6702,10 @@ Output must be between 200-900 characters in English.`;
   // 🛡️ ENDPOINTS SEGUROS PARA HISTORIAL DE BÚSQUEDA DE PROPIEDADES
   app.get("/api/property/history", optionalAuth, async (req: Request, res: Response) => {
     try {
-      // 🔐 OBTENER userId del AuthMiddleware (opcional)
-      const authReq = req as AuthenticatedRequest;
-      const userId = authReq.userId;
-      const firebaseUid = authReq.firebaseUid;
+      // 🔐 OBTENER userId del AuthMiddleware unificado (opcional)
+      const authUser = req.authUser;
+      const userId = authUser?.internalUserId;
+      const firebaseUid = authUser?.uid;
       
       // Si no hay usuario autenticado, retornar array vacío
       if (!userId || !firebaseUid) {
@@ -6904,19 +6904,21 @@ Output must be between 200-900 characters in English.`;
       });
     }
 
-    // 🔐 VERIFICAR SI HAY USUARIO AUTENTICADO (OPCIONAL)
-    // Usar el nuevo sistema authUser primero, fallback a firebaseUser legacy
-    const firebaseUid = (req as any).authUser?.uid || (req as any).firebaseUser?.uid;
+    // 🔐 VERIFICAR SI HAY USUARIO AUTENTICADO (OPCIONAL) - usando middleware unificado
+    const authUser = req.authUser;
+    const firebaseUid = authUser?.uid;
+    const internalUserId = authUser?.internalUserId;
     let user = null;
     
-    if (firebaseUid) {
-      user = await storage.getUserByFirebaseUid(firebaseUid);
-      console.log(`🔍 [PROPERTY-API] Verificación para usuario autenticado: ${firebaseUid} (ID: ${user?.id})`);
+    if (firebaseUid && internalUserId) {
+      // Ya tenemos el user ID del middleware, no necesitamos buscar en storage
+      user = { id: internalUserId, firebaseUid: firebaseUid };
+      console.log(`🔍 [PROPERTY-API] Verificación para usuario autenticado: ${firebaseUid} (ID: ${internalUserId})`);
     } else {
       console.log(`🔍 [PROPERTY-API] Verificación para usuario no autenticado - acceso básico`);
-      console.log(`🔍 [PROPERTY-API-DEBUG] authUser:`, (req as any).authUser);
-      console.log(`🔍 [PROPERTY-API-DEBUG] firebaseUser:`, (req as any).firebaseUser);
+      console.log(`🔍 [PROPERTY-API-DEBUG] authUser:`, authUser);
       console.log(`🔍 [PROPERTY-API-DEBUG] Authorization header:`, req.headers.authorization ? 'present' : 'missing');
+      console.log(`🔍 [PROPERTY-API-DEBUG] Session cookie:`, req.cookies?.__session ? 'present' : 'missing');
     }
 
     if (city || state || zip) {
