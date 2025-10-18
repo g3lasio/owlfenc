@@ -6914,7 +6914,8 @@ Output must be between 200-900 characters in English.`;
     }
 
     // 🔐 VERIFICAR SI HAY USUARIO AUTENTICADO (OPCIONAL)
-    const firebaseUid = (req as any).firebaseUser?.uid;
+    // Usar el nuevo sistema authUser primero, fallback a firebaseUser legacy
+    const firebaseUid = (req as any).authUser?.uid || (req as any).firebaseUser?.uid;
     let user = null;
     
     if (firebaseUid) {
@@ -6922,6 +6923,9 @@ Output must be between 200-900 characters in English.`;
       console.log(`🔍 [PROPERTY-API] Verificación para usuario autenticado: ${firebaseUid} (ID: ${user?.id})`);
     } else {
       console.log(`🔍 [PROPERTY-API] Verificación para usuario no autenticado - acceso básico`);
+      console.log(`🔍 [PROPERTY-API-DEBUG] authUser:`, (req as any).authUser);
+      console.log(`🔍 [PROPERTY-API-DEBUG] firebaseUser:`, (req as any).firebaseUser);
+      console.log(`🔍 [PROPERTY-API-DEBUG] Authorization header:`, req.headers.authorization ? 'present' : 'missing');
     }
 
     if (city || state || zip) {
