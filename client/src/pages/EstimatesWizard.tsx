@@ -4285,10 +4285,40 @@ This link provides a professional view of your estimate that you can access anyt
         throw new Error('Invalid server response');
       }
 
-      setGeneratedEstimateUrl(result.shareUrl);
-      console.log('✅ [SIMPLE-SHARE] Public shareable URL created:', result.shareUrl);
-      
-      return result.shareUrl;
+      const longUrl = result.shareUrl;
+      console.log('✅ [SIMPLE-SHARE] Long URL created:', longUrl);
+
+      // Create short URL using URL shortener service
+      try {
+        const token = await currentUser?.getIdToken();
+        const shortUrlResponse = await fetch('/api/url/shorten', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            originalUrl: longUrl,
+            resourceType: 'estimate',
+            resourceId: result.shareId,
+          }),
+        });
+
+        if (shortUrlResponse.ok) {
+          const shortUrlData = await shortUrlResponse.json();
+          if (shortUrlData.success && shortUrlData.shortUrl) {
+            setGeneratedEstimateUrl(shortUrlData.shortUrl);
+            console.log('✅ [URL-SHORTENER] Short URL created:', shortUrlData.shortUrl);
+            return shortUrlData.shortUrl;
+          }
+        }
+      } catch (shortUrlError) {
+        console.warn('⚠️ [URL-SHORTENER] Failed to create short URL, using long URL:', shortUrlError);
+      }
+
+      // Fallback to long URL if shortening fails
+      setGeneratedEstimateUrl(longUrl);
+      return longUrl;
       
     } catch (error) {
       console.error('❌ [SIMPLE-SHARE] Error generating public shareable URL:', error);
@@ -8157,7 +8187,14 @@ This link provides a professional view of your estimate that you can access anyt
                     </div>
                   ) : currentShareUrl ? (
                     <div className="bg-gray-800/50 rounded px-3 py-2 border border-gray-600">
-                      <p className="text-sm text-green-400 font-mono break-all">{currentShareUrl}</p>
+                      <a 
+                        href={currentShareUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-green-400 font-mono break-all hover:text-green-300 hover:underline transition-colors cursor-pointer"
+                      >
+                        {currentShareUrl}
+                      </a>
                     </div>
                   ) : (
                     <div className="text-gray-400">No URL generated</div>
@@ -8166,12 +8203,12 @@ This link provides a professional view of your estimate that you can access anyt
               </div>
             </div>
 
-            {/* External Sharing Options */}
+            {/* Simplified Sharing Options - Only Copy, Share, Open */}
             {currentShareUrl && (
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-cyan-400 text-center">🌐 Share</h3>
+                <h3 className="text-sm font-semibold text-cyan-400 text-center">🌐 Share Options</h3>
                 
-                <div className="flex items-center justify-center gap-2 flex-wrap">
+                <div className="flex items-center justify-center gap-3">
                   <button
                     onClick={async () => {
                       try {
@@ -8181,71 +8218,11 @@ This link provides a professional view of your estimate that you can access anyt
                         toast({ title: "❌ Error", description: "Failed to copy URL", variant: "destructive" });
                       }
                     }}
-                    className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-colors"
                     data-testid="button-copy-url"
-                    title="Copy URL"
                   >
                     <Copy className="h-4 w-4" />
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      const message = `Professional Estimate - ${estimate.client?.name || 'Client'}\n\n${currentShareUrl}`;
-                      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
-                    }}
-                    className="p-2 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors"
-                    data-testid="button-share-whatsapp"
-                    title="WhatsApp"
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      const subject = `Professional Estimate - ${estimate.client?.name || 'Client'}`;
-                      const body = `Hi,\n\nPlease review your professional estimate:\n\n${currentShareUrl}\n\nBest regards`;
-                      window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
-                    }}
-                    className="p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-                    data-testid="button-share-email"
-                    title="Email"
-                  >
-                    <Mail className="h-4 w-4" />
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      const message = `Professional Estimate: ${currentShareUrl}`;
-                      window.open(`sms:?body=${encodeURIComponent(message)}`, '_blank');
-                    }}
-                    className="p-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors"
-                    data-testid="button-share-sms"
-                    title="SMS"
-                  >
-                    <Smartphone className="h-4 w-4" />
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      const tweet = `Professional Estimate Ready 📊 ${currentShareUrl}`;
-                      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`, '_blank');
-                    }}
-                    className="p-2 rounded-lg bg-sky-500 hover:bg-sky-600 text-white transition-colors"
-                    data-testid="button-share-twitter"
-                    title="Twitter"
-                  >
-                    <Twitter className="h-4 w-4" />
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentShareUrl)}`, '_blank');
-                    }}
-                    className="p-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white transition-colors"
-                    data-testid="button-share-linkedin"
-                    title="LinkedIn"
-                  >
-                    <Globe className="h-4 w-4" />
+                    <span className="text-sm font-medium">Copy</span>
                   </button>
 
                   {navigator.share && (
@@ -8261,21 +8238,21 @@ This link provides a professional view of your estimate that you can access anyt
                           if (error.name !== 'AbortError') console.error('Share error:', error);
                         }
                       }}
-                      className="p-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white transition-colors"
                       data-testid="button-share-native"
-                      title="Share"
                     >
                       <Share2 className="h-4 w-4" />
+                      <span className="text-sm font-medium">Share</span>
                     </button>
                   )}
 
                   <button
                     onClick={() => window.open(currentShareUrl, '_blank')}
-                    className="p-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white transition-colors"
                     data-testid="button-open-url"
-                    title="Open in new tab"
                   >
                     <ExternalLink className="h-4 w-4" />
+                    <span className="text-sm font-medium">Open</span>
                   </button>
                 </div>
               </div>

@@ -22,6 +22,7 @@ import stripeWebhooksRoutes from "./routes/stripe-webhooks.js";
 import alertingRoutes from "./routes/alerting.js";
 import phase4OptimizationRoutes from "./routes/phase4-optimization";
 import adminContractsRoutes from "./routes/admin-contracts";
+import urlShortenerRoutes from "./routes/urlShortener";
 
 // 📊 Importar servicios de optimización Fase 4 ANTES de registrar rutas
 import { observabilityService } from './services/observabilityService';
@@ -744,6 +745,10 @@ console.log('📊 [OBSERVABILITY] Middleware de métricas aplicado para captura 
 app.use("/api/phase4", phase4OptimizationRoutes);
 console.log('⚡ [PHASE4-OPT] Servicios de optimización Fase 4 registrados en /api/phase4');
 
+// 🔗 Registrar rutas de URL shortener
+app.use("/api/url", urlShortenerRoutes);
+console.log('🔗 [URL-SHORTENER] Sistema de acortamiento de URLs registrado en /api/url');
+
 // 🧪 Endpoints de prueba para verificar conectividad backend
 app.get('/api/test/ping', (req, res) => {
   console.log('🧪 [TEST] PING received');
@@ -1022,6 +1027,26 @@ console.log('🔧 [UNIFIED-ANALYSIS] Sistema híbrido registrado en /api/analysi
         console.error('Server startup error:', error);
         reject(error);
       });
+    });
+    
+    // 🔗 URL SHORTENER REDIRECT - Handle /s/:shortCode redirects
+    app.get('/s/:shortCode', async (req, res) => {
+      try {
+        const { shortCode } = req.params;
+        const { UrlShortenerService } = await import('./services/urlShortenerService');
+        
+        const originalUrl = await UrlShortenerService.getOriginalUrl(shortCode);
+        
+        if (!originalUrl) {
+          return res.status(404).send('Short URL not found or expired');
+        }
+        
+        console.log(`🔗 [URL-REDIRECT] ${shortCode} → ${originalUrl}`);
+        res.redirect(originalUrl);
+      } catch (error) {
+        console.error('❌ [URL-REDIRECT] Error:', error);
+        res.status(500).send('Error processing short URL');
+      }
     });
     
     // Only setup Vite in development mode

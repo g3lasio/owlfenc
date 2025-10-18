@@ -885,6 +885,33 @@ export const learningProgress = pgTable('learning_progress', {
   lastSessionIdx: index('learning_progress_last_session_idx').on(table.lastLearningSession),
 }));
 
+// ================================
+// URL SHORTENER TABLE
+// ================================
+export const shortUrls = pgTable('short_urls', {
+  id: serial('id').primaryKey(),
+  shortCode: varchar('short_code', { length: 20 }).notNull().unique(),
+  originalUrl: text('original_url').notNull(),
+  firebaseUid: text('firebase_uid').notNull(),
+  resourceType: varchar('resource_type', { length: 50 }), // 'estimate', 'contract', etc.
+  resourceId: text('resource_id'), // ID of the estimate/contract
+  clicks: integer('clicks').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  expiresAt: timestamp('expires_at'), // Optional expiration
+}, (table) => ({
+  shortCodeIdx: index('short_code_idx').on(table.shortCode),
+  firebaseUidIdx: index('short_urls_firebase_uid_idx').on(table.firebaseUid),
+}));
+
+export const insertShortUrlSchema = createInsertSchema(shortUrls).omit({
+  id: true,
+  clicks: true,
+  createdAt: true,
+});
+
+export type ShortUrl = typeof shortUrls.$inferSelect;
+export type InsertShortUrl = z.infer<typeof insertShortUrlSchema>;
+
 // Insert schemas for memory system tables
 export const insertAgentMemoryPatternSchema = createInsertSchema(agentMemoryPatterns).omit({
   id: true,
