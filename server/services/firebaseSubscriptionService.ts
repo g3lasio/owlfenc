@@ -131,22 +131,56 @@ export class FirebaseSubscriptionService {
           })
           .where(eq(userSubscriptions.userId, internalUserId));
       } else {
-        // Crear nueva suscripción
-        await db!
-          .insert(userSubscriptions)
-          .values({
-            userId: internalUserId,
-            planId: subscriptionData.planId || 1,
-            status: subscriptionData.status || 'active',
-            stripeSubscriptionId: subscriptionData.stripeSubscriptionId,
-            stripeCustomerId: subscriptionData.stripeCustomerId,
-            currentPeriodStart: subscriptionData.currentPeriodStart || new Date(),
-            currentPeriodEnd: subscriptionData.currentPeriodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd || false,
-            billingCycle: subscriptionData.billingCycle || 'monthly',
-            createdAt: new Date(),
-            updatedAt: new Date()
+        // 🛡️ CRITICAL: Si es un trial, marcar hasUsedTrial ANTES de crear suscripción
+        if (subscriptionData.planId === TRIAL_PLAN_ID) {
+          await db!.transaction(async (tx) => {
+            // Marcar hasUsedTrial como true PERMANENTEMENTE
+            const updateResult = await tx
+              .update(users)
+              .set({ hasUsedTrial: true })
+              .where(eq(users.id, internalUserId));
+            
+            if (!updateResult.rowCount || updateResult.rowCount === 0) {
+              throw new Error('User not found in database - cannot create trial');
+            }
+            
+            // Crear suscripción trial solo después de marcar hasUsedTrial
+            await tx
+              .insert(userSubscriptions)
+              .values({
+                userId: internalUserId,
+                planId: subscriptionData.planId,
+                status: subscriptionData.status || 'trialing',
+                stripeSubscriptionId: subscriptionData.stripeSubscriptionId,
+                stripeCustomerId: subscriptionData.stripeCustomerId,
+                currentPeriodStart: subscriptionData.currentPeriodStart || new Date(),
+                currentPeriodEnd: subscriptionData.currentPeriodEnd || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 días
+                cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd || false,
+                billingCycle: subscriptionData.billingCycle || 'monthly',
+                createdAt: new Date(),
+                updatedAt: new Date()
+              });
+            
+            console.log(`✅ [SECURITY] Trial created with hasUsedTrial=true for user ${userId}`);
           });
+        } else {
+          // Crear suscripción gratuita (no trial)
+          await db!
+            .insert(userSubscriptions)
+            .values({
+              userId: internalUserId,
+              planId: subscriptionData.planId || 1,
+              status: subscriptionData.status || 'active',
+              stripeSubscriptionId: subscriptionData.stripeSubscriptionId,
+              stripeCustomerId: subscriptionData.stripeCustomerId,
+              currentPeriodStart: subscriptionData.currentPeriodStart || new Date(),
+              currentPeriodEnd: subscriptionData.currentPeriodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+              cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd || false,
+              billingCycle: subscriptionData.billingCycle || 'monthly',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+        }
       }
       
       console.log(`✅ [FIREBASE-SUBSCRIPTION] Suscripción guardada exitosamente en PostgreSQL`);
