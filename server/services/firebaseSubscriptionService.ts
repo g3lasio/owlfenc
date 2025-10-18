@@ -67,11 +67,18 @@ export class FirebaseSubscriptionService {
   }
   
   /**
-   * Crear o actualizar suscripción del usuario
+   * 🛡️ DEPRECATED: Usar createOrUpdateSubscriptionFromWebhook para planes pagos
+   * Solo debe usarse para planes gratuitos y trials (planId 1 o 4)
    */
   async createOrUpdateSubscription(userId: string, subscriptionData: Partial<SubscriptionData>): Promise<void> {
     try {
       console.log(`📧 [FIREBASE-SUBSCRIPTION] Creando/actualizando suscripción para usuario: ${userId}`);
+      
+      // 🛡️ SECURITY: Block paid plan updates through this method
+      if (subscriptionData.planId && subscriptionData.planId !== 1 && subscriptionData.planId !== TRIAL_PLAN_ID) {
+        console.error(`🚨 [SECURITY] Attempted to create paid plan (${subscriptionData.planId}) without webhook verification for user: ${userId}`);
+        throw new Error('Paid plans must be created through Stripe webhook verification');
+      }
       
       // Obtener el user_id interno desde Firebase UID
       const internalUserId = await userMappingService.getInternalUserId(userId);
@@ -87,6 +94,13 @@ export class FirebaseSubscriptionService {
         .limit(1);
       
       if (existing.length > 0) {
+        // 🛡️ SECURITY: Prevent upgrading to paid plans without webhook
+        const newPlanId = subscriptionData.planId || existing[0].planId;
+        if (newPlanId !== 1 && newPlanId !== TRIAL_PLAN_ID && existing[0].planId !== newPlanId) {
+          console.error(`🚨 [SECURITY] Attempted to upgrade to paid plan (${newPlanId}) without webhook for user: ${userId}`);
+          throw new Error('Plan upgrades must be processed through Stripe');
+        }
+        
         // Actualizar suscripción existente
         await db!
           .update(userSubscriptions)
@@ -185,7 +199,8 @@ export class FirebaseSubscriptionService {
   }
 
   /**
-   * Actualizar suscripción desde webhook de Stripe
+   * 🛡️ SECURE: Actualizar suscripción desde webhook de Stripe verificado
+   * Este es el ÚNICO método que puede actualizar planes pagos (planId 2 o 3)
    */
   async updateSubscriptionFromStripe(
     userId: string, 
@@ -193,8 +208,8 @@ export class FirebaseSubscriptionService {
     stripeData: any
   ): Promise<void> {
     try {
-      console.log(`🔄 [FIREBASE-SUBSCRIPTION] Actualizando desde Stripe webhook para usuario: ${userId}`);
-      console.log(`🔄 [FIREBASE-SUBSCRIPTION] Stripe data:`, JSON.stringify(stripeData, null, 2));
+      console.log(`🔒 [SECURE-WEBHOOK] Actualizando desde Stripe webhook VERIFICADO para usuario: ${userId}`);
+      console.log(`🔒 [SECURE-WEBHOOK] Stripe subscription ID: ${stripeSubscriptionId}`);
       
       const subscriptionData: Partial<SubscriptionData> = {
         id: stripeSubscriptionId,
