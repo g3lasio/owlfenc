@@ -472,18 +472,32 @@ export class DualSignatureService {
         );
         console.log(`📊 [FIREBASE-ONLY] Contract completed - both parties signed`);
       } else {
-        // Only one party signed - update status to 'progress'
+        // Only one party signed - update status to specific signed state
+        const newStatus = submission.party === 'contractor' ? 'contractor_signed' : 'client_signed';
         await contractRef.update({
-          status: 'progress', // ✅ FIXED: Use 'progress' status (not 'contractor_signed' or 'client_signed')
+          status: newStatus, // ✅ FIXED: Use specific status to track who has signed
           updatedAt: new Date(),
         });
 
-        finalStatus = 'progress';
+        finalStatus = newStatus;
+
+        // Sync with contractHistory collection
+        try {
+          await firebaseDb
+            .collection('contractHistory')
+            .doc(submission.contractId)
+            .update({
+              status: newStatus,
+              updatedAt: new Date(),
+            });
+        } catch (syncError) {
+          console.log(`⚠️ [FIREBASE-ONLY] Could not sync with contractHistory:`, syncError);
+        }
 
         console.log(
           `✅ [FIREBASE-ONLY] ${submission.party} signature processed successfully`
         );
-        console.log(`📊 [FIREBASE-ONLY] New status: progress`);
+        console.log(`📊 [FIREBASE-ONLY] New status: ${newStatus}`);
 
         // Notify the other party that signature is pending
         await this.notifyRemainingParty(

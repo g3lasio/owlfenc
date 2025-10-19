@@ -81,11 +81,13 @@ export class ContractMigrationService {
           }
 
           // Determine contract status based on signatures
-          let status: 'draft' | 'progress' | 'completed';
+          let status: 'draft' | 'contractor_signed' | 'client_signed' | 'completed';
           if (contract.contractorSigned && contract.clientSigned) {
             status = 'completed';
-          } else if (contract.contractorSigned || contract.clientSigned) {
-            status = 'progress';
+          } else if (contract.contractorSigned && !contract.clientSigned) {
+            status = 'contractor_signed';
+          } else if (contract.clientSigned && !contract.contractorSigned) {
+            status = 'client_signed';
           } else {
             status = 'draft';
           }
