@@ -1736,8 +1736,9 @@ export default function SimpleContractGenerator() {
             scope: selectedProject.projectDescription || "",
           },
           financials: {
-            total: getCorrectProjectTotal(selectedProject),
-            subtotal: getCorrectProjectTotal(selectedProject),
+            // CRITICAL FIX: Use the edited projectTotal from user input, not the original project total
+            total: editableData.projectTotal || getCorrectProjectTotal(selectedProject),
+            subtotal: editableData.projectTotal || getCorrectProjectTotal(selectedProject),
             tax: 0,
             materials: 0,
             labor: 0,
@@ -1761,6 +1762,8 @@ export default function SimpleContractGenerator() {
             warrantyYears: editableData.warrantyYears,
             startDate: editableData.startDate,
             completionDate: editableData.completionDate,
+            // CRITICAL FIX: Save the edited projectTotal so it can be restored later
+            projectTotal: editableData.projectTotal,
           },
           paymentTerms: editableData.paymentMilestones as any,
           materials: selectedProject.materials || [],
@@ -1864,7 +1867,12 @@ export default function SimpleContractGenerator() {
         setContractData(contractDataFromHistory);
 
         // Set editable data from contract history
-        const contractTotal = contractDataFromHistory.financials?.total || 0;
+        // CRITICAL FIX: Check if projectTotal was saved in formFields or directly in financials
+        const savedProjectTotal = 
+          (contractDataFromHistory.formFields as any)?.projectTotal ||
+          contractDataFromHistory.financials?.total || 
+          0;
+        const contractTotal = savedProjectTotal;
 
         // Ensure payment milestones always have amount field defined
         let paymentMilestones = contractDataFromHistory.paymentTerms || [
@@ -2531,7 +2539,8 @@ export default function SimpleContractGenerator() {
             selectedProject.projectType ||
             "",
           type: selectedProject.projectType || "Construction Project",
-          total: getCorrectProjectTotal(selectedProject),
+          // CRITICAL FIX: Use the edited projectTotal from user input
+          total: editableData.projectTotal || getCorrectProjectTotal(selectedProject),
           materials: contractData?.materials || selectedProject.materials || [],
         },
         contractor: {
@@ -2544,8 +2553,9 @@ export default function SimpleContractGenerator() {
           license: profile?.license || "",
         },
         financials: {
-          total: getCorrectProjectTotal(selectedProject),
-          subtotal: getCorrectProjectTotal(selectedProject),
+          // CRITICAL FIX: Use the edited projectTotal from user input for PDF generation
+          total: editableData.projectTotal || getCorrectProjectTotal(selectedProject),
+          subtotal: editableData.projectTotal || getCorrectProjectTotal(selectedProject),
           tax: 0,
           discount: 0,
         },
@@ -2560,13 +2570,13 @@ export default function SimpleContractGenerator() {
             id: 1,
             description: "Initial deposit",
             percentage: 50,
-            amount: getCorrectProjectTotal(selectedProject) * 0.5,
+            amount: (editableData.projectTotal || getCorrectProjectTotal(selectedProject)) * 0.5,
           },
           {
             id: 2,
             description: "Project completion",
             percentage: 50,
-            amount: getCorrectProjectTotal(selectedProject) * 0.5,
+            amount: (editableData.projectTotal || getCorrectProjectTotal(selectedProject)) * 0.5,
           },
         ],
       };
@@ -2819,7 +2829,7 @@ export default function SimpleContractGenerator() {
               <h3 style="margin: 0 0 10px 0; color: #1a1a1a;">Project Details</h3>
               <p style="margin: 5px 0;"><strong>Client:</strong> ${editableData.clientName || selectedProject.clientName || 'Client Name'}</p>
               <p style="margin: 5px 0;"><strong>Project:</strong> ${selectedProject.projectType || 'Construction Project'}</p>
-              <p style="margin: 5px 0;"><strong>Total Amount:</strong> $${getCorrectProjectTotal(selectedProject).toLocaleString()}</p>
+              <p style="margin: 5px 0;"><strong>Total Amount:</strong> $${(editableData.projectTotal || getCorrectProjectTotal(selectedProject)).toLocaleString()}</p>
             </div>
             
             <div style="margin: 30px 0;">
@@ -2899,7 +2909,8 @@ export default function SimpleContractGenerator() {
             selectedProject.projectType ||
             "",
           type: selectedProject.projectType || "Construction Project",
-          total: getCorrectProjectTotal(selectedProject),
+          // CRITICAL FIX: Use the edited projectTotal from user input
+          total: editableData.projectTotal || getCorrectProjectTotal(selectedProject),
           materials: contractData?.materials || selectedProject.materials || [],
         },
         contractor: {
@@ -2929,7 +2940,8 @@ export default function SimpleContractGenerator() {
               : "To be agreed",
         },
         financials: {
-          total: getCorrectProjectTotal(selectedProject),
+          // CRITICAL FIX: Use the edited projectTotal from user input
+          total: editableData.projectTotal || getCorrectProjectTotal(selectedProject),
           paymentMilestones: editableData.paymentMilestones,
         },
         permitInfo: {
