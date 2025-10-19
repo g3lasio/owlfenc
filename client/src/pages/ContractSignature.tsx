@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, PenTool, Download, CheckCircle, AlertCircle, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { contractHistoryService } from '@/services/contractHistoryService';
 
 interface DigitalContract {
   contractId: string;
@@ -245,11 +246,17 @@ const ContractSignature: React.FC = () => {
           description: result.message,
         });
 
-        if (result.bothSigned) {
+        // If both parties have signed, the backend automatically updates status to completed
+        if (result.bothSigned || result.isCompleted) {
           toast({
-            title: "Contract Complete",
-            description: "Both parties have signed! Final PDF will be sent to all parties.",
+            title: "✅ Contract Complete!",
+            description: "Both parties have signed! The contract is now legally binding.",
           });
+          
+          console.log("✅ [CONTRACT-SIGNATURE] Contract fully signed and marked as completed by backend:", contractId);
+          
+          // The backend (transactionalContractService) automatically marks the contract as completed
+          // when both parties have signed, so no additional action is needed here.
         }
       } else {
         toast({
