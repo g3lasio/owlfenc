@@ -157,6 +157,21 @@ class TransactionalContractService {
           updatedAt: new Date(),
         });
 
+        // Sync with contractHistory collection
+        try {
+          await firebaseDb
+            .collection('contractHistory')
+            .doc(contractId)
+            .update({
+              status: newStatus,
+              updatedAt: new Date(),
+            });
+          console.log(`✅ [TRANSACTIONAL] Contract history updated to ${newStatus}`);
+        } catch (syncError) {
+          console.log(`⚠️ [TRANSACTIONAL] Could not sync with contractHistory:`, syncError);
+          // Don't fail the operation if sync fails
+        }
+
         return {
           success: true,
           message: `${party} signature recorded successfully`,

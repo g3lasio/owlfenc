@@ -198,6 +198,55 @@ export class DualSignatureService {
         contractId
       );
 
+      // También sincronizar con contractHistory para mantener consistencia
+      const historyEntry = {
+        userId: request.userId,
+        contractId,
+        clientName: request.contractData.clientName,
+        projectType: 'Construction',
+        status: 'draft',
+        contractorSignUrl,
+        clientSignUrl,
+        shareableLink: clientSignUrl, // Para compatibilidad
+        permanentUrl: null,
+        createdAt: firebaseContract.createdAt,
+        updatedAt: firebaseContract.updatedAt,
+        contractData: {
+          client: {
+            name: request.contractData.clientName,
+            address: request.contractData.clientAddress || '',
+            email: request.contractData.clientEmail,
+            phone: request.contractData.clientPhone
+          },
+          contractor: {
+            name: request.contractData.contractorName,
+            address: '',
+            email: request.contractData.contractorEmail,
+            phone: request.contractData.contractorPhone,
+            company: request.contractData.contractorCompany
+          },
+          project: {
+            type: 'Construction',
+            description: request.contractData.projectDescription,
+            location: request.contractData.clientAddress || '',
+          },
+          financials: {
+            total: request.contractData.totalAmount
+          },
+          protections: []
+        }
+      };
+
+      await firebaseDb
+        .collection('contractHistory')
+        .doc(contractId)
+        .set(historyEntry);
+
+      console.log(
+        "✅ [SYNC] Contract also saved to contractHistory:",
+        contractId
+      );
+
       // Send dual notifications
       await this.sendDualNotifications({
         contractId,
@@ -764,69 +813,18 @@ export class DualSignatureService {
       try {
         console.log("📋 [DUAL-SIGNATURE] Updating contract history...");
 
-        // Import contract history service
-        const { contractHistoryService } = await import(
-          "../../client/src/services/contractHistoryService"
-        );
+        // Update the contractHistory collection directly
+        await firebaseDb
+          .collection('contractHistory')
+          .doc(contractId)
+          .update({
+            status: "completed",
+            permanentUrl: permanentPdfUrl,
+            pdfUrl: signedPdfPath,
+            updatedAt: completionDate,
+          });
 
-        // Update contract status to completed in history
-        const contractData = contract.contractData as any;
-
-        const historyEntry = {
-          userId: contract.userId,
-          contractId: contract.contractId,
-          clientName: contract.clientName,
-          projectType: contractData?.projectType || "Construction",
-          status: "completed" as const,
-          contractData: {
-            client: {
-              name: contract.clientName,
-              address: contractData?.clientAddress || "",
-              email: contract.clientEmail,
-              phone: contract.clientPhone || "",
-            },
-            contractor: {
-              name: contract.contractorName,
-              address: contractData?.contractorAddress || "",
-              email: contract.contractorEmail,
-              phone: contract.contractorPhone || "",
-              license: contractData?.contractorLicense || "",
-              company: contract.contractorCompany || contract.contractorName,
-            },
-            project: {
-              type: contractData?.projectType || "Construction",
-              description: contract.projectDescription,
-              location: contractData?.clientAddress || "",
-              scope: contract.projectDescription,
-            },
-            financials: {
-              total: parseFloat(contract.totalAmount || "0"),
-              subtotal: parseFloat(contract.totalAmount || "0"),
-              tax: 0,
-              materials: 0,
-              labor: 0,
-              permits: 0,
-              other: 0,
-            },
-            protections: [],
-            timeline: {
-              startDate: contractData?.startDate || "",
-              completionDate: contractData?.completionDate || "",
-              estimatedDuration: "As specified in contract",
-            },
-            terms: {
-              warranty: contractData?.warrantyYears || "1",
-              permits: contractData?.permitResponsibility || "contractor",
-            },
-          },
-          // ✅ FIX: Use download endpoint URL instead of filesystem path
-          pdfUrl: signedPdfPath ? `/api/dual-signature/download/${contract.contractId}` : undefined,
-        };
-
-        await contractHistoryService.saveContract(historyEntry);
-        console.log(
-          "✅ [DUAL-SIGNATURE] Contract history updated with PDF download URL"
-        );
+        console.log("✅ [DUAL-SIGNATURE] Contract history updated to completed");
       } catch (historyError: any) {
         console.error(
           "❌ [DUAL-SIGNATURE] Error updating contract history:",
