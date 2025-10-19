@@ -264,6 +264,27 @@ class TransactionalContractService {
         updatedAt: new Date(),
       });
 
+      // CRITICAL FIX: Sync completed status with contractHistory collection
+      try {
+        await firebaseDb
+          .collection('contractHistory')
+          .doc(contractId)
+          .update({
+            status: 'completed',
+            finalPdfPath,
+            signedPdfPath: finalPdfPath,
+            permanentPdfUrl: finalPdfPath,
+            folio: legalSeal.folio,
+            pdfHash: legalSeal.pdfHash,
+            updatedAt: new Date(),
+          });
+        console.log(`✅ [TRANSACTIONAL] Contract history synced to completed status`);
+      } catch (syncError) {
+        console.error(`❌ [TRANSACTIONAL] Failed to sync contractHistory:`, syncError);
+        // Don't fail the operation if sync fails, but log it as critical
+        console.error(`🚨 CRITICAL: Contract ${contractId} is completed but not synced with history!`);
+      }
+
       console.log(`✅ [TRANSACTIONAL] Contract completed with legal seal`);
       console.log(`   📋 Folio: ${legalSeal.folio}`);
       console.log(`   🔐 Hash: ${legalSeal.pdfHash.substring(0, 16)}...`);
