@@ -42,33 +42,11 @@ class TransactionalContractService {
 
       // Import Firebase
       const { db: firebaseDb } = await import("../lib/firebase-admin");
+      const admin = await import('firebase-admin');
+      const FieldValue = admin.firestore.FieldValue;
 
-      // Get contract from Firebase
+      // CRITICAL FIX: Use Firestore transaction to prevent race conditions
       const contractRef = firebaseDb.collection('dualSignatureContracts').doc(contractId);
-      const contractDoc = await contractRef.get();
-
-      if (!contractDoc.exists) {
-        throw new Error('Contract not found in Firebase');
-      }
-
-      const contract = contractDoc.data()!;
-
-      // IDEMPOTENCY CHECK: If already signed by this party, return current state
-      const alreadySigned = party === 'contractor' 
-        ? contract.contractorSigned 
-        : contract.clientSigned;
-
-      if (alreadySigned) {
-        console.log(`⚠️ [TRANSACTIONAL] ${party} already signed - idempotent return`);
-        
-        return {
-          success: true,
-          message: `${party} signature already recorded`,
-          status: contract.status || 'signed',
-          bothSigned: contract.contractorSigned && contract.clientSigned,
-          isCompleted: contract.status === 'completed',
-        };
-      }
 
       // Calculate signature hash for audit
       const signatureHash = crypto
@@ -76,35 +54,83 @@ class TransactionalContractService {
         .update(signatureData)
         .digest('hex');
 
-      // Update signature in Firebase
-      const updateData: any = party === 'contractor' ? {
-        contractorSigned: true,
-        contractorSignedAt: new Date(),
-        contractorSignature: signatureData,
-        contractorSignatureType: signatureType,
-        updatedAt: new Date(),
-      } : {
-        clientSigned: true,
-        clientSignedAt: new Date(),
-        clientSignature: signatureData,
-        clientSignatureType: signatureType,
-        updatedAt: new Date(),
-      };
+      // Execute atomic transaction to handle concurrent signatures correctly
+      const transactionResult = await firebaseDb.runTransaction(async (transaction) => {
+        // Get fresh contract data within transaction
+        const contractDoc = await transaction.get(contractRef);
+        
+        if (!contractDoc.exists) {
+          throw new Error('Contract not found in Firebase');
+        }
 
-      // Add audit data
-      updateData.lastSignatureHash = signatureHash;
-      updateData.lastSignatureIp = ipAddress || null;
-      updateData.lastSignatureUserAgent = userAgent || null;
+        const contract = contractDoc.data()!;
 
-      // Update Firebase document
-      await contractRef.update(updateData);
+        // IDEMPOTENCY CHECK: If already signed by this party, return current state
+        const alreadySigned = party === 'contractor' 
+          ? contract.contractorSigned 
+          : contract.clientSigned;
 
-      // Check if both parties have now signed
-      const otherPartySigned = party === 'contractor' 
-        ? contract.clientSigned 
-        : contract.contractorSigned;
+        if (alreadySigned) {
+          console.log(`⚠️ [TRANSACTIONAL] ${party} already signed - idempotent return`);
+          return {
+            alreadySigned: true,
+            status: contract.status || 'signed',
+            bothSigned: contract.contractorSigned && contract.clientSigned,
+            isCompleted: contract.status === 'completed',
+          };
+        }
 
-      const bothSigned = otherPartySigned;
+        // Prepare update data
+        const updateData: any = party === 'contractor' ? {
+          contractorSigned: true,
+          contractorSignedAt: FieldValue.serverTimestamp(),
+          contractorSignature: signatureData,
+          contractorSignatureType: signatureType,
+          updatedAt: FieldValue.serverTimestamp(),
+        } : {
+          clientSigned: true,
+          clientSignedAt: FieldValue.serverTimestamp(),
+          clientSignature: signatureData,
+          clientSignatureType: signatureType,
+          updatedAt: FieldValue.serverTimestamp(),
+        };
+
+        // Add audit data
+        updateData.lastSignatureHash = signatureHash;
+        updateData.lastSignatureIp = ipAddress || null;
+        updateData.lastSignatureUserAgent = userAgent || null;
+
+        // Update within transaction
+        transaction.update(contractRef, updateData);
+
+        // Check if both parties have now signed (using fresh data from transaction)
+        const otherPartySigned = party === 'contractor' 
+          ? contract.clientSigned 
+          : contract.contractorSigned;
+
+        const bothSigned = otherPartySigned;
+
+        // Return result from transaction
+        return {
+          alreadySigned: false,
+          bothSigned,
+          contractorSigned: party === 'contractor' ? true : contract.contractorSigned,
+          clientSigned: party === 'client' ? true : contract.clientSigned,
+        };
+      });
+
+      // Handle idempotency case
+      if (transactionResult.alreadySigned) {
+        return {
+          success: true,
+          message: `${party} signature already recorded`,
+          status: transactionResult.status,
+          bothSigned: transactionResult.bothSigned,
+          isCompleted: transactionResult.isCompleted,
+        };
+      }
+
+      const bothSigned = transactionResult.bothSigned;
 
       if (bothSigned) {
         console.log('🎉 [TRANSACTIONAL] Both parties signed - completing contract...');

@@ -46,8 +46,8 @@ This project is an AI-powered legal document and permit management platform that
 ### Backend
 - **Server Framework**: Express.js.
 - **Database Architecture**:
-  - **Firebase (Firestore)**: Primary database for client management and digital contracts, ensuring real-time sync and cross-device consistency.
-  - **PostgreSQL with Drizzle ORM**: Secondary for legacy data (estimates, subscriptions, usage tracking). Digital contracts table is deprecated as a historical backup.
+  - **Firebase (Firestore)**: PRIMARY AND EXCLUSIVE database for ALL digital contracts and signatures. Collection: `dualSignatureContracts`. Ensures real-time sync, cross-device consistency, and complete data integrity.
+  - **PostgreSQL with Drizzle ORM**: ONLY for subscriptions, usage tracking, and legacy estimates. CRITICAL: NO contract data should ever be stored or queried from PostgreSQL - all contract operations MUST use Firebase exclusively.
 - **Authentication**: Firebase Admin SDK with native Firebase UID usage. Session-based authentication using `__session` cookies.
 - **Security Architecture**: Multi-layer authentication with `AuthMiddleware`, `UserMappingService`, and `DataIntegrityMonitor`, including a `RobustAuthManager` and triple-layer contract security (Firebase middleware, ownership verification, Firebase security rules). Enterprise-grade security for Legal Defense features with robust backend validation.
 
