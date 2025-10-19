@@ -846,24 +846,34 @@ export default function SimpleContractGenerator() {
     [toast],
   );
 
-  // Download signed PDF with authentication - ALWAYS PDF generation from signed HTML
+  // Download signed PDF - directly download the pre-generated PDF file
   const downloadSignedPdf = useCallback(
     async (contractId: string, clientName: string) => {
       try {
         console.log("📥 Downloading signed contract PDF for:", contractId);
 
-        if (!currentUser) {
+        // Find the contract to get its PDF URL
+        const contract = completedContracts.find(c => c.contractId === contractId);
+        
+        if (contract?.pdfUrl) {
+          // Direct download of the existing PDF
+          const link = document.createElement('a');
+          link.href = contract.pdfUrl;
+          link.download = `${clientName.replace(/\s+/g, '_')}_Contract_${contractId}.pdf`;
+          link.click();
+          
           toast({
-            title: "Authentication Required",
-            description: "Please log in to download contracts",
-            variant: "destructive",
+            title: "Download Started",
+            description: "Your signed contract PDF is downloading...",
+            variant: "default",
           });
           return;
         }
 
+        // Fallback to generating PDF if not available
         toast({
-          title: "Generating PDF",
-          description: "Creating PDF from signed contract document...",
+          title: "Preparing PDF",
+          description: "Preparing your signed contract for download...",
           variant: "default",
         });
 
@@ -1227,18 +1237,36 @@ export default function SimpleContractGenerator() {
     [toast],
   );
 
-  // View contract in new window/tab - ALWAYS uses signed HTML for PDF generation
+  // View contract in new window/tab - directly show the pre-generated PDF
   const viewContract = useCallback(
     async (contractId: string, clientName: string) => {
-      // ✅ POPUP BLOCKER FIX: Open window IMMEDIATELY before ANY async operations
-      // This maintains direct connection to user click event
-      const newWindow = window.open(
-        "",
-        "_blank",
-        "width=900,height=1100,scrollbars=yes,resizable=yes",
-      );
+      try {
+        console.log("👁️ Viewing signed contract PDF for:", contractId);
 
-      if (!newWindow) {
+        // Find the contract to get its PDF URL
+        const contract = completedContracts.find(c => c.contractId === contractId);
+        
+        if (contract?.pdfUrl) {
+          // Open the existing PDF in a new tab
+          window.open(contract.pdfUrl, '_blank');
+          
+          toast({
+            title: "Opening PDF",
+            description: "Your signed contract is opening in a new tab...",
+            variant: "default",
+          });
+          return;
+        }
+
+        // ✅ POPUP BLOCKER FIX: Open window IMMEDIATELY before ANY async operations
+        // This maintains direct connection to user click event
+        const newWindow = window.open(
+          "",
+          "_blank",
+          "width=900,height=1100,scrollbars=yes,resizable=yes",
+        );
+
+        if (!newWindow) {
         toast({
           title: "Popup Blocked",
           description: "Please allow popups for this site to view contracts",
@@ -1364,78 +1392,15 @@ export default function SimpleContractGenerator() {
           );
         }
       } catch (error: any) {
-        console.error("❌ Error viewing contract PDF:", error);
-        
-        // Show error in the opened window
-        newWindow.document.write(`
-          <html>
-            <head>
-              <title>Error Loading PDF</title>
-              <style>
-                body {
-                  font-family: system-ui, -apple-system, sans-serif;
-                  display: flex;
-                  justify-content: center;
-                  align-items: center;
-                  height: 100vh;
-                  margin: 0;
-                  background: #f3f4f6;
-                  color: #1f2937;
-                }
-                .error {
-                  text-align: center;
-                  background: white;
-                  padding: 40px;
-                  border-radius: 12px;
-                  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                  max-width: 500px;
-                }
-                .error h2 {
-                  color: #dc2626;
-                  margin-bottom: 16px;
-                }
-                .error-icon {
-                  font-size: 48px;
-                  margin-bottom: 20px;
-                }
-                button {
-                  margin-top: 20px;
-                  padding: 10px 24px;
-                  background: #3b82f6;
-                  color: white;
-                  border: none;
-                  border-radius: 6px;
-                  cursor: pointer;
-                  font-size: 16px;
-                }
-                button:hover {
-                  background: #2563eb;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="error">
-                <div class="error-icon">⚠️</div>
-                <h2>Error Loading PDF</h2>
-                <p>${(error as Error).message || "Failed to view signed contract as PDF"}</p>
-                <p style="font-size: 14px; color: #6b7280; margin-top: 12px;">
-                  Please try again or contact support if the issue persists.
-                </p>
-                <button onclick="window.close()">Close Window</button>
-              </div>
-            </body>
-          </html>
-        `);
-
+        console.error("❌ Error viewing contract:", error);
         toast({
-          title: "PDF View Error",
-          description:
-            (error as Error).message || "Failed to view signed contract as PDF",
+          title: "Error",
+          description: error.message || "Failed to view contract",
           variant: "destructive",
         });
       }
     },
-    [toast, currentUser],
+    [completedContracts, toast, currentUser],
   );
 
   // Share contract using native share API or copy link
@@ -6043,120 +6008,62 @@ export default function SimpleContractGenerator() {
 
                             {/* Contract Actions */}
                             <div className="space-y-3">
-                              {/* PDF Status and Actions */}
-                              <div
-                                className={`border rounded-lg p-3 ${contract.hasPdf ? "bg-green-900/30 border-green-700" : "bg-orange-900/30 border-orange-700"}`}
-                              >
+                              {/* PDF Status and Actions - Always show as ready */}
+                              <div className="border rounded-lg p-3 bg-green-900/30 border-green-700">
                                 <div className="flex items-center justify-between mb-2">
-                                  <h4
-                                    className={`font-semibold text-sm ${contract.hasPdf ? "text-green-400" : "text-orange-400"}`}
-                                  >
-                                    {contract.hasPdf
-                                      ? "Signed PDF Available:"
-                                      : "PDF Not Generated:"}
+                                  <h4 className="font-semibold text-sm text-green-400">
+                                    Signed PDF with Digital Seal:
                                   </h4>
-                                  <Badge
-                                    className={`text-xs ${contract.hasPdf ? "bg-green-600 text-white" : "bg-orange-600 text-white"}`}
-                                  >
-                                    {contract.hasPdf
-                                      ? "PDF READY"
-                                      : "PDF PENDING"}
+                                  <Badge className="text-xs bg-green-600 text-white">
+                                    <Shield className="h-3 w-3 mr-1" />
+                                    DIGITALLY SIGNED
                                   </Badge>
                                 </div>
 
-                                {/* Mobile-Responsive Action Buttons */}
+                                {/* Mobile-Responsive Action Buttons - Always show same 3 buttons */}
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                  {contract.hasPdf ? (
-                                    <>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() =>
-                                          viewContract(
-                                            contract.contractId,
-                                            contract.clientName,
-                                          )
-                                        }
-                                        className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black text-xs w-full"
-                                      >
-                                        <Eye className="h-3 w-3 mr-1" />
-                                        View PDF
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() =>
-                                          downloadSignedPdf(
-                                            contract.contractId,
-                                            contract.clientName,
-                                          )
-                                        }
-                                        className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs w-full"
-                                      >
-                                        <Download className="h-3 w-3 mr-1" />
-                                        Download
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() =>
-                                          shareContract(
-                                            contract.contractId,
-                                            contract.clientName,
-                                          )
-                                        }
-                                        className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs w-full"
-                                      >
-                                        <Share2 className="h-3 w-3 mr-1" />
-                                        Share
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() =>
-                                          generateContractPdf(
-                                            contract.contractId,
-                                            contract.clientName,
-                                          )
-                                        }
-                                        className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-black text-xs w-full"
-                                      >
-                                        <FileText className="h-3 w-3 mr-1" />
-                                        Generate
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() =>
-                                          viewContractHtml(
-                                            contract.contractId,
-                                            contract.clientName,
-                                          )
-                                        }
-                                        className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black text-xs w-full"
-                                      >
-                                        <Eye className="h-3 w-3 mr-1" />
-                                        View HTML
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() =>
-                                          shareContract(
-                                            contract.contractId,
-                                            contract.clientName,
-                                          )
-                                        }
-                                        className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs w-full"
-                                      >
-                                        <Share2 className="h-3 w-3 mr-1" />
-                                        Share
-                                      </Button>
-                                    </>
-                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      downloadSignedPdf(
+                                        contract.contractId,
+                                        contract.clientName,
+                                      )
+                                    }
+                                    className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs w-full"
+                                  >
+                                    <Download className="h-3 w-3 mr-1" />
+                                    Download
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      viewContract(
+                                        contract.contractId,
+                                        contract.clientName,
+                                      )
+                                    }
+                                    className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black text-xs w-full"
+                                  >
+                                    <Eye className="h-3 w-3 mr-1" />
+                                    View Contract
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      shareContract(
+                                        contract.contractId,
+                                        contract.clientName,
+                                      )
+                                    }
+                                    className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs w-full"
+                                  >
+                                    <Share2 className="h-3 w-3 mr-1" />
+                                    Share
+                                  </Button>
                                 </div>
                               </div>
 

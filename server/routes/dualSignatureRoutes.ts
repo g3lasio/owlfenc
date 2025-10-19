@@ -490,14 +490,18 @@ router.get("/completed/:userId", async (req, res) => {
     const { db: firebaseDb } = await import("../lib/firebase-admin");
 
     // Get COMPLETED contracts from Firebase dualSignatureContracts
+    // Simplified query to avoid index requirement
     const snapshot = await firebaseDb
       .collection('dualSignatureContracts')
       .where('userId', '==', firebaseUid)
-      .where('status', '==', 'completed')
-      .orderBy('createdAt', 'desc')
       .get();
+    
+    // Filter completed contracts in memory
+    const completedDocs = snapshot.docs.filter(doc => 
+      doc.data().status === 'completed'
+    );
 
-    const contracts = snapshot.docs.map(doc => {
+    const contracts = completedDocs.map(doc => {
       const data = doc.data();
       return {
         contractId: data.contractId || doc.id,
