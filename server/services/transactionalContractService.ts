@@ -40,10 +40,9 @@ class TransactionalContractService {
     try {
       console.log(`✍️ [TRANSACTIONAL] Processing ${party} signature for ${contractId}`);
 
-      // Import Firebase
-      const { db: firebaseDb } = await import("../lib/firebase-admin");
-      const admin = await import('firebase-admin');
-      const FieldValue = admin.firestore.FieldValue;
+      // Import Firebase - Use only the unified instance
+      const { db: firebaseDb, admin } = await import("../lib/firebase-admin");
+      const serverTimestamp = admin.firestore.FieldValue.serverTimestamp;
 
       // CRITICAL FIX: Use Firestore transaction to prevent race conditions
       const contractRef = firebaseDb.collection('dualSignatureContracts').doc(contractId);
@@ -83,16 +82,16 @@ class TransactionalContractService {
         // Prepare update data
         const updateData: any = party === 'contractor' ? {
           contractorSigned: true,
-          contractorSignedAt: FieldValue.serverTimestamp(),
+          contractorSignedAt: serverTimestamp(),
           contractorSignature: signatureData,
           contractorSignatureType: signatureType,
-          updatedAt: FieldValue.serverTimestamp(),
+          updatedAt: serverTimestamp(),
         } : {
           clientSigned: true,
-          clientSignedAt: FieldValue.serverTimestamp(),
+          clientSignedAt: serverTimestamp(),
           clientSignature: signatureData,
           clientSignatureType: signatureType,
-          updatedAt: FieldValue.serverTimestamp(),
+          updatedAt: serverTimestamp(),
         };
 
         // Add audit data
