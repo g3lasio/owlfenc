@@ -7,9 +7,14 @@ export interface ContractHistoryEntry {
   contractId: string;
   clientName: string;
   projectType: string;
-  status: 'draft' | 'completed' | 'processing' | 'error';
+  status: 'draft' | 'in_progress' | 'completed' | 'processing' | 'error' | 'contractor_signed' | 'client_signed' | 'both_signed';
   createdAt: Date;
   updatedAt: Date;
+  // Links para firma dual
+  contractorSignUrl?: string;
+  clientSignUrl?: string;
+  shareableLink?: string;
+  permanentUrl?: string;
   contractData: {
     client: {
       name: string;
@@ -78,12 +83,15 @@ export interface ContractHistoryEntry {
 
 class ContractHistoryService {
   private collectionName = 'contractHistory';
+  private dualSignatureCollection = 'dualSignatureContracts';
 
   /**
    * Busca un contrato existente del mismo cliente y proyecto
+   * Primero busca en contractHistory, luego en dualSignatureContracts
    */
   async findExistingContract(userId: string, clientName: string, projectType: string): Promise<ContractHistoryEntry | null> {
     try {
+      // Buscar primero en contractHistory
       const q = query(
         collection(db, this.collectionName),
         where('userId', '==', userId),
@@ -93,7 +101,7 @@ class ContractHistoryService {
 
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
-        const doc = querySnapshot.docs[0]; // Tomar el primer contrato encontrado
+        const doc = querySnapshot.docs[0];
         const data = doc.data();
         return {
           id: doc.id,
@@ -102,11 +110,72 @@ class ContractHistoryService {
           updatedAt: data.updatedAt?.toDate() || new Date()
         } as ContractHistoryEntry;
       }
+
+      // Si no se encuentra, buscar en dualSignatureContracts
+      const dualQuery = query(
+        collection(db, this.dualSignatureCollection),
+        where('userId', '==', userId),
+        where('clientName', '==', clientName)
+      );
+
+      const dualSnapshot = await getDocs(dualQuery);
+      if (!dualSnapshot.empty) {
+        const doc = dualSnapshot.docs[0];
+        const data = doc.data();
+        // Mapear datos de dualSignatureContracts a ContractHistoryEntry
+        return this.mapDualSignatureToHistory(doc.id, data);
+      }
+
       return null;
     } catch (error) {
       console.error('❌ Error finding existing contract:', error);
       return null;
     }
+  }
+
+  /**
+   * Mapea un contrato de dualSignatureContracts a ContractHistoryEntry
+   */
+  private mapDualSignatureToHistory(id: string, data: any): ContractHistoryEntry {
+    return {
+      id,
+      userId: data.userId,
+      contractId: data.contractId,
+      clientName: data.clientName,
+      projectType: data.projectType || 'Construction',
+      status: data.status || 'draft',
+      createdAt: data.createdAt?.toDate() || new Date(),
+      updatedAt: data.updatedAt?.toDate() || new Date(),
+      contractorSignUrl: data.contractorSignUrl,
+      clientSignUrl: data.clientSignUrl,
+      shareableLink: data.shareableLink,
+      permanentUrl: data.permanentPdfUrl || data.finalPdfPath,
+      contractData: {
+        client: {
+          name: data.clientName,
+          address: data.clientAddress || '',
+          email: data.clientEmail,
+          phone: data.clientPhone
+        },
+        contractor: {
+          name: data.contractorName,
+          address: data.contractorAddress || '',
+          email: data.contractorEmail,
+          phone: data.contractorPhone,
+          company: data.contractorCompany
+        },
+        project: {
+          type: data.projectType || 'Construction',
+          description: data.projectDescription,
+          location: data.clientAddress || '',
+        },
+        financials: {
+          total: data.totalAmount || 0
+        },
+        protections: []
+      },
+      pdfUrl: data.finalPdfPath || data.signedPdfPath
+    };
   }
 
   /**
@@ -170,17 +239,18 @@ class ContractHistoryService {
 
   /**
    * Obtiene el historial de contratos para un usuario
+   * Combina contratos de contractHistory y dualSignatureContracts
    */
   async getContractHistory(userId: string): Promise<ContractHistoryEntry[]> {
     try {
-      // Simple query without ordering to avoid Firebase errors
-      const q = query(
+      // Obtener contratos de contractHistory
+      const historyQuery = query(
         collection(db, this.collectionName),
         where('userId', '==', userId)
       );
 
-      const querySnapshot = await getDocs(q);
-      const contracts = querySnapshot.docs.map(doc => {
+      const historySnapshot = await getDocs(historyQuery);
+      const historyContracts = historySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -190,14 +260,36 @@ class ContractHistoryService {
         } as ContractHistoryEntry;
       });
 
-      // Sort locally to avoid Firebase index issues
-      contracts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      // Obtener contratos de dualSignatureContracts
+      const dualQuery = query(
+        collection(db, this.dualSignatureCollection),
+        where('userId', '==', userId)
+      );
 
-      console.log('🔥 Retrieved contract history:', contracts.length, 'contracts');
-      return contracts;
+      const dualSnapshot = await getDocs(dualQuery);
+      const dualContracts = dualSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return this.mapDualSignatureToHistory(doc.id, data);
+      });
+
+      // Combinar y eliminar duplicados basado en contractId
+      const allContracts = [...historyContracts];
+      const existingContractIds = new Set(historyContracts.map(c => c.contractId));
+      
+      for (const dualContract of dualContracts) {
+        if (!existingContractIds.has(dualContract.contractId)) {
+          allContracts.push(dualContract);
+        }
+      }
+
+      // Ordenar por fecha de creación (más reciente primero)
+      allContracts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+      console.log('🔥 Retrieved combined contract history:', allContracts.length, 'contracts');
+      console.log('📊 Sources - History:', historyContracts.length, 'Dual:', dualContracts.length);
+      return allContracts;
     } catch (error) {
       console.error('❌ Error retrieving contract history:', error);
-      // Return empty array on error to maintain functionality
       return [];
     }
   }

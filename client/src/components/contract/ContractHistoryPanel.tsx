@@ -24,7 +24,10 @@ import {
   Loader2,
   Eye,
   Archive,
-  Edit3
+  Edit3,
+  Link,
+  Share2,
+  ExternalLink
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -129,7 +132,8 @@ export function ContractHistoryPanel({ children, onEditContract }: ContractHisto
   };
 
   const downloadContract = async (contract: ContractHistoryEntry) => {
-    if (!contract.pdfUrl) {
+    const pdfUrl = contract.pdfUrl || contract.permanentUrl;
+    if (!pdfUrl) {
       toast({
         title: "Download Unavailable",
         description: "PDF not available for this contract.",
@@ -140,7 +144,7 @@ export function ContractHistoryPanel({ children, onEditContract }: ContractHisto
 
     try {
       const link = document.createElement('a');
-      link.href = contract.pdfUrl;
+      link.href = pdfUrl;
       link.download = `Contract_${contract.clientName.replace(/\s+/g, '_')}_${contract.contractId}.pdf`;
       link.style.display = 'none';
       document.body.appendChild(link);
@@ -282,6 +286,42 @@ export function ContractHistoryPanel({ children, onEditContract }: ContractHisto
 
                       <div className="flex flex-col gap-1 items-end">
                         <div className="flex gap-1">
+                          {/* Links de Firma */}
+                          {(contract.status === 'draft' || contract.status === 'in_progress') && contract.contractorSignUrl && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                navigator.clipboard.writeText(contract.contractorSignUrl!);
+                                toast({
+                                  title: "Link Copiado",
+                                  description: "Link de firma del contratista copiado",
+                                });
+                              }}
+                              className="h-7 px-2 border-blue-500/20 hover:border-blue-400 hover:bg-blue-500/10 text-xs"
+                              title="Copiar link de contratista"
+                            >
+                              <Link className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {(contract.status === 'draft' || contract.status === 'in_progress' || contract.status === 'contractor_signed') && contract.clientSignUrl && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                navigator.clipboard.writeText(contract.clientSignUrl!);
+                                toast({
+                                  title: "Link Copiado",
+                                  description: "Link de firma del cliente copiado",
+                                });
+                              }}
+                              className="h-7 px-2 border-purple-500/20 hover:border-purple-400 hover:bg-purple-500/10 text-xs"
+                              title="Copiar link de cliente"
+                            >
+                              <Share2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                          
                           {/* Edit Button */}
                           <Button
                             size="sm"
@@ -294,7 +334,7 @@ export function ContractHistoryPanel({ children, onEditContract }: ContractHisto
                           </Button>
                           
                           {/* Download Button */}
-                          {contract.pdfUrl && (
+                          {(contract.pdfUrl || contract.permanentUrl) && (
                             <Button
                               size="sm"
                               variant="outline"
