@@ -10,13 +10,8 @@
  * - Escalable para contratos multi-parte (joint ventures, subcontratistas)
  */
 
-import { db } from "../db";
-import {
-  digitalContracts,
-  type InsertDigitalContract,
-  type DigitalContract,
-} from "@shared/schema";
-import { eq } from "drizzle-orm";
+// CRITICAL FIX: Removed all PostgreSQL imports - using Firebase exclusively
+// This service now operates 100% on Firebase for complete consistency
 import { ResendEmailAdvanced } from "./resendEmailAdvanced";
 import crypto from "crypto";
 
@@ -482,18 +477,21 @@ export class DualSignatureService {
         contractId
       );
 
-      const [contract] = await db
-        .select()
-        .from(digitalContracts)
-        .where(eq(digitalContracts.contractId, contractId))
-        .limit(1);
+      // CRITICAL FIX: Using Firebase instead of PostgreSQL
+      const { db: firebaseDb } = await import("../lib/firebase-admin");
+      const contractDoc = await firebaseDb
+        .collection('dualSignatureContracts')
+        .doc(contractId)
+        .get();
 
-      if (!contract) {
+      if (!contractDoc.exists) {
         return {
           success: false,
-          message: "Contract not found",
+          message: "Contract not found in Firebase",
         };
       }
+
+      const contract = contractDoc.data()!;
 
       // Security check - optional for public contracts
       if (requestingUserId && contract.userId !== requestingUserId) {
@@ -581,18 +579,21 @@ export class DualSignatureService {
     message: string;
   }> {
     try {
-      const [contract] = await db
-        .select()
-        .from(digitalContracts)
-        .where(eq(digitalContracts.contractId, contractId))
-        .limit(1);
+      // CRITICAL FIX: Using Firebase instead of PostgreSQL
+      const { db: firebaseDb } = await import("../lib/firebase-admin");
+      const contractDoc = await firebaseDb
+        .collection('dualSignatureContracts')
+        .doc(contractId)
+        .get();
 
-      if (!contract) {
+      if (!contractDoc.exists) {
         return {
           success: false,
-          message: "Contract not found",
+          message: "Contract not found in Firebase",
         };
       }
+
+      const contract = contractDoc.data()!;
 
       const status: DualSignatureStatus = {
         contractId: contract.contractId,
@@ -1093,18 +1094,21 @@ export class DualSignatureService {
         contractId
       );
 
-      const [contract] = await db
-        .select()
-        .from(digitalContracts)
-        .where(eq(digitalContracts.contractId, contractId))
-        .limit(1);
+      // CRITICAL FIX: Using Firebase instead of PostgreSQL
+      const { db: firebaseDb } = await import("../lib/firebase-admin");
+      const contractDoc = await firebaseDb
+        .collection('dualSignatureContracts')
+        .doc(contractId)
+        .get();
 
-      if (!contract) {
+      if (!contractDoc.exists) {
         return {
           success: false,
-          message: "Contract not found",
+          message: "Contract not found in Firebase",
         };
       }
+
+      const contract = contractDoc.data()!;
 
       if (contract.status !== "completed" || !contract.signedPdfPath) {
         return {

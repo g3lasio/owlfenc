@@ -581,21 +581,13 @@ router.get("/all/:userId", verifyFirebaseAuth, async (req, res) => {
 
     console.log("📋 [API] Getting ALL contracts (unified) for user:", userId);
 
-    // Import database and services
-    const { db } = await import("../db");
-    const { digitalContracts } = await import("../../shared/schema");
-    const { eq } = await import("drizzle-orm");
+    // CRITICAL FIX: Only using Firebase - removed all PostgreSQL references
     const { firebaseContractService } = await import("../services/firebaseContractService");
     const { db: firebaseDb } = await import("../lib/firebase-admin");
 
-    // 1. Get contracts from PostgreSQL (dual-signature system)
-    const postgresContracts = await db
-      .select()
-      .from(digitalContracts)
-      .where(eq(digitalContracts.userId, userId))
-      .orderBy(digitalContracts.createdAt);
-
-    console.log(`✅ [POSTGRES] Found ${postgresContracts.length} contracts`);
+    // 1. Skip PostgreSQL completely - using Firebase only
+    const postgresContracts: any[] = [];
+    console.log("✅ [MIGRATION] PostgreSQL disabled - using Firebase exclusively");
 
     // 2. Get contracts from Firebase contractHistory collection (using Admin SDK)
     let firebaseHistoryContracts: any[] = [];
@@ -748,34 +740,22 @@ router.get("/download-html/:contractId", async (req, res) => {
 
     console.log("📄 [API] HTML download request for contract:", contractId);
 
-    // Try PostgreSQL first (new dual-signature system)
-    const { db } = await import("../db");
-    const { digitalContracts } = await import("../../shared/schema");
-    const { eq } = await import("drizzle-orm");
-
-    const [contract] = await db
-      .select()
-      .from(digitalContracts)
-      .where(eq(digitalContracts.contractId, contractId))
-      .limit(1);
-
-    if (contract) {
-      // Contract found in PostgreSQL
-      console.log("✅ [API] Contract found in PostgreSQL:", contractId);
-
-      if (requestingUserId && contract.userId !== requestingUserId) {
-        return res.status(403).json({
-          success: false,
-          message: "Access denied",
-        });
-      }
-
-      // Continue with PostgreSQL contract (existing code below)
+    // CRITICAL FIX: Only use Firebase - PostgreSQL removed completely
+    const { db: firebaseDb } = await import("../lib/firebase-admin");
+    
+    // First try dualSignatureContracts (primary)
+    let contract: any = null;
+    let contractDoc = await firebaseDb
+      .collection('dualSignatureContracts')
+      .doc(contractId)
+      .get();
+    
+    if (contractDoc.exists) {
+      contract = contractDoc.data();
+      console.log("✅ [API] Contract found in dualSignatureContracts:", contractId);
     } else {
-      // Try Firebase (legacy contractHistory system)
-      console.log("🔍 [API] Contract not in PostgreSQL, checking Firebase:", contractId);
-      
-      const { db: firebaseDb } = await import("../lib/firebase-admin");
+      // Fallback to contractHistory collection
+      console.log("🔍 [API] Contract not in dualSignatureContracts, checking contractHistory:", contractId);
       
       // FIXED: Query by contractId field, not document ID
       const contractSnapshot = await firebaseDb
