@@ -2497,21 +2497,115 @@ export default function SimpleContractGenerator() {
       });
 
       if (response.ok) {
-        // Convert response to blob and download
+        // Convert response to blob 
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `contract-${selectedProject.clientName?.replace(/\s+/g, "_") || "client"}-${new Date().toISOString().split("T")[0]}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
+        const fileName = `contract-${selectedProject.clientName?.replace(/\s+/g, "_") || "client"}-${new Date().toISOString().split("T")[0]}.pdf`;
+        
+        // Detect if user is on mobile/tablet device
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
+                        ('ontouchstart' in window) ||
+                        (navigator.maxTouchPoints > 0);
+        
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isIPadOS = navigator.userAgent.includes('Mac') && 'ontouchend' in document;
+        
+        // Handle PDF based on device type
+        if (isMobile || isIOS || isIPadOS) {
+          // Mobile/Tablet: Try Web Share API first, fallback to opening in new tab
+          const file = new File([blob], fileName, { type: 'application/pdf' });
+          
+          // Check if Web Share API is available and supports files
+          if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                title: 'Contract PDF',
+                text: `Contract for ${selectedProject.clientName}`,
+                files: [file]
+              });
+              
+              toast({
+                title: "✅ PDF Ready",
+                description: "Choose where to save or share your contract",
+              });
+            } catch (shareError: any) {
+              // User cancelled share or error occurred
+              if (shareError.name !== 'AbortError') {
+                console.error('Share failed:', shareError);
+                // Fallback to opening in new tab
+                const url = window.URL.createObjectURL(blob);
+                const newTab = window.open(url, '_blank');
+                
+                if (newTab) {
+                  toast({
+                    title: "📄 PDF Opened",
+                    description: "Use the share button in your browser to save or send the PDF",
+                  });
+                } else {
+                  // If popup was blocked, create a download link
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = fileName;
+                  a.style.display = 'none';
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  
+                  toast({
+                    title: "📥 PDF Downloaded",
+                    description: "Check your Downloads folder or Files app",
+                  });
+                }
+                
+                // Clean up after a delay
+                setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+              }
+            }
+          } else {
+            // Web Share API not available - open in new tab
+            const url = window.URL.createObjectURL(blob);
+            const newTab = window.open(url, '_blank');
+            
+            if (newTab) {
+              toast({
+                title: "📄 PDF Opened",
+                description: isIOS || isIPadOS 
+                  ? "Tap the share button (↗) to save to Files or share" 
+                  : "Use the menu (⋮) to download or share",
+              });
+            } else {
+              // Popup blocked - try download
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = fileName;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              
+              toast({
+                title: "📥 PDF Downloaded",
+                description: "Check your Downloads or Files app",
+              });
+            }
+            
+            // Clean up after a delay
+            setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+          }
+        } else {
+          // Desktop: Traditional download
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
 
-        toast({
-          title: "PDF Downloaded",
-          description: `Contract PDF downloaded successfully for ${selectedProject.clientName}`,
-        });
+          toast({
+            title: "✅ PDF Downloaded",
+            description: `Contract saved to Downloads folder`,
+          });
+        }
       } else {
         const errorText = await response.text();
         console.error("❌ PDF download failed:", errorText);
