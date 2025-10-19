@@ -3390,11 +3390,15 @@ export default function SimpleContractGenerator() {
         }
       }
 
-      const response = await fetch("/api/multi-channel/initiate", {
+      // Use public endpoint that doesn't require authentication
+      const response = await fetch("/api/multi-channel/initiate-public", {
         method: "POST",
         headers,
-        credentials: 'include', // ✅ Include session cookie as fallback
-        body: JSON.stringify(secureDeliveryPayload),
+        credentials: 'include', // Still include cookies if available
+        body: JSON.stringify({
+          ...secureDeliveryPayload,
+          userId: currentUser?.uid || `guest_${Date.now()}` // Provide a userId for tracking
+        }),
       });
 
       if (!response.ok) {

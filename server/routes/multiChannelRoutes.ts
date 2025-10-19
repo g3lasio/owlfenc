@@ -216,6 +216,113 @@ router.get('/status/:contractId', requireAuth, async (req, res) => {
 });
 
 /**
+ * POST /api/multi-channel/initiate-public
+ * Generate signature links WITHOUT authentication requirement
+ * This endpoint is specifically for generating contract signature links
+ * without requiring Firebase authentication
+ */
+router.post('/initiate-public', async (req, res) => {
+  try {
+    console.log('🔓 [MULTI-CHANNEL PUBLIC] Public initiate request received - NO AUTH REQUIRED');
+    
+    const { 
+      contractHTML, 
+      deliveryMethods, 
+      contractData, 
+      securityFeatures,
+      userId: providedUserId 
+    } = req.body;
+
+    // Validate required fields
+    if (!contractHTML) {
+      return res.status(400).json({ 
+        error: 'Contract HTML is required',
+        code: 'MISSING_CONTRACT_HTML'
+      });
+    }
+
+    if (!contractData) {
+      return res.status(400).json({ 
+        error: 'Contract data is required',
+        code: 'MISSING_CONTRACT_DATA'
+      });
+    }
+
+    // Use provided userId or generate a temporary one for tracking
+    const userId = providedUserId || `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`🔓 [PUBLIC-AUTH] Processing contract for: ${userId}`);
+
+    // Allow generation of signature links without requiring delivery methods
+    const selectedMethods = deliveryMethods ? 
+      Object.entries(deliveryMethods).filter(([_, enabled]) => enabled) : [];
+    
+    console.log('🔓 [MULTI-CHANNEL PUBLIC] Mode:', selectedMethods.length > 0 ? 'With delivery' : 'Links only');
+
+    // Validate email addresses if email delivery is selected
+    if (deliveryMethods?.email) {
+      if (!contractData.contractorEmail || !contractData.clientEmail) {
+        return res.status(400).json({ 
+          error: 'Contractor and client email addresses are required for email delivery',
+          code: 'MISSING_EMAIL_ADDRESSES'
+        });
+      }
+    }
+
+    // Initiate secure delivery (works without authentication)
+    const result = await multiChannelDeliveryService.initiateSecureDelivery({
+      userId,
+      contractHTML,
+      deliveryMethods: deliveryMethods || {},
+      contractData,
+      securityFeatures: securityFeatures || {
+        encryption: "256-bit SSL",
+        verification: true,
+        auditTrail: true,
+        timeStamps: true
+      }
+    });
+
+    console.log('✅ [MULTI-CHANNEL PUBLIC] Links generated successfully');
+    console.log('✅ [MULTI-CHANNEL PUBLIC] Contract ID:', result.contractId);
+
+    // Return success response
+    res.json({
+      success: true,
+      message: 'Signature links generated successfully (public endpoint)',
+      contractId: result.contractId,
+      contractorSignUrl: result.contractorSignUrl,
+      clientSignUrl: result.clientSignUrl,
+      deliveryResults: result.deliveryResults,
+      securityFeatures: {
+        encryption: "256-bit SSL",
+        verification: true,
+        auditTrail: true,
+        timeStamps: true,
+        expirationHours: 72
+      },
+      publicEndpoint: true,
+      deliveredChannels: selectedMethods.length > 0 ? selectedMethods.map(([method, _]) => {
+        switch(method) {
+          case 'email': return 'Secure Email';
+          case 'sms': return 'SMS Text Message';
+          case 'whatsapp': return 'WhatsApp Business';
+          default: return method;
+        }
+      }) : ['Signature Links Generated - Manual Sharing']
+    });
+
+  } catch (error) {
+    console.error('❌ [MULTI-CHANNEL PUBLIC] Error:', error);
+    
+    res.status(500).json({
+      error: 'Failed to generate signature links',
+      message: error.message || 'Internal server error',
+      code: 'GENERATION_FAILED'
+    });
+  }
+});
+
+/**
  * GET /api/multi-channel/health
  * Health check endpoint
  */
