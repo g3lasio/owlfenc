@@ -512,9 +512,11 @@ router.get("/completed/:userId", async (req, res) => {
         contractorSignedAt: data.contractorSignedAt,
         clientSignedAt: data.clientSignedAt,
         createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        hasPdf: !!data.permanentPdfUrl,
-        pdfUrl: data.permanentPdfUrl || null,
-        permanentPdfUrl: data.permanentPdfUrl || null,
+        completionDate: data.completionDate?.toDate?.()?.toISOString() || data.updatedAt?.toDate?.()?.toISOString(),
+        hasPdf: data.hasPdf || !!data.pdfUrl || !!data.permanentPdfUrl,
+        pdfUrl: data.pdfUrl || data.permanentPdfUrl || null,
+        permanentPdfUrl: data.pdfUrl || data.permanentPdfUrl || null,
+        folio: data.folio || null,
         status: data.status,
         source: 'firebase'
       };

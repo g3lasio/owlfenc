@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
+import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import multer from "multer";
@@ -316,6 +317,10 @@ app.use(express.urlencoded({ limit: '100mb', extended: true, parameterLimit: 500
 
 // 🍪 COOKIE PARSER CONFIGURATION - Required for session cookies
 app.use(cookieParser());
+
+// 📁 SERVE STATIC FILES - PDFs, contracts, and other public files
+app.use('/contracts', express.static(path.join(process.cwd(), 'public', 'contracts')));
+app.use('/public', express.static(path.join(process.cwd(), 'public')));
 
 
 

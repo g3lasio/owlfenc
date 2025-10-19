@@ -241,44 +241,60 @@ class TransactionalContractService {
         finalSigningIp
       );
 
-      // Save final PDF to filesystem
-      const finalPdfPath = `signed_contracts/contract_${contractId}_final_sealed.pdf`;
-      const fullPath = path.join(process.cwd(), finalPdfPath);
-      const dir = path.dirname(fullPath);
+      // Save final PDF to public filesystem location for web access
+      const pdfFilename = `contract_${contractId}_signed_${legalSeal.folio}.pdf`;
+      const publicPdfPath = path.join(process.cwd(), 'public', 'contracts', 'signed', pdfFilename);
+      const publicDir = path.dirname(publicPdfPath);
 
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+      if (!fs.existsSync(publicDir)) {
+        fs.mkdirSync(publicDir, { recursive: true });
       }
 
-      fs.writeFileSync(fullPath, pdfBuffer);
+      fs.writeFileSync(publicPdfPath, pdfBuffer);
 
-      // Update Firebase with completion data
+      // Create public URL for the PDF
+      const pdfUrl = `/contracts/signed/${pdfFilename}`;
+
+      // Update Firebase with completion data and PDF URL
       await contractRef.update({
         status: 'completed',
-        finalPdfPath,
-        signedPdfPath: finalPdfPath,
-        permanentPdfUrl: finalPdfPath,
+        pdfUrl,  // Public accessible URL
+        hasPdf: true,  // Mark that PDF is available
+        finalPdfPath: pdfUrl,
+        signedPdfPath: pdfUrl,
+        permanentPdfUrl: pdfUrl,
         folio: legalSeal.folio,
         pdfHash: legalSeal.pdfHash,
         signingIp: finalSigningIp,
+        completionDate: new Date(),  // Add completion date
         updatedAt: new Date(),
       });
 
       // CRITICAL FIX: Sync completed status with contractHistory collection
       try {
+        const contractData = contract;
         await firebaseDb
           .collection('contractHistory')
           .doc(contractId)
-          .update({
+          .set({
+            ...contractData,  // Include all contract data
+            contractId,
+            userId: contractData.userId,
+            clientName: contractData.clientName,
+            projectType: contractData.projectType,
+            totalAmount: contractData.totalAmount,
             status: 'completed',
-            finalPdfPath,
-            signedPdfPath: finalPdfPath,
-            permanentPdfUrl: finalPdfPath,
+            pdfUrl,  // Public accessible URL
+            hasPdf: true,  // Mark that PDF is available
+            finalPdfPath: pdfUrl,
+            signedPdfPath: pdfUrl,
+            permanentPdfUrl: pdfUrl,
             folio: legalSeal.folio,
             pdfHash: legalSeal.pdfHash,
+            completionDate: new Date(),  // Add completion date
             updatedAt: new Date(),
           });
-        console.log(`✅ [TRANSACTIONAL] Contract history synced to completed status`);
+        console.log(`✅ [TRANSACTIONAL] Contract history synced to completed status with PDF URL: ${pdfUrl}`);
       } catch (syncError) {
         console.error(`❌ [TRANSACTIONAL] Failed to sync contractHistory:`, syncError);
         // Don't fail the operation if sync fails, but log it as critical
