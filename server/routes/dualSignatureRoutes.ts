@@ -1038,23 +1038,21 @@ router.post("/regenerate-pdf/:contractId", async (req, res) => {
 
     console.log("🔄 [API] Regenerating PDF for contract:", contractId);
 
-    // Import database here to avoid circular dependencies
-    const { db } = await import("../db");
-    const { digitalContracts } = await import("../../shared/schema");
-    const { eq } = await import("drizzle-orm");
+    // CRITICAL FIX: Using Firebase exclusively
+    const { db: firebaseDb } = await import("../lib/firebase-admin");
+    const contractDoc = await firebaseDb
+      .collection('dualSignatureContracts')
+      .doc(contractId)
+      .get();
 
-    const [contract] = await db
-      .select()
-      .from(digitalContracts)
-      .where(eq(digitalContracts.contractId, contractId))
-      .limit(1);
-
-    if (!contract) {
+    if (!contractDoc.exists) {
       return res.status(404).json({
         success: false,
-        message: "Contract not found",
+        message: "Contract not found in Firebase",
       });
     }
+
+    const contract = contractDoc.data()!;
 
     if (!contract.contractorSigned || !contract.clientSigned) {
       return res.status(400).json({
@@ -1137,14 +1135,11 @@ router.post("/regenerate-pdf/:contractId", async (req, res) => {
 
       fs.writeFileSync(fullPath, pdfBuffer);
 
-      // Update database with PDF path
-      await db
-        .update(digitalContracts)
-        .set({
-          signedPdfPath,
-          updatedAt: new Date(),
-        })
-        .where(eq(digitalContracts.contractId, contractId));
+      // Update Firebase with PDF path
+      await contractDoc.ref.update({
+        signedPdfPath,
+        updatedAt: new Date(),
+      });
 
       console.log("✅ [API] PDF regenerated successfully:", signedPdfPath);
 
@@ -1180,23 +1175,21 @@ router.post("/force-complete/:contractId", async (req, res) => {
 
     console.log("🔧 [API] Force completing contract:", contractId);
 
-    // Import database here to avoid circular dependencies
-    const { db } = await import("../db");
-    const { digitalContracts } = await import("../../shared/schema");
-    const { eq } = await import("drizzle-orm");
+    // CRITICAL FIX: Using Firebase exclusively
+    const { db: firebaseDb } = await import("../lib/firebase-admin");
+    const contractDoc = await firebaseDb
+      .collection('dualSignatureContracts')
+      .doc(contractId)
+      .get();
 
-    const [contract] = await db
-      .select()
-      .from(digitalContracts)
-      .where(eq(digitalContracts.contractId, contractId))
-      .limit(1);
-
-    if (!contract) {
+    if (!contractDoc.exists) {
       return res.status(404).json({
         success: false,
-        message: "Contract not found",
+        message: "Contract not found in Firebase",
       });
     }
+
+    const contract = contractDoc.data()!;
 
     if (!contract.contractorSigned || !contract.clientSigned) {
       return res.status(400).json({
@@ -1205,14 +1198,11 @@ router.post("/force-complete/:contractId", async (req, res) => {
       });
     }
 
-    // Force update status to completed
-    await db
-      .update(digitalContracts)
-      .set({
-        status: "completed",
-        updatedAt: new Date(),
-      })
-      .where(eq(digitalContracts.contractId, contractId));
+    // Force update status to completed in Firebase
+    await contractDoc.ref.update({
+      status: "completed",
+      updatedAt: new Date(),
+    });
 
     console.log("✅ [API] Contract force completed successfully");
 
@@ -1257,24 +1247,23 @@ router.post("/resend-links", async (req, res) => {
       methods,
     );
 
-    // Import database here to avoid circular dependencies
-    const { db } = await import("../db");
-    const { digitalContracts } = await import("../../shared/schema");
-    const { eq } = await import("drizzle-orm");
+    // CRITICAL FIX: Using Firebase exclusively - no more PostgreSQL
+    const { db: firebaseDb } = await import("../lib/firebase-admin");
+    
+    // Get contract data from Firebase
+    const contractDoc = await firebaseDb
+      .collection('dualSignatureContracts')
+      .doc(contractId)
+      .get();
 
-    // Get contract data
-    const [contract] = await db
-      .select()
-      .from(digitalContracts)
-      .where(eq(digitalContracts.contractId, contractId))
-      .limit(1);
-
-    if (!contract) {
+    if (!contractDoc.exists) {
       return res.status(404).json({
         success: false,
-        error: "Contract not found",
+        error: "Contract not found in Firebase",
       });
     }
+
+    const contract = contractDoc.data()!;
 
     // Generate signature URLs dinámicamente - funciona en cualquier entorno
     const { buildSignatureUrls } = await import('../utils/url-builder');
