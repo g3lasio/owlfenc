@@ -302,6 +302,7 @@ class ContractHistoryService {
     completed: number;
     drafts: number;
     processing: number;
+    inProgress: number;
     totalValue: number;
   }> {
     try {
@@ -309,9 +310,14 @@ class ContractHistoryService {
       
       const stats = {
         total: contracts.length,
-        completed: contracts.filter(c => c.status === 'completed').length,
+        completed: contracts.filter(c => c.status === 'completed' || c.status === 'both_signed').length,
         drafts: contracts.filter(c => c.status === 'draft').length,
         processing: contracts.filter(c => c.status === 'processing').length,
+        inProgress: contracts.filter(c => 
+          c.status === 'in_progress' || 
+          c.status === 'contractor_signed' || 
+          c.status === 'client_signed'
+        ).length,
         totalValue: contracts.reduce((sum, c) => sum + (c.contractData.financials.total || 0), 0)
       };
 
@@ -323,6 +329,7 @@ class ContractHistoryService {
         completed: 0,
         drafts: 0,
         processing: 0,
+        inProgress: 0,
         totalValue: 0
       };
     }

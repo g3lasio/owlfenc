@@ -48,6 +48,7 @@ export function ContractHistoryPanel({ children, onEditContract }: ContractHisto
     completed: 0,
     drafts: 0,
     processing: 0,
+    inProgress: 0,
     totalValue: 0
   });
   
