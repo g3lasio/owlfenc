@@ -1399,6 +1399,14 @@ export default function SimpleContractGenerator() {
           variant: "destructive",
         });
       }
+    } catch (error: any) {
+      console.error("❌ Error in viewContract:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to view contract",
+        variant: "destructive",
+      });
+    }
     },
     [completedContracts, toast, currentUser],
   );
