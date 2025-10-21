@@ -1876,21 +1876,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     return () => clearTimeout(timeoutId);
   }, [clients, estimate.items.length, estimate.client]);
 
-  // Check email verification status on component load
-  useEffect(() => {
-    const checkEmailStatus = async () => {
-      try {
-        const result = await checkEmailVerification();
-        setEmailVerified(result.verified);
-      } catch (error) {
-        console.error("Error checking email verification:", error);
-        setEmailVerified(false);
-      }
-    };
-
-    checkEmailStatus();
-  }, []);
-
   const loadClients = async () => {
     try {
       setIsLoadingClients(true);
