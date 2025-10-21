@@ -1028,10 +1028,11 @@ export class EstimateEmailService {
       
       const htmlContent = EstimateEmailService.generateEstimateHTML(data);
       
-      // Use verified owlfenc.com domain for sending
+      // Send from contractor's name using verified owlfenc.com domain for deliverability
+      // Client sees: "Contractor Name <estimates@owlfenc.com>" and replies go to contractor's real email
       const success = await resendService.sendEmail({
         to: data.client.email,
-        from: 'mervin@owlfenc.com',
+        from: `${data.contractor.companyName} <estimates@owlfenc.com>`,
         subject: `Estimado ${data.estimateNumber} - ${data.project.type} | ${data.contractor.companyName}`,
         html: htmlContent,
         replyTo: data.contractor.email
@@ -1043,7 +1044,7 @@ export class EstimateEmailService {
         // Enviar copia al contratista
         const copySuccess = await resendService.sendEmail({
           to: data.contractor.email,
-          from: 'mervin@owlfenc.com',
+          from: `Owl Fence Platform <noreply@owlfenc.com>`,
           subject: `[COPIA] Estimado ${data.estimateNumber} enviado a ${data.client.name}`,
           html: `
             <div style="background: #f0f9ff; padding: 20px; border-left: 4px solid #3b82f6; margin-bottom: 20px;">
@@ -1052,7 +1053,7 @@ export class EstimateEmailService {
             </div>
             ${htmlContent}
           `,
-          replyTo: 'mervin@owlfenc.com'
+          replyTo: 'noreply@owlfenc.com'
         });
         
         return {
@@ -1088,7 +1089,7 @@ export class EstimateEmailService {
       // Notificar al contratista sobre la aprobación
       const success = await resendService.sendEmail({
         to: approval.contractorEmail,
-        from: 'mervin@owlfenc.com',
+        from: `Owl Fence Platform <notifications@owlfenc.com>`,
         subject: `🎉 Estimado ${approval.estimateId} APROBADO por ${approval.clientName}`,
         html: `
           <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
@@ -1123,7 +1124,7 @@ export class EstimateEmailService {
             </div>
           </div>
         `,
-        replyTo: 'mervin@owlfenc.com'
+        replyTo: 'notifications@owlfenc.com'
       });
       
       if (success) {
@@ -1161,7 +1162,7 @@ export class EstimateEmailService {
       // Notificar al contratista sobre los ajustes solicitados
       const success = await resendService.sendEmail({
         to: adjustment.contractorEmail,
-        from: 'mervin@owlfenc.com',
+        from: `${adjustment.clientName} <notifications@owlfenc.com>`,
         subject: `📝 Ajustes solicitados para estimado ${adjustment.estimateId}`,
         html: `
           <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">

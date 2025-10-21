@@ -66,7 +66,7 @@ export class ResendEmailDifferentiated {
       const emailHtml = this.generateContractorEmailTemplate(params);
       
       const emailOptions = {
-        from: 'legal@owlfenc.com',
+        from: `Owl Fence Platform <contracts@owlfenc.com>`,
         to: recipient,
         subject: `🔐 Contractor Review Required - Contract ${params.contractId}`,
         html: emailHtml,
@@ -117,7 +117,7 @@ export class ResendEmailDifferentiated {
       const emailHtml = this.generateClientEmailTemplate(params);
       
       const emailOptions = {
-        from: 'sign.legal@owlfenc.com',
+        from: `${params.contractorName} <contracts@owlfenc.com>`,
         to: recipient,
         subject: `📋 Your Contract Ready for Signature - ${params.projectDetails.description}`,
         html: emailHtml,

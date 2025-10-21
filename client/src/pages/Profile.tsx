@@ -1331,78 +1331,10 @@ export default function Profile() {
                         placeholder="contact@yourcompany.com"
                         className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                       />
-                      {/* Email Verification Status */}
                       {companyInfo.email && (
-                        <div className="mt-2 p-3 rounded-lg border border-gray-600 bg-gray-800/50">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              {emailVerificationStatus === "checking" && (
-                                <>
-                                  <Loader2 className="h-4 w-4 animate-spin text-cyan-400" />
-                                  <span className="text-sm text-gray-400">
-                                    Checking verification status...
-                                  </span>
-                                </>
-                              )}
-                              {emailVerificationStatus === "verified" && (
-                                <>
-                                  <CheckCircle className="h-4 w-4 text-green-500" />
-                                  <span className="text-sm text-green-400 font-medium">
-                                    Email verified
-                                  </span>
-                                </>
-                              )}
-                              {emailVerificationStatus === "pending" && (
-                                <>
-                                  <AlertCircle className="h-4 w-4 text-yellow-500" />
-                                  <span className="text-sm text-yellow-400 font-medium">
-                                    Verification pending
-                                  </span>
-                                </>
-                              )}
-                              {emailVerificationStatus === "unverified" && (
-                                <>
-                                  <AlertCircle className="h-4 w-4 text-red-500" />
-                                  <span className="text-sm text-red-400 font-medium">
-                                    Email not verified
-                                  </span>
-                                </>
-                              )}
-                            </div>
-
-                            {emailVerificationStatus !== "verified" &&
-                              emailVerificationStatus !== "checking" && (
-                                <Button
-                                  onClick={handleEmailVerification}
-                                  disabled={isVerifying || !companyInfo.email}
-                                  size="sm"
-                                  variant="outline"
-                                  className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700 hover:border-gray-500"
-                                >
-                                  {isVerifying ? (
-                                    <>
-                                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                      Sending...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Mail className="h-3 w-3 mr-1" />
-                                      Verify Email
-                                    </>
-                                  )}
-                                </Button>
-                              )}
-                          </div>
-
-                          <div className="mt-2 text-xs text-gray-400">
-                            {emailVerificationStatus === "verified" &&
-                              "You can now send professional emails to clients using this address."}
-                            {emailVerificationStatus === "pending" &&
-                              "Check your email for a verification link from SendGrid. Click it to complete verification."}
-                            {emailVerificationStatus === "unverified" &&
-                              "Verify your email to send professional estimates and contracts to clients."}
-                          </div>
-                        </div>
+                        <p className="text-xs text-gray-400 mt-2">
+                          Este email se usará para respuestas de clientes. Los estimados se envían desde la plataforma Owl Fence.
+                        </p>
                       )}
                     </div>
                     <div className="space-y-2">
