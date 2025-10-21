@@ -1411,11 +1411,11 @@ export default function SimpleContractGenerator() {
     [completedContracts, toast, currentUser],
   );
 
-  // Share contract using native share API or copy link
+  // Share contract PDF file using native share API or download
   const shareContract = useCallback(
     async (contractId: string, clientName: string) => {
       try {
-        console.log("🔗 Sharing contract:", contractId);
+        console.log("🔗 Sharing contract PDF:", contractId);
 
         if (!currentUser) {
           toast({
@@ -1426,58 +1426,84 @@ export default function SimpleContractGenerator() {
           return;
         }
 
-        // Create shareable URL based on PDF availability
-        const baseUrl = window.location.origin;
-        const shareUrl = `${baseUrl}/api/dual-signature/download-html/${contractId}`;
-        const shareText = `Signed Contract for ${clientName}`;
+        // Find the contract to get its PDF URL
+        const contract = completedContracts.find(c => c.contractId === contractId);
+        
+        if (!contract?.pdfUrl) {
+          toast({
+            title: "PDF Not Available",
+            description: "Signed PDF is not available for this contract",
+            variant: "destructive",
+          });
+          return;
+        }
 
-        // Try native Web Share API first
-        if (navigator.share) {
-          try {
-            await navigator.share({
-              title: shareText,
-              text: `View the signed contract for ${clientName}`,
-              url: shareUrl,
-            });
+        toast({
+          title: "Preparing PDF",
+          description: "Preparing signed PDF for sharing...",
+        });
 
-            toast({
-              title: "Contract Shared",
-              description: `Contract shared via native share options`,
-            });
-            return;
-          } catch (shareError: any) {
-            // User cancelled share or share failed, fall back to copy
-            console.log(
-              "Native share cancelled or failed, falling back to copy",
-            );
+        // Fetch the PDF file
+        const response = await fetch(contract.pdfUrl);
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch PDF file");
+        }
+
+        const pdfBlob = await response.blob();
+        const fileName = `${clientName.replace(/\s+/g, '_')}_Contract_Signed.pdf`;
+
+        // Try native Web Share API with file sharing
+        if (navigator.share && navigator.canShare) {
+          const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+          
+          // Check if file sharing is supported
+          if (navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                files: [file],
+                title: `Signed Contract - ${clientName}`,
+                text: `Signed contract for ${clientName}`,
+              });
+
+              toast({
+                title: "PDF Shared",
+                description: "Signed PDF shared successfully",
+              });
+              return;
+            } catch (shareError: any) {
+              // User cancelled or share failed
+              if (shareError.name !== 'AbortError') {
+                console.warn("Native share failed:", shareError);
+              }
+            }
           }
         }
 
-        // Fallback: Copy to clipboard
-        try {
-          await navigator.clipboard.writeText(shareUrl);
-          toast({
-            title: "Link Copied",
-            description: `Contract link copied to clipboard for ${clientName}`,
-          });
-        } catch (clipboardError) {
-          // Ultimate fallback: Show URL in alert
-          window.prompt("Copy this contract link:", shareUrl);
-          toast({
-            title: "Contract Link",
-            description: "Contract link displayed for manual copy",
-          });
-        }
+        // Fallback: Download the PDF
+        const url = window.URL.createObjectURL(pdfBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        toast({
+          title: "PDF Downloaded",
+          description: "Signed PDF downloaded to your device",
+        });
       } catch (error: any) {
         console.error("❌ Error sharing contract:", error);
         toast({
           title: "Share Error",
-          description: (error as Error).message || "Failed to share contract",
+          description: error.message || "Failed to share contract PDF",
           variant: "destructive",
         });
       }
     },
-    [toast, currentUser],
+    [toast, currentUser, completedContracts],
   );
 
   // Download contract as HTML file
