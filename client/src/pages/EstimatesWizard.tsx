@@ -330,7 +330,6 @@ export default function EstimatesWizardFixed() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
 
   // Deepsearch Materials states
   const [showDeepsearchDialog, setShowDeepsearchDialog] = useState(false);
@@ -3735,17 +3734,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         title: "Profile Required",
         description:
           "Please complete your company profile before sending estimates.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check email verification status before sending
-    if (!emailVerified) {
-      toast({
-        title: "Email Verification Required",
-        description:
-          "Please verify your email address before sending estimates.",
         variant: "destructive",
       });
       return;
