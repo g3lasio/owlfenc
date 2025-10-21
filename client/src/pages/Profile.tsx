@@ -128,14 +128,6 @@ export default function Profile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
-  // Email verification state
-  const [emailVerificationStatus, setEmailVerificationStatus] = useState<
-    "unverified" | "pending" | "verified" | "checking"
-  >("unverified");
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [lastVerifiedEmail, setLastVerifiedEmail] = useState("");
-
   // ===== USER SETTINGS STATES =====
   // Types for settings
   interface UserSettings {
@@ -913,122 +905,6 @@ export default function Profile() {
       }
     };
   }, []);
-
-  // Check email verification status when email changes
-  useEffect(() => {
-    if (companyInfo.email) {
-      checkEmailVerificationStatus(companyInfo.email);
-    } else {
-      setEmailVerificationStatus("unverified");
-    }
-  }, [companyInfo.email]);
-
-  const checkEmailVerificationStatus = async (email: string) => {
-    if (!email) return;
-
-    setEmailVerificationStatus("checking");
-
-    try {
-      // Verificar si el email ha sido realmente verificado a través de SendGrid
-      const verifiedEmails = JSON.parse(
-        localStorage.getItem("verifiedEmails") || "[]",
-      );
-      const isVerified = verifiedEmails.includes(email);
-
-      if (isVerified) {
-        setEmailVerificationStatus("verified");
-        setEmailVerified(true);
-        setLastVerifiedEmail(email);
-        return;
-      }
-
-      // Si no está en la lista de verificados, comprobar con el servidor
-      const response = await fetch("/api/contractor-email/check-verification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      const result = await response.json();
-
-      // Solo marcar como verificado si realmente fue confirmado por SendGrid
-      if (result.verified && result.confirmedByProvider) {
-        setEmailVerificationStatus("verified");
-        setEmailVerified(true);
-        setLastVerifiedEmail(email);
-
-        // Guardar en lista de emails verificados
-        const updatedVerifiedEmails = [...verifiedEmails, email];
-        localStorage.setItem(
-          "verifiedEmails",
-          JSON.stringify(updatedVerifiedEmails),
-        );
-      } else if (result.pending) {
-        setEmailVerificationStatus("pending");
-        setEmailVerified(false);
-      } else {
-        setEmailVerificationStatus("unverified");
-        setEmailVerified(false);
-      }
-    } catch (error) {
-      console.error("Error checking verification status:", error);
-      setEmailVerificationStatus("unverified");
-      setEmailVerified(false);
-    }
-  };
-
-  const handleEmailVerification = async () => {
-    if (!companyInfo.email) {
-      toast({
-        title: "Email Required",
-        description: "Please enter your email address first.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsVerifying(true);
-    try {
-      const response = await fetch("/api/contractor-email/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: companyInfo.email,
-          name: companyInfo.company || companyInfo.ownerName || "Contractor",
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setEmailVerificationStatus("pending");
-        toast({
-          title: "Verification Email Sent",
-          description:
-            "Please check your email and click the verification link from SendGrid.",
-          duration: 8000,
-        });
-      } else {
-        toast({
-          title: "Verification Failed",
-          description:
-            result.message ||
-            "Unable to send verification email. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error sending verification:", error);
-      toast({
-        title: "Connection Error",
-        description:
-          "Unable to send verification email. Please check your connection.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsVerifying(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-black text-white font-mono">
