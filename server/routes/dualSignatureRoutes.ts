@@ -9,7 +9,7 @@ import { dualSignatureService } from "../services/dualSignatureService";
 import { transactionalContractService } from "../services/transactionalContractService";
 import { signTokenService } from "../services/signTokenService";
 import { verifyFirebaseAuth } from "../middleware/firebase-auth";
-import { requireAuth } from "../middleware/unified-session-auth";
+import { requireAuth, optionalAuth } from "../middleware/unified-session-auth";
 import { 
   requireLegalDefenseAccess,
   validateUsageLimit,
@@ -252,18 +252,19 @@ router.post("/sign", async (req, res) => {
 /**
  * GET /api/dual-signature/download/:contractId
  * Download signed PDF contract
+ * 🔓 PUBLIC ACCESS: Allows clients to download signed contracts
+ * 🔐 OWNERSHIP CHECK: If authenticated, verifies user owns the contract
  */
-router.get("/download/:contractId", async (req, res) => {
+router.get("/download/:contractId", optionalAuth, async (req, res) => {
   try {
     const { contractId } = req.params;
-    const requestingUserId = req.headers["x-user-id"] as string;
 
     console.log("📥 [API] Download request for contract:", contractId);
-    console.log("👤 [API] Requesting user:", requestingUserId || "No user ID");
+    console.log("👤 [API] Requesting user:", req.authUser?.uid || "Unauthenticated");
 
     const result = await dualSignatureService.downloadSignedPdf(
       contractId,
-      requestingUserId,
+      req.authUser?.uid,
     );
 
     if (result.success && result.pdfBuffer) {
@@ -336,20 +337,25 @@ router.get("/status/:contractId", async (req, res) => {
 
 /**
  * GET /api/dual-signature/in-progress/:userId
- * Obtener todos los contratos en progreso (pendientes de firma) de un usuario
- * PUBLIC - User-specific data filtering
- */
-/**
- * GET /api/dual-signature/in-progress/:userId
  * Obtener contratos pendientes de firma (en progreso)
  * ✅ FIREBASE-ONLY: Single source of truth (PostgreSQL deprecated)
  * 🔐 SECURED: Requires authentication and ownership verification
  */
-router.get("/in-progress/:userId", async (req, res) => {
+router.get("/in-progress/:userId", requireAuth, async (req, res) => {
   try {
     const { userId: firebaseUid } = req.params;
     
-    // SIMPLIFIED: Session-based auth, no strict verification needed
+    // 🔒 SECURITY: Verify ownership - user can only access their own in-progress contracts
+    if (req.authUser?.uid !== firebaseUid) {
+      console.error(
+        `🚫 [SECURITY-VIOLATION] User ${req.authUser?.uid} attempted to access in-progress contracts of ${firebaseUid}`
+      );
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message: 'You can only access your own contracts'
+      });
+    }
 
     console.log("📋 [FIREBASE-ONLY] Getting in-progress contracts for user:", firebaseUid);
 
@@ -407,19 +413,25 @@ router.get("/in-progress/:userId", async (req, res) => {
 
 /**
  * GET /api/dual-signature/drafts/:userId
- * Obtener todos los contratos en borrador de un usuario
- * SECURED: Requires authentication and ownership verification
- */
-/**
- * GET /api/dual-signature/drafts/:userId
  * Obtener contratos en borrador (draft) del usuario
  * ✅ FIREBASE-ONLY: Single source of truth (PostgreSQL deprecated)
+ * 🔐 SECURED: Requires authentication and ownership verification
  */
-router.get("/drafts/:userId", async (req, res) => {
+router.get("/drafts/:userId", requireAuth, async (req, res) => {
   try {
     const { userId } = req.params;
     
-    // SIMPLIFIED: Session-based auth, no strict verification needed
+    // 🔒 SECURITY: Verify ownership - user can only access their own drafts
+    if (req.authUser?.uid !== userId) {
+      console.error(
+        `🚫 [SECURITY-VIOLATION] User ${req.authUser?.uid} attempted to access drafts of ${userId}`
+      );
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message: 'You can only access your own contracts'
+      });
+    }
 
     console.log("📋 [FIREBASE-ONLY] Getting draft contracts for user:", userId);
 
@@ -476,14 +488,23 @@ router.get("/drafts/:userId", async (req, res) => {
  * GET /api/dual-signature/completed/:userId
  * Obtener SOLO contratos completados/firmados del usuario
  * ✅ FIREBASE-ONLY: Single source of truth (PostgreSQL deprecated)
- * 🔓 SIMPLIFIED AUTH: Uses session-based auth for better UX
+ * 🔐 SECURED: Requires authentication and ownership verification
  */
-router.get("/completed/:userId", async (req, res) => {
+router.get("/completed/:userId", requireAuth, async (req, res) => {
   try {
     const { userId: firebaseUid } = req.params;
     
-    // SIMPLIFIED: Just log the access without blocking
-    // In a production environment with proper login, the user will have access to their own data
+    // 🔒 SECURITY: Verify ownership - user can only access their own completed contracts
+    if (req.authUser?.uid !== firebaseUid) {
+      console.error(
+        `🚫 [SECURITY-VIOLATION] User ${req.authUser?.uid} attempted to access completed contracts of ${firebaseUid}`
+      );
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message: 'You can only access your own contracts'
+      });
+    }
     
     console.log(`📋 [FIREBASE-ONLY] Getting COMPLETED contracts for user: ${firebaseUid}`);
 
@@ -545,14 +566,24 @@ router.get("/completed/:userId", async (req, res) => {
 /**
  * GET /api/dual-signature/all/:userId
  * Obtener TODOS los contratos del usuario (draft, progress, completed)
- * SECURED: Requires authentication and ownership verification
+ * 🔐 SECURED: Requires authentication and ownership verification
  * HYBRID: Combina contratos de PostgreSQL (dual-signature) y Firebase (contractHistory)
  */
-router.get("/all/:userId", async (req, res) => {
+router.get("/all/:userId", requireAuth, async (req, res) => {
   try {
     const { userId } = req.params;
     
-    // SIMPLIFIED: Session-based auth, no strict verification needed
+    // 🔒 SECURITY: Verify ownership - user can only access their own contracts
+    if (req.authUser?.uid !== userId) {
+      console.error(
+        `🚫 [SECURITY-VIOLATION] User ${req.authUser?.uid} attempted to access all contracts of ${userId}`
+      );
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message: 'You can only access your own contracts'
+      });
+    }
 
     console.log("📋 [API] Getting ALL contracts (unified) for user:", userId);
 
@@ -706,12 +737,13 @@ router.get("/all/:userId", async (req, res) => {
 /**
  * GET /api/dual-signature/download-html/:contractId
  * Download signed contract as HTML
+ * 🔓 PUBLIC ACCESS: Allows clients to view contracts for signing
+ * 🔐 OWNERSHIP CHECK: If authenticated, verifies user owns the contract
  * HYBRID: Busca en PostgreSQL y Firebase para soportar ambos sistemas
  */
-router.get("/download-html/:contractId", async (req, res) => {
+router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
   try {
     const { contractId } = req.params;
-    const requestingUserId = req.headers["x-user-id"] as string;
 
     console.log("📄 [API] HTML download request for contract:", contractId);
 
@@ -728,6 +760,17 @@ router.get("/download-html/:contractId", async (req, res) => {
     if (contractDoc.exists) {
       contract = contractDoc.data();
       console.log("✅ [API] Contract found in dualSignatureContracts:", contractId);
+      
+      // 🔒 SECURITY: If authenticated, verify ownership
+      if (req.authUser && contract?.userId !== req.authUser.uid) {
+        console.error(
+          `🚫 [SECURITY-VIOLATION] User ${req.authUser.uid} attempted to access contract ${contractId} owned by ${contract?.userId}`
+        );
+        return res.status(403).json({
+          success: false,
+          message: "Access denied - you can only access your own contracts",
+        });
+      }
     } else {
       // Fallback to contractHistory collection
       console.log("🔍 [API] Contract not in dualSignatureContracts, checking contractHistory:", contractId);
@@ -751,11 +794,14 @@ router.get("/download-html/:contractId", async (req, res) => {
       const firebaseContract = contractDoc.data();
       console.log("✅ [API] Contract found in Firebase:", contractId);
       
-      // Check ownership for Firebase contracts
-      if (requestingUserId && firebaseContract?.userId !== requestingUserId) {
+      // 🔒 SECURITY: If authenticated, verify ownership
+      if (req.authUser && firebaseContract?.userId !== req.authUser.uid) {
+        console.error(
+          `🚫 [SECURITY-VIOLATION] User ${req.authUser.uid} attempted to access contract ${contractId} owned by ${firebaseContract?.userId}`
+        );
         return res.status(403).json({
           success: false,
-          message: "Access denied",
+          message: "Access denied - you can only access your own contracts",
         });
       }
       
