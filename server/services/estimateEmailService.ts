@@ -666,49 +666,55 @@ export class EstimateEmailService {
                     </tr>
                   </thead>
                   <tbody>
-                    ${data.items.map(item => `
+                    ${data.items.map(item => {
+                      const unitPrice = item.unitPrice || item.price || 0;
+                      const total = item.total || (item.quantity * unitPrice) || 0;
+                      return `
                       <tr>
                         <td>
                           <strong>${item.name}</strong>
                           ${item.description ? `<br><small style="color: #6b7280;">${item.description}</small>` : ''}
                         </td>
-                        <td>${item.quantity} ${item.unit}</td>
-                        <td>$${item.unitPrice.toFixed(2)}</td>
-                        <td class="amount">$${item.total.toFixed(2)}</td>
+                        <td>${item.quantity || 0} ${item.unit || ''}</td>
+                        <td>$${Number(unitPrice).toFixed(2)}</td>
+                        <td class="amount">$${Number(total).toFixed(2)}</td>
                       </tr>
-                    `).join('')}
+                    `}).join('')}
                   </tbody>
                 </table>
               </div>
 
               <!-- Cards para móvil -->
               <div class="mobile-items">
-                ${data.items.map(item => `
+                ${data.items.map(item => {
+                  const unitPrice = item.unitPrice || item.price || 0;
+                  const total = item.total || (item.quantity * unitPrice) || 0;
+                  return `
                   <div class="mobile-item">
                     <div class="mobile-item-name">${item.name}</div>
                     ${item.description ? `<div class="mobile-item-description">${item.description}</div>` : ''}
                     <div class="mobile-item-details">
-                      <div class="mobile-item-quantity">${item.quantity} ${item.unit} × $${item.unitPrice.toFixed(2)}</div>
-                      <div class="mobile-item-price">$${item.total.toFixed(2)}</div>
+                      <div class="mobile-item-quantity">${item.quantity || 0} ${item.unit || ''} × $${Number(unitPrice).toFixed(2)}</div>
+                      <div class="mobile-item-price">$${Number(total).toFixed(2)}</div>
                     </div>
                   </div>
-                `).join('')}
+                `}).join('')}
               </div>
               
               <div class="totals">
                 <div class="total-line">
                   <span>Materiales (${data.items.length} items):</span>
-                  <span>$${data.subtotal.toFixed(2)}</span>
+                  <span>$${Number(data.subtotal || 0).toFixed(2)}</span>
                 </div>
                 ${data.discount && data.discount > 0 ? `
                 <div class="total-line" style="color: #059669;">
                   <span>Descuento${data.discountType === 'percentage' ? ` (${data.discountValue}%)` : ''}:</span>
-                  <span>-$${data.discount.toFixed(2)}</span>
+                  <span>-$${Number(data.discount).toFixed(2)}</span>
                 </div>
                 ` : ''}
                 <div class="total-line">
-                  <span>Impuesto (${data.taxRate}%):</span>
-                  <span>$${data.tax.toFixed(2)}</span>
+                  <span>Impuesto (${data.taxRate || 0}%):</span>
+                  <span>$${Number(data.tax || 0).toFixed(2)}</span>
                 </div>
                 <div class="total-line">
                   <span>TOTAL:</span>
