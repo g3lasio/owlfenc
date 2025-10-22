@@ -761,6 +761,24 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
       contract = contractDoc.data();
       console.log("✅ [API] Contract found in dualSignatureContracts:", contractId);
       
+      // 🔍 CRITICAL DEBUG: Log signature data availability
+      console.log("🔍 [SIGNATURE-DEBUG] Contract signature status:", {
+        contractorSigned: contract?.contractorSigned,
+        clientSigned: contract?.clientSigned,
+        contractorSignatureData: contract?.contractorSignatureData ? 'EXISTS' : 'MISSING',
+        clientSignatureData: contract?.clientSignatureData ? 'EXISTS' : 'MISSING',
+        contractorSignedAt: contract?.contractorSignedAt ? 'EXISTS' : 'MISSING',
+        clientSignedAt: contract?.clientSignedAt ? 'EXISTS' : 'MISSING'
+      });
+      
+      // 🔍 DEBUG: Log signature data types and lengths
+      if (contract?.contractorSignatureData) {
+        console.log("🖋️ [CONTRACTOR-SIG] Type:", typeof contract.contractorSignatureData, "Length:", String(contract.contractorSignatureData).length);
+      }
+      if (contract?.clientSignatureData) {
+        console.log("🖋️ [CLIENT-SIG] Type:", typeof contract.clientSignatureData, "Length:", String(contract.clientSignatureData).length);
+      }
+      
       // 🔒 SECURITY: If authenticated, verify ownership
       if (req.authUser && contract?.userId !== req.authUser.uid) {
         console.error(
@@ -875,7 +893,15 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
 
     // Helper function to process signature data correctly
     const processSignatureForDisplay = (signatureData: string | null, fallbackText: string = "Digital signature on file"): string => {
+      console.log("🔍 [PROCESS-SIG] Input:", {
+        exists: !!signatureData,
+        type: typeof signatureData,
+        length: signatureData ? String(signatureData).length : 0,
+        isBase64: signatureData ? signatureData.startsWith("data:image") : false
+      });
+      
       if (!signatureData) {
+        console.warn("⚠️ [PROCESS-SIG] No signature data provided, using fallback");
         return `<span style="font-style: italic; color: #666;">${fallbackText}</span>`;
       }
 
