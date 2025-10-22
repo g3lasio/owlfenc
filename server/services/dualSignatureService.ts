@@ -736,6 +736,77 @@ export class DualSignatureService {
         );
         const pdfService = new PremiumPdfService();
 
+        // Helper function to convert Firestore Timestamp to JavaScript Date
+        const toJSDate = (firestoreTimestamp: any): Date => {
+          if (!firestoreTimestamp) {
+            throw new Error('Cannot convert null/undefined timestamp to Date');
+          }
+          
+          let resultDate: Date;
+          
+          // Check if it's already a Date object
+          if (firestoreTimestamp instanceof Date) {
+            resultDate = firestoreTimestamp;
+          }
+          // Check if it's a Firestore Timestamp with toDate() method
+          else if (firestoreTimestamp.toDate && typeof firestoreTimestamp.toDate === 'function') {
+            resultDate = firestoreTimestamp.toDate();
+          }
+          // Check if it's a timestamp object with seconds field (Firestore format)
+          else if (firestoreTimestamp._seconds || firestoreTimestamp.seconds) {
+            const seconds = firestoreTimestamp._seconds || firestoreTimestamp.seconds;
+            if (typeof seconds !== 'number' || isNaN(seconds)) {
+              throw new Error(`Invalid timestamp seconds value: ${seconds}`);
+            }
+            resultDate = new Date(seconds * 1000);
+          }
+          // Handle numeric timestamp (milliseconds)
+          else if (typeof firestoreTimestamp === 'number') {
+            if (isNaN(firestoreTimestamp)) {
+              throw new Error('Timestamp is NaN');
+            }
+            resultDate = new Date(firestoreTimestamp);
+          }
+          // Try to parse as string
+          else if (typeof firestoreTimestamp === 'string') {
+            resultDate = new Date(firestoreTimestamp);
+          }
+          else {
+            throw new Error(`Unknown timestamp format: ${typeof firestoreTimestamp}`);
+          }
+          
+          // Validate the resulting date
+          if (isNaN(resultDate.getTime())) {
+            throw new Error(`Conversion resulted in Invalid Date from: ${JSON.stringify(firestoreTimestamp)}`);
+          }
+          
+          return resultDate;
+        };
+
+        console.log('📅 [DATE-DEBUG] Contractor signedAt:', contract.contractorSignedAt);
+        console.log('📅 [DATE-DEBUG] Client signedAt:', contract.clientSignedAt);
+
+        // Convert timestamps with error handling
+        let contractorSignedDate: Date;
+        let clientSignedDate: Date;
+        
+        try {
+          contractorSignedDate = toJSDate(contract.contractorSignedAt);
+        } catch (error: any) {
+          console.error('❌ [DATE-CONVERSION] Failed to convert contractor signedAt:', error.message);
+          throw new Error(`Invalid contractor signature date: ${error.message}`);
+        }
+        
+        try {
+          clientSignedDate = toJSDate(contract.clientSignedAt);
+        } catch (error: any) {
+          console.error('❌ [DATE-CONVERSION] Failed to convert client signedAt:', error.message);
+          throw new Error(`Invalid client signature date: ${error.message}`);
+        }
+
+        console.log('✅ [DATE-DEBUG] Converted contractor signedAt:', contractorSignedDate.toISOString());
+        console.log('✅ [DATE-DEBUG] Converted client signedAt:', clientSignedDate.toISOString());
+
         // Generate PDF with signatures integrated
         pdfBuffer = await pdfService.generateContractWithSignatures({
           contractHTML: contract.contractHtml || "",
@@ -746,7 +817,7 @@ export class DualSignatureService {
               contract.contractorSignatureType === "typed"
                 ? contract.contractorName
                 : undefined,
-            signedAt: contract.contractorSignedAt || new Date(),
+            signedAt: contractorSignedDate,
           },
           clientSignature: {
             name: contract.clientName,
@@ -755,7 +826,7 @@ export class DualSignatureService {
               contract.clientSignatureType === "typed"
                 ? contract.clientName
                 : undefined,
-            signedAt: contract.clientSignedAt || new Date(),
+            signedAt: clientSignedDate,
           },
         });
 
