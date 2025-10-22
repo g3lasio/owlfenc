@@ -1426,31 +1426,54 @@ export default function SimpleContractGenerator() {
           return;
         }
 
-        // Find the contract to get its PDF URL
-        const contract = completedContracts.find(c => c.contractId === contractId);
-        
-        if (!contract?.pdfUrl) {
-          toast({
-            title: "PDF Not Available",
-            description: "Signed PDF is not available for this contract",
-            variant: "destructive",
-          });
-          return;
-        }
-
         toast({
           title: "Preparing PDF",
           description: "Preparing signed PDF for sharing...",
         });
 
-        // Fetch the PDF file
-        const response = await fetch(contract.pdfUrl);
-        
-        if (!response.ok) {
-          throw new Error("Failed to fetch PDF file");
+        // CRITICAL FIX: Generate PDF from HTML (same as download process)
+        const htmlResponse = await fetch(
+          `/api/dual-signature/download-html/${contractId}`,
+          {
+            headers: {
+              "x-user-id": currentUser.uid,
+            },
+          },
+        );
+
+        if (!htmlResponse.ok) {
+          const errorData = await htmlResponse.json();
+          throw new Error(
+            errorData.message || "Failed to load signed contract",
+          );
         }
 
-        const pdfBlob = await response.blob();
+        const signedHtmlContent = await htmlResponse.text();
+
+        // Generate PDF from the signed HTML content
+        const pdfResponse = await fetch(
+          "/api/dual-signature/generate-pdf-from-html",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              contractId,
+              htmlContent: signedHtmlContent,
+              clientName,
+            }),
+          },
+        );
+
+        if (!pdfResponse.ok) {
+          const errorData = await pdfResponse.json();
+          throw new Error(
+            errorData.message || "Failed to generate PDF from signed contract",
+          );
+        }
+
+        const pdfBlob = await pdfResponse.blob();
         const fileName = `${clientName.replace(/\s+/g, '_')}_Contract_Signed.pdf`;
 
         // Try native Web Share API with file sharing

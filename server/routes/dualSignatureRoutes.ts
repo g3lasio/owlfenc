@@ -923,6 +923,54 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
       }
     };
 
+    // Helper function to convert Firestore Timestamp to JavaScript Date
+    const convertFirestoreTimestamp = (timestamp: any): string => {
+      if (!timestamp) {
+        return "Date not available";
+      }
+      
+      // If it's already a Date object
+      if (timestamp instanceof Date) {
+        return timestamp.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      }
+      
+      // If it's a Firestore Timestamp with toDate() method
+      if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+        return timestamp.toDate().toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      }
+      
+      // If it's a timestamp object with seconds field (Firestore format)
+      if (timestamp._seconds || timestamp.seconds) {
+        const seconds = timestamp._seconds || timestamp.seconds;
+        return new Date(seconds * 1000).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      }
+      
+      // If it's a string, try to parse it
+      if (typeof timestamp === 'string') {
+        return new Date(timestamp).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      }
+      
+      // Fallback
+      console.warn('⚠️ [DATE-CONVERSION] Could not convert timestamp:', timestamp);
+      return "Date not available";
+    };
+
     let contentHtml = htmlContent;
 
     if (contract.contractorSigned && contract.clientSigned) {
@@ -953,7 +1001,7 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
                     <p><strong>${contract.contractorName}</strong></p>
                     <p>Print Name</p>
                     <br>
-                    <p>Date: <span class="date-line">${contract.contractorSignedAt?.toLocaleString()}</span></p>
+                    <p>Date: <span class="date-line">${convertFirestoreTimestamp(contract.contractorSignedAt)}</span></p>
                 </div>
                 <div class="signature-box">
                     <div class="signature-title">CLIENT</div>
@@ -963,7 +1011,7 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
                     <p><strong>${contract.clientName}</strong></p>
                     <p>Print Name</p>
                     <br>
-                    <p>Date: <span class="date-line">${contract.clientSignedAt?.toLocaleString()}</span></p>
+                    <p>Date: <span class="date-line">${convertFirestoreTimestamp(contract.clientSignedAt)}</span></p>
                 </div>
             </div>
         </div>
