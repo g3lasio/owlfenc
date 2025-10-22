@@ -54,8 +54,6 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
-import ChatOnboarding from "@/components/onboarding/ChatOnboarding";
-import { useOnboarding } from "@/hooks/useOnboarding";
 import AuthDiagnostic from './pages/AuthDiagnostic';
 import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
@@ -83,14 +81,13 @@ type ProtectedRouteProps = {
 
 function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   const { currentUser, loading } = useAuth();
-  const { needsOnboarding, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
   const [authStable, setAuthStable] = useState(false);
 
   // Estabilizar el estado de auth para evitar redirecciones por cambios temporales
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
     
-    if (!loading && !onboardingLoading) {
+    if (!loading) {
       if (currentUser) {
         // Si hay usuario, marcar como estable inmediatamente
         setAuthStable(true);
@@ -105,10 +102,10 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [currentUser, loading, onboardingLoading]);
+  }, [currentUser, loading]);
 
-  // Muestra un indicador de carga mientras se verifica la autenticación o onboarding
-  if (loading || onboardingLoading || !authStable) {
+  // Muestra un indicador de carga mientras se verifica la autenticación
+  if (loading || !authStable) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -121,12 +118,7 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     return <Redirect to="/login" />;
   }
 
-  // Si el usuario necesita onboarding, muestra ChatOnboarding
-  if (needsOnboarding) {
-    return <ChatOnboarding onComplete={completeOnboarding} />;
-  }
-
-  // Renderiza el componente si el usuario está autenticado y ha completado onboarding
+  // Renderiza el componente si el usuario está autenticado
   return <Component />;
 }
 

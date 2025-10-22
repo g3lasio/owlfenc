@@ -27,7 +27,7 @@ This project is an AI-powered legal document and permit management platform that
 - FASE 2 RESEARCH OPTIMIZATION COMPLETED: Sistema avanzado de investigación web súper rápida específicamente optimizado para contratistas ocupados
 - FASE 3 FRONTEND INTEGRATION COMPLETED: Integración completa del frontend del chat de Mervin con backend reorganizado
 - MOBILE UX OPTIMIZATION COMPLETED: Optimización completa de Mervin AI chat para iPhone y dispositivos móviles
-- CONVERSATIONAL ONBOARDING SYSTEM: Sistema de onboarding completamente integrado en Mervin AI
+- ONBOARDING SYSTEM REMOVED (2025-10-22): Sistema de onboarding eliminado completamente para reducir fricción; Los usuarios van directo al dashboard tras registro; Trial NO se activa automáticamente - el usuario controla cuándo activarlo manualmente desde su perfil/suscripciones; Hook useOnboarding y componente ChatOnboarding deshabilitados pero preservados para uso futuro
 - SMART ACTION SYSTEM REVOLUTION: Sistema revolucionario de acciones inteligentes que reemplaza botones estáticos
 - CLIENT MANAGEMENT SYSTEM REVOLUTION COMPLETED: Sistema de gestión de clientes completamente refactorizado y optimizado
 - AGENT FUNCTIONS HEADER INTEGRATION
