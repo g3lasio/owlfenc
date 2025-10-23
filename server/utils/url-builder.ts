@@ -61,9 +61,9 @@ function isProductionEnvironment(req: Request): boolean {
   // Detectores de producción
   const productionIndicators = [
     // Dominios de producción comunes
-    'owlfenc.com',
-    'app.owlfenc.com',
-    'api.owlfenc.com',
+    'chyrris.com',
+    'app.chyrris.com',
+    'api.chyrris.com',
     // Hosting providers comunes
     '.vercel.app',
     '.netlify.app',
