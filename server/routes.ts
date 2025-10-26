@@ -31,7 +31,7 @@ import { memoryService } from "./services/memoryService";
 import { stripeService } from "./services/stripeService";
 import { permitService } from "./services/permitService";
 import admin from "firebase-admin";
-import { buildDynamicUrl } from './utils/url-builder';
+import { buildDynamicUrl, getEstimateSharableDomain } from './utils/url-builder';
 import { searchService } from "./services/searchService";
 import { sendEmail } from "./services/emailService";
 import { firebaseSubscriptionService } from "./services/firebaseSubscriptionService";
@@ -4322,8 +4322,11 @@ Output must be between 200-900 characters in English.`;
       });
       
       // Generar URL completa usando url-builder dinámico
+      // 🌐 PRODUCCIÓN: Usa chyrris.com para URLs de estimados compartidos
+      const estimateDomain = getEstimateSharableDomain(req);
       const shareUrl = buildDynamicUrl(req, `/shared-estimate/${shareId}`, {
-        forceHttps: false // Para desarrollo, usar HTTP
+        forceHttps: true, // Siempre HTTPS para seguridad
+        customDomain: estimateDomain
       });
       
       console.log(`✅ [SHARE-ESTIMATE] Shareable URL created: ${shareUrl}`);

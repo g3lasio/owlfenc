@@ -136,6 +136,27 @@ function getSignatureDomain(req: Request): string {
 }
 
 /**
+ * Obtiene el dominio correcto para URLs compartibles de estimados
+ * Producción: chyrris.com
+ * Desarrollo: host actual
+ */
+export function getEstimateSharableDomain(req: Request): string {
+  const currentHost = req.get('host') || 'localhost:5000';
+  
+  // Si estamos en desarrollo local o Replit dev, usar el host actual
+  if (currentHost.includes('localhost') || 
+      currentHost.includes('127.0.0.1') || 
+      currentHost.includes('replit.dev')) {
+    console.log('🔧 [URL-BUILDER] Desarrollo detectado, usando host actual para estimados:', currentHost);
+    return currentHost;
+  }
+  
+  // En producción, SIEMPRE usar chyrris.com para URLs de estimados compartidos
+  console.log('🌐 [URL-BUILDER] Producción detectada, usando chyrris.com para estimados');
+  return 'chyrris.com';
+}
+
+/**
  * Genera URL para verificación de email de contratista
  */
 export function buildEmailVerificationUrl(req: Request, token: string, success: boolean = true): string {
