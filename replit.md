@@ -1,7 +1,7 @@
 # Legal Document & Permit Management Platform
 
 ## Overview
-This project is an AI-powered legal document and permit management platform that aims to automate tasks such as generating estimates, creating contracts, analyzing permits, verifying properties, and coordinating over 20 API endpoints autonomously through Mervin AI. The platform seeks to evolve Mervin AI into a capable intelligent agent, offering significant market potential in legal and permit management by streamlining operations for contractors.
+This AI-powered legal document and permit management platform automates tasks such as generating estimates, creating contracts, analyzing permits, verifying properties, and coordinating over 20 API endpoints via Mervin AI. The project aims to evolve Mervin AI into a capable intelligent agent, offering significant market potential by streamlining operations for contractors in legal and permit management.
 
 ## User Preferences
 - Respuestas técnicas y detalladas cuando se requiera análisis
@@ -51,25 +51,25 @@ This project is an AI-powered legal document and permit management platform that
 ### Backend
 - **Server Framework**: Express.js.
 - **Database Architecture**:
-  - **Firebase (Firestore)**: PRIMARY AND EXCLUSIVE database for ALL digital contracts and signatures. Collection: `dualSignatureContracts`. Ensures real-time sync, cross-device consistency, and complete data integrity.
-  - **PostgreSQL with Drizzle ORM**: ONLY for subscriptions, usage tracking, and legacy estimates. CRITICAL: NO contract data should ever be stored or queried from PostgreSQL - all contract operations MUST use Firebase exclusively.
-- **Authentication**: Firebase Admin SDK with native Firebase UID usage. Session-based authentication using `__session` cookies.
-- **Security Architecture**: Multi-layer authentication with `AuthMiddleware`, `UserMappingService`, and `DataIntegrityMonitor`, including a `RobustAuthManager` and triple-layer contract security (Firebase middleware, ownership verification, Firebase security rules). Enterprise-grade security for Legal Defense features with robust backend validation.
+  - **Firebase (Firestore)**: Primary and exclusive database for all digital contracts and signatures (`dualSignatureContracts` collection). Ensures real-time sync, cross-device consistency, and data integrity.
+  - **PostgreSQL with Drizzle ORM**: Used for subscriptions, usage tracking, and legacy estimates.
+- **Authentication**: Firebase Admin SDK with native Firebase UID usage, session-based authentication using `__session` cookies.
+- **Security Architecture**: Multi-layer authentication (`AuthMiddleware`, `UserMappingService`, `DataIntegrityMonitor`, `RobustAuthManager`), triple-layer contract security, and enterprise-grade security for Legal Defense features.
 
 ### AI Architecture
 - **Mervin AI Unified System**: Superintelligent chatbot with autonomous task execution, real-time web research, differentiated AI model roles, intelligent decision-making, parallel execution, and specialized agents (estimates, contracts, permits, property verification). Features learning, memory, real-time feedback, and a Conversational Intelligence module with advanced multilingual personality and emotion recognition. Includes a `TaskOrchestrator` and `EndpointCoordinator`.
 
 ### Core Features & Design Patterns
-- **User Authentication & Authorization**: Robust subscription-based permission system with OAuth, email/password, secure registration, automatic subscription degradation, real-time usage limits, persistent login, device fingerprinting, session validation, and WebAuthn API for biometric logins. Secure 1:1 Firebase UID to PostgreSQL user_id mapping. Critical trial period anti-reset system preventing infinite renewals.
+- **User Authentication & Authorization**: Robust subscription-based permission system with OAuth, email/password, secure registration, automatic subscription degradation, real-time usage limits, persistent login, device fingerprinting, session validation, and WebAuthn API for biometric logins. Secure 1:1 Firebase UID to PostgreSQL `user_id` mapping. Critical trial period anti-reset system.
 - **Data Consistency & Security**: Secure 1:1 user mapping, comprehensive authentication middleware, and real-time integrity monitoring. Firebase Firestore is the single source of truth for contractor profiles.
 - **Password Management**: Secure email-based password reset using Resend with database-stored, single-use, expiring tokens.
-- **Dynamic URL Generation**: Centralized utility (`server/utils/url-builder.ts`) for environment-agnostic URL generation.
+- **Dynamic URL Generation**: Centralized utility (`server/utils/url-builder.ts`) for environment-agnostic URL generation, supporting `chyrris.com` for signature and estimate sharing URLs.
 - **Enhanced Error Handling**: Comprehensive Firebase authentication error handling, advanced unhandled rejection interceptors, and a triple-layer system for "Failed to fetch" errors.
 - **Dynamic Form Validation**: Client-side validation using Zod schema.
 - **API Design**: Secure API endpoints for subscription, usage, authentication, and password reset with middleware for access controls and usage limits.
 - **Holographic Sharing System**: Futuristic interface for PDF generation and URL sharing, simplified to 3 essential actions (Copy, Share, Open).
-- **Public URL Sharing System**: Simplified estimate sharing generating permanent, stable URLs without authentication, using Firebase Admin SDK and crypto-secure shareId generation.
-- **URL Shortening System**: Enterprise-grade URL shortening service integrated with `chyrris.com` domain. Features include secure protocol validation, unique short code generation, click tracking, URL expiration, and Firebase authentication.
+- **Public URL Sharing System**: Simplified estimate sharing generating permanent, stable URLs without authentication, using Firebase Admin SDK and crypto-secure `shareId` generation.
+- **URL Shortening System**: Enterprise-grade URL shortening service integrated with `chyrris.com` domain, featuring secure protocol validation, unique short code generation, click tracking, URL expiration, and Firebase authentication.
 
 ## External Dependencies
 - Firebase (Firestore, Admin SDK)
@@ -79,5 +79,5 @@ This project is an AI-powered legal document and permit management platform that
 - Drizzle ORM
 - Resend
 - Anthropic
-- Mapbox (simulated integration)
+- Mapbox
 - PDFMonkey
