@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { useAuth } from './AuthContext';
 import { smartPermissionLoader } from '@/services/smartPermissionLoader';
 import { devModeManager, debugLog } from '@/utils/devModeUtils';
+import { PLAN_IDS, getPlanLimits, PLAN_NAMES, PLAN_FEATURES, PLAN_MOTTOS, planNameToId } from '@shared/permissions-config';
 
 // Tipos para el sistema de permisos
 export interface Plan {
@@ -60,107 +61,41 @@ export interface PermissionContextValue {
   getUpgradeReason: (feature: string) => string;
 }
 
-// Planes predefinidos (IDs actualizados para coincidir con PostgreSQL)
-// ✅ PRIMO CHAMBEADOR (ID: 5) es ahora el plan gratuito por defecto
+// ✅ MIGRADO: Planes ahora se construyen desde archivo centralizado
+// Planes predefinidos (IDs sincronizados con PostgreSQL)
 const PLANS: Plan[] = [
   {
-    id: 5,
-    name: "Primo Chambeador",
-    motto: "Ningún trabajo es pequeño cuando tu espíritu es grande",
-    price: 0, // ✅ GRATIS mensual (según PostgreSQL)
-    limits: {
-      basicEstimates: 5,
-      aiEstimates: 1,
-      contracts: 0, // 🔐 NO Legal Defense access - Demo Mode only
-      propertyVerifications: 0, // 🔐 NO Legal Defense access
-      permitAdvisor: 0,
-      projects: 5,
-      invoices: 0,
-      paymentTracking: 0,
-      deepsearch: 0
-    },
-    features: [
-      "5 estimados básicos/mes (con marca de agua)",
-      "1 estimado con IA/mes (con marca de agua)",
-      "0 contratos (Demo Mode - upgrade para generar)",
-      "0 Property Verification (upgrade requerido)",
-      "5 proyectos/mes"
-    ]
-  },
-  {
-    id: 9,
-    name: "Mero Patrón",
-    motto: "No eres solo un patrón, eres el estratega que transforma el reto en victoria",
-    price: 4999,
-    limits: {
-      basicEstimates: 50,
-      aiEstimates: 20,
-      contracts: 50, // ✅ Matches backend Legal Defense limits
-      propertyVerifications: 15,
-      permitAdvisor: 10,
-      projects: 30,
-      invoices: -1,
-      paymentTracking: 1,
-      deepsearch: 50
-    },
-    features: [
-      "50 estimados básicos/mes (sin marca de agua)",
-      "20 estimados con IA/mes (sin marca de agua)",
-      "50 contratos/mes (sin marca de agua)",
-      "15 Property Verification/mes",
-      "10 Permit Advisor/mes",
-      "30 proyectos AI/mes",
-      "Sistema de facturación completo"
-    ]
-  },
-  {
-    id: 6,
-    name: "Master Contractor",
-    motto: "Tu voluntad es acero, tu obra es ley. Lidera como un verdadero campeón",
-    price: 9900,
-    limits: {
-      basicEstimates: -1,
-      aiEstimates: -1,
-      contracts: -1,
-      propertyVerifications: -1,
-      permitAdvisor: -1,
-      projects: -1,
-      invoices: -1,
-      paymentTracking: 2,
-      deepsearch: -1
-    },
-    features: [
-      "TODO ILIMITADO",
-      "Sin marcas de agua",
-      "Integración QuickBooks",
-      "Soporte VIP 24/7",
-      "Análisis predictivo avanzado"
-    ]
-  },
-  {
-    id: 4,
-    name: "Free Trial",
-    motto: "Prueba antes de comprar",
+    id: PLAN_IDS.PRIMO_CHAMBEADOR,
+    name: PLAN_NAMES[PLAN_IDS.PRIMO_CHAMBEADOR],
+    motto: PLAN_MOTTOS[PLAN_IDS.PRIMO_CHAMBEADOR],
     price: 0,
-    trialDays: 14, // ✅ Matches backend trial period
-    limits: {
-      basicEstimates: -1, // ✅ Unlimited during trial
-      aiEstimates: -1, // ✅ Unlimited during trial
-      contracts: -1, // ✅ Unlimited during trial (matches backend)
-      propertyVerifications: -1, // ✅ Unlimited during trial
-      permitAdvisor: -1, // ✅ Unlimited during trial
-      projects: -1, // ✅ Unlimited during trial
-      invoices: -1, // ✅ Unlimited during trial
-      paymentTracking: 2, // ✅ Full access during trial
-      deepsearch: -1 // ✅ Unlimited during trial
-    },
-    features: [
-      "14 días gratis - TODO ILIMITADO",
-      "Estimados ilimitados (con marca de agua)",
-      "Estimados con IA ilimitados (con marca de agua)",
-      "Contratos ilimitados (con marca de agua)",
-      "Acceso completo a todas las funciones"
-    ]
+    limits: getPlanLimits(PLAN_IDS.PRIMO_CHAMBEADOR) as UserLimits,
+    features: PLAN_FEATURES[PLAN_IDS.PRIMO_CHAMBEADOR] as string[]
+  },
+  {
+    id: PLAN_IDS.MERO_PATRON,
+    name: PLAN_NAMES[PLAN_IDS.MERO_PATRON],
+    motto: PLAN_MOTTOS[PLAN_IDS.MERO_PATRON],
+    price: 4999,
+    limits: getPlanLimits(PLAN_IDS.MERO_PATRON) as UserLimits,
+    features: PLAN_FEATURES[PLAN_IDS.MERO_PATRON] as string[]
+  },
+  {
+    id: PLAN_IDS.MASTER_CONTRACTOR,
+    name: PLAN_NAMES[PLAN_IDS.MASTER_CONTRACTOR],
+    motto: PLAN_MOTTOS[PLAN_IDS.MASTER_CONTRACTOR],
+    price: 9900,
+    limits: getPlanLimits(PLAN_IDS.MASTER_CONTRACTOR) as UserLimits,
+    features: PLAN_FEATURES[PLAN_IDS.MASTER_CONTRACTOR] as string[]
+  },
+  {
+    id: PLAN_IDS.FREE_TRIAL,
+    name: PLAN_NAMES[PLAN_IDS.FREE_TRIAL],
+    motto: PLAN_MOTTOS[PLAN_IDS.FREE_TRIAL],
+    price: 0,
+    trialDays: 14,
+    limits: getPlanLimits(PLAN_IDS.FREE_TRIAL) as UserLimits,
+    features: PLAN_FEATURES[PLAN_IDS.FREE_TRIAL] as string[]
   }
 ];
 
@@ -229,14 +164,8 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         if (data.success && data.subscription) {
           const { planName, daysRemaining, isTrialing } = data.subscription;
           
-          // Map backend plan name to frontend plan (PostgreSQL IDs)
-          let planId = 5; // Default to Primo Chambeador (plan gratuito)
-          if (planName === 'Primo Chambeador') planId = 5;
-          else if (planName === 'Mero Patrón') planId = 9;
-          else if (planName === 'Master Contractor') planId = 6;
-          else if (planName === 'Free Trial' || planName === 'Trial Master') planId = 4;
-          else if (planName === 'Free') planId = 5; // ✅ Map legacy "Free" to Primo Chambeador
-          
+          // ✅ MIGRADO: Usar función centralizada para mapeo de nombres a IDs
+          const planId = planNameToId(planName);
           const plan = PLANS.find(p => p.id === planId) || PLANS[0];
           setUserPlan(plan);
           
@@ -254,16 +183,8 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
       if (devSimulation && process.env.NODE_ENV === 'development') {
         const simData = JSON.parse(devSimulation);
         
-        // Mapear IDs de string a IDs numéricos (PostgreSQL IDs)
-        const planIdMapping: { [key: string]: number } = {
-          'free-trial': 4,          // Free Trial
-          'primo-chambeador': 5,    // Primo Chambeador  
-          'mero-patron': 9,         // Mero Patrón
-          'emperador-del-negocio': 6, // Master Contractor
-          'free': 5                 // ✅ Map legacy "free" to Primo Chambeador
-        };
-        
-        const numericPlanId = planIdMapping[simData.currentPlan] || 5; // Default to Primo Chambeador
+        // ✅ MIGRADO: Usar función centralizada para mapeo
+        const numericPlanId = planNameToId(simData.currentPlan);
         const simulatedPlan = PLANS.find(p => p.id === numericPlanId) || PLANS[0];
         
         console.log(`🧪 [DEV-SIMULATION] API failed, usando plan simulado: ${simulatedPlan.name} (ID: ${numericPlanId})`);

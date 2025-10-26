@@ -1,92 +1,22 @@
 /**
  * Middleware de autorización basado en suscripciones
  * Valida que el usuario tenga una suscripción activa y permisos para acceder a funciones específicas
+ * 
+ * ✅ MIGRADO: Ahora usa configuración centralizada desde shared/permissions-config.ts
+ * Fecha migración: 2025-10-26
  */
 
 import { Request, Response, NextFunction } from 'express';
 import { firebaseSubscriptionService } from '../services/firebaseSubscriptionService';
+import { 
+  PermissionLevel,
+  PLAN_PERMISSION_LEVELS,
+  getPlanLimits,
+  PLAN_IDS,
+} from '@shared/permissions-config';
 
-// Tipos de funciones que requieren diferentes niveles de suscripción
-export enum PermissionLevel {
-  FREE = 'free',              // primo_chambeador - Plan gratuito
-  BASIC = 'basic',           // mero_patron - Plan básico pagado
-  PREMIUM = 'premium',       // master_contractor - Plan premium
-  TRIAL = 'trial'            // Acceso durante trial válido
-}
-
-// Mapeo de planes a niveles de permisos
-const PLAN_PERMISSIONS: Record<number, PermissionLevel[]> = {
-  1: [PermissionLevel.FREE],                                    // primo_chambeador
-  2: [PermissionLevel.FREE, PermissionLevel.BASIC],            // mero_patron
-  3: [PermissionLevel.FREE, PermissionLevel.BASIC, PermissionLevel.PREMIUM], // master_contractor
-  4: [PermissionLevel.FREE, PermissionLevel.BASIC, PermissionLevel.PREMIUM, PermissionLevel.TRIAL] // trial (acceso completo)
-};
-
-// 🔐 ENTERPRISE-GRADE PLAN LIMITS
-// Updated: 2025-10-14 - Security Hardening for Legal Defense
-const PLAN_LIMITS = {
-  1: { // primo_chambeador - FREE (NO Legal Defense Access)
-    estimatesBasic: 10,
-    estimatesAI: 3,
-    contracts: 0, // ❌ NO ACCESO a Legal Defense
-    propertyVerification: 5,
-    permitAdvisor: 5,
-    hasWatermark: true,
-    hasInvoices: false,
-    hasPaymentTracker: false,
-    hasOwlFunding: false,
-    hasOwlAcademy: false,
-    hasAIProjectManager: false,
-    hasLegalDefense: false, // ❌ Bloquear completamente Legal Defense
-    supportLevel: 'community'
-  },
-  2: { // mero_patron - BASIC ($49.99/month - 50 contracts)
-    estimatesBasic: -1, // ilimitado
-    estimatesAI: 50,
-    contracts: 50, // ✅ 50 contratos/mes
-    propertyVerification: 50,
-    permitAdvisor: 50,
-    hasWatermark: false,
-    hasInvoices: true,
-    hasPaymentTracker: true,
-    hasOwlFunding: true,
-    hasOwlAcademy: true,
-    hasAIProjectManager: true,
-    hasLegalDefense: true, // ✅ Acceso completo a Legal Defense
-    supportLevel: 'priority'
-  },
-  3: { // master_contractor - PREMIUM ($99/month - unlimited)
-    estimatesBasic: -1, // ilimitado
-    estimatesAI: -1, // ilimitado
-    contracts: -1, // ✅ Contratos ILIMITADOS
-    propertyVerification: -1, // ilimitado
-    permitAdvisor: -1, // ilimitado
-    hasWatermark: false,
-    hasInvoices: true,
-    hasPaymentTracker: true,
-    hasOwlFunding: true,
-    hasOwlAcademy: true,
-    hasAIProjectManager: true,
-    hasLegalDefense: true, // ✅ Acceso completo a Legal Defense
-    supportLevel: 'vip'
-  },
-  4: { // trial - FREE TRIAL (14 días - acceso completo temporal)
-    estimatesBasic: -1, // ilimitado durante trial
-    estimatesAI: -1, // ilimitado durante trial
-    contracts: -1, // ✅ Contratos ILIMITADOS durante trial (14 días)
-    propertyVerification: -1, // ilimitado durante trial
-    permitAdvisor: -1, // ilimitado durante trial
-    hasWatermark: false,
-    hasInvoices: true,
-    hasPaymentTracker: true,
-    hasOwlFunding: true,
-    hasOwlAcademy: true,
-    hasAIProjectManager: true,
-    hasLegalDefense: true, // ✅ Acceso completo a Legal Defense
-    supportLevel: 'premium',
-    trialDurationDays: 14 // 14 días de trial
-  }
-};
+// Re-export para compatibilidad con código existente
+export { PermissionLevel };
 
 /**
  * Obtiene la suscripción actual del usuario y valida que esté activa
@@ -106,7 +36,7 @@ async function getUserActiveSubscription(userId: string) {
       // Si la suscripción expiró, degradar a plan gratuito
       console.log(`⚠️ [AUTH] Suscripción expirada para usuario ${userId}, degradando a plan gratuito`);
       await firebaseSubscriptionService.degradeToFreePlan(userId);
-      return { planId: 1, status: 'expired' }; // Plan gratuito
+      return { planId: PLAN_IDS.PRIMO_CHAMBEADOR, status: 'expired' }; // Plan gratuito ID: 5
     }
 
     return subscription;
@@ -135,11 +65,11 @@ export const requireSubscriptionLevel = (requiredLevel: PermissionLevel) => {
 
       let userSubscription = subscription;
       if (!userSubscription) {
-        // Sin suscripción = plan gratuito por defecto
-        userSubscription = { planId: 1, status: 'free' };
+        // Sin suscripción = plan gratuito por defecto (PRIMO_CHAMBEADOR = 5)
+        userSubscription = { planId: PLAN_IDS.PRIMO_CHAMBEADOR, status: 'free' };
       }
 
-      const userPermissions = PLAN_PERMISSIONS[userSubscription.planId as keyof typeof PLAN_PERMISSIONS] || [PermissionLevel.FREE];
+      const userPermissions = PLAN_PERMISSION_LEVELS[userSubscription.planId as keyof typeof PLAN_PERMISSION_LEVELS] || [PermissionLevel.FREE];
       
       // Verificar si el usuario tiene el nivel requerido
       if (!userPermissions.includes(requiredLevel)) {
@@ -156,7 +86,7 @@ export const requireSubscriptionLevel = (requiredLevel: PermissionLevel) => {
       req.userSubscription = {
         planId: userSubscription.planId,
         level: userPermissions,
-        limits: PLAN_LIMITS[userSubscription.planId as keyof typeof PLAN_LIMITS]
+        limits: getPlanLimits(userSubscription.planId)
       };
 
       next();
@@ -342,11 +272,11 @@ export const requireLegalDefenseAccess = async (req: Request, res: Response, nex
     // 2. Determinar plan del usuario
     let userSubscription = subscription;
     if (!userSubscription) {
-      userSubscription = { planId: 5, status: 'free' }; // Default: Primo Chambeador
+      userSubscription = { planId: PLAN_IDS.PRIMO_CHAMBEADOR, status: 'free' }; // Default: Primo Chambeador
     }
 
     const planId = userSubscription.planId;
-    const limits = PLAN_LIMITS[planId as keyof typeof PLAN_LIMITS];
+    const limits = getPlanLimits(planId);
 
     // 3. Validar acceso a Legal Defense
     if (!limits || !limits.hasLegalDefense) {
@@ -357,9 +287,9 @@ export const requireLegalDefenseAccess = async (req: Request, res: Response, nex
         error: 'Legal Defense requiere suscripción de paga',
         code: 'LEGAL_DEFENSE_PREMIUM_REQUIRED',
         userPlan: planId,
-        requiredPlans: [9, 6, 4], // Mero Patrón, Master Contractor, Free Trial
+        requiredPlans: [PLAN_IDS.MERO_PATRON, PLAN_IDS.MASTER_CONTRACTOR, PLAN_IDS.FREE_TRIAL],
         upgradeUrl: '/subscription',
-        message: planId === 5 
+        message: planId === PLAN_IDS.PRIMO_CHAMBEADOR 
           ? 'Usuarios de Primo Chambeador no tienen acceso a Legal Defense. Actualiza a Mero Patrón ($49.99/mes) para desbloquear 50 contratos mensuales.'
           : 'Tu suscripción no incluye acceso a Legal Defense. Por favor actualiza tu plan.'
       });
@@ -368,7 +298,7 @@ export const requireLegalDefenseAccess = async (req: Request, res: Response, nex
     // 4. Añadir información al request
     req.userSubscription = {
       planId: planId,
-      level: PLAN_PERMISSIONS[planId as keyof typeof PLAN_PERMISSIONS] || [PermissionLevel.FREE],
+      level: PLAN_PERMISSION_LEVELS[planId as keyof typeof PLAN_PERMISSION_LEVELS] || [PermissionLevel.FREE],
       limits: limits
     };
 

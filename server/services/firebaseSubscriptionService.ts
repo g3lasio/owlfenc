@@ -2,7 +2,8 @@ import { db } from '../db';
 import { userSubscriptions, subscriptionPlans, users } from '@shared/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { userMappingService } from './userMappingService';
-import { TRIAL_PLAN_ID } from '../constants/subscription';
+import { TRIAL_PLAN_ID, SUBSCRIPTION_PLANS } from '../constants/subscription';
+import { PLAN_IDS } from '@shared/permissions-config';
 
 // IMPORTANT: Using PostgreSQL database for persistent storage across devices
 
@@ -54,7 +55,7 @@ export class FirebaseSubscriptionService {
     return {
       id: 'owner_unlimited',
       status: 'active',
-      planId: 3, // Master Contractor
+      planId: PLAN_IDS.MASTER_CONTRACTOR, // Master Contractor (ID: 6)
       stripeSubscriptionId: 'owner_unlimited_access',
       stripeCustomerId: 'owner_customer',
       currentPeriodStart: currentDate,
@@ -75,7 +76,7 @@ export class FirebaseSubscriptionService {
       console.log(`📧 [FIREBASE-SUBSCRIPTION] Creando/actualizando suscripción para usuario: ${userId}`);
       
       // 🛡️ SECURITY: Block paid plan updates through this method
-      if (subscriptionData.planId && subscriptionData.planId !== 5 && subscriptionData.planId !== TRIAL_PLAN_ID) {
+      if (subscriptionData.planId && subscriptionData.planId !== PLAN_IDS.PRIMO_CHAMBEADOR && subscriptionData.planId !== TRIAL_PLAN_ID) {
         console.error(`🚨 [SECURITY] Attempted to create paid plan (${subscriptionData.planId}) without webhook verification for user: ${userId}`);
         throw new Error('Paid plans must be created through Stripe webhook verification');
       }
@@ -110,7 +111,7 @@ export class FirebaseSubscriptionService {
       if (existing.length > 0) {
         // 🛡️ SECURITY: Prevent upgrading to paid plans without webhook
         const newPlanId = subscriptionData.planId || existing[0].planId;
-        if (newPlanId !== 1 && newPlanId !== TRIAL_PLAN_ID && existing[0].planId !== newPlanId) {
+        if (newPlanId !== PLAN_IDS.PRIMO_CHAMBEADOR && newPlanId !== TRIAL_PLAN_ID && existing[0].planId !== newPlanId) {
           console.error(`🚨 [SECURITY] Attempted to upgrade to paid plan (${newPlanId}) without webhook for user: ${userId}`);
           throw new Error('Plan upgrades must be processed through Stripe');
         }
@@ -182,7 +183,7 @@ export class FirebaseSubscriptionService {
               .insert(userSubscriptions)
               .values({
                 userId: internalUserId,
-                planId: subscriptionData.planId,
+                planId: subscriptionData.planId || TRIAL_PLAN_ID, // Garantizar planId para TypeScript
                 status: subscriptionData.status || 'trialing',
                 stripeSubscriptionId: subscriptionData.stripeSubscriptionId,
                 stripeCustomerId: subscriptionData.stripeCustomerId,
@@ -202,7 +203,7 @@ export class FirebaseSubscriptionService {
             .insert(userSubscriptions)
             .values({
               userId: internalUserId,
-              planId: subscriptionData.planId || 1,
+              planId: subscriptionData.planId || PLAN_IDS.PRIMO_CHAMBEADOR,
               status: subscriptionData.status || 'active',
               stripeSubscriptionId: subscriptionData.stripeSubscriptionId,
               stripeCustomerId: subscriptionData.stripeCustomerId,
@@ -396,12 +397,12 @@ export class FirebaseSubscriptionService {
         
         // Mapear usando plan_code del metadata
         const planMapping: { [key: string]: number } = {
-          'primo_chambeador': 1,
-          'mero_patron': 2,
-          'master_contractor': 3,
+          'primo_chambeador': PLAN_IDS.PRIMO_CHAMBEADOR,  // 5
+          'mero_patron': PLAN_IDS.MERO_PATRON,           // 9
+          'master_contractor': PLAN_IDS.MASTER_CONTRACTOR, // 6
         };
         
-        const planId = planMapping[planCode] || 1;
+        const planId = planMapping[planCode] || PLAN_IDS.PRIMO_CHAMBEADOR;
         console.log(`🔄 [FIREBASE-SUBSCRIPTION] Mapped to plan ID: ${planId}`);
         return planId;
       }
@@ -559,7 +560,7 @@ export class FirebaseSubscriptionService {
         // Downgrade to Primo Chambeador (free plan)
         await this.createOrUpdateSubscription(userId, {
           status: 'canceled',
-          planId: 1, // Primo Chambeador
+          planId: PLAN_IDS.PRIMO_CHAMBEADOR,
           cancelAtPeriodEnd: true
         });
         
@@ -602,7 +603,7 @@ export class FirebaseSubscriptionService {
       
       const freePlanData = {
         status: 'active' as const,
-        planId: 1, // primo_chambeador (plan gratuito)
+        planId: PLAN_IDS.PRIMO_CHAMBEADOR, // Plan gratuito ID: 5
         stripeSubscriptionId: `free_prod_${Date.now()}`,
         stripeCustomerId: `cus_free_${Date.now()}`,
         currentPeriodStart: new Date(),
@@ -628,7 +629,7 @@ export class FirebaseSubscriptionService {
       
       const freePlanData = {
         status: 'active' as const,
-        planId: 1, // primo_chambeador (plan gratuito)
+        planId: PLAN_IDS.PRIMO_CHAMBEADOR, // Plan gratuito ID: 5
         stripeSubscriptionId: `free_prod_${Date.now()}`,
         stripeCustomerId: `cus_free_${Date.now()}`,
         currentPeriodStart: new Date(),

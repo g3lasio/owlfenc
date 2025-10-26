@@ -1,4 +1,5 @@
 import { usePermissions as usePermissionsContext } from '@/contexts/PermissionContext';
+import { PLAN_IDS } from '@shared/permissions-config';
 
 // Re-export del hook desde el contexto para consistencia
 export { usePermissions } from '@/contexts/PermissionContext';
@@ -48,8 +49,9 @@ export function useWatermark() {
   const shouldShowWatermark = (feature: 'estimates' | 'contracts'): boolean => {
     if (!userPlan) return true;
     
-    // Plan gratuito siempre tiene marca de agua
-    if (userPlan.id === 1) return true;
+    // Plan gratuito PRIMO CHAMBEADOR siempre tiene marca de agua
+    // ✅ MIGRADO: Usa constante centralizada en lugar de ID hardcoded
+    if (userPlan.id === PLAN_IDS.PRIMO_CHAMBEADOR) return true;
     
     // Trial y planes pagados no tienen marca de agua
     return false;
