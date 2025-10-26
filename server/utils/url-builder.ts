@@ -94,19 +94,45 @@ export function buildPasswordResetUrl(req: Request, token: string): string {
 
 /**
  * Genera URLs para sistema de firma dual
+ * 🔒 SIEMPRE usa chyrris.com para URLs de firma (con SSL wildcard configurado)
  */
 export function buildSignatureUrls(req: Request, contractId: string): {
   contractorSignUrl: string;
   clientSignUrl: string;
 } {
+  const signatureDomain = getSignatureDomain(req);
+  
   return {
     contractorSignUrl: buildDynamicUrl(req, `/sign/${contractId}/contractor`, {
-      forceHttps: true
+      forceHttps: true,
+      customDomain: signatureDomain
     }),
     clientSignUrl: buildDynamicUrl(req, `/sign/${contractId}/client`, {
-      forceHttps: true
+      forceHttps: true,
+      customDomain: signatureDomain
     })
   };
+}
+
+/**
+ * Obtiene el dominio correcto para URLs de firma
+ * Producción: chyrris.com
+ * Desarrollo: host actual
+ */
+function getSignatureDomain(req: Request): string {
+  const currentHost = req.get('host') || 'localhost:5000';
+  
+  // Si estamos en desarrollo local o Replit dev, usar el host actual
+  if (currentHost.includes('localhost') || 
+      currentHost.includes('127.0.0.1') || 
+      currentHost.includes('replit.dev')) {
+    console.log('🔧 [URL-BUILDER] Desarrollo detectado, usando host actual:', currentHost);
+    return currentHost;
+  }
+  
+  // En producción, SIEMPRE usar chyrris.com para URLs de firma
+  console.log('🌐 [URL-BUILDER] Producción detectada, usando chyrris.com para firma');
+  return 'chyrris.com';
 }
 
 /**
