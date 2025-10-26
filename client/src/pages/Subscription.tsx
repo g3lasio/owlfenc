@@ -487,7 +487,7 @@ export default function Subscription() {
     if (userSubscription?.active && userSubscription?.subscription?.planId) {
       return userSubscription.subscription.planId;
     }
-    return 1; // Plan gratuito por defecto
+    return 5; // Plan gratuito por defecto (Primo Chambeador)
   };
 
   // Obtener fecha de expiración
@@ -530,15 +530,15 @@ export default function Subscription() {
           <h3 className="text-lg font-medium mb-2">Tu Plan Actual</h3>
           <p className="mb-4">
             Actualmente tienes el plan{" "}
-            <span className={cn("font-bold", activePlanId === 1 ? "text-muted-foreground" : "text-primary")}>
+            <span className={cn("font-bold", activePlanId === 5 ? "text-muted-foreground" : "text-primary")}>
               {Array.isArray(plans) ? plans.find((p: SubscriptionPlan) => p.id === activePlanId)?.name || "Desconocido" : "Desconocido"}
             </span>
-            {activePlanId === 1 && (
+            {activePlanId === 5 && (
               <span className="text-sm text-muted-foreground block mt-1">
                 (Plan gratuito - considera hacer upgrade para obtener más funciones)
               </span>
             )}
-            {expirationDate && activePlanId !== 1 && (
+            {expirationDate && activePlanId !== 5 && (
               <>
                 {" "}válido hasta el{" "}
                 <span className="font-bold">
@@ -547,7 +547,7 @@ export default function Subscription() {
               </>
             )}
           </p>
-          {activePlanId === 1 ? (
+          {activePlanId === 5 ? (
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
               <Button
                 variant="default"
@@ -579,9 +579,9 @@ export default function Subscription() {
               </button>
               <button
                 onClick={() => {
-                  const freePlan = plans?.find(p => p.id === 1);
+                  const freePlan = plans?.find(p => p.id === 5);
                   if (freePlan && window.confirm('¿Estás seguro de que quieres hacer downgrade al plan gratuito?')) {
-                    createCheckoutSession(1);
+                    createCheckoutSession(5);
                   }
                 }}
                 disabled={isLoading}

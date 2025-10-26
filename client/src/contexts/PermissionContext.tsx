@@ -61,35 +61,13 @@ export interface PermissionContextValue {
 }
 
 // Planes predefinidos (IDs actualizados para coincidir con PostgreSQL)
+// ✅ PRIMO CHAMBEADOR (ID: 5) es ahora el plan gratuito por defecto
 const PLANS: Plan[] = [
-  {
-    id: 8,
-    name: "Free",
-    motto: "Comienza gratis",
-    price: 0,
-    limits: {
-      basicEstimates: 1,
-      aiEstimates: 0,
-      contracts: 0,
-      propertyVerifications: 0,
-      permitAdvisor: 0,
-      projects: 1,
-      invoices: 0,
-      paymentTracking: 0,
-      deepsearch: 0
-    },
-    features: [
-      "1 estimado básico/mes (con marca de agua)",
-      "0 estimados con IA",
-      "0 contratos",
-      "Vista demo de funciones premium"
-    ]
-  },
   {
     id: 5,
     name: "Primo Chambeador",
     motto: "Ningún trabajo es pequeño cuando tu espíritu es grande",
-    price: 31000,
+    price: 0, // ✅ GRATIS mensual (según PostgreSQL)
     limits: {
       basicEstimates: 5,
       aiEstimates: 1,
@@ -252,12 +230,12 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
           const { planName, daysRemaining, isTrialing } = data.subscription;
           
           // Map backend plan name to frontend plan (PostgreSQL IDs)
-          let planId = 8; // Default to Free plan
+          let planId = 5; // Default to Primo Chambeador (plan gratuito)
           if (planName === 'Primo Chambeador') planId = 5;
           else if (planName === 'Mero Patrón') planId = 9;
           else if (planName === 'Master Contractor') planId = 6;
           else if (planName === 'Free Trial' || planName === 'Trial Master') planId = 4;
-          else if (planName === 'Free') planId = 8;
+          else if (planName === 'Free') planId = 5; // ✅ Map legacy "Free" to Primo Chambeador
           
           const plan = PLANS.find(p => p.id === planId) || PLANS[0];
           setUserPlan(plan);
@@ -282,10 +260,10 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
           'primo-chambeador': 5,    // Primo Chambeador  
           'mero-patron': 9,         // Mero Patrón
           'emperador-del-negocio': 6, // Master Contractor
-          'free': 8                 // Free
+          'free': 5                 // ✅ Map legacy "free" to Primo Chambeador
         };
         
-        const numericPlanId = planIdMapping[simData.currentPlan] || 8;
+        const numericPlanId = planIdMapping[simData.currentPlan] || 5; // Default to Primo Chambeador
         const simulatedPlan = PLANS.find(p => p.id === numericPlanId) || PLANS[0];
         
         console.log(`🧪 [DEV-SIMULATION] API failed, usando plan simulado: ${simulatedPlan.name} (ID: ${numericPlanId})`);

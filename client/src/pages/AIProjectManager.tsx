@@ -13,7 +13,7 @@ import { useLocation } from "wouter";
 export default function AIProjectManager() {
   const { hasAccess, userPlan, showUpgradeModal } = usePermissions();
   const [, navigate] = useLocation();
-  const hasAIProjectManagerAccess = hasAccess('projects') && userPlan?.id !== 1;
+  const hasAIProjectManagerAccess = hasAccess('projects') && userPlan?.id !== 5;
   
   // Si el usuario no tiene acceso, mostrar mensaje de upgrade
   if (!hasAIProjectManagerAccess) {

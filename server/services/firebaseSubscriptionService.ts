@@ -68,14 +68,14 @@ export class FirebaseSubscriptionService {
   
   /**
    * 🛡️ DEPRECATED: Usar createOrUpdateSubscriptionFromWebhook para planes pagos
-   * Solo debe usarse para planes gratuitos y trials (planId 1 o 4)
+   * Solo debe usarse para planes gratuitos y trials (planId 5 o 4)
    */
   async createOrUpdateSubscription(userId: string, subscriptionData: Partial<SubscriptionData>): Promise<void> {
     try {
       console.log(`📧 [FIREBASE-SUBSCRIPTION] Creando/actualizando suscripción para usuario: ${userId}`);
       
       // 🛡️ SECURITY: Block paid plan updates through this method
-      if (subscriptionData.planId && subscriptionData.planId !== 1 && subscriptionData.planId !== TRIAL_PLAN_ID) {
+      if (subscriptionData.planId && subscriptionData.planId !== 5 && subscriptionData.planId !== TRIAL_PLAN_ID) {
         console.error(`🚨 [SECURITY] Attempted to create paid plan (${subscriptionData.planId}) without webhook verification for user: ${userId}`);
         throw new Error('Paid plans must be created through Stripe webhook verification');
       }

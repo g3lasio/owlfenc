@@ -26,7 +26,7 @@ export default function OwlFunding() {
   });
 
   // Verificar si tiene acceso a Owl Funding (solo planes pagados)
-  const hasOwlFundingAccess = userPlan?.id !== 1; // Todos excepto Primo Chambeador
+  const hasOwlFundingAccess = userPlan?.id !== 5; // Todos excepto Primo Chambeador
   
   // Si el usuario no tiene acceso, mostrar mensaje de upgrade
   if (!hasOwlFundingAccess) {

@@ -4604,7 +4604,7 @@ Output must be between 200-900 characters in English.`;
           // Get updated subscription after potential trial expiration
           const updatedSubscription = await firebaseSubscriptionService.getUserSubscription(userId);
           
-          if (updatedSubscription && updatedSubscription.planId !== 1) {
+          if (updatedSubscription && updatedSubscription.planId !== 5) {
             // User has active subscription (paid or trial)
             let defaultPlan;
             let trialDaysRemaining = 0;
@@ -4628,11 +4628,11 @@ Output must be between 200-900 characters in English.`;
               // Paid plan
               defaultPlan = {
                 id: updatedSubscription.planId,
-                name: updatedSubscription.planId === 2 ? "Mero Patrón" : "Master Contractor",
+                name: updatedSubscription.planId === 9 ? "Mero Patrón" : "Master Contractor",
                 price: 10000, // $100.00 USD/month for both premium plans
                 interval: updatedSubscription.billingCycle,
                 features:
-                  updatedSubscription.planId === 2
+                  updatedSubscription.planId === 9
                     ? [
                         "Unlimited basic estimates",
                         "50 AI estimates/month",

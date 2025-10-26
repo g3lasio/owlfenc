@@ -342,7 +342,7 @@ export const requireLegalDefenseAccess = async (req: Request, res: Response, nex
     // 2. Determinar plan del usuario
     let userSubscription = subscription;
     if (!userSubscription) {
-      userSubscription = { planId: 1, status: 'free' }; // Default: Primo Chambeador
+      userSubscription = { planId: 5, status: 'free' }; // Default: Primo Chambeador
     }
 
     const planId = userSubscription.planId;
@@ -357,9 +357,9 @@ export const requireLegalDefenseAccess = async (req: Request, res: Response, nex
         error: 'Legal Defense requiere suscripción de paga',
         code: 'LEGAL_DEFENSE_PREMIUM_REQUIRED',
         userPlan: planId,
-        requiredPlans: [2, 3, 4], // Mero Patrón, Master Contractor, Free Trial
+        requiredPlans: [9, 6, 4], // Mero Patrón, Master Contractor, Free Trial
         upgradeUrl: '/subscription',
-        message: planId === 1 
+        message: planId === 5 
           ? 'Usuarios de Primo Chambeador no tienen acceso a Legal Defense. Actualiza a Mero Patrón ($49.99/mes) para desbloquear 50 contratos mensuales.'
           : 'Tu suscripción no incluye acceso a Legal Defense. Por favor actualiza tu plan.'
       });

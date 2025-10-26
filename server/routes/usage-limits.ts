@@ -68,9 +68,10 @@ router.get('/current', verifyFirebaseAuth, async (req: Request, res: Response) =
 
     res.json({
       planId: subscription.planId,
-      planName: subscription.planId === 1 ? 'Primo Chambeador' : 
-                subscription.planId === 2 ? 'Mero Patrón' :
-                subscription.planId === 3 ? 'Master Contractor' : 'Trial Master',
+      planName: subscription.planId === 5 ? 'Primo Chambeador' : 
+                subscription.planId === 9 ? 'Mero Patrón' :
+                subscription.planId === 6 ? 'Master Contractor' : 
+                subscription.planId === 4 ? 'Free Trial' : 'Unknown',
       limits,
       currentUsage,
       remaining: {

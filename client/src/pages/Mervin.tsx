@@ -66,7 +66,7 @@ export default function Mervin() {
   const { isSidebarExpanded } = useSidebar();
 
   // Detect if user is free plan (Primo Chambeador)
-  const isFreeUser = userPlan?.id === 1 || userPlan?.name === "Primo Chambeador";
+  const isFreeUser = userPlan?.id === 5 || userPlan?.name === "Primo Chambeador";
   const canUseAgentMode = !isFreeUser;
 
   // Función para determinar si el input requiere capacidades de agente autónomo

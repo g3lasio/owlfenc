@@ -16,7 +16,6 @@ import PropertyOwnershipVerifier from "@/pages/PropertyOwnershipVerifier";
 import PermitAdvisor from "@/pages/PermitAdvisor";
 import AIProjectManager from "@/pages/AIProjectManager";
 import OwlFunding from "@/pages/OwlFunding";
-import ARFenceEstimator from "@/pages/ARFenceEstimator";
 import AboutOwlFence from "@/pages/AboutOwlFence";
 import AboutMervin from "@/pages/AboutMervin";
 import LegalPolicy from "@/pages/LegalPolicy";
@@ -205,9 +204,6 @@ function MainAppRouter() {
               </Route>
               <Route path="/owlfunding">
                 {() => <ProtectedRoute component={OwlFunding} />}
-              </Route>
-              <Route path="/ar-fence-estimator">
-                {() => <ProtectedRoute component={ARFenceEstimator} />}
               </Route>
               <Route path="/settings/pricing">
                 {() => <ProtectedRoute component={PricingSettings} />}
