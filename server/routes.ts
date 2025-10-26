@@ -4474,88 +4474,70 @@ Output must be between 200-900 characters in English.`;
   // *** SUBSCRIPTION ROUTES ***
   app.get("/api/subscription/plans", async (req: Request, res: Response) => {
     try {
-      console.log("📋 [SUBSCRIPTION-PLANS] Obteniendo planes desde Firebase");
-      console.log("📋 [SUBSCRIPTION-PLANS] Environment check:", {
-        hasApiKey: !!process.env.FIREBASE_API_KEY,
-        hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
-        projectId: process.env.FIREBASE_PROJECT_ID?.substring(0, 10) + "...",
-        nodeEnv: process.env.NODE_ENV
-      });
+      console.log("📋 [SUBSCRIPTION-PLANS] Obteniendo planes desde PostgreSQL (fuente única de verdad)");
       
-      // Usar Firebase como la única fuente de datos auténticos
-      const firebaseStorage = new (await import('./FirebaseStorage')).FirebaseStorage();
-      const dbPlans = await firebaseStorage.getAllSubscriptionPlans();
-      console.log("📋 [SUBSCRIPTION-PLANS] Planes obtenidos desde Firebase:", dbPlans?.length || 0);
+      // ✅ USAR POSTGRESQL COMO ÚNICA FUENTE DE VERDAD
+      const dbPlans = await db!
+        .select()
+        .from(subscriptionPlans)
+        .where(eq(subscriptionPlans.isActive, true))
+        .orderBy(subscriptionPlans.price);
+      
+      console.log("📋 [SUBSCRIPTION-PLANS] Planes obtenidos desde PostgreSQL:", dbPlans?.length || 0);
 
-      // Si no hay planes en Firebase, diagnosticar el problema del deployment
       if (!dbPlans || dbPlans.length === 0) {
-        console.error("❌ [SUBSCRIPTION-PLANS] No se encontraron planes en Firebase");
-        
-        // Verificar configuración crítica para deployment
-        const missingVars = [];
-        if (!process.env.FIREBASE_API_KEY) missingVars.push('FIREBASE_API_KEY');
-        if (!process.env.FIREBASE_PROJECT_ID) missingVars.push('FIREBASE_PROJECT_ID');
-        if (!process.env.FIREBASE_AUTH_DOMAIN) missingVars.push('FIREBASE_AUTH_DOMAIN');
-        
-        if (missingVars.length > 0) {
-          return res.status(500).json({
-            success: false,
-            error: "Configuración de Firebase incompleta",
-            message: "Variables de entorno faltantes: " + missingVars.join(', '),
-            details: "El deployment necesita las variables de entorno de Firebase configuradas"
-          });
-        }
-        
+        console.error("❌ [SUBSCRIPTION-PLANS] No se encontraron planes activos en PostgreSQL");
         return res.status(404).json({
           success: false,
-          error: "No se encontraron planes de suscripción",
-          message: "Firebase conectado pero sin datos de planes",
-          details: "Verificar la colección 'subscriptionPlans' en Firestore o ejecutar script de inicialización"
+          error: "No se encontraron planes de suscripción activos",
+          message: "No hay planes disponibles actualmente"
         });
       }
 
-      // Mapear planes auténticos de Firebase al formato esperado por el frontend
+      // Mapear planes de PostgreSQL al formato esperado por el frontend
       const formattedPlans = dbPlans.map(plan => {
-        // Convertir features desde formato Firebase a array de strings
-        let featuresArray: string[] = [];
-        if (plan.features) {
-          if (Array.isArray(plan.features)) {
-            featuresArray = plan.features;
-          } else if (typeof plan.features === 'object') {
-            // Convertir objeto de features a array de strings descriptivos en español
-            const featuresObj = plan.features as Record<string, number>;
-            const featureLabels: Record<string, string> = {
-              projects: 'Proyectos',
-              contracts: 'Contratos',
-              aiEstimates: 'Estimados con IA',
-              permitAdvisor: 'Asesoría de Permisos',
-              basicEstimates: 'Estimados básicos',
-              propertyVerifications: 'Verificaciones de Propiedad'
-            };
-            
-            featuresArray = Object.entries(featuresObj).map(([key, value]) => {
-              const label = featureLabels[key] || key;
-              if (value === -1) return `${label} ilimitados`;
-              if (value === 0) return `Sin acceso a ${label}`;
-              return `${value} ${label} al mes`;
-            });
-          }
+        // Generar features desde la estructura del plan
+        const featuresArray: string[] = [];
+        
+        // Agregar features basadas en los límites del plan
+        if (plan.price === 0) {
+          featuresArray.push("Plan gratuito");
+        } else {
+          featuresArray.push("Acceso completo a la plataforma");
+        }
+        
+        // Features específicas por plan (basadas en ID)
+        if (plan.id === 5) { // Primo Chambeador
+          featuresArray.push("5 estimados básicos/mes (con marca de agua)");
+          featuresArray.push("1 estimado con IA/mes (con marca de agua)");
+          featuresArray.push("5 proyectos/mes");
+        } else if (plan.id === 9) { // Mero Patrón
+          featuresArray.push("Estimados ilimitados");
+          featuresArray.push("50 contratos/mes");
+          featuresArray.push("Verificación de propiedades");
+        } else if (plan.id === 6) { // Master Contractor
+          featuresArray.push("Todo ilimitado");
+          featuresArray.push("Soporte prioritario");
+          featuresArray.push("Sin marcas de agua");
+        } else if (plan.id === 4) { // Free Trial
+          featuresArray.push("Acceso completo por 7 días");
+          featuresArray.push("Todas las funciones premium");
         }
         
         return {
           id: plan.id,
           name: plan.name,
-          description: plan.description,
+          description: plan.description || `Plan ${plan.name}`,
           price: plan.price,
-          yearlyPrice: plan.yearly_price || plan.price * 10,
+          yearlyPrice: plan.yearlyPrice || plan.price * 10,
           features: featuresArray,
-          motto: plan.motto,
+          motto: plan.motto || `Plan ${plan.name}`,
           code: plan.code,
-          isActive: plan.is_active !== false,
+          isActive: plan.isActive,
         };
       });
       
-      console.log("📋 [SUBSCRIPTION-PLANS] Planes auténticos formateados correctamente");
+      console.log("📋 [SUBSCRIPTION-PLANS] Planes de PostgreSQL formateados correctamente");
       res.json(formattedPlans);
       
     } catch (error) {
@@ -4563,7 +4545,7 @@ Output must be between 200-900 characters in English.`;
       res.status(500).json({
         success: false,
         error: "Error interno del servidor",
-        message: "No se pudieron cargar los planes de suscripción desde Firebase"
+        message: "No se pudieron cargar los planes de suscripción"
       });
     }
   });

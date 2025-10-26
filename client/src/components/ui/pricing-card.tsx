@@ -65,13 +65,16 @@ export function PricingCard({
   // Determinar el ícono según el código del plan
   const renderPlanIcon = () => {
     switch (code) {
+      case 'PRIMO_CHAMBEADOR':
       case 'primo_chambeador':
         return <Hammer className="h-6 w-6 text-orange-500" />;
       case 'mero_patron':
         return <Crown className="h-6 w-6 text-primary" />;
-      case 'chingon_mayor':
+      case 'MASTER_CONTRACTOR':
       case 'master_contractor':
         return <Zap className="h-6 w-6 text-purple-500" />;
+      case 'FREE_TRIAL':
+        return <Trophy className="h-6 w-6 text-amber-500" />;
       default:
         return <Trophy className="h-6 w-6 text-amber-500" />;
     }
