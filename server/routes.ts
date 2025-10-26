@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 import {
   insertProjectSchema,
   insertTemplateSchema,
@@ -10,6 +10,9 @@ import {
   InsertProject,
   insertPermitSearchHistorySchema,
   insertPropertySearchHistorySchema,
+  subscriptionPlans,
+  userSubscriptions,
+  users,
 } from "@shared/schema";
 import * as path from "path";
 import * as fs from "fs";
