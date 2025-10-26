@@ -63,6 +63,8 @@ This AI-powered legal document and permit management platform automates tasks su
 - **Holographic Sharing System**: Futuristic interface for PDF generation and URL sharing, simplified to 3 essential actions (Copy, Share, Open).
 - **Public URL Sharing System**: Simplified estimate sharing generating permanent, stable URLs without authentication, using Firebase Admin SDK and crypto-secure `shareId` generation.
 - **URL Shortening System**: Enterprise-grade URL shortening service integrated with `chyrris.com` domain, featuring secure protocol validation, unique short code generation, click tracking, URL expiration, and Firebase authentication.
+- **PERMISSIONS SYSTEM CENTRALIZED (2025-10-26)**: Sistema completo de permisos migrado a arquitectura centralizada con `shared/permissions-config.ts` como fuente única de verdad. PLAN_IDS correctos [5, 9, 6, 4] consolidados, eliminadas todas las referencias hardcoded.
+- **REDIS RATE LIMITING & USAGE TRACKING (2025-10-26)**: Sistema de protección híbrido RBAC + Metering con Redis (Upstash) para conteo en tiempo real. Middleware unificado `subscription-protection.ts` que orquesta autenticación, rate limiting (sliding window), y usage tracking. Contadores mensuales con TTL automático. Graceful fallback a in-memory cuando Redis no disponible. Arquitectura escalable multi-instancia.
 
 ## External Dependencies
 - Firebase (Firestore, Admin SDK)
@@ -74,3 +76,55 @@ This AI-powered legal document and permit management platform automates tasks su
 - Anthropic
 - Mapbox
 - PDFMonkey
+- **Upstash Redis**: Serverless Redis for real-time usage tracking and rate limiting with automatic persistence and TLS
+
+## Technical Architecture Details
+
+### Subscription & Usage Control System
+**Architecture:** Hybrid RBAC + Metering with Redis-backed real-time tracking
+
+**Components:**
+1. **Centralized Configuration** (`shared/permissions-config.ts`):
+   - Single source of truth for all plan limits and permissions
+   - PLAN_IDS: Primo Chambeador (5), Mero Patrón (9), Master Contractor (6), Free Trial (4)
+   - PLAN_LIMITS: Comprehensive feature flags and usage limits
+   - Helper functions: getPlanLimits(), planNameToId()
+
+2. **Redis Infrastructure** (`server/lib/redis/`):
+   - **Client Factory** (`client.ts`): Upstash Redis with auto-retry and health checks
+   - **Usage Service** (`redisUsageService.ts`): Monthly counters with TTL (60 days)
+     - Key schema: `usage:{uid}:{feature}:{yyyymm}`
+     - Atomic increment with pipeline operations
+     - Fallback to in-memory UsageTracker
+   - **Rate Limiter** (`redisRateLimiter.ts`): Sliding window algorithm
+     - Key schema: `rate:{route}:{fingerprint}` (sorted sets)
+     - Configurable windows and limits per route
+     - Automatic cleanup of expired entries
+
+3. **Unified Middleware** (`server/middleware/subscription-protection.ts`):
+   - Single pipeline: Auth → Rate Limit → Subscription Check → Usage Validation
+   - Predefined presets for common features (contracts, estimates, AI, etc.)
+   - Response hooks for post-operation usage tracking
+   - Performance optimized with parallel checks
+   - Graceful degradation when Redis unavailable
+
+**Data Flow:**
+```
+Request → Firebase Auth → subscriptionProtection() →
+  1. Rate Limit Check (Redis sorted set)
+  2. Subscription Validation (Firebase/PostgreSQL)
+  3. Usage Check (Redis counter vs plan limits)
+  → Proceed if all pass →
+  → Response Hook: Increment usage (Redis atomic)
+```
+
+**Fallback Strategy:**
+- Redis unavailable → In-memory tracking with warning headers
+- Subscription service down → Block with 500 error
+- Rate limit failure → Allow with logging
+- Usage tracking failure → Allow but log error
+
+**Environment Variables:**
+- `UPSTASH_REDIS_REST_URL`: Redis endpoint
+- `UPSTASH_REDIS_REST_TOKEN`: Authentication token
+- `REDIS_ENABLED`: Enable/disable Redis (default: true)
