@@ -65,10 +65,7 @@ export default function Subscription() {
     error: plansError,
   } = useQuery<SubscriptionPlan[]>({
     queryKey: ["/api/subscription/plans"],
-    throwOnError: false,
     staleTime: 1000 * 60 * 5, // Cache por 5 minutos
-    retry: 3,
-    refetchOnWindowFocus: false,
   });
 
   // Handle plans data changes
