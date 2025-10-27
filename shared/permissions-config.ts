@@ -31,7 +31,7 @@ export const PLAN_IDS = {
   /** Plan pagado básico $49.99/mes */
   MERO_PATRON: 9,
   
-  /** Plan premium $99/mes */
+  /** Plan premium $99.99/mes */
   MASTER_CONTRACTOR: 6,
   
   /** Trial gratuito 14 días */
@@ -76,14 +76,14 @@ export const PLAN_MOTTOS = {
 export const PLAN_PRICES = {
   [PLAN_IDS.PRIMO_CHAMBEADOR]: 0,        // Gratis
   [PLAN_IDS.MERO_PATRON]: 4999,          // $49.99 USD/mes
-  [PLAN_IDS.MASTER_CONTRACTOR]: 9900,    // $99.00 USD/mes
+  [PLAN_IDS.MASTER_CONTRACTOR]: 9999,    // $99.99 USD/mes
   [PLAN_IDS.FREE_TRIAL]: 0,              // Gratis (14 días)
 } as const;
 
 export const PLAN_YEARLY_PRICES = {
   [PLAN_IDS.PRIMO_CHAMBEADOR]: 0,        // Gratis
   [PLAN_IDS.MERO_PATRON]: 49990,         // $499.90 USD/año (10 meses)
-  [PLAN_IDS.MASTER_CONTRACTOR]: 99000,   // $990.00 USD/año (10 meses)
+  [PLAN_IDS.MASTER_CONTRACTOR]: 99990,   // $999.90 USD/año (10 meses)
   [PLAN_IDS.FREE_TRIAL]: 0,              // Gratis
 } as const;
 
