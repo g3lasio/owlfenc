@@ -4602,7 +4602,7 @@ Output must be between 200-900 characters in English.`;
                 price: 0,
                 interval: "trial",
                 features: [
-                  "ACCESO TOTAL por 21 días",
+                  "ACCESO TOTAL por 14 días",
                   "Todas las funciones premium",
                   "Sin marcas de agua",
                   "Soporte premium"

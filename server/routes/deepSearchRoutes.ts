@@ -8,7 +8,7 @@
  * - ✅ Límites por plan respetados
  * 
  * Límites por plan:
- * - Free Trial (ID 4): ILIMITADO (21 días gratis)
+ * - Free Trial (ID 4): ILIMITADO (14 días gratis)
  * - Primo Chambeador (ID 5): 3 búsquedas/mes
  * - Mero Patrón (ID 9): 50 búsquedas/mes
  * - Master Contractor (ID 6): ILIMITADO

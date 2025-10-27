@@ -229,8 +229,8 @@ export const PLAN_LIMITS = {
   // FREE TRIAL - Plan ID: 4
   // =========================================
   [PLAN_IDS.FREE_TRIAL]: {
-    // Durante trial: TODO ILIMITADO por 21 días
-    estimatesBasic: -1,          // ✅ ILIMITADO durante trial (21 días)
+    // Durante trial: TODO ILIMITADO por 14 días
+    estimatesBasic: -1,          // ✅ ILIMITADO durante trial (14 días)
     estimatesAI: -1,             // ✅ ILIMITADO durante trial
     basicEstimates: -1,          // Alias para compatibilidad frontend
     aiEstimates: -1,             // Alias para compatibilidad frontend
@@ -241,7 +241,7 @@ export const PLAN_LIMITS = {
     projects: -1,                // ✅ ILIMITADO durante trial
     invoices: -1,                // ✅ ILIMITADO durante trial
     paymentTracking: 2,          // ✅ PRO durante trial
-    deepsearch: -1,              // ✅ ILIMITADO durante trial (21 días gratis)
+    deepsearch: -1,              // ✅ ILIMITADO durante trial (14 días gratis)
     
     // ===== FEATURE FLAGS BOOLEANAS =====
     hasWatermark: false,         // ✅ SIN marca de agua durante trial
@@ -255,7 +255,7 @@ export const PLAN_LIMITS = {
     
     // Configuración
     supportLevel: 'premium',     // Soporte premium durante trial
-    trialDurationDays: 21,       // 21 días de trial gratis
+    trialDurationDays: 14,       // 14 días de trial gratis
   },
 } as const;
 
@@ -291,7 +291,7 @@ export const PLAN_FEATURES = {
   ],
   
   [PLAN_IDS.FREE_TRIAL]: [
-    "21 días gratis - TODO ILIMITADO",
+    "14 días gratis - TODO ILIMITADO",
     "DeepSearch ilimitado durante trial",
     "Estimados ilimitados sin marca de agua",
     "Contratos ilimitados sin marca de agua",
