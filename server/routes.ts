@@ -4484,7 +4484,7 @@ Output must be between 200-900 characters in English.`;
       const dbPlans = await db!
         .select()
         .from(subscriptionPlans)
-        .where(eq(subscriptionPlans.isActive, true))
+        .where(eq(subscriptionPlans.is_active, true))
         .orderBy(subscriptionPlans.price);
       
       console.log("📋 [SUBSCRIPTION-PLANS] Planes obtenidos desde PostgreSQL:", dbPlans?.length || 0);
