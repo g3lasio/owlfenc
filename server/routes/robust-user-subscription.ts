@@ -180,4 +180,85 @@ export function registerRobustUserSubscriptionRoutes(app: any) {
       });
     }
   });
+
+  // 🎯 NUEVO: Activar plan elegido por el usuario (Free Trial, Primo, Mero, Master)
+  app.post('/api/subscription/activate-plan', async (req: Request, res: Response) => {
+    try {
+      const { firebaseUid, planId, email } = req.body;
+      
+      if (!firebaseUid || !planId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Firebase UID and Plan ID are required',
+          code: 'MISSING_REQUIRED_FIELDS'
+        });
+      }
+
+      const normalizedPlanId = Number(planId);
+      console.log(`🎯 [ACTIVATE-PLAN] Usuario ${firebaseUid} eligiendo plan ID: ${normalizedPlanId}`);
+      
+      // Verificar si ya tiene suscripción
+      const existingSubscription = await userMappingService.getUserSubscriptionByFirebaseUid(firebaseUid);
+      if (existingSubscription) {
+        return res.status(400).json({
+          success: false,
+          error: 'Ya tienes un plan activo. Usa /change-plan para cambiar.',
+          code: 'ALREADY_HAS_SUBSCRIPTION',
+          currentPlan: existingSubscription.plan?.name
+        });
+      }
+
+      // 🛡️ SECURITY: Si eligió Free Trial, verificar que nunca lo haya usado
+      if (normalizedPlanId === 4) {
+        const hasUsed = await userMappingService.hasUserUsedTrial(firebaseUid);
+        if (hasUsed) {
+          return res.status(403).json({
+            success: false,
+            error: 'Ya has usado tu Free Trial. Elige un plan de pago.',
+            code: 'TRIAL_ALREADY_USED'
+          });
+        }
+      }
+
+      // Obtener user_id interno desde Firebase UID
+      const internalUserId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!internalUserId) {
+        return res.status(404).json({
+          success: false,
+          error: 'User not found',
+          code: 'USER_NOT_FOUND'
+        });
+      }
+
+      // 🔧 FIX: Activar plan con internalUserId correcto
+      const subscription = await robustSubscriptionService.activateUserPlan(internalUserId, normalizedPlanId);
+
+      // Si eligió Free Trial (ID 4), marcar hasUsedTrial = true
+      if (normalizedPlanId === 4) {
+        await userMappingService.markTrialAsUsed(firebaseUid);
+        console.log(`✅ [ACTIVATE-PLAN] Trial marcado como usado para: ${firebaseUid}`);
+      }
+
+      res.json({
+        success: true,
+        message: 'Plan activado exitosamente',
+        subscription: {
+          planId: normalizedPlanId,
+          planName: subscription.planName,
+          status: subscription.status,
+          features: subscription.features
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ [ACTIVATE-PLAN] Error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error al activar plan',
+        message: error instanceof Error ? error.message : 'Error desconocido'
+      });
+    }
+  });
+
+  console.log('🛡️ [ROBUST-USER-SUBSCRIPTION] Routes registered successfully');
 }

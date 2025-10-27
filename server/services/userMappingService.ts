@@ -344,6 +344,63 @@ export class UserMappingService {
   }
 
   /**
+   * Verificar si el usuario ya usó su Free Trial
+   */
+  async hasUserUsedTrial(firebaseUid: string): Promise<boolean> {
+    try {
+      const internalUserId = await this.getInternalUserId(firebaseUid);
+      if (!internalUserId) {
+        return false; // Usuario no existe, no ha usado trial
+      }
+
+      const userResult = await db!
+        .select({ hasUsedTrial: users.hasUsedTrial })
+        .from(users)
+        .where(eq(users.id, internalUserId))
+        .limit(1);
+
+      if (userResult.length === 0) {
+        return false;
+      }
+
+      return userResult[0].hasUsedTrial || false;
+
+    } catch (error) {
+      console.error('❌ [USER-MAPPING] Error checking hasUsedTrial:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Marcar que el usuario ya usó su Free Trial
+   * IMPORTANTE: Este flag es permanente - nunca se resetea
+   */
+  async markTrialAsUsed(firebaseUid: string): Promise<boolean> {
+    try {
+      const internalUserId = await this.getInternalUserId(firebaseUid);
+      if (!internalUserId) {
+        console.error(`❌ [USER-MAPPING] No user found for Firebase UID: ${firebaseUid}`);
+        return false;
+      }
+
+      // Marcar hasUsedTrial = true y registrar fecha de inicio
+      await db!.update(users)
+        .set({ 
+          hasUsedTrial: true,
+          trialStartDate: new Date()
+        })
+        .where(eq(users.id, internalUserId));
+
+      console.log(`✅ [USER-MAPPING] Trial marcado como usado para usuario ${internalUserId} (Firebase UID: ${firebaseUid})`);
+      return true;
+
+    } catch (error) {
+      console.error('❌ [USER-MAPPING] Error marking trial as used:', error);
+      return false;
+    }
+  }
+
+  /**
    * Obtener o crear user_id para Firebase UID
    * FUNCIÓN REQUERIDA: Combina getInternalUserId y createMapping
    */

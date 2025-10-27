@@ -79,18 +79,14 @@ export function registerRobustFirebaseAuthRoutes(app: any) {
       // Obtener suscripción existente (incluyendo expiradas)
       const subscriptionData = await userMappingService.getUserSubscriptionByFirebaseUid(firebaseUid);
       
-      // CRÍTICO: Solo crear trial para usuarios COMPLETAMENTE NUEVOS
+      // 🚫 NUEVO FLUJO: NO asignar plan automáticamente
+      // El usuario debe elegir su plan manualmente en /subscription
       let subscription = subscriptionData;
       if (!subscription && isNewUser) {
-        console.log(`🆓 [ROBUST-AUTH] Creating trial for brand new user: ${email}`);
-        try {
-          await userMappingService.createTrialSubscriptionForFirebaseUid(firebaseUid, email);
-          subscription = await userMappingService.getUserSubscriptionByFirebaseUid(firebaseUid);
-        } catch (error) {
-          console.error('❌ [ROBUST-AUTH] Failed to create trial:', error);
-        }
+        console.log(`📋 [ROBUST-AUTH] Nuevo usuario sin plan: ${email} - Debe elegir plan en /subscription`);
+        // NO crear trial automáticamente - usuario debe elegir
       } else if (!subscription && !isNewUser) {
-        console.log(`🔒 [ROBUST-AUTH] Existing user ${email} without subscription - keeping as free user (no new trial)`);
+        console.log(`🔒 [ROBUST-AUTH] Usuario existente ${email} sin suscripción - Debe elegir plan`);
       }
 
       // LÓGICA CORREGIDA: Detectar trial basándose en plan y fecha, no solo status
@@ -134,7 +130,8 @@ export function registerRobustFirebaseAuthRoutes(app: any) {
         } : {
           active: false,
           status: 'none',
-          needsTrial: true
+          needsToChoosePlan: true, // NUEVO FLAG: Usuario debe ir a /subscription
+          redirectTo: '/subscription'
         },
         systemInfo: {
           dataSource: 'PostgreSQL (persistent)',

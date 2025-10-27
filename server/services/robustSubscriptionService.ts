@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { userMappingService } from './userMappingService';
 import { eq, and } from 'drizzle-orm';
-import { userSubscriptions, subscriptionPlans, userUsageLimits } from '@shared/schema';
+import { userSubscriptions, subscriptionPlans, userUsageLimits, users } from '@shared/schema';
 
 /**
  * SERVICIO ROBUSTO DE SUSCRIPCIONES
@@ -189,6 +189,84 @@ export class RobustSubscriptionService {
     } catch (error) {
       console.error(`❌ [ROBUST-SUBSCRIPTION] Error incrementing ${feature}:`, error);
       return false;
+    }
+  }
+
+  /**
+   * Activar plan elegido por el usuario (Free Trial, Primo, Mero, Master)
+   * Este método crea la suscripción inicial cuando el usuario elige su plan
+   * 
+   * @param internalUserId - user_id numérico interno (NO Firebase UID)
+   * @param planId - ID del plan (4=Free Trial, 5=Primo, 9=Mero, 6=Master)
+   */
+  async activateUserPlan(internalUserId: number, planId: number): Promise<RobustSubscriptionData> {
+    try {
+      console.log(`🎯 [ROBUST-SUBSCRIPTION] Activating plan ${planId} for internal user ID ${internalUserId}`);
+      
+      if (!db) {
+        throw new Error('Database connection not available');
+      }
+
+      // Verificar que el plan existe
+      const planResult = await db
+        .select()
+        .from(subscriptionPlans)
+        .where(eq(subscriptionPlans.id, planId))
+        .limit(1);
+
+      if (planResult.length === 0) {
+        throw new Error(`Plan ID ${planId} no encontrado`);
+      }
+
+      const plan = planResult[0];
+
+      // Calcular fechas de suscripción
+      const now = new Date();
+      let currentPeriodEnd = new Date(now);
+      
+      // Si es Free Trial (ID 4), dar 14 días
+      if (planId === 4) {
+        currentPeriodEnd.setDate(currentPeriodEnd.getDate() + 14);
+      } else {
+        // Planes de pago: 1 mes
+        currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
+      }
+
+      // Crear suscripción usando internalUserId directamente
+      await db.insert(userSubscriptions).values({
+        userId: internalUserId,
+        planId,
+        status: planId === 4 ? 'trialing' : 'active',
+        currentPeriodStart: now,
+        currentPeriodEnd,
+        createdAt: now,
+        updatedAt: now
+      });
+
+      console.log(`✅ [ROBUST-SUBSCRIPTION] Plan ${plan.name} activado para usuario interno ${internalUserId}`);
+      
+      // Obtener Firebase UID para getUserSubscription
+      const userResult = await db
+        .select({ firebaseUid: users.firebaseUid })
+        .from(users)
+        .where(eq(users.id, internalUserId))
+        .limit(1);
+
+      if (userResult.length === 0 || !userResult[0].firebaseUid) {
+        throw new Error('Error: Usuario sin Firebase UID');
+      }
+
+      // Retornar datos de la suscripción usando Firebase UID
+      const subscription = await this.getUserSubscription(userResult[0].firebaseUid);
+      if (!subscription) {
+        throw new Error('Error al obtener suscripción recién creada');
+      }
+
+      return subscription;
+
+    } catch (error) {
+      console.error('❌ [ROBUST-SUBSCRIPTION] Error activating plan:', error);
+      throw error;
     }
   }
 
