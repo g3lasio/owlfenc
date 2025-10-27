@@ -246,6 +246,14 @@ export const ProtectionPresets = {
     rateLimit: { windowMs: 3600000, max: 300, message: 'Límite de mensajes AI alcanzado' },
     requirePlan: true,
     trackUsage: false // Don't track each message, track operations
+  },
+
+  deepsearch: {
+    feature: 'deepsearch',
+    rateLimit: { windowMs: 3600000, max: 200, message: 'Límite de búsquedas DeepSearch alcanzado por hora' },
+    requirePlan: true,
+    trackUsage: true,
+    minimumLevel: PermissionLevel.FREE // Todos los planes tienen acceso pero con límites diferentes
   }
 };
 
@@ -258,3 +266,4 @@ export const protectAIEstimates = () => subscriptionProtection(ProtectionPresets
 export const protectPropertyVerification = () => subscriptionProtection(ProtectionPresets.propertyVerification);
 export const protectPermitAdvisor = () => subscriptionProtection(ProtectionPresets.permitAdvisor);
 export const protectAIChat = () => subscriptionProtection(ProtectionPresets.aiChat);
+export const protectDeepSearch = () => subscriptionProtection(ProtectionPresets.deepsearch);

@@ -5393,8 +5393,21 @@ This link provides a professional view of your estimate that you can access anyt
 
                           {/* Header */}
                           <div className="border-b border-cyan-400/20 p-3">
-                            <div className="text-xs font-mono text-cyan-400 mb-1 tracking-wider">
-                              SELECT.SEARCH.TYPE
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="text-xs font-mono text-cyan-400 tracking-wider">
+                                SELECT.SEARCH.TYPE
+                              </div>
+                              {featureAccess.canUseDeepsearch() && (
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                  <span className="text-xs font-mono text-emerald-400">
+                                    {(() => {
+                                      const remaining = featureAccess.remainingDeepsearch();
+                                      return remaining === -1 ? '∞' : remaining;
+                                    })()} restantes
+                                  </span>
+                                </div>
+                              )}
                             </div>
                             <div className="h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
                           </div>
@@ -5437,7 +5450,9 @@ This link provides a professional view of your estimate that you can access anyt
                                   </div>
                                   <div className="text-xs text-slate-400 font-mono">
                                     {!featureAccess.canUseDeepsearch()
-                                      ? "🔓 Upgrade to Mero Patrón for access"
+                                      ? (userPlan?.id === 5 
+                                          ? "✨ Primo: 3 búsquedas/mes - Actualiza para más" 
+                                          : "🔒 Límite alcanzado - Actualiza tu plan")
                                       : "Search materials database only"
                                     }
                                   </div>
@@ -5487,7 +5502,9 @@ This link provides a professional view of your estimate that you can access anyt
                                   </div>
                                   <div className="text-xs text-slate-400 font-mono">
                                     {!featureAccess.canUseDeepsearch()
-                                      ? "🔓 Upgrade to Mero Patrón for access"
+                                      ? (userPlan?.id === 5 
+                                          ? "✨ Primo: 3 búsquedas/mes - Actualiza para más" 
+                                          : "🔒 Límite alcanzado - Actualiza tu plan")
                                       : "Generate labor service items"
                                     }
                                   </div>
@@ -5547,7 +5564,9 @@ This link provides a professional view of your estimate that you can access anyt
                                   </div>
                                   <div className="text-xs text-slate-400 font-mono">
                                     {!featureAccess.canUseDeepsearch()
-                                      ? "🔓 Upgrade to Mero Patrón for access"
+                                      ? (userPlan?.id === 5 
+                                          ? "✨ Primo: 3 búsquedas/mes - Actualiza para más" 
+                                          : "🔒 Límite alcanzado - Actualiza tu plan")
                                       : "Materials + labor complete analysis"
                                     }
                                   </div>

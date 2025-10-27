@@ -1,8 +1,17 @@
 /**
- * Rutas de la API para el módulo DeepSearch IA - SIN AUTENTICACION
+ * 🔍 DEEPSEARCH ROUTES - PROTEGIDO CON AUTENTICACIÓN Y CONTEO
  * 
- * Proporciona endpoints para analizar proyectos y generar
- * automáticamente listas de materiales con IA.
+ * Sistema robusto de análisis de proyectos con IA:
+ * - ✅ Autenticación Firebase requerida en TODOS los endpoints
+ * - ✅ Conteo automático de uso con Redis
+ * - ✅ Rate limiting por usuario
+ * - ✅ Límites por plan respetados
+ * 
+ * Límites por plan:
+ * - Free Trial (ID 4): ILIMITADO (21 días gratis)
+ * - Primo Chambeador (ID 5): 3 búsquedas/mes
+ * - Mero Patrón (ID 9): 50 búsquedas/mes
+ * - Master Contractor (ID 6): ILIMITADO
  */
 
 import { Express, Request, Response } from 'express';
@@ -10,6 +19,8 @@ import { z } from 'zod';
 import { deepSearchService } from '../services/deepSearchService';
 import { smartMaterialCacheService } from '../services/smartMaterialCacheService';
 import { deepSearchRefinementService } from '../services/deepSearchRefinementService';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { protectDeepSearch } from '../middleware/subscription-protection';
 
 // Esquemas de validación
 const ProjectAnalysisSchema = z.object({
@@ -30,208 +41,273 @@ export function registerDeepSearchRoutes(app: Express): void {
   
   /**
    * POST /api/deepsearch/refine
-   * CHAT INTERACTIVO: Procesa solicitudes de refinamiento de DeepSearch
+   * 🔒 PROTEGIDO: Chat interactivo para refinamiento de DeepSearch
+   * 
+   * Seguridad:
+   * - Autenticación Firebase requerida
+   * - Conteo automático de uso
+   * - Rate limiting: 200 requests/hora
    */
-  app.post('/api/deepsearch/refine', async (req: Request, res: Response) => {
-    console.log('🔍 [DEEPSEARCH-REFINE] Nueva solicitud de refinamiento');
-    
-    try {
-      const { userRequest, currentResult, projectDescription, location, conversationHistory } = req.body;
+  app.post('/api/deepsearch/refine', 
+    verifyFirebaseAuth,
+    protectDeepSearch(),
+    async (req: Request, res: Response) => {
+      const userId = req.firebaseUser?.uid;
+      console.log(`🔍 [DEEPSEARCH-REFINE] User: ${userId} - Nueva solicitud`);
+      
+      try {
+        const { userRequest, currentResult, projectDescription, location, conversationHistory } = req.body;
 
-      // Validar datos requeridos
-      if (!userRequest || !currentResult || !projectDescription) {
-        return res.status(400).json({
+        // Validar datos requeridos
+        if (!userRequest || !currentResult || !projectDescription) {
+          return res.status(400).json({
+            success: false,
+            error: 'Faltan datos requeridos: userRequest, currentResult, projectDescription'
+          });
+        }
+
+        console.log('📝 [DEEPSEARCH-REFINE] Procesando:', {
+          userId,
+          userRequest: userRequest.substring(0, 100) + '...',
+          location,
+          materialsCount: currentResult.materials?.length || 0,
+          currentTotal: currentResult.grandTotal || 0
+        });
+
+        // Procesar refinamiento
+        const refinementResult = await deepSearchRefinementService.processRefinementRequest({
+          userRequest,
+          currentResult,
+          projectDescription,
+          location,
+          conversationHistory
+        });
+
+        // ✅ CONTEO AUTOMÁTICO DE USO
+        if (req.trackUsage) {
+          await req.trackUsage();
+        }
+
+        console.log('✅ [DEEPSEARCH-REFINE] Refinamiento completado:', {
+          userId,
+          success: refinementResult.success,
+          hasUpdatedResult: !!refinementResult.updatedResult,
+          suggestedActionsCount: refinementResult.suggestedActions?.length || 0
+        });
+
+        res.json(refinementResult);
+
+      } catch (error: any) {
+        console.error(`❌ [DEEPSEARCH-REFINE] User: ${userId} - Error:`, error);
+        
+        res.status(500).json({
           success: false,
-          error: 'Faltan datos requeridos: userRequest, currentResult, projectDescription'
+          error: 'Error interno del servidor procesando refinamiento',
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
       }
-
-      console.log('📝 [DEEPSEARCH-REFINE] Procesando:', {
-        userRequest: userRequest.substring(0, 100) + '...',
-        location,
-        materialsCount: currentResult.materials?.length || 0,
-        currentTotal: currentResult.grandTotal || 0
-      });
-
-      // Procesar refinamiento
-      const refinementResult = await deepSearchRefinementService.processRefinementRequest({
-        userRequest,
-        currentResult,
-        projectDescription,
-        location,
-        conversationHistory
-      });
-
-      console.log('✅ [DEEPSEARCH-REFINE] Refinamiento completado:', {
-        success: refinementResult.success,
-        hasUpdatedResult: !!refinementResult.updatedResult,
-        suggestedActionsCount: refinementResult.suggestedActions?.length || 0
-      });
-
-      res.json(refinementResult);
-
-    } catch (error: any) {
-      console.error('❌ [DEEPSEARCH-REFINE] Error:', error);
-      
-      res.status(500).json({
-        success: false,
-        error: 'Error interno del servidor procesando refinamiento',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
-      });
     }
-  });
+  );
 
   /**
    * POST /api/deepsearch/materials
-   * ONLY MATERIALS: Genera únicamente materiales sin costos de labor
+   * 🔒 PROTEGIDO: Genera únicamente materiales sin costos de labor
+   * 
+   * Seguridad:
+   * - Autenticación Firebase requerida
+   * - Conteo automático de uso
+   * - Rate limiting: 200 requests/hora
    */
-  app.post('/api/deepsearch/materials', async (req: Request, res: Response) => {
-    try {
-      console.log('📦 MATERIALS ONLY DeepSearch: Recibiendo solicitud', req.body);
-
-      // Validar entrada
-      const validatedData = ProjectAnalysisSchema.parse(req.body);
+  app.post('/api/deepsearch/materials',
+    verifyFirebaseAuth,
+    protectDeepSearch(),
+    async (req: Request, res: Response) => {
+      const userId = req.firebaseUser?.uid;
       
-      // Procesar con el servicio DeepSearch
-      const analysisResult = await deepSearchService.analyzeProject(
-        validatedData.projectDescription,
-        validatedData.location
-      );
+      try {
+        console.log(`📦 [MATERIALS ONLY] User: ${userId} - Nueva solicitud`);
 
-      // ONLY MATERIALS: Eliminar todos los costos de labor
-      analysisResult.laborCosts = [];
-      analysisResult.totalLaborCost = 0;
-      analysisResult.grandTotal = analysisResult.totalMaterialsCost + analysisResult.totalAdditionalCost;
+        // Validar entrada
+        const validatedData = ProjectAnalysisSchema.parse(req.body);
+        
+        // Procesar con el servicio DeepSearch
+        const analysisResult = await deepSearchService.analyzeProject(
+          validatedData.projectDescription,
+          validatedData.location
+        );
 
-      console.log('✅ MATERIALS ONLY: Análisis completado', {
-        materialsCount: analysisResult.materials.length,
-        totalCost: analysisResult.grandTotal
-      });
+        // ONLY MATERIALS: Eliminar todos los costos de labor
+        analysisResult.laborCosts = [];
+        analysisResult.totalLaborCost = 0;
+        analysisResult.grandTotal = analysisResult.totalMaterialsCost + analysisResult.totalAdditionalCost;
 
-      res.json({
-        success: true,
-        data: analysisResult,
-        timestamp: new Date().toISOString(),
-        searchType: 'materials_only'
-      });
+        // ✅ CONTEO AUTOMÁTICO DE USO
+        if (req.trackUsage) {
+          await req.trackUsage();
+        }
 
-    } catch (error: any) {
-      console.error('❌ Error en MATERIALS ONLY DeepSearch:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Error interno del servidor',
-        searchType: 'materials_only'
-      });
+        console.log(`✅ [MATERIALS ONLY] User: ${userId} - Completado:`, {
+          materialsCount: analysisResult.materials.length,
+          totalCost: analysisResult.grandTotal
+        });
+
+        res.json({
+          success: true,
+          data: analysisResult,
+          timestamp: new Date().toISOString(),
+          searchType: 'materials_only'
+        });
+
+      } catch (error: any) {
+        console.error(`❌ [MATERIALS ONLY] User: ${userId} - Error:`, error);
+        res.status(500).json({
+          success: false,
+          error: error.message || 'Error interno del servidor',
+          searchType: 'materials_only'
+        });
+      }
     }
-  });
+  );
 
   /**
    * POST /api/deepsearch/analyze
-   * Analiza un proyecto y genera lista completa de materiales, labor y costos
+   * 🔒 PROTEGIDO: Análisis completo de proyecto (materiales + labor + costos)
+   * 
+   * Seguridad:
+   * - Autenticación Firebase requerida
+   * - Conteo automático de uso
+   * - Rate limiting: 200 requests/hora
    */
-  app.post('/api/deepsearch/analyze', async (req: Request, res: Response) => {
-    try {
-      console.log('🔍 DeepSearch API: Recibiendo solicitud de análisis', req.body);
-
-      // Validar entrada
-      const validatedData = ProjectAnalysisSchema.parse(req.body);
+  app.post('/api/deepsearch/analyze',
+    verifyFirebaseAuth,
+    protectDeepSearch(),
+    async (req: Request, res: Response) => {
+      const userId = req.firebaseUser?.uid;
       
-      // Procesar con el servicio DeepSearch
-      const analysisResult = await deepSearchService.analyzeProject(
-        validatedData.projectDescription,
-        validatedData.location
-      );
+      try {
+        console.log(`🔍 [DEEPSEARCH-ANALYZE] User: ${userId} - Nueva solicitud`);
 
-      // Filtrar resultados según preferencias
-      if (!validatedData.includeLabor) {
-        analysisResult.laborCosts = [];
-        analysisResult.totalLaborCost = 0;
-      }
+        // Validar entrada
+        const validatedData = ProjectAnalysisSchema.parse(req.body);
+        
+        // Procesar con el servicio DeepSearch
+        const analysisResult = await deepSearchService.analyzeProject(
+          validatedData.projectDescription,
+          validatedData.location
+        );
 
-      if (!validatedData.includeAdditionalCosts) {
-        analysisResult.additionalCosts = [];
-        analysisResult.totalAdditionalCost = 0;
-      }
-
-      // Recalcular total si se filtraron secciones
-      if (!validatedData.includeLabor || !validatedData.includeAdditionalCosts) {
-        analysisResult.grandTotal = analysisResult.totalMaterialsCost + 
-                                   analysisResult.totalLaborCost + 
-                                   analysisResult.totalAdditionalCost;
-      }
-
-      console.log('✅ DeepSearch API: Análisis completado exitosamente', {
-        materialsCount: analysisResult.materials.length,
-        totalCost: analysisResult.grandTotal,
-        confidence: analysisResult.confidence
-      });
-
-      res.json({
-        success: true,
-        data: analysisResult,
-        metadata: {
-          timestamp: new Date().toISOString(),
-          processingTime: Date.now() - req.body.startTime || 0,
-          model: 'claude-3-7-sonnet-20250219'
+        // Filtrar resultados según preferencias
+        if (!validatedData.includeLabor) {
+          analysisResult.laborCosts = [];
+          analysisResult.totalLaborCost = 0;
         }
-      });
 
-    } catch (error: any) {
-      console.error('❌ DeepSearch API Error:', error);
-      
-      res.status(400).json({
-        success: false,
-        error: error.message,
-        code: error.name || 'DEEPSEARCH_ERROR',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      });
+        if (!validatedData.includeAdditionalCosts) {
+          analysisResult.additionalCosts = [];
+          analysisResult.totalAdditionalCost = 0;
+        }
+
+        // Recalcular total si se filtraron secciones
+        if (!validatedData.includeLabor || !validatedData.includeAdditionalCosts) {
+          analysisResult.grandTotal = analysisResult.totalMaterialsCost + 
+                                     analysisResult.totalLaborCost + 
+                                     analysisResult.totalAdditionalCost;
+        }
+
+        // ✅ CONTEO AUTOMÁTICO DE USO
+        if (req.trackUsage) {
+          await req.trackUsage();
+        }
+
+        console.log(`✅ [DEEPSEARCH-ANALYZE] User: ${userId} - Completado:`, {
+          materialsCount: analysisResult.materials.length,
+          totalCost: analysisResult.grandTotal,
+          confidence: analysisResult.confidence
+        });
+
+        res.json({
+          success: true,
+          data: analysisResult,
+          metadata: {
+            timestamp: new Date().toISOString(),
+            processingTime: Date.now() - req.body.startTime || 0,
+            model: 'claude-3-7-sonnet-20250219'
+          }
+        });
+
+      } catch (error: any) {
+        console.error(`❌ [DEEPSEARCH-ANALYZE] User: ${userId} - Error:`, error);
+        
+        res.status(400).json({
+          success: false,
+          error: error.message,
+          code: error.name || 'DEEPSEARCH_ERROR',
+          details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+      }
     }
-  });
+  );
 
   /**
    * POST /api/deepsearch/materials-only
-   * Genera solo la lista de materiales compatible con el sistema existente
+   * 🔒 PROTEGIDO: Genera lista de materiales compatible con sistema existente
+   * 
+   * Seguridad:
+   * - Autenticación Firebase requerida
+   * - Conteo automático de uso
+   * - Rate limiting: 200 requests/hora
    */
-  app.post('/api/deepsearch/materials-only', async (req: Request, res: Response) => {
-    try {
-      console.log('🔍 DeepSearch API: Generando lista de materiales únicamente');
-
-      // Validar entrada
-      const validatedData = MaterialsGenerationSchema.parse(req.body);
+  app.post('/api/deepsearch/materials-only',
+    verifyFirebaseAuth,
+    protectDeepSearch(),
+    async (req: Request, res: Response) => {
+      const userId = req.firebaseUser?.uid;
       
-      // Generar lista compatible de materiales
-      const materialsList = await deepSearchService.generateCompatibleMaterialsList(
-        validatedData.projectDescription,
-        validatedData.location
-      );
+      try {
+        console.log(`🔍 [MATERIALS-ONLY] User: ${userId} - Generando lista de materiales`);
 
-      console.log('✅ DeepSearch API: Lista de materiales generada', {
-        materialsCount: materialsList.length
-      });
+        // Validar entrada
+        const validatedData = MaterialsGenerationSchema.parse(req.body);
+        
+        // Generar lista compatible de materiales
+        const materialsList = await deepSearchService.generateCompatibleMaterialsList(
+          validatedData.projectDescription,
+          validatedData.location
+        );
 
-      res.json({
-        success: true,
-        materials: materialsList,
-        metadata: {
-          timestamp: new Date().toISOString(),
-          model: 'claude-3-7-sonnet-20250219'
+        // ✅ CONTEO AUTOMÁTICO DE USO
+        if (req.trackUsage) {
+          await req.trackUsage();
         }
-      });
 
-    } catch (error: any) {
-      console.error('❌ DeepSearch Materials API Error:', error);
-      
-      res.status(400).json({
-        success: false,
-        error: error.message,
-        code: error.name || 'MATERIALS_GENERATION_ERROR'
-      });
+        console.log(`✅ [MATERIALS-ONLY] User: ${userId} - Completado:`, {
+          materialsCount: materialsList.length
+        });
+
+        res.json({
+          success: true,
+          materials: materialsList,
+          metadata: {
+            timestamp: new Date().toISOString(),
+            model: 'claude-3-7-sonnet-20250219'
+          }
+        });
+
+      } catch (error: any) {
+        console.error(`❌ [MATERIALS-ONLY] User: ${userId} - Error:`, error);
+        
+        res.status(400).json({
+          success: false,
+          error: error.message,
+          code: error.name || 'MATERIALS_GENERATION_ERROR'
+        });
+      }
     }
-  });
+  );
 
   /**
    * GET /api/deepsearch/health
-   * Endpoint de salud para verificar el estado del servicio
+   * ⚠️ SIN PROTECCIÓN: Endpoint público de health check
    */
   app.get('/api/deepsearch/health', async (req: Request, res: Response) => {
     try {
@@ -266,60 +342,78 @@ export function registerDeepSearchRoutes(app: Express): void {
 
   /**
    * POST /api/deepsearch/estimate-integration
-   * Integra resultados de DeepSearch directamente en un estimado existente
+   * 🔒 PROTEGIDO: Integra resultados directamente en estimado existente
+   * 
+   * Seguridad:
+   * - Autenticación Firebase requerida
+   * - Conteo automático de uso
+   * - Rate limiting: 200 requests/hora
    */
-  app.post('/api/deepsearch/estimate-integration', async (req: Request, res: Response) => {
-    try {
-      const schema = z.object({
-        projectDescription: z.string().min(10),
-        location: z.string().optional(),
-        estimateId: z.string(),
-        replaceExisting: z.boolean().default(false)
-      });
-
-      const validatedData = schema.parse(req.body);
-
-      // Generar análisis completo
-      const analysisResult = await deepSearchService.analyzeProject(
-        validatedData.projectDescription,
-        validatedData.location
-      );
-
-      // Formatear para integración con el sistema de estimados existente
-      const integrationData = {
-        materials: analysisResult.materials,
-        laborCosts: analysisResult.laborCosts,
-        additionalCosts: analysisResult.additionalCosts,
-        totals: {
-          materials: analysisResult.totalMaterialsCost,
-          labor: analysisResult.totalLaborCost,
-          additional: analysisResult.totalAdditionalCost,
-          grand: analysisResult.grandTotal
-        },
-        metadata: {
-          confidence: analysisResult.confidence,
-          recommendations: analysisResult.recommendations,
-          warnings: analysisResult.warnings,
-          generatedAt: new Date().toISOString()
-        }
-      };
-
-      console.log('✅ DeepSearch Integration: Datos preparados para estimado', validatedData.estimateId);
-
-      res.json({
-        success: true,
-        integrationData,
-        message: `${analysisResult.materials.length} materiales generados automáticamente`
-      });
-
-    } catch (error: any) {
-      console.error('❌ DeepSearch Integration Error:', error);
+  app.post('/api/deepsearch/estimate-integration',
+    verifyFirebaseAuth,
+    protectDeepSearch(),
+    async (req: Request, res: Response) => {
+      const userId = req.firebaseUser?.uid;
       
-      res.status(400).json({
-        success: false,
-        error: error.message,
-        code: 'INTEGRATION_ERROR'
-      });
+      try {
+        const schema = z.object({
+          projectDescription: z.string().min(10),
+          location: z.string().optional(),
+          estimateId: z.string(),
+          replaceExisting: z.boolean().default(false)
+        });
+
+        const validatedData = schema.parse(req.body);
+
+        console.log(`🔍 [ESTIMATE-INTEGRATION] User: ${userId} - Estimate: ${validatedData.estimateId}`);
+
+        // Generar análisis completo
+        const analysisResult = await deepSearchService.analyzeProject(
+          validatedData.projectDescription,
+          validatedData.location
+        );
+
+        // Formatear para integración con el sistema de estimados existente
+        const integrationData = {
+          materials: analysisResult.materials,
+          laborCosts: analysisResult.laborCosts,
+          additionalCosts: analysisResult.additionalCosts,
+          totals: {
+            materials: analysisResult.totalMaterialsCost,
+            labor: analysisResult.totalLaborCost,
+            additional: analysisResult.totalAdditionalCost,
+            grand: analysisResult.grandTotal
+          },
+          metadata: {
+            confidence: analysisResult.confidence,
+            recommendations: analysisResult.recommendations,
+            warnings: analysisResult.warnings,
+            generatedAt: new Date().toISOString()
+          }
+        };
+
+        // ✅ CONTEO AUTOMÁTICO DE USO
+        if (req.trackUsage) {
+          await req.trackUsage();
+        }
+
+        console.log(`✅ [ESTIMATE-INTEGRATION] User: ${userId} - Completado`);
+
+        res.json({
+          success: true,
+          integrationData,
+          message: `${analysisResult.materials.length} materiales generados automáticamente`
+        });
+
+      } catch (error: any) {
+        console.error(`❌ [ESTIMATE-INTEGRATION] User: ${userId} - Error:`, error);
+        
+        res.status(400).json({
+          success: false,
+          error: error.message,
+          code: 'INTEGRATION_ERROR'
+        });
+      }
     }
-  });
+  );
 }
