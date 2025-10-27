@@ -108,52 +108,10 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     };
   }, [currentUser, loading]);
 
-  // 🎯 NEW: Check if user has selected a plan (Task 7)
-  const { data: userSubscription, isLoading: isLoadingSubscription, status: subscriptionStatus, error: subscriptionError } = useQuery({
-    queryKey: ["/api/subscription/user-subscription", userEmail],
-    enabled: !!currentUser && authStable,
-    retry: 1,
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-  });
-
-  // Debug logging
-  useEffect(() => {
-    console.log("🔍 [APP-GUARD-DEBUG]", {
-      loading,
-      authStable,
-      isLoadingSubscription,
-      subscriptionStatus,
-      hasSubscriptionData: !!userSubscription,
-      subscriptionError: subscriptionError?.message,
-    });
-  }, [loading, authStable, isLoadingSubscription, subscriptionStatus, userSubscription, subscriptionError]);
-
-  // 🎯 CRITICAL FIX: Only mark needsToChoosePlan if query succeeded AND subscription data confirms no plan
-  const needsToChoosePlan = 
-    subscriptionStatus === "success" && 
-    userSubscription !== null && 
-    userSubscription !== undefined &&
-    (userSubscription.subscription?.planId === null || 
-     userSubscription.subscription?.planId === undefined);
+  // ⚠️ TEMPORARY DISABLE: Guard de selección de plan desactivado para debugging
+  // TODO: Re-implementar cuando se solucione el problema de carga
   
-  const isOnSubscriptionPage = location === "/subscription" || location === "/subscription-test";
-
-  // 🛡️ SECURITY FIX: Only show toast if authenticated and query succeeded
-  useEffect(() => {
-    if (currentUser && authStable && subscriptionStatus === "success" && needsToChoosePlan && !isOnSubscriptionPage) {
-      console.log("🎯 [APP-GUARD] User has no plan, redirecting to /subscription");
-      toast({
-        title: "Elige tu plan",
-        description: "Por favor selecciona un plan para continuar usando Owl Fence.",
-        variant: "default",
-      });
-    }
-  }, [currentUser, authStable, subscriptionStatus, needsToChoosePlan, isOnSubscriptionPage, toast]);
-
-  // 🐛 FIX: Don't block on subscription loading if auth is still loading or if there's an error
-  // Only show loading spinner while auth is not stable
+  // Show loading spinner while auth is not stable
   if (loading || !authStable) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -165,11 +123,6 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   // Redirige a login solo después de que el estado sea estable y realmente no hay usuario
   if (!currentUser) {
     return <Redirect to="/login" />;
-  }
-
-  // 🎯 Redirect to /subscription if user needs to choose a plan (and not already there)
-  if (needsToChoosePlan && !isOnSubscriptionPage) {
-    return <Redirect to="/subscription" />;
   }
 
   // Renderiza el componente si el usuario está autenticado y tiene un plan
