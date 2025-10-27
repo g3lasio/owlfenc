@@ -124,8 +124,8 @@ export const PLAN_LIMITS = {
     invoices: 0,                 // ❌ Sin acceso
     paymentTracking: 0,          // ❌ Sin acceso (0=disabled, 1=basic, 2=pro)
     
-    // Investigación avanzada
-    deepsearch: 0,               // ❌ Sin acceso
+    // Investigación avanzada - LÍMITE BAJO PARA PRIMO
+    deepsearch: 3,               // ✅ 3 búsquedas DeepSearch/mes (puede agregar materiales manualmente ilimitado)
     
     // ===== FEATURE FLAGS BOOLEANAS =====
     hasWatermark: true,          // ✅ SIEMPRE marca de agua
@@ -229,8 +229,8 @@ export const PLAN_LIMITS = {
   // FREE TRIAL - Plan ID: 4
   // =========================================
   [PLAN_IDS.FREE_TRIAL]: {
-    // Durante trial: TODO ILIMITADO por 14 días
-    estimatesBasic: -1,          // ✅ ILIMITADO durante trial
+    // Durante trial: TODO ILIMITADO por 21 días
+    estimatesBasic: -1,          // ✅ ILIMITADO durante trial (21 días)
     estimatesAI: -1,             // ✅ ILIMITADO durante trial
     basicEstimates: -1,          // Alias para compatibilidad frontend
     aiEstimates: -1,             // Alias para compatibilidad frontend
@@ -241,7 +241,7 @@ export const PLAN_LIMITS = {
     projects: -1,                // ✅ ILIMITADO durante trial
     invoices: -1,                // ✅ ILIMITADO durante trial
     paymentTracking: 2,          // ✅ PRO durante trial
-    deepsearch: -1,              // ✅ ILIMITADO durante trial
+    deepsearch: -1,              // ✅ ILIMITADO durante trial (21 días gratis)
     
     // ===== FEATURE FLAGS BOOLEANAS =====
     hasWatermark: false,         // ✅ SIN marca de agua durante trial
@@ -255,7 +255,7 @@ export const PLAN_LIMITS = {
     
     // Configuración
     supportLevel: 'premium',     // Soporte premium durante trial
-    trialDurationDays: 14,       // 14 días de trial
+    trialDurationDays: 21,       // 21 días de trial gratis
   },
 } as const;
 
@@ -291,11 +291,11 @@ export const PLAN_FEATURES = {
   ],
   
   [PLAN_IDS.FREE_TRIAL]: [
-    "14 días gratis - TODO ILIMITADO",
-    "Estimados ilimitados (con marca de agua)",
-    "Estimados con IA ilimitados (con marca de agua)",
-    "Contratos ilimitados (con marca de agua)",
-    "Acceso completo a todas las funciones"
+    "21 días gratis - TODO ILIMITADO",
+    "DeepSearch ilimitado durante trial",
+    "Estimados ilimitados sin marca de agua",
+    "Contratos ilimitados sin marca de agua",
+    "Acceso completo a todas las funciones premium"
   ],
 } as const;
 
