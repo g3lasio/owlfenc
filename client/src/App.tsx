@@ -109,40 +109,26 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   }, [currentUser, loading]);
 
   // 🎯 NEW: Check if user has selected a plan (Task 7)
-  const { data: userSubscription, isLoading: isLoadingSubscription, status: subscriptionStatus } = useQuery({
+  const { data: userSubscription, isLoading: isLoadingSubscription, status: subscriptionStatus, error: subscriptionError } = useQuery({
     queryKey: ["/api/subscription/user-subscription", userEmail],
-    queryFn: async () => {
-      if (!currentUser) throw new Error("User not authenticated");
-      
-      let token: string;
-      try {
-        token = await currentUser.getIdToken(false);
-      } catch (tokenError) {
-        try {
-          token = await currentUser.getIdToken(true);
-        } catch (retryError) {
-          throw new Error("Could not get auth token");
-        }
-      }
-      
-      if (!token) throw new Error("No token available");
-      
-      const response = await fetch("/api/subscription/user-subscription", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-      
-      if (!response.ok) throw new Error("Failed to fetch subscription");
-      return response.json();
-    },
     enabled: !!currentUser && authStable,
-    retry: 2,
+    retry: 1,
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
-    throwOnError: false, // Don't throw errors, handle them gracefully
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
+
+  // Debug logging
+  useEffect(() => {
+    console.log("🔍 [APP-GUARD-DEBUG]", {
+      loading,
+      authStable,
+      isLoadingSubscription,
+      subscriptionStatus,
+      hasSubscriptionData: !!userSubscription,
+      subscriptionError: subscriptionError?.message,
+    });
+  }, [loading, authStable, isLoadingSubscription, subscriptionStatus, userSubscription, subscriptionError]);
 
   // 🎯 CRITICAL FIX: Only mark needsToChoosePlan if query succeeded AND subscription data confirms no plan
   const needsToChoosePlan = 
@@ -166,8 +152,9 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     }
   }, [currentUser, authStable, subscriptionStatus, needsToChoosePlan, isOnSubscriptionPage, toast]);
 
-  // Muestra un indicador de carga mientras se verifica la autenticación y suscripción
-  if (loading || !authStable || isLoadingSubscription) {
+  // 🐛 FIX: Don't block on subscription loading if auth is still loading or if there's an error
+  // Only show loading spinner while auth is not stable
+  if (loading || !authStable) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
