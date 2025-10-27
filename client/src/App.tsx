@@ -62,8 +62,10 @@ import SharedEstimate from './pages/SharedEstimate';
 import WebAuthnPopup from './pages/WebAuthnPopup';
 
 
-import { Redirect } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 // 🔧 FIX: Global error handler for unhandled promises - DESHABILITADO TEMPORALMENTE
 // setupGlobalErrorHandlers(); // ❌ COMENTADO: Estaba silenciando errores legítimos del agente
@@ -81,6 +83,9 @@ type ProtectedRouteProps = {
 function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   const { currentUser, loading } = useAuth();
   const [authStable, setAuthStable] = useState(false);
+  const [location] = useLocation();
+  const { toast } = useToast();
+  const userEmail = currentUser?.email || "";
 
   // Estabilizar el estado de auth para evitar redirecciones por cambios temporales
   useEffect(() => {
@@ -103,8 +108,66 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     };
   }, [currentUser, loading]);
 
-  // Muestra un indicador de carga mientras se verifica la autenticación
-  if (loading || !authStable) {
+  // 🎯 NEW: Check if user has selected a plan (Task 7)
+  const { data: userSubscription, isLoading: isLoadingSubscription, status: subscriptionStatus } = useQuery({
+    queryKey: ["/api/subscription/user-subscription", userEmail],
+    queryFn: async () => {
+      if (!currentUser) throw new Error("User not authenticated");
+      
+      let token: string;
+      try {
+        token = await currentUser.getIdToken(false);
+      } catch (tokenError) {
+        try {
+          token = await currentUser.getIdToken(true);
+        } catch (retryError) {
+          throw new Error("Could not get auth token");
+        }
+      }
+      
+      if (!token) throw new Error("No token available");
+      
+      const response = await fetch("/api/subscription/user-subscription", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) throw new Error("Failed to fetch subscription");
+      return response.json();
+    },
+    enabled: !!currentUser && authStable,
+    retry: 2,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    throwOnError: false, // Don't throw errors, handle them gracefully
+  });
+
+  // 🎯 CRITICAL FIX: Only mark needsToChoosePlan if query succeeded AND subscription data confirms no plan
+  const needsToChoosePlan = 
+    subscriptionStatus === "success" && 
+    userSubscription !== null && 
+    userSubscription !== undefined &&
+    (userSubscription.subscription?.planId === null || 
+     userSubscription.subscription?.planId === undefined);
+  
+  const isOnSubscriptionPage = location === "/subscription" || location === "/subscription-test";
+
+  // 🛡️ SECURITY FIX: Only show toast if authenticated and query succeeded
+  useEffect(() => {
+    if (currentUser && authStable && subscriptionStatus === "success" && needsToChoosePlan && !isOnSubscriptionPage) {
+      console.log("🎯 [APP-GUARD] User has no plan, redirecting to /subscription");
+      toast({
+        title: "Elige tu plan",
+        description: "Por favor selecciona un plan para continuar usando Owl Fence.",
+        variant: "default",
+      });
+    }
+  }, [currentUser, authStable, subscriptionStatus, needsToChoosePlan, isOnSubscriptionPage, toast]);
+
+  // Muestra un indicador de carga mientras se verifica la autenticación y suscripción
+  if (loading || !authStable || isLoadingSubscription) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -117,7 +180,12 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     return <Redirect to="/login" />;
   }
 
-  // Renderiza el componente si el usuario está autenticado
+  // 🎯 Redirect to /subscription if user needs to choose a plan (and not already there)
+  if (needsToChoosePlan && !isOnSubscriptionPage) {
+    return <Redirect to="/subscription" />;
+  }
+
+  // Renderiza el componente si el usuario está autenticado y tiene un plan
   return <Component />;
 }
 

@@ -136,6 +136,9 @@ export default function Subscription() {
       throwOnError: false,
     });
 
+  // 🎯 Extract hasUsedTrial flag from subscription data
+  const hasUsedTrial = userSubscription?.hasUsedTrial || false;
+
 
 
   // Crea sesión de checkout para un plan seleccionado
@@ -527,7 +530,11 @@ export default function Subscription() {
       {/* Mostrar información de la suscripción actual SIEMPRE */}
       {userSubscription && (
         <div className="bg-muted/50 rounded-lg p-6 mb-10 text-center">
-          <h3 className="text-lg font-medium mb-2">Tu Plan Actual</h3>
+          <h3 className="text-lg font-medium mb-2">
+            {activePlanId === null || activePlanId === undefined 
+              ? "🎯 Elige tu primer plan" 
+              : "Tu Plan Actual"}
+          </h3>
           <p className="mb-4">
             Actualmente tienes el plan{" "}
             <span className={cn("font-bold", activePlanId === 5 ? "text-muted-foreground" : "text-primary")}>
@@ -597,7 +604,18 @@ export default function Subscription() {
       {/* Mostrar las tarjetas de planes */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-10">
         {Array.isArray(plans) && plans
-          .filter((plan: SubscriptionPlan) => plan.isActive && plan.id != null)
+          .filter((plan: SubscriptionPlan) => {
+            // 🎯 Filter out Free Trial (ID 4) if:
+            // 1. User has already used trial (hasUsedTrial = true)
+            // 2. User currently has Free Trial active (planId = 4)
+            if (plan.id === 4) {
+              if (hasUsedTrial || activePlanId === 4) {
+                console.log(`🚫 [SUBSCRIPTION] Hiding Free Trial - hasUsedTrial: ${hasUsedTrial}, activePlanId: ${activePlanId}`);
+                return false;
+              }
+            }
+            return plan.isActive && plan.id != null;
+          })
           .map((plan: SubscriptionPlan, index) => (
             <PricingCard
               key={plan.id || `plan-${index}`}

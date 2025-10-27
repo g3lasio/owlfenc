@@ -33,6 +33,7 @@ import aiImportRoutes from "./routes/ai-import-routes";
 import { memoryService } from "./services/memoryService";
 import { stripeService } from "./services/stripeService";
 import { permitService } from "./services/permitService";
+import { userMappingService } from "./services/userMappingService";
 import admin from "firebase-admin";
 import { buildDynamicUrl, getEstimateSharableDomain } from './utils/url-builder';
 import { searchService } from "./services/searchService";
@@ -4578,6 +4579,9 @@ Output must be between 200-900 characters in English.`;
           `👤 [SUBSCRIPTION-USER] Getting subscription for: ${userId} (Firebase UID: ${firebaseUserId})`,
         );
 
+        // 🎯 NEW: Check if user has used trial (for conditional Free Trial display)
+        const hasUsedTrial = await userMappingService.hasUserUsedTrial(firebaseUserId);
+
         // SISTEMA UNIFICADO: Obtener suscripción usando Firebase UID
         const subscription =
           await firebaseSubscriptionService.getUserSubscription(userId);
@@ -4635,6 +4639,7 @@ Output must be between 200-900 characters in English.`;
 
             const responseData: any = {
               active: true,
+              hasUsedTrial, // 🎯 Include hasUsedTrial flag
               subscription: {
                 id: updatedSubscription.id,
                 status: updatedSubscription.status,
@@ -4684,6 +4689,7 @@ Output must be between 200-900 characters in English.`;
 
               res.json({
                 active: true,
+                hasUsedTrial, // 🎯 Include hasUsedTrial flag
                 subscription: {
                   id: freeSubscription.id,
                   status: freeSubscription.status,
@@ -4716,6 +4722,7 @@ Output must be between 200-900 characters in English.`;
 
           res.json({
             active: true,
+            hasUsedTrial, // 🎯 Include hasUsedTrial flag
             subscription: {
               id: "free-plan",
               status: "active",
