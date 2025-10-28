@@ -220,18 +220,11 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
                   )}
                 </div>
                 
-                {/* Stage Label */}
-                <span className={`text-xs md:text-sm font-medium mt-1 transition-all duration-300 text-center leading-tight ${
+                {/* Stage Label - Single responsive version */}
+                <span className={`text-[10px] sm:text-xs md:text-sm font-medium mt-1 transition-all duration-300 text-center leading-tight ${
                   isActive ? 'text-cyan-100' : 'text-gray-400'
-                } hidden sm:block`}>
+                }`}>
                   {stage.label}
-                </span>
-                
-                {/* Mobile: Abbreviated Label */}
-                <span className={`text-[10px] font-medium mt-1 transition-all duration-300 text-center leading-tight ${
-                  isActive ? 'text-cyan-100' : 'text-gray-400'
-                } block sm:hidden`}>
-                  {stage.label.substring(0, 3)}
                 </span>
               </div>
             );
