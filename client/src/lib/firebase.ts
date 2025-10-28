@@ -501,11 +501,19 @@ export const getProjectById = async (id: string) => {
       // Si no encontramos el proyecto
       throw new Error("Project not found");
     } else {
-      // CRITICAL SECURITY: Código para Firebase en producción con verificación de usuario
+      // CRITICAL SECURITY: Buscar en ambas colecciones (projects y estimates)
       console.log(`🔒 SECURITY: Loading project ${id} for user ${currentUser.uid}`);
       
-      const docRef = doc(db, "projects", id);
-      const docSnap = await getDoc(docRef);
+      // ✅ FIXED: Try "projects" collection first
+      let docRef = doc(db, "projects", id);
+      let docSnap = await getDoc(docRef);
+
+      // ✅ FIXED: If not found in "projects", try "estimates" collection
+      if (!docSnap.exists()) {
+        console.log(`🔍 [GET-PROJECT] Not found in "projects", trying "estimates" collection...`);
+        docRef = doc(db, "estimates", id);
+        docSnap = await getDoc(docRef);
+      }
 
       if (docSnap.exists()) {
         const projectData = docSnap.data();
@@ -514,13 +522,79 @@ export const getProjectById = async (id: string) => {
         if (projectData.firebaseUserId === currentUser.uid || 
             (!projectData.firebaseUserId && projectData.userId === currentUser.uid)) {
           console.log("🔒 SECURITY: Project access granted for Firebase UID:", currentUser.uid);
-          return { id: docSnap.id, ...projectData };
+          
+          // ✅ FIXED: Transform estimates data to match project format (same as Projects.tsx)
+          const clientName =
+            projectData.clientInformation?.name ||
+            projectData.clientName ||
+            projectData.client?.name ||
+            "Cliente sin nombre";
+
+          const clientEmail =
+            projectData.clientInformation?.email ||
+            projectData.clientEmail ||
+            projectData.client?.email ||
+            "";
+
+          let totalValue =
+            projectData.projectTotalCosts?.totalSummary?.finalTotal ||
+            projectData.projectTotalCosts?.total ||
+            projectData.total ||
+            projectData.estimateAmount ||
+            0;
+
+          const projectTitle =
+            projectData.projectDetails?.name ||
+            projectData.projectName ||
+            projectData.title ||
+            `Estimado para ${clientName}`;
+
+          return {
+            id: docSnap.id,
+            clientName: clientName,
+            address: projectData.address || projectData.clientAddress || "Dirección no especificada",
+            projectType: projectData.projectType || projectData.projectDetails?.type || "fencing",
+            projectSubtype: projectData.projectSubtype || projectData.fenceType || projectData.serviceType,
+            fenceType: projectData.fenceType,
+            fenceHeight: projectData.fenceHeight || projectData.height,
+            height: projectData.height || projectData.fenceHeight,
+            status: projectData.status || "estimate",
+            totalPrice: totalValue,
+            createdAt: projectData.createdAt,
+            source: docSnap.ref.parent.id,
+            projectProgress: projectData.projectProgress || "estimate_created",
+            estimateHtml: projectData.estimateHtml,
+            contractHtml: projectData.contractHtml,
+            attachments: projectData.attachments || {},
+            clientNotes: projectData.clientNotes || projectData.notes,
+            internalNotes: projectData.internalNotes,
+            permitStatus: projectData.permitStatus,
+            paymentStatus: projectData.paymentStatus,
+            scheduledDate: projectData.scheduledDate,
+            completedDate: projectData.completedDate,
+            projectDescription: projectData.projectDescription || projectData.description || projectTitle,
+            projectCategory: projectData.projectCategory || "fencing",
+            projectScope: projectData.projectScope,
+            materialsList: projectData.materialsList || projectData.items || [],
+            laborHours: projectData.laborHours,
+            difficulty: projectData.difficulty || "medium",
+            estimateNumber: projectData.estimateNumber || `EST-${docSnap.id.slice(-6)}`,
+            title: projectTitle,
+            clientEmail: clientEmail,
+            estimateDate: projectData.createdAt
+              ? projectData.createdAt.toDate?.() || new Date(projectData.createdAt)
+              : new Date(),
+            items: projectData.projectTotalCosts?.materialCosts?.items || projectData.items || [],
+            projectId: docSnap.id,
+            pdfUrl: projectData.pdfUrl || null,
+            originalData: projectData
+          };
         } else {
           console.warn("🔒 SECURITY: Project access denied - belongs to different user");
           throw new Error("Access denied - project belongs to different user");
         }
       } else {
-        console.warn("🔒 SECURITY: Project not found:", id);
+        console.warn("🔒 SECURITY: Project not found in both collections:", id);
         throw new Error("Project not found");
       }
     }
