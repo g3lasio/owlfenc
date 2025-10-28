@@ -230,7 +230,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-2">
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {quickActions.map((action, index) => (
                   <Button
                     key={index}
@@ -450,7 +450,17 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                 <div className="space-y-2">
                   <div className="text-xs font-semibold text-muted-foreground">Presupuesto</div>
                   {project.estimateHtml ? (
-                    <Button variant="outline" size="sm" className="w-full" data-testid="button-view-estimate">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full" 
+                      onClick={() => {
+                        if (typeof window !== 'undefined') {
+                          window.open(`/estimate/${project.id}`, '_blank');
+                        }
+                      }}
+                      data-testid="button-view-estimate"
+                    >
                       <i className="ri-file-text-line mr-2"></i>
                       Ver Presupuesto
                     </Button>
@@ -463,7 +473,21 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                 <div className="space-y-2">
                   <div className="text-xs font-semibold text-muted-foreground">Contrato</div>
                   {project.contractHtml ? (
-                    <Button variant="outline" size="sm" className="w-full" data-testid="button-view-contract">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full" 
+                      onClick={() => {
+                        if (typeof window !== 'undefined') {
+                          if (project.contractHtml) {
+                            window.open(`/contract/${project.id}`, '_blank');
+                          } else if (project.permanentPdfUrl) {
+                            window.open(project.permanentPdfUrl, '_blank');
+                          }
+                        }
+                      }}
+                      data-testid="button-view-contract"
+                    >
                       <i className="ri-file-text-line mr-2"></i>
                       Ver Contrato
                     </Button>
