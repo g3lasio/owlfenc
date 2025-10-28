@@ -614,40 +614,48 @@ export default function Subscription() {
 
       {/* Mostrar las tarjetas de planes */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-10">
-        {Array.isArray(plans) && plans
-          .filter((plan: SubscriptionPlan) => {
-            // 🎯 Filter out Free Trial (ID 4) if:
-            // 1. User has already used trial (hasUsedTrial = true)
-            // 2. User currently has Free Trial active (planId = 4)
-            if (plan.id === 4) {
-              if (hasUsedTrial || activePlanId === 4) {
+        {/* 🎯 FORCED DISPLAY: Always show all active plans */}
+        {Array.isArray(plans) ? (
+          plans
+            .filter((plan: SubscriptionPlan) => {
+              // Only filter by isActive - show ALL active plans
+              const shouldShow = plan.isActive === true || plan.isActive === undefined;
+              console.log(`📋 [PLAN-FILTER] ${plan.name} (ID: ${plan.id}): isActive=${plan.isActive}, showing=${shouldShow}`);
+              
+              // Hide Free Trial only if user already used it OR currently has it active
+              if (plan.id === 4 && (hasUsedTrial || activePlanId === 4)) {
                 console.log(`🚫 [SUBSCRIPTION] Hiding Free Trial - hasUsedTrial: ${hasUsedTrial}, activePlanId: ${activePlanId}`);
                 return false;
               }
-            }
-            return plan.isActive && plan.id != null;
-          })
-          .map((plan: SubscriptionPlan, index) => (
-            <PricingCard
-              key={plan.id || `plan-${index}`}
-              name={plan.name}
-              description={plan.description}
-              price={plan.price}
-              yearlyPrice={plan.yearlyPrice}
-              features={plan.features as string[]}
-              isYearly={isYearly}
-              motto={plan.motto}
-              isMostPopular={getIsMostPopular(plan.code)}
-              onSelectPlan={createCheckoutSession}
-              planId={plan.id}
-              isLoading={isLoading}
-              code={plan.code}
-              isActive={plan.id === activePlanId}
-              expirationDate={plan.id === activePlanId ? (expirationDate || undefined) : undefined}
-              currentUserPlanId={activePlanId}
-              onManageSubscription={createCustomerPortal}
-            />
-          ))}
+              
+              return shouldShow;
+            })
+            .map((plan: SubscriptionPlan, index) => (
+              <PricingCard
+                key={plan.id || `plan-${index}`}
+                name={plan.name}
+                description={plan.description}
+                price={plan.price}
+                yearlyPrice={plan.yearlyPrice}
+                features={plan.features as string[]}
+                isYearly={isYearly}
+                motto={plan.motto}
+                isMostPopular={getIsMostPopular(plan.code)}
+                onSelectPlan={createCheckoutSession}
+                planId={plan.id}
+                isLoading={isLoading}
+                code={plan.code}
+                isActive={plan.id === activePlanId}
+                expirationDate={plan.id === activePlanId ? (expirationDate || undefined) : undefined}
+                currentUserPlanId={activePlanId}
+                onManageSubscription={createCustomerPortal}
+              />
+            ))
+        ) : (
+          <div className="col-span-full text-center py-12">
+            <p className="text-muted-foreground">Cargando planes...</p>
+          </div>
+        )}
       </div>
 
       {/* Información adicional */}
