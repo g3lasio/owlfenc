@@ -28,18 +28,14 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
   const handleClientNotesUpdate = async () => {
     try {
       setIsSaving(true);
-
       const updatedProject = await updateProject(project.id, {
         clientNotes: editableNotes.clientNotes
       });
-
       onUpdate(updatedProject);
-
       toast({
         title: "Notas actualizadas",
         description: "Las notas del cliente han sido actualizadas correctamente."
       });
-      
       setClientNotesOpen(false);
     } catch (error) {
       console.error("Error updating notes:", error);
@@ -56,18 +52,14 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
   const handleInternalNotesUpdate = async () => {
     try {
       setIsSaving(true);
-
       const updatedProject = await updateProject(project.id, {
         internalNotes: editableNotes.internalNotes
       });
-
       onUpdate(updatedProject);
-
       toast({
         title: "Notas actualizadas",
         description: "Las notas internas han sido actualizadas correctamente."
       });
-      
       setInternalNotesOpen(false);
     } catch (error) {
       console.error("Error updating notes:", error);
@@ -83,11 +75,9 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
 
   const formatDate = (date: any) => {
     if (!date) return 'No establecida';
-
     if (typeof date === 'object' && date.toDate) {
       date = date.toDate();
     }
-
     return new Intl.DateTimeFormat('es-ES', {
       year: 'numeric',
       month: 'short',
@@ -97,7 +87,6 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
 
   const formatCurrency = (amount: number) => {
     if (!amount && amount !== 0) return 'No establecido';
-
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
@@ -111,7 +100,6 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
       overdue: { label: 'Vencido', variant: 'destructive' },
       partial: { label: 'Pago Parcial', variant: 'outline' }
     };
-
     const statusInfo = statusMap[status] || { label: status, variant: 'outline' };
     return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
   };
@@ -123,7 +111,6 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
       rejected: { label: 'Rechazado', variant: 'destructive' },
       not_required: { label: 'No Requerido', variant: 'outline' }
     };
-
     const statusInfo = statusMap[status] || { label: status, variant: 'outline' };
     return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
   };
@@ -133,11 +120,10 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
     onUpdate(updatedProject);
   };
 
-  // Acciones rápidas del proyecto
   const quickActions = [
     { 
       icon: "ri-phone-line", 
-      label: "Llamar Cliente", 
+      label: "Llamar", 
       action: () => {
         if (typeof window !== 'undefined' && project.clientPhone) {
           window.open(`tel:${project.clientPhone}`);
@@ -147,7 +133,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
     },
     { 
       icon: "ri-mail-line", 
-      label: "Email Cliente", 
+      label: "Email", 
       action: () => {
         if (typeof window !== 'undefined' && project.clientEmail) {
           window.open(`mailto:${project.clientEmail}`);
@@ -157,7 +143,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
     },
     { 
       icon: "ri-map-pin-line", 
-      label: "Ver Ubicación", 
+      label: "Ubicación", 
       action: () => {
         if (typeof window !== 'undefined' && project.address) {
           window.open(`https://maps.google.com/?q=${encodeURIComponent(project.address)}`);
@@ -167,10 +153,9 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
     },
     { 
       icon: "ri-file-text-line", 
-      label: "Ver Contrato", 
+      label: "Contrato", 
       action: () => {
         if (typeof window === 'undefined') return;
-        
         if (project.contractHtml) {
           window.open(`/contract/${project.id}`, '_blank');
         } else if (project.permanentPdfUrl) {
@@ -187,20 +172,47 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
     },
   ];
 
+  const projectCategories = {
+    fencing: { name: "Cercas y Portones", icon: "ri-fence-line" },
+    roofing: { name: "Techos", icon: "ri-home-line" },
+    plumbing: { name: "Plomería", icon: "ri-droplet-line" },
+    electrical: { name: "Electricidad", icon: "ri-flashlight-line" },
+    carpentry: { name: "Carpintería", icon: "ri-hammer-line" },
+    concrete: { name: "Concreto", icon: "ri-square-line" },
+    landscaping: { name: "Paisajismo", icon: "ri-tree-line" },
+    painting: { name: "Pintura", icon: "ri-paint-brush-line" },
+    flooring: { name: "Pisos", icon: "ri-layout-grid-line" },
+    hvac: { name: "HVAC", icon: "ri-temp-hot-line" },
+    general: { name: "Contratista General", icon: "ri-tools-line" }
+  };
+
+  const projectType = project.projectType || project.projectCategory || 'general';
+  const category = projectCategories[projectType as keyof typeof projectCategories] || projectCategories.general;
+
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       <Tabs defaultValue="project" className="flex flex-col h-full">
-        <TabsList className="mb-4 w-full flex sticky top-0 z-10 bg-background">
-          <TabsTrigger value="project" className="flex-1" data-testid="tab-project">📋 Proyecto</TabsTrigger>
-          <TabsTrigger value="documents" className="flex-1" data-testid="tab-documents">📁 Documentos</TabsTrigger>
-          <TabsTrigger value="payment" className="flex-1" data-testid="tab-payment">💰 Pagos</TabsTrigger>
+        {/* Tabs Header */}
+        <TabsList className="w-full grid grid-cols-3 gap-1 bg-muted/50 p-1 mb-3 sticky top-0 z-10">
+          <TabsTrigger value="project" className="text-xs sm:text-sm" data-testid="tab-project">
+            <i className="ri-file-list-3-line mr-1"></i>
+            <span className="hidden sm:inline">Proyecto</span>
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="text-xs sm:text-sm" data-testid="tab-documents">
+            <i className="ri-folder-line mr-1"></i>
+            <span className="hidden sm:inline">Documentos</span>
+          </TabsTrigger>
+          <TabsTrigger value="payment" className="text-xs sm:text-sm" data-testid="tab-payment">
+            <i className="ri-money-dollar-circle-line mr-1"></i>
+            <span className="hidden sm:inline">Pagos</span>
+          </TabsTrigger>
         </TabsList>
 
-        {/* ===== TAB PROYECTO (FUSIÓN DE CLIENTE + PROYECTO + TIMELINE) ===== */}
-        <TabsContent value="project" className="space-y-4">
-          {/* Timeline del Proyecto */}
-          <Card className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-cyan-400/20">
-            <CardContent className="p-4">
+        {/* Tab: Proyecto */}
+        <TabsContent value="project" className="flex-1 overflow-y-auto space-y-3 px-1">
+          {/* Timeline */}
+          <Card className="border-2">
+            <CardContent className="p-3 sm:p-4">
               <FuturisticTimeline
                 projectId={project.id}
                 currentProgress={project.projectProgress || 'estimate_created'}
@@ -210,403 +222,347 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
           </Card>
 
           {/* Acciones Rápidas */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <i className="ri-flashlight-line"></i>
+          <Card className="border-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <i className="ri-flashlight-line text-primary"></i>
                 Acciones Rápidas
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <CardContent className="pt-2">
+              <div className="grid grid-cols-4 gap-2">
                 {quickActions.map((action, index) => (
                   <Button
                     key={index}
                     variant="outline"
-                    className="h-auto py-3 flex flex-col items-center gap-2"
+                    size="sm"
+                    className="h-auto py-2 px-1 flex flex-col items-center gap-1 text-xs"
                     onClick={action.action}
                     disabled={action.disabled}
                     data-testid={`button-quick-action-${index}`}
                   >
-                    <i className={`${action.icon} text-xl`}></i>
-                    <span className="text-xs">{action.label}</span>
+                    <i className={`${action.icon} text-base sm:text-lg`}></i>
+                    <span className="text-[10px] sm:text-xs leading-tight">{action.label}</span>
                   </Button>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          {/* Información del Cliente */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <i className="ri-user-line"></i>
+          {/* Información del Cliente y Proyecto */}
+          <Card className="border-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <i className="ri-user-line text-primary"></i>
                 Cliente y Proyecto
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Grid de información del cliente */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
-                <div>
-                  <label className="text-xs text-muted-foreground uppercase tracking-wider">Cliente</label>
-                  <p className="font-medium text-lg">{project.clientName}</p>
-                </div>
-                
-                {project.clientEmail && (
-                  <div>
-                    <label className="text-xs text-muted-foreground uppercase tracking-wider">Email</label>
-                    <p className="font-medium">{project.clientEmail}</p>
+            <CardContent className="pt-2 space-y-3">
+              {/* Cliente Info */}
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Cliente</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                  <div className="p-2 bg-muted/50 rounded border">
+                    <div className="text-xs text-muted-foreground mb-0.5">Nombre</div>
+                    <div className="font-medium">{project.clientName}</div>
                   </div>
-                )}
-                
-                {project.clientPhone && (
-                  <div>
-                    <label className="text-xs text-muted-foreground uppercase tracking-wider">Teléfono</label>
-                    <p className="font-medium">{project.clientPhone}</p>
+                  {project.clientEmail && (
+                    <div className="p-2 bg-muted/50 rounded border">
+                      <div className="text-xs text-muted-foreground mb-0.5">Email</div>
+                      <div className="font-medium truncate">{project.clientEmail}</div>
+                    </div>
+                  )}
+                  {project.clientPhone && (
+                    <div className="p-2 bg-muted/50 rounded border">
+                      <div className="text-xs text-muted-foreground mb-0.5">Teléfono</div>
+                      <div className="font-medium">{project.clientPhone}</div>
+                    </div>
+                  )}
+                  <div className={`p-2 bg-muted/50 rounded border ${!project.clientPhone || !project.clientEmail ? 'sm:col-span-2' : ''}`}>
+                    <div className="text-xs text-muted-foreground mb-0.5">Dirección</div>
+                    <div className="font-medium">{project.address}</div>
                   </div>
-                )}
-                
-                <div>
-                  <label className="text-xs text-muted-foreground uppercase tracking-wider">Dirección del Proyecto</label>
-                  <p className="font-medium">{project.address}</p>
                 </div>
               </div>
 
               {/* Detalles del Proyecto */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs text-cyan-400 uppercase tracking-wider font-mono">Categoría</label>
-                  <div className="bg-gray-800/50 border border-cyan-400/20 rounded px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      {(() => {
-                        const projectType = project.projectType || project.projectCategory || 'general';
-                        const projectCategories = {
-                          fencing: { name: "Cercas y Portones", icon: "fence" },
-                          roofing: { name: "Techos", icon: "home" },
-                          plumbing: { name: "Plomería", icon: "droplet" },
-                          electrical: { name: "Electricidad", icon: "zap" },
-                          carpentry: { name: "Carpintería", icon: "hammer" },
-                          concrete: { name: "Concreto", icon: "square" },
-                          landscaping: { name: "Paisajismo", icon: "tree" },
-                          painting: { name: "Pintura", icon: "paint-bucket" },
-                          flooring: { name: "Pisos", icon: "grid" },
-                          hvac: { name: "HVAC", icon: "thermometer" },
-                          general: { name: "Contratista General", icon: "tool" }
-                        };
-                        const category = projectCategories[projectType as keyof typeof projectCategories] || projectCategories.general;
-                        return (
-                          <>
-                            <i className={`ri-${category.icon}-line text-cyan-400`}></i>
-                            <span className="text-white text-sm">{category.name}</span>
-                          </>
-                        );
-                      })()}
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Detalles</div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+                  <div className="p-2 bg-muted/50 rounded border">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <i className={`${category.icon} text-primary`}></i>
+                      <div className="text-xs text-muted-foreground">Categoría</div>
                     </div>
+                    <div className="font-medium text-xs">{category.name}</div>
+                  </div>
+                  <div className="p-2 bg-muted/50 rounded border">
+                    <div className="text-xs text-muted-foreground mb-1">Tipo</div>
+                    <div className="font-medium text-xs">{project.projectSubtype || project.fenceType || 'No especificado'}</div>
+                  </div>
+                  <div className="p-2 bg-muted/50 rounded border">
+                    <div className="text-xs text-muted-foreground mb-1">Fecha Programada</div>
+                    <div className="font-medium text-xs">{formatDate(project.scheduledDate)}</div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs text-cyan-400 uppercase tracking-wider font-mono">Tipo Específico</label>
-                  <div className="bg-gray-800/50 border border-cyan-400/20 rounded px-3 py-2">
-                    <span className="text-white text-sm">
-                      {project.projectSubtype || project.fenceType || 'No especificado'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs text-cyan-400 uppercase tracking-wider font-mono">Fecha Programada</label>
-                  <div className="bg-gray-800/50 border border-cyan-400/20 rounded px-3 py-2">
-                    <span className="text-white text-sm">{formatDate(project.scheduledDate)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Dimensiones */}
-              {(project.height || project.length) && (
-                <div className="grid grid-cols-2 gap-4">
-                  {project.height && (
-                    <div className="space-y-2">
-                      <label className="text-xs text-muted-foreground uppercase tracking-wider">Altura</label>
-                      <p className="font-medium">{project.height} ft</p>
-                    </div>
-                  )}
-                  {project.length && (
-                    <div className="space-y-2">
-                      <label className="text-xs text-muted-foreground uppercase tracking-wider">Longitud</label>
-                      <p className="font-medium">{project.length} ft</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Puertas si existen */}
-              {project.gates && project.gates.length > 0 && (
-                <div>
-                  <h3 className="font-medium mb-2">Puertas/Portones</h3>
-                  <ul className="space-y-1">
-                    {project.gates.map((gate: any, index: number) => (
-                      <li key={index} className="flex items-center gap-2 text-sm">
-                        <i className="ri-door-line text-cyan-400"></i>
-                        {gate.type} ({gate.width}" x {gate.height}")
-                        {gate.hardware && <span className="text-muted-foreground">- {gate.hardware}</span>}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Estado del Permiso */}
-              {project.permitStatus && (
-                <div>
-                  <h3 className="font-medium mb-2">Estado del Permiso</h3>
-                  <div>{getPermitStatusBadge(project.permitStatus)}</div>
-                </div>
-              )}
-
-              {/* ID del Proyecto */}
-              <div className="pt-2 border-t">
-                <label className="text-xs text-muted-foreground uppercase tracking-wider">ID del Proyecto</label>
-                <p className="font-mono text-sm text-muted-foreground">{project.projectId}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Notas del Cliente */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Notas del Cliente</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Dialog open={clientNotesOpen} onOpenChange={setClientNotesOpen}>
-                <DialogTrigger asChild>
-                  <div className="relative">
-                    <Textarea 
-                      readOnly
-                      value={project.clientNotes || 'Sin notas del cliente. Haga clic para agregar.'}
-                      className="cursor-pointer h-28 resize-none"
-                      data-testid="textarea-client-notes"
-                    />
-                    <Button 
-                      size="sm" 
-                      className="absolute top-2 right-2" 
-                      variant="ghost"
-                      aria-label="Editar notas del cliente"
-                      data-testid="button-edit-client-notes"
-                    >
-                      <i className="ri-edit-line"></i>
-                    </Button>
-                  </div>
-                </DialogTrigger>
-                <DialogContent className="flex flex-col p-0">
-                  <DialogHeader className="sticky top-0 z-10 bg-background flex-shrink-0 p-4 md:p-6 border-b">
-                    <DialogTitle>Editar Notas del Cliente</DialogTitle>
-                  </DialogHeader>
-                  <div className="dialog-scroll-container p-4 md:p-6">
-                    <Textarea 
-                      placeholder="Ingrese notas sobre el cliente aquí..."
-                      className="min-h-[150px] resize-none w-full" 
-                      value={editableNotes.clientNotes}
-                      onChange={(e) => setEditableNotes({...editableNotes, clientNotes: e.target.value})}
-                      data-testid="textarea-edit-client-notes"
-                    />
-                  </div>
-                  <div className="sticky bottom-0 bg-background flex justify-end space-x-2 p-4 md:p-6 border-t flex-shrink-0">
-                    <Button 
-                      onClick={handleClientNotesUpdate} 
-                      disabled={isSaving}
-                      data-testid="button-save-client-notes"
-                    >
-                      {isSaving ? 'Guardando...' : 'Guardar Notas'}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </CardContent>
-          </Card>
-
-          {/* Notas Internas */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Notas Internas del Proyecto</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Dialog open={internalNotesOpen} onOpenChange={setInternalNotesOpen}>
-                <DialogTrigger asChild>
-                  <div className="relative">
-                    <Textarea 
-                      readOnly
-                      value={project.internalNotes || 'Sin notas internas. Haga clic para agregar.'}
-                      className="cursor-pointer h-28 resize-none"
-                      data-testid="textarea-internal-notes"
-                    />
-                    <Button 
-                      size="sm" 
-                      className="absolute top-2 right-2" 
-                      variant="ghost"
-                      aria-label="Editar notas internas"
-                      data-testid="button-edit-internal-notes"
-                    >
-                      <i className="ri-edit-line"></i>
-                    </Button>
-                  </div>
-                </DialogTrigger>
-                <DialogContent className="flex flex-col p-0">
-                  <DialogHeader className="sticky top-0 z-10 bg-background flex-shrink-0 p-4 md:p-6 border-b">
-                    <DialogTitle>Editar Notas Internas</DialogTitle>
-                  </DialogHeader>
-                  <div className="dialog-scroll-container p-4 md:p-6">
-                    <Textarea 
-                      placeholder="Ingrese notas internas aquí..."
-                      className="min-h-[150px] resize-none w-full" 
-                      value={editableNotes.internalNotes}
-                      onChange={(e) => setEditableNotes({...editableNotes, internalNotes: e.target.value})}
-                      data-testid="textarea-edit-internal-notes"
-                    />
-                  </div>
-                  <div className="sticky bottom-0 bg-background flex justify-end space-x-2 p-4 md:p-6 border-t flex-shrink-0">
-                    <Button 
-                      onClick={handleInternalNotesUpdate} 
-                      disabled={isSaving}
-                      data-testid="button-save-internal-notes"
-                    >
-                      {isSaving ? 'Guardando...' : 'Guardar Notas'}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ===== TAB DOCUMENTOS ===== */}
-        <TabsContent value="documents">
-          <div className="space-y-4">
-            {/* Documentos del sistema (Presupuesto y Contrato) */}
-            <Card>
-              <CardHeader>
-                <CardTitle>📋 Documentos del Sistema</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="font-medium mb-2 flex items-center gap-2">
-                      📊 Presupuesto
-                    </h3>
-                    {project.estimateHtml ? (
-                      <Button variant="outline" className="w-full" data-testid="button-view-estimate">
-                        <div className="mr-2">📄</div>
-                        Ver Presupuesto
-                      </Button>
-                    ) : (
-                      <div className="text-center p-4 border-2 border-dashed border-gray-300 rounded-lg">
-                        <p className="text-muted-foreground">No hay presupuesto disponible</p>
+                {/* Dimensiones */}
+                {(project.height || project.length) && (
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {project.height && (
+                      <div className="p-2 bg-muted/50 rounded border">
+                        <div className="text-xs text-muted-foreground mb-1">Altura</div>
+                        <div className="font-medium">{project.height} ft</div>
+                      </div>
+                    )}
+                    {project.length && (
+                      <div className="p-2 bg-muted/50 rounded border">
+                        <div className="text-xs text-muted-foreground mb-1">Longitud</div>
+                        <div className="font-medium">{project.length} ft</div>
                       </div>
                     )}
                   </div>
+                )}
 
-                  <div>
-                    <h3 className="font-medium mb-2 flex items-center gap-2">
-                      📜 Contrato
-                    </h3>
-                    {project.contractHtml ? (
-                      <Button variant="outline" className="w-full" data-testid="button-view-contract">
-                        <div className="mr-2">📃</div>
-                        Ver Contrato
-                      </Button>
-                    ) : (
-                      <div className="text-center p-4 border-2 border-dashed border-gray-300 rounded-lg">
-                        <p className="text-muted-foreground">No hay contrato disponible</p>
-                      </div>
-                    )}
+                {/* Puertas/Portones */}
+                {project.gates && project.gates.length > 0 && (
+                  <div className="p-2 bg-muted/50 rounded border">
+                    <div className="text-xs text-muted-foreground mb-1">Puertas/Portones</div>
+                    <div className="space-y-1">
+                      {project.gates.map((gate: any, index: number) => (
+                        <div key={index} className="flex items-center gap-1.5 text-xs">
+                          <i className="ri-door-line text-primary"></i>
+                          <span>{gate.type} ({gate.width}" x {gate.height}")</span>
+                          {gate.hardware && <span className="text-muted-foreground">- {gate.hardware}</span>}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                )}
 
-            {/* Mensaje de ayuda para Firebase Storage */}
-            <Card className="border-yellow-500/30 bg-yellow-500/5">
-              <CardContent className="pt-4">
-                <div className="flex gap-3">
-                  <i className="ri-information-line text-yellow-500 text-xl mt-1"></i>
-                  <div className="space-y-1">
-                    <p className="font-medium text-sm">⚠️ Si no puedes subir PDFs</p>
-                    <p className="text-sm text-muted-foreground">
-                      Firebase Storage requiere configuración de reglas de seguridad. 
-                      Consulta el archivo <code className="text-xs bg-muted px-1 py-0.5 rounded">FIREBASE-STORAGE-RULES-PROJECTS.md</code> para instrucciones completas.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Sistema de gestión de archivos */}
-            <FileManager 
-              projectId={project.id}
-              attachments={project.attachments}
-              onUpdate={(newAttachments) => {
-                const updatedProject = { ...project, attachments: newAttachments };
-                onUpdate(updatedProject);
-              }}
-            />
-          </div>
-        </TabsContent>
-
-        {/* ===== TAB PAGOS ===== */}
-        <TabsContent value="payment">
-          <Card>
-            <CardHeader>
-              <CardTitle>Información de Pago</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                <div>
-                  <h3 className="font-medium text-sm text-muted-foreground">Precio Total del Proyecto</h3>
-                  <p className="text-3xl font-bold">{formatCurrency(project.totalPrice || 0)}</p>
-                </div>
-                <div className="text-right">
-                  <h3 className="font-medium text-sm text-muted-foreground mb-1">Estado de Pago</h3>
-                  <div>{getPaymentStatusBadge(project.paymentStatus || 'pending')}</div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-medium mb-2">Historial de Pagos</h3>
-                {project.paymentDetails && project.paymentDetails.history && project.paymentDetails.history.length > 0 ? (
-                  <div className="border rounded-md">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead>
-                        <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Método</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {project.paymentDetails.history.map((payment: any, index: number) => (
-                          <tr key={index}>
-                            <td className="px-4 py-2 whitespace-nowrap">{formatDate(payment.date)}</td>
-                            <td className="px-4 py-2 whitespace-nowrap">{formatCurrency(payment.amount)}</td>
-                            <td className="px-4 py-2 whitespace-nowrap">{payment.method}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
-                    <i className="ri-money-dollar-circle-line text-4xl text-muted-foreground mb-2"></i>
-                    <p className="text-muted-foreground">No hay historial de pagos registrado</p>
+                {/* Permiso */}
+                {project.permitStatus && (
+                  <div className="p-2 bg-muted/50 rounded border">
+                    <div className="text-xs text-muted-foreground mb-1">Estado del Permiso</div>
+                    <div>{getPermitStatusBadge(project.permitStatus)}</div>
                   </div>
                 )}
               </div>
 
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button variant="outline" data-testid="button-register-payment">
+              {/* ID del Proyecto */}
+              <div className="pt-2 border-t">
+                <div className="text-[10px] text-muted-foreground">ID: {project.projectId}</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Notas */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Notas del Cliente */}
+            <Card className="border-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center justify-between">
+                  <span>Notas del Cliente</span>
+                  <Dialog open={clientNotesOpen} onOpenChange={setClientNotesOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" data-testid="button-edit-client-notes">
+                        <i className="ri-edit-line text-sm"></i>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Editar Notas del Cliente</DialogTitle>
+                      </DialogHeader>
+                      <Textarea 
+                        placeholder="Ingrese notas sobre el cliente aquí..."
+                        className="min-h-[200px]" 
+                        value={editableNotes.clientNotes}
+                        onChange={(e) => setEditableNotes({...editableNotes, clientNotes: e.target.value})}
+                        data-testid="textarea-edit-client-notes"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setClientNotesOpen(false)}>Cancelar</Button>
+                        <Button onClick={handleClientNotesUpdate} disabled={isSaving} data-testid="button-save-client-notes">
+                          {isSaving ? 'Guardando...' : 'Guardar'}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-2">
+                <div className="text-xs text-muted-foreground whitespace-pre-wrap min-h-[60px] p-2 bg-muted/30 rounded border">
+                  {project.clientNotes || 'Sin notas del cliente.'}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Notas Internas */}
+            <Card className="border-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center justify-between">
+                  <span>Notas Internas</span>
+                  <Dialog open={internalNotesOpen} onOpenChange={setInternalNotesOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" data-testid="button-edit-internal-notes">
+                        <i className="ri-edit-line text-sm"></i>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Editar Notas Internas</DialogTitle>
+                      </DialogHeader>
+                      <Textarea 
+                        placeholder="Ingrese notas internas aquí..."
+                        className="min-h-[200px]" 
+                        value={editableNotes.internalNotes}
+                        onChange={(e) => setEditableNotes({...editableNotes, internalNotes: e.target.value})}
+                        data-testid="textarea-edit-internal-notes"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setInternalNotesOpen(false)}>Cancelar</Button>
+                        <Button onClick={handleInternalNotesUpdate} disabled={isSaving} data-testid="button-save-internal-notes">
+                          {isSaving ? 'Guardando...' : 'Guardar'}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-2">
+                <div className="text-xs text-muted-foreground whitespace-pre-wrap min-h-[60px] p-2 bg-muted/30 rounded border">
+                  {project.internalNotes || 'Sin notas internas.'}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Tab: Documentos */}
+        <TabsContent value="documents" className="flex-1 overflow-y-auto space-y-3 px-1">
+          {/* Documentos del Sistema */}
+          <Card className="border-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Documentos del Sistema</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-muted-foreground">Presupuesto</div>
+                  {project.estimateHtml ? (
+                    <Button variant="outline" size="sm" className="w-full" data-testid="button-view-estimate">
+                      <i className="ri-file-text-line mr-2"></i>
+                      Ver Presupuesto
+                    </Button>
+                  ) : (
+                    <div className="text-center p-3 border border-dashed rounded text-xs text-muted-foreground">
+                      No disponible
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-muted-foreground">Contrato</div>
+                  {project.contractHtml ? (
+                    <Button variant="outline" size="sm" className="w-full" data-testid="button-view-contract">
+                      <i className="ri-file-text-line mr-2"></i>
+                      Ver Contrato
+                    </Button>
+                  ) : (
+                    <div className="text-center p-3 border border-dashed rounded text-xs text-muted-foreground">
+                      No disponible
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Ayuda Firebase Storage */}
+          <Card className="border-2 border-yellow-500/30 bg-yellow-500/5">
+            <CardContent className="p-3">
+              <div className="flex gap-2">
+                <i className="ri-information-line text-yellow-600 dark:text-yellow-500 text-base mt-0.5"></i>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold">Si no puedes subir archivos</p>
+                  <p className="text-xs text-muted-foreground">
+                    Configura las reglas de Firebase Storage. Consulta <code className="text-[10px] bg-muted px-1 py-0.5 rounded">FIREBASE-STORAGE-RULES-PROJECTS.md</code>
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* FileManager */}
+          <FileManager 
+            projectId={project.id}
+            attachments={project.attachments}
+            onUpdate={(newAttachments) => {
+              const updatedProject = { ...project, attachments: newAttachments };
+              onUpdate(updatedProject);
+            }}
+          />
+        </TabsContent>
+
+        {/* Tab: Pagos */}
+        <TabsContent value="payment" className="flex-1 overflow-y-auto space-y-3 px-1">
+          <Card className="border-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Información de Pago</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-2 space-y-3">
+              {/* Resumen de Pago */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-muted/50 rounded border">
+                  <div className="text-xs text-muted-foreground mb-1">Precio Total</div>
+                  <div className="text-lg font-bold">{formatCurrency(project.totalPrice || 0)}</div>
+                </div>
+                <div className="p-3 bg-muted/50 rounded border">
+                  <div className="text-xs text-muted-foreground mb-1">Estado</div>
+                  <div className="mt-1">{getPaymentStatusBadge(project.paymentStatus || 'pending')}</div>
+                </div>
+              </div>
+
+              {/* Historial de Pagos */}
+              <div>
+                <div className="text-xs font-semibold text-muted-foreground mb-2">Historial de Pagos</div>
+                {project.paymentDetails && project.paymentDetails.history && project.paymentDetails.history.length > 0 ? (
+                  <div className="border rounded overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="px-3 py-2 text-left font-semibold">Fecha</th>
+                            <th className="px-3 py-2 text-left font-semibold">Monto</th>
+                            <th className="px-3 py-2 text-left font-semibold">Método</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {project.paymentDetails.history.map((payment: any, index: number) => (
+                            <tr key={index}>
+                              <td className="px-3 py-2">{formatDate(payment.date)}</td>
+                              <td className="px-3 py-2 font-medium">{formatCurrency(payment.amount)}</td>
+                              <td className="px-3 py-2">{payment.method}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center p-6 border border-dashed rounded">
+                    <i className="ri-money-dollar-circle-line text-3xl text-muted-foreground mb-2 block"></i>
+                    <p className="text-xs text-muted-foreground">No hay historial de pagos</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Acciones */}
+              <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                <Button variant="outline" size="sm" className="flex-1" data-testid="button-register-payment">
                   <i className="ri-money-dollar-circle-line mr-2"></i>
                   Registrar Pago
                 </Button>
-                <Button data-testid="button-generate-invoice">
+                <Button size="sm" className="flex-1" data-testid="button-generate-invoice">
                   <i className="ri-bill-line mr-2"></i>
                   Generar Factura
                 </Button>
