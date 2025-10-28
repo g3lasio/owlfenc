@@ -66,10 +66,10 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
   const formatCurrency = (amount: number) => {
     if (!amount && amount !== 0) return 'No establecido';
 
-    return new Intl.NumberFormat('es-MX', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'MXN'
-    }).format(amount / 100); // Assuming amount is stored in cents
+      currency: 'USD'
+    }).format(amount); // ✅ FIXED: Values are already in dollars, not cents
   };
 
   const getPaymentStatusBadge = (status: string) => {

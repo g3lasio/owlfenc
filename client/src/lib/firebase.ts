@@ -612,62 +612,61 @@ export const getProjectById = async (id: string) => {
 
 export const updateProject = async (id: string, projectData: any) => {
   try {
-    if (devMode) {
-      console.log("Actualizando proyecto con ID:", id, projectData);
-      
-      // Obtener los proyectos de localStorage
-      const savedProjectsStr = localStorage.getItem('owlFenceProjects');
-      let allProjects = savedProjectsStr ? JSON.parse(savedProjectsStr) : [];
-      
-      // Buscar el proyecto en la lista
-      const projectIndex = allProjects.findIndex((p: any) => p.id === id);
-      
-      if (projectIndex === -1) {
-        throw new Error(`Project with ID ${id} not found`);
-      }
-      
-      // Actualizar el proyecto
-      const currentProject = allProjects[projectIndex];
-      const updatedProject = {
-        ...currentProject,
-        ...projectData,
-        updatedAt: typeof Timestamp.now === 'function' ? 
-          Timestamp.now() : 
-          { toDate: () => new Date(), toMillis: () => Date.now() }
-      };
-      
-      // Actualizar en la lista
-      allProjects[projectIndex] = updatedProject;
-      
-      // Guardar la lista actualizada en localStorage
-      localStorage.setItem('owlFenceProjects', JSON.stringify(allProjects));
-      
-      return updatedProject;
-    } else {
-      // Código para Firebase en producción
-      const docRef = doc(db, "projects", id);
-      const docSnap = await getDoc(docRef);
-      
-      if (!docSnap.exists()) {
-        throw new Error(`Project with ID ${id} not found`);
-      }
-      
-      // Make sure we're not losing any existing data
-      const currentData = docSnap.data();
-      
-      const updatedData = {
-        ...projectData,
-        updatedAt: Timestamp.now()
-      };
-      
-      await updateDoc(docRef, updatedData);
-      
-      // Get the refreshed document
-      const updatedDocSnap = await getDoc(docRef);
-      return { id, ...updatedDocSnap.data() };
+    console.log("🔄 [UPDATE-PROJECT] Updating project:", id, projectData);
+    
+    // CRITICAL SECURITY: Wait for auth to be ready and get current authenticated user
+    const currentUser = await waitForAuth();
+    if (!currentUser) {
+      throw new Error("Usuario no autenticado");
     }
+    
+    // ✅ FIXED: Search in both collections (projects and estimates) like getProjectById
+    const collectionsToSearch = ["projects", "estimates"];
+    let projectDoc = null;
+    let collectionName = null;
+    
+    for (const collectionNameToCheck of collectionsToSearch) {
+      console.log(`🔍 [UPDATE-PROJECT] Searching in collection: ${collectionNameToCheck}`);
+      
+      const projectDocRef = doc(db, collectionNameToCheck, id);
+      const projectDocSnap = await getDoc(projectDocRef);
+      
+      if (projectDocSnap.exists()) {
+        const existingData = projectDocSnap.data();
+        
+        // SISTEMA UNIFICADO: Verificar propiedad priorizando Firebase UID
+        if (existingData.firebaseUserId === currentUser.uid || 
+            (!existingData.firebaseUserId && existingData.userId === currentUser.uid)) {
+          projectDoc = projectDocSnap;
+          collectionName = collectionNameToCheck;
+          console.log(`✅ [UPDATE-PROJECT] Project found in collection: ${collectionNameToCheck}`);
+          break;
+        } else {
+          console.log(`🔒 [UPDATE-PROJECT] Project found but belongs to different user`);
+        }
+      }
+    }
+    
+    if (!projectDoc || !collectionName) {
+      console.error("🔍 [UPDATE-PROJECT] Project not found in any collection. ID:", id);
+      throw new Error(`Project with ID ${id} not found in any collection`);
+    }
+    
+    // Update the project in the correct collection
+    const docRef = doc(db, collectionName, id);
+    const updatedData = {
+      ...projectData,
+      updatedAt: Timestamp.now()
+    };
+    
+    await updateDoc(docRef, updatedData);
+    console.log("✅ [UPDATE-PROJECT] Project updated successfully");
+    
+    // Get updated project
+    const updatedDocSnap = await getDoc(docRef);
+    return { id, ...updatedDocSnap.data() };
   } catch (error) {
-    console.error("Error updating project:", error);
+    console.error("❌ [UPDATE-PROJECT] Error updating project:", error);
     throw error;
   }
 };

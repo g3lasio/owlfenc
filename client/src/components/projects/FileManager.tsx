@@ -94,7 +94,8 @@ export default function FileManager({ projectId, attachments = {}, onUpdate }: F
       return downloadURL;
     } catch (error) {
       console.error('Error subiendo archivo a Firebase Storage:', error);
-      throw new Error(`No se pudo subir el archivo: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      throw new Error(`No se pudo subir el archivo: ${errorMessage}`);
     }
   };
 
