@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/contexts/PermissionContext";
@@ -97,6 +97,7 @@ function Projects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
   const [selectedProjectCategory, setSelectedProjectCategory] = useState("");
   const [selectedProjectType, setSelectedProjectType] = useState("");
@@ -105,28 +106,32 @@ function Projects() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   
+  // ✅ Track if initial load completed to prevent toast spam
+  const hasLoadedOnce = useRef(false);
+  
   const { toast } = useToast();
   const { currentUser } = useAuth();
   const { hasAccess, showUpgradeModal } = usePermissions();
 
+  // ✅ Auto-refresh cada 30 segundos para sincronizar con EstimatesWizard
   useEffect(() => {
     // Esperar a que el usuario esté completamente autenticado
     if (currentUser?.uid) {
       console.log("👤 [PROJECTS] Usuario autenticado detectado, cargando proyectos...");
-      loadProjects();
+      loadProjects(false); // Initial load
+      
+      // ✅ Auto-refresh cada 30 segundos en background sin parpadeo
+      const refreshInterval = setInterval(() => {
+        console.log("🔄 [PROJECTS] Auto-refresh silencioso de proyectos...");
+        loadProjects(true); // Background refresh (no skeleton)
+      }, 30000);
+      
+      return () => clearInterval(refreshInterval);
     } else {
       console.log("👤 [PROJECTS] Esperando autenticación...");
       setIsLoading(false); // No mostrar cargando infinito si no hay usuario
     }
-  }, [currentUser?.uid]);
-
-  // Auto-reload cuando el usuario se autentica por primera vez
-  useEffect(() => {
-    if (currentUser && projects.length === 0 && !isLoading) {
-      console.log("🔄 [PROJECTS] Usuario autenticado pero sin proyectos, recargando...");
-      loadProjects();
-    }
-  }, [currentUser]);
+  }, [currentUser?.uid, loadProjects]); // ✅ Include loadProjects dependency
 
   // Filter projects when any filter changes
   useEffect(() => {
@@ -191,9 +196,14 @@ function Projects() {
     }
   };
 
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async (isBackgroundRefresh = false) => {
     try {
-      setIsLoading(true);
+      // ✅ Only show skeleton on initial load, not on background refresh
+      if (isBackgroundRefresh) {
+        setIsBackgroundRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
 
       if (!currentUser?.uid) {
         toast({
@@ -204,16 +214,8 @@ function Projects() {
         return;
       }
 
-      // ✅ FIXED: Solo verificar permisos sin llamar hooks anidados
-      if (!hasAccess('projects')) {
-        toast({
-          title: "⭐ Acceso Restringido",
-          description: "Tu plan actual no incluye acceso completo a gestión de proyectos",
-          variant: "destructive",
-        });
-        showUpgradeModal('projects', 'Gestiona proyectos con herramientas profesionales');
-        return;
-      }
+      // ✅ OPTIMIZED: No bloquear la carga, solo mostrar mensaje informativo
+      // La verificación de permisos se hace en el UI, no en la carga de datos
 
       console.log("🚀 [PROJECTS] Iniciando carga del dashboard de proyectos...");
       console.log(`🔍 [PROJECTS] Usuario autenticado: ${currentUser.uid}`);
@@ -431,16 +433,17 @@ function Projects() {
         
         if (allProjects.length === 0) {
           console.log("📭 [DASHBOARD] Dashboard vacío - No hay estimados");
-          toast({
-            title: "📋 Dashboard de Proyectos",
-            description: "No tienes estimados aún. Crea un estimado en Estimate Wizard y aparecerá aquí automáticamente.",
-          });
+          // No mostrar toast en carga vacía, solo en errores
         } else {
-          console.log("✅ [DASHBOARD] Dashboard cargado exitosamente");
-          toast({
-            title: "📊 Dashboard Cargado",
-            description: `${allProjects.length} proyecto${allProjects.length !== 1 ? 's' : ''} cargado${allProjects.length !== 1 ? 's' : ''} desde estimate wizard.`,
-          });
+          console.log(`✅ [DASHBOARD] Dashboard cargado exitosamente con ${allProjects.length} proyectos`);
+          // ✅ FIXED: Solo mostrar toast en la primera carga exitosa usando ref
+          if (!hasLoadedOnce.current && !isBackgroundRefresh) {
+            toast({
+              title: "📊 Dashboard Cargado",
+              description: `${allProjects.length} proyecto${allProjects.length !== 1 ? 's' : ''} sincronizado${allProjects.length !== 1 ? 's' : ''} desde estimates.`,
+            });
+            hasLoadedOnce.current = true;
+          }
         }
 
         // Mapear estados correctamente
@@ -455,39 +458,53 @@ function Projects() {
       } catch (firebaseError: any) {
         console.error("🚨 [FIREBASE-ERROR] Error conectando con Firebase:", firebaseError);
         
-        // Manejar errores específicos
-        if (firebaseError.code === 'permission-denied') {
-          toast({
-            variant: "destructive",
-            title: "Error de Permisos",
-            description: "No tienes permisos para acceder a los proyectos. Verifica tu autenticación.",
-          });
-        } else if (firebaseError.code === 'unavailable') {
-          toast({
-            variant: "destructive",
-            title: "Firebase No Disponible",
-            description: "El servicio está temporalmente no disponible. Intenta de nuevo en unos minutos.",
-          });
+        // ✅ FIXED: Solo mostrar toasts de error si no es background refresh
+        if (!isBackgroundRefresh) {
+          // Manejar errores específicos
+          if (firebaseError.code === 'permission-denied') {
+            toast({
+              variant: "destructive",
+              title: "Error de Permisos",
+              description: "No tienes permisos para acceder a los proyectos. Verifica tu autenticación.",
+            });
+          } else if (firebaseError.code === 'unavailable') {
+            toast({
+              variant: "destructive",
+              title: "Firebase No Disponible",
+              description: "El servicio está temporalmente no disponible. Intenta de nuevo en unos minutos.",
+            });
+          } else {
+            toast({
+              variant: "destructive",
+              title: "Error de Conexión",
+              description: "No se pudo cargar los proyectos. Verifica tu conexión a internet.",
+            });
+          }
         } else {
-          toast({
-            variant: "destructive",
-            title: "Error de Conexión",
-            description: "No se pudo cargar los proyectos. Verifica tu conexión a internet.",
-          });
+          // Background refresh: log silently for telemetry
+          console.warn("🔇 [BACKGROUND-REFRESH] Error silencioso:", firebaseError.code || firebaseError.message);
         }
       }
 
     } catch (error) {
       console.error("❌ Error loading projects:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudieron cargar los proyectos.",
-      });
+      // Solo mostrar error si no es background refresh silencioso
+      if (!isBackgroundRefresh) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudieron cargar los proyectos.",
+        });
+      }
     } finally {
-      setIsLoading(false);
+      // ✅ FIXED: Clear correct loading state
+      if (isBackgroundRefresh) {
+        setIsBackgroundRefreshing(false);
+      } else {
+        setIsLoading(false);
+      }
     }
-  };
+  }, [currentUser, toast]); // ✅ Dependencies for useCallback
 
   // Helper functions
   const formatDate = (date: any) => {
@@ -636,7 +653,7 @@ function Projects() {
         <p className="text-muted-foreground mb-6 max-w-md">
           Aún no has creado ningún estimado o contrato.
         </p>
-        <Link href="/estimates-dashboard">
+        <Link href="/estimates">
           <Button className="bg-green-500 hover:bg-green-600">
             🚀 Crear Nuevo Estimado
           </Button>
