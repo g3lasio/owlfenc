@@ -21,14 +21,43 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
     internalNotes: project.internalNotes || ''
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [clientNotesOpen, setClientNotesOpen] = useState(false);
+  const [internalNotesOpen, setInternalNotesOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleNotesUpdate = async () => {
+  const handleClientNotesUpdate = async () => {
     try {
       setIsSaving(true);
 
       const updatedProject = await updateProject(project.id, {
-        clientNotes: editableNotes.clientNotes,
+        clientNotes: editableNotes.clientNotes
+      });
+
+      onUpdate(updatedProject);
+
+      toast({
+        title: "Notas actualizadas",
+        description: "Las notas del cliente han sido actualizadas correctamente."
+      });
+      
+      setClientNotesOpen(false);
+    } catch (error) {
+      console.error("Error updating notes:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron actualizar las notas."
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleInternalNotesUpdate = async () => {
+    try {
+      setIsSaving(true);
+
+      const updatedProject = await updateProject(project.id, {
         internalNotes: editableNotes.internalNotes
       });
 
@@ -36,8 +65,10 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
 
       toast({
         title: "Notas actualizadas",
-        description: "Las notas del proyecto han sido actualizadas correctamente."
+        description: "Las notas internas han sido actualizadas correctamente."
       });
+      
+      setInternalNotesOpen(false);
     } catch (error) {
       console.error("Error updating notes:", error);
       toast({
@@ -104,10 +135,56 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
 
   // Acciones rápidas del proyecto
   const quickActions = [
-    { icon: "ri-phone-line", label: "Llamar Cliente", action: () => window.open(`tel:${project.clientPhone}`) },
-    { icon: "ri-mail-line", label: "Email Cliente", action: () => window.open(`mailto:${project.clientEmail}`) },
-    { icon: "ri-map-pin-line", label: "Ver Ubicación", action: () => window.open(`https://maps.google.com/?q=${encodeURIComponent(project.address)}`) },
-    { icon: "ri-file-text-line", label: "Ver Contrato", action: () => {} },
+    { 
+      icon: "ri-phone-line", 
+      label: "Llamar Cliente", 
+      action: () => {
+        if (typeof window !== 'undefined' && project.clientPhone) {
+          window.open(`tel:${project.clientPhone}`);
+        }
+      },
+      disabled: !project.clientPhone
+    },
+    { 
+      icon: "ri-mail-line", 
+      label: "Email Cliente", 
+      action: () => {
+        if (typeof window !== 'undefined' && project.clientEmail) {
+          window.open(`mailto:${project.clientEmail}`);
+        }
+      },
+      disabled: !project.clientEmail
+    },
+    { 
+      icon: "ri-map-pin-line", 
+      label: "Ver Ubicación", 
+      action: () => {
+        if (typeof window !== 'undefined' && project.address) {
+          window.open(`https://maps.google.com/?q=${encodeURIComponent(project.address)}`);
+        }
+      },
+      disabled: !project.address
+    },
+    { 
+      icon: "ri-file-text-line", 
+      label: "Ver Contrato", 
+      action: () => {
+        if (typeof window === 'undefined') return;
+        
+        if (project.contractHtml) {
+          window.open(`/contract/${project.id}`, '_blank');
+        } else if (project.permanentPdfUrl) {
+          window.open(project.permanentPdfUrl, '_blank');
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Contrato no disponible",
+            description: "Este proyecto aún no tiene un contrato generado."
+          });
+        }
+      },
+      disabled: !project.contractHtml && !project.permanentPdfUrl
+    },
   ];
 
   return (
@@ -148,7 +225,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                     variant="outline"
                     className="h-auto py-3 flex flex-col items-center gap-2"
                     onClick={action.action}
-                    disabled={!project.clientPhone && action.icon === "ri-phone-line"}
+                    disabled={action.disabled}
                     data-testid={`button-quick-action-${index}`}
                   >
                     <i className={`${action.icon} text-xl`}></i>
@@ -301,7 +378,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
               <CardTitle>Notas del Cliente</CardTitle>
             </CardHeader>
             <CardContent>
-              <Dialog>
+              <Dialog open={clientNotesOpen} onOpenChange={setClientNotesOpen}>
                 <DialogTrigger asChild>
                   <div className="relative">
                     <Textarea 
@@ -336,7 +413,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                   </div>
                   <div className="sticky bottom-0 bg-background flex justify-end space-x-2 p-4 md:p-6 border-t flex-shrink-0">
                     <Button 
-                      onClick={handleNotesUpdate} 
+                      onClick={handleClientNotesUpdate} 
                       disabled={isSaving}
                       data-testid="button-save-client-notes"
                     >
@@ -354,7 +431,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
               <CardTitle>Notas Internas del Proyecto</CardTitle>
             </CardHeader>
             <CardContent>
-              <Dialog>
+              <Dialog open={internalNotesOpen} onOpenChange={setInternalNotesOpen}>
                 <DialogTrigger asChild>
                   <div className="relative">
                     <Textarea 
@@ -389,7 +466,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                   </div>
                   <div className="sticky bottom-0 bg-background flex justify-end space-x-2 p-4 md:p-6 border-t flex-shrink-0">
                     <Button 
-                      onClick={handleNotesUpdate} 
+                      onClick={handleInternalNotesUpdate} 
                       disabled={isSaving}
                       data-testid="button-save-internal-notes"
                     >
