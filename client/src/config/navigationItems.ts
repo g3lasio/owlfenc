@@ -21,18 +21,13 @@ export const mainNavigationConfig: NavigationSection[] = [
         path: "/permit-advisor",
         icon: "ri-robot-2-line",
       },
-      {
-        label: "AI Project Manager",
-        path: "/ai-project-manager",
-        icon: "lucide-brain",
-      },
     ],
   },
   {
     title: "Proyectos",
     items: [
       {
-        label: "Dashboard",
+        label: "Projects",
         path: "/projects",
         icon: "ri-briefcase-4-line",
       },

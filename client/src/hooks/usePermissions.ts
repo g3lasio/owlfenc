@@ -27,7 +27,6 @@ export function useFeatureAccess() {
     // Herramientas premium
     canUsePropertyVerifier: () => canUse('propertyVerifications'),
     canUsePermitAdvisor: () => canUse('permitAdvisor'),
-    canUseAIProjectManager: () => hasAccess('projects'),
     
     // Sistema financiero
     hasInvoiceAccess: () => hasAccess('invoices'),

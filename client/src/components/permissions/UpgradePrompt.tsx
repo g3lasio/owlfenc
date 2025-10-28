@@ -32,11 +32,6 @@ const featureMessages = {
     message: "Genera contratos ilimitados sin marcas de agua.",
     benefits: ["Contratos ilimitados", "Sin marcas de agua", "Plantillas premium"]
   },
-  projects: {
-    title: "¡AI Project Manager Avanzado!",
-    message: "Gestiona proyectos complejos con inteligencia artificial.",
-    benefits: ["Proyectos ilimitados", "IA avanzada", "Automatización completa"]
-  },
   propertyVerifications: {
     title: "¡Verifica más propiedades!",
     message: "Acceso ilimitado al verificador de propiedades.",

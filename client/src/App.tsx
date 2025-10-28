@@ -14,7 +14,6 @@ import ChatInterface from "@/components/chat/ChatInterface";
 import Profile from "@/pages/Profile";
 import PropertyOwnershipVerifier from "@/pages/PropertyOwnershipVerifier";
 import PermitAdvisor from "@/pages/PermitAdvisor";
-import AIProjectManager from "@/pages/AIProjectManager";
 import OwlFunding from "@/pages/OwlFunding";
 import AboutOwlFence from "@/pages/AboutOwlFence";
 import AboutMervin from "@/pages/AboutMervin";
@@ -203,9 +202,6 @@ function MainAppRouter() {
               </Route>
               <Route path="/permit-advisor">
                 {() => <ProtectedRoute component={PermitAdvisor} />}
-              </Route>
-              <Route path="/ai-project-manager">
-                {() => <ProtectedRoute component={AIProjectManager} />}
               </Route>
               <Route path="/owl-funding">
                 {() => <ProtectedRoute component={OwlFunding} />}

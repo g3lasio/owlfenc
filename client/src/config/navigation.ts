@@ -33,7 +33,7 @@ export const navigationGroups: NavigationGroup[] = [
       },
       {
         id: "projects",
-        label: "navigation.dashboard",
+        label: "navigation.projects",
         path: "/projects",
         icon: "ri-briefcase-4-line"
       },
@@ -90,12 +90,6 @@ export const navigationGroups: NavigationGroup[] = [
         label: "navigation.permitAdvisor",
         path: "/permit-advisor",
         icon: "ri-robot-2-line"
-      },
-      {
-        id: "ai-project-manager",
-        label: "navigation.aiProjectManager",
-        path: "/ai-project-manager",
-        icon: "lucide-brain"
       },
       {
         id: "owl-funding",

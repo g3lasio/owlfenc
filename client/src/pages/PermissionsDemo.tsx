@@ -254,7 +254,7 @@ export default function PermissionsDemo() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Home className="h-5 w-5" />
-              AI Project Manager
+              Project Manager
             </CardTitle>
           </CardHeader>
           <CardContent>
