@@ -34,6 +34,7 @@ This AI-powered legal document and permit management platform automates tasks su
 - PROFILE SYNC FIX CRITICAL: Corregida sincronización de perfil contractor entre dispositivos - Firebase como fuente de verdad, localStorage solo como caché
 - CHYRRIS.COM SIGNATURE URLS: Sistema de URLs dinámicas completamente reconfigurado para usar chyrris.com exclusivamente para enlaces de firma de contratos
 - CHYRRIS.COM ESTIMATE SHARING URLS: Sistema de URLs compartibles de estimados completamente migrado a chyrris.com con URLs ultra-cortas
+- PROJECTS AUTO-REFRESH OPTIMIZATION (2025-10-28): Sistema de auto-refresh silencioso cada 30s implementado en Projects.tsx. Características: (1) isBackgroundRefreshing estado separado de isLoading para evitar skeleton flicker, (2) hasLoadedOnce useRef para prevenir toast spam, (3) useCallback en loadProjects con parámetro isBackgroundRefresh, (4) Background refresh completamente silencioso - solo logs en console, sin toasts de error, (5) UI feedback solo en initial load. Validado por architect: "Background refresh fully silent while preserving initial-load feedback".
 
 ## System Architecture
 
