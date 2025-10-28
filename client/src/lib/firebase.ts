@@ -543,6 +543,12 @@ export const getProjectById = async (id: string) => {
             projectData.estimateAmount ||
             0;
 
+          // ✅ FIXED: Detectar si el valor está en centavos y convertir a dólares
+          // Si es un número entero grande (>10000) sin decimales, está en centavos
+          if (totalValue > 10000 && Number.isInteger(totalValue)) {
+            totalValue = totalValue / 100;
+          }
+
           const projectTitle =
             projectData.projectDetails?.name ||
             projectData.projectName ||
