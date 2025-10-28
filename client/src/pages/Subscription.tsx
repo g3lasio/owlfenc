@@ -447,9 +447,20 @@ export default function Subscription() {
   // Determinar cuál plan marcar como el más popular (El Mero Patrón)
   const getIsMostPopular = (planCode: string) => planCode === "mero_patron";
 
+  // Debug logging to identify loading issues
+  useEffect(() => {
+    console.log("🔍 [SUBSCRIPTION-DEBUG] Plans state:", {
+      isLoadingPlans,
+      hasPlans: !!plans,
+      plansCount: Array.isArray(plans) ? plans.length : 0,
+      plansError: plansError?.message,
+    });
+  }, [isLoadingPlans, plans, plansError]);
+
   const isLoadingData = isLoadingPlans || isLoadingUserSubscription;
-  const hasError =
-    plansError || (!isLoadingPlans && (!plans || !Array.isArray(plans) || plans.length === 0));
+  
+  // 🐛 FIX: Only mark as error if we explicitly have an error OR if loading finished with no data
+  const hasError = !!plansError || (!isLoadingPlans && plans !== undefined && (!Array.isArray(plans) || plans.length === 0));
 
   if (isLoadingData) {
     return (
@@ -474,9 +485,12 @@ export default function Subscription() {
           <h2 className="text-xl font-semibold mb-2">
             Error al cargar los planes
           </h2>
-          <p className="text-muted-foreground">
-            No se pudieron cargar los planes de suscripción.
+          <p className="text-muted-foreground mb-4">
+            {plansError?.message || "No se pudieron cargar los planes de suscripción."}
           </p>
+          <Button onClick={() => window.location.reload()}>
+            Reintentar
+          </Button>
         </div>
       </div>
     );
