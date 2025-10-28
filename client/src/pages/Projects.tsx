@@ -113,68 +113,6 @@ function Projects() {
   const { currentUser } = useAuth();
   const { hasAccess, showUpgradeModal } = usePermissions();
 
-  // ✅ Auto-refresh cada 30 segundos para sincronizar con EstimatesWizard
-  useEffect(() => {
-    // Esperar a que el usuario esté completamente autenticado
-    if (currentUser?.uid) {
-      console.log("👤 [PROJECTS] Usuario autenticado detectado, cargando proyectos...");
-      loadProjects(false); // Initial load
-      
-      // ✅ Auto-refresh cada 30 segundos en background sin parpadeo
-      const refreshInterval = setInterval(() => {
-        console.log("🔄 [PROJECTS] Auto-refresh silencioso de proyectos...");
-        loadProjects(true); // Background refresh (no skeleton)
-      }, 30000);
-      
-      return () => clearInterval(refreshInterval);
-    } else {
-      console.log("👤 [PROJECTS] Esperando autenticación...");
-      setIsLoading(false); // No mostrar cargando infinito si no hay usuario
-    }
-  }, [currentUser?.uid, loadProjects]); // ✅ Include loadProjects dependency
-
-  // Filter projects when any filter changes
-  useEffect(() => {
-    let result = [...projects];
-    
-    // Filter by status tab
-    if (activeTab !== "all") {
-      result = result.filter(project => project.status === activeTab);
-    }
-    
-    // Filter by project category
-    if (selectedProjectCategory && selectedProjectCategory !== 'all') {
-      result = result.filter(project => {
-        const projectCategory = project.projectType || project.projectCategory || 'general';
-        return projectCategory === selectedProjectCategory;
-      });
-    }
-    
-    // Filter by specific project type
-    if (selectedProjectType && selectedProjectType !== 'all') {
-      result = result.filter(project => {
-        const projectSubtype = project.projectSubtype || project.fenceType;
-        return projectSubtype === selectedProjectType;
-      });
-    }
-    
-    // Filter by search term
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(
-        project => 
-          project.clientName.toLowerCase().includes(term) || 
-          project.address.toLowerCase().includes(term) ||
-          (project.projectType && project.projectType.toLowerCase().includes(term)) ||
-          (project.projectSubtype && project.projectSubtype.toLowerCase().includes(term)) ||
-          (project.fenceType && project.fenceType.toLowerCase().includes(term)) ||
-          (project.projectDescription && project.projectDescription.toLowerCase().includes(term))
-      );
-    }
-    
-    setFilteredProjects(result);
-  }, [activeTab, selectedProjectCategory, selectedProjectType, searchTerm, projects]);
-
   // Helper function para mapear estados de estimados a progreso de proyecto
   const mapStatusToProgress = (status?: string): string => {
     switch (status) {
@@ -505,6 +443,68 @@ function Projects() {
       }
     }
   }, [currentUser, toast]); // ✅ Dependencies for useCallback
+
+  // ✅ Auto-refresh cada 30 segundos para sincronizar con EstimatesWizard
+  useEffect(() => {
+    // Esperar a que el usuario esté completamente autenticado
+    if (currentUser?.uid) {
+      console.log("👤 [PROJECTS] Usuario autenticado detectado, cargando proyectos...");
+      loadProjects(false); // Initial load
+      
+      // ✅ Auto-refresh cada 30 segundos en background sin parpadeo
+      const refreshInterval = setInterval(() => {
+        console.log("🔄 [PROJECTS] Auto-refresh silencioso de proyectos...");
+        loadProjects(true); // Background refresh (no skeleton)
+      }, 30000);
+      
+      return () => clearInterval(refreshInterval);
+    } else {
+      console.log("👤 [PROJECTS] Esperando autenticación...");
+      setIsLoading(false); // No mostrar cargando infinito si no hay usuario
+    }
+  }, [currentUser?.uid, loadProjects]); // ✅ Include loadProjects dependency
+
+  // Filter projects when any filter changes
+  useEffect(() => {
+    let result = [...projects];
+    
+    // Filter by status tab
+    if (activeTab !== "all") {
+      result = result.filter(project => project.status === activeTab);
+    }
+    
+    // Filter by project category
+    if (selectedProjectCategory && selectedProjectCategory !== 'all') {
+      result = result.filter(project => {
+        const projectCategory = project.projectType || project.projectCategory || 'general';
+        return projectCategory === selectedProjectCategory;
+      });
+    }
+    
+    // Filter by specific project type
+    if (selectedProjectType && selectedProjectType !== 'all') {
+      result = result.filter(project => {
+        const projectSubtype = project.projectSubtype || project.fenceType;
+        return projectSubtype === selectedProjectType;
+      });
+    }
+    
+    // Filter by search term
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        project => 
+          project.clientName.toLowerCase().includes(term) || 
+          project.address.toLowerCase().includes(term) ||
+          (project.projectType && project.projectType.toLowerCase().includes(term)) ||
+          (project.projectSubtype && project.projectSubtype.toLowerCase().includes(term)) ||
+          (project.fenceType && project.fenceType.toLowerCase().includes(term)) ||
+          (project.projectDescription && project.projectDescription.toLowerCase().includes(term))
+      );
+    }
+    
+    setFilteredProjects(result);
+  }, [activeTab, selectedProjectCategory, selectedProjectType, searchTerm, projects]);
 
   // Helper functions
   const formatDate = (date: any) => {
