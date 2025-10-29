@@ -9,6 +9,7 @@
 
 import { getRedisClient, isRedisAvailable, executeRedisCommand } from '../lib/redis/client';
 import { usageTracker } from '../middleware/usage-tracking';
+import { postgresUsageService } from './postgresUsageService';
 
 interface UsageCount {
   current: number;
@@ -48,19 +49,20 @@ export class RedisUsageService {
   }
 
   /**
-   * Get current usage for a feature (Redis or fallback to in-memory)
+   * Get current usage for a feature (Redis or fallback to PostgreSQL)
    */
   async getUsage(userId: string, feature: string): Promise<number> {
     if (!isRedisAvailable()) {
-      // Fallback to in-memory tracker
-      return usageTracker.getUsage(userId, feature);
+      // ✅ FALLBACK: PostgreSQL (persistente) en vez de in-memory
+      console.log(`⚠️ [REDIS-USAGE] Redis unavailable, using PostgreSQL for ${userId}:${feature}`);
+      return await postgresUsageService.getUsage(userId, feature);
     }
 
     const key = this.getUsageKey(userId, feature);
     const client = getRedisClient();
 
     if (!client) {
-      return usageTracker.getUsage(userId, feature);
+      return await postgresUsageService.getUsage(userId, feature);
     }
 
     try {
@@ -68,27 +70,26 @@ export class RedisUsageService {
       return usage || 0;
     } catch (error) {
       console.error(`❌ [REDIS-USAGE] Error getting usage for ${userId}:${feature}:`, error);
-      // Fallback to in-memory
-      return usageTracker.getUsage(userId, feature);
+      // ✅ FALLBACK: PostgreSQL (persistente) en vez de in-memory
+      return await postgresUsageService.getUsage(userId, feature);
     }
   }
 
   /**
-   * Increment usage counter atomically
+   * Increment usage counter atomically (Redis + PostgreSQL backup)
    */
   async incrementUsage(userId: string, feature: string, amount: number = 1): Promise<number> {
     if (!isRedisAvailable()) {
-      // Fallback to in-memory tracker
-      usageTracker.trackUsage(userId, feature, amount);
-      return usageTracker.getUsage(userId, feature);
+      // ✅ FALLBACK: PostgreSQL (persistente) en vez de in-memory
+      console.log(`⚠️ [REDIS-USAGE] Redis unavailable, using PostgreSQL for increment ${userId}:${feature}`);
+      return await postgresUsageService.incrementUsage(userId, feature, amount);
     }
 
     const key = this.getUsageKey(userId, feature);
     const client = getRedisClient();
 
     if (!client) {
-      usageTracker.trackUsage(userId, feature, amount);
-      return usageTracker.getUsage(userId, feature);
+      return await postgresUsageService.incrementUsage(userId, feature, amount);
     }
 
     try {
@@ -102,15 +103,14 @@ export class RedisUsageService {
 
       console.log(`📊 [REDIS-USAGE] User ${userId} - ${feature}: ${newValue} uses`);
       
-      // Also update in-memory as backup
-      usageTracker.trackUsage(userId, feature, amount);
+      // ✅ ALSO UPDATE: PostgreSQL como backup permanente
+      await postgresUsageService.incrementUsage(userId, feature, amount);
 
       return newValue;
     } catch (error) {
       console.error(`❌ [REDIS-USAGE] Error incrementing usage for ${userId}:${feature}:`, error);
-      // Fallback to in-memory
-      usageTracker.trackUsage(userId, feature, amount);
-      return usageTracker.getUsage(userId, feature);
+      // ✅ FALLBACK: PostgreSQL (persistente) en vez de in-memory
+      return await postgresUsageService.incrementUsage(userId, feature, amount);
     }
   }
 
