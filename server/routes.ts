@@ -133,7 +133,9 @@ import { registerDeepSearchRoutes } from "./routes/deepSearchRoutes"; // Import 
 import { registerLaborDeepSearchRoutes } from "./routes/laborDeepSearchRoutes"; // Import Labor DeepSearch AI routes
 import { deepSearchService } from "./services/deepSearchService"; // Import DeepSearch service
 import { GeneralContractorIntelligenceService } from "./services/generalContractorIntelligenceService"; // Import GC service
-import { registerUsageRoutes } from "./routes/usage"; // Import Usage & Permissions routes
+// ✅ PERSISTENT USAGE TRACKING - Uses PostgreSQL instead of in-memory Map
+import { registerUsageRoutes } from "./routes/usage-persistent"; // Import PERSISTENT Usage & Permissions routes
+// DEPRECATED: import { registerUsageRoutes } from "./routes/usage"; // Old in-memory version
 import { registerSecurityOptimizationRoutes } from "./routes/security-optimization"; // Import Security Optimization routes
 import { registerTrialNotificationRoutes } from "./routes/trial-notifications"; // Import Trial Notification routes
 import { analyticsRouter } from './analytics-service'; // Import analytics service for system monitoring
@@ -7484,7 +7486,8 @@ Output must be between 200-900 characters in English.`;
   console.log("🔐 [ROBUST-FIREBASE-AUTH] Registrando endpoints de autenticación robusta...");
   registerRobustFirebaseAuthRoutes(app);
   
-  // Registrar rutas del sistema de permisos y uso (LEGACY - por compatibilidad)
+  // ✅ PERSISTENT USAGE TRACKING - PostgreSQL backend (ULTRA ROBUST)
+  console.log("📊 [USAGE] Usage API routes registered successfully");
   registerUsageRoutes(app);
   
   // 🔐 SECURITY OPTIMIZATION: Advanced security features and token management
