@@ -496,6 +496,27 @@ function Projects() {
 
   // Handle viewing project details
   const handleViewProject = async (id: string) => {
+    // 🔐 VERIFICAR PERMISOS: Solo usuarios de paga pueden ver detalles
+    const canAccessProjects = hasAccess('projects');
+    
+    if (!canAccessProjects) {
+      // Mostrar modal de upgrade para usuarios Free/Primo Chambeador
+      showUpgradeModal({
+        title: "Gestión de Proyectos - Plan Premium",
+        message: "La gestión completa de proyectos está disponible solo para usuarios de paga. Actualiza tu plan para monitorear y gestionar todos tus proyectos sin límites.",
+        feature: "projects",
+        benefits: [
+          "Monitoreo ilimitado de proyectos",
+          "Detalles completos de cada proyecto",
+          "Timeline futurista y visual",
+          "Gestión de documentos y pagos",
+          "Sin restricciones de acceso"
+        ]
+      });
+      return;
+    }
+    
+    // Si tiene acceso, abrir modal normalmente
     try {
       const projectData = await getProjectById(id);
       setSelectedProject(projectData as Project);
@@ -606,6 +627,42 @@ function Projects() {
             </Button>
           </div>
         </div>
+
+        {/* 🔐 BANNER DE ACCESO LIMITADO para usuarios Free/Primo Chambeador */}
+        {!hasAccess('projects') && (
+          <div className="mb-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/50 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="text-2xl">🔒</div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-amber-900 dark:text-amber-100 mb-1">
+                  Acceso Limitado - Plan Gratuito
+                </h3>
+                <p className="text-sm text-amber-800 dark:text-amber-200 mb-2">
+                  Puedes ver la lista de proyectos, pero necesitas un plan de paga para acceder a los detalles completos, monitoreo y gestión avanzada.
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() => showUpgradeModal({
+                    title: "Desbloquea la Gestión Completa de Proyectos",
+                    message: "Actualiza a un plan de paga para acceder a todas las funcionalidades de gestión de proyectos.",
+                    feature: "projects",
+                    benefits: [
+                      "Monitoreo ilimitado de proyectos",
+                      "Timeline futurista y visual",
+                      "Gestión de documentos y pagos",
+                      "Análisis detallado por proyecto",
+                      "Sin restricciones de acceso"
+                    ]
+                  })}
+                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                  data-testid="button-upgrade-projects"
+                >
+                  ⭐ Actualizar Plan
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Search and Filter Controls */}
         <div className="mb-4 space-y-4">

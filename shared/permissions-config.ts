@@ -118,7 +118,7 @@ export const PLAN_LIMITS = {
     permitAdvisor: 0,            // ❌ Bloqueado
     
     // Gestión de proyectos
-    projects: 5,                 // 5 proyectos básicos
+    projects: 0,                 // ❌ BLOQUEADO - puede ver página pero no detalles
     
     // Funciones financieras
     invoices: 0,                 // ❌ Sin acceso
@@ -160,7 +160,7 @@ export const PLAN_LIMITS = {
     permitAdvisor: 10,           // 10 consultas/mes
     
     // Gestión de proyectos
-    projects: 30,                // 30 proyectos AI/mes
+    projects: -1,                // ✅ ILIMITADO - acceso completo sin conteo
     
     // Funciones financieras
     invoices: -1,                // ✅ Ilimitado
@@ -269,7 +269,7 @@ export const PLAN_FEATURES = {
     "1 estimado con IA/mes (con marca de agua)",
     "0 contratos (Demo Mode - upgrade para generar)",
     "0 Property Verification (upgrade requerido)",
-    "5 proyectos/mes"
+    "Gestión de proyectos bloqueada (upgrade para acceso completo)"
   ],
   
   [PLAN_IDS.MERO_PATRON]: [
@@ -278,7 +278,7 @@ export const PLAN_FEATURES = {
     "50 contratos/mes (sin marca de agua)",
     "15 Property Verification/mes",
     "10 Permit Advisor/mes",
-    "30 proyectos AI/mes",
+    "Gestión de proyectos ILIMITADA",
     "Sistema de facturación completo"
   ],
   
