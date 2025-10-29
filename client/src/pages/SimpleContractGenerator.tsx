@@ -5166,30 +5166,11 @@ export default function SimpleContractGenerator() {
                       >
                         Back to Projects
                       </Button>
-                      <Button
-                        onClick={handleGenerateContract}
-                        disabled={isLoading || (isPrimoChambeador && !isLoading)}
-                        className={`font-bold py-3 px-8 relative ${
-                          isPrimoChambeador 
-                            ? "bg-gray-600 text-gray-400 cursor-not-allowed" 
-                            : isTrialMaster 
-                              ? "bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white"
-                              : "bg-green-600 hover:bg-green-500 text-white"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {isPrimoChambeador && (
-                            <Lock className="h-4 w-4" />
-                          )}
-                          {isTrialMaster && (
-                            <span className="text-xs bg-yellow-400 text-black px-1 rounded mr-1">TRIAL</span>
-                          )}
-                          {isLoading ? "Generating..." : "Generate Contract"}
-                        </div>
+                      <div className="relative">
                         {isPrimoChambeador && (
                           <div 
                             onClick={() => setLocation('/subscription')}
-                            className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-600 to-orange-600 text-white px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer hover:from-yellow-500 hover:to-orange-500 transition-all shadow-lg hover:shadow-xl hover:scale-105 border-2 border-yellow-400/50 group"
+                            className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-600 to-orange-600 text-white px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer hover:from-yellow-500 hover:to-orange-500 transition-all shadow-lg hover:shadow-xl hover:scale-105 border-2 border-yellow-400/50 group z-50"
                             data-testid="banner-upgrade-contract-primo"
                           >
                             <div className="flex items-center gap-1">
@@ -5199,7 +5180,28 @@ export default function SimpleContractGenerator() {
                             </div>
                           </div>
                         )}
-                      </Button>
+                        <Button
+                          onClick={handleGenerateContract}
+                          disabled={isLoading || (isPrimoChambeador && !isLoading)}
+                          className={`font-bold py-3 px-8 ${
+                            isPrimoChambeador 
+                              ? "bg-gray-600 text-gray-400 cursor-not-allowed" 
+                              : isTrialMaster 
+                                ? "bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white"
+                                : "bg-green-600 hover:bg-green-500 text-white"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {isPrimoChambeador && (
+                              <Lock className="h-4 w-4" />
+                            )}
+                            {isTrialMaster && (
+                              <span className="text-xs bg-yellow-400 text-black px-1 rounded mr-1">TRIAL</span>
+                            )}
+                            {isLoading ? "Generating..." : "Generate Contract"}
+                          </div>
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -5230,31 +5232,11 @@ export default function SimpleContractGenerator() {
                         <p className="text-gray-300 text-sm mb-4">
                           Download PDF for immediate use
                         </p>
-                        <Button
-                          onClick={handleDownloadPDF}
-                          disabled={isLoading || (isPrimoChambeador && !isLoading)}
-                          className={`font-medium py-2 px-4 w-full text-sm relative ${
-                            isPrimoChambeador 
-                              ? "bg-gray-600 text-gray-400 cursor-not-allowed" 
-                              : isTrialMaster 
-                                ? "bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white"
-                                : "bg-blue-600 hover:bg-blue-500 text-white"
-                          }`}
-                        >
-                          <div className="flex items-center justify-center gap-2">
-                            {isPrimoChambeador ? (
-                              <Lock className="h-4 w-4" />
-                            ) : isLoading ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Download className="h-4 w-4" />
-                            )}
-                            {isPrimoChambeador ? "Upgrade Required" : (isTrialMaster || isTrialUser) ? `Download PDF (Trial - ${trialDaysRemaining}d)` : isLoading ? "Generating..." : "Download PDF"}
-                          </div>
+                        <div className="relative">
                           {isPrimoChambeador && (
                             <div 
                               onClick={() => setLocation('/subscription')}
-                              className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer hover:from-cyan-500 hover:to-blue-500 transition-all shadow-lg hover:shadow-xl hover:scale-105 border-2 border-cyan-400/50 group"
+                              className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer hover:from-cyan-500 hover:to-blue-500 transition-all shadow-lg hover:shadow-xl hover:scale-105 border-2 border-cyan-400/50 group z-50"
                               data-testid="banner-upgrade-download-primo"
                             >
                               <div className="flex items-center gap-1">
@@ -5264,7 +5246,29 @@ export default function SimpleContractGenerator() {
                               </div>
                             </div>
                           )}
-                        </Button>
+                          <Button
+                            onClick={handleDownloadPDF}
+                            disabled={isLoading || (isPrimoChambeador && !isLoading)}
+                            className={`font-medium py-2 px-4 w-full text-sm ${
+                              isPrimoChambeador 
+                                ? "bg-gray-600 text-gray-400 cursor-not-allowed" 
+                                : isTrialMaster 
+                                  ? "bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white"
+                                  : "bg-blue-600 hover:bg-blue-500 text-white"
+                            }`}
+                          >
+                            <div className="flex items-center justify-center gap-2">
+                              {isPrimoChambeador ? (
+                                <Lock className="h-4 w-4" />
+                              ) : isLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Download className="h-4 w-4" />
+                              )}
+                              {isPrimoChambeador ? "Upgrade Required" : (isTrialMaster || isTrialUser) ? `Download PDF (Trial - ${trialDaysRemaining}d)` : isLoading ? "Generating..." : "Download PDF"}
+                            </div>
+                          </Button>
+                        </div>
                         <div className="flex items-center justify-center text-xs text-gray-400 mt-2 gap-1">
                           <CheckCircle className="h-3 w-3" />
                           <span>Instant • Print Ready</span>
