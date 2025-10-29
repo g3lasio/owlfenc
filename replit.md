@@ -34,6 +34,7 @@ This AI-powered legal document and permit management platform automates tasks li
 - PROFILE SYNC FIX CRITICAL: Corregida sincronización de perfil contractor entre dispositivos - Firebase como fuente de verdad, localStorage solo como caché
 - CHYRRIS.COM SIGNATURE URLS: Sistema de URLs dinámicas completamente reconfigurado para usar chyrris.com exclusivamente para enlaces de firma de contratos
 - CHYRRIS.COM ESTIMATE SHARING URLS: Sistema de URLs compartibles de estimados completamente migrado a chyrris.com con URLs ultra-cortas
+- LEGAL DEFENSE ACCESS CONTROL SYSTEM: Sistema completo de control de acceso por plan de suscripción implementado en Legal Defense con enforcement de límites
 
 ## System Architecture
 
@@ -75,6 +76,13 @@ This AI-powered legal document and permit management platform automates tasks li
   - **Security Helper**: Centralized `verifyAuthToken()` function for DRY authentication across all endpoints
   - **Protected Endpoints**: GET usage, POST increment, POST reset, GET stats, POST can-use all require authentication
   - **Ready for Deployment**: Architect-verified system resistant to refresh, server restart, and device changes
+- **LEGAL DEFENSE ACCESS CONTROL SYSTEM**: Enterprise-grade subscription-based access control for Legal Defense page with complete plan-tier enforcement:
+  - **Primo Chambeador (Plan ID 5)**: ZERO ACCESS - Early return renders locked upgrade screen, side effects cancelled immediately via useEffect, prevents autoguardado/processing
+  - **Mero Patrón (Plan ID 9)**: LIMITED ACCESS - 50 contracts/month enforced, visible usage counter (blue→red when limit reached), PDF generation button disabled when quota exceeded, signature protocol blocked with upgrade banner
+  - **Master Contractor (Plan ID 6)**: UNLIMITED ACCESS - Both PDF generation and signature protocol available without restrictions
+  - **Free Trial (Plan ID 4)**: UNLIMITED ACCESS - Inherits Master Contractor privileges for 14-day trial period per permissions-config.ts
+  - **Implementation**: Uses PermissionContext, canUse('contracts') validation, reactive UI with disabled states, upgrade modals on quota exceeded
+  - **Architect Verified**: PASS - all tiers enforce correctly with no bypass vulnerabilities
 
 ## External Dependencies
 - Firebase (Firestore, Admin SDK)
