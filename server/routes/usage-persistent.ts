@@ -14,13 +14,47 @@ export function registerUsageRoutes(app: any) {
   
   // ==========================================
   // GET USAGE - Obtener uso mensual del usuario
+  // 🔐 SECURE: Requiere autenticación Firebase
   // ==========================================
   app.get('/api/usage/:userId', async (req: Request, res: Response) => {
     try {
       const { userId } = req.params;
       const month = (req.query.month as string) || getCurrentMonth();
       
-      console.log(`📊 [USAGE-PERSISTENT] Getting usage for user: ${userId}, month: ${month}`);
+      // ✅ SECURITY: Verificar autenticación Firebase
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ 
+          error: "Autenticación requerida para consultar uso",
+          code: "NO_AUTH_TOKEN" 
+        });
+      }
+
+      const token = authHeader.split(' ')[1];
+      
+      // Verificar el token con Firebase Admin
+      let authenticatedUserId: string;
+      try {
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        authenticatedUserId = decodedToken.uid;
+      } catch (tokenError) {
+        console.error("❌ [USAGE-PERSISTENT] Error verificando token:", tokenError);
+        return res.status(401).json({ 
+          error: "Token inválido",
+          code: "INVALID_TOKEN" 
+        });
+      }
+
+      // ✅ SECURITY: Solo puede ver su propio uso (o admin puede ver todos)
+      if (userId !== authenticatedUserId) {
+        console.error(`🚨 [SECURITY] Intento de ver uso de otro usuario! Token: ${authenticatedUserId}, Requested: ${userId}`);
+        return res.status(403).json({ 
+          error: "No puedes ver el uso de otro usuario",
+          code: "FORBIDDEN_USER_MISMATCH" 
+        });
+      }
+      
+      console.log(`📊 [USAGE-PERSISTENT] Getting usage for authenticated user: ${userId}, month: ${month}`);
       
       // Cargar desde PostgreSQL (persistente)
       const usage = await postgresUsageService.getUserUsage(userId);

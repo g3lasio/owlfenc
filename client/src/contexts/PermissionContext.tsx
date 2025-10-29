@@ -225,7 +225,20 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
       // ✅ ULTRA ROBUST: Load ALL feature usage from persistent PostgreSQL backend
       console.log(`📊 [PERMISSION-CONTEXT] Loading complete usage data for user: ${currentUser.uid}`);
       
-      const response = await fetch(`/api/usage/${currentUser.uid}`);
+      // 🔐 SECURITY: Get Firebase ID token for authentication
+      let idToken: string | undefined;
+      try {
+        idToken = await currentUser.getIdToken();
+      } catch (tokenError) {
+        console.error('❌ [PERMISSION-CONTEXT] Error getting ID token for usage fetch:', tokenError);
+      }
+      
+      const headers: Record<string, string> = {};
+      if (idToken) {
+        headers['Authorization'] = `Bearer ${idToken}`;
+      }
+      
+      const response = await fetch(`/api/usage/${currentUser.uid}`, { headers });
       
       if (response.ok) {
         const usageData = await response.json();

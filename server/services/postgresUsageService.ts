@@ -169,19 +169,44 @@ export class PostgresUsageService {
     }
 
     const currentMonth = this.getCurrentMonth();
-    const columnName = this.getColumnName(feature);
 
     try {
       // Ensure record exists first
       await this.getOrCreateUsageRecord(userId);
 
-      // Atomic increment using SQL
+      // ✅ FIXED: Use proper column reference for atomic increment
+      // Map feature to the correct Drizzle column object
+      let updateData: any = { updatedAt: new Date() };
+      
+      switch(feature) {
+        case 'basicEstimates':
+        case 'deepsearch': // DeepSearch shares basic estimates counter
+          updateData.basicEstimatesUsed = sql`${userUsageLimits.basicEstimatesUsed} + ${amount}`;
+          break;
+        case 'aiEstimates':
+          updateData.aiEstimatesUsed = sql`${userUsageLimits.aiEstimatesUsed} + ${amount}`;
+          break;
+        case 'contracts':
+          updateData.contractsUsed = sql`${userUsageLimits.contractsUsed} + ${amount}`;
+          break;
+        case 'propertyVerifications':
+          updateData.propertyVerificationsUsed = sql`${userUsageLimits.propertyVerificationsUsed} + ${amount}`;
+          break;
+        case 'permitAdvisor':
+          updateData.permitAdvisorUsed = sql`${userUsageLimits.permitAdvisorUsed} + ${amount}`;
+          break;
+        case 'projects':
+          updateData.projectsUsed = sql`${userUsageLimits.projectsUsed} + ${amount}`;
+          break;
+        default:
+          console.warn(`⚠️ [PG-USAGE] Unknown feature: ${feature}, defaulting to basicEstimates`);
+          updateData.basicEstimatesUsed = sql`${userUsageLimits.basicEstimatesUsed} + ${amount}`;
+      }
+
+      // Atomic increment using correct Drizzle API
       const result = await db!
         .update(userUsageLimits)
-        .set({
-          [columnName]: sql`${sql.identifier(columnName)} + ${amount}`,
-          updatedAt: new Date()
-        })
+        .set(updateData)
         .where(
           and(
             eq(userUsageLimits.userId, userId),
@@ -190,7 +215,32 @@ export class PostgresUsageService {
         )
         .returning();
 
-      const newValue = (result[0] as any)[columnName] || 0;
+      // Get the updated value based on feature
+      let newValue = 0;
+      if (result && result.length > 0) {
+        const record = result[0];
+        switch(feature) {
+          case 'basicEstimates':
+          case 'deepsearch':
+            newValue = record.basicEstimatesUsed || 0;
+            break;
+          case 'aiEstimates':
+            newValue = record.aiEstimatesUsed || 0;
+            break;
+          case 'contracts':
+            newValue = record.contractsUsed || 0;
+            break;
+          case 'propertyVerifications':
+            newValue = record.propertyVerificationsUsed || 0;
+            break;
+          case 'permitAdvisor':
+            newValue = record.permitAdvisorUsed || 0;
+            break;
+          case 'projects':
+            newValue = record.projectsUsed || 0;
+            break;
+        }
+      }
       
       console.log(`✅ [PG-USAGE] User ${userId} - ${feature}: incremented by ${amount}, new value: ${newValue}`);
       
