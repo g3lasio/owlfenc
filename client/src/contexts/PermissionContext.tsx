@@ -222,46 +222,51 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     }
 
     try {
-      // 🔧 SECURITY FIX: Load all feature usage from backend
-      const [estimatesResponse, contractsResponse] = await Promise.all([
-        fetch(`/api/auth/can-access/${currentUser.uid}/basicEstimates`),
-        fetch(`/api/auth/can-access/${currentUser.uid}/contracts`)
-      ]);
+      // ✅ ULTRA ROBUST: Load ALL feature usage from persistent PostgreSQL backend
+      console.log(`📊 [PERMISSION-CONTEXT] Loading complete usage data for user: ${currentUser.uid}`);
       
-      let basicEstimatesUsed = 0;
-      let contractsUsed = 0;
+      const response = await fetch(`/api/usage/${currentUser.uid}`);
       
-      // Load basic estimates usage
-      if (estimatesResponse.ok) {
-        const estimatesData = await estimatesResponse.json();
-        if (estimatesData.success && estimatesData.usage) {
-          basicEstimatesUsed = estimatesData.usage.used || 0;
-        }
+      if (response.ok) {
+        const usageData = await response.json();
+        
+        // Map backend response to frontend usage structure
+        const usage: UserUsage = {
+          basicEstimates: usageData.basicEstimatesUsed || 0,
+          aiEstimates: usageData.aiEstimatesUsed || 0,
+          contracts: usageData.contractsUsed || 0,
+          propertyVerifications: usageData.propertyVerificationsUsed || 0,
+          permitAdvisor: usageData.permitAdvisorUsed || 0,
+          projects: usageData.projectsUsed || 0,
+          deepsearch: usageData.deepsearchUsed || usageData.basicEstimatesUsed || 0, // Deepsearch counts as basic estimate
+          month: usageData.month || new Date().toISOString().slice(0, 7)
+        };
+        
+        setUserUsage(usage);
+        console.log(`✅ [PERMISSION-CONTEXT] All usage loaded:`, {
+          basicEstimates: usage.basicEstimates,
+          aiEstimates: usage.aiEstimates,
+          contracts: usage.contracts,
+          propertyVerifications: usage.propertyVerifications,
+          permitAdvisor: usage.permitAdvisor,
+          projects: usage.projects,
+          deepsearch: usage.deepsearch
+        });
+      } else {
+        console.warn(`⚠️ [PERMISSION-CONTEXT] Failed to load usage from backend, using defaults`);
+        setUserUsage({
+          basicEstimates: 0,
+          aiEstimates: 0,
+          contracts: 0,
+          propertyVerifications: 0,
+          permitAdvisor: 0,
+          projects: 0,
+          deepsearch: 0,
+          month: new Date().toISOString().slice(0, 7)
+        });
       }
-      
-      // Load contracts usage
-      if (contractsResponse.ok) {
-        const contractsData = await contractsResponse.json();
-        if (contractsData.success && contractsData.usage) {
-          contractsUsed = contractsData.usage.used || 0;
-        }
-      }
-      
-      const usage = {
-        basicEstimates: basicEstimatesUsed,
-        aiEstimates: 0, // Will be loaded separately if needed
-        contracts: contractsUsed, // ✅ Now loaded from backend
-        propertyVerifications: 0, // Will be loaded separately if needed
-        permitAdvisor: 0, // Will be loaded separately if needed
-        projects: 0,
-        deepsearch: 0,
-        month: new Date().toISOString().slice(0, 7)
-      };
-      
-      setUserUsage(usage);
-      console.log(`✅ [PERMISSION-CONTEXT] Usage loaded - estimates: ${basicEstimatesUsed}, contracts: ${contractsUsed}`);
     } catch (error) {
-      console.error('Error loading user usage:', error);
+      console.error('❌ [PERMISSION-CONTEXT] Error loading user usage:', error);
       setUserUsage({
         basicEstimates: 0,
         aiEstimates: 0,
