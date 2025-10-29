@@ -1988,87 +1988,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       let allEstimates = [];
 
-      // Try loading from projects collection first (simpler query)
-      try {
-        const projectsQuery = query(
-          collection(db, "projects"),
-          where("firebaseUserId", "==", currentUser?.uid),
-        );
+      // ❌ ELIMINADO: Ya no cargar desde collection "projects" (proyectos corruptos)
+      // Solo cargar desde collection "estimates" que es la fuente de verdad
+      console.log(`📊 [HISTORY] Cargando SOLO desde collection "estimates"...`);
 
-        const projectsSnapshot = await getDocs(projectsQuery);
-        const projectEstimates = projectsSnapshot.docs
-          .filter((doc) => {
-            const data = doc.data();
-            return data.status === "estimate" || data.estimateNumber;
-          })
-          .map((doc) => {
-            const data = doc.data();
-
-            // Better data extraction with multiple fallback paths
-            const clientName =
-              data.clientInformation?.name ||
-              data.clientName ||
-              data.client?.name ||
-              "Cliente sin nombre";
-
-            const clientEmail =
-              data.clientInformation?.email ||
-              data.clientEmail ||
-              data.client?.email ||
-              "";
-
-            // Better total calculation with multiple paths
-            let totalValue =
-              data.projectTotalCosts?.totalSummary?.finalTotal ||
-              data.projectTotalCosts?.total ||
-              data.total ||
-              data.estimateAmount ||
-              0;
-
-            // No conversion - keep original values as they are stored
-            const displayTotal = totalValue;
-
-            const projectTitle =
-              data.projectDetails?.name ||
-              data.projectName ||
-              data.title ||
-              `Estimado para ${clientName}`;
-
-            return {
-              id: doc.id,
-              estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
-              title: projectTitle,
-              clientName: clientName,
-              clientEmail: clientEmail,
-              total: displayTotal,
-              status: data.status || "estimate",
-              estimateDate: data.createdAt
-                ? data.createdAt.toDate?.() || new Date(data.createdAt)
-                : new Date(),
-              items:
-                data.projectTotalCosts?.materialCosts?.items ||
-                data.items ||
-                [],
-              projectType:
-                data.projectType || data.projectDetails?.type || "fence",
-              projectId: doc.id,
-              pdfUrl: data.pdfUrl || null,
-              originalData: data, // Store original data for editing
-            };
-          });
-
-        allEstimates = [...allEstimates, ...projectEstimates];
-        console.log(
-          `📊 Cargados ${projectEstimates.length} estimados desde proyectos`,
-        );
-      } catch (projectError) {
-        console.warn(
-          "No se pudieron cargar estimados desde proyectos:",
-          projectError,
-        );
-      }
-
-      // Try loading from estimates collection (if it exists)
+      // ✅ SOLO cargar desde collection "estimates" (igual que Projects.tsx)
       try {
         const estimatesQuery = query(
           collection(db, "estimates"),
