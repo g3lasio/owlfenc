@@ -65,6 +65,16 @@ This AI-powered legal document and permit management platform automates tasks li
 - **URL Shortening System**: Enterprise-grade URL shortening service integrated with `chyrris.com` domain, featuring secure protocol validation, unique short code generation, click tracking, URL expiration, and Firebase authentication.
 - **PERMISSIONS SYSTEM CENTRALIZED**: Complete permissions system migrated to a centralized architecture using `shared/permissions-config.ts` as the single source of truth for plan limits and permissions.
 - **REDIS RATE LIMITING & USAGE TRACKING**: Hybrid RBAC + Metering system with Upstash Redis for real-time usage tracking and rate limiting (sliding window). Features a unified middleware (`subscription-protection.ts`) for authentication, rate limiting, and subscription/usage validation, with graceful fallback to in-memory tracking.
+- **PERSISTENT USAGE TRACKING SYSTEM (ULTRA ROBUST)**: Production-grade usage tracking system that eliminates refresh/restart vulnerabilities through PostgreSQL persistent storage. Features:
+  - **PostgreSQL Primary Storage**: `postgresUsageService.ts` provides atomic operations on `user_usage_limits` table tracking 7 features (basicEstimates, aiEstimates, contracts, propertyVerifications, permitAdvisor, projects, deepsearch)
+  - **Dual-Write Architecture**: Redis cache + PostgreSQL persistence with automatic fallback for maximum reliability
+  - **Firebase Authentication**: All usage endpoints (`/api/usage/*`) enforce Firebase token verification with userId matching to prevent cross-user access
+  - **Correct Drizzle API**: Atomic increments using proper column references avoiding runtime errors
+  - **DeepSearch Integration**: DeepSearch usage shares `basicEstimatesUsed` column (design decision documented in code)
+  - **Monthly Tracking**: Automatic monthly record creation with plan-based limits initialization
+  - **Security Helper**: Centralized `verifyAuthToken()` function for DRY authentication across all endpoints
+  - **Protected Endpoints**: GET usage, POST increment, POST reset, GET stats, POST can-use all require authentication
+  - **Ready for Deployment**: Architect-verified system resistant to refresh, server restart, and device changes
 
 ## External Dependencies
 - Firebase (Firestore, Admin SDK)
