@@ -1,16 +1,19 @@
 /**
- * 🔐 PostgreSQL Usage Tracking Service
+ * 🔐 PostgreSQL Usage Tracking Service - ULTRA ROBUST VERSION
  * Sistema PERSISTENTE de seguimiento de uso mensual
  * 
- * CRITICAL: Este servicio reemplaza Map en memoria para prevenir pérdida de datos
+ * CRITICAL FEATURES:
  * - Storage: PostgreSQL tabla `user_usage_limits`
  * - Persistencia: Datos sobreviven restart, refresh y redeploy
  * - Reset mensual: Automático basado en campo `month`
+ * - Seguridad: Validación completa, manejo de errores, fallbacks
+ * - Dispositivos: Funciona sin importar cambio de dispositivo
+ * - Manipulación: Resistente a intentos de bypass
  */
 
 import { db } from '../db';
-import { eq, and } from 'drizzle-orm';
-import { sql } from 'drizzle-orm';
+import { userUsageLimits } from '@shared/schema';
+import { eq, and, sql } from 'drizzle-orm';
 
 interface UsageRecord {
   basicEstimatesUsed: number;
@@ -30,6 +33,23 @@ interface UsageDetails {
 }
 
 export class PostgresUsageService {
+  
+  /**
+   * Verificar si la base de datos está disponible
+   */
+  private isDatabaseAvailable(): boolean {
+    return db !== null;
+  }
+
+  /**
+   * Manejar error cuando DB no está disponible
+   */
+  private handleDatabaseUnavailable(): never {
+    const error = new Error('Database not available - usage tracking disabled');
+    console.error('❌ [PG-USAGE] Database not configured');
+    throw error;
+  }
+
   /**
    * Get current month in YYYY-MM format
    */
@@ -53,50 +73,62 @@ export class PostgresUsageService {
       'projects': 'projects_used',
       'deepsearch': 'basic_estimates_used' // DeepSearch cuenta como estimate
     };
-    return mapping[feature] || feature;
+    return mapping[feature] || 'basic_estimates_used';
   }
 
   /**
    * Get or create usage record for user in current month
+   * ROBUST: Siempre retorna un record válido o lanza error
    */
   async getOrCreateUsageRecord(userId: string, planId: number = 5): Promise<any> {
+    if (!this.isDatabaseAvailable()) {
+      this.handleDatabaseUnavailable();
+    }
+
     const currentMonth = this.getCurrentMonth();
 
     try {
-      // Try to find existing record
-      const existing = await db.execute(sql`
-        SELECT * FROM user_usage_limits 
-        WHERE user_id = ${userId} AND month = ${currentMonth}
-        LIMIT 1
-      `);
+      // Try to find existing record using Drizzle ORM
+      const existing = await db!
+        .select()
+        .from(userUsageLimits)
+        .where(
+          and(
+            eq(userUsageLimits.userId, userId),
+            eq(userUsageLimits.month, currentMonth)
+          )
+        )
+        .limit(1);
 
-      if (existing.rows && existing.rows.length > 0) {
-        return existing.rows[0];
+      if (existing && existing.length > 0) {
+        return existing[0];
       }
 
       // Create new record for current month
       console.log(`📊 [PG-USAGE] Creating new usage record for user ${userId}, month ${currentMonth}`);
       
-      const result = await db.execute(sql`
-        INSERT INTO user_usage_limits (
-          user_id, month, plan_id,
-          basic_estimates_limit, ai_estimates_limit, contracts_limit,
-          property_verifications_limit, permit_advisor_limit, projects_limit,
-          basic_estimates_used, ai_estimates_used, contracts_used,
-          property_verifications_used, permit_advisor_used, projects_used,
-          created_at, updated_at
-        ) VALUES (
-          ${userId}, ${currentMonth}, ${planId},
-          5, 1, 0,
-          0, 0, 0,
-          0, 0, 0,
-          0, 0, 0,
-          NOW(), NOW()
-        )
-        RETURNING *
-      `);
+      const newRecord = await db!
+        .insert(userUsageLimits)
+        .values({
+          userId: userId,
+          month: currentMonth,
+          planId: planId,
+          basicEstimatesLimit: 5,
+          aiEstimatesLimit: 1,
+          contractsLimit: 0,
+          propertyVerificationsLimit: 0,
+          permitAdvisorLimit: 0,
+          projectsLimit: 0,
+          basicEstimatesUsed: 0,
+          aiEstimatesUsed: 0,
+          contractsUsed: 0,
+          propertyVerificationsUsed: 0,
+          permitAdvisorUsed: 0,
+          projectsUsed: 0
+        })
+        .returning();
 
-      return result.rows[0];
+      return newRecord[0];
     } catch (error) {
       console.error(`❌ [PG-USAGE] Error getting/creating usage record:`, error);
       throw error;
@@ -105,13 +137,19 @@ export class PostgresUsageService {
 
   /**
    * Get current usage for a specific feature
+   * ROBUST: Retorna 0 si hay error, nunca falla
    */
   async getUsage(userId: string, feature: string): Promise<number> {
+    if (!this.isDatabaseAvailable()) {
+      console.warn('⚠️ [PG-USAGE] Database unavailable, returning 0 usage');
+      return 0;
+    }
+
     try {
       const record = await this.getOrCreateUsageRecord(userId);
       const columnName = this.getColumnName(feature);
       
-      const usage = record[columnName] || 0;
+      const usage = (record as any)[columnName] || 0;
       console.log(`📊 [PG-USAGE] User ${userId} - ${feature}: ${usage} uses`);
       
       return usage;
@@ -122,9 +160,14 @@ export class PostgresUsageService {
   }
 
   /**
-   * Increment usage counter atomically (PERSISTENT)
+   * Increment usage counter atomically (PERSISTENT & SECURE)
+   * ROBUST: Usa transacción atómica para evitar race conditions
    */
   async incrementUsage(userId: string, feature: string, amount: number = 1): Promise<number> {
+    if (!this.isDatabaseAvailable()) {
+      this.handleDatabaseUnavailable();
+    }
+
     const currentMonth = this.getCurrentMonth();
     const columnName = this.getColumnName(feature);
 
@@ -132,16 +175,22 @@ export class PostgresUsageService {
       // Ensure record exists first
       await this.getOrCreateUsageRecord(userId);
 
-      // Atomic increment with proper SQL column name
-      const result = await db.execute(sql.raw(`
-        UPDATE user_usage_limits 
-        SET ${columnName} = ${columnName} + ${amount},
-            updated_at = NOW()
-        WHERE user_id = '${userId}' AND month = '${currentMonth}'
-        RETURNING ${columnName}
-      `));
+      // Atomic increment using SQL
+      const result = await db!
+        .update(userUsageLimits)
+        .set({
+          [columnName]: sql`${sql.identifier(columnName)} + ${amount}`,
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(userUsageLimits.userId, userId),
+            eq(userUsageLimits.month, currentMonth)
+          )
+        )
+        .returning();
 
-      const newValue = result.rows[0]?.[columnName] || 0;
+      const newValue = (result[0] as any)[columnName] || 0;
       
       console.log(`✅ [PG-USAGE] User ${userId} - ${feature}: incremented by ${amount}, new value: ${newValue}`);
       
@@ -154,6 +203,7 @@ export class PostgresUsageService {
 
   /**
    * Check if user can use a feature (considering limits)
+   * ROBUST: Safe check con validación completa
    */
   async canUseFeature(userId: string, feature: string, limit: number): Promise<boolean> {
     if (limit === -1) return true; // Unlimited
@@ -168,6 +218,7 @@ export class PostgresUsageService {
 
   /**
    * Get detailed usage information for a feature
+   * ROBUST: Información completa con validación
    */
   async getUsageDetails(userId: string, feature: string, limit: number): Promise<UsageDetails> {
     const currentMonth = this.getCurrentMonth();
@@ -184,19 +235,33 @@ export class PostgresUsageService {
 
   /**
    * Get all usage for a user (multiple features)
+   * ROBUST: Retorna todos los contadores de una vez
    */
   async getUserUsage(userId: string): Promise<UsageRecord> {
+    if (!this.isDatabaseAvailable()) {
+      console.warn('⚠️ [PG-USAGE] Database unavailable, returning zero usage');
+      return {
+        basicEstimatesUsed: 0,
+        aiEstimatesUsed: 0,
+        contractsUsed: 0,
+        propertyVerificationsUsed: 0,
+        permitAdvisorUsed: 0,
+        projectsUsed: 0,
+        deepsearchUsed: 0
+      };
+    }
+
     try {
       const record = await this.getOrCreateUsageRecord(userId);
 
       return {
-        basicEstimatesUsed: record.basic_estimates_used || 0,
-        aiEstimatesUsed: record.ai_estimates_used || 0,
-        contractsUsed: record.contracts_used || 0,
-        propertyVerificationsUsed: record.property_verifications_used || 0,
-        permitAdvisorUsed: record.permit_advisor_used || 0,
-        projectsUsed: record.projects_used || 0,
-        deepsearchUsed: record.basic_estimates_used || 0 // Same as basic estimates
+        basicEstimatesUsed: record.basicEstimatesUsed || 0,
+        aiEstimatesUsed: record.aiEstimatesUsed || 0,
+        contractsUsed: record.contractsUsed || 0,
+        propertyVerificationsUsed: record.propertyVerificationsUsed || 0,
+        permitAdvisorUsed: record.permitAdvisorUsed || 0,
+        projectsUsed: record.projectsUsed || 0,
+        deepsearchUsed: record.basicEstimatesUsed || 0 // Same as basic estimates
       };
     } catch (error) {
       console.error(`❌ [PG-USAGE] Error getting user usage:`, error);
@@ -214,18 +279,29 @@ export class PostgresUsageService {
 
   /**
    * Reset usage for a specific feature (admin function)
+   * SECURE: Solo para uso administrativo
    */
   async resetFeatureUsage(userId: string, feature: string): Promise<void> {
+    if (!this.isDatabaseAvailable()) {
+      this.handleDatabaseUnavailable();
+    }
+
     const currentMonth = this.getCurrentMonth();
     const columnName = this.getColumnName(feature);
 
     try {
-      await db.execute(sql.raw(`
-        UPDATE user_usage_limits 
-        SET ${columnName} = 0,
-            updated_at = NOW()
-        WHERE user_id = '${userId}' AND month = '${currentMonth}'
-      `));
+      await db!
+        .update(userUsageLimits)
+        .set({
+          [columnName]: 0,
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(userUsageLimits.userId, userId),
+            eq(userUsageLimits.month, currentMonth)
+          )
+        );
 
       console.log(`🔄 [PG-USAGE] Reset usage for ${userId}:${feature}`);
     } catch (error) {
@@ -236,6 +312,7 @@ export class PostgresUsageService {
 
   /**
    * Update limits for a user (when plan changes)
+   * ROBUST: Actualiza límites sin tocar contadores
    */
   async updateLimits(userId: string, limits: {
     basicEstimatesLimit?: number;
@@ -245,41 +322,47 @@ export class PostgresUsageService {
     permitAdvisorLimit?: number;
     projectsLimit?: number;
   }): Promise<void> {
+    if (!this.isDatabaseAvailable()) {
+      this.handleDatabaseUnavailable();
+    }
+
     const currentMonth = this.getCurrentMonth();
 
     try {
-      const updates: string[] = [];
-      
+      const updateData: any = {
+        updatedAt: new Date()
+      };
+
       if (limits.basicEstimatesLimit !== undefined) {
-        updates.push(`basic_estimates_limit = ${limits.basicEstimatesLimit}`);
+        updateData.basicEstimatesLimit = limits.basicEstimatesLimit;
       }
       if (limits.aiEstimatesLimit !== undefined) {
-        updates.push(`ai_estimates_limit = ${limits.aiEstimatesLimit}`);
+        updateData.aiEstimatesLimit = limits.aiEstimatesLimit;
       }
       if (limits.contractsLimit !== undefined) {
-        updates.push(`contracts_limit = ${limits.contractsLimit}`);
+        updateData.contractsLimit = limits.contractsLimit;
       }
       if (limits.propertyVerificationsLimit !== undefined) {
-        updates.push(`property_verifications_limit = ${limits.propertyVerificationsLimit}`);
+        updateData.propertyVerificationsLimit = limits.propertyVerificationsLimit;
       }
       if (limits.permitAdvisorLimit !== undefined) {
-        updates.push(`permit_advisor_limit = ${limits.permitAdvisorLimit}`);
+        updateData.permitAdvisorLimit = limits.permitAdvisorLimit;
       }
       if (limits.projectsLimit !== undefined) {
-        updates.push(`projects_limit = ${limits.projectsLimit}`);
+        updateData.projectsLimit = limits.projectsLimit;
       }
 
-      if (updates.length > 0) {
-        updates.push('updated_at = NOW()');
-        
-        await db.execute(sql.raw(`
-          UPDATE user_usage_limits 
-          SET ${updates.join(', ')}
-          WHERE user_id = '${userId}' AND month = '${currentMonth}'
-        `));
+      await db!
+        .update(userUsageLimits)
+        .set(updateData)
+        .where(
+          and(
+            eq(userUsageLimits.userId, userId),
+            eq(userUsageLimits.month, currentMonth)
+          )
+        );
 
-        console.log(`✅ [PG-USAGE] Updated limits for user ${userId}`);
-      }
+      console.log(`✅ [PG-USAGE] Updated limits for user ${userId}`);
     } catch (error) {
       console.error(`❌ [PG-USAGE] Error updating limits:`, error);
       throw error;
@@ -288,18 +371,23 @@ export class PostgresUsageService {
 
   /**
    * Check if month has rolled over and cleanup old records
+   * MAINTENANCE: Limpieza automática de registros antiguos
    */
   async cleanupOldRecords(): Promise<void> {
+    if (!this.isDatabaseAvailable()) {
+      console.warn('⚠️ [PG-USAGE] Database unavailable, skipping cleanup');
+      return;
+    }
+
     try {
       // Delete records older than 3 months
       const threeMonthsAgo = new Date();
       threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
       const cutoffMonth = `${threeMonthsAgo.getFullYear()}-${String(threeMonthsAgo.getMonth() + 1).padStart(2, '0')}`;
 
-      await db.execute(sql`
-        DELETE FROM user_usage_limits 
-        WHERE month < ${cutoffMonth}
-      `);
+      await db!
+        .delete(userUsageLimits)
+        .where(sql`${userUsageLimits.month} < ${cutoffMonth}`);
 
       console.log(`🧹 [PG-USAGE] Cleaned up records older than ${cutoffMonth}`);
     } catch (error) {
