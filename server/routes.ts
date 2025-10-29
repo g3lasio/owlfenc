@@ -4478,76 +4478,116 @@ Output must be between 200-900 characters in English.`;
   });
 
   // *** SUBSCRIPTION ROUTES ***
+  
+  // 💾 SISTEMA DE CACHE ULTRA-RÁPIDO PARA PLANES
+  let plansCache: any[] | null = null;
+  let plansCacheTimestamp: number = 0;
+  const PLANS_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+  
+  async function getPlansFromDB() {
+    console.log("📋 [PLANS-DB] Consultando planes desde PostgreSQL");
+    const startTime = Date.now();
+    
+    const dbPlans = await db!
+      .select()
+      .from(subscriptionPlans)
+      .where(eq(subscriptionPlans.is_active, true))
+      .orderBy(subscriptionPlans.price);
+    
+    const elapsed = Date.now() - startTime;
+    console.log(`📋 [PLANS-DB] Consulta completada en ${elapsed}ms, planes: ${dbPlans?.length || 0}`);
+    
+    if (!dbPlans || dbPlans.length === 0) {
+      console.error("❌ [PLANS-DB] No se encontraron planes activos");
+      return null;
+    }
+    
+    return dbPlans.map(plan => {
+      const featuresArray: string[] = [];
+      
+      if (plan.price === 0) {
+        featuresArray.push("Plan gratuito");
+      } else {
+        featuresArray.push("Acceso completo a la plataforma");
+      }
+      
+      if (plan.id === 5) {
+        featuresArray.push("5 estimados básicos/mes (con marca de agua)");
+        featuresArray.push("1 estimado con IA/mes (con marca de agua)");
+        featuresArray.push("5 proyectos/mes");
+      } else if (plan.id === 9) {
+        featuresArray.push("Estimados ilimitados");
+        featuresArray.push("50 contratos/mes");
+        featuresArray.push("Verificación de propiedades");
+      } else if (plan.id === 6) {
+        featuresArray.push("Todo ilimitado");
+        featuresArray.push("Soporte prioritario");
+        featuresArray.push("Sin marcas de agua");
+      } else if (plan.id === 4) {
+        featuresArray.push("Acceso completo por 7 días");
+        featuresArray.push("Todas las funciones premium");
+      }
+      
+      return {
+        id: plan.id,
+        name: plan.name,
+        description: plan.description || `Plan ${plan.name}`,
+        price: plan.price,
+        yearlyPrice: plan.yearly_price || plan.price * 10,
+        features: featuresArray,
+        motto: plan.motto || `Plan ${plan.name}`,
+        code: plan.code,
+        isActive: plan.is_active,
+      };
+    });
+  }
+  
   app.get("/api/subscription/plans", async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    
     try {
-      console.log("📋 [SUBSCRIPTION-PLANS] Obteniendo planes desde PostgreSQL (fuente única de verdad)");
+      const now = Date.now();
+      const cacheAge = now - plansCacheTimestamp;
       
-      // ✅ USAR POSTGRESQL COMO ÚNICA FUENTE DE VERDAD
-      const dbPlans = await db!
-        .select()
-        .from(subscriptionPlans)
-        .where(eq(subscriptionPlans.is_active, true))
-        .orderBy(subscriptionPlans.price);
+      // ✅ Servir desde cache si está fresco
+      if (plansCache && cacheAge < PLANS_CACHE_TTL) {
+        const elapsed = Date.now() - startTime;
+        console.log(`⚡ [PLANS-CACHE-HIT] Servidos desde cache en ${elapsed}ms (cache edad: ${Math.round(cacheAge/1000)}s)`);
+        return res.json(plansCache);
+      }
       
-      console.log("📋 [SUBSCRIPTION-PLANS] Planes obtenidos desde PostgreSQL:", dbPlans?.length || 0);
-
-      if (!dbPlans || dbPlans.length === 0) {
-        console.error("❌ [SUBSCRIPTION-PLANS] No se encontraron planes activos en PostgreSQL");
+      // 🔄 Cache expirado o vacío - recargar
+      console.log(`🔄 [PLANS-CACHE-MISS] Cache ${plansCache ? 'expirado' : 'vacío'}, recargando...`);
+      
+      const plans = await getPlansFromDB();
+      
+      if (!plans) {
         return res.status(404).json({
           success: false,
           error: "No se encontraron planes de suscripción activos",
           message: "No hay planes disponibles actualmente"
         });
       }
-
-      // Mapear planes de PostgreSQL al formato esperado por el frontend
-      const formattedPlans = dbPlans.map(plan => {
-        // Generar features desde la estructura del plan
-        const featuresArray: string[] = [];
-        
-        // Agregar features basadas en los límites del plan
-        if (plan.price === 0) {
-          featuresArray.push("Plan gratuito");
-        } else {
-          featuresArray.push("Acceso completo a la plataforma");
-        }
-        
-        // Features específicas por plan (basadas en ID)
-        if (plan.id === 5) { // Primo Chambeador
-          featuresArray.push("5 estimados básicos/mes (con marca de agua)");
-          featuresArray.push("1 estimado con IA/mes (con marca de agua)");
-          featuresArray.push("5 proyectos/mes");
-        } else if (plan.id === 9) { // Mero Patrón
-          featuresArray.push("Estimados ilimitados");
-          featuresArray.push("50 contratos/mes");
-          featuresArray.push("Verificación de propiedades");
-        } else if (plan.id === 6) { // Master Contractor
-          featuresArray.push("Todo ilimitado");
-          featuresArray.push("Soporte prioritario");
-          featuresArray.push("Sin marcas de agua");
-        } else if (plan.id === 4) { // Free Trial
-          featuresArray.push("Acceso completo por 7 días");
-          featuresArray.push("Todas las funciones premium");
-        }
-        
-        return {
-          id: plan.id,
-          name: plan.name,
-          description: plan.description || `Plan ${plan.name}`,
-          price: plan.price,
-          yearlyPrice: plan.yearlyPrice || plan.price * 10,
-          features: featuresArray,
-          motto: plan.motto || `Plan ${plan.name}`,
-          code: plan.code,
-          isActive: plan.isActive,
-        };
-      });
       
-      console.log("📋 [SUBSCRIPTION-PLANS] Planes de PostgreSQL formateados correctamente");
-      res.json(formattedPlans);
+      // Actualizar cache
+      plansCache = plans;
+      plansCacheTimestamp = now;
+      
+      const elapsed = Date.now() - startTime;
+      console.log(`✅ [PLANS-LOADED] ${plans.length} planes cargados en ${elapsed}ms, cache actualizado`);
+      
+      res.json(plans);
       
     } catch (error) {
-      console.error("❌ [SUBSCRIPTION-PLANS] Error obteniendo planes:", error);
+      const elapsed = Date.now() - startTime;
+      console.error(`❌ [PLANS-ERROR] Error después de ${elapsed}ms:`, error);
+      
+      // Fallback: si hay cache viejo, servirlo
+      if (plansCache) {
+        console.warn(`⚠️ [PLANS-FALLBACK] Sirviendo cache expirado como fallback`);
+        return res.json(plansCache);
+      }
+      
       res.status(500).json({
         success: false,
         error: "Error interno del servidor",
@@ -4555,6 +4595,22 @@ Output must be between 200-900 characters in English.`;
       });
     }
   });
+  
+  // 🚀 PRE-CARGAR CACHE AL INICIAR SERVIDOR
+  console.log("🚀 [PLANS-INIT] Pre-cargando cache de planes...");
+  getPlansFromDB()
+    .then(plans => {
+      if (plans) {
+        plansCache = plans;
+        plansCacheTimestamp = Date.now();
+        console.log(`✅ [PLANS-INIT] Cache inicializado con ${plans.length} planes`);
+      } else {
+        console.error("❌ [PLANS-INIT] No se pudieron pre-cargar planes");
+      }
+    })
+    .catch(err => {
+      console.error("❌ [PLANS-INIT] Error pre-cargando planes:", err);
+    });
 
   app.get(
     "/api/subscription/user-subscription",

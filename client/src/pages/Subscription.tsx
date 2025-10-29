@@ -58,14 +58,49 @@ export default function Subscription() {
     checkSuccessRedirect();
   }, [userEmail, toast, queryClient]);
 
-  // Obtenemos los planes disponibles
+  // Obtenemos los planes disponibles con timeout robusto y retry automático
   const {
     data: plans,
     isLoading: isLoadingPlans,
     error: plansError,
   } = useQuery<SubscriptionPlan[]>({
     queryKey: ["/api/subscription/plans"],
+    queryFn: async ({ signal }) => {
+      const controller = new AbortController();
+      
+      // Timeout promise que rechaza y aborta el fetch después de 10 segundos
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          controller.abort();
+          reject(new Error("Timeout: La carga de planes tardó más de 10 segundos. Por favor, recarga la página."));
+        }, 10000);
+      });
+      
+      // Fetch promise con AbortController
+      const fetchPromise = fetch("/api/subscription/plans", { 
+        signal: controller.signal 
+      }).then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Error HTTP ${response.status}: No se pudieron cargar los planes`);
+        }
+        
+        const data = await response.json();
+        console.log("✅ [PLANS] Planes cargados exitosamente:", data.length);
+        return data;
+      });
+      
+      // Promise.race: el primero en resolverse/rechazarse gana
+      try {
+        return await Promise.race([fetchPromise, timeoutPromise]);
+      } catch (error: any) {
+        console.error("❌ [PLANS] Error cargando planes:", error.message);
+        throw error;
+      }
+    },
     staleTime: 1000 * 60 * 5, // Cache por 5 minutos
+    gcTime: 1000 * 60 * 10, // Mantener en cache 10 minutos
+    retry: 2, // Reintentar 2 veces si falla
+    retryDelay: 1000, // Esperar 1 segundo entre reintentos
   });
 
   // Handle plans data changes
@@ -465,11 +500,16 @@ export default function Subscription() {
   if (isLoadingData) {
     return (
       <div className="container max-w-6xl mx-auto py-12">
-        <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-          <p className="text-muted-foreground">
-            Cargando planes de suscripción...
-          </p>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 space-y-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <div className="text-center space-y-2">
+            <p className="text-lg font-medium">
+              Cargando planes de suscripción...
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Los planes se cargan desde cache ultra-rápido (generalmente &lt;100ms)
+            </p>
+          </div>
         </div>
       </div>
     );
