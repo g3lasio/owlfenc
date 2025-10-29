@@ -10,6 +10,27 @@ import admin from 'firebase-admin';
 import { postgresUsageService } from '../services/postgresUsageService';
 import { getCurrentMonth } from '@shared/usage-schema';
 
+/**
+ * 🔐 SECURITY HELPER: Verify Firebase authentication token
+ * Returns authenticated userId or null if invalid
+ */
+async function verifyAuthToken(req: Request): Promise<string | null> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+
+  const token = authHeader.split(' ')[1];
+  
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    return decodedToken.uid;
+  } catch (tokenError) {
+    console.error("❌ [AUTH] Error verifying token:", tokenError);
+    return null;
+  }
+}
+
 export function registerUsageRoutes(app: any) {
   
   // ==========================================
@@ -161,20 +182,39 @@ export function registerUsageRoutes(app: any) {
 
   // ==========================================
   // RESET USAGE - Resetear uso mensual
+  // 🔐 SECURE: Requiere autenticación Firebase
   // ==========================================
   app.post('/api/usage/reset/:userId', async (req: Request, res: Response) => {
     try {
       const { userId } = req.params;
       const { feature } = req.body;
       
+      // ✅ SECURITY: Verify Firebase authentication
+      const authenticatedUserId = await verifyAuthToken(req);
+      if (!authenticatedUserId) {
+        return res.status(401).json({ 
+          error: "Autenticación requerida para resetear uso",
+          code: "NO_AUTH_TOKEN" 
+        });
+      }
+
+      // ✅ SECURITY: Only allow resetting own usage
+      if (userId !== authenticatedUserId) {
+        console.error(`🚨 [SECURITY] Intento de resetear uso de otro usuario! Token: ${authenticatedUserId}, Requested: ${userId}`);
+        return res.status(403).json({ 
+          error: "No puedes resetear el uso de otro usuario",
+          code: "FORBIDDEN_USER_MISMATCH" 
+        });
+      }
+      
       if (feature) {
         // Reset específico de una feature
         await postgresUsageService.resetFeatureUsage(userId, feature);
-        console.log(`🔄 [USAGE-PERSISTENT] Reset ${feature} for user: ${userId}`);
+        console.log(`🔄 [USAGE-PERSISTENT] Reset ${feature} for authenticated user: ${userId}`);
       } else {
         // Reset completo (crear nuevo record para el mes)
         await postgresUsageService.getOrCreateUsageRecord(userId);
-        console.log(`🔄 [USAGE-PERSISTENT] Created fresh record for user: ${userId}`);
+        console.log(`🔄 [USAGE-PERSISTENT] Created fresh record for authenticated user: ${userId}`);
       }
       
       const usage = await postgresUsageService.getUserUsage(userId);
@@ -188,10 +228,29 @@ export function registerUsageRoutes(app: any) {
 
   // ==========================================
   // GET USAGE STATS - Estadísticas para dashboard
+  // 🔐 SECURE: Requiere autenticación Firebase
   // ==========================================
   app.get('/api/usage/stats/:userId', async (req: Request, res: Response) => {
     try {
       const { userId } = req.params;
+      
+      // ✅ SECURITY: Verify Firebase authentication
+      const authenticatedUserId = await verifyAuthToken(req);
+      if (!authenticatedUserId) {
+        return res.status(401).json({ 
+          error: "Autenticación requerida para consultar estadísticas",
+          code: "NO_AUTH_TOKEN" 
+        });
+      }
+
+      // ✅ SECURITY: Only allow viewing own stats
+      if (userId !== authenticatedUserId) {
+        console.error(`🚨 [SECURITY] Intento de ver estadísticas de otro usuario! Token: ${authenticatedUserId}, Requested: ${userId}`);
+        return res.status(403).json({ 
+          error: "No puedes ver las estadísticas de otro usuario",
+          code: "FORBIDDEN_USER_MISMATCH" 
+        });
+      }
       
       const usage = await postgresUsageService.getUserUsage(userId);
       
@@ -214,6 +273,7 @@ export function registerUsageRoutes(app: any) {
 
   // ==========================================
   // CAN USE FEATURE - Verificar si puede usar
+  // 🔐 SECURE: Requiere autenticación Firebase
   // ==========================================
   app.post('/api/usage/can-use', async (req: Request, res: Response) => {
     try {
@@ -221,6 +281,24 @@ export function registerUsageRoutes(app: any) {
       
       if (!userId || !feature || limit === undefined) {
         return res.status(400).json({ error: 'userId, feature, and limit are required' });
+      }
+
+      // ✅ SECURITY: Verify Firebase authentication
+      const authenticatedUserId = await verifyAuthToken(req);
+      if (!authenticatedUserId) {
+        return res.status(401).json({ 
+          error: "Autenticación requerida para verificar uso",
+          code: "NO_AUTH_TOKEN" 
+        });
+      }
+
+      // ✅ SECURITY: Only allow checking own usage
+      if (userId !== authenticatedUserId) {
+        console.error(`🚨 [SECURITY] Intento de verificar uso de otro usuario! Token: ${authenticatedUserId}, Requested: ${userId}`);
+        return res.status(403).json({ 
+          error: "No puedes verificar el uso de otro usuario",
+          code: "FORBIDDEN_USER_MISMATCH" 
+        });
       }
 
       const canUse = await postgresUsageService.canUseFeature(userId, feature, limit);
