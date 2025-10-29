@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -89,6 +90,7 @@ interface CompletedContract {
 
 // Simple 3-step contract generator without complex state management
 export default function SimpleContractGenerator() {
+  const [, setLocation] = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [contractData, setContractData] = useState<any>(null);
@@ -5185,8 +5187,16 @@ export default function SimpleContractGenerator() {
                           {isLoading ? "Generating..." : "Generate Contract"}
                         </div>
                         {isPrimoChambeador && (
-                          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-yellow-600 text-black px-2 py-1 rounded text-xs font-medium whitespace-nowrap">
-                            Upgrade to Mero Patrón
+                          <div 
+                            onClick={() => setLocation('/subscription')}
+                            className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-600 to-orange-600 text-white px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer hover:from-yellow-500 hover:to-orange-500 transition-all shadow-lg hover:shadow-xl hover:scale-105 border-2 border-yellow-400/50 group"
+                            data-testid="banner-upgrade-contract-primo"
+                          >
+                            <div className="flex items-center gap-1">
+                              <Lock className="h-3 w-3" />
+                              <span>Click para upgrade → Mero Patrón</span>
+                              <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                            </div>
                           </div>
                         )}
                       </Button>
@@ -5242,8 +5252,16 @@ export default function SimpleContractGenerator() {
                             {isPrimoChambeador ? "Upgrade Required" : (isTrialMaster || isTrialUser) ? `Download PDF (Trial - ${trialDaysRemaining}d)` : isLoading ? "Generating..." : "Download PDF"}
                           </div>
                           {isPrimoChambeador && (
-                            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-yellow-600 text-black px-2 py-1 rounded text-xs font-medium whitespace-nowrap">
-                              Unlock with Mero Patrón
+                            <div 
+                              onClick={() => setLocation('/subscription')}
+                              className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer hover:from-cyan-500 hover:to-blue-500 transition-all shadow-lg hover:shadow-xl hover:scale-105 border-2 border-cyan-400/50 group"
+                              data-testid="banner-upgrade-download-primo"
+                            >
+                              <div className="flex items-center gap-1">
+                                <Sparkles className="h-3 w-3" />
+                                <span>Ver Planes → Desbloquear</span>
+                                <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                              </div>
                             </div>
                           )}
                         </Button>
