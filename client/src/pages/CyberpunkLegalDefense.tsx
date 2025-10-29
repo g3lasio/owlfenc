@@ -15,6 +15,7 @@ import {
 import { contractHistoryService } from "@/services/contractHistoryService";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/contexts/PermissionContext";
+import { PLAN_IDS } from "@/../../shared/permissions-config";
 import {
   legalDefenseEngine,
   type LegalClause,
@@ -180,12 +181,12 @@ export default function CyberpunkLegalDefense() {
     getUpgradeReason
   } = usePermissions();
   
-  // Plan type checks
+  // Plan type checks - CORREGIDOS CON IDs REALES
   const currentPlan = userPlan;
-  const isPrimoChambeador = currentPlan?.id === 1;
-  const isMeroPatron = currentPlan?.id === 2;
-  const isMasterContractor = currentPlan?.id === 3;
-  const isTrialMaster = currentPlan?.id === 4;
+  const isPrimoChambeador = currentPlan?.id === PLAN_IDS.PRIMO_CHAMBEADOR; // 5
+  const isMeroPatron = currentPlan?.id === PLAN_IDS.MERO_PATRON; // 9
+  const isMasterContractor = currentPlan?.id === PLAN_IDS.MASTER_CONTRACTOR; // 6
+  const isTrialMaster = currentPlan?.id === PLAN_IDS.FREE_TRIAL; // 4
 
   // Estados principales del workflow - SIMPLE 3 STEP WIZARD
   const [currentStep, setCurrentStep] = useState(1);
@@ -504,6 +505,18 @@ export default function CyberpunkLegalDefense() {
       }
     };
   }, []);
+
+  // 🔒 CRITICAL: Bloqueo inmediato para Primo Chambeador - previene side effects
+  useEffect(() => {
+    if (isPrimoChambeador) {
+      // Bloquear inmediatamente cualquier procesamiento costoso
+      setIsProcessing(false);
+      // No ejecutar autoguardado ni otros side effects
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    }
+  }, [isPrimoChambeador]);
 
   // Funciones para manejar términos de pago con autoguardado
   const updatePaymentTerm = useCallback(
@@ -2524,6 +2537,85 @@ export default function CyberpunkLegalDefense() {
     </div>
   );
 
+  // 🔒 GATE DE ACCESO COMPLETO: Bloquear Legal Defense para Primo Chambeador
+  if (isPrimoChambeador) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 text-white p-6 flex items-center justify-center">
+        <Card className="max-w-2xl w-full bg-gray-900/50 border-2 border-red-500/50">
+          <CardHeader>
+            <div className="flex items-center justify-center mb-4">
+              <Lock className="h-16 w-16 text-red-500" />
+            </div>
+            <CardTitle className="text-center text-2xl text-red-400">
+              Legal Defense Access Restricted
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="bg-red-900/20 border border-red-500/30 rounded p-4">
+              <p className="text-gray-300 text-center">
+                Legal Defense is only available for <span className="font-bold text-white">Mero Patrón</span> and <span className="font-bold text-yellow-400">Master Contractor</span> plans.
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <h3 className="text-cyan-400 font-bold text-sm">UNLOCK WITH MERO PATRÓN:</h3>
+              <ul className="space-y-2 text-gray-300 text-sm">
+                <li className="flex items-center">
+                  <CheckCircle className="h-4 w-4 text-green-400 mr-2 flex-shrink-0" />
+                  50 professional contracts per month
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="h-4 w-4 text-green-400 mr-2 flex-shrink-0" />
+                  Download contracts as PDF
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="h-4 w-4 text-green-400 mr-2 flex-shrink-0" />
+                  Legal defense protections
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-yellow-400 font-bold text-sm">OR GO UNLIMITED WITH MASTER CONTRACTOR:</h3>
+              <ul className="space-y-2 text-gray-300 text-sm">
+                <li className="flex items-center">
+                  <CheckCircle className="h-4 w-4 text-yellow-400 mr-2 flex-shrink-0" />
+                  Unlimited contracts - no monthly limits
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="h-4 w-4 text-yellow-400 mr-2 flex-shrink-0" />
+                  Electronic signature protocol
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="h-4 w-4 text-yellow-400 mr-2 flex-shrink-0" />
+                  All premium features unlocked
+                </li>
+              </ul>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <Button
+                onClick={() => window.open('/subscription', '_blank')}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold py-3"
+                data-testid="button-upgrade-legal-defense"
+              >
+                <ArrowRight className="h-4 w-4 mr-2" />
+                View Plans & Upgrade
+              </Button>
+              <Button
+                onClick={() => window.history.back()}
+                variant="outline"
+                className="flex-1 border-gray-600 text-gray-400 hover:border-gray-500"
+              >
+                Go Back
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div
       className=" mb-40 bg-black text-white p-6 relative "
@@ -2534,18 +2626,6 @@ export default function CyberpunkLegalDefense() {
         <div className="bg-gradient-to-r from-cyan-600 to-blue-600 p-3 rounded-lg mb-4 text-center">
           <p className="text-white font-medium">
             🎆 Trial Mode: {trialDaysRemaining} days remaining for unlimited access
-          </p>
-        </div>
-      )}
-      
-      {/* Plan Restriction Warning */}
-      {isPrimoChambeador && (
-        <div className="bg-gradient-to-r from-orange-600 to-red-600 p-3 rounded-lg mb-4 text-center">
-          <p className="text-white font-medium">
-            ⚠️ Legal Defense requires Mero Patrón plan or higher - 
-            <span className="underline cursor-pointer ml-1" onClick={() => window.open('/pricing', '_blank')}>
-              Upgrade Now
-            </span>
           </p>
         </div>
       )}
@@ -3960,21 +4040,95 @@ export default function CyberpunkLegalDefense() {
                 </div>
 
                 {/* Contract Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Button
-                    onClick={() => generateContractPDF()}
-                    className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-6 rounded border-0 shadow-none"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    GENERATE CONTRACT PDF
-                  </Button>
-                  <Button
-                    onClick={() => sendContractForSignature()}
-                    className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded border-0 shadow-none"
-                  >
-                    <PenTool className="h-4 w-4 mr-2" />
-                    SEND FOR SIGNATURE
-                  </Button>
+                <div className="space-y-4">
+                  {/* Contract Usage Counter for Mero Patrón */}
+                  {isMeroPatron && (
+                    <div className={`border rounded p-3 ${
+                      !canUse('contracts') 
+                        ? 'bg-red-900/20 border-red-400/30' 
+                        : 'bg-blue-900/20 border-blue-400/30'
+                    }`}>
+                      <div className={`text-sm font-bold mb-1 flex items-center justify-between ${
+                        !canUse('contracts') ? 'text-red-400' : 'text-blue-400'
+                      }`}>
+                        <span className="flex items-center">
+                          <FileSignature className="h-4 w-4 mr-2" />
+                          Contract Usage
+                        </span>
+                        <span className="text-white">
+                          {userUsage?.contracts || 0} / {currentPlan?.limits?.contracts || 50}
+                        </span>
+                      </div>
+                      <div className="text-gray-300 text-xs">
+                        {!canUse('contracts') 
+                          ? '⚠️ Monthly limit reached - Upgrade to Master Contractor for unlimited contracts'
+                          : `${(currentPlan?.limits?.contracts || 50) - (userUsage?.contracts || 0)} contracts remaining this month`
+                        }
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Generate PDF - Available to all paid plans with limit enforcement for Mero Patrón */}
+                    <Button
+                      onClick={() => {
+                        if (isMeroPatron && !canUse('contracts')) {
+                          showUpgradeModal(
+                            'You have reached your monthly limit of 50 contracts. Upgrade to Master Contractor for unlimited contracts.',
+                            'contracts'
+                          );
+                          return;
+                        }
+                        generateContractPDF();
+                      }}
+                      disabled={isMeroPatron && !canUse('contracts')}
+                      className={`font-bold py-3 px-6 rounded border-0 shadow-none ${
+                        isMeroPatron && !canUse('contracts')
+                          ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                          : 'bg-purple-600 hover:bg-purple-500 text-white'
+                      }`}
+                      data-testid="button-generate-pdf"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      {isMeroPatron && !canUse('contracts') ? 'LIMIT REACHED' : 'GENERATE CONTRACT PDF'}
+                    </Button>
+
+                    {/* Send for Signature - Master Contractor & Trial Only */}
+                    {(isMasterContractor || isTrialMaster) && (
+                      <Button
+                        onClick={() => sendContractForSignature()}
+                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded border-0 shadow-none"
+                        data-testid="button-send-signature"
+                      >
+                        <PenTool className="h-4 w-4 mr-2" />
+                        SEND FOR SIGNATURE
+                      </Button>
+                    )}
+
+                    {/* Upgrade Banner for Mero Patrón - Replace Signature Button */}
+                    {isMeroPatron && (
+                      <div 
+                        className="bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border-2 border-yellow-400/50 rounded p-4 cursor-pointer hover:border-yellow-400 transition-all"
+                        onClick={() => showUpgradeModal(
+                          'Unlock electronic signature protocol with Master Contractor plan. Send contracts digitally and track signatures in real-time.',
+                          'contracts'
+                        )}
+                        data-testid="banner-upgrade-signature"
+                      >
+                        <div className="text-yellow-400 font-bold text-sm mb-1 flex items-center">
+                          <Lock className="h-4 w-4 mr-2" />
+                          SIGNATURE PROTOCOL LOCKED
+                        </div>
+                        <div className="text-gray-300 text-xs mb-2">
+                          Upgrade to Master Contractor for unlimited digital signatures
+                        </div>
+                        <div className="text-yellow-400 text-xs font-bold flex items-center">
+                          UPGRADE NOW
+                          <ArrowRight className="h-3 w-3 ml-1" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Legal Compliance Notice */}
