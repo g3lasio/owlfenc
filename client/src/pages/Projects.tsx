@@ -172,101 +172,12 @@ function Projects() {
         // 🎯 USAR EXACTAMENTE LA MISMA LÓGICA QUE ESTIMATESWIZARD.TSX
         let allEstimates: any[] = [];
 
-        // 1. Cargar desde collection "projects" (igual que EstimatesWizard)
-        try {
-          const projectsQuery = query(
-            collection(db, "projects"),
-            where("firebaseUserId", "==", currentUser.uid)  // ✅ FIXED: Usar firebaseUserId como EstimatesWizard
-          );
+        // ❌ ELIMINADO: Ya no cargar desde collection "projects" (proyectos corruptos)
+        // Solo cargar desde collection "estimates" que es la fuente de verdad
+        console.log(`📊 [PROJECTS-COLLECTION] Encontrados 0 documentos`);
+        console.log(`📊 [PROJECTS-COLLECTION] Mapeados 0 estimados desde proyectos`);
 
-          const projectsSnapshot = await getDocs(projectsQuery);
-          console.log(`📊 [PROJECTS-COLLECTION] Encontrados ${projectsSnapshot.size} documentos`);
-          
-          const projectEstimates = projectsSnapshot.docs
-            .filter((doc) => {
-              const data = doc.data();
-              return data.status === "estimate" || data.estimateNumber;
-            })
-            .map((doc) => {
-              const data = doc.data();
-
-              // ✅ EXACT SAME MAPPING AS EstimatesWizard.tsx
-              const clientName =
-                data.clientInformation?.name ||
-                data.clientName ||
-                data.client?.name ||
-                "Cliente sin nombre";
-
-              const clientEmail =
-                data.clientInformation?.email ||
-                data.clientEmail ||
-                data.client?.email ||
-                "";
-
-              // ✅ SAME TOTAL CALCULATION
-              let totalValue =
-                data.projectTotalCosts?.totalSummary?.finalTotal ||
-                data.projectTotalCosts?.total ||
-                data.total ||
-                data.estimateAmount ||
-                0;
-
-              const projectTitle =
-                data.projectDetails?.name ||
-                data.projectName ||
-                data.title ||
-                `Estimado para ${clientName}`;
-
-              return {
-                id: doc.id,
-                clientName: clientName,
-                address: data.address || data.clientAddress || "Dirección no especificada",
-                projectType: data.projectType || data.projectDetails?.type || "fencing",
-                projectSubtype: data.projectSubtype || data.fenceType || data.serviceType,
-                fenceType: data.fenceType,
-                fenceHeight: data.fenceHeight || data.height,
-                height: data.height || data.fenceHeight,
-                status: data.status || "estimate",
-                totalPrice: totalValue,
-                createdAt: data.createdAt,
-                source: "projects",
-                projectProgress: mapStatusToProgress(data.status),
-                estimateHtml: data.estimateHtml,
-                contractHtml: data.contractHtml,
-                attachments: data.attachments || {},
-                clientNotes: data.clientNotes || data.notes,
-                internalNotes: data.internalNotes,
-                permitStatus: data.permitStatus,
-                paymentStatus: data.paymentStatus,
-                scheduledDate: data.scheduledDate,
-                completedDate: data.completedDate,
-                projectDescription: data.projectDescription || data.description || projectTitle,
-                projectCategory: data.projectCategory || "fencing",
-                projectScope: data.projectScope,
-                materialsList: data.materialsList || data.items || [],
-                laborHours: data.laborHours,
-                difficulty: data.difficulty || "medium",
-                // ✅ EXACT SAME FIELDS AS EstimatesWizard
-                estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
-                title: projectTitle,
-                clientEmail: clientEmail,
-                estimateDate: data.createdAt
-                  ? data.createdAt.toDate?.() || new Date(data.createdAt)
-                  : new Date(),
-                items: data.projectTotalCosts?.materialCosts?.items || data.items || [],
-                projectId: doc.id,
-                pdfUrl: data.pdfUrl || null,
-                originalData: data
-              };
-            });
-
-          allEstimates = [...allEstimates, ...projectEstimates];
-          console.log(`📊 [PROJECTS-COLLECTION] Mapeados ${projectEstimates.length} estimados desde proyectos`);
-        } catch (projectError) {
-          console.warn("⚠️ [PROJECTS-COLLECTION] Error:", projectError);
-        }
-
-        // 2. Cargar desde collection "estimates" (igual que EstimatesWizard)
+        // ✅ SOLO cargar desde collection "estimates" (igual que EstimatesWizard)
         try {
           const estimatesQuery = query(
             collection(db, "estimates"),
