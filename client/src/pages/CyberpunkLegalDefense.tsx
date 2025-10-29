@@ -48,6 +48,8 @@ import {
   Archive,
   History,
   Server,
+  Crown,
+  Home,
 } from "lucide-react";
 
 interface PaymentTerm {
@@ -2541,25 +2543,43 @@ export default function CyberpunkLegalDefense() {
   if (isPrimoChambeador) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 text-white p-6 flex items-center justify-center">
-        <Card className="max-w-2xl w-full bg-gray-900/50 border-2 border-red-500/50">
+        <Card className="max-w-2xl w-full bg-gray-900/50 border-2 border-red-500/50 shadow-2xl shadow-red-500/20">
           <CardHeader>
             <div className="flex items-center justify-center mb-4">
-              <Lock className="h-16 w-16 text-red-500" />
+              <div className="relative">
+                <Lock className="h-16 w-16 text-red-500 animate-pulse" />
+                <div className="absolute inset-0 blur-xl bg-red-500/30 -z-10"></div>
+              </div>
             </div>
-            <CardTitle className="text-center text-2xl text-red-400">
-              Legal Defense Access Restricted
+            <CardTitle className="text-center text-3xl font-bold bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
+              Legal Defense Locked
             </CardTitle>
+            <p className="text-center text-gray-400 mt-2">
+              Upgrade your plan to access professional contract generation
+            </p>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="bg-red-900/20 border border-red-500/30 rounded p-4">
-              <p className="text-gray-300 text-center">
-                Legal Defense is only available for <span className="font-bold text-white">Mero Patrón</span> and <span className="font-bold text-yellow-400">Master Contractor</span> plans.
+            <div className="bg-gradient-to-r from-red-900/30 to-orange-900/30 border-2 border-red-500/50 rounded-lg p-4 shadow-inner">
+              <p className="text-gray-200 text-center leading-relaxed">
+                <span className="block text-white font-bold text-lg mb-2">🚫 Current Plan: Primo Chambeador (Free)</span>
+                Legal Defense features require <span className="font-bold text-cyan-400">Mero Patrón</span> or <span className="font-bold text-yellow-400">Master Contractor</span> subscription.
               </p>
             </div>
             
-            <div className="space-y-3">
-              <h3 className="text-cyan-400 font-bold text-sm">UNLOCK WITH MERO PATRÓN:</h3>
-              <ul className="space-y-2 text-gray-300 text-sm">
+            {/* Mero Patrón Option */}
+            <div 
+              onClick={() => setLocation('/subscription')}
+              className="bg-gradient-to-br from-blue-900/40 to-cyan-900/40 border-2 border-cyan-500/50 rounded-lg p-5 cursor-pointer hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/30 transition-all duration-300 transform hover:scale-[1.02] group"
+              data-testid="card-mero-patron-upgrade"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-cyan-400 font-bold text-lg flex items-center">
+                  <Zap className="h-5 w-5 mr-2" />
+                  MERO PATRÓN - $49.99/month
+                </h3>
+                <ArrowRight className="h-5 w-5 text-cyan-400 group-hover:translate-x-1 transition-transform" />
+              </div>
+              <ul className="space-y-2 text-gray-300 text-sm mb-3">
                 <li className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-2 flex-shrink-0" />
                   50 professional contracts per month
@@ -2573,14 +2593,30 @@ export default function CyberpunkLegalDefense() {
                   Legal defense protections
                 </li>
               </ul>
+              <div className="text-cyan-300 text-xs font-bold flex items-center">
+                <span className="bg-cyan-500/20 px-3 py-1 rounded-full">
+                  Click to upgrade →
+                </span>
+              </div>
             </div>
 
-            <div className="space-y-3">
-              <h3 className="text-yellow-400 font-bold text-sm">OR GO UNLIMITED WITH MASTER CONTRACTOR:</h3>
-              <ul className="space-y-2 text-gray-300 text-sm">
+            {/* Master Contractor Option */}
+            <div 
+              onClick={() => setLocation('/subscription')}
+              className="bg-gradient-to-br from-yellow-900/40 to-orange-900/40 border-2 border-yellow-500/50 rounded-lg p-5 cursor-pointer hover:border-yellow-400 hover:shadow-lg hover:shadow-yellow-500/30 transition-all duration-300 transform hover:scale-[1.02] group"
+              data-testid="card-master-contractor-upgrade"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-yellow-400 font-bold text-lg flex items-center">
+                  <Crown className="h-5 w-5 mr-2" />
+                  MASTER CONTRACTOR - $99.99/month
+                </h3>
+                <ArrowRight className="h-5 w-5 text-yellow-400 group-hover:translate-x-1 transition-transform" />
+              </div>
+              <ul className="space-y-2 text-gray-300 text-sm mb-3">
                 <li className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-yellow-400 mr-2 flex-shrink-0" />
-                  Unlimited contracts - no monthly limits
+                  <span className="font-bold text-white">Unlimited contracts</span> - no monthly limits
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-yellow-400 mr-2 flex-shrink-0" />
@@ -2591,23 +2627,29 @@ export default function CyberpunkLegalDefense() {
                   All premium features unlocked
                 </li>
               </ul>
+              <div className="text-yellow-300 text-xs font-bold flex items-center">
+                <span className="bg-yellow-500/20 px-3 py-1 rounded-full">
+                  Click to upgrade →
+                </span>
+              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Button
-                onClick={() => window.open('/subscription', '_blank')}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold py-3"
+                onClick={() => setLocation('/subscription')}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold py-4 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300"
                 data-testid="button-upgrade-legal-defense"
               >
-                <ArrowRight className="h-4 w-4 mr-2" />
-                View Plans & Upgrade
+                <Zap className="h-5 w-5 mr-2 animate-pulse" />
+                Upgrade Now - View Plans
               </Button>
               <Button
-                onClick={() => window.history.back()}
+                onClick={() => setLocation('/')}
                 variant="outline"
-                className="flex-1 border-gray-600 text-gray-400 hover:border-gray-500"
+                className="flex-1 border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
               >
-                Go Back
+                <Home className="h-4 w-4 mr-2" />
+                Back to Dashboard
               </Button>
             </div>
           </CardContent>
