@@ -342,7 +342,7 @@ class TransactionalContractService {
       console.log(`✅ [TRANSACTIONAL] Contract completed with legal seal`);
       console.log(`   📋 Folio: ${legalSeal.folio}`);
       console.log(`   🔐 Hash: ${legalSeal.pdfHash.substring(0, 16)}...`);
-      console.log(`   💾 Path: ${finalPdfPath}`);
+      console.log(`   💾 Path: ${pdfUrl}`);
 
     } catch (error: any) {
       console.error('❌ [TRANSACTIONAL] Error completing contract:', error);
