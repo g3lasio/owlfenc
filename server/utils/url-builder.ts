@@ -115,45 +115,59 @@ export function buildSignatureUrls(req: Request, contractId: string): {
 }
 
 /**
- * Obtiene el dominio correcto para URLs de firma
- * Producción: chyrris.com
- * Desarrollo: host actual
+ * Obtiene el dominio correcto donde está el servidor API/backend
+ * CRÍTICO: Los URLs compartidos DEBEN apuntar al dominio donde corre Express/API
+ * 
+ * Configuración mediante variables de entorno (orden de prioridad):
+ * 1. PUBLIC_SHARE_DOMAIN - Dominio específico para URLs compartidos (ej: app.chyrris.com)
+ * 2. BACKEND_URL - URL base del backend (extraerá el dominio)
+ * 3. req.get('host') - Host actual de la petición (fallback seguro)
+ * 
+ * ⚠️ IMPORTANTE: Si usas un dominio de marketing (chyrris.com) separado del backend,
+ * debes configurar PUBLIC_SHARE_DOMAIN con el dominio donde está el API
  */
-function getSignatureDomain(req: Request): string {
+function getBackendDomain(req: Request, context: string = ''): string {
   const currentHost = req.get('host') || 'localhost:5000';
   
-  // Si estamos en desarrollo local o Replit dev, usar el host actual
+  // 🔧 DESARROLLO: Siempre usar host actual
   if (currentHost.includes('localhost') || 
       currentHost.includes('127.0.0.1') || 
       currentHost.includes('replit.dev')) {
-    console.log('🔧 [URL-BUILDER] Desarrollo detectado, usando host actual:', currentHost);
+    console.log(`🔧 [URL-BUILDER] ${context} - Desarrollo detectado, usando host actual:`, currentHost);
     return currentHost;
   }
   
-  // En producción, SIEMPRE usar chyrris.com para URLs de firma
-  console.log('🌐 [URL-BUILDER] Producción detectada, usando chyrris.com para firma');
-  return 'chyrris.com';
+  // 🌐 PRODUCCIÓN: Usar variable de entorno o host actual
+  const configuredDomain = process.env.PUBLIC_SHARE_DOMAIN || 
+                          (process.env.BACKEND_URL ? new URL(process.env.BACKEND_URL).host : null);
+  
+  if (configuredDomain) {
+    console.log(`🌐 [URL-BUILDER] ${context} - Usando dominio configurado:`, configuredDomain);
+    console.log(`📍 [URL-BUILDER] Fuente: ${process.env.PUBLIC_SHARE_DOMAIN ? 'PUBLIC_SHARE_DOMAIN' : 'BACKEND_URL'}`);
+    return configuredDomain;
+  }
+  
+  // ✅ FALLBACK SEGURO: Usar el host actual (donde llegó la petición)
+  // Esto funciona porque si la petición llegó aquí, significa que este host tiene el API
+  console.log(`✅ [URL-BUILDER] ${context} - Usando host actual (fallback seguro):`, currentHost);
+  console.log(`💡 [URL-BUILDER] TIP: Para URLs personalizados, configura PUBLIC_SHARE_DOMAIN`);
+  return currentHost;
+}
+
+/**
+ * Obtiene el dominio correcto para URLs de firma
+ * Usa la configuración centralizada de backend domain
+ */
+function getSignatureDomain(req: Request): string {
+  return getBackendDomain(req, 'FIRMA');
 }
 
 /**
  * Obtiene el dominio correcto para URLs compartibles de estimados
- * Producción: chyrris.com
- * Desarrollo: host actual
+ * Usa la configuración centralizada de backend domain
  */
 export function getEstimateSharableDomain(req: Request): string {
-  const currentHost = req.get('host') || 'localhost:5000';
-  
-  // Si estamos en desarrollo local o Replit dev, usar el host actual
-  if (currentHost.includes('localhost') || 
-      currentHost.includes('127.0.0.1') || 
-      currentHost.includes('replit.dev')) {
-    console.log('🔧 [URL-BUILDER] Desarrollo detectado, usando host actual para estimados:', currentHost);
-    return currentHost;
-  }
-  
-  // En producción, SIEMPRE usar chyrris.com para URLs de estimados compartidos
-  console.log('🌐 [URL-BUILDER] Producción detectada, usando chyrris.com para estimados');
-  return 'chyrris.com';
+  return getBackendDomain(req, 'ESTIMADO');
 }
 
 /**
