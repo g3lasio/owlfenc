@@ -848,38 +848,30 @@ export default function SimpleContractGenerator() {
     [toast],
   );
 
-  // Download signed PDF - directly download the pre-generated PDF file
+  // Download signed PDF - ALWAYS generate fresh PDF to ensure signatures are included
   const downloadSignedPdf = useCallback(
     async (contractId: string, clientName: string) => {
       try {
-        console.log("📥 Downloading signed contract PDF for:", contractId);
+        console.log("📥 [PDF-DOWNLOAD] Starting download for contract:", contractId);
 
-        // Find the contract to get its PDF URL
-        const contract = completedContracts.find(c => c.contractId === contractId);
-        
-        if (contract?.pdfUrl) {
-          // Direct download of the existing PDF
-          const link = document.createElement('a');
-          link.href = contract.pdfUrl;
-          link.download = `${clientName.replace(/\s+/g, '_')}_Contract_${contractId}.pdf`;
-          link.click();
-          
+        if (!currentUser) {
           toast({
-            title: "Download Started",
-            description: "Your signed contract PDF is downloading...",
-            variant: "default",
+            title: "Authentication Required",
+            description: "Please log in to download contracts",
+            variant: "destructive",
           });
           return;
         }
 
-        // Fallback to generating PDF if not available
+        // Show immediate feedback
         toast({
           title: "Preparing PDF",
-          description: "Preparing your signed contract for download...",
+          description: "Generating your signed contract PDF with all signatures...",
           variant: "default",
         });
 
-        // CRITICAL FIX: Get the signed HTML content first (same as viewContractHtml)
+        // STEP 1: Get the signed HTML content with embedded signatures
+        console.log("📄 [PDF-DOWNLOAD] Fetching signed HTML content...");
         const htmlResponse = await fetch(
           `/api/dual-signature/download-html/${contractId}`,
           {
@@ -890,15 +882,18 @@ export default function SimpleContractGenerator() {
         );
 
         if (!htmlResponse.ok) {
-          const errorData = await htmlResponse.json();
+          const errorData = await htmlResponse.json().catch(() => ({}));
+          console.error("❌ [PDF-DOWNLOAD] Failed to fetch HTML:", errorData);
           throw new Error(
-            errorData.message || "Failed to load signed contract",
+            errorData.message || "Failed to load signed contract. The contract may not be fully signed yet.",
           );
         }
 
         const signedHtmlContent = await htmlResponse.text();
+        console.log("✅ [PDF-DOWNLOAD] HTML content retrieved, length:", signedHtmlContent.length);
 
-        // Generate PDF from the EXACT signed HTML content
+        // STEP 2: Generate PDF from the signed HTML content with signatures embedded
+        console.log("🔄 [PDF-DOWNLOAD] Generating PDF from HTML...");
         const pdfResponse = await fetch(
           "/api/dual-signature/generate-pdf-from-html",
           {
@@ -915,6 +910,7 @@ export default function SimpleContractGenerator() {
         );
 
         if (pdfResponse.ok) {
+          console.log("✅ [PDF-DOWNLOAD] PDF generated successfully");
           // Get the PDF blob
           const pdfBlob = await pdfResponse.blob();
           const fileName = `contract_${clientName.replace(/\s+/g, "_")}_signed.pdf`;
@@ -1028,23 +1024,24 @@ export default function SimpleContractGenerator() {
             });
           }
         } else {
-          const errorData = await pdfResponse.json();
+          const errorData = await pdfResponse.json().catch(() => ({}));
+          console.error("❌ [PDF-DOWNLOAD] PDF generation failed:", errorData);
           throw new Error(
-            errorData.message || "Failed to generate PDF from signed contract",
+            errorData.message || "Failed to generate PDF from signed contract. Please try again.",
           );
         }
       } catch (error: any) {
-        console.error("❌ Error downloading signed contract PDF:", error);
+        console.error("❌ [PDF-DOWNLOAD] Download error:", error);
         toast({
           title: "PDF Download Error",
           description:
-            (error as Error).message ||
-            "Failed to download signed contract as PDF. Chrome dependencies may be missing.",
+            error.message ||
+            "Failed to download signed contract PDF. Please ensure both parties have signed the contract and try again.",
           variant: "destructive",
         });
       }
     },
-    [toast, currentUser],
+    [toast, currentUser, completedContracts],
   );
 
   // View contract HTML in new window with embedded signatures
