@@ -240,17 +240,35 @@ class ContractHistoryService {
   /**
    * Obtiene el historial de contratos para un usuario
    * Combina contratos de contractHistory y dualSignatureContracts
+   * ✅ PRODUCTION-READY: Con timeout, validación y manejo robusto de errores
    */
   async getContractHistory(userId: string): Promise<ContractHistoryEntry[]> {
+    // ✅ VALIDATION: Verificar userId antes de hacer queries
+    if (!userId || typeof userId !== 'string' || userId.trim() === '') {
+      console.error('❌ [CONTRACT-HISTORY] Invalid userId:', userId);
+      return [];
+    }
+
+    console.log('📋 [CONTRACT-HISTORY] Loading contracts for user:', userId);
+
+    let historyContracts: ContractHistoryEntry[] = [];
+    let dualContracts: ContractHistoryEntry[] = [];
+
+    // ✅ RESILIENT: Load contractHistory with timeout and individual error handling
     try {
-      // Obtener contratos de contractHistory
       const historyQuery = query(
         collection(db, this.collectionName),
         where('userId', '==', userId)
       );
 
-      const historySnapshot = await getDocs(historyQuery);
-      const historyContracts = historySnapshot.docs.map(doc => {
+      // Add timeout to prevent hanging queries
+      const historyPromise = getDocs(historyQuery);
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('contractHistory query timeout')), 10000)
+      );
+
+      const historySnapshot = await Promise.race([historyPromise, timeoutPromise]);
+      historyContracts = historySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -259,39 +277,55 @@ class ContractHistoryService {
           updatedAt: data.updatedAt?.toDate() || new Date()
         } as ContractHistoryEntry;
       });
+      
+      console.log('✅ [CONTRACT-HISTORY] Loaded from contractHistory:', historyContracts.length);
+    } catch (historyError: any) {
+      console.error('⚠️ [CONTRACT-HISTORY] Failed to load contractHistory:', historyError.message);
+      // Continue execution - don't fail completely if one source fails
+    }
 
-      // Obtener contratos de dualSignatureContracts
+    // ✅ RESILIENT: Load dualSignatureContracts with timeout and individual error handling
+    try {
       const dualQuery = query(
         collection(db, this.dualSignatureCollection),
         where('userId', '==', userId)
       );
 
-      const dualSnapshot = await getDocs(dualQuery);
-      const dualContracts = dualSnapshot.docs.map(doc => {
+      // Add timeout to prevent hanging queries
+      const dualPromise = getDocs(dualQuery);
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('dualSignatureContracts query timeout')), 10000)
+      );
+
+      const dualSnapshot = await Promise.race([dualPromise, timeoutPromise]);
+      dualContracts = dualSnapshot.docs.map(doc => {
         const data = doc.data();
         return this.mapDualSignatureToHistory(doc.id, data);
       });
 
-      // Combinar y eliminar duplicados basado en contractId
-      const allContracts = [...historyContracts];
-      const existingContractIds = new Set(historyContracts.map(c => c.contractId));
-      
-      for (const dualContract of dualContracts) {
-        if (!existingContractIds.has(dualContract.contractId)) {
-          allContracts.push(dualContract);
-        }
-      }
-
-      // Ordenar por fecha de creación (más reciente primero)
-      allContracts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-      console.log('🔥 Retrieved combined contract history:', allContracts.length, 'contracts');
-      console.log('📊 Sources - History:', historyContracts.length, 'Dual:', dualContracts.length);
-      return allContracts;
-    } catch (error) {
-      console.error('❌ Error retrieving contract history:', error);
-      return [];
+      console.log('✅ [CONTRACT-HISTORY] Loaded from dualSignatureContracts:', dualContracts.length);
+    } catch (dualError: any) {
+      console.error('⚠️ [CONTRACT-HISTORY] Failed to load dualSignatureContracts:', dualError.message);
+      // Continue execution - don't fail completely if one source fails
     }
+
+    // ✅ MERGE: Combinar y eliminar duplicados basado en contractId
+    const allContracts = [...historyContracts];
+    const existingContractIds = new Set(historyContracts.map(c => c.contractId));
+    
+    for (const dualContract of dualContracts) {
+      if (!existingContractIds.has(dualContract.contractId)) {
+        allContracts.push(dualContract);
+      }
+    }
+
+    // Ordenar por fecha de creación (más reciente primero)
+    allContracts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    console.log('✅ [CONTRACT-HISTORY] Total combined:', allContracts.length, 'contracts');
+    console.log('📊 [CONTRACT-HISTORY] Sources - History:', historyContracts.length, 'Dual:', dualContracts.length);
+    
+    return allContracts;
   }
 
   /**

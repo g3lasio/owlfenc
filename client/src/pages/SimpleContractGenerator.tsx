@@ -390,23 +390,41 @@ export default function SimpleContractGenerator() {
         console.warn("⚠️ Firebase user not fully initialized - relying on session cookie");
       }
 
+      // ✅ PRODUCTION-READY: Add timeout wrapper for all promises
+      const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
+        return Promise.race([
+          promise,
+          new Promise<T>((_, reject) => 
+            setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs)
+          )
+        ]);
+      };
+
       const dataPromises: Promise<any>[] = [
         // Source 1: Contract History (contracts completed via Simple Generator)
         // This uses Firebase directly, doesn't need API token
-        contractHistoryService.getContractHistory(effectiveUid),
+        withTimeout(
+          contractHistoryService.getContractHistory(effectiveUid),
+          15000, // 15 second timeout
+          'Contract History Query'
+        ),
         
         // Source 2: Unified Dual Signature System (SECURE with auth)
         // Uses Firebase token OR session cookie for authentication
-        fetch(`/api/dual-signature/completed/${effectiveUid}`, {
-          method: 'GET',
-          headers: authHeaders,
-          credentials: 'include' // Include session cookies
-        }).then((res) => {
-          if (!res.ok) {
-            throw new Error(`API returned ${res.status}: Cannot load dual signature contracts`);
-          }
-          return res.json();
-        })
+        withTimeout(
+          fetch(`/api/dual-signature/completed/${effectiveUid}`, {
+            method: 'GET',
+            headers: authHeaders,
+            credentials: 'include' // Include session cookies
+          }).then((res) => {
+            if (!res.ok) {
+              throw new Error(`API returned ${res.status}: Cannot load dual signature contracts`);
+            }
+            return res.json();
+          }),
+          15000, // 15 second timeout
+          'Dual Signature API'
+        )
       ];
 
       // Load from available sources and merge
@@ -481,24 +499,32 @@ export default function SimpleContractGenerator() {
         `✅ Completed contracts loaded: ${uniqueCompleted.length} contracts from ${sourcesSuccessful}/${sourcesLoaded} available sources`,
       );
       
-      // ✅ ROBUST: Explicit confirmation of data integrity
-      if (uniqueCompleted.length > 0) {
-        console.log("✅ Contract data loaded successfully - no data loss detected");
+      // ✅ PRODUCTION-READY: Only show error if BOTH sources fail completely
+      if (sourcesSuccessful === 0 && sourcesLoaded > 0) {
+        console.error("🚨 CRITICAL: All data sources failed - database connection issue");
+        toast({
+          title: "Database Connection Error",
+          description: "Cannot load contracts. Check your internet connection and try refreshing.",
+          variant: "destructive",
+        });
+      } else if (uniqueCompleted.length > 0) {
+        console.log("✅ Contract data loaded successfully");
+      } else if (sourcesSuccessful > 0 && uniqueCompleted.length === 0) {
+        console.log("ℹ️ No completed contracts found for this user");
       }
       
       // ⚠️ Warn if some sources failed but we still have data
       if (sourcesSuccessful < sourcesLoaded && uniqueCompleted.length > 0) {
-        console.warn(`⚠️ Note: ${sourcesLoaded - sourcesSuccessful} source(s) could not be loaded, but existing contracts are preserved`);
+        console.warn(`⚠️ Partial load: ${sourcesSuccessful}/${sourcesLoaded} sources succeeded`);
       }
     } catch (error) {
-      console.error("❌ Error loading completed contracts:", error);
-      // ✅ ROBUST: Don't show error toast if we're just missing auth token
-      // Only show error if it's a critical failure
+      console.error("❌ Critical error loading completed contracts:", error);
+      // ✅ PRODUCTION-READY: Only show toast for real errors, not auth issues
       const errorMessage = error instanceof Error ? error.message : String(error);
-      if (!errorMessage.includes('token') && !errorMessage.includes('auth')) {
+      if (!errorMessage.includes('token') && !errorMessage.includes('auth') && !errorMessage.includes('403')) {
         toast({
           title: "Error",
-          description: "Failed to load some contract data. Please refresh the page.",
+          description: "Failed to load contract data. Please refresh the page.",
           variant: "destructive",
         });
       }
