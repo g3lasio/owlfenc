@@ -333,14 +333,17 @@ export default function SimpleContractGenerator() {
 
   // Load contract history
   const loadContractHistory = useCallback(async () => {
+    // ✅ CRITICAL: Get effective UID from Firebase Auth OR profile
+    const effectiveUid = currentUser?.uid || profile?.firebaseUid;
+    
     // ✅ FIXED: Resilient auth check
-    if (!currentUser?.uid && !profile?.email) return;
+    if (!effectiveUid && !profile?.email) return;
 
     setIsLoadingHistory(true);
     try {
-      console.log("📋 Loading contract history for user:", currentUser?.uid || 'profile_user');
+      console.log("📋 Loading contract history for user:", effectiveUid || 'profile_user');
       const history = await contractHistoryService.getContractHistory(
-        currentUser.uid,
+        effectiveUid,
       );
       setContractHistory(history);
       console.log("✅ Contract history loaded:", history.length, "contracts");
@@ -354,7 +357,7 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoadingHistory(false);
     }
-  }, [currentUser?.uid, toast]);
+  }, [currentUser?.uid, profile?.firebaseUid, toast]);
 
   // Load completed contracts from both contract history and dual signature system
   const loadCompletedContracts = useCallback(async () => {
@@ -535,16 +538,19 @@ export default function SimpleContractGenerator() {
 
   // Load draft contracts from contract history
   const loadDraftContracts = useCallback(async () => {
+    // ✅ CRITICAL: Get effective UID from Firebase Auth OR profile
+    const effectiveUid = currentUser?.uid || profile?.firebaseUid;
+    
     // ✅ FIXED: Resilient auth check
-    if (!currentUser?.uid && !profile?.email) return;
+    if (!effectiveUid && !profile?.email) return;
 
     setIsLoadingDrafts(true);
     try {
-      console.log("📋 Loading draft contracts for user:", currentUser?.uid || 'profile_user');
+      console.log("📋 Loading draft contracts for user:", effectiveUid || 'profile_user');
 
       // Load from contract history service
       const history = await contractHistoryService.getContractHistory(
-        currentUser.uid,
+        effectiveUid,
       );
       const drafts = history.filter((contract) => contract.status === "draft");
 
@@ -560,17 +566,20 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoadingDrafts(false);
     }
-  }, [currentUser?.uid, toast]);
+  }, [currentUser?.uid, profile?.firebaseUid, toast]);
 
   const loadInProgressContracts = useCallback(async () => {
+    // ✅ CRITICAL: Get effective UID from Firebase Auth OR profile
+    const effectiveUid = currentUser?.uid || profile?.firebaseUid;
+    
     // ✅ FIXED: Resilient auth check
-    if (!currentUser?.uid && !profile?.email) return;
+    if (!effectiveUid && !profile?.email) return;
 
     setIsLoadingInProgress(true);
     try {
       console.log(
         "📋 Loading in-progress contracts for user:",
-        currentUser.uid,
+        effectiveUid,
       );
 
       // Try to get Firebase token for authentication
@@ -578,16 +587,21 @@ export default function SimpleContractGenerator() {
         'Content-Type': 'application/json'
       };
       
-      try {
-        const token = await currentUser.getIdToken();
-        authHeaders['Authorization'] = `Bearer ${token}`;
-      } catch (tokenError) {
-        console.warn("⚠️ Could not get Firebase token for in-progress - relying on session cookie:", tokenError);
+      // ✅ FIX: Verify currentUser exists before trying to get token
+      if (currentUser && typeof currentUser.getIdToken === 'function') {
+        try {
+          const token = await currentUser.getIdToken();
+          authHeaders['Authorization'] = `Bearer ${token}`;
+        } catch (tokenError) {
+          console.warn("⚠️ Could not get Firebase token for in-progress - relying on session cookie:", tokenError);
+        }
+      } else {
+        console.warn("⚠️ Firebase user not available - using session cookie authentication");
       }
 
       // Load from dual signature system (contracts with signature links sent)
       const response = await fetch(
-        `/api/dual-signature/in-progress/${currentUser.uid}`,
+        `/api/dual-signature/in-progress/${effectiveUid}`,
         {
           method: 'GET',
           headers: authHeaders,
@@ -616,12 +630,15 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoadingInProgress(false);
     }
-  }, [currentUser?.uid, toast]);
+  }, [currentUser, currentUser?.uid, profile?.firebaseUid, toast]);
 
   // Load projects from Firebase (same logic as ProjectToContractSelector)
   const loadProjectsFromFirebase = useCallback(async () => {
+    // ✅ CRITICAL: Get effective UID from Firebase Auth OR profile
+    const effectiveUid = currentUser?.uid || profile?.firebaseUid;
+    
     // ✅ FIXED: Resilient auth check
-    if (!currentUser?.uid && !profile?.email) return;
+    if (!effectiveUid && !profile?.email) return;
 
     try {
       setIsLoading(true);
@@ -633,7 +650,7 @@ export default function SimpleContractGenerator() {
       try {
         const projectsQuery = query(
           collection(db, "projects"),
-          where("firebaseUserId", "==", currentUser.uid),
+          where("firebaseUserId", "==", effectiveUid),
         );
 
         const projectsSnapshot = await getDocs(projectsQuery);
@@ -725,7 +742,7 @@ export default function SimpleContractGenerator() {
       try {
         const estimatesQuery = query(
           collection(db, "estimates"),
-          where("firebaseUserId", "==", currentUser.uid),
+          where("firebaseUserId", "==", effectiveUid),
         );
 
         const estimatesSnapshot = await getDocs(estimatesQuery);
@@ -810,7 +827,7 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser?.uid, toast]);
+  }, [currentUser?.uid, profile?.firebaseUid, toast]);
 
   // Resend signature links
   const resendSignatureLinks = useCallback(
@@ -2030,11 +2047,14 @@ export default function SimpleContractGenerator() {
 
   // Load projects for step 1
   const loadProjects = useCallback(async () => {
+    // ✅ CRITICAL: Get effective UID from Firebase Auth OR profile
+    const effectiveUid = currentUser?.uid || profile?.firebaseUid;
+    
     // ✅ FIXED: Resilient auth check
-    if (!currentUser?.uid && !profile?.email) return;
+    if (!effectiveUid && !profile?.email) return;
 
     setIsLoading(true);
-    console.log("🔍 Loading estimates and projects for user:", currentUser?.uid || 'profile_user');
+    console.log("🔍 Loading estimates and projects for user:", effectiveUid || 'profile_user');
 
     try {
       // FIREBASE CONNECTION VALIDATION
@@ -2048,7 +2068,7 @@ export default function SimpleContractGenerator() {
       try {
         const testQuery = query(
           collection(db, "estimates"),
-          where("firebaseUserId", "==", currentUser.uid),
+          where("firebaseUserId", "==", effectiveUid),
         );
         console.log("✅ Firebase connection validated successfully");
       } catch (connectionError) {
@@ -2064,7 +2084,7 @@ export default function SimpleContractGenerator() {
       console.log("📋 Loading from estimates collection...");
       const estimatesQuery = query(
         collection(db, "estimates"),
-        where("firebaseUserId", "==", currentUser.uid),
+        where("firebaseUserId", "==", effectiveUid),
       );
 
       const estimatesSnapshot = await getDocs(estimatesQuery);
@@ -2160,7 +2180,7 @@ export default function SimpleContractGenerator() {
       console.log("🏗️ Loading from projects collection...");
       const projectsQuery = query(
         collection(db, "projects"),
-        where("firebaseUserId", "==", currentUser.uid),
+        where("firebaseUserId", "==", effectiveUid),
       );
 
       const projectsSnapshot = await getDocs(projectsQuery);
@@ -2228,21 +2248,24 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser?.uid, toast]);
+  }, [currentUser?.uid, profile?.firebaseUid, toast]);
 
   // Set up real-time Firebase listener for projects
   useEffect(() => {
+    // ✅ CRITICAL: Get effective UID from Firebase Auth OR profile
+    const effectiveUid = currentUser?.uid || profile?.firebaseUid;
+    
     // ✅ FIXED: Resilient auth check for real-time listener
-    if (!currentUser?.uid && !profile?.email) return;
+    if (!effectiveUid && !profile?.email) return;
 
     console.log(
       "🔄 Setting up real-time project listener for user:",
-      currentUser?.uid || 'profile_user',
+      effectiveUid || 'profile_user',
     );
 
     const projectsQuery = query(
       collection(db, "projects"),
-      where("firebaseUserId", "==", currentUser.uid),
+      where("firebaseUserId", "==", effectiveUid),
     );
 
     // Real-time listener with enhanced error handling and data validation
@@ -2345,7 +2368,7 @@ export default function SimpleContractGenerator() {
 
     // Cleanup listener on unmount
     return () => unsubscribe();
-  }, [currentUser?.uid, toast]);
+  }, [currentUser?.uid, profile?.firebaseUid, toast]);
 
   // Initialize editable data when project is selected
   useEffect(() => {
