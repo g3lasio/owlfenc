@@ -442,8 +442,23 @@ export class DualSignatureService {
               updatedAt: new Date(),
             };
 
-      // Update signature in Firebase
-      await contractRef.update(updateData);
+      // 🔍 DEBUG: Log what we're about to save
+      console.log(`🔍 [SIGNATURE-SAVE] Attempting to save signature data:`, {
+        party: submission.party,
+        contractId: submission.contractId,
+        signatureType: submission.signatureType,
+        signatureDataLength: submission.signatureData?.length || 0,
+        signatureDataPreview: submission.signatureData?.substring(0, 50) || 'EMPTY',
+        updateData: {
+          ...updateData,
+          [`${submission.party}SignatureData`]: `${submission.signatureData?.length || 0} chars`
+        }
+      });
+
+      // ✅ CRITICAL FIX: Use .set() with merge instead of .update() for better reliability
+      await contractRef.set(updateData, { merge: true });
+      
+      console.log(`✅ [SIGNATURE-SAVE] Signature data saved successfully to Firebase`);
 
       // Check if both parties will be signed after this signature
       const bothSigned =

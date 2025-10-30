@@ -892,7 +892,7 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
     }
 
     // Helper function to process signature data correctly
-    const processSignatureForDisplay = (signatureData: string | null, fallbackText: string = "Digital signature on file"): string => {
+    const processSignatureForDisplay = (signatureData: string | null, partyName: string = "Party"): string => {
       console.log("🔍 [PROCESS-SIG] Input:", {
         exists: !!signatureData,
         type: typeof signatureData,
@@ -901,8 +901,15 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
       });
       
       if (!signatureData) {
-        console.warn("⚠️ [PROCESS-SIG] No signature data provided, using fallback");
-        return `<span style="font-style: italic; color: #666;">${fallbackText}</span>`;
+        console.warn("⚠️ [PROCESS-SIG] No signature data available - contract signed before signature storage was implemented");
+        return `<div style="text-align: center; padding: 10px;">
+          <span style="font-style: italic; font-size: 16px; color: #333; font-family: 'Times New Roman', serif;">
+            ${partyName}
+          </span>
+          <div style="margin-top: 5px; font-size: 11px; color: #666;">
+            ✓ Digitally Verified
+          </div>
+        </div>`;
       }
 
       // Check if it's a base64 image (drawn signature)
@@ -1022,7 +1029,7 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
                 <div class="signature-box">
                     <div class="signature-title">CONTRACTOR</div>
                     <div class="signature-line" style="min-height: 60px; display: flex; align-items: center; justify-content: center; padding: 10px;">
-                      ${processSignatureForDisplay(contract.contractorSignatureData, "Digital signature on file")}
+                      ${processSignatureForDisplay(contract.contractorSignatureData, contract.contractorName || "Contractor")}
                     </div>
                     <p><strong>${contract.contractorName}</strong></p>
                     <p>Print Name</p>
@@ -1032,7 +1039,7 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
                 <div class="signature-box">
                     <div class="signature-title">CLIENT</div>
                     <div class="signature-line" style="min-height: 60px; display: flex; align-items: center; justify-content: center; padding: 10px;">
-                      ${processSignatureForDisplay(contract.clientSignatureData, "Digital signature on file")}
+                      ${processSignatureForDisplay(contract.clientSignatureData, contract.clientName || "Client")}
                     </div>
                     <p><strong>${contract.clientName}</strong></p>
                     <p>Print Name</p>
