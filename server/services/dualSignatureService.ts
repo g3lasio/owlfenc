@@ -100,7 +100,7 @@ export class DualSignatureService {
       const contractId = this.generateUniqueContractId();
       console.log("🆔 [FIREBASE-ONLY] Contract ID generated:", contractId);
 
-      // Generate signature URLs using production domain
+      // Generate signature URLs using Owl Fence production domain
       const getBaseUrl = () => {
         // Debug logging
         console.log(
@@ -109,10 +109,10 @@ export class DualSignatureService {
         );
         console.log("🔍 [URL-DEBUG] NODE_ENV:", process.env.NODE_ENV);
 
-        // Production environment - use owlfenc.com domain
+        // Production environment - use app.owlfenc.com (verified domain with API)
         if (process.env.NODE_ENV === "production") {
-          console.log("✅ [URL-DEBUG] Using production URL");
-          return "https://owlfenc.com";
+          console.log("🦉 [URL-DEBUG] Using Owl Fence production URL: app.owlfenc.com");
+          return "https://app.owlfenc.com";
         }
 
         // Development - use REPLIT_DEV_DOMAIN if available

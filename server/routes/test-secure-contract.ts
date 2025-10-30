@@ -75,7 +75,7 @@ router.post('/test-secure-contract', async (req, res) => {
     
     // Step 3: Build secure links
     const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://owlfenc.com'
+      ? 'https://app.owlfenc.com'
       : `http://localhost:${process.env.PORT || 5000}`;
       
     const contractorLink = `${baseUrl}/sign/${contractorToken.token}`;

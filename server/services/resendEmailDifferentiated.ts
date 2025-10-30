@@ -298,7 +298,7 @@ export class ResendEmailDifferentiated {
                 </div>
                 
                 <!-- ALTERNATIVE FORM-BASED APPROACH -->
-                <form action="${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://owlfenc.com'}/api/contract-signature" method="POST" style="margin-top: 20px; border: 2px dashed #28a745; padding: 20px; border-radius: 8px;">
+                <form action="${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://app.owlfenc.com'}/api/contract-signature" method="POST" style="margin-top: 20px; border: 2px dashed #28a745; padding: 20px; border-radius: 8px;">
                   <h4 style="color: #28a745; text-align: center;">Alternative: Form-Based Approval</h4>
                   <p style="text-align: center; font-size: 14px; color: #666;">If buttons above don't work, use this form as backup:</p>
                   <input type="hidden" name="contractId" value="${params.contractId}">
@@ -506,7 +506,7 @@ export class ResendEmailDifferentiated {
 
                     showStatus('⏳ Processing approval...', true);
 
-                    fetch('${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://owlfenc.com'}/api/contract-signature', {
+                    fetch('${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://app.owlfenc.com'}/api/contract-signature', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify(contractData)
@@ -565,7 +565,7 @@ export class ResendEmailDifferentiated {
 
                     showStatus('⏳ Processing rejection...', true);
 
-                    fetch('${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://owlfenc.com'}/api/contract-signature', {
+                    fetch('${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://app.owlfenc.com'}/api/contract-signature', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify(contractData)
@@ -895,7 +895,7 @@ export class ResendEmailDifferentiated {
                 </div>
                 
                 <!-- ALTERNATIVE CLIENT FORM-BASED APPROACH -->
-                <form action="${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://owlfenc.com'}/api/contract-signature" method="POST" style="margin-top: 20px; border: 2px dashed #007bff; padding: 20px; border-radius: 8px;">
+                <form action="${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://app.owlfenc.com'}/api/contract-signature" method="POST" style="margin-top: 20px; border: 2px dashed #007bff; padding: 20px; border-radius: 8px;">
                   <h4 style="color: #007bff; text-align: center;">Alternative: Form-Based Approval</h4>
                   <p style="text-align: center; font-size: 14px; color: #666;">If buttons above don't work, use this form as backup:</p>
                   <input type="hidden" name="contractId" value="${params.contractId}">
@@ -1111,7 +1111,7 @@ export class ResendEmailDifferentiated {
 
                     showClientStatus('⏳ Processing approval...', true);
 
-                    fetch('${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://owlfenc.com'}/api/contract-signature', {
+                    fetch('${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://app.owlfenc.com'}/api/contract-signature', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify(contractData)
@@ -1166,7 +1166,7 @@ export class ResendEmailDifferentiated {
 
                     showClientStatus('⏳ Processing rejection...', true);
 
-                    fetch('${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://owlfenc.com'}/api/contract-signature', {
+                    fetch('${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://app.owlfenc.com'}/api/contract-signature', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify(contractData)

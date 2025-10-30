@@ -62,7 +62,7 @@ export const handleCallback = async (req: Request, res: Response) => {
     
     // Construir la URL completa para manejar el callback
     const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://owlfenc.com' 
+      ? 'https://app.owlfenc.com' 
       : 'https://material-calculator.replit.app';
     const fullUrl = `${baseUrl}${req.url}`;
     console.log('[QuickBooks] Procesando URL de callback:', fullUrl);
