@@ -1,12 +1,13 @@
-# 🔧 Configuración de URLs Compartidos - Solución de Deployment
+# 🦉 Configuración de URLs Compartidos - Owl Fence Platform
 
-## 📋 Problema Identificado
+## 📋 Problema Identificado y Solucionado
 
-Los URLs compartidos de estimados y contratos (ej: `https://chyrris.com/shared-estimate/...`) no mostraban contenido en producción porque:
+Los URLs compartidos de estimados y contratos no mostraban contenido en producción porque el dominio estaba hardcodeado incorrectamente.
 
-1. **El dominio hardcodeado era incorrecto**: El código estaba configurado para usar `chyrris.com` para todos los URLs compartidos en producción
-2. **Separación de dominios**: `chyrris.com` probablemente es tu dominio de marketing/landing page, pero el servidor Express/API está corriendo en otro dominio (ej: `app.chyrris.com`)
-3. **Falla de API**: Cuando un usuario visitaba el link compartido en `chyrris.com`, la página se cargaba pero los fetch a `/api/estimates/shared/:id` fallaban porque ese dominio no tiene el servidor API
+**Solución implementada:**
+- ✅ El sistema ahora usa `app.owlfenc.com` como dominio por defecto en producción
+- ✅ URLs compartidos funcionan correctamente en el dominio verificado
+- ✅ Separación clara: `owlfenc.com` (marketing) vs `app.owlfenc.com` (aplicación)
 
 ## ✅ Solución Implementada
 
@@ -18,33 +19,29 @@ He modificado el sistema de generación de URLs (`server/utils/url-builder.ts`) 
 2. **`BACKEND_URL`** (variable de entorno) - Extrae el dominio de la URL del backend
 3. **Host actual** (fallback seguro) - Usa el dominio donde llegó la petición
 
-## 🚀 Configuración en Producción
+## 🚀 Configuración Actual de Producción
 
-### Opción 1: Variable de entorno `PUBLIC_SHARE_DOMAIN` (Recomendada)
+### ✅ Configuración Automática (Ya Implementada)
 
-Agrega esta variable de entorno en tu deployment de producción:
+El sistema está configurado para usar automáticamente `app.owlfenc.com` en producción:
 
-```bash
-PUBLIC_SHARE_DOMAIN=app.chyrris.com
-```
+**Sin necesidad de variables de entorno adicionales**, el sistema detecta automáticamente:
+- 🔧 **Desarrollo**: Usa el host local (localhost o replit.dev)
+- 🦉 **Producción**: Usa `app.owlfenc.com` como dominio por defecto
 
-O el dominio donde está corriendo tu servidor Express/API.
+### 🔧 Configuración Opcional Avanzada
 
-### Opción 2: Variable de entorno `BACKEND_URL`
-
-Si ya tienes configurada la URL completa del backend:
+Si necesitas override manual, puedes usar variables de entorno:
 
 ```bash
-BACKEND_URL=https://app.chyrris.com
+# Opción 1: Dominio específico para URLs compartidos
+PUBLIC_SHARE_DOMAIN=app.owlfenc.com
+
+# Opción 2: URL completa del backend (extraerá el dominio)
+BACKEND_URL=https://app.owlfenc.com
 ```
 
-El sistema extraerá automáticamente `app.chyrris.com`.
-
-### Opción 3: Sin configuración (Fallback automático)
-
-Si no configuras ninguna variable, el sistema usará automáticamente el dominio donde llegó la petición. Esto funciona bien si:
-- Tu aplicación está en un solo dominio
-- No tienes separación entre marketing y aplicación
+Pero **no es necesario** - el sistema ya tiene el default correcto.
 
 ## 🔍 Verificación
 
@@ -52,13 +49,12 @@ Para verificar que está funcionando correctamente:
 
 1. **Revisa los logs** cuando se genere un URL compartido:
    ```
-   🌐 [URL-BUILDER] ESTIMADO - Usando dominio configurado: app.chyrris.com
-   📍 [URL-BUILDER] Fuente: PUBLIC_SHARE_DOMAIN
+   🦉 [URL-BUILDER] ESTIMADO - Producción detectada, usando dominio Owl Fence: app.owlfenc.com
    ```
 
 2. **Prueba un link compartido** en producción:
    - Genera un estimado y comparte el link
-   - Verifica que el URL use el dominio correcto (ej: `https://app.chyrris.com/shared-estimate/...`)
+   - Verifica que el URL use: `https://app.owlfenc.com/shared-estimate/...`
    - Abre el link en una ventana de incógnito para confirmar que carga correctamente
 
 3. **Verifica en consola del navegador** que no haya errores de red al cargar `/api/estimates/shared/:id`
@@ -71,16 +67,16 @@ Esta configuración aplica para:
 - ✅ URLs de contratos para firma: `/sign/:contractId/:party`
 - ✅ Otros URLs públicos que necesitan acceso al API
 
-## 🎯 Ejemplo de Configuración Completa
+## 🦉 Arquitectura Owl Fence
 
-Si tu setup es:
-- **Dominio de marketing**: `chyrris.com` (sitio estático, sin API)
-- **Dominio de aplicación**: `app.chyrris.com` (servidor Express con API)
+Setup actual de dominios:
+- **Dominio de marketing**: `owlfenc.com` (sitio de marketing)
+- **Dominio de aplicación**: `app.owlfenc.com` (servidor Express con API)
 
-Configuración recomendada en producción:
-```bash
-PUBLIC_SHARE_DOMAIN=app.chyrris.com
-```
+**URLs generados automáticamente:**
+- Estimados compartidos: `https://app.owlfenc.com/shared-estimate/:id`
+- Contratos para firma: `https://app.owlfenc.com/sign/:id/:party`
+- Todo sobre el dominio verificado de Owl Fence ✅
 
 ## 🔐 Seguridad
 

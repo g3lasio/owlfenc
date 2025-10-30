@@ -60,10 +60,10 @@ function isProductionEnvironment(req: Request): boolean {
   
   // Detectores de producción
   const productionIndicators = [
-    // Dominios de producción comunes
-    'chyrris.com',
-    'app.chyrris.com',
-    'api.chyrris.com',
+    // Dominios de producción de Owl Fence
+    'owlfenc.com',
+    'app.owlfenc.com',
+    'api.owlfenc.com',
     // Hosting providers comunes
     '.vercel.app',
     '.netlify.app',
@@ -94,7 +94,7 @@ export function buildPasswordResetUrl(req: Request, token: string): string {
 
 /**
  * Genera URLs para sistema de firma dual
- * 🔒 SIEMPRE usa chyrris.com para URLs de firma (con SSL wildcard configurado)
+ * 🔒 Usa app.owlfenc.com para URLs de firma (dominio verificado con SSL)
  */
 export function buildSignatureUrls(req: Request, contractId: string): {
   contractorSignUrl: string;
@@ -115,16 +115,16 @@ export function buildSignatureUrls(req: Request, contractId: string): {
 }
 
 /**
- * Obtiene el dominio correcto donde está el servidor API/backend
+ * Obtiene el dominio correcto donde está el servidor API/backend de Owl Fence
  * CRÍTICO: Los URLs compartidos DEBEN apuntar al dominio donde corre Express/API
  * 
  * Configuración mediante variables de entorno (orden de prioridad):
- * 1. PUBLIC_SHARE_DOMAIN - Dominio específico para URLs compartidos (ej: app.chyrris.com)
+ * 1. PUBLIC_SHARE_DOMAIN - Dominio específico para URLs compartidos (ej: app.owlfenc.com)
  * 2. BACKEND_URL - URL base del backend (extraerá el dominio)
- * 3. req.get('host') - Host actual de la petición (fallback seguro)
+ * 3. req.get('host') - Host actual de la petición
+ * 4. DEFAULT PRODUCTION: app.owlfenc.com (dominio verificado de producción)
  * 
- * ⚠️ IMPORTANTE: Si usas un dominio de marketing (chyrris.com) separado del backend,
- * debes configurar PUBLIC_SHARE_DOMAIN con el dominio donde está el API
+ * ⚠️ IMPORTANTE: Owl Fence usa app.owlfenc.com como dominio principal de la aplicación
  */
 function getBackendDomain(req: Request, context: string = ''): string {
   const currentHost = req.get('host') || 'localhost:5000';
@@ -137,7 +137,7 @@ function getBackendDomain(req: Request, context: string = ''): string {
     return currentHost;
   }
   
-  // 🌐 PRODUCCIÓN: Usar variable de entorno o host actual
+  // 🌐 PRODUCCIÓN: Usar variable de entorno configurada
   const configuredDomain = process.env.PUBLIC_SHARE_DOMAIN || 
                           (process.env.BACKEND_URL ? new URL(process.env.BACKEND_URL).host : null);
   
@@ -147,10 +147,14 @@ function getBackendDomain(req: Request, context: string = ''): string {
     return configuredDomain;
   }
   
-  // ✅ FALLBACK SEGURO: Usar el host actual (donde llegó la petición)
-  // Esto funciona porque si la petición llegó aquí, significa que este host tiene el API
-  console.log(`✅ [URL-BUILDER] ${context} - Usando host actual (fallback seguro):`, currentHost);
-  console.log(`💡 [URL-BUILDER] TIP: Para URLs personalizados, configura PUBLIC_SHARE_DOMAIN`);
+  // 🦉 PRODUCCIÓN OWL FENCE: Si estamos en producción y no hay config, usar app.owlfenc.com
+  if (isProductionEnvironment(req)) {
+    console.log(`🦉 [URL-BUILDER] ${context} - Producción detectada, usando dominio Owl Fence: app.owlfenc.com`);
+    return 'app.owlfenc.com';
+  }
+  
+  // ✅ FALLBACK: Usar el host actual
+  console.log(`✅ [URL-BUILDER] ${context} - Usando host actual (fallback):`, currentHost);
   return currentHost;
 }
 
