@@ -14,6 +14,13 @@
 // This service now operates 100% on Firebase for complete consistency
 import { ResendEmailAdvanced } from "./resendEmailAdvanced";
 import crypto from "crypto";
+import {
+  createDigitalCertificate,
+  parseDeviceInfo,
+  type DigitalCertificate,
+  type SignatureAuditMetadata,
+  type CertifiedSignature
+} from "./digitalCertification";
 
 export interface InitiateDualSignatureRequest {
   userId: string;
@@ -40,6 +47,13 @@ export interface SignatureSubmission {
   signatureData: string;
   signatureType: "drawing" | "cursive";
   fullName: string;
+  // 🔐 Enterprise-grade metadata
+  ipAddress?: string;
+  userAgent?: string;
+  geolocation?: {
+    latitude?: number;
+    longitude?: number;
+  };
 }
 
 export interface DualSignatureStatus {
@@ -366,6 +380,7 @@ export class DualSignatureService {
   /**
    * Procesar la firma enviada por una de las partes
    * INCLUYE VERIFICACIÓN DE SEGURIDAD PARA PREVENIR ACCESO CRUZADO
+   * 🔐 ENTERPRISE-GRADE: Triple redundancy + PKI certification + audit metadata
    */
   async processSignature(
     submission: SignatureSubmission,
@@ -375,6 +390,7 @@ export class DualSignatureService {
     message: string;
     status?: string;
     bothSigned?: boolean;
+    certificate?: DigitalCertificate;
   }> {
     try {
       console.log(
@@ -424,7 +440,70 @@ export class DualSignatureService {
         };
       }
 
-      // Prepare update data
+      // 🔐 STEP 1: Create audit metadata
+      const auditMetadata: SignatureAuditMetadata = {
+        ipAddress: submission.ipAddress || 'Unknown',
+        userAgent: submission.userAgent || 'Unknown',
+        deviceType: parseDeviceInfo(submission.userAgent || ''),
+        geolocation: submission.geolocation
+      };
+
+      // 🔐 STEP 2: Generate digital certificate (PKI)
+      // ⚠️ CRITICAL FIX: Use correct field name (contractHtml not contractHTML)
+      const certificate = createDigitalCertificate(
+        submission.contractId,
+        contract?.contractHtml || contract?.contractHTML || '',
+        submission.signatureData,
+        submission.fullName
+      );
+
+      console.log(`🔐 [CERTIFICATE] Generated digital certificate:`, {
+        certificateId: certificate.certificateId.substring(0, 10) + '...',
+        timestamp: certificate.timestamp,
+        issuer: certificate.issuer,
+        verified: certificate.verified
+      });
+
+      // 🔐 STEP 3: Save to Firebase Cloud Storage (Triple Redundancy #2)
+      let cloudStorageUrl: string | undefined;
+      try {
+        const { admin } = await import("../lib/firebase-admin");
+        const bucket = admin.storage().bucket();
+        
+        // Convert base64 to buffer if it's a drawn signature
+        if (submission.signatureData.startsWith('data:image')) {
+          const base64Data = submission.signatureData.split(',')[1];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          const fileName = `signatures/${submission.contractId}/${submission.party}_${certificate.certificateId}.png`;
+          const file = bucket.file(fileName);
+          
+          await file.save(buffer, {
+            metadata: {
+              contentType: 'image/png',
+              metadata: {
+                contractId: submission.contractId,
+                party: submission.party,
+                certificateId: certificate.certificateId,
+                timestamp: certificate.timestamp,
+                signerName: submission.fullName
+              }
+            }
+          });
+          
+          // Make file publicly readable (for PDF generation)
+          await file.makePublic();
+          cloudStorageUrl = file.publicUrl();
+          
+          console.log(`☁️ [CLOUD-STORAGE] Signature saved to Firebase Storage: ${fileName}`);
+        }
+      } catch (storageError: any) {
+        console.warn(`⚠️ [CLOUD-STORAGE] Failed to save to Cloud Storage (non-critical):`, storageError.message);
+        // Don't fail the signature process if storage fails - we still have Firestore
+      }
+
+      // 🔐 STEP 4: Prepare enhanced update data with certificate and audit
+      // ✅ CHAIN OF CUSTODY: All metadata persisted together for verification
       const updateData =
         submission.party === "contractor"
           ? {
@@ -432,6 +511,9 @@ export class DualSignatureService {
               contractorSignedAt: new Date(),
               contractorSignatureData: submission.signatureData,
               contractorSignatureType: submission.signatureType,
+              contractorCertificate: certificate,
+              contractorAudit: auditMetadata,
+              contractorCloudStorageUrl: cloudStorageUrl || null, // ✅ Persisted
               updatedAt: new Date(),
             }
           : {
@@ -439,26 +521,28 @@ export class DualSignatureService {
               clientSignedAt: new Date(),
               clientSignatureData: submission.signatureData,
               clientSignatureType: submission.signatureType,
+              clientCertificate: certificate,
+              clientAudit: auditMetadata,
+              clientCloudStorageUrl: cloudStorageUrl || null, // ✅ Persisted
               updatedAt: new Date(),
             };
 
       // 🔍 DEBUG: Log what we're about to save
-      console.log(`🔍 [SIGNATURE-SAVE] Attempting to save signature data:`, {
+      console.log(`🔍 [SIGNATURE-SAVE] Saving enterprise-grade signature:`, {
         party: submission.party,
         contractId: submission.contractId,
         signatureType: submission.signatureType,
         signatureDataLength: submission.signatureData?.length || 0,
-        signatureDataPreview: submission.signatureData?.substring(0, 50) || 'EMPTY',
-        updateData: {
-          ...updateData,
-          [`${submission.party}SignatureData`]: `${submission.signatureData?.length || 0} chars`
-        }
+        certificateId: certificate.certificateId.substring(0, 10) + '...',
+        hasCloudStorageBackup: !!cloudStorageUrl,
+        deviceType: auditMetadata.deviceType,
+        ipAddress: auditMetadata.ipAddress
       });
 
-      // ✅ CRITICAL FIX: Use .set() with merge instead of .update() for better reliability
+      // ✅ CRITICAL: Use .set() with merge for reliability (Triple Redundancy #1)
       await contractRef.set(updateData, { merge: true });
       
-      console.log(`✅ [SIGNATURE-SAVE] Signature data saved successfully to Firebase`);
+      console.log(`✅ [SIGNATURE-SAVE] Enterprise signature saved successfully with PKI certification`);
 
       // Check if both parties will be signed after this signature
       const bothSigned =

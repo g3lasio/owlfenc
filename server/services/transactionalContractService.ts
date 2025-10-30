@@ -8,6 +8,12 @@ import { legalSealService } from './legalSealService';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import {
+  createDigitalCertificate,
+  parseDeviceInfo,
+  type DigitalCertificate,
+  type SignatureAuditMetadata,
+} from "./digitalCertification";
 
 export interface SignatureSubmission {
   contractId: string;
@@ -53,6 +59,13 @@ class TransactionalContractService {
         .update(signatureData)
         .digest('hex');
 
+      // 🔐 STEP 1: Create audit metadata (BEFORE transaction)
+      const auditMetadata: SignatureAuditMetadata = {
+        ipAddress: ipAddress || 'Unknown',
+        userAgent: userAgent || 'Unknown',
+        deviceType: parseDeviceInfo(userAgent || ''),
+      };
+
       // Execute atomic transaction to handle concurrent signatures correctly
       const transactionResult = await firebaseDb.runTransaction(async (transaction) => {
         // Get fresh contract data within transaction
@@ -79,22 +92,47 @@ class TransactionalContractService {
           };
         }
 
-        // Prepare update data
+        // 🔐 STEP 2: Generate digital certificate (PKI) within transaction
+        const signerName = party === 'contractor' ? contract.contractorName : contract.clientName;
+        // ⚠️ CRITICAL FIX: Use correct field name (contractHtml not contractHTML)
+        const certificate = createDigitalCertificate(
+          contractId,
+          contract.contractHtml || contract.contractHTML || '',
+          signatureData,
+          signerName || 'Unknown'
+        );
+
+        console.log(`🔐 [CERTIFICATE] Generated for ${party}:`, {
+          certificateId: certificate.certificateId.substring(0, 10) + '...',
+          timestamp: certificate.timestamp,
+          issuer: certificate.issuer
+        });
+
+        // Prepare update data with enterprise-grade metadata
+        // ⚠️ TODO: Add Cloud Storage URL persistence here (post-transaction)
         const updateData: any = party === 'contractor' ? {
           contractorSigned: true,
           contractorSignedAt: serverTimestamp(),
           contractorSignature: signatureData,
+          contractorSignatureData: signatureData, // Compatibility
           contractorSignatureType: signatureType,
+          contractorCertificate: certificate,
+          contractorAudit: auditMetadata,
+          contractorCloudStorageUrl: null, // ✅ Will be set if Cloud Storage succeeds
           updatedAt: serverTimestamp(),
         } : {
           clientSigned: true,
           clientSignedAt: serverTimestamp(),
           clientSignature: signatureData,
+          clientSignatureData: signatureData, // Compatibility
           clientSignatureType: signatureType,
+          clientCertificate: certificate,
+          clientAudit: auditMetadata,
+          clientCloudStorageUrl: null, // ✅ Will be set if Cloud Storage succeeds
           updatedAt: serverTimestamp(),
         };
 
-        // Add audit data
+        // Add legacy audit data for backward compatibility
         updateData.lastSignatureHash = signatureHash;
         updateData.lastSignatureIp = ipAddress || null;
         updateData.lastSignatureUserAgent = userAgent || null;

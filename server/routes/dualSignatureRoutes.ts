@@ -16,6 +16,7 @@ import {
   incrementUsageOnSuccess 
 } from "../middleware/subscription-auth";
 import { z } from "zod";
+import { createDigitalSealHTML } from "../services/digitalCertification";
 
 const router = Router();
 
@@ -1035,6 +1036,14 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
                     <p>Print Name</p>
                     <br>
                     <p>Date: <span class="date-line">${convertFirestoreTimestamp(contract.contractorSignedAt)}</span></p>
+                    ${contract.contractorCertificate && contract.contractorAudit ? 
+                      createDigitalSealHTML(
+                        contract.contractorName || 'Contractor',
+                        contract.contractorCertificate,
+                        contract.contractorAudit
+                      ) : 
+                      ''
+                    }
                 </div>
                 <div class="signature-box">
                     <div class="signature-title">CLIENT</div>
@@ -1045,6 +1054,14 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
                     <p>Print Name</p>
                     <br>
                     <p>Date: <span class="date-line">${convertFirestoreTimestamp(contract.clientSignedAt)}</span></p>
+                    ${contract.clientCertificate && contract.clientAudit ? 
+                      createDigitalSealHTML(
+                        contract.clientName || 'Client',
+                        contract.clientCertificate,
+                        contract.clientAudit
+                      ) : 
+                      ''
+                    }
                 </div>
             </div>
         </div>
