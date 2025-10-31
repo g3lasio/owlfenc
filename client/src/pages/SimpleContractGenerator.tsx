@@ -361,15 +361,16 @@ export default function SimpleContractGenerator() {
 
   // Load completed contracts from both contract history and dual signature system
   const loadCompletedContracts = useCallback(async () => {
-    // ✅ FIXED: Get effective UID from Firebase Auth OR profile
-    const effectiveUid = currentUser?.uid || profile?.firebaseUid;
-    
-    // ✅ FIXED: Resilient auth check  
-    if (!effectiveUid && !profile?.email) return;
+    // 🔐 CRITICAL: ONLY use currentUser.uid for authenticated API calls
+    // NEVER use profile?.firebaseUid as it may be stale/from different user
+    if (!currentUser?.uid) {
+      console.log("⏳ Waiting for Firebase Auth to initialize...");
+      return;
+    }
 
     setIsLoadingCompleted(true);
     try {
-      console.log("📋 Loading completed contracts for user:", effectiveUid || 'profile_user');
+      console.log("📋 Loading completed contracts for user:", currentUser.uid);
 
       // ✅ SECURE & ROBUST: Use unified endpoint with proper authentication
       // The backend uses unified-session-auth middleware (session cookie OR token)
@@ -407,15 +408,15 @@ export default function SimpleContractGenerator() {
         // Source 1: Contract History (contracts completed via Simple Generator)
         // This uses Firebase directly, doesn't need API token
         withTimeout(
-          contractHistoryService.getContractHistory(effectiveUid),
+          contractHistoryService.getContractHistory(currentUser.uid),
           15000, // 15 second timeout
           'Contract History Query'
         ),
         
         // Source 2: Unified Dual Signature System (SECURE with auth)
-        // Uses Firebase token OR session cookie for authentication
+        // 🔐 CRITICAL: Must use currentUser.uid (matches session cookie)
         withTimeout(
-          fetch(`/api/dual-signature/completed/${effectiveUid}`, {
+          fetch(`/api/dual-signature/completed/${currentUser.uid}`, {
             method: 'GET',
             headers: authHeaders,
             credentials: 'include' // Include session cookies
@@ -534,7 +535,7 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoadingCompleted(false);
     }
-  }, [currentUser?.uid, profile?.firebaseUid, toast]);
+  }, [currentUser, currentUser?.uid, toast]);
 
   // Load draft contracts from contract history
   const loadDraftContracts = useCallback(async () => {
@@ -569,17 +570,17 @@ export default function SimpleContractGenerator() {
   }, [currentUser?.uid, profile?.firebaseUid, toast]);
 
   const loadInProgressContracts = useCallback(async () => {
-    // ✅ CRITICAL: Get effective UID from Firebase Auth OR profile
-    const effectiveUid = currentUser?.uid || profile?.firebaseUid;
-    
-    // ✅ FIXED: Resilient auth check
-    if (!effectiveUid && !profile?.email) return;
+    // 🔐 CRITICAL: ONLY use currentUser.uid for authenticated API calls
+    if (!currentUser?.uid) {
+      console.log("⏳ Waiting for Firebase Auth to initialize...");
+      return;
+    }
 
     setIsLoadingInProgress(true);
     try {
       console.log(
         "📋 Loading in-progress contracts for user:",
-        effectiveUid,
+        currentUser.uid,
       );
 
       // Try to get Firebase token for authentication
@@ -600,8 +601,9 @@ export default function SimpleContractGenerator() {
       }
 
       // Load from dual signature system (contracts with signature links sent)
+      // 🔐 CRITICAL: Must use currentUser.uid (matches session cookie)
       const response = await fetch(
-        `/api/dual-signature/in-progress/${effectiveUid}`,
+        `/api/dual-signature/in-progress/${currentUser.uid}`,
         {
           method: 'GET',
           headers: authHeaders,
@@ -630,7 +632,7 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoadingInProgress(false);
     }
-  }, [currentUser, currentUser?.uid, profile?.firebaseUid, toast]);
+  }, [currentUser, currentUser?.uid, toast]);
 
   // Load projects from Firebase (same logic as ProjectToContractSelector)
   const loadProjectsFromFirebase = useCallback(async () => {
@@ -3632,9 +3634,15 @@ export default function SimpleContractGenerator() {
 
   // Load contract history on component mount
   useEffect(() => {
-    // ✅ FIX: Execute when Firebase Auth OR profile is available
+    // 🔐 CRITICAL: Only load when Firebase Auth is ready
+    // loadContractHistory uses Firebase directly (can use effectiveUid)
+    // loadCompletedContracts calls authenticated API (needs currentUser.uid)
     if (currentUser?.uid || profile?.firebaseUid) {
       loadContractHistory();
+    }
+    
+    // Load completed contracts ONLY when Firebase Auth is ready
+    if (currentUser?.uid) {
       loadCompletedContracts();
     }
   }, [currentUser?.uid, profile?.firebaseUid, loadContractHistory, loadCompletedContracts]);
@@ -3644,13 +3652,19 @@ export default function SimpleContractGenerator() {
 
   // Load in-progress contracts when switching to in-progress tab
   useEffect(() => {
-    // ✅ FIX: Execute when Firebase Auth OR profile is available
-    if (currentUser?.uid || profile?.firebaseUid) {
-      if (historyTab === "drafts") {
+    if (historyTab === "drafts") {
+      // Firebase direct access - can use effectiveUid
+      if (currentUser?.uid || profile?.firebaseUid) {
         loadDraftContracts();
-      } else if (historyTab === "in-progress") {
+      }
+    } else if (historyTab === "in-progress") {
+      // API call - needs currentUser.uid
+      if (currentUser?.uid) {
         loadInProgressContracts();
-      } else if (historyTab === "completed") {
+      }
+    } else if (historyTab === "completed") {
+      // API call - needs currentUser.uid
+      if (currentUser?.uid) {
         loadCompletedContracts();
       }
     }
