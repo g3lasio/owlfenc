@@ -110,6 +110,25 @@ export const unifiedSessionAuth = (options: AuthOptions = { requireAuth: true })
         }
       }
 
+      // CRITICAL: Block problematic Firebase UID to prevent auto-recreation
+      const BLOCKED_UIDS = ['XLe7umTlYvU8dsWGsivivdcDrwJ3']; // tibu@martinez conflictive session
+      if (BLOCKED_UIDS.includes(decodedClaims.uid)) {
+        console.error(`🚫 [UNIFIED-AUTH] Blocked UID attempted access: ${decodedClaims.uid}`);
+        // Clear the session cookie for this blocked user
+        res.clearCookie('__session', {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'none',
+          path: '/'
+        });
+        return res.status(403).json({
+          success: false,
+          error: 'Session inválida. Por favor, cierre sesión y vuelva a iniciar.',
+          code: 'SESSION_BLOCKED',
+          hint: 'Su sesión anterior ha expirado. Cierre el navegador e inicie sesión nuevamente.'
+        });
+      }
+
       // STEP 4: Get or create internal user mapping
       let internalUserId: number | null = null;
       try {
