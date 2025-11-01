@@ -11,36 +11,9 @@ import './lib/unified-error-handler';
 
 console.log('🛡️ [MAIN] Sistema unificado de errores activado');
 
-// 🛡️ SISTEMA ROBUSTO DE NIVEL ENTERPRISE
-// Inicialización automática para prevenir pérdida de datos
-(async () => {
-  try {
-    console.log('🚀 [ENTERPRISE] Inicializando sistemas robustos...');
-    
-    // 🚫 REVERTIDO: Configuración STS que rompía Firebase
-    
-    // Sistema de autenticación robusto con múltiples fallbacks
-    const { robustAuth } = await import('./lib/robust-auth-manager');
-    await robustAuth.initialize();
-    console.log('✅ [ENTERPRISE] Sistema de autenticación robusto inicializado');
-    
-    // Sistema de monitoreo de integridad de datos  
-    // DATA MONITOR DESHABILITADO - Causaba errores masivos de fetch
-    // const { dataMonitor } = await import('./lib/data-integrity-monitor');
-    // dataMonitor.startMonitoring();
-    console.log('✅ [ENTERPRISE] Monitor de integridad de datos iniciado');
-    
-    // Cleanup al cerrar la aplicación
-    window.addEventListener('beforeunload', () => {
-      robustAuth.destroy();
-      // dataMonitor.stopMonitoring(); // Deshabilitado
-    });
-    
-  } catch (error) {
-    console.error('❌ [ENTERPRISE] Error inicializando sistemas robustos:', error);
-    // La aplicación continuará funcionando incluso si falla la inicialización robusta
-  }
-})();
+// 🛡️ SISTEMA DE AUTENTICACIÓN BASADO EN COOKIES DE SESIÓN
+// El nuevo AuthSessionProvider maneja la autenticación de forma confiable
+console.log('✅ [ENTERPRISE] Sistema de autenticación basado en cookies inicializado');
 
 const container = document.getElementById("root");
 if (!container) throw new Error("Root container missing in index.html");

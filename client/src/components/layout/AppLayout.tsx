@@ -3,7 +3,7 @@ import Header from "./Header";
 
 import Sidebar from "./Sidebar";
 import { Route, Switch, useLocation, Link } from "wouter";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -20,7 +20,7 @@ const Profile = () => {
 };
 
 export default function AppLayout({ children }: AppLayoutProps) {
-  const { currentUser } = useAuth();
+  const { user } = useAuth();
   const [location] = useLocation();
   const [sidebarWidth, setSidebarWidth] = useState(64);
 
@@ -51,7 +51,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     location === "/legal-policy" ||
     location === "/privacy-policy";
 
-  if (isPublicPage && !currentUser) {
+  if (isPublicPage && !user) {
     return (
       <div className="flex flex-col min-h-screen">
         <header className="bg-white shadow-sm">
