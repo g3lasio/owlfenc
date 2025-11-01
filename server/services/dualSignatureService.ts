@@ -1040,7 +1040,7 @@ export class DualSignatureService {
         ? `${baseUrl}/api/dual-signature/download/${contract.contractId}`
         : null;
 
-      // Send to contractor
+      // ✅ SECURITY FIX: Only send PDF to contractor (not client)
       await this.emailService.sendContractEmail({
         to: contract.contractorEmail,
         toName: contract.contractorName,
@@ -1067,34 +1067,7 @@ export class DualSignatureService {
         }),
       });
 
-      // Send to client
-      await this.emailService.sendContractEmail({
-        to: contract.clientEmail,
-        toName: contract.clientName,
-        contractorEmail: contract.contractorEmail,
-        contractorName: contract.contractorName,
-        contractorCompany:
-          contractData?.contractorCompany || "Construction Company",
-        subject: `🎉 Contract Completed! - ${contractData?.contractorCompany || "Construction Company"}`,
-        htmlContent: this.generateCompletionEmailHTML({
-          recipientName: contract.clientName,
-          recipientType: "client",
-          contractId: contract.contractId,
-          clientName: contract.clientName,
-          contractorName: contract.contractorName,
-          contractorCompany:
-            contractData?.contractorCompany || "Construction Company",
-          projectDescription:
-            contractData?.projectDescription || "Construction Project",
-          totalAmount: contractData?.totalAmount || contract.totalAmount,
-          downloadUrl: downloadUrl,
-          contractorSignedAt: contract.contractorSignedAt,
-          clientSignedAt: contract.clientSignedAt,
-          hasPdf: hasPdf,
-        }),
-      });
-
-      console.log("✅ [DUAL-SIGNATURE] Completion emails sent to both parties");
+      console.log("✅ [DUAL-SIGNATURE] Completion email sent successfully to contractor only");
     } catch (error: any) {
       console.error(
         "❌ [DUAL-SIGNATURE] Error sending completion emails:",
