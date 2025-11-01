@@ -47,7 +47,7 @@ import SmartContractWizard from "@/pages/SmartContractWizard";
 import AITestingPage from "@/pages/AITestingPage";
 import DeepSearchDemo from "@/pages/DeepSearchDemo";
 import PermissionsDemo from "@/pages/PermissionsDemo";
-import { AuthTest } from "@/pages/AuthTest";
+// import { AuthTest } from "@/pages/AuthTest"; // LEGACY: No longer used
 import { AuthSessionProvider } from "@/components/auth/AuthSessionProvider";
 import { useAuth } from "@/hooks/use-auth";
 import { LanguageProvider } from "@/contexts/LanguageContext";
