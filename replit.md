@@ -35,6 +35,7 @@ This AI-powered legal document and permit management platform automates tasks li
 - CHYRRIS.COM SIGNATURE URLS: Sistema de URLs dinámicas completamente reconfigurado para usar chyrris.com exclusivamente para enlaces de firma de contratos
 - CHYRRIS.COM ESTIMATE SHARING URLS: Sistema de URLs compartibles de estimados completamente migrado a chyrris.com con URLs ultra-cortas
 - LEGAL DEFENSE ACCESS CONTROL SYSTEM: Sistema completo de control de acceso por plan de suscripción implementado en Legal Defense con enforcement de límites
+- PDF SIGNATURE GENERATION FIX (NOV 2025): Sistema de firmas digitales en PDFs completados corregido usando contadores independientes por estrategia. Cada estrategia de reemplazo (signature-line, date-line, etc.) alterna independientemente entre contractor y client, eliminando el bug de asignación cruzada que causaba que ambas cajas mostraran la firma del contractor
 
 ## System Architecture
 
@@ -84,6 +85,13 @@ This AI-powered legal document and permit management platform automates tasks li
   - **Free Trial (Plan ID 4)**: UNLIMITED ACCESS - Inherits Master Contractor privileges for 14-day trial period per permissions-config.ts
   - **Implementation**: Uses PermissionContext, canUse('contracts') validation, reactive UI with disabled states, upgrade modals on quota exceeded
   - **Architect Verified**: PASS - all tiers enforce correctly with no bypass vulnerabilities
+- **PDF DIGITAL SIGNATURE SYSTEM (FIXED NOV 2025)**: Premium PDF service with robust signature embedding using independent strategy-based counters:
+  - **Architecture**: 7 replacement strategies (signature-line, date-line, sign-space, etc.) each with independent alternating counters
+  - **Pattern**: First occurrence = CONTRACTOR, Second occurrence = CLIENT (per strategy)
+  - **Fix**: Eliminated cross-strategy interference bug where shared counter caused date lines to receive wrong signer's data
+  - **Implementation**: `server/services/premiumPdfService.ts` - each regex replacement maintains its own counter (signatureLineCount, dateLineCount, etc.)
+  - **Validation**: Enhanced logging per strategy showing contractor/client assignment for debugging
+  - **Architect Verified**: PASS - independent per-strategy counters keep contractor/client in sync, no security issues
 
 ## External Dependencies
 - Firebase (Firestore, Admin SDK)
