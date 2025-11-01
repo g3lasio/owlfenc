@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { useSidebar } from "@/contexts/SidebarContext";
 import {

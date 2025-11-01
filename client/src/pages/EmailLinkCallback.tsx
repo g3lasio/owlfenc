@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 import { isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 

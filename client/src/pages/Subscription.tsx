@@ -4,7 +4,7 @@ import { PricingToggle } from "@/components/ui/pricing-toggle";
 import { PricingCard } from "@/components/ui/pricing-card";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 

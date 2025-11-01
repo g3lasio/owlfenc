@@ -23,7 +23,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 import { RiEyeLine, RiEyeOffLine, RiMailLine, RiLockPasswordLine } from "react-icons/ri";
 import { auth } from "@/lib/firebase";
 import { signInWithCustomToken } from "firebase/auth";

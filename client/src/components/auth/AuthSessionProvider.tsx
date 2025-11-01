@@ -24,6 +24,7 @@ import { auth } from '@/lib/firebase';
 
 interface AuthContextType {
   user: FirebaseUser | null;
+  currentUser: FirebaseUser | null; // Alias para compatibilidad con código legacy
   loading: boolean;
   error: string | null;
   signIn: (email: string, password: string) => Promise<void>;
@@ -241,6 +242,7 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
 
   const value: AuthContextType = {
     user,
+    currentUser: user, // Alias para compatibilidad
     loading,
     error,
     signIn,

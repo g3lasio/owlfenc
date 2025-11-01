@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, RefreshCw, Link as LinkIcon } from "lucide-react";
 import axios from "axios";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 
 // Tipo para un item de QuickBooks
 interface QuickbooksItem {

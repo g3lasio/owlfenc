@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { useFeatureAccess } from "@/hooks/usePermissions";

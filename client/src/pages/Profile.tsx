@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card";
 import { useProfile } from "@/hooks/use-profile";
 import { usePermissions } from "@/contexts/PermissionContext";
-import { useAuth, getValidToken } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Input } from "@/components/ui/input";
@@ -180,7 +180,7 @@ export default function Profile() {
   const updateSettingsMutation = useMutation({
     mutationFn: async (updates: Partial<UserSettings>) => {
       if (!currentUser) throw new Error('Authentication required');
-      await getValidToken(currentUser);
+      // Session cookie se envía automáticamente con credentials: 'include'
       return await apiRequest('PATCH', '/api/settings', updates);
     },
     onSuccess: () => {
@@ -640,15 +640,14 @@ export default function Profile() {
     setIsChangingPassword(true);
     
     try {
-      const token = await getValidToken(currentUser);
-      
+      // Session cookie se envía automáticamente
       const response = await fetch('/api/auth/update-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
           'x-user-uid': currentUser.uid
         },
+        credentials: 'include', // Enviar cookie de sesión automáticamente
         body: JSON.stringify({ 
           newPassword,
           currentPassword // Optional for backend logging
@@ -736,15 +735,14 @@ export default function Profile() {
     setIsChangingEmail(true);
     
     try {
-      const token = await getValidToken(currentUser);
-      
+      // Session cookie se envía automáticamente
       const response = await fetch('/api/auth/update-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
           'x-user-uid': currentUser.uid
         },
+        credentials: 'include', // Enviar cookie de sesión automáticamente
         body: JSON.stringify({ newEmail: newEmail.trim() })
       });
 

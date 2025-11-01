@@ -8,7 +8,7 @@ import { Project } from "@shared/schema";
 import { Search, FileText, Shield, AlertTriangle, CheckCircle, Upload, RefreshCw } from "lucide-react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 
 interface ProjectToContractSelectorProps {
   onProjectSelected: (project: Project) => void;
