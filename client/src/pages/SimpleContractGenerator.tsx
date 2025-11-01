@@ -333,17 +333,17 @@ export default function SimpleContractGenerator() {
 
   // Load contract history
   const loadContractHistory = useCallback(async () => {
-    // ✅ CRITICAL: Get effective UID from Firebase Auth OR profile
-    const effectiveUid = currentUser?.uid || profile?.firebaseUid;
+    // ✅ CRITICAL: Use currentUser.uid for authenticated API calls
+    const effectiveUid = currentUser?.uid;
     
     // ✅ FIXED: Resilient auth check
-    if (!effectiveUid && !profile?.email) return;
+    if (!effectiveUid) return;
 
     setIsLoadingHistory(true);
     try {
-      console.log("📋 Loading contract history for user:", effectiveUid || 'profile_user');
+      console.log("📋 Loading contract history for user:", effectiveUid);
       const history = await contractHistoryService.getContractHistory(
-        effectiveUid,
+        effectiveUid!,
       );
       setContractHistory(history);
       console.log("✅ Contract history loaded:", history.length, "contracts");
@@ -357,12 +357,12 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoadingHistory(false);
     }
-  }, [currentUser?.uid, profile?.firebaseUid, toast]);
+  }, [currentUser?.uid, currentUser?.uid, toast]);
 
   // Load completed contracts from both contract history and dual signature system
   const loadCompletedContracts = useCallback(async () => {
     // 🔐 CRITICAL: ONLY use currentUser.uid for authenticated API calls
-    // NEVER use profile?.firebaseUid as it may be stale/from different user
+    // NEVER use currentUser?.uid as it may be stale/from different user
     if (!currentUser?.uid) {
       console.log("⏳ Waiting for Firebase Auth to initialize...");
       return;
@@ -539,19 +539,19 @@ export default function SimpleContractGenerator() {
 
   // Load draft contracts from contract history
   const loadDraftContracts = useCallback(async () => {
-    // ✅ CRITICAL: Get effective UID from Firebase Auth OR profile
-    const effectiveUid = currentUser?.uid || profile?.firebaseUid;
+    // ✅ CRITICAL: Use currentUser.uid for authenticated API calls
+    const effectiveUid = currentUser?.uid;
     
     // ✅ FIXED: Resilient auth check
-    if (!effectiveUid && !profile?.email) return;
+    if (!effectiveUid) return;
 
     setIsLoadingDrafts(true);
     try {
-      console.log("📋 Loading draft contracts for user:", effectiveUid || 'profile_user');
+      console.log("📋 Loading draft contracts for user:", effectiveUid);
 
       // Load from contract history service
       const history = await contractHistoryService.getContractHistory(
-        effectiveUid,
+        effectiveUid!,
       );
       const drafts = history.filter((contract) => contract.status === "draft");
 
@@ -567,7 +567,7 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoadingDrafts(false);
     }
-  }, [currentUser?.uid, profile?.firebaseUid, toast]);
+  }, [currentUser?.uid, currentUser?.uid, toast]);
 
   const loadInProgressContracts = useCallback(async () => {
     // 🔐 CRITICAL: ONLY use currentUser.uid for authenticated API calls
@@ -637,7 +637,7 @@ export default function SimpleContractGenerator() {
   // Load projects from Firebase (same logic as ProjectToContractSelector)
   const loadProjectsFromFirebase = useCallback(async () => {
     // ✅ CRITICAL: Get effective UID from Firebase Auth OR profile
-    const effectiveUid = currentUser?.uid || profile?.firebaseUid;
+    const effectiveUid = currentUser?.uid || currentUser?.uid;
     
     // ✅ FIXED: Resilient auth check
     if (!effectiveUid && !profile?.email) return;
@@ -829,7 +829,7 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser?.uid, profile?.firebaseUid, toast]);
+  }, [currentUser?.uid, currentUser?.uid, toast]);
 
   // Resend signature links
   const resendSignatureLinks = useCallback(
@@ -2050,7 +2050,7 @@ export default function SimpleContractGenerator() {
   // Load projects for step 1
   const loadProjects = useCallback(async () => {
     // ✅ CRITICAL: Get effective UID from Firebase Auth OR profile
-    const effectiveUid = currentUser?.uid || profile?.firebaseUid;
+    const effectiveUid = currentUser?.uid || currentUser?.uid;
     
     // ✅ FIXED: Resilient auth check
     if (!effectiveUid && !profile?.email) return;
@@ -2250,12 +2250,12 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser?.uid, profile?.firebaseUid, toast]);
+  }, [currentUser?.uid, currentUser?.uid, toast]);
 
   // Set up real-time Firebase listener for projects
   useEffect(() => {
     // ✅ CRITICAL: Get effective UID from Firebase Auth OR profile
-    const effectiveUid = currentUser?.uid || profile?.firebaseUid;
+    const effectiveUid = currentUser?.uid || currentUser?.uid;
     
     // ✅ FIXED: Resilient auth check for real-time listener
     if (!effectiveUid && !profile?.email) return;
@@ -2370,7 +2370,7 @@ export default function SimpleContractGenerator() {
 
     // Cleanup listener on unmount
     return () => unsubscribe();
-  }, [currentUser?.uid, profile?.firebaseUid, toast]);
+  }, [currentUser?.uid, currentUser?.uid, toast]);
 
   // Initialize editable data when project is selected
   useEffect(() => {
@@ -3637,7 +3637,7 @@ export default function SimpleContractGenerator() {
     // 🔐 CRITICAL: Only load when Firebase Auth is ready
     // loadContractHistory uses Firebase directly (can use effectiveUid)
     // loadCompletedContracts calls authenticated API (needs currentUser.uid)
-    if (currentUser?.uid || profile?.firebaseUid) {
+    if (currentUser?.uid || currentUser?.uid) {
       loadContractHistory();
     }
     
@@ -3645,7 +3645,7 @@ export default function SimpleContractGenerator() {
     if (currentUser?.uid) {
       loadCompletedContracts();
     }
-  }, [currentUser?.uid, profile?.firebaseUid, loadContractHistory, loadCompletedContracts]);
+  }, [currentUser?.uid, currentUser?.uid, loadContractHistory, loadCompletedContracts]);
 
   // ✅ AUTO-REFRESH REMOVED: Manual refresh prevents annoying auto-scrolling
   // Users can refresh manually if needed by switching tabs or using refresh button
@@ -3654,7 +3654,7 @@ export default function SimpleContractGenerator() {
   useEffect(() => {
     if (historyTab === "drafts") {
       // Firebase direct access - can use effectiveUid
-      if (currentUser?.uid || profile?.firebaseUid) {
+      if (currentUser?.uid || currentUser?.uid) {
         loadDraftContracts();
       }
     } else if (historyTab === "in-progress") {
@@ -3671,7 +3671,7 @@ export default function SimpleContractGenerator() {
   }, [
     historyTab,
     currentUser?.uid,
-    profile?.firebaseUid,
+    currentUser?.uid,
     loadDraftContracts,
     loadInProgressContracts,
     loadCompletedContracts,
