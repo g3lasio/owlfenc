@@ -48,7 +48,8 @@ import AITestingPage from "@/pages/AITestingPage";
 import DeepSearchDemo from "@/pages/DeepSearchDemo";
 import PermissionsDemo from "@/pages/PermissionsDemo";
 import { AuthTest } from "@/pages/AuthTest";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AuthSessionProvider } from "@/components/auth/AuthSessionProvider";
+import { useAuth } from "@/hooks/use-auth";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
@@ -80,18 +81,18 @@ type ProtectedRouteProps = {
 };
 
 function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
-  const { currentUser, loading } = useAuth();
+  const { user, loading } = useAuth();
   const [authStable, setAuthStable] = useState(false);
   const [location] = useLocation();
   const { toast } = useToast();
-  const userEmail = currentUser?.email || "";
+  const userEmail = user?.email || "";
 
   // Estabilizar el estado de auth para evitar redirecciones por cambios temporales
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
     
     if (!loading) {
-      if (currentUser) {
+      if (user) {
         // Si hay usuario, marcar como estable inmediatamente
         setAuthStable(true);
       } else {
@@ -105,7 +106,7 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [currentUser, loading]);
+  }, [user, loading]);
 
   // ⚠️ TEMPORARY DISABLE: Guard de selección de plan desactivado para debugging
   // TODO: Re-implementar cuando se solucione el problema de carga
@@ -120,7 +121,7 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   }
 
   // Redirige a login solo después de que el estado sea estable y realmente no hay usuario
-  if (!currentUser) {
+  if (!user) {
     return <Redirect to="/login" />;
   }
 
@@ -149,7 +150,7 @@ function PublicOnlyRouter() {
 // 🔐 MAIN APP ROUTER - Requires full app context and layout
 function MainAppRouter() {
   return (
-    <AuthProvider>
+    <AuthSessionProvider>
       <PermissionProvider>
         <SidebarProvider>
           <AppLayout>
@@ -289,7 +290,7 @@ function MainAppRouter() {
           <Toaster />
         </SidebarProvider>
       </PermissionProvider>
-    </AuthProvider>
+    </AuthSessionProvider>
   );
 }
 
