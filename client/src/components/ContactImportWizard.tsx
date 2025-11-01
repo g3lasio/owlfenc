@@ -12,7 +12,7 @@ import Papa from 'papaparse';
 import { Loader2, Upload, FileSpreadsheet, AlertCircle, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/use-auth';
 import { useTranslation } from 'react-i18next';
 import { processCSVToClients, FieldMapping, CLIENT_FIELD_OPTIONS } from '@/lib/intelligentImport';
 

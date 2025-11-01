@@ -51,7 +51,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { useLocation } from "wouter";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 import Papa from "papaparse";
 import { analyzeCSVWithAnthropic } from "../services/anthropicService";
 

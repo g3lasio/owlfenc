@@ -16,7 +16,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Zap, Brain, ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/use-auth';
 import { usePermissions } from '@/contexts/PermissionContext';
 
 // Import the new agent system

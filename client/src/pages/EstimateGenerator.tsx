@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { ProjectDescriptionEnhancer } from '@/components/ui/project-description-enhancer';
 import { getClients } from '@/lib/clientFirebase';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/use-auth';
 import { usePermissions } from '@/contexts/PermissionContext';
 import { UpgradePrompt } from '@/components/permissions/UpgradePrompt';
 import { 

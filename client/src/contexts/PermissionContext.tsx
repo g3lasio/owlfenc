@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { useAuth } from './AuthContext';
+import { useAuth } from '@/hooks/use-auth';
 import { smartPermissionLoader } from '@/services/smartPermissionLoader';
 import { devModeManager, debugLog } from '@/utils/devModeUtils';
 import { PLAN_IDS, getPlanLimits, PLAN_NAMES, PLAN_FEATURES, PLAN_MOTTOS, planNameToId } from '@shared/permissions-config';

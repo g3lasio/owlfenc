@@ -7,7 +7,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Fingerprint, Smartphone, Shield, Loader2, CheckCircle } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { detectBiometricCapabilities } from '@/lib/biometric-detection';
 import { sessionUnlockService } from '@/lib/session-unlock-service';

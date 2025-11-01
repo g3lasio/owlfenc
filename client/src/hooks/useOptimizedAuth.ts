@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/use-auth';
 import { authStateMonitor } from '@/services/authStateMonitor';
 import { devModeManager, debugLog } from '@/utils/devModeUtils';
 

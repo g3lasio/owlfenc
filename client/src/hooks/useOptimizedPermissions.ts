@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/use-auth';
 import { usePermissions } from '@/contexts/PermissionContext';
 import { smartPermissionLoader } from '@/services/smartPermissionLoader';
 import { devModeManager, debugLog } from '@/utils/devModeUtils';
