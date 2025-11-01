@@ -296,104 +296,119 @@ class PremiumPdfService {
       clientSignature.typedName,
     );
 
-    // Helper function to determine which signature/date to use based on context
-    const getSignatureForContext = (contextBefore: string): { image: string; date: Date; name: string } => {
-      const context = contextBefore.toLowerCase();
-      
-      // Look for "contractor" keyword near the placeholder
-      if (context.includes('contractor')) {
-        return {
-          image: contractorSigImage,
-          date: contractorSignature.signedAt,
-          name: 'CONTRACTOR'
-        };
-      }
-      
-      // Look for "client" keyword near the placeholder
-      if (context.includes('client')) {
-        return {
-          image: clientSigImage,
-          date: clientSignature.signedAt,
-          name: 'CLIENT'
-        };
-      }
-      
-      // Default: use contractor for first occurrence
-      console.warn('⚠️ [SIGNATURE-DEBUG] Could not determine context, using contractor as default');
-      return {
-        image: contractorSigImage,
-        date: contractorSignature.signedAt,
-        name: 'CONTRACTOR (default)'
-      };
-    };
-
-    // Strategy 1: Replace "Digital signature on file" with context-aware signatures
+    // ✅ FIXED: Each strategy uses its own independent counter to alternate correctly
+    // Strategy 1: Replace "Digital signature on file" - alternates contractor/client
     let replacementCount = 0;
     modifiedHTML = modifiedHTML.replace(
       /(.{0,200})Digital signature on file/gi,
       (match, contextBefore) => {
         replacementCount++;
-        const sig = getSignatureForContext(contextBefore);
-        console.log(`✅ [SIGNATURE-DEBUG] Replacing "Digital signature on file" #${replacementCount} for ${sig.name}`);
-        return contextBefore + sig.image;
+        const isContractor = replacementCount % 2 === 1;
+        const sigImage = isContractor ? contractorSigImage : clientSigImage;
+        const sigName = isContractor ? 'CONTRACTOR' : 'CLIENT';
+        console.log(`✅ [SIGNATURE-DEBUG] Strategy 1: Replacing "Digital signature on file" #${replacementCount} for ${sigName}`);
+        return contextBefore + sigImage;
       }
     );
 
-    // Strategy 2: Replace empty sign-space divs with context-aware signatures
+    // Strategy 2: Replace empty sign-space divs - alternates contractor/client
     let signSpaceCount = 0;
     modifiedHTML = modifiedHTML.replace(
       /(.{0,200})<div class="sign-space"><\/div>/g,
       (match, contextBefore) => {
         signSpaceCount++;
-        const sig = getSignatureForContext(contextBefore);
-        console.log(`✅ [SIGNATURE-DEBUG] Replacing sign-space #${signSpaceCount} for ${sig.name}`);
+        const isContractor = signSpaceCount % 2 === 1;
+        const sigImage = isContractor ? contractorSigImage : clientSigImage;
+        const sigName = isContractor ? 'CONTRACTOR' : 'CLIENT';
+        console.log(`✅ [SIGNATURE-DEBUG] Strategy 2: Replacing sign-space #${signSpaceCount} for ${sigName}`);
         return `${contextBefore}<div class="sign-space" style="height: 60px; margin: 10px 0; display: flex; align-items: center; justify-content: center; border-bottom: 2px solid #000; padding: 5px;">
-          ${sig.image}
+          ${sigImage}
         </div>`;
       }
     );
 
-    // Strategy 3: Replace "[object Object]" dates with context-aware formatted dates
+    // Strategy 3: Replace "[object Object]" dates - alternates contractor/client
     let dateObjectCount = 0;
     modifiedHTML = modifiedHTML.replace(
       /(.{0,200})\[object Object\]/g,
       (match, contextBefore) => {
         dateObjectCount++;
-        const sig = getSignatureForContext(contextBefore);
-        const formattedDate = sig.date.toLocaleDateString('en-US', {
+        const isContractor = dateObjectCount % 2 === 1;
+        const sigDate = isContractor ? contractorSignature.signedAt : clientSignature.signedAt;
+        const sigName = isContractor ? 'CONTRACTOR' : 'CLIENT';
+        const formattedDate = sigDate.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
           day: 'numeric'
         });
-        console.log(`✅ [SIGNATURE-DEBUG] Replacing [object Object] #${dateObjectCount} for ${sig.name} with ${formattedDate}`);
+        console.log(`✅ [SIGNATURE-DEBUG] Strategy 3: Replacing [object Object] #${dateObjectCount} for ${sigName} with ${formattedDate}`);
         return `${contextBefore}<span style="font-weight: bold; border-bottom: 1px solid #000; padding: 2px 10px;">${formattedDate}</span>`;
       }
     );
 
-    // Strategy 4: Replace date placeholders with context-aware actual dates
+    // Strategy 4: Replace date placeholders - alternates contractor/client
     let dateCount = 0;
     modifiedHTML = modifiedHTML.replace(
       /(.{0,200})Date:\s*____________________/g,
       (match, contextBefore) => {
         dateCount++;
-        const sig = getSignatureForContext(contextBefore);
-        const formattedDate = sig.date.toLocaleDateString('en-US', {
+        const isContractor = dateCount % 2 === 1;
+        const sigDate = isContractor ? contractorSignature.signedAt : clientSignature.signedAt;
+        const sigName = isContractor ? 'CONTRACTOR' : 'CLIENT';
+        const formattedDate = sigDate.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
           day: 'numeric'
         });
-        console.log(`✅ [SIGNATURE-DEBUG] Replacing date placeholder #${dateCount} for ${sig.name} with ${formattedDate}`);
+        console.log(`✅ [SIGNATURE-DEBUG] Strategy 4: Replacing date placeholder #${dateCount} for ${sigName} with ${formattedDate}`);
         return `${contextBefore}Date: <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 2px 10px;">${formattedDate}</span>`;
       }
     );
 
     // Strategy 5 removed - it was corrupting existing <img> tags by creating nested images
 
+    // ✅ Strategy 6: Replace empty <div class="signature-line"></div> - alternates contractor/client
+    let signatureLineCount = 0;
+    modifiedHTML = modifiedHTML.replace(
+      /<div class="signature-line"><\/div>/g,
+      (match) => {
+        signatureLineCount++;
+        const isContractor = signatureLineCount % 2 === 1;
+        const sigImage = isContractor ? contractorSigImage : clientSigImage;
+        const sigName = isContractor ? 'CONTRACTOR' : 'CLIENT';
+        console.log(`✅ [SIGNATURE-DEBUG] Strategy 6: Replacing signature-line #${signatureLineCount} for ${sigName}`);
+        return `<div class="signature-line" style="min-height: 60px; border-bottom: 2px solid #000; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px; margin: 10px 0;">
+          ${sigImage}
+        </div>`;
+      }
+    );
+
+    // ✅ Strategy 7: Replace empty <span class="date-line"></span> - alternates contractor/client
+    let dateLineCount = 0;
+    modifiedHTML = modifiedHTML.replace(
+      /<span class="date-line"><\/span>/g,
+      (match) => {
+        dateLineCount++;
+        const isContractor = dateLineCount % 2 === 1;
+        const sigDate = isContractor ? contractorSignature.signedAt : clientSignature.signedAt;
+        const sigName = isContractor ? 'CONTRACTOR' : 'CLIENT';
+        const formattedDate = sigDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        console.log(`✅ [SIGNATURE-DEBUG] Strategy 7: Replacing date-line #${dateLineCount} for ${sigName} with ${formattedDate}`);
+        return `<span class="date-line" style="font-weight: bold; border-bottom: 1px solid #000; padding: 2px 10px;">${formattedDate}</span>`;
+      }
+    );
+
     console.log(`📊 [SIGNATURE-DEBUG] Replacement summary:`);
     console.log(`  - "Digital signature on file" replaced: ${replacementCount}`);
     console.log(`  - Sign-space divs replaced: ${signSpaceCount}`);
     console.log(`  - [object Object] dates replaced: ${dateObjectCount}`);
     console.log(`  - Date placeholders replaced: ${dateCount}`);
+    console.log(`  - Signature-line divs replaced: ${signatureLineCount}`);
+    console.log(`  - Date-line spans replaced: ${dateLineCount}`);
 
     // Only add verification footer if signatures were successfully embedded
     if (
