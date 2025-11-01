@@ -33,7 +33,7 @@ import {
   RiShieldKeyholeLine,
   RiCheckboxCircleLine,
 } from "react-icons/ri";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 import BiometricLoginButton from "@/components/auth/BiometricLoginButton";
 import { detectBiometricCapabilities, hasBasicBiometricSupport } from "@/lib/biometric-detection";
 
@@ -61,14 +61,16 @@ type SignupFormValues = {
 export default function AuthPage() {
   const [, navigate] = useLocation();
   const {
-    login,
-    register,
-    sendEmailLoginLink,
-    error,
-    clearError,
-    currentUser,
+    signIn,
+    user,
     loading: authLoading,
+    error: authError
   } = useAuth();
+  
+  // Alias para compatibilidad temporal
+  const currentUser = user;
+  const error = authError ? String(authError) : null;
+  const clearError = () => {}; // No-op por ahora
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -281,8 +283,8 @@ export default function AuthPage() {
           throw new Error("Por favor completa todos los campos");
         }
 
-        await login(data.email, data.password, data.rememberMe);
-        console.log("Login exitoso para:", data.email, "recordarme:", data.rememberMe);
+        await signIn(data.email, data.password);
+        console.log("Login exitoso para:", data.email);
         showSuccessEffect();
       } else if (loginMethod === "otp") {
         console.log("Enviando enlace de inicio de sesión a:", data.email);

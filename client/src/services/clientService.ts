@@ -39,7 +39,6 @@ async function getAuthToken(): Promise<string> {
   
   try {
     // Usar el sistema robusto de autenticación
-    const { robustAuth } = await import('../lib/robust-auth-manager');
     const token = await robustAuth.getAuthToken();
     
     console.log('✅ [CLIENT-SERVICE] Token obtenido del sistema robusto');

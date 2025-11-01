@@ -207,7 +207,6 @@ export class LegalDefensePersonalizer {
   private async getCompanyProfile(): Promise<any> {
     try {
       // 🛡️ CRITICAL: Usar autenticación robusta
-      const { robustAuth } = await import('../lib/robust-auth-manager');
       const token = await robustAuth.getAuthToken();
       
       const response = await fetch('/api/user-profile', {
@@ -232,7 +231,6 @@ export class LegalDefensePersonalizer {
   private async getLegalDefenseProfile(): Promise<any> {
     try {
       // 🛡️ CRITICAL: Usar autenticación robusta
-      const { robustAuth } = await import('../lib/robust-auth-manager');
       const token = await robustAuth.getAuthToken();
       
       const response = await fetch('/api/legal-defense-profile', {

@@ -132,7 +132,6 @@ export default function LegalDefenseProfile() {
     setIsLoading(true);
     try {
       // 🛡️ CRITICAL: Usar sistema robusto de autenticación
-      const { robustAuth } = await import('../lib/robust-auth-manager');
       const token = await robustAuth.getAuthToken();
       
       const response = await fetch('/api/legal-defense-profile', {
@@ -173,7 +172,6 @@ export default function LegalDefenseProfile() {
     setIsLoading(true);
     try {
       // 🛡️ CRITICAL: Usar sistema robusto de autenticación
-      const { robustAuth } = await import('../lib/robust-auth-manager');
       const token = await robustAuth.getAuthToken();
       
       const response = await fetch('/api/legal-defense-profile', {

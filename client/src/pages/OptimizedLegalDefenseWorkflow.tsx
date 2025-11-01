@@ -258,7 +258,6 @@ export default function OptimizedLegalDefenseWorkflow() {
     validation: ValidationResult;
   }> => {
     // 🛡️ CRITICAL: Usar autenticación robusta
-    const { robustAuth } = await import('../lib/robust-auth-manager');
     const token = await robustAuth.getAuthToken();
     
     const formData = new FormData();
@@ -292,7 +291,6 @@ export default function OptimizedLegalDefenseWorkflow() {
   // Función 4: Análisis legal avanzado
   const performLegalRiskAnalysis = async (projectData: any): Promise<ContractAnalysis> => {
     // 🛡️ CRITICAL: Usar autenticación robusta
-    const { robustAuth } = await import('../lib/robust-auth-manager');
     const token = await robustAuth.getAuthToken();
     
     const response = await fetch('/api/legal-defense/advanced-analysis', {
@@ -320,7 +318,6 @@ export default function OptimizedLegalDefenseWorkflow() {
   // Función 5: Generación de contrato defensivo
   const generateDefensiveContract = async (projectData: any, analysis: ContractAnalysis): Promise<string> => {
     // 🛡️ CRITICAL: Usar autenticación robusta
-    const { robustAuth } = await import('../lib/robust-auth-manager');
     const token = await robustAuth.getAuthToken();
     
     const response = await fetch('/api/pdf-contract-processor/pdf-to-contract', {
@@ -360,7 +357,6 @@ export default function OptimizedLegalDefenseWorkflow() {
       formData.append('estimatePdf', file);
 
       // 🛡️ CRITICAL: Usar autenticación robusta en fallback
-      const { robustAuth } = await import('../lib/robust-auth-manager');
       const token = await robustAuth.getAuthToken();
       
       const response = await fetch('/api/pdf-contract-processor/pdf-to-contract-simple', {
