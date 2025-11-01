@@ -41,20 +41,21 @@ This AI-powered legal document and permit management platform automates tasks li
 ### Frontend
 - **Technology Stack**: React.js with TypeScript, Tailwind CSS, Wouter for routing, TanStack Query for data management.
 - **UI/UX Decisions**: Mobile optimization, conversational onboarding via Mervin AI, smart action system (slash commands, contextual suggestions), adaptive UI, integrated AI model selectors. Redesigned Project Details view with merged tabs and enhanced functionality.
+- **Authentication Architecture (UNIFIED)**: Complete migration to AuthSessionProvider with cookie-based sessions. All active components use `@/hooks/use-auth` (19 files updated Nov 2025). Deprecated AuthContext eliminated from active routes. System provides backward compatibility via both 'user' and 'currentUser' properties.
 
 ### Backend
 - **Server Framework**: Express.js.
 - **Database Architecture**:
   - **Firebase (Firestore)**: Primary and exclusive database for all digital contracts and signatures, and contractor profiles (source of truth).
   - **PostgreSQL with Drizzle ORM**: Used for subscriptions, usage tracking, and legacy estimates.
-- **Authentication**: Firebase Admin SDK with native Firebase UID usage, session-based authentication using `__session` cookies.
-- **Security Architecture**: Multi-layer authentication, triple-layer contract security, enterprise-grade security for Legal Defense features. Robust 1:1 Firebase UID to PostgreSQL `user_id` mapping.
+- **Authentication**: Firebase Admin SDK with native Firebase UID usage, session-based authentication using `__session` HTTP-only cookies (5-day expiration). Unified AuthSessionProvider eliminates XSS vulnerabilities from localStorage tokens. All API requests use automatic cookie-based authentication with `credentials: 'include'`.
+- **Security Architecture**: Multi-layer authentication, triple-layer contract security, enterprise-grade security for Legal Defense features. Robust 1:1 Firebase UID to PostgreSQL `user_id` mapping. HTTP-only cookies prevent client-side token exposure.
 
 ### AI Architecture
 - **Mervin AI Unified System**: Superintelligent chatbot with autonomous task execution, real-time web research, differentiated AI model roles, intelligent decision-making, parallel execution, and specialized agents (estimates, contracts, permits, property verification). Features learning, memory, real-time feedback, and a Conversational Intelligence module with advanced multilingual personality and emotion recognition. Includes a `TaskOrchestrator` and `EndpointCoordinator`.
 
 ### Core Features & Design Patterns
-- **User Authentication & Authorization**: Robust subscription-based permission system with OAuth, email/password, secure registration, automatic subscription degradation, real-time usage limits, persistent login, device fingerprinting, session validation, and WebAuthn API for biometric logins. Critical trial period anti-reset system.
+- **User Authentication & Authorization**: Robust subscription-based permission system with OAuth, email/password, secure registration, automatic subscription degradation, real-time usage limits, persistent login, device fingerprinting, session validation, and WebAuthn API for biometric logins. Critical trial period anti-reset system. **UNIFIED AUTH ECOSYSTEM (Nov 2025)**: Complete migration to AuthSessionProvider - 19 components updated, 0 active files using deprecated AuthContext, cookie-based sessions eliminate manual token management, architect-verified end-to-end compatibility.
 - **Data Consistency & Security**: Secure 1:1 user mapping, comprehensive authentication middleware, and real-time integrity monitoring.
 - **Password Management**: Secure email-based password reset using Resend with database-stored, single-use, expiring tokens.
 - **Dynamic URL Generation**: Centralized utility (`server/utils/url-builder.ts`) for environment-agnostic URL generation, supporting `chyrris.com` for signature and estimate sharing URLs.
