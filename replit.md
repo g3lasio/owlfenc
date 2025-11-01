@@ -36,6 +36,12 @@ This AI-powered legal document and permit management platform automates tasks li
 - CHYRRIS.COM ESTIMATE SHARING URLS: Sistema de URLs compartibles de estimados completamente migrado a chyrris.com con URLs ultra-cortas
 - LEGAL DEFENSE ACCESS CONTROL SYSTEM: Sistema completo de control de acceso por plan de suscripción implementado en Legal Defense con enforcement de límites
 - PDF SIGNATURE GENERATION FIX (NOV 2025): Sistema de firmas digitales en PDFs completados corregido usando contadores independientes por estrategia. Cada estrategia de reemplazo (signature-line, date-line, etc.) alterna independientemente entre contractor y client, eliminando el bug de asignación cruzada que causaba que ambas cajas mostraran la firma del contractor
+- DUAL SIGNATURE COMPLETION WORKFLOW FIX (NOV 2025): Sistema de firma dual completamente funcional con flujo automatizado de finalización:
+  - Solo el contractor recibe el PDF firmado por email (cliente no recibe email con PDF por seguridad)
+  - Contratos completados se guardan automáticamente con status="completed" en Firebase (dualSignatureContracts y contractHistory)
+  - PDF se genera automáticamente con firmas, fechas y sello digital usando premiumPdfService
+  - Método notifyRemainingParty reimplementado para Firebase (eliminada dependencia de PostgreSQL obsoleta)
+  - Sistema de notificación funciona correctamente cuando primera parte firma
 
 ## System Architecture
 
@@ -92,6 +98,13 @@ This AI-powered legal document and permit management platform automates tasks li
   - **Implementation**: `server/services/premiumPdfService.ts` - each regex replacement maintains its own counter (signatureLineCount, dateLineCount, etc.)
   - **Validation**: Enhanced logging per strategy showing contractor/client assignment for debugging
   - **Architect Verified**: PASS - independent per-strategy counters keep contractor/client in sync, no security issues
+- **DUAL SIGNATURE COMPLETION WORKFLOW (NOV 2025)**: Automated contract completion system fully functional:
+  - **Email Distribution**: ONLY contractor receives PDF signed contract via Resend no-reply@ email (client does NOT receive PDF for security)
+  - **Status Management**: Contracts automatically saved with status="completed" in both dualSignatureContracts and contractHistory Firebase collections
+  - **PDF Generation**: Automatic generation of signed PDF with embedded signatures, dates, and digital seal using premiumPdfService
+  - **Notification System**: notifyRemainingParty method reimplemented for Firebase-only architecture (PostgreSQL dependency eliminated)
+  - **Completion Trigger**: When both parties sign, completeContract() workflow executes automatically with PDF generation and email delivery
+  - **Implementation**: `server/services/dualSignatureService.ts` - Firebase-native with sendCompletionEmails sending only to contractor
 
 ## External Dependencies
 - Firebase (Firestore, Admin SDK)

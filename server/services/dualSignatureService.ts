@@ -1304,6 +1304,7 @@ export class DualSignatureService {
 
   /**
    * Notificar a la parte restante que falta por firmar
+   * ✅ FIREBASE-ONLY: Uses Firebase as single source of truth
    */
   private async notifyRemainingParty(
     contractId: string,
@@ -1316,20 +1317,22 @@ export class DualSignatureService {
         `📧 [DUAL-SIGNATURE] Notifying ${remainingParty} that ${signedParty} has signed`
       );
 
-      // Get contract data from database
-      const [contract] = await db
-        .select()
-        .from(digitalContracts)
-        .where(eq(digitalContracts.contractId, contractId))
-        .limit(1);
-
-      if (!contract) {
+      // ✅ Get contract data from Firebase
+      const { db: firebaseDb } = await import("../lib/firebase-admin");
+      const contractDoc = await firebaseDb
+        .collection('dualSignatureContracts')
+        .doc(contractId)
+        .get();
+      
+      if (!contractDoc.exists) {
         console.error(
           "❌ [DUAL-SIGNATURE] Contract not found for notification:",
           contractId
         );
         return;
       }
+
+      const contract = contractDoc.data();
 
       // FIXED: Use correct data structure from database
       const contractData = contract.contractData as any;
