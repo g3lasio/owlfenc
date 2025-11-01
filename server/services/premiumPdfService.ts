@@ -336,7 +336,9 @@ class PremiumPdfService {
         const isContractor = dateObjectCount % 2 === 1;
         const sigDate = isContractor ? contractorSignature.signedAt : clientSignature.signedAt;
         const sigName = isContractor ? 'CONTRACTOR' : 'CLIENT';
-        const formattedDate = sigDate.toLocaleDateString('en-US', {
+        // ✅ Convert to Date object if it's a string/timestamp from Firebase
+        const dateObj = sigDate instanceof Date ? sigDate : new Date(sigDate);
+        const formattedDate = dateObj.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
           day: 'numeric'
@@ -355,7 +357,9 @@ class PremiumPdfService {
         const isContractor = dateCount % 2 === 1;
         const sigDate = isContractor ? contractorSignature.signedAt : clientSignature.signedAt;
         const sigName = isContractor ? 'CONTRACTOR' : 'CLIENT';
-        const formattedDate = sigDate.toLocaleDateString('en-US', {
+        // ✅ Convert to Date object if it's a string/timestamp from Firebase
+        const dateObj = sigDate instanceof Date ? sigDate : new Date(sigDate);
+        const formattedDate = dateObj.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
           day: 'numeric'
@@ -392,7 +396,9 @@ class PremiumPdfService {
         const isContractor = dateLineCount % 2 === 1;
         const sigDate = isContractor ? contractorSignature.signedAt : clientSignature.signedAt;
         const sigName = isContractor ? 'CONTRACTOR' : 'CLIENT';
-        const formattedDate = sigDate.toLocaleDateString('en-US', {
+        // ✅ Convert to Date object if it's a string/timestamp from Firebase
+        const dateObj = sigDate instanceof Date ? sigDate : new Date(sigDate);
+        const formattedDate = dateObj.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
           day: 'numeric'
@@ -422,6 +428,9 @@ class PremiumPdfService {
     } else {
       // Fallback: add signature section at the end if EXECUTION section not found
       console.log("⚠️ [SIGNATURE-DEBUG] Adding fallback signature section");
+      // ✅ Convert dates to Date objects if they're strings/timestamps from Firebase
+      const contractorDateObj = contractorSignature.signedAt instanceof Date ? contractorSignature.signedAt : new Date(contractorSignature.signedAt);
+      const clientDateObj = clientSignature.signedAt instanceof Date ? clientSignature.signedAt : new Date(clientSignature.signedAt);
       const signatureSection = `
         <div style="margin-top: 40px; page-break-inside: avoid; border-top: 2px solid #000; padding-top: 20px;">
           <h3 style="text-align: center; margin-bottom: 30px;">DIGITAL SIGNATURES</h3>
@@ -432,7 +441,7 @@ class PremiumPdfService {
                 ${contractorSigImage}
               </div>
               <p><strong>${contractorSignature.name}</strong></p>
-              <p>Date: ${contractorSignature.signedAt.toLocaleDateString()}</p>
+              <p>Date: ${contractorDateObj.toLocaleDateString()}</p>
             </div>
             <div style="flex: 1; text-align: center; border: 2px solid #000; padding: 20px;">
               <h4>CLIENT</h4>
@@ -440,7 +449,7 @@ class PremiumPdfService {
                 ${clientSigImage}
               </div>
               <p><strong>${clientSignature.name}</strong></p>
-              <p>Date: ${clientSignature.signedAt.toLocaleDateString()}</p>
+              <p>Date: ${clientDateObj.toLocaleDateString()}</p>
             </div>
           </div>
         </div>
