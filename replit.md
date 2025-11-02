@@ -49,7 +49,8 @@ This AI-powered legal document and permit management platform automates tasks li
   - Logging condicional solo en development para evitar exposición de PII en producción
   - Manejo robusto de datos legacy (strings, timestamps, valores faltantes)
   - Normalización comprehensiva de fechas de firma (contractorSignedAt, clientSignedAt) eliminando "Invalid Date" en sección de firmas
-  - Función normalizeTimestamp robusta que parsea Firestore Timestamps, strings legacy y maneja valores corruptos defensivamente
+  - Función normalizeTimestamp robusta que parsea Firestore Timestamps, strings legacy y maneja valores corruptos defensivamente (para endpoint /completed)
+  - Función convertFirestoreTimestamp robusta con validación comprehensiva para HTML view eliminando "Invalid Date" en vistas Share/View Contract (validación de Date objects, Firestore Timestamps, timestamps con seconds, y strings parseables)
 
 ## System Architecture
 

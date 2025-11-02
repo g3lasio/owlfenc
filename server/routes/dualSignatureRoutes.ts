@@ -1019,6 +1019,11 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
       
       // If it's already a Date object
       if (timestamp instanceof Date) {
+        // Validate that it's not Invalid Date
+        if (isNaN(timestamp.getTime())) {
+          console.warn('⚠️ [DATE-CONVERSION] Invalid Date object:', timestamp);
+          return "Date not available";
+        }
         return timestamp.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
@@ -1028,7 +1033,12 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
       
       // If it's a Firestore Timestamp with toDate() method
       if (timestamp.toDate && typeof timestamp.toDate === 'function') {
-        return timestamp.toDate().toLocaleDateString('en-US', {
+        const date = timestamp.toDate();
+        if (isNaN(date.getTime())) {
+          console.warn('⚠️ [DATE-CONVERSION] Invalid Firestore Timestamp:', timestamp);
+          return "Date not available";
+        }
+        return date.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
           day: 'numeric'
@@ -1038,16 +1048,27 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
       // If it's a timestamp object with seconds field (Firestore format)
       if (timestamp._seconds || timestamp.seconds) {
         const seconds = timestamp._seconds || timestamp.seconds;
-        return new Date(seconds * 1000).toLocaleDateString('en-US', {
+        const date = new Date(seconds * 1000);
+        if (isNaN(date.getTime())) {
+          console.warn('⚠️ [DATE-CONVERSION] Invalid seconds timestamp:', timestamp);
+          return "Date not available";
+        }
+        return date.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
           day: 'numeric'
         });
       }
       
-      // If it's a string, try to parse it
+      // If it's a string, try to parse it and validate
       if (typeof timestamp === 'string') {
-        return new Date(timestamp).toLocaleDateString('en-US', {
+        const date = new Date(timestamp);
+        // Check if parsing was successful
+        if (isNaN(date.getTime())) {
+          console.warn('⚠️ [DATE-CONVERSION] Could not parse string timestamp:', timestamp);
+          return "Date not available";
+        }
+        return date.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
           day: 'numeric'
@@ -1055,7 +1076,7 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
       }
       
       // Fallback
-      console.warn('⚠️ [DATE-CONVERSION] Could not convert timestamp:', timestamp);
+      console.warn('⚠️ [DATE-CONVERSION] Unknown timestamp format:', timestamp);
       return "Date not available";
     };
 
