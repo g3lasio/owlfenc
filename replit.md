@@ -48,21 +48,19 @@ This AI-powered legal document and permit management platform automates tasks li
 ### Frontend
 - **Technology Stack**: React.js with TypeScript, Tailwind CSS, Wouter for routing, TanStack Query for data management.
 - **UI/UX Decisions**: Mobile optimization, conversational onboarding via Mervin AI, smart action system (slash commands, contextual suggestions), adaptive UI, integrated AI model selectors. Redesigned Project Details view with merged tabs and enhanced functionality.
-- **Authentication Architecture (UNIFIED)**: Complete migration to AuthSessionProvider with cookie-based sessions. All active components use `@/hooks/use-auth` (19 files updated Nov 2025). Deprecated AuthContext eliminated from active routes. System provides backward compatibility via both 'user' and 'currentUser' properties.
+- **Authentication Architecture**: Complete migration to AuthSessionProvider with cookie-based sessions, eliminating Legacy AuthContext.tsx. Single source of truth: `@/components/auth/AuthSessionProvider.tsx`.
 
 ### Backend
 - **Server Framework**: Express.js.
-- **Database Architecture**:
-  - **Firebase (Firestore)**: Primary and exclusive database for all digital contracts and signatures, and contractor profiles (source of truth).
-  - **PostgreSQL with Drizzle ORM**: Used for subscriptions, usage tracking, and legacy estimates.
-- **Authentication**: Firebase Admin SDK with native Firebase UID usage, session-based authentication using `__session` HTTP-only cookies (5-day expiration). Unified AuthSessionProvider eliminates XSS vulnerabilities from localStorage tokens. All API requests use automatic cookie-based authentication with `credentials: 'include'`.
-- **Security Architecture**: Multi-layer authentication, triple-layer contract security, enterprise-grade security for Legal Defense features. Robust 1:1 Firebase UID to PostgreSQL `user_id` mapping. HTTP-only cookies prevent client-side token exposure.
+- **Database Architecture**: Firebase (Firestore) for digital contracts, signatures, and contractor profiles. PostgreSQL with Drizzle ORM for subscriptions, usage tracking, and legacy estimates.
+- **Authentication**: Firebase Admin SDK with native Firebase UID, session-based authentication using HTTP-only cookies. Unified AuthSessionProvider.
+- **Security Architecture**: Multi-layer authentication, triple-layer contract security, enterprise-grade security for Legal Defense features, robust 1:1 Firebase UID to PostgreSQL `user_id` mapping.
 
 ### AI Architecture
-- **Mervin AI Unified System**: Superintelligent chatbot with autonomous task execution, real-time web research, differentiated AI model roles, intelligent decision-making, parallel execution, and specialized agents (estimates, contracts, permits, property verification). Features learning, memory, real-time feedback, and a Conversational Intelligence module with advanced multilingual personality and emotion recognition. Includes a `TaskOrchestrator` and `EndpointCoordinator`.
+- **Mervin AI Unified System**: Superintelligent chatbot with autonomous task execution, real-time web research, differentiated AI model roles, intelligent decision-making, parallel execution, and specialized agents (estimates, contracts, permits, property verification). Features learning, memory, real-time feedback, and a Conversational Intelligence module. Includes a `TaskOrchestrator` and `EndpointCoordinator`.
 
 ### Core Features & Design Patterns
-- **User Authentication & Authorization**: Robust subscription-based permission system with OAuth, email/password, secure registration, automatic subscription degradation, real-time usage limits, persistent login, device fingerprinting, session validation, and WebAuthn API for biometric logins. Critical trial period anti-reset system. **UNIFIED AUTH ECOSYSTEM (Nov 2025)**: Complete migration to AuthSessionProvider - 19 components updated, 0 active files using deprecated AuthContext, cookie-based sessions eliminate manual token management, architect-verified end-to-end compatibility.
+- **User Authentication & Authorization**: Robust subscription-based permission system with OAuth, email/password, secure registration, automatic subscription degradation, real-time usage limits, persistent login, device fingerprinting, session validation, and WebAuthn API for biometric logins. Unified Auth Ecosystem with cookie-based sessions.
 - **Data Consistency & Security**: Secure 1:1 user mapping, comprehensive authentication middleware, and real-time integrity monitoring.
 - **Password Management**: Secure email-based password reset using Resend with database-stored, single-use, expiring tokens.
 - **Dynamic URL Generation**: Centralized utility (`server/utils/url-builder.ts`) for environment-agnostic URL generation, supporting `chyrris.com` for signature and estimate sharing URLs.
@@ -70,41 +68,14 @@ This AI-powered legal document and permit management platform automates tasks li
 - **Dynamic Form Validation**: Client-side validation using Zod schema.
 - **API Design**: Secure API endpoints for subscription, usage, authentication, and password reset with middleware for access controls and usage limits.
 - **Holographic Sharing System**: Futuristic interface for PDF generation and URL sharing.
-- **Public URL Sharing System**: Simplified estimate sharing generating permanent, stable URLs without authentication, using Firebase Admin SDK and crypto-secure `shareId` generation.
-- **URL Shortening System**: Enterprise-grade URL shortening service integrated with `chyrris.com` domain, featuring secure protocol validation, unique short code generation, click tracking, URL expiration, and Firebase authentication.
-- **PERMISSIONS SYSTEM CENTRALIZED**: Complete permissions system migrated to a centralized architecture using `shared/permissions-config.ts` as the single source of truth for plan limits and permissions.
-- **REDIS RATE LIMITING & USAGE TRACKING**: Hybrid RBAC + Metering system with Upstash Redis for real-time usage tracking and rate limiting (sliding window). Features a unified middleware (`subscription-protection.ts`) for authentication, rate limiting, and subscription/usage validation, with graceful fallback to in-memory tracking.
-- **PERSISTENT USAGE TRACKING SYSTEM (ULTRA ROBUST)**: Production-grade usage tracking system that eliminates refresh/restart vulnerabilities through PostgreSQL persistent storage. Features:
-  - **PostgreSQL Primary Storage**: `postgresUsageService.ts` provides atomic operations on `user_usage_limits` table tracking 7 features (basicEstimates, aiEstimates, contracts, propertyVerifications, permitAdvisor, projects, deepsearch)
-  - **Dual-Write Architecture**: Redis cache + PostgreSQL persistence with automatic fallback for maximum reliability
-  - **Firebase Authentication**: All usage endpoints (`/api/usage/*`) enforce Firebase token verification with userId matching to prevent cross-user access
-  - **Correct Drizzle API**: Atomic increments using proper column references avoiding runtime errors
-  - **DeepSearch Integration**: DeepSearch usage shares `basicEstimatesUsed` column (design decision documented in code)
-  - **Monthly Tracking**: Automatic monthly record creation with plan-based limits initialization
-  - **Security Helper**: Centralized `verifyAuthToken()` function for DRY authentication across all endpoints
-  - **Protected Endpoints**: GET usage, POST increment, POST reset, GET stats, POST can-use all require authentication
-  - **Ready for Deployment**: Architect-verified system resistant to refresh, server restart, and device changes
-- **LEGAL DEFENSE ACCESS CONTROL SYSTEM**: Enterprise-grade subscription-based access control for Legal Defense page with complete plan-tier enforcement:
-  - **Primo Chambeador (Plan ID 5)**: ZERO ACCESS - Early return renders locked upgrade screen, side effects cancelled immediately via useEffect, prevents autoguardado/processing
-  - **Mero Patrón (Plan ID 9)**: LIMITED ACCESS - 50 contracts/month enforced, visible usage counter (blue→red when limit reached), PDF generation button disabled when quota exceeded, signature protocol blocked with upgrade banner
-  - **Master Contractor (Plan ID 6)**: UNLIMITED ACCESS - Both PDF generation and signature protocol available without restrictions
-  - **Free Trial (Plan ID 4)**: UNLIMITED ACCESS - Inherits Master Contractor privileges for 14-day trial period per permissions-config.ts
-  - **Implementation**: Uses PermissionContext, canUse('contracts') validation, reactive UI with disabled states, upgrade modals on quota exceeded
-  - **Architect Verified**: PASS - all tiers enforce correctly with no bypass vulnerabilities
-- **PDF DIGITAL SIGNATURE SYSTEM (FIXED NOV 2025)**: Premium PDF service with robust signature embedding using independent strategy-based counters:
-  - **Architecture**: 7 replacement strategies (signature-line, date-line, sign-space, etc.) each with independent alternating counters
-  - **Pattern**: First occurrence = CONTRACTOR, Second occurrence = CLIENT (per strategy)
-  - **Fix**: Eliminated cross-strategy interference bug where shared counter caused date lines to receive wrong signer's data
-  - **Implementation**: `server/services/premiumPdfService.ts` - each regex replacement maintains its own counter (signatureLineCount, dateLineCount, etc.)
-  - **Validation**: Enhanced logging per strategy showing contractor/client assignment for debugging
-  - **Architect Verified**: PASS - independent per-strategy counters keep contractor/client in sync, no security issues
-- **DUAL SIGNATURE COMPLETION WORKFLOW (NOV 2025)**: Automated contract completion system fully functional:
-  - **Email Distribution**: ONLY contractor receives PDF signed contract via Resend no-reply@ email (client does NOT receive PDF for security)
-  - **Status Management**: Contracts automatically saved with status="completed" in both dualSignatureContracts and contractHistory Firebase collections
-  - **PDF Generation**: Automatic generation of signed PDF with embedded signatures, dates, and digital seal using premiumPdfService
-  - **Notification System**: notifyRemainingParty method reimplemented for Firebase-only architecture (PostgreSQL dependency eliminated)
-  - **Completion Trigger**: When both parties sign, completeContract() workflow executes automatically with PDF generation and email delivery
-  - **Implementation**: `server/services/dualSignatureService.ts` - Firebase-native with sendCompletionEmails sending only to contractor
+- **Public URL Sharing System**: Simplified estimate sharing generating permanent, stable URLs without authentication.
+- **URL Shortening System**: Enterprise-grade URL shortening service integrated with `chyrris.com` domain.
+- **Permissions System**: Centralized architecture using `shared/permissions-config.ts` for plan limits and permissions.
+- **Redis Rate Limiting & Usage Tracking**: Hybrid RBAC + Metering system with Upstash Redis for real-time usage tracking and rate limiting (sliding window).
+- **Persistent Usage Tracking System**: Production-grade usage tracking system utilizing PostgreSQL persistent storage with a dual-write architecture (Redis cache + PostgreSQL) for features like estimates, contracts, and permit verification.
+- **Legal Defense Access Control System**: Enterprise-grade subscription-based access control for Legal Defense page with plan-tier enforcement (e.g., Primo Chambeador: ZERO ACCESS, Mero Patrón: LIMITED ACCESS, Master Contractor/Free Trial: UNLIMITED ACCESS).
+- **PDF Digital Signature System**: Premium PDF service with robust signature embedding using independent strategy-based counters for contractor/client assignments.
+- **Dual Signature Completion Workflow**: Automated contract completion system, including email distribution (contractor only), status management in Firebase, automatic PDF generation, and a Firebase-native notification system.
 
 ## External Dependencies
 - Firebase (Firestore, Admin SDK)
@@ -116,4 +87,4 @@ This AI-powered legal document and permit management platform automates tasks li
 - Anthropic
 - Mapbox
 - PDFMonkey
-- Upstash Redis: Serverless Redis for real-time usage tracking and rate limiting.
+- Upstash Redis
