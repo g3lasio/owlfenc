@@ -43,6 +43,12 @@ This AI-powered legal document and permit management platform automates tasks li
   - Método notifyRemainingParty reimplementado para Firebase (eliminada dependencia de PostgreSQL obsoleta)
   - Sistema de notificación funciona correctamente cuando primera parte firma
   - PDF ATTACHMENT FIX (NOV 2025): PDF se adjunta directamente al email del contractor como archivo adjunto (no solo link de descarga) usando soporte nativo de Resend con type safety
+  - COMPLETION EMAIL NOTIFICATION ENHANCEMENT (NOV 2025): Email de completado rediseñado para servir claramente como notificación oficial:
+    - Subject: "✅ NOTIFICACIÓN: Contrato Firmado por Ambas Partes"
+    - Header prominente: "📧 NOTIFICACIÓN OFICIAL"
+    - Mensaje claro: "Este es un correo de notificación oficial: El contrato ha sido firmado exitosamente por ambas partes"
+    - Recordatorio explícito: "El documento PDF firmado está adjunto a este email"
+    - Se envía INMEDIATAMENTE cuando ambas partes completan la firma
 - COMPLETED CONTRACT DISPLAY FIX (NOV 2025): Corrección de visualización de datos en contratos completados:
   - Frontend normaliza Firestore Timestamps a ISO strings antes de display (eliminando "N/A" en fechas)
   - Backend normaliza totalAmount de strings legacy a números (eliminando costo "0" en contratos antiguos)

@@ -1064,7 +1064,7 @@ export class DualSignatureService {
         contractorName: contract.contractorName,
         contractorCompany:
           contractData?.contractorCompany || "Construction Company",
-        subject: `🎉 Contract Completed! - ${contract.clientName}`,
+        subject: `✅ NOTIFICACIÓN: Contrato Firmado por Ambas Partes - ${contract.clientName}`,
         htmlContent: this.generateCompletionEmailHTML({
           recipientName: contract.contractorName,
           recipientType: "contractor",
@@ -1154,19 +1154,29 @@ export class DualSignatureService {
         </head>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 40px; text-align: center; border-radius: 15px 15px 0 0;">
-            <h1 style="margin: 0; font-size: 28px;">🎉 Contract Successfully Completed!</h1>
-            <p style="margin: 15px 0 0 0; opacity: 0.9; font-size: 18px;">Both parties have signed - Your contract is now active</p>
+            <div style="background: rgba(255,255,255,0.2); display: inline-block; padding: 10px 25px; border-radius: 25px; margin-bottom: 15px;">
+              <p style="margin: 0; font-size: 14px; font-weight: bold; letter-spacing: 1px;">📧 NOTIFICACIÓN OFICIAL</p>
+            </div>
+            <h1 style="margin: 0; font-size: 32px; font-weight: bold;">🎉 ¡CONTRATO COMPLETADO!</h1>
+            <p style="margin: 15px 0 0 0; font-size: 20px; font-weight: 600;">Ambas partes han firmado el contrato</p>
+            <p style="margin: 10px 0 0 0; opacity: 0.95; font-size: 16px;">El documento firmado está adjunto en este email</p>
           </div>
 
           <div style="background: #f8fafc; padding: 40px; border-radius: 0 0 15px 15px; border: 1px solid #e2e8f0;">
-            <h2 style="color: #059669; margin-top: 0; font-size: 24px;">Hello ${params.recipientName},</h2>
+            <h2 style="color: #059669; margin-top: 0; font-size: 24px;">Hola ${params.recipientName},</h2>
 
-            <div style="background: #d1fae5; padding: 25px; border-radius: 12px; border-left: 6px solid #10b981; margin: 25px 0;">
-              <h3 style="margin: 0 0 15px 0; color: #059669; font-size: 20px;">✅ Contract Execution Complete</h3>
-              <p style="margin: 0; color: #065f46; font-size: 16px;">
-                Congratulations! The contract between <strong>${params.contractorCompany}</strong> and <strong>${params.clientName}</strong> 
-                has been successfully signed by both parties and is now legally binding.
+            <div style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); padding: 30px; border-radius: 12px; border: 3px solid #10b981; margin: 25px 0; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">
+              <h3 style="margin: 0 0 15px 0; color: #059669; font-size: 22px; text-align: center;">✅ ¡FIRMA COMPLETADA POR AMBAS PARTES!</h3>
+              <p style="margin: 0; color: #065f46; font-size: 17px; line-height: 1.8; text-align: center;">
+                <strong>Este es un correo de notificación oficial:</strong><br>
+                El contrato entre <strong>${params.contractorCompany}</strong> y <strong>${params.clientName}</strong> 
+                ha sido firmado exitosamente por ambas partes y es ahora <strong style="color: #059669;">legalmente vinculante</strong>.
               </p>
+              <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center; border: 2px dashed #10b981;">
+                <p style="margin: 0; color: #059669; font-size: 16px; font-weight: bold;">
+                  📎 El documento PDF firmado está adjunto a este email
+                </p>
+              </div>
             </div>
 
             <div style="background: white; padding: 25px; border-radius: 12px; border: 2px solid #10b981; margin: 25px 0;">
