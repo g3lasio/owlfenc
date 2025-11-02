@@ -125,11 +125,12 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
       icon: "ri-phone-line", 
       label: "Llamar", 
       action: () => {
-        if (typeof window !== 'undefined' && project.clientPhone) {
-          window.open(`tel:${project.clientPhone}`);
-        }
+        toast({
+          title: "🚧 Próximamente",
+          description: "La función de llamadas estará disponible pronto."
+        });
       },
-      disabled: !project.clientPhone
+      disabled: false
     },
     { 
       icon: "ri-mail-line", 
@@ -155,20 +156,11 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
       icon: "ri-file-text-line", 
       label: "Contrato", 
       action: () => {
-        if (typeof window === 'undefined') return;
-        if (project.contractHtml) {
-          window.open(`/contract/${project.id}`, '_blank');
-        } else if (project.permanentPdfUrl) {
-          window.open(project.permanentPdfUrl, '_blank');
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Contrato no disponible",
-            description: "Este proyecto aún no tiene un contrato generado."
-          });
+        if (typeof window !== 'undefined') {
+          window.location.href = '/legal-defense';
         }
       },
-      disabled: !project.contractHtml && !project.permanentPdfUrl
+      disabled: false
     },
   ];
 
