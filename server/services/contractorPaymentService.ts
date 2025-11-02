@@ -1,12 +1,12 @@
 import Stripe from 'stripe';
 import { storage } from '../storage';
 import type { ProjectPayment, InsertProjectPayment } from '@shared/schema';
+import { getStripeSecretKey } from '../config/stripe';
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY is required');
-}
+// Get Stripe key from centralized config (supports both naming conventions)
+const stripeKey = getStripeSecretKey();
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+const stripe = new Stripe(stripeKey, {
   apiVersion: '2024-06-20',
 });
 

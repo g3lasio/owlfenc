@@ -6,33 +6,18 @@ import {
 } from "@shared/schema";
 import { storage } from "../storage";
 import { firebaseSubscriptionService } from "./firebaseSubscriptionService";
+import { getStripeSecretKey, logStripeConfig } from "../config/stripe";
 
-// Verificar que la clave secreta de Stripe esté configurada
-// MODO PRODUCCIÓN - usar STRIPE_SECRET_KEY
-const stripeKey = process.env.STRIPE_SECRET_KEY;
+// Get Stripe key from centralized config (supports both naming conventions)
+const stripeKey = getStripeSecretKey();
 
-if (!stripeKey) {
-  console.error(
-    "❌ STRIPE_SECRET_KEY no está configurada. Las funciones de pago no funcionarán correctamente.",
-  );
-  throw new Error("STRIPE_SECRET_KEY is required");
-}
-
-// Inicializar Stripe con la clave de PRODUCCIÓN
+// Initialize Stripe with the configured key
 const stripe = new Stripe(stripeKey, {
   apiVersion: "2023-10-16" as any,
 });
 
-// Log para confirmar configuración de producción
-console.log(
-  "🔑 [STRIPE-CONFIG] Using API key:",
-  stripeKey ? `${stripeKey.substring(0, 12)}...` : "No key configured",
-);
-console.log("🔑 [STRIPE-CONFIG] Environment: PRODUCTION MODE");
-console.log(
-  "🔑 [STRIPE-CONFIG] Production key available:",
-  !!process.env.STRIPE_SECRET_KEY,
-);
+// Log configuration
+logStripeConfig();
 
 interface SubscriptionCheckoutOptions {
   planId: number;

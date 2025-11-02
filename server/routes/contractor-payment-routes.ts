@@ -914,15 +914,18 @@ router.post("/:paymentId/resend", isAuthenticated, async (req: Request, res: Res
  */
 router.get("/stripe/diagnostic", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+    const { getStripeSecretKey, getStripePublishableKey, getStripeWebhookSecret } = await import('../config/stripe');
+    const stripeKey = getStripeSecretKey();
+    
+    const stripe = new Stripe(stripeKey, {
       apiVersion: "2024-11-20.acacia" as any,
     });
 
     // Get the secret key prefix to identify which account is being used
-    const keyPrefix = process.env.STRIPE_SECRET_KEY?.substring(0, 15) || "NOT_CONFIGURED";
-    const keyType = process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") 
+    const keyPrefix = stripeKey.substring(0, 15);
+    const keyType = stripeKey.startsWith("sk_live_") 
       ? "LIVE" 
-      : process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_")
+      : stripeKey.startsWith("sk_test_")
       ? "TEST"
       : "UNKNOWN";
 
@@ -965,8 +968,8 @@ router.get("/stripe/diagnostic", isAuthenticated, async (req: Request, res: Resp
     }
 
     // Check if webhook secret is configured
-    const webhookConfigured = !!process.env.STRIPE_WEBHOOK_SECRET;
-    const publishableKeyConfigured = !!process.env.STRIPE_PUBLISHABLE_KEY;
+    const webhookConfigured = !!getStripeWebhookSecret();
+    const publishableKeyConfigured = !!getStripePublishableKey();
 
     res.json({
       success: true,

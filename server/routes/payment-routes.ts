@@ -5,9 +5,11 @@ import { storage } from '../storage';
 import Stripe from 'stripe';
 import express from 'express';
 import { isAuthenticated } from '../middleware/auth';
+import { getStripeSecretKey } from '../config/stripe';
 
-// Initialize Stripe with PRODUCTION key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+// Initialize Stripe with PRODUCTION key (supports both naming conventions)
+const stripeKey = getStripeSecretKey();
+const stripe = new Stripe(stripeKey, {
   apiVersion: '2023-10-16' as any,
 });
 

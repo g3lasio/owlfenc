@@ -9,12 +9,12 @@ import { db, admin } from '../lib/firebase-admin.js';
 import { trialNotificationService } from './trialNotificationService.js';
 import { productionUsageService } from './productionUsageService.js';
 import { securityOptimizationService } from './securityOptimizationService.js';
+import { getStripeSecretKey } from '../config/stripe.js';
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
-}
+// Get Stripe key from centralized config (supports both naming conventions)
+const stripeKey = getStripeSecretKey();
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+const stripe = new Stripe(stripeKey, {
   apiVersion: "2023-10-16",
 });
 

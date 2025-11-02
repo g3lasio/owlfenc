@@ -1,14 +1,13 @@
 import Stripe from 'stripe';
 import { ProjectPayment, InsertProjectPayment, Project } from '@shared/schema';
 import { storage } from '../storage';
+import { getStripeSecretKey } from '../config/stripe';
 
-// Verify that the Stripe secret key is configured
-if (!process.env.STRIPE_SECRET_KEY) {
-  console.warn('⚠️ STRIPE_SECRET_KEY is not configured. Payment functions will not work correctly.');
-}
+// Get Stripe key from centralized config (supports both naming conventions)
+const stripeKey = getStripeSecretKey();
 
 // Initialize Stripe with PRODUCTION secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripe = new Stripe(stripeKey, {
   apiVersion: '2023-10-16' as any, // Use a compatible version
 });
 
