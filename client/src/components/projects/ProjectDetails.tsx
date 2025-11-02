@@ -19,13 +19,19 @@ interface ProjectDetailsProps {
 }
 
 export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProps) {
-  const [editableNotes, setEditableNotes] = useState({
-    clientNotes: project.clientNotes || '',
-    internalNotes: project.internalNotes || ''
-  });
+  // Consolidar notas del cliente e internas en un solo campo "Project Notes"
+  const consolidatedNotes = () => {
+    const parts = [];
+    if (project.clientNotes) parts.push(project.clientNotes);
+    if (project.internalNotes) parts.push(project.internalNotes);
+    return parts.join('\n\n---\n\n');
+  };
+
+  const [projectNotes, setProjectNotes] = useState(
+    project.projectNotes || consolidatedNotes() || ''
+  );
   const [isSaving, setIsSaving] = useState(false);
-  const [clientNotesOpen, setClientNotesOpen] = useState(false);
-  const [internalNotesOpen, setInternalNotesOpen] = useState(false);
+  const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentData, setPaymentData] = useState({
     amount: '',
@@ -35,42 +41,20 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
   });
   const { toast } = useToast();
 
-  const handleClientNotesUpdate = async () => {
+  const handleProjectNotesUpdate = async () => {
     try {
       setIsSaving(true);
       const updatedProject = await updateProject(project.id, {
-        clientNotes: editableNotes.clientNotes
+        projectNotes: projectNotes
+        // Mantener campos legacy por retrocompatibilidad
+        // No limpiarlos para que otros componentes puedan seguir usándolos
       });
       onUpdate(updatedProject);
       toast({
-        title: "Notas actualizadas",
-        description: "Las notas del cliente han sido actualizadas correctamente."
+        title: "✅ Notas actualizadas",
+        description: "Las notas del proyecto han sido guardadas correctamente."
       });
-      setClientNotesOpen(false);
-    } catch (error) {
-      console.error("Error updating notes:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudieron actualizar las notas."
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleInternalNotesUpdate = async () => {
-    try {
-      setIsSaving(true);
-      const updatedProject = await updateProject(project.id, {
-        internalNotes: editableNotes.internalNotes
-      });
-      onUpdate(updatedProject);
-      toast({
-        title: "Notas actualizadas",
-        description: "Las notas internas han sido actualizadas correctamente."
-      });
-      setInternalNotesOpen(false);
+      setNotesDialogOpen(false);
     } catch (error) {
       console.error("Error updating notes:", error);
       toast({
@@ -533,86 +517,47 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
             </CardContent>
           </Card>
 
-          {/* Notas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Notas del Cliente */}
-            <Card className="border-2">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center justify-between">
-                  <span>Notas del Cliente</span>
-                  <Dialog open={clientNotesOpen} onOpenChange={setClientNotesOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" data-testid="button-edit-client-notes">
-                        <i className="ri-edit-line text-sm"></i>
+          {/* Project Notes - Consolidado */}
+          <Card className="border-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center justify-between">
+                <span>📝 Project Notes</span>
+                <Dialog open={notesDialogOpen} onOpenChange={setNotesDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" data-testid="button-edit-project-notes">
+                      <i className="ri-edit-line text-sm"></i>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                      <DialogTitle>Editar Notas del Proyecto</DialogTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Agrega cualquier nota relevante sobre este proyecto, cliente, o detalles internos.
+                      </p>
+                    </DialogHeader>
+                    <Textarea 
+                      placeholder="Ingrese notas del proyecto aquí... (Ej: preferencias del cliente, observaciones del sitio, instrucciones especiales, etc.)"
+                      className="min-h-[250px]" 
+                      value={projectNotes}
+                      onChange={(e) => setProjectNotes(e.target.value)}
+                      data-testid="textarea-edit-project-notes"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setNotesDialogOpen(false)}>Cancelar</Button>
+                      <Button onClick={handleProjectNotesUpdate} disabled={isSaving} data-testid="button-save-project-notes">
+                        {isSaving ? 'Guardando...' : 'Guardar Notas'}
                       </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle>Editar Notas del Cliente</DialogTitle>
-                      </DialogHeader>
-                      <Textarea 
-                        placeholder="Ingrese notas sobre el cliente aquí..."
-                        className="min-h-[200px]" 
-                        value={editableNotes.clientNotes}
-                        onChange={(e) => setEditableNotes({...editableNotes, clientNotes: e.target.value})}
-                        data-testid="textarea-edit-client-notes"
-                      />
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setClientNotesOpen(false)}>Cancelar</Button>
-                        <Button onClick={handleClientNotesUpdate} disabled={isSaving} data-testid="button-save-client-notes">
-                          {isSaving ? 'Guardando...' : 'Guardar'}
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <div className="text-xs text-muted-foreground whitespace-pre-wrap min-h-[60px] p-2 bg-muted/30 rounded border">
-                  {project.clientNotes || 'Sin notas del cliente.'}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Notas Internas */}
-            <Card className="border-2">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center justify-between">
-                  <span>Notas Internas</span>
-                  <Dialog open={internalNotesOpen} onOpenChange={setInternalNotesOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" data-testid="button-edit-internal-notes">
-                        <i className="ri-edit-line text-sm"></i>
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle>Editar Notas Internas</DialogTitle>
-                      </DialogHeader>
-                      <Textarea 
-                        placeholder="Ingrese notas internas aquí..."
-                        className="min-h-[200px]" 
-                        value={editableNotes.internalNotes}
-                        onChange={(e) => setEditableNotes({...editableNotes, internalNotes: e.target.value})}
-                        data-testid="textarea-edit-internal-notes"
-                      />
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setInternalNotesOpen(false)}>Cancelar</Button>
-                        <Button onClick={handleInternalNotesUpdate} disabled={isSaving} data-testid="button-save-internal-notes">
-                          {isSaving ? 'Guardando...' : 'Guardar'}
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <div className="text-xs text-muted-foreground whitespace-pre-wrap min-h-[60px] p-2 bg-muted/30 rounded border">
-                  {project.internalNotes || 'Sin notas internas.'}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <div className="text-xs text-muted-foreground whitespace-pre-wrap min-h-[80px] max-h-[200px] overflow-y-auto p-3 bg-muted/30 rounded border">
+                {projectNotes || 'Sin notas del proyecto. Click en el botón de edición para agregar notas.'}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Tab: Documentos */}

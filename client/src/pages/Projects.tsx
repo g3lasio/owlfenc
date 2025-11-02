@@ -39,8 +39,9 @@ interface Project {
   attachments?: any;
   permitStatus?: string;
   permitDetails?: any;
-  clientNotes?: string;
-  internalNotes?: string;
+  projectNotes?: string; // Campo consolidado de notas
+  clientNotes?: string; // DEPRECATED - Migrado a projectNotes
+  internalNotes?: string; // DEPRECATED - Migrado a projectNotes
   paymentStatus?: string;
   paymentDetails?: any;
   projectCategory?: string;
@@ -239,8 +240,10 @@ function Projects() {
               estimateHtml: data.estimateHtml,
               contractHtml: data.contractHtml,
               attachments: data.attachments || {},
-              clientNotes: data.clientNotes || data.notes,
-              internalNotes: data.internalNotes,
+              // Notas: Usar projectNotes si existe, sino consolidar legacy
+              projectNotes: data.projectNotes || '',
+              clientNotes: data.clientNotes || data.notes || '',
+              internalNotes: data.internalNotes || '',
               permitStatus: data.permitStatus,
               paymentStatus: data.paymentStatus,
               scheduledDate: data.scheduledDate,

@@ -158,13 +158,13 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
   }, [isDragging, dragPosition, currentProgress, projectId]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-2 md:px-4 py-2 md:py-3">
+    <div className="w-full max-w-4xl mx-auto px-3 md:px-4 py-3 md:py-4">
       {/* Header - Centered */}
-      <div className="text-center mb-3 md:mb-4">
-        <h3 className="text-lg md:text-xl font-bold text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text mb-1">
+      <div className="text-center mb-4 md:mb-5">
+        <h3 className="text-base md:text-xl font-bold text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text mb-2">
           Project Timeline
         </h3>
-        <div className="w-16 md:w-24 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent mx-auto"></div>
+        <div className="w-20 md:w-24 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent mx-auto"></div>
         
         {/* Live Stage Feedback During Drag */}
         {isDragging && (
@@ -187,9 +187,9 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
       </div>
 
       {/* Compact Timeline Container */}
-      <div className="relative bg-gray-900/50 rounded-xl border border-cyan-400/20 p-3 md:p-4 backdrop-blur-sm overflow-hidden">
-        {/* Stage Icons Row - Flexbox Layout */}
-        <div className="flex items-center justify-between gap-1 md:gap-2 mb-3 px-2">
+      <div className="relative bg-gray-900/50 rounded-xl border border-cyan-400/20 p-4 md:p-5 backdrop-blur-sm overflow-hidden">
+        {/* Stage Icons Row - Flexbox Layout with better mobile spacing */}
+        <div className="flex items-center justify-between gap-2 md:gap-3 mb-4 px-1 md:px-2">
           {timelineStages.map((stage, index) => {
             // Use temp stage index during dragging for immediate visual feedback
             const activeIndex = isDragging ? tempStageIndex : validCurrentIndex;
@@ -200,7 +200,7 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
               <div key={stage.key} className="flex flex-col items-center flex-1 min-w-0">
                 {/* Stage Icon */}
                 <div 
-                  className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-300 relative ${
+                  className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-300 relative ${
                     isActive 
                       ? 'bg-gradient-to-br from-cyan-400/20 to-blue-600/20 border-2 border-cyan-400/60 shadow-lg' 
                       : 'bg-gray-800/50 border-2 border-gray-600/30'
@@ -210,7 +210,7 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
                     borderColor: isActive ? `${stage.color}60` : undefined,
                   }}
                 >
-                  <i className={`${stage.icon} text-sm md:text-lg transition-all duration-300 ${
+                  <i className={`${stage.icon} text-base md:text-lg transition-all duration-300 ${
                     isActive ? 'text-cyan-200' : 'text-gray-500'
                   }`}></i>
                   
@@ -220,8 +220,8 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
                   )}
                 </div>
                 
-                {/* Stage Label - Single responsive version */}
-                <span className={`text-[10px] sm:text-xs md:text-sm font-medium mt-1 transition-all duration-300 text-center leading-tight ${
+                {/* Stage Label - Better mobile readability */}
+                <span className={`text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-medium mt-1.5 md:mt-2 transition-all duration-300 text-center leading-tight max-w-full break-words ${
                   isActive ? 'text-cyan-100' : 'text-gray-400'
                 }`}>
                   {stage.label}
