@@ -210,17 +210,6 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
 
         {/* Tab: Proyecto */}
         <TabsContent value="project" className="flex-1 overflow-y-auto space-y-3 px-1">
-          {/* Timeline */}
-          <Card className="border-2">
-            <CardContent className="p-3 sm:p-4">
-              <FuturisticTimeline
-                projectId={project.id}
-                currentProgress={project.projectProgress || 'estimate_created'}
-                onProgressUpdate={handleProgressUpdate}
-              />
-            </CardContent>
-          </Card>
-
           {/* Acciones Rápidas */}
           <Card className="border-2">
             <CardHeader className="pb-2">
