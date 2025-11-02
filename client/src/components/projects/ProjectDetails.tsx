@@ -85,14 +85,33 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
 
   const formatDate = (date: any) => {
     if (!date) return 'No establecida';
+    
+    let dateObj: Date;
+    
+    // Manejar diferentes tipos de fecha
     if (typeof date === 'object' && date.toDate) {
-      date = date.toDate();
+      // Firebase Timestamp
+      dateObj = date.toDate();
+    } else if (typeof date === 'string') {
+      // String de fecha (del input date)
+      dateObj = new Date(date);
+    } else if (date instanceof Date) {
+      // Ya es un objeto Date
+      dateObj = date;
+    } else {
+      return 'Fecha inválida';
     }
+    
+    // Validar que la fecha es válida
+    if (isNaN(dateObj.getTime())) {
+      return 'Fecha inválida';
+    }
+    
     return new Intl.DateTimeFormat('es-ES', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
-    }).format(date);
+    }).format(dateObj);
   };
 
   const formatCurrency = (amount: number) => {
