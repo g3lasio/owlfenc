@@ -106,15 +106,16 @@ function UnifiedPaymentDonut({
   };
 
   // Label positions (outside the circle)
-  const labelRadius = outerRadius + 100;
+  const labelRadius = outerRadius + 80;
 
   return (
-    <div className="relative flex items-center justify-center w-full" style={{ minHeight: size + 250 }}>
+    <div className="relative flex items-center justify-center w-full">
       <svg
-        width={size + 400}
-        height={size + 250}
-        viewBox={`0 0 ${size + 400} ${size + 250}`}
-        className="mx-auto"
+        width="100%"
+        height="auto"
+        viewBox={`0 0 ${size + 200} ${size + 120}`}
+        className="mx-auto max-w-4xl"
+        preserveAspectRatio="xMidYMid meet"
       >
         <defs>
           {/* Glow filters for each segment */}
@@ -159,10 +160,10 @@ function UnifiedPaymentDonut({
         </defs>
 
         {/* Background starfield */}
-        <rect x="0" y="0" width={size + 300} height={size + 200} fill="url(#starfield)" opacity="0.3" />
+        <rect x="0" y="0" width={size + 200} height={size + 120} fill="url(#starfield)" opacity="0.3" />
 
         {/* Main group - centered */}
-        <g transform={`translate(${(size + 300) / 2 - centerX}, 100)`}>
+        <g transform={`translate(${(size + 200) / 2 - centerX}, ${(size + 120) / 2 - centerY})`}>
           {/* Outer ring segments */}
           {segmentData.map((segment, index) => {
             // Create donut segment path
@@ -441,7 +442,7 @@ export default function FuturisticPaymentDashboard({
         data-testid="card-unified-payment-donut"
       >
         <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-purple-500/5 to-cyan-500/5 animate-pulse pointer-events-none" />
-        <CardContent className="p-12 relative">
+        <CardContent className="p-6 relative">
           <UnifiedPaymentDonut segments={segments} totalValue={totalValue} />
         </CardContent>
       </Card>
