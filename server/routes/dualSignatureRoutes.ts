@@ -525,12 +525,48 @@ router.get("/completed/:userId", requireAuth, async (req, res) => {
 
     const contracts = completedDocs.map(doc => {
       const data = doc.data();
+      
+      // Normalize totalAmount to number, handling legacy string values
+      const normalizeTotalAmount = (value: any): number => {
+        if (typeof value === 'number') return value;
+        if (typeof value === 'string') {
+          const parsed = parseFloat(value);
+          return isNaN(parsed) ? 0 : parsed;
+        }
+        return 0;
+      };
+      
+      // Handle completion date - could be string or Timestamp
+      let completionDateISO = null;
+      if (data.completionDate) {
+        if (typeof data.completionDate === 'string') {
+          completionDateISO = data.completionDate;
+        } else if (data.completionDate.toDate) {
+          completionDateISO = data.completionDate.toDate().toISOString();
+        }
+      } else if (data.updatedAt?.toDate) {
+        completionDateISO = data.updatedAt.toDate().toISOString();
+      }
+      
+      // 🔍 DEBUG (development only): Log contract data to help identify issues
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`📊 [COMPLETED-CONTRACT-DEBUG] Contract ${doc.id}:`, {
+          contractId: data.contractId,
+          totalAmount: normalizeTotalAmount(data.totalAmount),
+          totalAmountOriginal: data.totalAmount,
+          totalAmountType: typeof data.totalAmount,
+          completionDate: completionDateISO,
+          hasCompletionDate: !!data.completionDate,
+          status: data.status
+        });
+      }
+      
       return {
         contractId: data.contractId || doc.id,
         clientName: data.clientName || '',
         clientEmail: data.clientEmail || '',
         clientPhone: data.clientPhone || '',
-        totalAmount: data.totalAmount || 0,
+        totalAmount: normalizeTotalAmount(data.totalAmount),
         isCompleted: true,
         isDownloadable: true,
         contractorSigned: data.contractorSigned || false,
@@ -538,7 +574,7 @@ router.get("/completed/:userId", requireAuth, async (req, res) => {
         contractorSignedAt: data.contractorSignedAt,
         clientSignedAt: data.clientSignedAt,
         createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        completionDate: data.completionDate?.toDate?.()?.toISOString() || data.updatedAt?.toDate?.()?.toISOString(),
+        completionDate: completionDateISO,
         hasPdf: data.hasPdf || !!data.pdfUrl || !!data.permanentPdfUrl,
         pdfUrl: data.pdfUrl || data.permanentPdfUrl || null,
         permanentPdfUrl: data.pdfUrl || data.permanentPdfUrl || null,

@@ -137,6 +137,26 @@ class ContractHistoryService {
    * Mapea un contrato de dualSignatureContracts a ContractHistoryEntry
    */
   private mapDualSignatureToHistory(id: string, data: any): ContractHistoryEntry {
+    // Normalize timestamps to ISO strings for UI consumption
+    const normalizeDate = (value: any): string => {
+      if (!value) return '';
+      if (typeof value === 'string') return value;
+      if (value.toDate && typeof value.toDate === 'function') {
+        return value.toDate().toISOString();
+      }
+      return '';
+    };
+
+    // Coerce totalAmount to number, handling legacy string values
+    const normalizeTotalAmount = (value: any): number => {
+      if (typeof value === 'number') return value;
+      if (typeof value === 'string') {
+        const parsed = parseFloat(value);
+        return isNaN(parsed) ? 0 : parsed;
+      }
+      return 0;
+    };
+
     return {
       id,
       userId: data.userId,
@@ -149,7 +169,7 @@ class ContractHistoryService {
       contractorSignUrl: data.contractorSignUrl,
       clientSignUrl: data.clientSignUrl,
       shareableLink: data.shareableLink,
-      permanentUrl: data.permanentPdfUrl || data.finalPdfPath,
+      permanentUrl: data.permanentPdfUrl || data.finalPdfPath || data.pdfUrl,
       contractData: {
         client: {
           name: data.clientName,
@@ -166,15 +186,20 @@ class ContractHistoryService {
         },
         project: {
           type: data.projectType || 'Construction',
-          description: data.projectDescription,
+          description: data.projectDescription || '',
           location: data.clientAddress || '',
         },
         financials: {
-          total: data.totalAmount || 0
+          total: normalizeTotalAmount(data.totalAmount)
         },
-        protections: []
+        protections: [],
+        formFields: {
+          startDate: normalizeDate(data.startDate),
+          completionDate: normalizeDate(data.completionDate),
+          estimatedDuration: data.estimatedDuration || ''
+        }
       },
-      pdfUrl: data.finalPdfPath || data.signedPdfPath
+      pdfUrl: data.finalPdfPath || data.signedPdfPath || data.pdfUrl || data.permanentPdfUrl
     };
   }
 
