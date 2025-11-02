@@ -362,7 +362,7 @@ export default function PermitAdvisor() {
     {
       id: "property-analysis",
       step: 1,
-      title: "Property & Project Analysis",
+      title: "Property",
       description: "Enter your property address to begin comprehensive permit analysis. Our system will identify local requirements and jurisdiction-specific regulations.",
       status: selectedAddress && coordinates
         ? "completed"
@@ -376,7 +376,7 @@ export default function PermitAdvisor() {
     {
       id: "project-details",
       step: 2,
-      title: "Project Details & Documentation",
+      title: "Details",
       description: "Specify your project type, provide detailed description, and attach relevant documents. This information helps generate precise permit requirements.",
       status: projectType && projectDescription
         ? "completed"
@@ -390,7 +390,7 @@ export default function PermitAdvisor() {
     {
       id: "deepsearch-results",
       step: 3,
-      title: "DeepSearch Results & Analysis",
+      title: "Results",
       description: "Review comprehensive permit requirements, building codes, timeline estimates, and download your professional permit analysis report.",
       status: permitData
         ? "completed"
@@ -1019,17 +1019,11 @@ export default function PermitAdvisor() {
         <div className="relative max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
           <div className="text-center">
             <h1 className="text-xl sm:text-2xl md:text-4xl font-bold bg-gradient-to-r from-cyan-300 via-blue-300 to-cyan-300 bg-clip-text text-transparent mb-1 sm:mb-2">
-              Mervin DeepSearch
+              Permit Analysis
             </h1>
-            <p className="text-sm sm:text-base text-gray-300 mb-1 sm:mb-2 px-2">
-              AI-Powered Permit Analysis & Regulatory Intelligence
+            <p className="text-sm sm:text-base text-gray-300 px-2">
+              Powered by Mervin AI
             </p>
-            <div className="flex items-center justify-center gap-2 text-cyan-300">
-              <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-xs font-mono">
-                Professional Grade Intelligence
-              </span>
-            </div>
           </div>
         </div>
       </div>
@@ -1146,13 +1140,13 @@ export default function PermitAdvisor() {
 
           {/* Desktop: Enhanced Centered Flow Layout */}
           <div className="hidden md:block">
-            <div className="flex items-stretch justify-center max-w-5xl mx-auto gap-3">
+            <div className="flex items-stretch justify-center max-w-4xl mx-auto gap-3">
               {workflowSteps.map((step, index) => (
                 <div key={step.id} className="flex items-center">
-                  {/* Step Card - Reorganized Layout */}
+                  {/* Step Card - Compact Layout */}
                   <div className="relative flex-1">
                     <div
-                      className={`p-4 rounded-xl border-2 transition-all duration-500 cursor-pointer transform hover:scale-105 min-w-[200px] ${
+                      className={`p-3 rounded-xl border-2 transition-all duration-500 cursor-pointer transform hover:scale-105 ${
                         step.status === "completed"
                           ? "border-green-400/70 bg-gradient-to-br from-green-400/10 to-green-500/5 shadow-xl shadow-green-400/20"
                           : step.status === "processing"
@@ -1170,11 +1164,11 @@ export default function PermitAdvisor() {
                       }}
                     >
                       {/* Horizontal Layout: Icon + Content */}
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-center gap-2">
                         {/* Icon Circle */}
                         <div className="flex-shrink-0">
                           <div
-                            className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${
+                            className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${
                               step.status === "completed"
                                 ? "border-green-400 bg-green-400/25 shadow-lg shadow-green-400/30"
                                 : step.status === "processing"
@@ -1185,24 +1179,24 @@ export default function PermitAdvisor() {
                             }`}
                           >
                             {step.status === "completed" ? (
-                              <CheckCircle2 className="h-5 w-5 text-green-400" />
+                              <CheckCircle2 className="h-4 w-4 text-green-400" />
                             ) : (
                               <div className={`transition-all duration-500 ${
                                 step.status === "processing" ? "text-cyan-300" : 
                                 step.step === currentStep ? "text-cyan-300" : "text-gray-400"
                               }`}>
-                                {step.step === 1 && <MapPin className="h-5 w-5" />}
-                                {step.step === 2 && <FileText className="h-5 w-5" />}
-                                {step.step === 3 && <Eye className="h-5 w-5" />}
+                                {step.step === 1 && <MapPin className="h-4 w-4" />}
+                                {step.step === 2 && <FileText className="h-4 w-4" />}
+                                {step.step === 3 && <Eye className="h-4 w-4" />}
                               </div>
                             )}
                           </div>
                         </div>
 
                         {/* Content: Title + Badge */}
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
                           <h3
-                            className={`font-semibold text-sm mb-2 leading-tight ${
+                            className={`font-semibold text-sm leading-tight ${
                               step.status === "completed"
                                 ? "text-green-400"
                                 : step.status === "processing"
@@ -1218,7 +1212,7 @@ export default function PermitAdvisor() {
                           {/* Status Badge */}
                           <Badge
                             variant="secondary"
-                            className={`text-xs inline-flex ${
+                            className={`text-xs inline-flex shrink-0 ${
                               step.status === "completed"
                                 ? "bg-green-400/20 text-green-400 border-green-400/40"
                                 : step.status === "processing"
@@ -1229,17 +1223,6 @@ export default function PermitAdvisor() {
                             {step.estimatedTime}
                           </Badge>
                         </div>
-                      </div>
-
-                      {/* Progress Indicator */}
-                      <div className="mt-3">
-                        <Progress 
-                          value={step.progress} 
-                          className={`h-1.5 ${
-                            step.status === "completed" ? "bg-green-400/20" :
-                            step.status === "processing" ? "bg-cyan-400/20" : "bg-gray-600/20"
-                          }`}
-                        />
                       </div>
                     </div>
                   </div>
@@ -1816,7 +1799,7 @@ You can also drag & drop documents here (permits, plans, estimates)"
                 <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
                   <Search className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
-                <span className="text-center leading-tight">DeepSearch Results & Analysis</span>
+                <span className="text-center leading-tight">Results & Analysis</span>
               </CardTitle>
               <p className="text-gray-400 text-xs sm:text-sm mt-1 sm:mt-2 px-2">
                 Comprehensive permit requirements and analysis for your project
