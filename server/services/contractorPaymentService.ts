@@ -68,13 +68,36 @@ export class ContractorPaymentService {
   }
 
   /**
-   * Creates a payment record and Stripe payment link
+   * Creates a payment record and Stripe payment link using Stripe Connect
+   * Payments go directly to the contractor's connected Stripe account
    */
   async createProjectPayment(request: CreateProjectPaymentRequest): Promise<PaymentLinkResponse> {
     // Get project details
     const project = await storage.getProject(request.projectId);
     if (!project) {
       throw new Error('Project not found');
+    }
+
+    // Get user to retrieve their Stripe Connect account
+    const user = await storage.getUser(request.userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Check if user has a Stripe Connect account
+    if (!user.stripeConnectAccountId) {
+      throw new Error('Please connect your Stripe account in Settings before creating payment links');
+    }
+
+    // Verify the connected account is active
+    try {
+      const account = await stripe.accounts.retrieve(user.stripeConnectAccountId);
+      if (!account.charges_enabled) {
+        throw new Error('Please complete your Stripe account setup in Settings before creating payment links');
+      }
+    } catch (error: any) {
+      console.error('Error verifying Stripe Connect account:', error);
+      throw new Error('Invalid Stripe account. Please reconnect your account in Settings');
     }
 
     // Generate invoice number
@@ -96,7 +119,14 @@ export class ContractorPaymentService {
 
     const payment = await storage.createProjectPayment(paymentData);
 
-    // Create Stripe Checkout Session
+    // Determine the base URL for redirects
+    const baseUrl = process.env.REPLIT_DOMAINS 
+      ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
+      : (process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000');
+
+    // Create Stripe Checkout Session directly in the connected account
+    // For Express accounts, we create the session directly on their account
+    // All payments go directly to the contractor's bank account
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -113,22 +143,30 @@ export class ContractorPaymentService {
         },
       ],
       mode: 'payment',
-      success_url: `${process.env.APP_URL || 'http://localhost:5173'}/payment-success?payment_id=${payment.id}`,
-      cancel_url: `${process.env.APP_URL || 'http://localhost:5173'}/payment-tracker`,
+      success_url: `${baseUrl}/payment-success?payment_id=${payment.id}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/project-payments`,
       metadata: {
         paymentId: payment.id.toString(),
         projectId: request.projectId.toString(),
         userId: request.userId.toString(),
         type: request.type,
         invoiceNumber,
+        platformUserId: request.userId.toString(),
       },
       customer_email: request.clientEmail || project.clientEmail || undefined,
+    }, {
+      // Create the session directly on the connected account
+      // This ensures all funds go directly to the contractor
+      stripeAccount: user.stripeConnectAccountId,
     });
+
+    console.log(`✅ [PAYMENT-LINK] Created checkout session for connected account: ${user.stripeConnectAccountId}`);
 
     // Update payment with Stripe details
     await storage.updateProjectPayment(payment.id, {
       stripeCheckoutSessionId: session.id,
       checkoutUrl: session.url || '',
+      paymentLinkUrl: session.url || '',
     });
 
     return {

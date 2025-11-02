@@ -621,18 +621,19 @@ router.get("/stripe/account-status", isAuthenticated, async (req: Request, res: 
 });
 
 /**
- * Connect to Stripe - Real Production Implementation
- * NO AUTH REQUIRED: TEMPORARY HARDCODED USER FOR TESTING
+ * Connect to Stripe - Production Implementation with Real Authentication
+ * Creates or manages Stripe Express Connect accounts for contractors
  */
-router.post("/stripe/connect", async (req: Request, res: Response) => {
+router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    // TEMPORARY: Use hardcoded Firebase UID for your user
-    // TODO: Replace with proper session-based auth once Firebase session persists correctly
-    const firebaseUid = "qztot1YEy3UWz605gIH2iwwWhW53"; 
+    if (!req.firebaseUser) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
     
-    console.log("🔐 [STRIPE-CONNECT] Using hardcoded UID for testing:", firebaseUid);
+    const firebaseUid = req.firebaseUser.uid;
+    console.log("🔐 [STRIPE-CONNECT] Authenticated user:", firebaseUid);
     
-    // Import user mapping service to convert Firebase UID to database user ID
+    // Convert Firebase UID to database user ID
     const { userMappingService } = await import('../services/userMappingService');
     const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
     
@@ -656,34 +657,48 @@ router.post("/stripe/connect", async (req: Request, res: Response) => {
     
     let accountId = user.stripeConnectAccountId;
     
-    // If user already has a Stripe Connect account, create a new onboarding link
+    // If user already has a Stripe Connect account, check its status
     if (accountId) {
       try {
-        // Verify the account still exists
-        await stripe.accounts.retrieve(accountId);
+        // Verify the account still exists and get its status
+        const account = await stripe.accounts.retrieve(accountId);
         
-        // Create a new account link for re-onboarding
+        // Determine the appropriate link type based on account status
+        const linkType = account.details_submitted ? 'account_update' : 'account_onboarding';
+        
+        // Create account link for existing account
         const accountLink = await stripe.accountLinks.create({
           account: accountId,
           refresh_url: refreshUrl,
           return_url: returnUrl,
-          type: 'account_onboarding',
+          type: linkType,
         });
+        
+        console.log(`✅ [STRIPE-CONNECT] Existing account link created - Type: ${linkType}`);
         
         return res.json({
           success: true,
           url: accountLink.url,
           accountId: accountId,
-          message: "Stripe Connect onboarding link refreshed",
+          isExisting: true,
+          accountStatus: {
+            chargesEnabled: account.charges_enabled,
+            payoutsEnabled: account.payouts_enabled,
+            detailsSubmitted: account.details_submitted,
+          },
+          message: linkType === 'account_update' 
+            ? "Redirecting to manage your Stripe account" 
+            : "Complete your Stripe account setup",
         });
-      } catch (stripeError) {
-        // If account doesn't exist anymore, we'll create a new one below
-        console.log("Existing Stripe account not found, creating new one");
+      } catch (stripeError: any) {
+        // If account doesn't exist anymore, create a new one below
+        console.warn("⚠️ [STRIPE-CONNECT] Existing account not found, creating new one");
         accountId = null;
       }
     }
     
-    // Create a new Stripe Connect account
+    // Create a new Stripe Express Connect account
+    console.log("🆕 [STRIPE-CONNECT] Creating new Stripe Express account");
     const account = await stripe.accounts.create({
       type: 'express',
       email: user.email,
@@ -696,6 +711,7 @@ router.post("/stripe/connect", async (req: Request, res: Response) => {
       metadata: {
         firebase_uid: firebaseUid,
         user_id: dbUserId.toString(),
+        app: 'PermitAdvisor',
       }
     });
 
@@ -712,16 +728,19 @@ router.post("/stripe/connect", async (req: Request, res: Response) => {
       type: 'account_onboarding',
     });
     
+    console.log(`✅ [STRIPE-CONNECT] New account created: ${account.id}`);
+    
     res.json({
       success: true,
       url: accountLink.url,
       accountId: account.id,
-      message: "Stripe Connect account created successfully",
+      isExisting: false,
+      message: "Stripe Connect account created successfully. Complete setup to start receiving payments.",
     });
   } catch (error) {
-    console.error("Error creating Stripe connect:", error);
+    console.error("❌ [STRIPE-CONNECT] Error:", error);
     res.status(500).json({
-      message: "Error creating Stripe connect",
+      message: "Error setting up Stripe Connect",
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }

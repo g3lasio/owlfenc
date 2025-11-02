@@ -16,9 +16,9 @@ import {
   Shield,
   Building2,
   ExternalLink,
-  DollarSign,
-  TrendingUp,
   BarChart3,
+  Zap,
+  Link as LinkIcon,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -108,120 +108,257 @@ export default function PaymentSettings({
 
   return (
     <div className="space-y-6">
-      {/* Primary Bank Account Connection - ONLY Essential Functionality */}
+      {/* Header with Status Overview */}
+      <div className="bg-gradient-to-r from-cyan-900/20 to-blue-900/20 border border-cyan-700/50 rounded-lg p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+              <Building2 className="h-6 w-6 text-cyan-400" />
+              Payment Account Settings
+            </h3>
+            <p className="text-gray-300 text-sm">
+              Set up your Stripe Connect account to receive payments from clients
+            </p>
+          </div>
+          {getStripeStatusBadge()}
+        </div>
+      </div>
+
+      {/* Stripe Connect Account Setup */}
       <Card className="bg-gray-900 border-gray-700">
         <CardHeader>
-          <CardTitle className="text-cyan-400 flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Bank Account Connection
+          <CardTitle className="text-white flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-cyan-400" />
+            Stripe Connect Account
           </CardTitle>
           <CardDescription className="text-gray-400">
-            Connect your bank account to receive payments directly from clients
+            {!stripeAccountStatus?.hasStripeAccount 
+              ? "Create or connect your Stripe account to start accepting payments"
+              : needsSetup
+              ? "Complete your account setup to start receiving payments"
+              : isAccountActive
+              ? "Your account is active and ready to receive payments"
+              : "Reconnect your account to continue receiving payments"
+            }
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex items-center justify-between p-6 border border-gray-700 rounded-lg bg-gray-800">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-600/20 rounded-lg">
-                <CreditCard className="h-8 w-8 text-blue-400" />
-              </div>
-              <div>
-                <h4 className="font-medium text-white mb-1">Stripe Connect Account</h4>
-                <p className="text-sm text-gray-400">
-                  Process payments and receive funds instantly to your bank account
-                </p>
-                {stripeAccountStatus?.accountDetails && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Account ID: {stripeAccountStatus.accountDetails.id}
+          {/* Account Status Card */}
+          <div className="border border-gray-700 rounded-lg bg-gray-800/50 p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-lg ${
+                  isAccountActive 
+                    ? "bg-green-600/20" 
+                    : needsSetup 
+                    ? "bg-yellow-600/20" 
+                    : "bg-blue-600/20"
+                }`}>
+                  <CreditCard className={`h-8 w-8 ${
+                    isAccountActive 
+                      ? "text-green-400" 
+                      : needsSetup 
+                      ? "text-yellow-400" 
+                      : "text-blue-400"
+                  }`} />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-white mb-1">
+                    {!stripeAccountStatus?.hasStripeAccount 
+                      ? "No Account Connected"
+                      : isAccountActive
+                      ? "Account Active"
+                      : needsSetup
+                      ? "Setup In Progress"
+                      : "Reconnection Required"
+                    }
+                  </h4>
+                  <p className="text-sm text-gray-400 mb-2">
+                    {!stripeAccountStatus?.hasStripeAccount 
+                      ? "Click below to create a new Stripe account or connect an existing one"
+                      : isAccountActive
+                      ? "Your Stripe account is fully configured and accepting payments"
+                      : needsSetup
+                      ? "Complete the onboarding process to activate your account"
+                      : "Verify your account information to resume receiving payments"
+                    }
                   </p>
-                )}
+                  {stripeAccountStatus?.accountDetails && (
+                    <div className="flex flex-wrap gap-3 mt-3">
+                      <div className="text-xs">
+                        <span className="text-gray-500">Account ID:</span>{" "}
+                        <span className="text-gray-300 font-mono">{stripeAccountStatus.accountDetails.id}</span>
+                      </div>
+                      {stripeAccountStatus.accountDetails.country && (
+                        <div className="text-xs">
+                          <span className="text-gray-500">Country:</span>{" "}
+                          <span className="text-gray-300">{stripeAccountStatus.accountDetails.country}</span>
+                        </div>
+                      )}
+                      {stripeAccountStatus.accountDetails.defaultCurrency && (
+                        <div className="text-xs">
+                          <span className="text-gray-500">Currency:</span>{" "}
+                          <span className="text-gray-300">{stripeAccountStatus.accountDetails.defaultCurrency.toUpperCase()}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="flex flex-col items-end gap-3">
-              {getStripeStatusBadge()}
-              <div className="flex gap-2">
-                {isAccountActive && (
-                  <Button
-                    onClick={handleViewDashboard}
-                    className="bg-blue-600 text-white hover:bg-blue-700"
-                    disabled={isLoadingDashboard}
-                  >
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    {isLoadingDashboard ? "Loading..." : "View Dashboard"}
-                  </Button>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-3">
+              <Button
+                onClick={() => {
+                  console.log("💳 [STRIPE-CONNECT] Button clicked", {
+                    hasAccount: stripeAccountStatus?.hasStripeAccount,
+                    isActive: isAccountActive,
+                    accountDetails: stripeAccountStatus?.accountDetails
+                  });
+                  onConnectStripe();
+                }}
+                className={`${
+                  !stripeAccountStatus?.hasStripeAccount || needsSetup
+                    ? "bg-cyan-500 hover:bg-cyan-600 text-white"
+                    : "bg-gray-700 hover:bg-gray-600 text-white"
+                }`}
+                size="lg"
+                data-testid="button-connect-stripe"
+              >
+                {!stripeAccountStatus?.hasStripeAccount ? (
+                  <>
+                    <Zap className="h-4 w-4 mr-2" />
+                    Connect Stripe Account
+                  </>
+                ) : needsSetup ? (
+                  <>
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    Complete Setup
+                  </>
+                ) : isAccountActive ? (
+                  <>
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Manage Account
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    Reconnect
+                  </>
                 )}
+              </Button>
+
+              {isAccountActive && (
                 <Button
-                  onClick={() => {
-                    console.log("💳 [STRIPE-CONNECT] Button clicked", {
-                      hasAccount: stripeAccountStatus?.hasStripeAccount,
-                      isActive: isAccountActive,
-                      accountDetails: stripeAccountStatus?.accountDetails
-                    });
-                    onConnectStripe();
-                  }}
-                  className="bg-cyan-400 text-black hover:bg-cyan-300"
-                  disabled={false}
-                  data-testid="button-connect-stripe"
+                  onClick={handleViewDashboard}
+                  variant="outline"
+                  size="lg"
+                  disabled={isLoadingDashboard}
+                  className="border-gray-600 text-gray-300 hover:bg-gray-800"
                 >
-                  {!stripeAccountStatus?.hasStripeAccount 
-                    ? "Connect Bank Account"
-                    : needsSetup
-                    ? "Complete Setup"
-                    : isAccountActive
-                    ? "Manage Account"
-                    : "Reconnect"
-                  }
-                  <ExternalLink className="h-4 w-4 ml-2" />
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  {isLoadingDashboard ? "Loading..." : "View Stripe Dashboard"}
                 </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-cyan-900/10 border border-cyan-800/50 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Shield className="h-5 w-5 text-cyan-400 mt-0.5" />
+                <div>
+                  <h5 className="font-medium text-cyan-300 mb-1">Secure Payments</h5>
+                  <p className="text-sm text-gray-400">
+                    Bank-grade encryption and fraud protection for all transactions
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-green-900/10 border border-green-800/50 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="h-5 w-5 text-green-400 mt-0.5" />
+                <div>
+                  <h5 className="font-medium text-green-300 mb-1">Direct Deposits</h5>
+                  <p className="text-sm text-gray-400">
+                    Receive payments directly to your bank account automatically
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-blue-900/10 border border-blue-800/50 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <LinkIcon className="h-5 w-5 text-blue-400 mt-0.5" />
+                <div>
+                  <h5 className="font-medium text-blue-300 mb-1">Payment Links</h5>
+                  <p className="text-sm text-gray-400">
+                    Generate secure payment links to share with clients
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-purple-900/10 border border-purple-800/50 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <CreditCard className="h-5 w-5 text-purple-400 mt-0.5" />
+                <div>
+                  <h5 className="font-medium text-purple-300 mb-1">All Payment Methods</h5>
+                  <p className="text-sm text-gray-400">
+                    Accept credit cards, debit cards, and digital wallets
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Essential Features Only */}
-          <div className="bg-cyan-900/20 border border-cyan-700 p-4 rounded-lg">
-            <h5 className="font-medium text-cyan-400 mb-2 flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              What You Get
-            </h5>
-            <ul className="text-sm text-cyan-300 space-y-1">
-              <li>• Payments go directly to your bank account</li>
-              <li>• Support for all major credit cards and Apple Pay</li>
-              <li>• Automatic tax reporting</li>
-              <li>• Fraud protection</li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Payment Revenue Summary - Essential Metrics Only */}
-      <Card className="bg-gray-900 border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-cyan-400 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Revenue Overview
-          </CardTitle>
-          <CardDescription className="text-gray-400">
-            Track your payment performance
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-gray-800/50 rounded-lg">
-              <DollarSign className="h-8 w-8 text-cyan-400 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-white">$0</p>
-              <p className="text-sm text-gray-400">Total Revenue</p>
+          {/* Setup Steps (only show if not connected) */}
+          {!isAccountActive && (
+            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-5">
+              <h5 className="font-medium text-white mb-3 flex items-center gap-2">
+                <Clock className="h-4 w-4 text-cyan-400" />
+                Setup Process
+              </h5>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                    stripeAccountStatus?.hasStripeAccount ? "bg-green-600 text-white" : "bg-gray-600 text-gray-300"
+                  }`}>
+                    1
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">Connect Account</p>
+                    <p className="text-xs text-gray-400">Create or link your Stripe account</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                    needsSetup ? "bg-yellow-600 text-white" : stripeAccountStatus?.hasStripeAccount ? "bg-gray-600 text-gray-300" : "bg-gray-700 text-gray-400"
+                  }`}>
+                    2
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">Complete Information</p>
+                    <p className="text-xs text-gray-400">Provide business details and verify identity</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                    isAccountActive ? "bg-green-600 text-white" : "bg-gray-700 text-gray-400"
+                  }`}>
+                    3
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">Link Bank Account</p>
+                    <p className="text-xs text-gray-400">Add your bank account to receive payments</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="text-center p-4 bg-gray-800/50 rounded-lg">
-              <CheckCircle className="h-8 w-8 text-green-400 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-white">0</p>
-              <p className="text-sm text-gray-400">Paid Invoices</p>
-            </div>
-            <div className="text-center p-4 bg-gray-800/50 rounded-lg">
-              <Clock className="h-8 w-8 text-yellow-400 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-white">0</p>
-              <p className="text-sm text-gray-400">Pending Payments</p>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>
