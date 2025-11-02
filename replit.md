@@ -42,7 +42,7 @@ This AI-powered legal document and permit management platform automates tasks li
   - PDF se genera automáticamente con firmas, fechas y sello digital usando premiumPdfService
   - Método notifyRemainingParty reimplementado para Firebase (eliminada dependencia de PostgreSQL obsoleta)
   - Sistema de notificación funciona correctamente cuando primera parte firma
-  - PDF ATTACHMENT FIX: PDF se adjunta directamente al email del contractor (no solo link de descarga)
+  - PDF ATTACHMENT FIX (NOV 2025): PDF se adjunta directamente al email del contractor como archivo adjunto (no solo link de descarga) usando soporte nativo de Resend con type safety
 - COMPLETED CONTRACT DISPLAY FIX (NOV 2025): Corrección de visualización de datos en contratos completados:
   - Frontend normaliza Firestore Timestamps a ISO strings antes de display (eliminando "N/A" en fechas)
   - Backend normaliza totalAmount de strings legacy a números (eliminando costo "0" en contratos antiguos)
@@ -51,7 +51,14 @@ This AI-powered legal document and permit management platform automates tasks li
   - Manejo robusto de datos legacy (strings, timestamps, valores faltantes)
   - Normalización comprehensiva de fechas de firma (contractorSignedAt, clientSignedAt) eliminando "Invalid Date" en sección de firmas
   - Función normalizeTimestamp robusta que parsea Firestore Timestamps, strings legacy y maneja valores corruptos defensivamente (para endpoint /completed)
-  - Función convertFirestoreTimestamp robusta con validación comprehensiva para HTML view eliminando "Invalid Date" en vistas Share/View Contract (validación de Date objects, Firestore Timestamps, timestamps con seconds, y strings parseables)
+  - Función convertFirestoreTimestamp robusta con validación comprehensiva para HTML view eliminando "Invalid Date" en vistas Share/View Contract (validación de Date objects, Firestore Timestamps, timestamps con seconds, y strings parseables con isNaN() checks)
+- DUAL SIGNATURE EMAIL RESEND FIX (NOV 2025): Sistema de reenvío de emails de firma completamente corregido y funcional:
+  - Método sendDualNotifications() ahora es PUBLIC y acepta parámetros contractorSigned/clientSigned
+  - Verificación INTERNA en servicio: solo envía emails a partes que NO han firmado
+  - Endpoint /api/dual-signature/resend-links verifica estado de contrato Y pasa signature flags al servicio
+  - Doble capa de protección: verificación en route + verificación en service
+  - Logging claro de qué emails se enviaron y cuáles se saltaron
+  - Elimina completamente el bug de emails duplicados a partes que ya firmaron
 
 ## System Architecture
 
