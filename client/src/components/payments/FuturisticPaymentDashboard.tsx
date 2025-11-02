@@ -2,148 +2,347 @@ import React from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
-  DollarSign,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  AlertTriangle,
-  CreditCard,
-  Target,
   Activity,
 } from "lucide-react";
 
-// Futuristic Circular Chart Component
-interface CircularChartProps {
-  percentage: number;
-  size?: number;
-  strokeWidth?: number;
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  badge?: React.ReactNode;
-  colorScheme: 'cyan' | 'yellow' | 'green' | 'red';
+// Helper function to convert polar coordinates to cartesian
+function polarToCartesian(
+  centerX: number,
+  centerY: number,
+  radius: number,
+  angleInDegrees: number
+) {
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
+  return {
+    x: centerX + radius * Math.cos(angleInRadians),
+    y: centerY + radius * Math.sin(angleInRadians),
+  };
 }
 
-function CircularChart({ 
-  percentage, 
-  size = 180, 
-  strokeWidth = 12,
-  icon,
-  label,
-  value,
-  badge,
-  colorScheme
-}: CircularChartProps) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (percentage / 100) * circumference;
-  
-  // Color logic based on percentage (traffic light system)
-  const getColor = () => {
-    if (colorScheme === 'red') {
-      // Overdue: inverted logic - lower is better
-      if (percentage < 20) return { primary: '#10b981', glow: '#10b981' }; // Green
-      if (percentage < 50) return { primary: '#fbbf24', glow: '#fbbf24' }; // Yellow
-      return { primary: '#ef4444', glow: '#ef4444' }; // Red
-    }
-    
-    // Normal logic for other charts - higher is better
-    if (percentage >= 70) return { 
-      primary: colorScheme === 'cyan' ? '#06b6d4' : colorScheme === 'yellow' ? '#fbbf24' : '#10b981',
-      glow: colorScheme === 'cyan' ? '#06b6d4' : colorScheme === 'yellow' ? '#fbbf24' : '#10b981'
+// Helper function to create SVG arc path
+function createArcPath(
+  x: number,
+  y: number,
+  radius: number,
+  startAngle: number,
+  endAngle: number
+) {
+  const start = polarToCartesian(x, y, radius, endAngle);
+  const end = polarToCartesian(x, y, radius, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+  return [
+    "M",
+    start.x,
+    start.y,
+    "A",
+    radius,
+    radius,
+    0,
+    largeArcFlag,
+    0,
+    end.x,
+    end.y,
+  ].join(" ");
+}
+
+// Segment data interface
+interface Segment {
+  label: string;
+  value: number;
+  color: string;
+  glowColor: string;
+}
+
+// Unified Donut Chart Component
+interface UnifiedPaymentDonutProps {
+  segments: Segment[];
+  totalValue: number;
+  size?: number;
+  innerRadius?: number;
+  outerRadius?: number;
+}
+
+function UnifiedPaymentDonut({
+  segments,
+  totalValue,
+  size = 500,
+  innerRadius = 120,
+  outerRadius = 200,
+}: UnifiedPaymentDonutProps) {
+  const centerX = size / 2;
+  const centerY = size / 2;
+  const ringThickness = outerRadius - innerRadius;
+
+  // Calculate angles for each segment
+  let currentAngle = 0;
+  const segmentData = segments.map((segment) => {
+    const percentage = totalValue > 0 ? (segment.value / totalValue) * 100 : 0;
+    const angle = (percentage / 100) * 360;
+    const startAngle = currentAngle;
+    const endAngle = currentAngle + angle;
+    const midAngle = currentAngle + angle / 2;
+
+    currentAngle = endAngle;
+
+    return {
+      ...segment,
+      percentage,
+      startAngle,
+      endAngle,
+      midAngle,
     };
-    if (percentage >= 40) return { primary: '#fbbf24', glow: '#fbbf24' }; // Yellow
-    return { primary: '#ef4444', glow: '#ef4444' }; // Red
+  });
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount / 100);
   };
-  
-  const colors = getColor();
-  
+
+  // Label positions (outside the circle)
+  const labelRadius = outerRadius + 80;
+
   return (
-    <div className="relative flex flex-col items-center justify-center p-4">
-      {/* SVG Circular Chart */}
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} className="transform -rotate-90">
-          {/* Glow effect */}
-          <defs>
-            <filter id={`glow-${colorScheme}`}>
-              <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+    <div className="relative flex items-center justify-center w-full" style={{ minHeight: size + 200 }}>
+      <svg
+        width={size + 300}
+        height={size + 200}
+        viewBox={`0 0 ${size + 300} ${size + 200}`}
+        className="mx-auto"
+      >
+        <defs>
+          {/* Glow filters for each segment */}
+          {segmentData.map((segment, index) => (
+            <filter key={`glow-${index}`} id={`segment-glow-${index}`}>
+              <feGaussianBlur stdDeviation="4" result="coloredBlur" />
               <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
-            <linearGradient id={`gradient-${colorScheme}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style={{ stopColor: colors.primary, stopOpacity: 1 }} />
-              <stop offset="100%" style={{ stopColor: colors.glow, stopOpacity: 0.6 }} />
+          ))}
+
+          {/* Gradients for segments */}
+          {segmentData.map((segment, index) => (
+            <linearGradient
+              key={`gradient-${index}`}
+              id={`segment-gradient-${index}`}
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
+              <stop offset="0%" style={{ stopColor: segment.color, stopOpacity: 1 }} />
+              <stop offset="100%" style={{ stopColor: segment.glowColor, stopOpacity: 0.7 }} />
             </linearGradient>
-          </defs>
-          
-          {/* Background circle (track) */}
+          ))}
+
+          {/* Inner circle gradient */}
+          <radialGradient id="inner-gradient">
+            <stop offset="0%" style={{ stopColor: "#374151", stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: "#1f2937", stopOpacity: 1 }} />
+          </radialGradient>
+
+          {/* Starfield pattern */}
+          <pattern id="starfield" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+            <circle cx="10" cy="10" r="0.5" fill="#ffffff" opacity="0.3" />
+            <circle cx="50" cy="30" r="0.8" fill="#06b6d4" opacity="0.2" />
+            <circle cx="80" cy="70" r="0.6" fill="#ffffff" opacity="0.4" />
+            <circle cx="30" cy="85" r="0.4" fill="#10b981" opacity="0.3" />
+          </pattern>
+        </defs>
+
+        {/* Background starfield */}
+        <rect x="0" y="0" width={size + 300} height={size + 200} fill="url(#starfield)" opacity="0.3" />
+
+        {/* Main group - centered */}
+        <g transform={`translate(${(size + 300) / 2 - centerX}, 100)`}>
+          {/* Outer ring segments */}
+          {segmentData.map((segment, index) => {
+            // Create donut segment path
+            const outerArc = createArcPath(
+              centerX,
+              centerY,
+              outerRadius,
+              segment.startAngle,
+              segment.endAngle
+            );
+            const innerArc = createArcPath(
+              centerX,
+              centerY,
+              innerRadius,
+              segment.endAngle,
+              segment.startAngle
+            );
+
+            const outerStart = polarToCartesian(
+              centerX,
+              centerY,
+              outerRadius,
+              segment.endAngle
+            );
+            const innerStart = polarToCartesian(
+              centerX,
+              centerY,
+              innerRadius,
+              segment.endAngle
+            );
+
+            const donutPath = `
+              ${outerArc}
+              L ${innerStart.x} ${innerStart.y}
+              ${innerArc}
+              Z
+            `;
+
+            // Calculate label position
+            const labelPos = polarToCartesian(
+              centerX,
+              centerY,
+              labelRadius,
+              segment.midAngle
+            );
+
+            // Calculate connector line start (just outside outer radius)
+            const connectorStart = polarToCartesian(
+              centerX,
+              centerY,
+              outerRadius + 5,
+              segment.midAngle
+            );
+
+            // Determine text anchor based on position
+            const textAnchor = labelPos.x > centerX ? "start" : "end";
+            const textX = labelPos.x > centerX ? labelPos.x + 10 : labelPos.x - 10;
+
+            return (
+              <g key={index}>
+                {/* Segment path */}
+                <path
+                  d={donutPath}
+                  fill={`url(#segment-gradient-${index})`}
+                  stroke={segment.glowColor}
+                  strokeWidth="2"
+                  filter={`url(#segment-glow-${index})`}
+                  className="transition-all duration-500 hover:opacity-90 animate-in fade-in"
+                  style={{
+                    animationDelay: `${index * 0.1}s`,
+                  }}
+                />
+
+                {/* Glowing dot at segment edge */}
+                <circle
+                  cx={connectorStart.x}
+                  cy={connectorStart.y}
+                  r="4"
+                  fill={segment.color}
+                  filter={`url(#segment-glow-${index})`}
+                  className="animate-pulse"
+                />
+
+                {/* Connector line */}
+                <line
+                  x1={connectorStart.x}
+                  y1={connectorStart.y}
+                  x2={labelPos.x}
+                  y2={labelPos.y}
+                  stroke={segment.color}
+                  strokeWidth="1.5"
+                  opacity="0.6"
+                  strokeDasharray="4,2"
+                />
+
+                {/* Label */}
+                <g>
+                  <text
+                    x={textX}
+                    y={labelPos.y - 8}
+                    fill={segment.color}
+                    fontSize="16"
+                    fontWeight="600"
+                    textAnchor={textAnchor}
+                    className="font-sans"
+                  >
+                    {segment.label}
+                  </text>
+                  <text
+                    x={textX}
+                    y={labelPos.y + 10}
+                    fill="#ffffff"
+                    fontSize="18"
+                    fontWeight="700"
+                    textAnchor={textAnchor}
+                    className="font-sans"
+                  >
+                    {formatCurrency(segment.value)}
+                  </text>
+                  <text
+                    x={textX}
+                    y={labelPos.y + 26}
+                    fill="#9ca3af"
+                    fontSize="13"
+                    textAnchor={textAnchor}
+                    className="font-sans"
+                  >
+                    {segment.percentage.toFixed(1)}%
+                  </text>
+                </g>
+              </g>
+            );
+          })}
+
+          {/* Inner circle with gradient */}
           <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
+            cx={centerX}
+            cy={centerY}
+            r={innerRadius - 10}
+            fill="url(#inner-gradient)"
+            stroke="#4b5563"
+            strokeWidth="3"
+            opacity="0.9"
+          />
+
+          {/* Inner glow ring */}
+          <circle
+            cx={centerX}
+            cy={centerY}
+            r={innerRadius - 20}
             fill="none"
-            stroke="#1f2937"
-            strokeWidth={strokeWidth}
-            className="opacity-30"
+            stroke="#06b6d4"
+            strokeWidth="1"
+            opacity="0.3"
+            className="animate-pulse"
           />
-          
-          {/* Segmented progress circle with holographic effect */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={`url(#gradient-${colorScheme})`}
-            strokeWidth={strokeWidth}
-            strokeDasharray={`${circumference} ${circumference}`}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-            className="transition-all duration-1000 ease-out"
-            filter={`url(#glow-${colorScheme})`}
-            style={{
-              transformOrigin: 'center',
-            }}
-          />
-          
-          {/* Pulsing inner circle for holographic effect */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius - strokeWidth - 5}
-            fill={colors.primary}
-            className="opacity-5 animate-pulse"
-          />
-        </svg>
-        
-        {/* Center content */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="mb-2" style={{ color: colors.primary }}>
-            {icon}
-          </div>
-          <p className="text-3xl font-bold text-white">
-            {percentage}%
-          </p>
-        </div>
-      </div>
-      
-      {/* Label and value */}
-      <div className="text-center mt-4 space-y-2">
-        <p className="text-sm font-medium" style={{ color: colors.primary }}>
-          {label}
-        </p>
-        <p className="text-2xl font-bold text-white">
-          {value}
-        </p>
-        {badge && <div className="flex justify-center">{badge}</div>}
-      </div>
+
+          {/* Total value in center */}
+          <text
+            x={centerX}
+            y={centerY - 15}
+            fill="#9ca3af"
+            fontSize="16"
+            fontWeight="500"
+            textAnchor="middle"
+            className="font-sans"
+          >
+            Total Payments
+          </text>
+          <text
+            x={centerX}
+            y={centerY + 15}
+            fill="#ffffff"
+            fontSize="32"
+            fontWeight="700"
+            textAnchor="middle"
+            className="font-sans"
+          >
+            {formatCurrency(totalValue)}
+          </text>
+        </g>
+      </svg>
     </div>
   );
 }
@@ -166,19 +365,6 @@ export default function FuturisticPaymentDashboard({
   paymentSummary,
   isLoading,
 }: FuturisticPaymentDashboardProps) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount / 100);
-  };
-
-  const calculatePercentage = (value: number, total: number) => {
-    if (total === 0) return 0;
-    return Math.round((value / total) * 100);
-  };
-
-  // Use only REAL data from Firebase/database - NO MOCK DATA
   const displaySummary = paymentSummary;
 
   if (isLoading) {
@@ -195,118 +381,52 @@ export default function FuturisticPaymentDashboard({
     );
   }
 
-  // Calculate dynamic percentages for circular charts
-  const revenuePercentage = displaySummary.totalRevenue > 0 
-    ? Math.min(100, calculatePercentage(displaySummary.totalPaid, displaySummary.totalRevenue))
-    : 0;
-  
-  const pendingPercentage = displaySummary.totalRevenue > 0
-    ? calculatePercentage(displaySummary.totalPending, displaySummary.totalRevenue)
-    : 0;
-  
-  const paidMonthPercentage = displaySummary.totalRevenue > 0
-    ? calculatePercentage(displaySummary.totalPaid, displaySummary.totalRevenue)
-    : 0;
-  
-  const overduePercentage = displaySummary.totalRevenue > 0
-    ? calculatePercentage(displaySummary.totalOverdue, displaySummary.totalRevenue)
-    : 0;
+  // Calculate total for the unified chart
+  const totalValue =
+    displaySummary.totalRevenue +
+    displaySummary.totalPending +
+    displaySummary.totalPaid +
+    displaySummary.totalOverdue;
+
+  // Define segments with colors (matching reference image aesthetic)
+  const segments: Segment[] = [
+    {
+      label: "Total Revenue",
+      value: displaySummary.totalRevenue,
+      color: "#06b6d4", // Cyan
+      glowColor: "#22d3ee",
+    },
+    {
+      label: "Pending Payments",
+      value: displaySummary.totalPending,
+      color: "#fbbf24", // Yellow
+      glowColor: "#fcd34d",
+    },
+    {
+      label: "Paid This Month",
+      value: displaySummary.totalPaid,
+      color: "#10b981", // Green
+      glowColor: "#34d399",
+    },
+    {
+      label: "Overdue",
+      value: displaySummary.totalOverdue,
+      color: "#ef4444", // Red
+      glowColor: "#f87171",
+    },
+  ];
 
   return (
     <div className="space-y-6">
-      {/* Futuristic Circular Charts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        {/* Total Revenue Chart */}
-        <Card 
-          className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-cyan-700/30 shadow-xl shadow-cyan-500/10"
-          data-testid="card-revenue-chart"
-        >
-          <CardContent className="p-2">
-            <CircularChart
-              percentage={revenuePercentage}
-              icon={<DollarSign className="h-10 w-10" />}
-              label="Revenue Collected"
-              value={formatCurrency(displaySummary.totalRevenue)}
-              badge={
-                <Badge variant="default" className="bg-cyan-600/20 text-cyan-400 border-cyan-500/30">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  Total Revenue
-                </Badge>
-              }
-              colorScheme="cyan"
-            />
-          </CardContent>
-        </Card>
-
-        {/* Pending Payments Chart */}
-        <Card 
-          className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-yellow-700/30 shadow-xl shadow-yellow-500/10"
-          data-testid="card-pending-chart"
-        >
-          <CardContent className="p-2">
-            <CircularChart
-              percentage={pendingPercentage}
-              icon={<Clock className="h-10 w-10" />}
-              label="Pending Payments"
-              value={formatCurrency(displaySummary.totalPending)}
-              badge={
-                <Badge variant="secondary" className="bg-yellow-600/20 text-yellow-400 border-yellow-500/30">
-                  {displaySummary.pendingCount} invoices
-                </Badge>
-              }
-              colorScheme="yellow"
-            />
-          </CardContent>
-        </Card>
-
-        {/* Paid This Month Chart */}
-        <Card 
-          className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-green-700/30 shadow-xl shadow-green-500/10"
-          data-testid="card-paid-chart"
-        >
-          <CardContent className="p-2">
-            <CircularChart
-              percentage={paidMonthPercentage}
-              icon={<CheckCircle className="h-10 w-10" />}
-              label="Paid This Month"
-              value={formatCurrency(displaySummary.totalPaid)}
-              badge={
-                <Badge variant="default" className="bg-green-600/20 text-green-400 border-green-500/30">
-                  {displaySummary.paidCount} payments
-                </Badge>
-              }
-              colorScheme="green"
-            />
-          </CardContent>
-        </Card>
-
-        {/* Overdue Payments Chart */}
-        <Card 
-          className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-red-700/30 shadow-xl shadow-red-500/10"
-          data-testid="card-overdue-chart"
-        >
-          <CardContent className="p-2">
-            <CircularChart
-              percentage={overduePercentage}
-              icon={<AlertTriangle className="h-10 w-10" />}
-              label="Overdue"
-              value={formatCurrency(displaySummary.totalOverdue)}
-              badge={
-                displaySummary.totalOverdue > 0 ? (
-                  <Badge variant="destructive" className="bg-red-600/20 text-red-400 border-red-500/30">
-                    Action needed
-                  </Badge>
-                ) : (
-                  <Badge variant="default" className="bg-gray-600/20 text-gray-400 border-gray-500/30">
-                    All current
-                  </Badge>
-                )
-              }
-              colorScheme="red"
-            />
-          </CardContent>
-        </Card>
-      </div>
+      {/* Unified Futuristic Donut Chart */}
+      <Card
+        className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-gray-700/50 shadow-2xl"
+        data-testid="card-unified-payment-donut"
+      >
+        <CardContent className="p-8">
+          <UnifiedPaymentDonut segments={segments} totalValue={totalValue} />
+        </CardContent>
+      </Card>
     </div>
   );
 }
