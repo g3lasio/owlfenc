@@ -48,6 +48,8 @@ This AI-powered legal document and permit management platform automates tasks li
   - Sistema dual de normalización garantiza consistencia entre frontend y backend
   - Logging condicional solo en development para evitar exposición de PII en producción
   - Manejo robusto de datos legacy (strings, timestamps, valores faltantes)
+  - Normalización comprehensiva de fechas de firma (contractorSignedAt, clientSignedAt) eliminando "Invalid Date" en sección de firmas
+  - Función normalizeTimestamp robusta que parsea Firestore Timestamps, strings legacy y maneja valores corruptos defensivamente
 
 ## System Architecture
 
