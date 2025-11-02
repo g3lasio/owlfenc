@@ -18,6 +18,136 @@ import {
   Activity,
 } from "lucide-react";
 
+// Futuristic Circular Chart Component
+interface CircularChartProps {
+  percentage: number;
+  size?: number;
+  strokeWidth?: number;
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  badge?: React.ReactNode;
+  colorScheme: 'cyan' | 'yellow' | 'green' | 'red';
+}
+
+function CircularChart({ 
+  percentage, 
+  size = 180, 
+  strokeWidth = 12,
+  icon,
+  label,
+  value,
+  badge,
+  colorScheme
+}: CircularChartProps) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percentage / 100) * circumference;
+  
+  // Color logic based on percentage (traffic light system)
+  const getColor = () => {
+    if (colorScheme === 'red') {
+      // Overdue: inverted logic - lower is better
+      if (percentage < 20) return { primary: '#10b981', glow: '#10b981' }; // Green
+      if (percentage < 50) return { primary: '#fbbf24', glow: '#fbbf24' }; // Yellow
+      return { primary: '#ef4444', glow: '#ef4444' }; // Red
+    }
+    
+    // Normal logic for other charts - higher is better
+    if (percentage >= 70) return { 
+      primary: colorScheme === 'cyan' ? '#06b6d4' : colorScheme === 'yellow' ? '#fbbf24' : '#10b981',
+      glow: colorScheme === 'cyan' ? '#06b6d4' : colorScheme === 'yellow' ? '#fbbf24' : '#10b981'
+    };
+    if (percentage >= 40) return { primary: '#fbbf24', glow: '#fbbf24' }; // Yellow
+    return { primary: '#ef4444', glow: '#ef4444' }; // Red
+  };
+  
+  const colors = getColor();
+  
+  return (
+    <div className="relative flex flex-col items-center justify-center p-4">
+      {/* SVG Circular Chart */}
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="transform -rotate-90">
+          {/* Glow effect */}
+          <defs>
+            <filter id={`glow-${colorScheme}`}>
+              <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+            <linearGradient id={`gradient-${colorScheme}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style={{ stopColor: colors.primary, stopOpacity: 1 }} />
+              <stop offset="100%" style={{ stopColor: colors.glow, stopOpacity: 0.6 }} />
+            </linearGradient>
+          </defs>
+          
+          {/* Background circle (track) */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="#1f2937"
+            strokeWidth={strokeWidth}
+            className="opacity-30"
+          />
+          
+          {/* Segmented progress circle with holographic effect */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke={`url(#gradient-${colorScheme})`}
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${circumference} ${circumference}`}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            className="transition-all duration-1000 ease-out"
+            filter={`url(#glow-${colorScheme})`}
+            style={{
+              transformOrigin: 'center',
+            }}
+          />
+          
+          {/* Pulsing inner circle for holographic effect */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius - strokeWidth - 5}
+            fill={colors.primary}
+            className="opacity-5 animate-pulse"
+          />
+        </svg>
+        
+        {/* Center content */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <div className="mb-2" style={{ color: colors.primary }}>
+            {icon}
+          </div>
+          <p className="text-3xl font-bold text-white">
+            {percentage}%
+          </p>
+        </div>
+      </div>
+      
+      {/* Label and value */}
+      <div className="text-center mt-4 space-y-2">
+        <p className="text-sm font-medium" style={{ color: colors.primary }}>
+          {label}
+        </p>
+        <p className="text-2xl font-bold text-white">
+          {value}
+        </p>
+        {badge && <div className="flex justify-center">{badge}</div>}
+      </div>
+    </div>
+  );
+}
+
 type PaymentSummary = {
   totalPending: number;
   totalPaid: number;
@@ -48,10 +178,6 @@ export default function FuturisticPaymentDashboard({
     return Math.round((value / total) * 100);
   };
 
-  const totalTransactions = paymentSummary.pendingCount + paymentSummary.paidCount;
-  const paidPercentage = calculatePercentage(paymentSummary.paidCount, totalTransactions);
-  const pendingPercentage = calculatePercentage(paymentSummary.pendingCount, totalTransactions);
-
   // Use only REAL data from Firebase/database - NO MOCK DATA
   const displaySummary = paymentSummary;
 
@@ -69,184 +195,118 @@ export default function FuturisticPaymentDashboard({
     );
   }
 
+  // Calculate dynamic percentages for circular charts
+  const revenuePercentage = displaySummary.totalRevenue > 0 
+    ? Math.min(100, calculatePercentage(displaySummary.totalPaid, displaySummary.totalRevenue))
+    : 0;
+  
+  const pendingPercentage = displaySummary.totalRevenue > 0
+    ? calculatePercentage(displaySummary.totalPending, displaySummary.totalRevenue)
+    : 0;
+  
+  const paidMonthPercentage = displaySummary.totalRevenue > 0
+    ? calculatePercentage(displaySummary.totalPaid, displaySummary.totalRevenue)
+    : 0;
+  
+  const overduePercentage = displaySummary.totalRevenue > 0
+    ? calculatePercentage(displaySummary.totalOverdue, displaySummary.totalRevenue)
+    : 0;
+
   return (
     <div className="space-y-6">
-      {/* Main Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Total Revenue */}
-        <Card className="bg-gradient-to-br from-cyan-900/20 to-cyan-800/10 border-cyan-700/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-cyan-400 mb-1">Total Revenue</p>
-                <p className="text-2xl font-bold text-white">
-                  {formatCurrency(displaySummary.totalRevenue)}
-                </p>
-                <div className="flex items-center mt-2">
-                  <TrendingUp className="h-4 w-4 text-green-400 mr-1" />
-                  <span className="text-sm text-green-400">+12.5% this month</span>
-                </div>
-              </div>
-              <div className="p-3 bg-cyan-600/20 rounded-full">
-                <DollarSign className="h-8 w-8 text-cyan-400" />
-              </div>
-            </div>
+      {/* Futuristic Circular Charts Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {/* Total Revenue Chart */}
+        <Card 
+          className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-cyan-700/30 shadow-xl shadow-cyan-500/10"
+          data-testid="card-revenue-chart"
+        >
+          <CardContent className="p-2">
+            <CircularChart
+              percentage={revenuePercentage}
+              icon={<DollarSign className="h-10 w-10" />}
+              label="Revenue Collected"
+              value={formatCurrency(displaySummary.totalRevenue)}
+              badge={
+                <Badge variant="default" className="bg-cyan-600/20 text-cyan-400 border-cyan-500/30">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  Total Revenue
+                </Badge>
+              }
+              colorScheme="cyan"
+            />
           </CardContent>
         </Card>
 
-        {/* Pending Payments */}
-        <Card className="bg-gradient-to-br from-yellow-900/20 to-yellow-800/10 border-yellow-700/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-yellow-400 mb-1">Pending Payments</p>
-                <p className="text-2xl font-bold text-white">
-                  {formatCurrency(displaySummary.totalPending)}
-                </p>
-                <div className="flex items-center mt-2">
-                  <Badge variant="secondary" className="bg-yellow-600/20 text-yellow-400">
-                    {displaySummary.pendingCount} invoices
+        {/* Pending Payments Chart */}
+        <Card 
+          className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-yellow-700/30 shadow-xl shadow-yellow-500/10"
+          data-testid="card-pending-chart"
+        >
+          <CardContent className="p-2">
+            <CircularChart
+              percentage={pendingPercentage}
+              icon={<Clock className="h-10 w-10" />}
+              label="Pending Payments"
+              value={formatCurrency(displaySummary.totalPending)}
+              badge={
+                <Badge variant="secondary" className="bg-yellow-600/20 text-yellow-400 border-yellow-500/30">
+                  {displaySummary.pendingCount} invoices
+                </Badge>
+              }
+              colorScheme="yellow"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Paid This Month Chart */}
+        <Card 
+          className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-green-700/30 shadow-xl shadow-green-500/10"
+          data-testid="card-paid-chart"
+        >
+          <CardContent className="p-2">
+            <CircularChart
+              percentage={paidMonthPercentage}
+              icon={<CheckCircle className="h-10 w-10" />}
+              label="Paid This Month"
+              value={formatCurrency(displaySummary.totalPaid)}
+              badge={
+                <Badge variant="default" className="bg-green-600/20 text-green-400 border-green-500/30">
+                  {displaySummary.paidCount} payments
+                </Badge>
+              }
+              colorScheme="green"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Overdue Payments Chart */}
+        <Card 
+          className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-red-700/30 shadow-xl shadow-red-500/10"
+          data-testid="card-overdue-chart"
+        >
+          <CardContent className="p-2">
+            <CircularChart
+              percentage={overduePercentage}
+              icon={<AlertTriangle className="h-10 w-10" />}
+              label="Overdue"
+              value={formatCurrency(displaySummary.totalOverdue)}
+              badge={
+                displaySummary.totalOverdue > 0 ? (
+                  <Badge variant="destructive" className="bg-red-600/20 text-red-400 border-red-500/30">
+                    Action needed
                   </Badge>
-                </div>
-              </div>
-              <div className="p-3 bg-yellow-600/20 rounded-full">
-                <Clock className="h-8 w-8 text-yellow-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Paid Payments */}
-        <Card className="bg-gradient-to-br from-green-900/20 to-green-800/10 border-green-700/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-green-400 mb-1">Paid This Month</p>
-                <p className="text-2xl font-bold text-white">
-                  {formatCurrency(displaySummary.totalPaid)}
-                </p>
-                <div className="flex items-center mt-2">
-                  <Badge variant="default" className="bg-green-600/20 text-green-400">
-                    {displaySummary.paidCount} payments
+                ) : (
+                  <Badge variant="default" className="bg-gray-600/20 text-gray-400 border-gray-500/30">
+                    All current
                   </Badge>
-                </div>
-              </div>
-              <div className="p-3 bg-green-600/20 rounded-full">
-                <CheckCircle className="h-8 w-8 text-green-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Overdue Payments */}
-        <Card className="bg-gradient-to-br from-red-900/20 to-red-800/10 border-red-700/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-red-400 mb-1">Overdue</p>
-                <p className="text-2xl font-bold text-white">
-                  {formatCurrency(displaySummary.totalOverdue)}
-                </p>
-                <div className="flex items-center mt-2">
-                  {displaySummary.totalOverdue > 0 ? (
-                    <Badge variant="destructive" className="bg-red-600/20 text-red-400">
-                      Action needed
-                    </Badge>
-                  ) : (
-                    <Badge variant="default" className="bg-gray-600/20 text-gray-400">
-                      All current
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              <div className="p-3 bg-red-600/20 rounded-full">
-                <AlertTriangle className="h-8 w-8 text-red-400" />
-              </div>
-            </div>
+                )
+              }
+              colorScheme="red"
+            />
           </CardContent>
         </Card>
       </div>
-
-      {/* Performance Overview */}
-      <Card className="bg-gray-900 border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-cyan-400 flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Payment Performance
-          </CardTitle>
-          <CardDescription className="text-gray-400">
-            Quick overview of your payment metrics and collection efficiency
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Progress Bars */}
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-white">Payment Success Rate</span>
-                <span className="text-cyan-400">{paidPercentage}%</span>
-              </div>
-              <div className="w-full bg-gray-700 rounded-full h-3">
-                <div
-                  className="bg-gradient-to-r from-cyan-400 to-cyan-600 h-3 rounded-full transition-all duration-500"
-                  style={{ width: `${paidPercentage}%` }}
-                ></div>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-white">Collection Efficiency</span>
-                <span className="text-green-400">87%</span>
-              </div>
-              <div className="w-full bg-gray-700 rounded-full h-3">
-                <div
-                  className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-500"
-                  style={{ width: "87%" }}
-                ></div>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-white">Average Payment Time</span>
-                <span className="text-blue-400">5.2 days</span>
-              </div>
-              <div className="w-full bg-gray-700 rounded-full h-3">
-                <div
-                  className="bg-gradient-to-r from-blue-400 to-blue-600 h-3 rounded-full transition-all duration-500"
-                  style={{ width: "72%" }}
-                ></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-700">
-            <div className="text-center p-4 bg-gray-800/50 rounded-lg">
-              <div className="flex items-center justify-center mb-2">
-                <Target className="h-6 w-6 text-cyan-400" />
-              </div>
-              <p className="text-2xl font-bold text-white">92%</p>
-              <p className="text-sm text-gray-400">Payment Accuracy</p>
-            </div>
-            <div className="text-center p-4 bg-gray-800/50 rounded-lg">
-              <div className="flex items-center justify-center mb-2">
-                <CreditCard className="h-6 w-6 text-green-400" />
-              </div>
-              <p className="text-2xl font-bold text-white">$1,847</p>
-              <p className="text-sm text-gray-400">Average Invoice</p>
-            </div>
-            <div className="text-center p-4 bg-gray-800/50 rounded-lg">
-              <div className="flex items-center justify-center mb-2">
-                <Clock className="h-6 w-6 text-blue-400" />
-              </div>
-              <p className="text-2xl font-bold text-white">3.1</p>
-              <p className="text-sm text-gray-400">Days to Payment</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
