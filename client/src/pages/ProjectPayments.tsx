@@ -542,6 +542,58 @@ const ProjectPayments: React.FC = () => {
     }
   };
 
+  // Calculate payment summary from Firebase projects
+  const calculatedSummary = React.useMemo(() => {
+    if (!projects || projects.length === 0) {
+      return {
+        totalRevenue: 0,
+        totalPending: 0,
+        totalPaid: 0,
+        totalOverdue: 0,
+        pendingCount: 0,
+        paidCount: 0,
+      };
+    }
+
+    let totalRevenue = 0;
+    let totalPending = 0;
+    let totalPaid = 0;
+    let totalOverdue = 0;
+    let pendingCount = 0;
+    let paidCount = 0;
+
+    projects.forEach((project) => {
+      const amount = project.totalPrice || 0;
+      
+      // Categorize based on payment status
+      const status = (project.paymentStatus || 'pending').toLowerCase();
+      
+      if (status === 'paid' || status === 'completed') {
+        totalPaid += amount;
+        paidCount++;
+      } else if (status === 'overdue') {
+        totalOverdue += amount;
+      } else {
+        totalPending += amount;
+        pendingCount++;
+      }
+      
+      // Total revenue is all projects
+      totalRevenue += amount;
+    });
+
+    console.log('💰 [PAYMENT-SUMMARY]', { totalRevenue, totalPending, totalPaid, totalOverdue, pendingCount, paidCount });
+
+    return {
+      totalRevenue,
+      totalPending,
+      totalPaid,
+      totalOverdue,
+      pendingCount,
+      paidCount,
+    };
+  }, [projects]);
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -557,6 +609,7 @@ const ProjectPayments: React.FC = () => {
       queryKey: ["/api/contractor-payments/dashboard/summary"],
     });
     queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+    queryClient.invalidateQueries({ queryKey: ["/firebase/projects-and-estimates"] });
   };
 
   // Check for data loading errors
@@ -693,14 +746,12 @@ const ProjectPayments: React.FC = () => {
         </div>
 
         {/* Futuristic Dashboard */}
-        {paymentSummary && (
-          <div className="mb-8">
-            <FuturisticPaymentDashboard
-              paymentSummary={paymentSummary}
-              isLoading={summaryLoading}
-            />
-          </div>
-        )}
+        <div className="mb-8">
+          <FuturisticPaymentDashboard
+            paymentSummary={calculatedSummary}
+            isLoading={projectsLoading}
+          />
+        </div>
 
         {/* Error State */}
         {hasDataErrors && (
