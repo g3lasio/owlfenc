@@ -134,7 +134,7 @@ export async function apiRequest(
       });
 
       // Timeout EXTENDIDO para operaciones DeepSearch intensivas (Reality Validation puede tomar hasta 2 minutos)
-      const timeoutMs = url.includes('deepsearch') || url.includes('labor-deepsearch') ? 120000 : 10000;
+      const timeoutMs = url.includes('deepsearch') || url.includes('labor-deepsearch') || url.includes('/permit/') ? 120000 : 10000;
       const res = await safeTimeout(fetchPromise, timeoutMs);
       
       clearTimeout(timeoutId); // Limpiar timeout
