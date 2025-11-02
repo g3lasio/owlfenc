@@ -536,16 +536,32 @@ router.get("/completed/:userId", requireAuth, async (req, res) => {
         return 0;
       };
       
-      // Handle completion date - could be string or Timestamp
-      let completionDateISO = null;
-      if (data.completionDate) {
-        if (typeof data.completionDate === 'string') {
-          completionDateISO = data.completionDate;
-        } else if (data.completionDate.toDate) {
-          completionDateISO = data.completionDate.toDate().toISOString();
+      // Normalize date fields - handles Firestore Timestamp, strings, and legacy formats
+      const normalizeTimestamp = (value: any): string | null => {
+        if (!value) return null;
+        
+        // If it's a Firestore Timestamp, convert to ISO string
+        if (value.toDate && typeof value.toDate === 'function') {
+          return value.toDate().toISOString();
         }
-      } else if (data.updatedAt?.toDate) {
-        completionDateISO = data.updatedAt.toDate().toISOString();
+        
+        // If it's a string, try to parse and normalize to ISO
+        if (typeof value === 'string') {
+          const parsed = new Date(value);
+          if (!isNaN(parsed.getTime())) {
+            return parsed.toISOString();
+          }
+          // If parsing failed, return null instead of invalid string
+          return null;
+        }
+        
+        return null;
+      };
+
+      // Handle completion date - could be string or Timestamp
+      let completionDateISO = normalizeTimestamp(data.completionDate);
+      if (!completionDateISO && data.updatedAt) {
+        completionDateISO = normalizeTimestamp(data.updatedAt);
       }
       
       // 🔍 DEBUG (development only): Log contract data to help identify issues
@@ -557,6 +573,8 @@ router.get("/completed/:userId", requireAuth, async (req, res) => {
           totalAmountType: typeof data.totalAmount,
           completionDate: completionDateISO,
           hasCompletionDate: !!data.completionDate,
+          contractorSignedAt: normalizeTimestamp(data.contractorSignedAt),
+          clientSignedAt: normalizeTimestamp(data.clientSignedAt),
           status: data.status
         });
       }
@@ -571,8 +589,8 @@ router.get("/completed/:userId", requireAuth, async (req, res) => {
         isDownloadable: true,
         contractorSigned: data.contractorSigned || false,
         clientSigned: data.clientSigned || false,
-        contractorSignedAt: data.contractorSignedAt,
-        clientSignedAt: data.clientSignedAt,
+        contractorSignedAt: normalizeTimestamp(data.contractorSignedAt),
+        clientSignedAt: normalizeTimestamp(data.clientSignedAt),
         createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
         completionDate: completionDateISO,
         hasPdf: data.hasPdf || !!data.pdfUrl || !!data.permanentPdfUrl,
