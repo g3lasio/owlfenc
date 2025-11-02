@@ -65,6 +65,13 @@ This AI-powered legal document and permit management platform automates tasks li
   - Doble capa de protección: verificación en route + verificación en service
   - Logging claro de qué emails se enviaron y cuáles se saltaron
   - Elimina completamente el bug de emails duplicados a partes que ya firmaron
+- DOWNLOAD BUTTON FUNCTIONALITY FIX (NOV 2025): Botón Download corregido para descargar directamente sin abrir diálogos de compartir:
+  - Función downloadSignedPdf completamente refactorizada para SOLO descargar archivo PDF
+  - Eliminado Web Share API del botón Download (ahora exclusivo del botón Share)
+  - Descarga directa usando createElement("a") con atributo download en todos los dispositivos
+  - Comportamiento consistente en desktop, móvil y tablet
+  - Botón Download ahora cumple exclusivamente su función: descargar el PDF localmente
+  - Botón Share mantiene funcionalidad de Web Share API para compartir el archivo
 
 ## System Architecture
 

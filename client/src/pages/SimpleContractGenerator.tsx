@@ -982,114 +982,27 @@ export default function SimpleContractGenerator() {
           const pdfBlob = await pdfResponse.blob();
           const fileName = `contract_${clientName.replace(/\s+/g, "_")}_signed.pdf`;
 
-          // Detect if user is on mobile/tablet device
-          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
-                          ('ontouchstart' in window) ||
-                          (navigator.maxTouchPoints > 0);
+          // ✅ CRITICAL FIX: DOWNLOAD ONLY - No Web Share API, no popups
+          // This button should ONLY download the file directly
+          const url = window.URL.createObjectURL(pdfBlob);
+          const a = document.createElement("a");
+          a.style.display = "none";
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
           
-          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-          const isIPadOS = navigator.userAgent.includes('Mac') && 'ontouchend' in document;
-
-          // Handle PDF based on device type
-          if (isMobile || isIOS || isIPadOS) {
-            // Mobile/Tablet: Try Web Share API first
-            const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
-            
-            // Check if Web Share API is available and supports files
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-              try {
-                await navigator.share({
-                  title: 'Signed Contract PDF',
-                  text: `Signed contract for ${clientName}`,
-                  files: [file]
-                });
-                
-                console.log("✅ PDF shared successfully via Web Share API");
-                toast({
-                  title: "✅ PDF Ready",
-                  description: "Choose where to save or share your signed contract",
-                });
-              } catch (shareError: any) {
-                // User cancelled share or error occurred
-                if (shareError.name !== 'AbortError') {
-                  console.error('Share failed, falling back:', shareError);
-                  // Fallback to opening in new tab
-                  const url = window.URL.createObjectURL(pdfBlob);
-                  const newTab = window.open(url, '_blank');
-                  
-                  if (newTab) {
-                    toast({
-                      title: "📄 PDF Opened",
-                      description: isIOS || isIPadOS 
-                        ? "Tap the share button (↗) to save to Files or share" 
-                        : "Use the menu (⋮) to download or share",
-                    });
-                  } else {
-                    // If popup was blocked, create a download link
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = fileName;
-                    a.style.display = 'none';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    
-                    toast({
-                      title: "📥 PDF Downloaded",
-                      description: "Check your Downloads folder or Files app",
-                    });
-                  }
-                  
-                  setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-                }
-              }
-            } else {
-              // Web Share API not available - open in new tab
-              const url = window.URL.createObjectURL(pdfBlob);
-              const newTab = window.open(url, '_blank');
-              
-              if (newTab) {
-                toast({
-                  title: "📄 PDF Opened",
-                  description: isIOS || isIPadOS 
-                    ? "Tap the share button (↗) to save to Files or share" 
-                    : "Use the menu (⋮) to download or share",
-                });
-              } else {
-                // Popup blocked - try download
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                
-                toast({
-                  title: "📥 PDF Downloaded",
-                  description: "Check your Downloads or Files app",
-                });
-              }
-              
-              setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-            }
-          } else {
-            // Desktop: Traditional download
-            const url = window.URL.createObjectURL(pdfBlob);
-            const a = document.createElement("a");
-            a.style.display = "none";
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
+          // Clean up
+          setTimeout(() => {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
+          }, 100);
 
-            console.log("✅ PDF downloaded successfully from signed HTML content");
-            toast({
-              title: "✅ PDF Downloaded",
-              description: `Signed contract for ${clientName} saved to Downloads`,
-            });
-          }
+          console.log("✅ [PDF-DOWNLOAD] PDF downloaded successfully to device");
+          toast({
+            title: "✅ PDF Downloaded",
+            description: `Signed contract for ${clientName} saved to Downloads`,
+          });
         } else {
           const errorData = await pdfResponse.json().catch(() => ({}));
           console.error("❌ [PDF-DOWNLOAD] PDF generation failed:", errorData);
