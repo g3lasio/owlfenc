@@ -45,6 +45,51 @@ export default function PaymentSettings({
 }: PaymentSettingsProps) {
   const { toast } = useToast();
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
+  const [isRunningDiagnostic, setIsRunningDiagnostic] = useState(false);
+
+  const handleRunDiagnostic = async () => {
+    try {
+      setIsRunningDiagnostic(true);
+      const response = await apiRequest("GET", "/api/contractor-payments/stripe/diagnostic");
+      
+      if (!response.ok) {
+        throw new Error("Failed to run diagnostic");
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        const { diagnostic } = data;
+        const connectStatus = diagnostic.connect.enabled ? "✅ ENABLED" : "❌ NOT ENABLED";
+        const accountType = diagnostic.account?.email || "Unknown";
+        
+        toast({
+          title: `Stripe Connect: ${connectStatus}`,
+          description: (
+            <div className="space-y-2 mt-2">
+              <p><strong>Account:</strong> {accountType}</p>
+              <p><strong>Environment:</strong> {diagnostic.stripe.keyType}</p>
+              <p><strong>Key Prefix:</strong> {diagnostic.stripe.keyPrefix}</p>
+              {diagnostic.connect.enabled ? (
+                <p className="text-green-400">✓ Ready to accept payments</p>
+              ) : (
+                <p className="text-red-400">⚠ Activate Connect in Stripe Dashboard</p>
+              )}
+            </div>
+          ),
+          variant: diagnostic.connect.enabled ? "default" : "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Diagnostic Failed",
+        description: error.message || "Could not verify Stripe configuration",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRunningDiagnostic(false);
+    }
+  };
 
   const handleViewDashboard = async () => {
     try {
@@ -247,6 +292,18 @@ export default function PaymentSettings({
                     Reconnect
                   </>
                 )}
+              </Button>
+
+              <Button
+                onClick={handleRunDiagnostic}
+                variant="outline"
+                size="lg"
+                disabled={isRunningDiagnostic}
+                className="border-yellow-600 text-yellow-400 hover:bg-yellow-900/20"
+                data-testid="button-stripe-diagnostic"
+              >
+                <Shield className="h-4 w-4 mr-2" />
+                {isRunningDiagnostic ? "Checking..." : "Verify Config"}
               </Button>
 
               {isAccountActive && (

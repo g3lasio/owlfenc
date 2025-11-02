@@ -3,6 +3,7 @@ import { z } from "zod";
 import { contractorPaymentService } from "../services/contractorPaymentService";
 import { storage } from "../storage";
 import jwt from "jsonwebtoken";
+import Stripe from "stripe";
 
 const router = Router();
 
@@ -903,6 +904,116 @@ router.post("/:paymentId/resend", isAuthenticated, async (req: Request, res: Res
     res.status(500).json({
       message: "Error resending payment link",
       error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+/**
+ * DIAGNOSTIC ENDPOINT: Verify Stripe Connect Configuration
+ * This endpoint checks if Stripe is properly configured with Connect enabled
+ */
+router.get("/stripe/diagnostic", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+      apiVersion: "2024-11-20.acacia" as any,
+    });
+
+    // Get the secret key prefix to identify which account is being used
+    const keyPrefix = process.env.STRIPE_SECRET_KEY?.substring(0, 15) || "NOT_CONFIGURED";
+    const keyType = process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") 
+      ? "LIVE" 
+      : process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_")
+      ? "TEST"
+      : "UNKNOWN";
+
+    // Try to retrieve account information
+    let accountInfo: any = null;
+    let connectEnabled = false;
+    let accountError = null;
+
+    try {
+      // Retrieve the Stripe account details
+      const account = await stripe.accounts.retrieve();
+      
+      accountInfo = {
+        id: account.id,
+        businessType: account.business_type,
+        country: account.country,
+        email: account.email,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        detailsSubmitted: account.details_submitted,
+        type: account.type, // "standard" for platform accounts with Connect
+      };
+
+      // Check if Connect is enabled by trying to list connected accounts
+      try {
+        const connectedAccounts = await stripe.accounts.list({ limit: 1 });
+        connectEnabled = true;
+      } catch (connectError: any) {
+        if (connectError.type === 'StripeInvalidRequestError' && 
+            connectError.message.includes("signed up for Connect")) {
+          connectEnabled = false;
+          accountError = "Stripe Connect is NOT enabled for this account";
+        } else {
+          connectEnabled = false;
+          accountError = connectError.message;
+        }
+      }
+    } catch (error: any) {
+      accountError = error.message;
+    }
+
+    // Check if webhook secret is configured
+    const webhookConfigured = !!process.env.STRIPE_WEBHOOK_SECRET;
+    const publishableKeyConfigured = !!process.env.STRIPE_PUBLISHABLE_KEY;
+
+    res.json({
+      success: true,
+      diagnostic: {
+        stripe: {
+          configured: !!process.env.STRIPE_SECRET_KEY,
+          keyPrefix: keyPrefix,
+          keyType: keyType,
+          webhookSecretConfigured: webhookConfigured,
+          publishableKeyConfigured: publishableKeyConfigured,
+        },
+        account: accountInfo,
+        connect: {
+          enabled: connectEnabled,
+          error: accountError,
+          status: connectEnabled 
+            ? "✅ Stripe Connect is ENABLED and ready to use" 
+            : "❌ Stripe Connect is NOT ENABLED - Please activate it in your Stripe Dashboard",
+        },
+        recommendations: connectEnabled 
+          ? [
+              "✅ Your account is ready for Stripe Connect",
+              "You can now create connected accounts for contractors",
+              "Make sure to configure webhooks for production use"
+            ]
+          : [
+              "❌ Activate Stripe Connect in your Stripe Dashboard",
+              "Go to: Dashboard → Settings → Connect",
+              "Enable Connect and complete the onboarding process",
+              "Make sure you're using the correct API keys (Owl Fence Company, not Chyrris Technologies)"
+            ],
+        environment: {
+          nodeEnv: process.env.NODE_ENV || "development",
+          hasReplitDomains: !!process.env.REPLIT_DOMAINS,
+        }
+      }
+    });
+  } catch (error: any) {
+    console.error("❌ [STRIPE-DIAGNOSTIC] Error:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      diagnostic: {
+        configured: !!process.env.STRIPE_SECRET_KEY,
+        error: "Failed to retrieve Stripe account information",
+        details: error.message,
+      }
     });
   }
 });
