@@ -321,18 +321,8 @@ export default function FileManager({ projectId, attachments = {}, onUpdate }: F
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Zona de Drop */}
-        <div
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${
-            isDragOver 
-              ? 'border-cyan-400 bg-cyan-50 dark:bg-cyan-900/20' 
-              : 'border-gray-300 dark:border-gray-600 hover:border-cyan-400 dark:hover:border-cyan-400'
-          }`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          data-testid="file-drop-zone"
-        >
+        {/* Botón de Upload Compacto */}
+        <div className="flex justify-between items-center">
           <input
             ref={fileInputRef}
             type="file"
@@ -342,30 +332,17 @@ export default function FileManager({ projectId, attachments = {}, onUpdate }: F
             className="hidden"
             data-testid="file-input"
           />
-          
-          <div className="space-y-4">
-            <div className="text-4xl">
-              {isDragOver ? '📂' : '📁'}
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-2">
-                {isDragOver ? '¡Suelta los archivos aquí!' : 'Arrastra archivos aquí'}
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                O haz clic para seleccionar archivos (PDF, DOC, XLS, imágenes, ZIP)
-              </p>
-              <Button 
-                onClick={() => fileInputRef.current?.click()}
-                className="bg-cyan-600 hover:bg-cyan-700"
-                data-testid="button-select-files"
-              >
-                📎 Seleccionar Archivos
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Máximo 10MB por archivo
-            </p>
-          </div>
+          <Button 
+            onClick={() => fileInputRef.current?.click()}
+            className="bg-cyan-600 hover:bg-cyan-700"
+            data-testid="button-select-files"
+          >
+            <i className="ri-upload-2-line mr-2"></i>
+            Subir Documentos
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Máx. 10MB · PDF, DOC, XLS, imágenes, ZIP
+          </p>
         </div>
 
         {/* Lista de uploads en progreso */}

@@ -490,21 +490,6 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
             </CardContent>
           </Card>
 
-          {/* Ayuda Firebase Storage */}
-          <Card className="border-2 border-yellow-500/30 bg-yellow-500/5">
-            <CardContent className="p-3">
-              <div className="flex gap-2">
-                <i className="ri-information-line text-yellow-600 dark:text-yellow-500 text-base mt-0.5"></i>
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold">Si no puedes subir archivos</p>
-                  <p className="text-xs text-muted-foreground">
-                    Configura las reglas de Firebase Storage. Consulta <code className="text-[10px] bg-muted px-1 py-0.5 rounded">FIREBASE-STORAGE-RULES-PROJECTS.md</code>
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* FileManager */}
           <FileManager 
             projectId={project.id}
