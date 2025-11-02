@@ -501,18 +501,7 @@ function Projects() {
     
     if (!canAccessProjects) {
       // Mostrar modal de upgrade para usuarios Free/Primo Chambeador
-      showUpgradeModal({
-        title: "Gestión de Proyectos - Plan Premium",
-        message: "La gestión completa de proyectos está disponible solo para usuarios de paga. Actualiza tu plan para monitorear y gestionar todos tus proyectos sin límites.",
-        feature: "projects",
-        benefits: [
-          "Monitoreo ilimitado de proyectos",
-          "Detalles completos de cada proyecto",
-          "Timeline futurista y visual",
-          "Gestión de documentos y pagos",
-          "Sin restricciones de acceso"
-        ]
-      });
+      showUpgradeModal('projects', 'La gestión completa de proyectos está disponible solo para usuarios de paga. Actualiza tu plan para monitorear y gestionar todos tus proyectos sin límites.');
       return;
     }
     
@@ -642,18 +631,7 @@ function Projects() {
                 </p>
                 <Button
                   size="sm"
-                  onClick={() => showUpgradeModal({
-                    title: "Desbloquea la Gestión Completa de Proyectos",
-                    message: "Actualiza a un plan de paga para acceder a todas las funcionalidades de gestión de proyectos.",
-                    feature: "projects",
-                    benefits: [
-                      "Monitoreo ilimitado de proyectos",
-                      "Timeline futurista y visual",
-                      "Gestión de documentos y pagos",
-                      "Análisis detallado por proyecto",
-                      "Sin restricciones de acceso"
-                    ]
-                  })}
+                  onClick={() => showUpgradeModal('projects', 'Actualiza a un plan de paga para acceder a todas las funcionalidades de gestión de proyectos.')}
                   className="bg-amber-600 hover:bg-amber-700 text-white"
                   data-testid="button-upgrade-projects"
                 >
@@ -857,22 +835,22 @@ function Projects() {
       {/* Modal de detalles del proyecto con línea de tiempo */}
       {selectedProject && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-7xl h-[90vh] p-0 overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
-            <DialogHeader className="sticky top-0 z-20 bg-gradient-to-r from-gray-800/90 to-gray-900/90 backdrop-blur-sm border-b border-cyan-400/20 p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-cyan-400/20 flex items-center justify-center border border-cyan-400/30">
-                  <div className="text-cyan-400 text-xl">🏗️</div>
+          <DialogContent className="max-w-7xl h-[90vh] sm:h-[90vh] p-0 overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+            <DialogHeader className="sticky top-0 z-10 bg-gradient-to-r from-gray-800/95 to-gray-900/95 backdrop-blur-md border-b border-cyan-400/20 p-4 sm:p-6 pr-12 sm:pr-14">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-cyan-400/20 flex items-center justify-center border border-cyan-400/30 flex-shrink-0">
+                  <div className="text-cyan-400 text-lg sm:text-xl">🏗️</div>
                 </div>
-                <div>
-                  <DialogTitle className="text-2xl font-bold text-white flex items-center gap-2">
-                    <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                <div className="min-w-0 flex-1">
+                  <DialogTitle className="text-lg sm:text-2xl font-bold text-white flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                    <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent truncate">
                       {selectedProject.clientName}
                     </span>
-                    <Badge className={`${getStatusBadgeColor(selectedProject.status)} text-white`}>
+                    <Badge className={`${getStatusBadgeColor(selectedProject.status)} text-white text-xs sm:text-sm w-fit`}>
                       {getStatusLabel(selectedProject.status)}
                     </Badge>
                   </DialogTitle>
-                  <p className="text-cyan-300/80 text-sm font-mono">
+                  <p className="text-cyan-300/80 text-xs sm:text-sm font-mono truncate">
                     ID: {selectedProject.id} • 📍 {selectedProject.address}
                   </p>
                 </div>
