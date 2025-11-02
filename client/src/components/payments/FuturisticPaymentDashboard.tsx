@@ -440,7 +440,7 @@ export default function FuturisticPaymentDashboard({
         className="bg-gradient-to-br from-black via-gray-900 to-black border-gray-800/50 shadow-2xl overflow-hidden"
         data-testid="card-unified-payment-donut"
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-purple-500/5 to-cyan-500/5 animate-pulse" />
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-purple-500/5 to-cyan-500/5 animate-pulse pointer-events-none" />
         <CardContent className="p-12 relative">
           <UnifiedPaymentDonut segments={segments} totalValue={totalValue} />
         </CardContent>
