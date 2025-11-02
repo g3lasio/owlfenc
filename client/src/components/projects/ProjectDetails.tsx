@@ -3,6 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { updateProject } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +26,13 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
   const [isSaving, setIsSaving] = useState(false);
   const [clientNotesOpen, setClientNotesOpen] = useState(false);
   const [internalNotesOpen, setInternalNotesOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentData, setPaymentData] = useState({
+    amount: '',
+    method: 'cash',
+    date: new Date().toISOString().split('T')[0],
+    notes: ''
+  });
   const { toast } = useToast();
 
   const handleClientNotesUpdate = async () => {
@@ -94,6 +104,11 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
   };
 
   const getPaymentStatusBadge = (status: string) => {
+    // Manejar estados con porcentaje (ej: "balance 50%")
+    if (status && status.includes('balance')) {
+      return <Badge variant="outline">{status}</Badge>;
+    }
+
     const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
       paid: { label: 'Pagado', variant: 'default' },
       pending: { label: 'Pendiente', variant: 'secondary' },
@@ -118,6 +133,168 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
   const handleProgressUpdate = (newProgress: string) => {
     const updatedProject = { ...project, projectProgress: newProgress };
     onUpdate(updatedProject);
+  };
+
+  const handleRegisterPayment = async () => {
+    try {
+      if (!paymentData.amount || parseFloat(paymentData.amount) <= 0) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Por favor ingrese un monto válido."
+        });
+        return;
+      }
+
+      setIsSaving(true);
+
+      // Obtener historial actual de pagos
+      let paymentDetails: any = { history: [] };
+      if (project.paymentDetails) {
+        paymentDetails = typeof project.paymentDetails === 'string' 
+          ? JSON.parse(project.paymentDetails) 
+          : project.paymentDetails;
+      }
+
+      if (!Array.isArray(paymentDetails.history)) {
+        paymentDetails.history = [];
+      }
+
+      // Agregar nuevo pago al historial
+      paymentDetails.history.push({
+        date: paymentData.date,
+        amount: parseFloat(paymentData.amount),
+        method: paymentData.method,
+        notes: paymentData.notes || ''
+      });
+
+      // Calcular total pagado
+      const totalPaid = paymentDetails.history.reduce((sum: number, payment: any) => 
+        sum + (payment.amount || 0), 0
+      );
+      paymentDetails.totalPaid = totalPaid;
+
+      // Determinar estado de pago
+      const projectTotalPrice = project.totalPrice || 0;
+      let paymentStatus = 'pending';
+      
+      if (totalPaid >= projectTotalPrice && projectTotalPrice > 0) {
+        paymentStatus = 'paid';
+      } else if (totalPaid > 0) {
+        const percentPaid = (totalPaid / projectTotalPrice) * 100;
+        paymentStatus = `balance ${Math.round(percentPaid)}%`;
+      }
+
+      // Actualizar proyecto
+      const updatedProject = await updateProject(project.id, {
+        paymentStatus,
+        paymentDetails
+      });
+
+      onUpdate(updatedProject);
+
+      toast({
+        title: "💰 Pago registrado",
+        description: `Pago de $${parseFloat(paymentData.amount).toFixed(2)} registrado exitosamente.`
+      });
+
+      // Limpiar formulario y cerrar diálogo
+      setPaymentData({
+        amount: '',
+        method: 'cash',
+        date: new Date().toISOString().split('T')[0],
+        notes: ''
+      });
+      setPaymentDialogOpen(false);
+
+    } catch (error) {
+      console.error("Error registrando pago:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo registrar el pago."
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleGenerateInvoice = async () => {
+    try {
+      setIsSaving(true);
+
+      // Preparar datos para la factura
+      const invoiceData = {
+        profile: {
+          company: "Owl Fence AI",
+          email: project.clientEmail || "",
+          phone: project.clientPhone || "",
+          address: ""
+        },
+        estimate: {
+          client: {
+            name: project.clientName,
+            email: project.clientEmail || "",
+            phone: project.clientPhone || "",
+            address: project.address
+          },
+          items: [{
+            description: `${project.projectType || 'Proyecto'} - ${project.projectSubtype || ''}`,
+            quantity: 1,
+            unitPrice: project.totalPrice || 0,
+            totalPrice: project.totalPrice || 0
+          }],
+          subtotal: project.totalPrice || 0,
+          tax: 0,
+          total: project.totalPrice || 0
+        },
+        invoiceConfig: {
+          downPaymentAmount: project.paymentDetails?.totalPaid || 0
+        },
+        emailConfig: {
+          ccContractor: false
+        }
+      };
+
+      // Generar y descargar PDF de factura
+      const response = await fetch('/api/invoice-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(invoiceData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al generar la factura');
+      }
+
+      // Descargar el PDF
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `factura-${project.projectId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "📄 Factura generada",
+        description: "La factura se ha generado y descargado exitosamente."
+      });
+
+    } catch (error) {
+      console.error("Error generando factura:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo generar la factura."
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const quickActions = [
@@ -548,13 +725,90 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
 
               {/* Acciones */}
               <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                <Button variant="outline" size="sm" className="flex-1" data-testid="button-register-payment">
-                  <i className="ri-money-dollar-circle-line mr-2"></i>
-                  Registrar Pago
-                </Button>
-                <Button size="sm" className="flex-1" data-testid="button-generate-invoice">
+                <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex-1" data-testid="button-register-payment">
+                      <i className="ri-money-dollar-circle-line mr-2"></i>
+                      Registrar Pago
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Registrar Pago</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="payment-amount">Monto</Label>
+                        <Input
+                          id="payment-amount"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={paymentData.amount}
+                          onChange={(e) => setPaymentData({...paymentData, amount: e.target.value})}
+                          data-testid="input-payment-amount"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="payment-method">Método de Pago</Label>
+                        <Select 
+                          value={paymentData.method} 
+                          onValueChange={(value) => setPaymentData({...paymentData, method: value})}
+                        >
+                          <SelectTrigger id="payment-method" data-testid="select-payment-method">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="cash">Efectivo</SelectItem>
+                            <SelectItem value="check">Cheque</SelectItem>
+                            <SelectItem value="card">Tarjeta</SelectItem>
+                            <SelectItem value="transfer">Transferencia</SelectItem>
+                            <SelectItem value="other">Otro</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="payment-date">Fecha</Label>
+                        <Input
+                          id="payment-date"
+                          type="date"
+                          value={paymentData.date}
+                          onChange={(e) => setPaymentData({...paymentData, date: e.target.value})}
+                          data-testid="input-payment-date"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="payment-notes">Notas (opcional)</Label>
+                        <Textarea
+                          id="payment-notes"
+                          placeholder="Agregar notas sobre este pago..."
+                          value={paymentData.notes}
+                          onChange={(e) => setPaymentData({...paymentData, notes: e.target.value})}
+                          className="min-h-[80px]"
+                          data-testid="textarea-payment-notes"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2 pt-2">
+                        <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
+                          Cancelar
+                        </Button>
+                        <Button onClick={handleRegisterPayment} disabled={isSaving} data-testid="button-save-payment">
+                          {isSaving ? 'Guardando...' : 'Registrar Pago'}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Button 
+                  size="sm" 
+                  className="flex-1" 
+                  onClick={handleGenerateInvoice}
+                  disabled={isSaving}
+                  data-testid="button-generate-invoice"
+                >
                   <i className="ri-bill-line mr-2"></i>
-                  Generar Factura
+                  {isSaving ? 'Generando...' : 'Generar Factura'}
                 </Button>
               </div>
             </CardContent>
