@@ -1041,7 +1041,23 @@ export class DualSignatureService {
         : null;
 
       // ✅ SECURITY FIX: Only send PDF to contractor (not client)
-      await this.emailService.sendContractEmail({
+      // ✅ ATTACHMENT FIX: Attach PDF directly to email
+      type CompletionEmailParams = {
+        to: string;
+        toName: string;
+        contractorEmail: string;
+        contractorName: string;
+        contractorCompany: string;
+        subject: string;
+        htmlContent: string;
+        attachments?: Array<{
+          filename: string;
+          content: Buffer;
+          contentType: string;
+        }>;
+      };
+      
+      const emailParams: CompletionEmailParams = {
         to: contract.contractorEmail,
         toName: contract.contractorName,
         contractorEmail: contract.contractorEmail,
@@ -1065,9 +1081,24 @@ export class DualSignatureService {
           clientSignedAt: contract.clientSignedAt,
           hasPdf: hasPdf,
         }),
-      });
+      };
 
-      console.log("✅ [DUAL-SIGNATURE] Completion email sent successfully to contractor only");
+      // ✅ CRITICAL FIX: Attach PDF directly to email if available
+      if (hasPdf && pdfBuffer) {
+        console.log("📎 [DUAL-SIGNATURE] Attaching signed PDF to email...");
+        emailParams.attachments = [
+          {
+            filename: `contract_${contract.contractId}_signed.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          },
+        ];
+        console.log("✅ [DUAL-SIGNATURE] PDF attachment added to email");
+      }
+
+      await this.emailService.sendContractEmail(emailParams);
+
+      console.log(`✅ [DUAL-SIGNATURE] Completion email sent successfully to contractor${hasPdf ? ' with PDF attachment' : ' (no PDF)'}`);
     } catch (error: any) {
       console.error(
         "❌ [DUAL-SIGNATURE] Error sending completion emails:",
@@ -1419,8 +1450,10 @@ export class DualSignatureService {
 
   /**
    * Enviar notificaciones duales a ambas partes
+   * ✅ PUBLIC: Exposed for API route usage (resend signature links)
+   * ✅ SMART: Only sends to unsigned parties (respects contractorSigned/clientSigned flags)
    */
-  private async sendDualNotifications(params: {
+  public async sendDualNotifications(params: {
     contractId: string;
     contractorName: string;
     contractorEmail: string;
@@ -1431,54 +1464,66 @@ export class DualSignatureService {
     totalAmount: number;
     contractorSignUrl: string;
     clientSignUrl: string;
+    contractorSigned?: boolean; // ✅ NEW: Skip if already signed
+    clientSigned?: boolean; // ✅ NEW: Skip if already signed
   }): Promise<void> {
     try {
       console.log("📧 [DUAL-SIGNATURE] Sending dual notifications...");
-      console.log("📧 [EMAIL-DEBUG] Contractor email:", params.contractorEmail);
-      console.log("📧 [EMAIL-DEBUG] Client email:", params.clientEmail);
-      console.log(
-        "📧 [EMAIL-DEBUG] Are emails the same?",
-        params.contractorEmail === params.clientEmail
-      );
+      console.log("📧 [EMAIL-DEBUG] Contractor signed:", params.contractorSigned ?? false);
+      console.log("📧 [EMAIL-DEBUG] Client signed:", params.clientSigned ?? false);
 
-      // Send to contractor
-      await this.emailService.sendContractEmail({
-        to: params.contractorEmail,
-        toName: params.contractorName,
-        contractorEmail: params.contractorEmail,
-        contractorName: params.contractorName,
-        contractorCompany: params.contractorCompany,
-        subject: `🔒 Contract Ready for Your Signature - ${params.clientName}`,
-        htmlContent: this.generateContractorEmailHTML({
-          contractorName: params.contractorName,
-          clientName: params.clientName,
-          projectDescription: params.projectDescription,
-          totalAmount: params.totalAmount,
-          signUrl: params.contractorSignUrl,
-          contractId: params.contractId,
-        }),
-      });
+      let emailsSent = 0;
 
-      // Send to client
-      await this.emailService.sendContractEmail({
-        to: params.clientEmail,
-        toName: params.clientName,
-        contractorEmail: params.contractorEmail,
-        contractorName: params.contractorName,
-        contractorCompany: params.contractorCompany,
-        subject: `📋 Contract for Review and Signature - ${params.contractorCompany}`,
-        htmlContent: this.generateClientEmailHTML({
-          clientName: params.clientName,
+      // ✅ Only send to contractor if they haven't signed
+      if (!params.contractorSigned) {
+        console.log("📧 [EMAIL-DEBUG] Sending to contractor:", params.contractorEmail);
+        await this.emailService.sendContractEmail({
+          to: params.contractorEmail,
+          toName: params.contractorName,
+          contractorEmail: params.contractorEmail,
           contractorName: params.contractorName,
           contractorCompany: params.contractorCompany,
-          projectDescription: params.projectDescription,
-          totalAmount: params.totalAmount,
-          signUrl: params.clientSignUrl,
-          contractId: params.contractId,
-        }),
-      });
+          subject: `🔒 Contract Ready for Your Signature - ${params.clientName}`,
+          htmlContent: this.generateContractorEmailHTML({
+            contractorName: params.contractorName,
+            clientName: params.clientName,
+            projectDescription: params.projectDescription,
+            totalAmount: params.totalAmount,
+            signUrl: params.contractorSignUrl,
+            contractId: params.contractId,
+          }),
+        });
+        emailsSent++;
+      } else {
+        console.log("⏭️ [DUAL-SIGNATURE] Skipping contractor email - already signed");
+      }
 
-      console.log("✅ [DUAL-SIGNATURE] Dual notifications sent successfully");
+      // ✅ Only send to client if they haven't signed
+      if (!params.clientSigned) {
+        console.log("📧 [EMAIL-DEBUG] Sending to client:", params.clientEmail);
+        await this.emailService.sendContractEmail({
+          to: params.clientEmail,
+          toName: params.clientName,
+          contractorEmail: params.contractorEmail,
+          contractorName: params.contractorName,
+          contractorCompany: params.contractorCompany,
+          subject: `📋 Contract for Review and Signature - ${params.contractorCompany}`,
+          htmlContent: this.generateClientEmailHTML({
+            clientName: params.clientName,
+            contractorName: params.contractorName,
+            contractorCompany: params.contractorCompany,
+            projectDescription: params.projectDescription,
+            totalAmount: params.totalAmount,
+            signUrl: params.clientSignUrl,
+            contractId: params.contractId,
+          }),
+        });
+        emailsSent++;
+      } else {
+        console.log("⏭️ [DUAL-SIGNATURE] Skipping client email - already signed");
+      }
+
+      console.log(`✅ [DUAL-SIGNATURE] Sent ${emailsSent} notification(s)`);
     } catch (error: any) {
       console.error(
         "❌ [DUAL-SIGNATURE] Error sending dual notifications:",

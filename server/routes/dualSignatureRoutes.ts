@@ -1468,37 +1468,39 @@ router.post("/resend-links", async (req, res) => {
     // Send via email if requested
     if (methods.includes("email")) {
       try {
-        const { ResendEmailAdvanced } = await import(
-          "../services/resendEmailAdvanced"
-        );
-        const emailService = new ResendEmailAdvanced();
+        // Check if contract is already completed
+        if (contract.contractorSigned && contract.clientSigned) {
+          results.push("Contract already completed - no emails sent");
+        } else {
+          // Only send emails to unsigned parties
+          const { DualSignatureService } = await import(
+            "../services/dualSignatureService"
+          );
+          const dualSignService = new DualSignatureService();
 
-        // Send to contractor if not signed
-        if (!contract.contractorSigned) {
-          await emailService.sendContractForSigning({
-            to: contract.contractorEmail,
+          // Send dual notifications only to parties who haven't signed
+          await dualSignService.sendDualNotifications({
+            contractId: contract.contractId,
             contractorName: contract.contractorName,
+            contractorEmail: contract.contractorEmail,
+            contractorCompany: contract.contractorCompany || "Construction Company",
             clientName: contract.clientName,
+            clientEmail: contract.clientEmail,
             projectDescription: contract.projectDescription,
             totalAmount: parseFloat(contract.totalAmount),
-            signUrl: contractorSignUrl,
-            party: "contractor",
+            contractorSignUrl,
+            clientSignUrl,
+            contractorSigned: contract.contractorSigned, // ✅ Pass signature status
+            clientSigned: contract.clientSigned, // ✅ Pass signature status
           });
-          results.push("Email sent to contractor");
-        }
-
-        // Send to client if not signed
-        if (!contract.clientSigned) {
-          await emailService.sendContractForSigning({
-            to: contract.clientEmail,
-            contractorName: contract.contractorName,
-            clientName: contract.clientName,
-            projectDescription: contract.projectDescription,
-            totalAmount: parseFloat(contract.totalAmount),
-            signUrl: clientSignUrl,
-            party: "client",
-          });
-          results.push("Email sent to client");
+          
+          // Track which emails were sent
+          if (!contract.contractorSigned) {
+            results.push("Email sent to contractor");
+          }
+          if (!contract.clientSigned) {
+            results.push("Email sent to client");
+          }
         }
       } catch (emailError) {
         console.error("❌ Error sending emails:", emailError);

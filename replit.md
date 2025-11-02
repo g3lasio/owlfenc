@@ -42,6 +42,7 @@ This AI-powered legal document and permit management platform automates tasks li
   - PDF se genera automáticamente con firmas, fechas y sello digital usando premiumPdfService
   - Método notifyRemainingParty reimplementado para Firebase (eliminada dependencia de PostgreSQL obsoleta)
   - Sistema de notificación funciona correctamente cuando primera parte firma
+  - PDF ATTACHMENT FIX: PDF se adjunta directamente al email del contractor (no solo link de descarga)
 - COMPLETED CONTRACT DISPLAY FIX (NOV 2025): Corrección de visualización de datos en contratos completados:
   - Frontend normaliza Firestore Timestamps a ISO strings antes de display (eliminando "N/A" en fechas)
   - Backend normaliza totalAmount de strings legacy a números (eliminando costo "0" en contratos antiguos)
