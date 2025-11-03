@@ -106,8 +106,9 @@ app.post('/api/contractor-payments/stripe/connect', async (req, res) => {
     const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
     
     const { storage } = await import('./storage');
+    const { getStripeSecretKey } = await import('./config/stripe');
     const stripe = await import('stripe');
-    const stripeClient = new stripe.default(process.env.STRIPE_SECRET_KEY!);
+    const stripeClient = new stripe.default(getStripeSecretKey());
     
     const user = await storage.getUser(dbUserId);
     let accountId = user?.stripeConnectAccountId;
