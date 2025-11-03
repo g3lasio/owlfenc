@@ -43,6 +43,14 @@ This AI-powered platform automates legal document and permit management for cont
 - DUAL SIGNATURE EMAIL RESEND FIX: Sistema de reenvío de emails de firma completamente corregido y funcional.
 - DOWNLOAD BUTTON FUNCTIONALITY FIX: Botón Download corregido para descargar directamente sin abrir diálogos de compartir.
 - LEGAL DEFENSE DATA SOURCE CONSISTENCY FIX: Refactorización arquitectónica completa - eliminada `projects` collection, ÚNICA fuente `estimates` con ordenamiento descendente por fecha (más recientes primero) usando `orderBy("createdAt", "desc")` en query Firebase y listener en tiempo real.
+- INVOICES PAGE FUNCTIONAL FIX (NOV 2025): Corrección completa de problemas funcionales reportados en página de Invoices:
+  - **Data Source Fix**: Migrado de `projects` a usar SOLO `estimates` collection (100% consistente con arquitectura documentada)
+  - **Ordenamiento**: Implementado `orderBy("createdAt", "desc")` para mostrar estimados más recientes primero
+  - **Currency Handling**: Eliminada conversión automática de centavos - valores usados exactamente como están almacenados para prevenir corrupción de datos
+  - **Button States**: Agregado estado `isGenerating` con spinner Loader2 para mejor UX durante generación de PDFs
+  - **Error Handling**: Implementado logging comprehensivo y manejo robusto de errores Axios con timeout de 60s
+  - **Data Consistency**: Agregado `firebaseUserId` a invoices collection para consistencia con estimates
+  - **Test IDs**: Agregados data-testid a botones principales para testing automatizado
 
 ## System Architecture
 
