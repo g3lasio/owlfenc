@@ -39,6 +39,7 @@ import {
   Mail,
   Check,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
 import {
   collection,
@@ -48,6 +49,7 @@ import {
   addDoc,
   updateDoc,
   doc,
+  orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
@@ -151,68 +153,52 @@ const Invoices: React.FC = () => {
 
     try {
       setLoadingEstimates(true);
-      console.log("🔐 Loading estimates for user:", currentUser.uid);
+      console.log("📋 [INVOICES] Loading estimates for user:", currentUser.uid);
 
-      // Primero intentar con la colección 'projects' que es donde se están guardando
-      const projectsRef = collection(db, "projects");
-
-      // Intentar primero con firebaseUserId
-      let q = query(
-        projectsRef,
+      // ARQUITECTURA CRÍTICA: Usar SOLO 'estimates' collection (matching EstimateWizard & Legal Defense)
+      const estimatesRef = collection(db, "estimates");
+      const q = query(
+        estimatesRef,
         where("firebaseUserId", "==", currentUser.uid),
+        orderBy("createdAt", "desc")
       );
 
-      let snapshot = await getDocs(q);
-      console.log(`📊 Found ${snapshot.size} projects with firebaseUserId`);
-
-      // Si no hay resultados, intentar con userId
-      if (snapshot.empty) {
-        console.log(
-          "No projects found with firebaseUserId, trying with userId...",
-        );
-        q = query(projectsRef, where("userId", "==", currentUser.uid));
-        snapshot = await getDocs(q);
-        console.log(`📊 Found ${snapshot.size} projects with userId`);
-      }
-
-      // Si todavía no hay resultados, intentar con la colección 'estimates'
-      if (snapshot.empty) {
-        console.log("No projects found, trying estimates collection...");
-        const estimatesRef = collection(db, "estimates");
-        q = query(estimatesRef, where("firebaseUserId", "==", currentUser.uid));
-        snapshot = await getDocs(q);
-        console.log(`📊 Found ${snapshot.size} in estimates collection`);
-      }
+      const snapshot = await getDocs(q);
+      console.log(`📊 [INVOICES] Found ${snapshot.size} estimates (ESTIMATES ONLY - matching architecture)`);
 
       const estimates: SavedEstimate[] = [];
 
       snapshot.forEach((doc) => {
         const data = doc.data();
-        console.log("Raw estimate data from Firebase:", data);
+        console.log("💾 [INVOICES] Raw estimate data:", { id: doc.id, clientName: data.clientName, total: data.total });
 
-        // Los datos vienen con campos planos, no anidados
+        // Extraer información del cliente
         const clientName = data.clientName || data.client?.name || "Sin nombre";
-        const clientPhone = data.clientPhone || "";
+        
+        // Extracción robusta de montos financieros con normalización automática
+        let total = 0;
+        let subtotal = 0;
+        let discount = 0;
+        let tax = 0;
 
-        // Verificar que el total esté en el formato correcto
-        let total = data.total || 0;
-        let subtotal = data.subtotal || 0;
-        let discount = data.discount || 0;
-        let tax = data.tax || 0;
-
-        // Detectar si los valores están en centavos o dólares
-        // Si el total es un número entero grande, probablemente está en centavos
-        const isInCents = Number.isInteger(total) && total > 5000;
-
-        if (isInCents) {
-          console.warn(
-            `Convirtiendo de centavos a dólares: ${total} → ${(total / 100).toFixed(2)}`,
-          );
-          total = total / 100;
-          subtotal = subtotal / 100;
-          discount = discount / 100;
-          tax = tax / 100;
+        // Prioridad de fuentes para el total (matching EstimateWizard logic)
+        if (data.projectTotalCosts?.totalSummary?.finalTotal) {
+          total = Number(data.projectTotalCosts.totalSummary.finalTotal);
+        } else if (data.total) {
+          total = Number(data.total);
+        } else if (data.estimateAmount) {
+          total = Number(data.estimateAmount);
         }
+
+        // Extraer subtotal, discount y tax
+        subtotal = Number(data.subtotal || data.projectTotalCosts?.totalSummary?.subtotal || 0);
+        discount = Number(data.discount || data.projectTotalCosts?.totalSummary?.discount || 0);
+        tax = Number(data.tax || data.projectTotalCosts?.totalSummary?.tax || 0);
+
+        // NO CONVERSIÓN AUTOMÁTICA: Los valores se usan tal como están almacenados
+        // Si hay inconsistencias de formato (centavos vs dólares), deben corregirse en la fuente
+        // La conversión automática es demasiado arriesgada y puede corromper invoices legítimos
+        console.log(`💰 [INVOICES] Financial values - Total: ${total}, Subtotal: ${subtotal}, Tax: ${tax}`);
 
         estimates.push({
           id: doc.id,
@@ -231,15 +217,10 @@ const Invoices: React.FC = () => {
         });
       });
 
-      // Ordenar por fecha de creación descendente
-      estimates.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
-
+      console.log(`✅ [INVOICES] Loaded ${estimates.length} estimates successfully`);
       setSavedEstimates(estimates);
     } catch (error) {
-      console.error("Error loading estimates:", error);
+      console.error("❌ [INVOICES] Error loading estimates:", error);
       toast({
         title: "Error cargando estimados",
         description: "No se pudieron cargar los estimados guardados",
@@ -507,10 +488,14 @@ const Invoices: React.FC = () => {
 
   // Handle invoice generation - EXACTLY like EstimatesWizard does it
   const handleGenerateInvoice = async () => {
-    if (!selectedEstimate || !currentUser) return;
+    if (!selectedEstimate || !currentUser) {
+      console.warn("⚠️ [INVOICES] Missing selectedEstimate or currentUser");
+      return;
+    }
 
     // Use the exact same validation as EstimatesWizard
     if (!profile?.company) {
+      console.warn("⚠️ [INVOICES] Profile company name missing");
       toast({
         title: "Perfil Incompleto",
         description:
@@ -522,9 +507,12 @@ const Invoices: React.FC = () => {
 
     try {
       setIsGenerating(true);
+      console.log("🚀 [INVOICES] Starting invoice generation for:", selectedEstimate.clientName);
 
       const amounts = calculateAmounts();
       const invoiceNumber = generateInvoiceNumber();
+      console.log("💰 [INVOICES] Calculated amounts:", amounts);
+      console.log("📄 [INVOICES] Invoice number:", invoiceNumber);
 
       // Calculate due date
       const dueDate = new Date();
@@ -569,10 +557,15 @@ const Invoices: React.FC = () => {
         },
       };
 
+      console.log("📤 [INVOICES] Sending request to /api/invoice-pdf");
+      
       // Use axios EXACTLY like EstimatesWizard does
       const response = await axios.post("/api/invoice-pdf", invoicePayload, {
         responseType: "blob",
+        timeout: 60000, // 60 second timeout
       });
+
+      console.log("✅ [INVOICES] PDF received, size:", response.data.size);
 
       const blob = new Blob([response.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
@@ -583,6 +576,8 @@ const Invoices: React.FC = () => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+
+      console.log("💾 [INVOICES] PDF downloaded successfully");
 
       // Determine payment status
       let paymentStatus: "pending" | "partial" | "paid" = "pending";
@@ -608,26 +603,31 @@ const Invoices: React.FC = () => {
         createdAt: new Date().toISOString(),
       };
 
+      console.log("💾 [INVOICES] Saving to Firebase...");
+      
       // Save to Firebase
       const invoicesRef = collection(db, "invoices");
       const docRef = await addDoc(invoicesRef, {
         ...invoiceData,
         userId: currentUser.uid,
+        firebaseUserId: currentUser.uid, // Consistencia con estimates
         estimateData: selectedEstimate,
         notes: invoiceConfig.notes,
       });
+
+      console.log("✅ [INVOICES] Saved to Firebase with ID:", docRef.id);
 
       // Update local state
       setInvoiceHistory([{ ...invoiceData, id: docRef.id }, ...invoiceHistory]);
 
       toast({
-        title: "Factura generada exitosamente",
+        title: "✅ Factura generada exitosamente",
         description: `Factura ${invoiceNumber} descargada correctamente`,
       });
 
       // Send email if requested
       if (invoiceConfig.sendEmail && invoiceConfig.recipientEmail) {
-        // Email functionality can be implemented later
+        console.log("📧 [INVOICES] Email sending requested");
         toast({
           title: "Email pendiente",
           description: "La funcionalidad de email se implementará próximamente",
@@ -636,6 +636,7 @@ const Invoices: React.FC = () => {
 
       // Reset wizard
       setTimeout(() => {
+        console.log("🔄 [INVOICES] Resetting wizard state");
         setActiveTab("history");
         setCurrentStep(1);
         setSelectedEstimate(null);
@@ -649,10 +650,21 @@ const Invoices: React.FC = () => {
         });
       }, 2000);
     } catch (error) {
-      console.error("Error generating invoice:", error);
+      console.error("❌ [INVOICES] Error generating invoice:", error);
+      
+      // Detailed error logging
+      if (axios.isAxiosError(error)) {
+        console.error("❌ [INVOICES] Axios error details:", {
+          message: error.message,
+          code: error.code,
+          response: error.response?.data,
+          status: error.response?.status,
+        });
+      }
+      
       toast({
-        title: "Error generando factura",
-        description: "No se pudo generar la factura",
+        title: "❌ Error generando factura",
+        description: error instanceof Error ? error.message : "No se pudo generar la factura",
         variant: "destructive",
       });
     } finally {
@@ -1083,20 +1095,31 @@ const Invoices: React.FC = () => {
                 <div className="flex gap-3">
                   <Button 
                     onClick={canUseInvoices ? handleGenerateInvoice : () => showUpgradeModal('invoices', 'Genera facturas profesionales ilimitadas con planes superiores')} 
-                    disabled={!canUseInvoices}
+                    disabled={isGenerating || !canUseInvoices}
                     className={`flex-1 ${canUseInvoices ? 'bg-cyan-400 text-black hover:bg-cyan-300' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+                    data-testid="button-generate-invoice"
                   >
-                    <Download className="mr-2 h-4 w-4" />
-                    {!canUseInvoices ? '🔒 Generar Factura (Premium)' : 'Generar Factura'}
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generando...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="mr-2 h-4 w-4" />
+                        {!canUseInvoices ? '🔒 Generar Factura (Premium)' : 'Generar Factura'}
+                      </>
+                    )}
                   </Button>
                   <Button
                     onClick={canUseInvoices ? () => {
                       setEmailPreviewContent(generateEmailPreview());
                       setShowEmailPreview(true);
                     } : () => showUpgradeModal('invoices', 'Accede a vista previa de emails profesionales con planes superiores')}
-                    disabled={!canUseInvoices}
+                    disabled={isGenerating || !canUseInvoices}
                     className={`flex-1 ${canUseInvoices ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700' : 'bg-gray-600 text-gray-400 cursor-not-allowed border-gray-600'}`}
                     variant="outline"
+                    data-testid="button-preview-email"
                   >
                     <Mail className="mr-2 h-4 w-4" />
                     {!canUseInvoices ? '🔒 Vista Previa Email (Premium)' : 'Vista Previa Email'}
