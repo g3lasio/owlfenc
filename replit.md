@@ -1,7 +1,7 @@
 # Legal Document & Permit Management Platform
 
 ## Overview
-This AI-powered legal document and permit management platform automates tasks like generating estimates, creating contracts, analyzing permits, verifying properties, and coordinating over 20 API endpoints via Mervin AI. The project aims to evolve Mervin AI into a capable intelligent agent, streamlining operations for contractors in legal and permit management, and offering significant market potential.
+This AI-powered platform automates legal document and permit management for contractors. It generates estimates, creates contracts, analyzes permits, verifies properties, and coordinates over 20 API endpoints via Mervin AI. The project aims to evolve Mervin AI into a highly capable intelligent agent, streamlining operations and offering significant market potential in legal and permit management for contractors.
 
 ## User Preferences
 - Respuestas técnicas y detalladas cuando se requiera análisis
@@ -35,43 +35,14 @@ This AI-powered legal document and permit management platform automates tasks li
 - CHYRRIS.COM SIGNATURE URLS: Sistema de URLs dinámicas completamente reconfigurado para usar chyrris.com exclusivamente para enlaces de firma de contratos
 - CHYRRIS.COM ESTIMATE SHARING URLS: Sistema de URLs compartibles de estimados completamente migrado a chyrris.com con URLs ultra-cortas
 - LEGAL DEFENSE ACCESS CONTROL SYSTEM: Sistema completo de control de acceso por plan de suscripción implementado en Legal Defense con enforcement de límites
-- PDF SIGNATURE GENERATION FIX (NOV 2025): Sistema de firmas digitales en PDFs completados corregido usando contadores independientes por estrategia. Cada estrategia de reemplazo (signature-line, date-line, etc.) alterna independientemente entre contractor y client, eliminando el bug de asignación cruzada que causaba que ambas cajas mostraran la firma del contractor
-- DUAL SIGNATURE COMPLETION WORKFLOW FIX (NOV 2025): Sistema de firma dual completamente funcional con flujo automatizado de finalización:
-  - Solo el contractor recibe el PDF firmado por email (cliente no recibe email con PDF por seguridad)
-  - Contratos completados se guardan automáticamente con status="completed" en Firebase (dualSignatureContracts y contractHistory)
-  - PDF se genera automáticamente con firmas, fechas y sello digital usando premiumPdfService
-  - Método notifyRemainingParty reimplementado para Firebase (eliminada dependencia de PostgreSQL obsoleta)
-  - Sistema de notificación funciona correctamente cuando primera parte firma
-  - PDF ATTACHMENT FIX (NOV 2025): PDF se adjunta directamente al email del contractor como archivo adjunto (no solo link de descarga) usando soporte nativo de Resend con type safety
-  - COMPLETION EMAIL NOTIFICATION ENHANCEMENT (NOV 2025): Email de completado rediseñado para servir claramente como notificación oficial:
-    - Subject: "✅ NOTIFICACIÓN: Contrato Firmado por Ambas Partes"
-    - Header prominente: "📧 NOTIFICACIÓN OFICIAL"
-    - Mensaje claro: "Este es un correo de notificación oficial: El contrato ha sido firmado exitosamente por ambas partes"
-    - Recordatorio explícito: "El documento PDF firmado está adjunto a este email"
-    - Se envía INMEDIATAMENTE cuando ambas partes completan la firma
-- COMPLETED CONTRACT DISPLAY FIX (NOV 2025): Corrección de visualización de datos en contratos completados:
-  - Frontend normaliza Firestore Timestamps a ISO strings antes de display (eliminando "N/A" en fechas)
-  - Backend normaliza totalAmount de strings legacy a números (eliminando costo "0" en contratos antiguos)
-  - Sistema dual de normalización garantiza consistencia entre frontend y backend
-  - Logging condicional solo en development para evitar exposición de PII en producción
-  - Manejo robusto de datos legacy (strings, timestamps, valores faltantes)
-  - Normalización comprehensiva de fechas de firma (contractorSignedAt, clientSignedAt) eliminando "Invalid Date" en sección de firmas
-  - Función normalizeTimestamp robusta que parsea Firestore Timestamps, strings legacy y maneja valores corruptos defensivamente (para endpoint /completed)
-  - Función convertFirestoreTimestamp robusta con validación comprehensiva para HTML view eliminando "Invalid Date" en vistas Share/View Contract (validación de Date objects, Firestore Timestamps, timestamps con seconds, y strings parseables con isNaN() checks)
-- DUAL SIGNATURE EMAIL RESEND FIX (NOV 2025): Sistema de reenvío de emails de firma completamente corregido y funcional:
-  - Método sendDualNotifications() ahora es PUBLIC y acepta parámetros contractorSigned/clientSigned
-  - Verificación INTERNA en servicio: solo envía emails a partes que NO han firmado
-  - Endpoint /api/dual-signature/resend-links verifica estado de contrato Y pasa signature flags al servicio
-  - Doble capa de protección: verificación en route + verificación en service
-  - Logging claro de qué emails se enviaron y cuáles se saltaron
-  - Elimina completamente el bug de emails duplicados a partes que ya firmaron
-- DOWNLOAD BUTTON FUNCTIONALITY FIX (NOV 2025): Botón Download corregido para descargar directamente sin abrir diálogos de compartir:
-  - Función downloadSignedPdf completamente refactorizada para SOLO descargar archivo PDF
-  - Eliminado Web Share API del botón Download (ahora exclusivo del botón Share)
-  - Descarga directa usando createElement("a") con atributo download en todos los dispositivos
-  - Comportamiento consistente en desktop, móvil y tablet
-  - Botón Download ahora cumple exclusivamente su función: descargar el PDF localmente
-  - Botón Share mantiene funcionalidad de Web Share API para compartir el archivo
+- PDF SIGNATURE GENERATION FIX: Sistema de firmas digitales en PDFs completados corregido usando contadores independientes por estrategia. Cada estrategia de reemplazo (signature-line, date-line, etc.) alterna independientemente entre contractor y client, eliminando el bug de asignación cruzada que causaba que ambas cajas mostraran la firma del contractor
+- DUAL SIGNATURE COMPLETION WORKFLOW FIX: Sistema de firma dual completamente funcional con flujo automatizado de finalización.
+- PDF ATTACHMENT FIX: PDF se adjunta directamente al email del contractor como archivo adjunto (no solo link de descarga) usando soporte nativo de Resend con type safety.
+- COMPLETION EMAIL NOTIFICATION ENHANCEMENT: Email de completado rediseñado para servir claramente como notificación oficial.
+- COMPLETED CONTRACT DISPLAY FIX: Corrección de visualización de datos en contratos completados.
+- DUAL SIGNATURE EMAIL RESEND FIX: Sistema de reenvío de emails de firma completamente corregido y funcional.
+- DOWNLOAD BUTTON FUNCTIONALITY FIX: Botón Download corregido para descargar directamente sin abrir diálogos de compartir.
+- LEGAL DEFENSE DATA SOURCE CONSISTENCY FIX: Refactorización arquitectónica completa para garantizar consistencia de datos.
 
 ## System Architecture
 
@@ -87,7 +58,7 @@ This AI-powered legal document and permit management platform automates tasks li
 - **Security Architecture**: Multi-layer authentication, triple-layer contract security, enterprise-grade security for Legal Defense features, robust 1:1 Firebase UID to PostgreSQL `user_id` mapping.
 
 ### AI Architecture
-- **Mervin AI Unified System**: Superintelligent chatbot with autonomous task execution, real-time web research, differentiated AI model roles, intelligent decision-making, parallel execution, and specialized agents (estimates, contracts, permits, property verification). Features learning, memory, real-time feedback, and a Conversational Intelligence module. Includes a `TaskOrchestrator` and `EndpointCoordinator`.
+- **Mervin AI Unified System**: Superintelligent chatbot with autonomous task execution, real-time web research, differentiated AI model roles, intelligent decision-making, parallel execution, and specialized agents (estimates, contracts, permits, property verification). Features learning, memory, real-time feedback, and a Conversational Intelligence module, including a `TaskOrchestrator` and `EndpointCoordinator`.
 
 ### Core Features & Design Patterns
 - **User Authentication & Authorization**: Robust subscription-based permission system with OAuth, email/password, secure registration, automatic subscription degradation, real-time usage limits, persistent login, device fingerprinting, session validation, and WebAuthn API for biometric logins. Unified Auth Ecosystem with cookie-based sessions.
@@ -103,16 +74,10 @@ This AI-powered legal document and permit management platform automates tasks li
 - **Permissions System**: Centralized architecture using `shared/permissions-config.ts` for plan limits and permissions.
 - **Redis Rate Limiting & Usage Tracking**: Hybrid RBAC + Metering system with Upstash Redis for real-time usage tracking and rate limiting (sliding window).
 - **Persistent Usage Tracking System**: Production-grade usage tracking system utilizing PostgreSQL persistent storage with a dual-write architecture (Redis cache + PostgreSQL) for features like estimates, contracts, and permit verification.
-- **Legal Defense Access Control System**: Enterprise-grade subscription-based access control for Legal Defense page with plan-tier enforcement (e.g., Primo Chambeador: ZERO ACCESS, Mero Patrón: LIMITED ACCESS, Master Contractor/Free Trial: UNLIMITED ACCESS).
+- **Legal Defense Access Control System**: Enterprise-grade subscription-based access control for Legal Defense page with plan-tier enforcement.
 - **PDF Digital Signature System**: Premium PDF service with robust signature embedding using independent strategy-based counters for contractor/client assignments.
 - **Dual Signature Completion Workflow**: Automated contract completion system, including email distribution (contractor only), status management in Firebase, automatic PDF generation, and a Firebase-native notification system.
-- **STRIPE CONNECT ORGANIZATION API KEY SUPPORT (NOV 2025)**: Sistema de pagos completamente configurado para soportar Stripe Organization API keys:
-  - Configuración centralizada en `server/config/stripe.ts` con detección automática de Organization API keys (sk_org_)
-  - Header `Stripe-Account` incluido automáticamente en todas las llamadas cuando se usa Organization API key
-  - Soporte para múltiples variables de entorno: STRIPE_SECRET_KEY, STRIPE_API_KEY, STRIPE_ACCOUNT_ID
-  - Logging comprehensivo mostrando modo Organization, Account ID y configuración completa
-  - Todas las instancias de Stripe actualizadas: servicios (contractorPaymentService, stripeService, projectPaymentService, stripeWebhookService), endpoints (server/index.ts), y rutas (routes.ts, payment-routes.ts, contractor-payment-routes.ts)
-  - Elimina error "Please include the Stripe-Context header with your target account when using an Organization API key"
+- **Stripe Connect Organization API Key Support**: Payment system configured for Stripe Organization API keys, including automatic `Stripe-Account` header inclusion and support for multiple environment variables.
 
 ## External Dependencies
 - Firebase (Firestore, Admin SDK)

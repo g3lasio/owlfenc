@@ -2108,31 +2108,15 @@ export default function SimpleContractGenerator() {
         };
       });
 
-      allProjects = [...allProjects, ...firebaseEstimates];
+      allProjects = firebaseEstimates;
       console.log(
-        `📋 Loaded ${firebaseEstimates.length} estimates from Firebase`,
+        `📋 Loaded ${firebaseEstimates.length} estimates from Firebase (ESTIMATES ONLY - matching EstimateWizard History)`,
       );
 
-      // 2. Also load from projects collection as backup
-      console.log("🏗️ Loading from projects collection...");
-      const projectsQuery = query(
-        collection(db, "projects"),
-        where("firebaseUserId", "==", effectiveUid),
-      );
+      // ✅ SINGLE SOURCE OF TRUTH: Only using estimates collection (matching EstimateWizard)
+      // ❌ REMOVED: projects collection loading - Legal Defense now uses ONLY estimates
 
-      const projectsSnapshot = await getDocs(projectsQuery);
-      const firebaseProjects = projectsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        source: "projects",
-      }));
-
-      allProjects = [...allProjects, ...firebaseProjects];
-      console.log(
-        `🏗️ Loaded ${firebaseProjects.length} projects from Firebase`,
-      );
-
-      // 3. Filter for valid projects with comprehensive data validation
+      // Filter for valid estimates with comprehensive data validation
       const validProjects = allProjects.filter((project: any) => {
         // Financial validation
         const financialAmount = getCorrectProjectTotal(project);
@@ -2187,7 +2171,7 @@ export default function SimpleContractGenerator() {
     }
   }, [currentUser?.uid, currentUser?.uid, toast]);
 
-  // Set up real-time Firebase listener for projects
+  // ✅ SINGLE SOURCE OF TRUTH: Real-time listener for ESTIMATES only (matching EstimateWizard)
   useEffect(() => {
     // ✅ CRITICAL: Get effective UID from Firebase Auth OR profile
     const effectiveUid = currentUser?.uid || currentUser?.uid;
@@ -2196,42 +2180,102 @@ export default function SimpleContractGenerator() {
     if (!effectiveUid && !profile?.email) return;
 
     console.log(
-      "🔄 Setting up real-time project listener for user:",
+      "🔄 Setting up real-time ESTIMATES listener for user:",
       effectiveUid || 'profile_user',
+      "(ESTIMATES ONLY - matching EstimateWizard History)",
     );
 
-    const projectsQuery = query(
-      collection(db, "projects"),
+    const estimatesQuery = query(
+      collection(db, "estimates"),
       where("firebaseUserId", "==", effectiveUid),
     );
 
     // Real-time listener with enhanced error handling and data validation
     const unsubscribe = onSnapshot(
-      projectsQuery,
+      estimatesQuery,
       (snapshot) => {
         try {
-          console.log("🔄 Processing real-time Firebase update...");
+          console.log("🔄 Processing real-time estimates update from Firebase...");
 
-          const allProjects = snapshot.docs
+          const allEstimates = snapshot.docs
             .map((doc) => {
               const data = doc.data();
 
-              // Data validation for each project
+              // Data validation for each estimate
               if (!data) {
-                console.warn("⚠️ Empty project data detected:", doc.id);
+                console.warn("⚠️ Empty estimate data detected:", doc.id);
                 return null;
               }
 
+              // Extract client information properly (matching loadProjects logic)
+              const clientName =
+                data.clientName ||
+                data.clientInformation?.name ||
+                data.client?.name ||
+                "Cliente sin nombre";
+
+              const clientEmail =
+                data.clientEmail ||
+                data.clientInformation?.email ||
+                data.client?.email ||
+                "";
+
+              const clientPhone =
+                data.clientPhone ||
+                data.clientInformation?.phone ||
+                data.client?.phone ||
+                "";
+
+              // Extract project details
+              const projectType =
+                data.projectType ||
+                data.projectDetails?.type ||
+                data.fenceType ||
+                "Construction";
+
+              const projectDescription =
+                data.projectDescription ||
+                data.projectDetails ||
+                data.description ||
+                "";
+
+              // Extract financial information - MATCH EstimatesWizard logic exactly
+              let totalValue =
+                data.projectTotalCosts?.totalSummary?.finalTotal ||
+                data.projectTotalCosts?.total ||
+                data.total ||
+                data.estimateAmount ||
+                0;
+
+              const displayTotal = totalValue;
+
               return {
                 id: doc.id,
-                ...data,
+                estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
+                clientName,
+                clientEmail,
+                clientPhone,
+                clientAddress: data.clientAddress || data.address || "",
+                projectType,
+                projectDescription,
+                description: projectDescription,
+                total: displayTotal,
+                totalAmount: displayTotal,
+                totalPrice: displayTotal,
+                displaySubtotal: displayTotal,
+                displayTotal,
+                items: data.items || data.projectTotalCosts?.materialCosts?.items || [],
+                status: data.status || "estimate",
+                projectProgress: "estimate_ready",
+                createdAt: data.createdAt || new Date(),
+                source: "estimates",
                 timestamp: new Date().toISOString(),
               };
             })
             .filter(Boolean); // Remove null entries
 
-          // Enhanced project filtering with data integrity checks
-          const approvedProjects = allProjects.filter((project: any) => {
+          // Enhanced filtering with data integrity checks
+          const approvedProjects = allEstimates.filter((project: any) => {
             // Status validation
             const hasValidStatus =
               project.status === "approved" ||
@@ -2274,7 +2318,7 @@ export default function SimpleContractGenerator() {
 
           setProjects(approvedProjects);
           console.log(
-            `📊 Real-time update: ${approvedProjects.length} validated projects`,
+            `📊 Real-time update from ESTIMATES: ${approvedProjects.length} validated estimates (matching EstimateWizard History)`,
           );
           setIsLoading(false);
         } catch (processError) {
