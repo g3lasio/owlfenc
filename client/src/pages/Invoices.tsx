@@ -117,7 +117,7 @@ const Invoices: React.FC = () => {
     useState<SavedEstimate | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [displayLimit, setDisplayLimit] = useState(10); // Show 10 estimates by default
+  const [displayLimit, setDisplayLimit] = useState(4); // Show 4 estimates by default
 
   // Invoice configuration
   const [invoiceConfig, setInvoiceConfig] = useState({
@@ -151,7 +151,7 @@ const Invoices: React.FC = () => {
 
   // Reset display limit when search term changes
   useEffect(() => {
-    setDisplayLimit(10);
+    setDisplayLimit(4);
   }, [searchTerm]);
 
   const loadSavedEstimates = async () => {
@@ -777,7 +777,7 @@ const Invoices: React.FC = () => {
                     ))}
                   </div>
 
-                  {/* Results counter and load more buttons */}
+                  {/* Results counter and load more button */}
                   <div className="mt-4 space-y-3">
                     {/* Results counter */}
                     <div className="text-center text-sm text-gray-400">
@@ -785,44 +785,32 @@ const Invoices: React.FC = () => {
                       {searchTerm && ` (filtrados de ${savedEstimates.length} totales)`}
                     </div>
 
-                    {/* Load more buttons */}
-                    {filteredEstimates.length > displayLimit && (
-                      <div className="flex gap-2 justify-center">
+                    {/* Single load more button */}
+                    {filteredEstimates.length > displayLimit ? (
+                      <div className="flex justify-center">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setDisplayLimit(prev => Math.min(prev + 10, filteredEstimates.length))}
+                          onClick={() => setDisplayLimit(prev => prev + 4)}
                           className="bg-gray-800 border-gray-600 text-cyan-400 hover:bg-gray-700 hover:text-cyan-300"
                           data-testid="button-load-more"
                         >
-                          Ver más (+10)
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setDisplayLimit(filteredEstimates.length)}
-                          className="bg-gray-800 border-gray-600 text-cyan-400 hover:bg-gray-700 hover:text-cyan-300"
-                          data-testid="button-show-all"
-                        >
-                          Ver todos ({filteredEstimates.length - displayLimit} más)
+                          Ver más ({filteredEstimates.length - displayLimit} restantes)
                         </Button>
                       </div>
-                    )}
-
-                    {/* Reset button when showing all */}
-                    {displayLimit >= filteredEstimates.length && filteredEstimates.length > 10 && (
+                    ) : displayLimit > 4 && filteredEstimates.length > 4 ? (
                       <div className="flex justify-center">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setDisplayLimit(10)}
+                          onClick={() => setDisplayLimit(4)}
                           className="text-gray-400 hover:text-cyan-400"
                           data-testid="button-show-less"
                         >
                           Mostrar menos
                         </Button>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                   </>
                 )}

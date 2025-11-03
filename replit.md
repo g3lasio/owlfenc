@@ -53,12 +53,12 @@ This AI-powered platform automates legal document and permit management for cont
   - **Test IDs**: Agregados data-testid a botones principales para testing automatizado
   - **Estimate Selection UX Enhancement**: Sistema mejorado de selección de estimados con:
     - Búsqueda en tiempo real por cliente y tipo de proyecto
-    - Visualización inicial de 10 estimados (vs 3 anterior)
-    - Botones "Ver más (+10)" y "Ver todos" para cargar progresivamente
+    - Visualización compacta inicial de 4 estimados máximo
+    - Botón único "Ver más (X restantes)" que carga de 4 en 4
     - Contador de resultados mostrando "X de Y estimados"
-    - Botón "Mostrar menos" para volver a vista compacta
-    - Auto-reset a 10 estimados cuando cambia término de búsqueda
-    - No inunda la página con listas enormes - UX optimizada para 98+ estimados
+    - Botón "Mostrar menos" para volver a vista compacta (aparece cuando displayLimit > 4)
+    - Auto-reset a 4 estimados cuando cambia término de búsqueda
+    - UX limpia y simple - no inunda la página, optimizada para 98+ estimados
 
 ## System Architecture
 
