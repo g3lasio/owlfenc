@@ -99,16 +99,52 @@ app.use(express.json({ limit: '10mb' })); // Enable JSON parsing for these endpo
 
 app.post('/api/contractor-payments/stripe/connect', async (req, res) => {
   try {
-    console.log('🔐 [STRIPE-CONNECT-EXPRESS] Iniciando onboarding simplificado');
-    const firebaseUid = "qztot1YEy3UWz605gIH2iwwWhW53"; // TEMPORARY for testing
+    console.log('🔐 [STRIPE-CONNECT-EXPRESS] Iniciando configuración de pagos');
+    const { getStripeConfig } = await import('./config/stripe');
+    const config = getStripeConfig();
     
+    // ORGANIZATION MODE: Usar cuenta existente directamente
+    if (config.stripeAccount) {
+      console.log('🏢 [STRIPE-ORG-MODE] Usando cuenta organizacional existente:', config.stripeAccount);
+      
+      const stripe = await import('stripe');
+      const stripeClient = new stripe.default(config.apiKey, {
+        stripeAccount: config.stripeAccount,
+      });
+      
+      // Verificar que la cuenta existe y está configurada
+      const account = await stripeClient.accounts.retrieve(config.stripeAccount);
+      
+      console.log('✅ [STRIPE-ORG-MODE] Cuenta verificada:', {
+        id: account.id,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+      });
+      
+      // Guardar el account ID en el usuario (para compatibilidad con el resto del código)
+      const firebaseUid = "qztot1YEy3UWz605gIH2iwwWhW53"; // TEMPORARY for testing
+      const { userMappingService } = await import('./services/userMappingService');
+      const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
+      const { storage } = await import('./storage');
+      await storage.updateUser(dbUserId, { stripeConnectAccountId: config.stripeAccount });
+      
+      return res.json({
+        success: true,
+        accountId: config.stripeAccount,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        message: 'Cuenta de pagos conectada exitosamente',
+        alreadyConfigured: true,
+      });
+    }
+    
+    // STANDARD MODE: Flujo normal de creación de cuenta Connect
+    const firebaseUid = "qztot1YEy3UWz605gIH2iwwWhW53"; // TEMPORARY for testing
     const { userMappingService } = await import('./services/userMappingService');
     const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
     
     const { storage } = await import('./storage');
-    const { getStripeConfig } = await import('./config/stripe');
     const stripe = await import('stripe');
-    const config = getStripeConfig();
     const stripeClient = new stripe.default(config.apiKey, {
       stripeAccount: config.stripeAccount,
     });
@@ -176,8 +212,46 @@ app.post('/api/contractor-payments/stripe/connect', async (req, res) => {
 app.get('/api/contractor-payments/stripe/account-status', async (req, res) => {
   try {
     console.log('🔍 [STRIPE-STATUS] Verificando estado de cuenta Connect');
-    const firebaseUid = "qztot1YEy3UWz605gIH2iwwWhW53"; // TEMPORARY for testing
+    const { getStripeConfig } = await import('./config/stripe');
+    const config = getStripeConfig();
     
+    // ORGANIZATION MODE: Usar cuenta organizacional directamente
+    if (config.stripeAccount) {
+      console.log('🏢 [STRIPE-ORG-MODE] Verificando cuenta organizacional:', config.stripeAccount);
+      const stripe = await import('stripe');
+      const stripeClient = new stripe.default(config.apiKey, {
+        stripeAccount: config.stripeAccount,
+      });
+      
+      const account = await stripeClient.accounts.retrieve(config.stripeAccount);
+      
+      const isFullyActive = account.charges_enabled && account.payouts_enabled;
+      const needsMoreInfo = account.requirements?.currently_due && account.requirements.currently_due.length > 0;
+      
+      console.log('✅ [STRIPE-ORG-MODE] Estado de cuenta:', {
+        accountId: account.id,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        fullyActive: isFullyActive,
+      });
+      
+      return res.json({
+        success: true,
+        connected: true,
+        accountId: account.id,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        detailsSubmitted: account.details_submitted,
+        fullyActive: isFullyActive,
+        needsMoreInfo,
+        requirements: account.requirements,
+        email: account.email,
+        organizationMode: true,
+      });
+    }
+    
+    // STANDARD MODE: Verificar cuenta del usuario
+    const firebaseUid = "qztot1YEy3UWz605gIH2iwwWhW53"; // TEMPORARY for testing
     const { userMappingService } = await import('./services/userMappingService');
     const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
     
@@ -192,9 +266,7 @@ app.get('/api/contractor-payments/stripe/account-status', async (req, res) => {
       });
     }
     
-    const { getStripeConfig } = await import('./config/stripe');
     const stripe = await import('stripe');
-    const config = getStripeConfig();
     const stripeClient = new stripe.default(config.apiKey, {
       stripeAccount: config.stripeAccount,
     });
