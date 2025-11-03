@@ -109,12 +109,12 @@ function UnifiedPaymentDonut({
   const labelRadius = outerRadius + 80;
 
   return (
-    <div className="relative flex items-center justify-center w-full">
+    <div className="relative flex items-center justify-center w-full overflow-visible">
       <svg
         width="100%"
         height="auto"
-        viewBox={`0 0 ${size + 200} ${size + 120}`}
-        className="mx-auto max-w-4xl"
+        viewBox={`0 0 ${size + 250} ${size + 200}`}
+        className="mx-auto max-w-5xl"
         preserveAspectRatio="xMidYMid meet"
       >
         <defs>
@@ -160,10 +160,10 @@ function UnifiedPaymentDonut({
         </defs>
 
         {/* Background starfield */}
-        <rect x="0" y="0" width={size + 200} height={size + 120} fill="url(#starfield)" opacity="0.3" />
+        <rect x="0" y="0" width={size + 250} height={size + 200} fill="url(#starfield)" opacity="0.3" />
 
         {/* Main group - centered */}
-        <g transform={`translate(${(size + 200) / 2 - centerX}, ${(size + 120) / 2 - centerY})`}>
+        <g transform={`translate(${(size + 250) / 2 - centerX}, ${(size + 200) / 2 - centerY})`}>
           {/* Outer ring segments */}
           {segmentData.map((segment, index) => {
             // Create donut segment path
@@ -263,9 +263,9 @@ function UnifiedPaymentDonut({
                 <g>
                   <text
                     x={textX}
-                    y={labelPos.y - 12}
+                    y={labelPos.y - 10}
                     fill={segment.color}
-                    fontSize="20"
+                    fontSize="16"
                     fontWeight="700"
                     textAnchor={textAnchor}
                     className="font-sans uppercase tracking-wide"
@@ -275,9 +275,9 @@ function UnifiedPaymentDonut({
                   </text>
                   <text
                     x={textX}
-                    y={labelPos.y + 16}
+                    y={labelPos.y + 18}
                     fill="#ffffff"
-                    fontSize="28"
+                    fontSize="24"
                     fontWeight="800"
                     textAnchor={textAnchor}
                     className="font-sans"
@@ -288,7 +288,7 @@ function UnifiedPaymentDonut({
                     x={textX}
                     y={labelPos.y + 38}
                     fill={segment.color}
-                    fontSize="16"
+                    fontSize="14"
                     fontWeight="600"
                     textAnchor={textAnchor}
                     className="font-sans"
@@ -409,7 +409,7 @@ export default function FuturisticPaymentDashboard({
   // Define segments with colors (matching reference image aesthetic)
   const segments: Segment[] = [
     {
-      label: "Revenue",
+      label: "Costs on Estimate",
       value: displaySummary.totalRevenue,
       color: "#06b6d4", // Cyan
       glowColor: "#22d3ee",
@@ -438,11 +438,11 @@ export default function FuturisticPaymentDashboard({
     <div className="space-y-6">
       {/* Unified Futuristic Donut Chart */}
       <Card
-        className="bg-gradient-to-br from-black via-gray-900 to-black border-gray-800/50 shadow-2xl overflow-hidden"
+        className="bg-gradient-to-br from-black via-gray-900 to-black border-gray-800/50 shadow-2xl overflow-visible"
         data-testid="card-unified-payment-donut"
       >
         <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-purple-500/5 to-cyan-500/5 animate-pulse pointer-events-none" />
-        <CardContent className="p-6 relative">
+        <CardContent className="p-8 md:p-12 relative">
           <UnifiedPaymentDonut segments={segments} totalValue={totalValue} />
         </CardContent>
       </Card>
