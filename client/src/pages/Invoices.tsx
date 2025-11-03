@@ -159,8 +159,9 @@ const Invoices: React.FC = () => {
       const estimatesRef = collection(db, "estimates");
       const q = query(
         estimatesRef,
-        where("firebaseUserId", "==", currentUser.uid),
-        orderBy("createdAt", "desc")
+        where("firebaseUserId", "==", currentUser.uid)
+        // NOTE: orderBy removed to avoid composite index requirement
+        // Results are sorted in-memory below
       );
 
       const snapshot = await getDocs(q);
@@ -217,7 +218,14 @@ const Invoices: React.FC = () => {
         });
       });
 
-      console.log(`✅ [INVOICES] Loaded ${estimates.length} estimates successfully`);
+      // Sort in-memory by creation date (newest first)
+      estimates.sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA; // Descending order (newest first)
+      });
+
+      console.log(`✅ [INVOICES] Loaded ${estimates.length} estimates successfully (sorted desc by date)`);
       setSavedEstimates(estimates);
     } catch (error) {
       console.error("❌ [INVOICES] Error loading estimates:", error);
