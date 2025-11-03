@@ -1996,7 +1996,7 @@ export default function SimpleContractGenerator() {
     try {
       // FIREBASE CONNECTION VALIDATION
       console.log("🔗 Validating Firebase connection...");
-      const { collection, query, where, getDocs } = await import(
+      const { collection, query, where, getDocs, orderBy } = await import(
         "firebase/firestore"
       );
       const { db } = await import("@/lib/firebase");
@@ -2017,11 +2017,12 @@ export default function SimpleContractGenerator() {
 
       let allProjects: any[] = [];
 
-      // 1. Load from estimates collection (primary source)
-      console.log("📋 Loading from estimates collection...");
+      // 1. Load from estimates collection (primary source) - ORDERED BY DATE DESC
+      console.log("📋 Loading from estimates collection (ordered by date - newest first)...");
       const estimatesQuery = query(
         collection(db, "estimates"),
         where("firebaseUserId", "==", effectiveUid),
+        orderBy("createdAt", "desc"), // ✅ Most recent estimates first
       );
 
       const estimatesSnapshot = await getDocs(estimatesQuery);
@@ -2182,12 +2183,13 @@ export default function SimpleContractGenerator() {
     console.log(
       "🔄 Setting up real-time ESTIMATES listener for user:",
       effectiveUid || 'profile_user',
-      "(ESTIMATES ONLY - matching EstimateWizard History)",
+      "(ESTIMATES ONLY - matching EstimateWizard History - ordered by date)",
     );
 
     const estimatesQuery = query(
       collection(db, "estimates"),
       where("firebaseUserId", "==", effectiveUid),
+      orderBy("createdAt", "desc"), // ✅ Most recent estimates first
     );
 
     // Real-time listener with enhanced error handling and data validation

@@ -42,7 +42,7 @@ This AI-powered platform automates legal document and permit management for cont
 - COMPLETED CONTRACT DISPLAY FIX: Corrección de visualización de datos en contratos completados.
 - DUAL SIGNATURE EMAIL RESEND FIX: Sistema de reenvío de emails de firma completamente corregido y funcional.
 - DOWNLOAD BUTTON FUNCTIONALITY FIX: Botón Download corregido para descargar directamente sin abrir diálogos de compartir.
-- LEGAL DEFENSE DATA SOURCE CONSISTENCY FIX: Refactorización arquitectónica completa para garantizar consistencia de datos.
+- LEGAL DEFENSE DATA SOURCE CONSISTENCY FIX: Refactorización arquitectónica completa - eliminada `projects` collection, ÚNICA fuente `estimates` con ordenamiento descendente por fecha (más recientes primero) usando `orderBy("createdAt", "desc")` en query Firebase y listener en tiempo real.
 
 ## System Architecture
 
