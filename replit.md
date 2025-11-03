@@ -45,12 +45,20 @@ This AI-powered platform automates legal document and permit management for cont
 - LEGAL DEFENSE DATA SOURCE CONSISTENCY FIX: Refactorización arquitectónica completa - eliminada `projects` collection, ÚNICA fuente `estimates` con ordenamiento descendente por fecha (más recientes primero) usando `orderBy("createdAt", "desc")` en query Firebase y listener en tiempo real.
 - INVOICES PAGE FUNCTIONAL FIX (NOV 2025): Corrección completa de problemas funcionales reportados en página de Invoices:
   - **Data Source Fix**: Migrado de `projects` a usar SOLO `estimates` collection (100% consistente con arquitectura documentada)
-  - **Ordenamiento**: Implementado `orderBy("createdAt", "desc")` para mostrar estimados más recientes primero
+  - **Composite Index Fix**: Eliminado `orderBy` de query Firebase para evitar error "failed-precondition", ordenamiento ahora en memoria
   - **Currency Handling**: Eliminada conversión automática de centavos - valores usados exactamente como están almacenados para prevenir corrupción de datos
   - **Button States**: Agregado estado `isGenerating` con spinner Loader2 para mejor UX durante generación de PDFs
   - **Error Handling**: Implementado logging comprehensivo y manejo robusto de errores Axios con timeout de 60s
   - **Data Consistency**: Agregado `firebaseUserId` a invoices collection para consistencia con estimates
   - **Test IDs**: Agregados data-testid a botones principales para testing automatizado
+  - **Estimate Selection UX Enhancement**: Sistema mejorado de selección de estimados con:
+    - Búsqueda en tiempo real por cliente y tipo de proyecto
+    - Visualización inicial de 10 estimados (vs 3 anterior)
+    - Botones "Ver más (+10)" y "Ver todos" para cargar progresivamente
+    - Contador de resultados mostrando "X de Y estimados"
+    - Botón "Mostrar menos" para volver a vista compacta
+    - Auto-reset a 10 estimados cuando cambia término de búsqueda
+    - No inunda la página con listas enormes - UX optimizada para 98+ estimados
 
 ## System Architecture
 

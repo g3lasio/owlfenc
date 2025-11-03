@@ -117,6 +117,7 @@ const Invoices: React.FC = () => {
     useState<SavedEstimate | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [displayLimit, setDisplayLimit] = useState(10); // Show 10 estimates by default
 
   // Invoice configuration
   const [invoiceConfig, setInvoiceConfig] = useState({
@@ -147,6 +148,11 @@ const Invoices: React.FC = () => {
       loadInvoiceHistory();
     }
   }, [currentUser]);
+
+  // Reset display limit when search term changes
+  useEffect(() => {
+    setDisplayLimit(10);
+  }, [searchTerm]);
 
   const loadSavedEstimates = async () => {
     if (!currentUser) return;
@@ -719,8 +725,9 @@ const Invoices: React.FC = () => {
                     <p>No se encontraron estimados</p>
                   </div>
                 ) : (
+                  <>
                   <div className="grid gap-2 ">
-                    {filteredEstimates.slice(0, 3).map((estimate) => (
+                    {filteredEstimates.slice(0, displayLimit).map((estimate) => (
                       <Card
                         key={estimate.id}
                         className={`cursor-pointer transition-all bg-gray-800 border-gray-600 ${
@@ -770,56 +777,54 @@ const Invoices: React.FC = () => {
                     ))}
                   </div>
 
-                  // <div className="grid gap-2">
-                  //   {filteredEstimates.slice(0, 3).map((estimate) => (
-                  //     <Card
-                  //       key={estimate.id}
-                  //       className={`cursor-pointer transition-all ${
-                  //         selectedEstimate?.id === estimate.id
-                  //           ? "border-primary ring-2 ring-primary ring-offset-2"
-                  //           : "hover:border-primary/50"
-                  //       }`}
-                  //       onClick={() => {
-                  //         setSelectedEstimate(estimate);
-                  //         setInvoiceConfig((prev) => ({
-                  //           ...prev,
-                  //           recipientEmail: estimate.clientEmail,
-                  //         }));
-                  //       }}
-                  //     >
-                  //       <CardContent className="p-3">
-                  //         <div className="flex  justify-between items-center gap-4">
-                  //           <div className="flex-1 min-w-0">
-                  //             <div className="flex items-center gap-2">
-                  //               <h4 className="font-medium text-sm truncate">
-                  //                 {estimate.clientName}
-                  //               </h4>
-                  //               <span className="text-xs text-muted-foreground">
-                  //                 •
-                  //               </span>
-                  //               <p className="text-xs text-muted-foreground">
-                  //                 {new Date(
-                  //                   estimate.createdAt,
-                  //                 ).toLocaleDateString()}
-                  //               </p>
-                  //             </div>
-                  //             <p className="text-xs text-muted-foreground truncate">
-                  //               {estimate.projectType}
-                  //             </p>
-                  //           </div>
-                  //           <div className="flex items-center gap-3 flex-shrink-0">
-                  //             <Badge variant="outline" className="text-xs">
-                  //               {estimate.items.length} items
-                  //             </Badge>
-                  //             <p className="text-base font-bold">
-                  //               ${estimate.total.toFixed(2)}
-                  //             </p>
-                  //           </div>
-                  //         </div>
-                  //       </CardContent>
-                  //     </Card>
-                  //   ))}
-                  // </div>
+                  {/* Results counter and load more buttons */}
+                  <div className="mt-4 space-y-3">
+                    {/* Results counter */}
+                    <div className="text-center text-sm text-gray-400">
+                      Mostrando {Math.min(displayLimit, filteredEstimates.length)} de {filteredEstimates.length} estimados
+                      {searchTerm && ` (filtrados de ${savedEstimates.length} totales)`}
+                    </div>
+
+                    {/* Load more buttons */}
+                    {filteredEstimates.length > displayLimit && (
+                      <div className="flex gap-2 justify-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setDisplayLimit(prev => Math.min(prev + 10, filteredEstimates.length))}
+                          className="bg-gray-800 border-gray-600 text-cyan-400 hover:bg-gray-700 hover:text-cyan-300"
+                          data-testid="button-load-more"
+                        >
+                          Ver más (+10)
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setDisplayLimit(filteredEstimates.length)}
+                          className="bg-gray-800 border-gray-600 text-cyan-400 hover:bg-gray-700 hover:text-cyan-300"
+                          data-testid="button-show-all"
+                        >
+                          Ver todos ({filteredEstimates.length - displayLimit} más)
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Reset button when showing all */}
+                    {displayLimit >= filteredEstimates.length && filteredEstimates.length > 10 && (
+                      <div className="flex justify-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDisplayLimit(10)}
+                          className="text-gray-400 hover:text-cyan-400"
+                          data-testid="button-show-less"
+                        >
+                          Mostrar menos
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  </>
                 )}
               </CardContent>
             </Card>
