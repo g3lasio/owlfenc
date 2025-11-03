@@ -106,6 +106,13 @@ This AI-powered legal document and permit management platform automates tasks li
 - **Legal Defense Access Control System**: Enterprise-grade subscription-based access control for Legal Defense page with plan-tier enforcement (e.g., Primo Chambeador: ZERO ACCESS, Mero Patrón: LIMITED ACCESS, Master Contractor/Free Trial: UNLIMITED ACCESS).
 - **PDF Digital Signature System**: Premium PDF service with robust signature embedding using independent strategy-based counters for contractor/client assignments.
 - **Dual Signature Completion Workflow**: Automated contract completion system, including email distribution (contractor only), status management in Firebase, automatic PDF generation, and a Firebase-native notification system.
+- **STRIPE CONNECT ORGANIZATION API KEY SUPPORT (NOV 2025)**: Sistema de pagos completamente configurado para soportar Stripe Organization API keys:
+  - Configuración centralizada en `server/config/stripe.ts` con detección automática de Organization API keys (sk_org_)
+  - Header `Stripe-Account` incluido automáticamente en todas las llamadas cuando se usa Organization API key
+  - Soporte para múltiples variables de entorno: STRIPE_SECRET_KEY, STRIPE_API_KEY, STRIPE_ACCOUNT_ID
+  - Logging comprehensivo mostrando modo Organization, Account ID y configuración completa
+  - Todas las instancias de Stripe actualizadas: servicios (contractorPaymentService, stripeService, projectPaymentService, stripeWebhookService), endpoints (server/index.ts), y rutas (routes.ts, payment-routes.ts, contractor-payment-routes.ts)
+  - Elimina error "Please include the Stripe-Context header with your target account when using an Organization API key"
 
 ## External Dependencies
 - Firebase (Firestore, Admin SDK)
