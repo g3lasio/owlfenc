@@ -995,57 +995,93 @@ const Invoices: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Invoice preview */}
+                {/* Invoice preview - Restyled for better visibility */}
                 {selectedEstimate && (
-                  <div className="bg-gray-800 p-6 rounded-lg space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-lg font-semibold text-cyan-400">
-                          Factura #{generateInvoiceNumber()}
-                        </h3>
-                        <p className="text-sm text-gray-400">
-                          Fecha: {new Date().toLocaleDateString()}
-                        </p>
-                      </div>
-                      <Badge
-                        variant={
-                          calculateAmounts().balance === 0
-                            ? "default"
+                  <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-cyan-500/30 p-6 rounded-xl shadow-lg space-y-5">
+                    {/* Header */}
+                    <div className="bg-black/40 -m-6 mb-5 p-5 rounded-t-xl border-b border-cyan-500/30">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-2xl font-bold text-cyan-400 mb-1">
+                            Resumen de Factura
+                          </h3>
+                          <div className="flex items-center gap-4 mt-2">
+                            <p className="text-base text-white font-semibold">
+                              Factura #{generateInvoiceNumber()}
+                            </p>
+                            <span className="text-gray-400">•</span>
+                            <p className="text-sm text-gray-300">
+                              {new Date().toLocaleDateString('es-ES', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge
+                          className={`text-sm px-4 py-1.5 font-semibold ${
+                            calculateAmounts().balance === 0
+                              ? "bg-green-600 text-white hover:bg-green-700"
+                              : calculateAmounts().paid > 0
+                                ? "bg-yellow-600 text-white hover:bg-yellow-700"
+                                : "bg-red-600 text-white hover:bg-red-700"
+                          }`}
+                        >
+                          {calculateAmounts().balance === 0
+                            ? "✓ Pagado"
                             : calculateAmounts().paid > 0
-                              ? "secondary"
-                              : "destructive"
-                        }
-                      >
-                        {calculateAmounts().balance === 0
-                          ? "Pagado"
-                          : calculateAmounts().paid > 0
-                            ? "Pago parcial"
-                            : "Pendiente"}
-                      </Badge>
+                              ? "⊙ Pago Parcial"
+                              : "⊗ Pendiente"}
+                        </Badge>
+                      </div>
                     </div>
 
-                    <div className="border-t border-gray-600 pt-4">
-                      <p className="font-medium mb-2 text-cyan-400">
+                    {/* Client info */}
+                    <div className="bg-gray-800/60 p-4 rounded-lg border border-gray-600">
+                      <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">Cliente</p>
+                      <p className="text-xl font-bold text-white mb-1">
                         {selectedEstimate.clientName}
                       </p>
-                      <p className="text-sm text-gray-400">
+                      <p className="text-base text-cyan-300 font-medium">
                         {selectedEstimate.projectType}
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 border-t border-gray-600 pt-4">
-                      <div>
-                        <p className="text-sm text-gray-400">Total</p>
-                        <p className="font-semibold text-cyan-400">
+                    {/* Financial summary with better contrast */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 p-4 rounded-lg border border-blue-500/30">
+                        <p className="text-xs uppercase tracking-wide text-blue-300 mb-2">Total Factura</p>
+                        <p className="text-2xl font-bold text-white">
                           ${calculateAmounts().total.toFixed(2)}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-400">Balance</p>
-                        <p className="font-semibold text-orange-400">
+                      <div className="bg-gradient-to-br from-green-900/40 to-green-800/20 p-4 rounded-lg border border-green-500/30">
+                        <p className="text-xs uppercase tracking-wide text-green-300 mb-2">Pagado</p>
+                        <p className="text-2xl font-bold text-white">
+                          ${calculateAmounts().paid.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="bg-gradient-to-br from-orange-900/40 to-orange-800/20 p-4 rounded-lg border border-orange-500/30">
+                        <p className="text-xs uppercase tracking-wide text-orange-300 mb-2">Balance</p>
+                        <p className="text-2xl font-bold text-white">
                           ${calculateAmounts().balance.toFixed(2)}
                         </p>
                       </div>
+                    </div>
+
+                    {/* Payment terms info */}
+                    <div className="bg-gray-800/40 p-3 rounded-lg border border-gray-600 flex items-center justify-between">
+                      <span className="text-sm text-gray-300">
+                        Términos de pago: <span className="font-semibold text-white">
+                          {invoiceConfig.paymentTerms === 0 ? 'Al recibir' : `${invoiceConfig.paymentTerms} días`}
+                        </span>
+                      </span>
+                      {invoiceConfig.paymentTerms > 0 && (
+                        <span className="text-xs text-gray-400">
+                          Vence: {new Date(Date.now() + invoiceConfig.paymentTerms * 24 * 60 * 60 * 1000).toLocaleDateString('es-ES')}
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
