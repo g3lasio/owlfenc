@@ -914,19 +914,22 @@ router.post("/:paymentId/resend", isAuthenticated, async (req: Request, res: Res
  */
 router.get("/stripe/diagnostic", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const { getStripeSecretKey, getStripePublishableKey, getStripeWebhookSecret } = await import('../config/stripe');
-    const stripeKey = getStripeSecretKey();
+    const { getStripeConfig, getStripePublishableKey, getStripeWebhookSecret } = await import('../config/stripe');
+    const config = getStripeConfig();
     
-    const stripe = new Stripe(stripeKey, {
+    const stripe = new Stripe(config.apiKey, {
       apiVersion: "2024-11-20.acacia" as any,
+      stripeAccount: config.stripeAccount,
     });
 
     // Get the secret key prefix to identify which account is being used
-    const keyPrefix = stripeKey.substring(0, 15);
-    const keyType = stripeKey.startsWith("sk_live_") 
+    const keyPrefix = config.apiKey.substring(0, 15);
+    const keyType = config.apiKey.startsWith("sk_live_") 
       ? "LIVE" 
-      : stripeKey.startsWith("sk_test_")
+      : config.apiKey.startsWith("sk_test_")
       ? "TEST"
+      : config.apiKey.startsWith("sk_org_")
+      ? "ORGANIZATION"
       : "UNKNOWN";
 
     // Try to retrieve account information

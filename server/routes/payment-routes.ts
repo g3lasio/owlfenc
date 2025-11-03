@@ -5,12 +5,13 @@ import { storage } from '../storage';
 import Stripe from 'stripe';
 import express from 'express';
 import { isAuthenticated } from '../middleware/auth';
-import { getStripeSecretKey } from '../config/stripe';
+import { getStripeConfig } from '../config/stripe';
 
-// Initialize Stripe with PRODUCTION key (supports both naming conventions)
-const stripeKey = getStripeSecretKey();
-const stripe = new Stripe(stripeKey, {
+// Initialize Stripe with PRODUCTION key (supports Organization API keys)
+const config = getStripeConfig();
+const stripe = new Stripe(config.apiKey, {
   apiVersion: '2023-10-16' as any,
+  stripeAccount: config.stripeAccount,
 });
 
 // Schema for validating payment link creation

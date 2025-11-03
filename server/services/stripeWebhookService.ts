@@ -9,13 +9,14 @@ import { db, admin } from '../lib/firebase-admin.js';
 import { trialNotificationService } from './trialNotificationService.js';
 import { productionUsageService } from './productionUsageService.js';
 import { securityOptimizationService } from './securityOptimizationService.js';
-import { getStripeSecretKey } from '../config/stripe.js';
+import { getStripeConfig } from '../config/stripe.js';
 
-// Get Stripe key from centralized config (supports both naming conventions)
-const stripeKey = getStripeSecretKey();
+// Get Stripe configuration (supports Organization API keys with Stripe-Account header)
+const config = getStripeConfig();
 
-const stripe = new Stripe(stripeKey, {
+const stripe = new Stripe(config.apiKey, {
   apiVersion: "2023-10-16",
+  stripeAccount: config.stripeAccount,
 });
 
 export interface WebhookResult {

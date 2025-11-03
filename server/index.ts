@@ -106,9 +106,12 @@ app.post('/api/contractor-payments/stripe/connect', async (req, res) => {
     const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
     
     const { storage } = await import('./storage');
-    const { getStripeSecretKey } = await import('./config/stripe');
+    const { getStripeConfig } = await import('./config/stripe');
     const stripe = await import('stripe');
-    const stripeClient = new stripe.default(getStripeSecretKey());
+    const config = getStripeConfig();
+    const stripeClient = new stripe.default(config.apiKey, {
+      stripeAccount: config.stripeAccount,
+    });
     
     const user = await storage.getUser(dbUserId);
     let accountId = user?.stripeConnectAccountId;
@@ -189,8 +192,12 @@ app.get('/api/contractor-payments/stripe/account-status', async (req, res) => {
       });
     }
     
+    const { getStripeConfig } = await import('./config/stripe');
     const stripe = await import('stripe');
-    const stripeClient = new stripe.default(process.env.STRIPE_SECRET_KEY!);
+    const config = getStripeConfig();
+    const stripeClient = new stripe.default(config.apiKey, {
+      stripeAccount: config.stripeAccount,
+    });
     const account = await stripeClient.accounts.retrieve(user.stripeConnectAccountId);
     
     const isFullyActive = account.charges_enabled && account.payouts_enabled;
@@ -253,8 +260,12 @@ app.post('/api/contractor-payments/create-payment-link', async (req, res) => {
       });
     }
     
+    const { getStripeConfig } = await import('./config/stripe');
     const stripe = await import('stripe');
-    const stripeClient = new stripe.default(process.env.STRIPE_SECRET_KEY!);
+    const config = getStripeConfig();
+    const stripeClient = new stripe.default(config.apiKey, {
+      stripeAccount: config.stripeAccount,
+    });
     const account = await stripeClient.accounts.retrieve(user.stripeConnectAccountId);
     
     if (!account.charges_enabled) {

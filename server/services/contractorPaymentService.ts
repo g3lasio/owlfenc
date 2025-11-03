@@ -1,13 +1,14 @@
 import Stripe from 'stripe';
 import { storage } from '../storage';
 import type { ProjectPayment, InsertProjectPayment } from '@shared/schema';
-import { getStripeSecretKey } from '../config/stripe';
+import { getStripeConfig } from '../config/stripe';
 
-// Get Stripe key from centralized config (supports both naming conventions)
-const stripeKey = getStripeSecretKey();
+// Get Stripe configuration (supports Organization API keys with Stripe-Account header)
+const config = getStripeConfig();
 
-const stripe = new Stripe(stripeKey, {
+const stripe = new Stripe(config.apiKey, {
   apiVersion: '2024-06-20',
+  stripeAccount: config.stripeAccount,
 });
 
 export interface CreateProjectPaymentRequest {

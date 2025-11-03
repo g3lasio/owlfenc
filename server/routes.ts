@@ -5190,8 +5190,11 @@ Output must be between 200-900 characters in English.`;
       console.log(`🔔 [WEBHOOK] Body length:`, req.body.length);
 
       let event: Stripe.Event;
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+      const { getStripeConfig, getStripeWebhookSecret } = await import('./config/stripe');
+      const config = getStripeConfig();
+      const stripe = new Stripe(config.apiKey, {
         apiVersion: "2024-06-20",
+        stripeAccount: config.stripeAccount,
       });
 
       try {
@@ -5205,7 +5208,7 @@ Output must be between 200-900 characters in English.`;
           event = stripe.webhooks.constructEvent(
             req.body,
             sig as string,
-            process.env.STRIPE_WEBHOOK_SECRET || "",
+            getStripeWebhookSecret() || "",
           );
         }
       } catch (err: any) {
@@ -5286,8 +5289,11 @@ Output must be between 200-900 characters in English.`;
       }
 
       // Get subscription details from Stripe
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+      const { getStripeConfig } = await import('./config/stripe');
+      const config = getStripeConfig();
+      const stripe = new Stripe(config.apiKey, {
         apiVersion: "2024-06-20",
+        stripeAccount: config.stripeAccount,
       });
 
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
