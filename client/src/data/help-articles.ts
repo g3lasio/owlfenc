@@ -341,10 +341,10 @@ Access dashboard on mobile:
 ## Keyboard Shortcuts
 
 Speed up your workflow:
-- `Cmd/Ctrl + N`: New estimate
-- `Cmd/Ctrl + K`: Search
-- `Cmd/Ctrl + /`: Open Mervin chat
-- `Cmd/Ctrl + ,`: Settings
+- **Cmd/Ctrl + N**:New estimate
+- **Cmd/Ctrl + K**:Search
+- **Cmd/Ctrl + /**:Open Mervin chat
+- **Cmd/Ctrl + ,**:Settings
 
 ## Dashboard Health Check
 
