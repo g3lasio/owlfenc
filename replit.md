@@ -44,31 +44,31 @@ This AI-powered platform automates legal document and permit management for cont
 - DOWNLOAD BUTTON FUNCTIONALITY FIX: Botón Download corregido para descargar directamente sin abrir diálogos de compartir.
 - LEGAL DEFENSE DATA SOURCE CONSISTENCY FIX: Refactorización arquitectónica completa - eliminada `projects` collection, ÚNICA fuente `estimates` con ordenamiento descendente por fecha (más recientes primero) usando `orderBy("createdAt", "desc")` en query Firebase y listener en tiempo real.
 - INVOICES PAGE FUNCTIONAL FIX (NOV 2025): Corrección completa de problemas funcionales reportados en página de Invoices:
-  - **Data Source Fix**: Migrado de `projects` a usar SOLO `estimates` collection (100% consistente con arquitectura documentada)
-  - **Composite Index Fix**: Eliminado `orderBy` de query Firebase para evitar error "failed-precondition", ordenamiento ahora en memoria
-  - **Currency Handling**: Eliminada conversión automática de centavos - valores usados exactamente como están almacenados para prevenir corrupción de datos
-  - **Button States**: Agregado estado `isGenerating` con spinner Loader2 para mejor UX durante generación de PDFs
-  - **Error Handling**: Implementado logging comprehensivo y manejo robusto de errores Axios con timeout de 60s
-  - **Data Consistency**: Agregado `firebaseUserId` a invoices collection para consistencia con estimates
-  - **Test IDs**: Agregados data-testid a botones principales para testing automatizado
-  - **PRIMO CHAMBEADOR PRICING FIX (NOV 2025)**: Corrección crítica de precios del plan gratuito "Primo Chambeador":
-    - **Problema detectado**: Precio anual mostraba $310 cuando debería ser gratis
-    - **Root cause**: Inconsistencia en scripts de setup PostgreSQL y Firebase
-    - **Corrección aplicada**:
+  - Data Source Fix: Migrado de `projects` a usar SOLO `estimates` collection (100% consistente con arquitectura documentada)
+  - Composite Index Fix: Eliminado `orderBy` de query Firebase para evitar error "failed-precondition", ordenamiento ahora en memoria
+  - Currency Handling: Eliminada conversión automática de centavos - valores usados exactamente como están almacenados para prevenir corrupción de datos
+  - Button States: Agregado estado `isGenerating` con spinner Loader2 para mejor UX durante generación de PDFs
+  - Error Handling: Implementado logging comprehensivo y manejo robusto de errores Axios con timeout de 60s
+  - Data Consistency: Agregado `firebaseUserId` a invoices collection para consistencia con estimates
+  - Test IDs: Agregados data-testid a botones principales para testing automatizado
+  - PRIMO CHAMBEADOR PRICING FIX (NOV 2025): Corrección crítica de precios del plan gratuito "Primo Chambeador":
+    - Problema detectado: Precio anual mostraba $310 cuando debería ser gratis
+    - Root cause: Inconsistencia en scripts de setup PostgreSQL y Firebase
+    - Corrección aplicada:
       - Actualizado `server/scripts/setupSubscriptionPlans.ts`: yearly_price 31000 → 0
       - Actualizado `server/scripts/setupFirebaseSubscriptionPlans.ts`: yearly_price 290 → 0
       - Ejecutado UPDATE directo en PostgreSQL: `yearly_price = 0` para plan ID 5
       - Features ajustadas a coincidircon `shared/permissions-config.ts`
-    - **Verificación**: Plan ahora 100% gratuito tanto mensual como anual en toda la arquitectura
-    - **Consistencia**: Alineado con permissions-config.ts como fuente de verdad
-  - **Invoice Summary Redesign**: Resumen de factura completamente rediseñado con:
+    - Verificación: Plan ahora 100% gratuito tanto mensual como anual en toda la arquitectura
+    - Consistencia: Alineado con permissions-config.ts como fuente de verdad
+  - Invoice Summary Redesign: Resumen de factura completamente rediseñado con:
     - Gradientes de color por categoría (azul/verde/naranja)
     - Contraste mejorado con texto blanco bold
     - Tarjetas financieras con bordes brillantes
     - Título "Resumen de Factura" prominente y visible
     - Badge de estado con colores sólidos (verde/amarillo/rojo)
     - Información de términos de pago agregada
-  - **Estimate Selection UX Enhancement**: Sistema mejorado de selección de estimados con:
+  - Estimate Selection UX Enhancement: Sistema mejorado de selección de estimados con:
     - Búsqueda en tiempo real por cliente y tipo de proyecto
     - Visualización compacta inicial de 4 estimados máximo
     - Botón único "Ver más (X restantes)" que carga de 4 en 4
@@ -76,28 +76,28 @@ This AI-powered platform automates legal document and permit management for cont
     - Botón "Mostrar menos" para volver a vista compacta (aparece cuando displayLimit > 4)
     - Auto-reset a 4 estimados cuando cambia término de búsqueda
     - UX limpia y simple - no inunda la página, optimizada para 98+ estimados
-- **PROFILE DATA PERSISTENCE FIX (NOV 2025)**: Corrección crítica de pérdida de datos en perfiles de contratista:
-  - **Problema detectado**: Foto de perfil y documentos se perdían después de refresh/recarga
-  - **Root cause**: Uso de `URL.createObjectURL()` que genera URLs temporales en memoria del navegador
-  - **Solución implementada**:
-    - **Foto de perfil**: Sistema completo de upload a Firebase Storage con función `handleProfilePhotoUpload()`
+- PROFILE DATA PERSISTENCE FIX (NOV 2025): Corrección crítica de pérdida de datos en perfiles de contratista:
+  - Problema detectado: Foto de perfil y documentos se perdían después de refresh/recarga
+  - Root cause: Uso de `URL.createObjectURL()` que genera URLs temporales en memoria del navegador
+  - Solución implementada:
+    - Foto de perfil: Sistema completo de upload a Firebase Storage con función `handleProfilePhotoUpload()`
       - Validación de tamaño (máx 5MB) y tipo de archivo (solo imágenes)
       - Upload a carpeta `profile-photos/{userId}` en Firebase Storage
       - URL permanente guardada en Firestore en campo `profilePhoto`
       - Loading state con spinner durante upload
       - Toast notifications para feedback al usuario
-    - **Documentos (licencias, seguros, etc.)**: Sistema completo de upload a Firebase Storage con función `handleDocumentUpload()`
+    - Documentos (licencias, seguros, etc.): Sistema completo de upload a Firebase Storage con función `handleDocumentUpload()`
       - Validación de tamaño (máx 10MB) para documentos
       - Upload a carpeta `documents/{userId}` en Firebase Storage
       - URLs permanentes guardadas en Firestore en campo `documents.{documentType}`
       - Loading state separado para no bloquear otras operaciones
-    - **Logo de empresa**: Ya estaba correcto usando Base64 que persiste en Firestore
-  - **Archivos modificados**:
+    - Logo de empresa: Ya estaba correcto usando Base64 que persiste en Firestore
+  - Archivos modificados:
     - `client/src/pages/Profile.tsx`: Agregadas funciones `handleProfilePhotoUpload()` y `handleDocumentUpload()`
     - Importado `uploadFile` desde `client/src/lib/firebase.ts`
     - Estados agregados: `uploadingPhoto` y `uploadingDocument` para UX loading
     - Reemplazado `URL.createObjectURL()` temporal por Firebase Storage permanente
-  - **Verificación**: Datos ahora persisten correctamente entre dispositivos y sesiones usando Firebase como fuente de verdad
+  - Verificación: Datos ahora persisten correctamente entre dispositivos y sesiones usando Firebase como fuente de verdad
 
 ## System Architecture
 
