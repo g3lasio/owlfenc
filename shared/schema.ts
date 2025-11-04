@@ -962,3 +962,79 @@ export type EstimateItem = Estimate;
 export type InsertEstimateItem = InsertEstimate;
 export type EstimateTemplate = Template;
 export type InsertEstimateTemplate = InsertTemplate;
+
+// ================================
+// HELP & SUPPORT SYSTEM (Firebase Firestore)
+// ================================
+
+export const supportTicketCategories = [
+  'billing',
+  'technical',
+  'feature-request',
+  'feedback',
+  'how-to',
+  'urgent'
+] as const;
+
+export const supportTicketPriorities = [
+  'low',
+  'medium',
+  'high',
+  'critical'
+] as const;
+
+export const supportTicketStatuses = [
+  'open',
+  'in-progress',
+  'waiting-response',
+  'resolved',
+  'closed'
+] as const;
+
+// Zod schemas for validation
+export const supportTicketSchema = z.object({
+  id: z.string().optional(),
+  userId: z.string(),
+  userEmail: z.string().email(),
+  userName: z.string(),
+  category: z.enum(supportTicketCategories),
+  priority: z.enum(supportTicketPriorities),
+  subject: z.string().min(5, 'Subject must be at least 5 characters'),
+  description: z.string().min(20, 'Description must be at least 20 characters'),
+  status: z.enum(supportTicketStatuses).default('open'),
+  attachmentUrl: z.string().url().optional(),
+  createdAt: z.any(),
+  updatedAt: z.any(),
+  resolvedAt: z.any().optional(),
+});
+
+export const supportTicketResponseSchema = z.object({
+  id: z.string().optional(),
+  ticketId: z.string(),
+  message: z.string().min(1),
+  isStaff: z.boolean().default(false),
+  staffName: z.string().optional(),
+  createdAt: z.any(),
+});
+
+export const insertSupportTicketSchema = supportTicketSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  resolvedAt: true,
+  status: true,
+});
+
+export const insertSupportTicketResponseSchema = supportTicketResponseSchema.omit({
+  id: true,
+  createdAt: true,
+});
+
+// TypeScript types
+export type SupportTicketCategory = typeof supportTicketCategories[number];
+export type SupportTicketPriority = typeof supportTicketPriorities[number];
+export type SupportTicketStatus = typeof supportTicketStatuses[number];
+export type SupportTicket = z.infer<typeof supportTicketSchema>;
+export type SupportTicketResponse = z.infer<typeof supportTicketResponseSchema>;
+export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
+export type InsertSupportTicketResponse = z.infer<typeof insertSupportTicketResponseSchema>;
