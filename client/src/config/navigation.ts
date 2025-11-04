@@ -100,6 +100,29 @@ export const navigationGroups: NavigationGroup[] = [
     ]
   },
   {
+    title: "help-support",
+    items: [
+      {
+        id: "help-center",
+        label: "Help Center",
+        path: "/support/help-center",
+        icon: "ri-question-line"
+      },
+      {
+        id: "get-support",
+        label: "Get Support",
+        path: "/support/get-support",
+        icon: "ri-customer-service-2-line"
+      },
+      {
+        id: "my-tickets",
+        label: "My Tickets",
+        path: "/support/my-tickets",
+        icon: "ri-file-list-3-line"
+      }
+    ]
+  },
+  {
     title: "account",
     items: [
       {

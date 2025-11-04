@@ -148,6 +148,7 @@ import multiChannelRoutes from "./routes/multiChannelRoutes"; // Import Multi-Ch
 import deepSearchAiRoutes from "./routes/deepsearch-ai"; // Import DeepSearch AI routes
 import intelligentImportRoutes from "./routes/intelligentImportRoutes"; // Import Intelligent Import routes
 import invoiceRoutes from "./routes/billing-test"; // Import Invoice Management routes (using working filename)
+import supportRoutes from "./routes/support-routes"; // Import Support & Help Center routes
 import express from "express"; // Import express to use express.raw
 // REMOVED: Firebase auth middleware for DeepSearch access
 // REMOVED: Subscription auth middleware for DeepSearch access
@@ -1717,6 +1718,9 @@ Output must be between 200-900 characters in English.`;
 
   // Registrar ruta de contacto
   app.use("/api/contact", contactRoutes);
+
+  // Registrar rutas de soporte y ayuda (protegidas con Firebase auth)
+  app.use("/api/support", requireAuth, supportRoutes);
 
   // Registrar rutas de perfil de usuario y onboarding
   app.use("/api/user", userProfileRoutes);

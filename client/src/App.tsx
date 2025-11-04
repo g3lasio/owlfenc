@@ -60,6 +60,9 @@ import SimpleContractGenerator from './pages/SimpleContractGenerator';
 import ContractSignature from './pages/ContractSignature';
 import SharedEstimate from './pages/SharedEstimate';
 import WebAuthnPopup from './pages/WebAuthnPopup';
+import HelpCenter from './pages/help/HelpCenter';
+import GetSupport from './pages/help/GetSupport';
+import MyTickets from './pages/help/MyTickets';
 
 
 import { Redirect, useLocation } from "wouter";
@@ -225,6 +228,17 @@ function MainAppRouter() {
               </Route>
               <Route path="/history">
                 {() => <ProtectedRoute component={History} />}
+              </Route>
+
+              {/* Help & Support Routes */}
+              <Route path="/support/help-center">
+                {() => <ProtectedRoute component={HelpCenter} />}
+              </Route>
+              <Route path="/support/get-support">
+                {() => <ProtectedRoute component={GetSupport} />}
+              </Route>
+              <Route path="/support/my-tickets">
+                {() => <ProtectedRoute component={MyTickets} />}
               </Route>
 
               <Route path="/smart-contract-wizard">
