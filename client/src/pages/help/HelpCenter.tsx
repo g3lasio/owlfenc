@@ -4,160 +4,21 @@ import {
   Search, 
   BookOpen, 
   MessageSquare, 
-  Settings, 
-  CreditCard,
-  HelpCircle,
-  Rocket,
-  FileText,
-  Zap,
   ChevronRight 
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-
-interface HelpArticle {
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  icon: any;
-}
-
-interface HelpCategory {
-  id: string;
-  title: string;
-  description: string;
-  icon: any;
-  articles: HelpArticle[];
-}
+import { helpCategories, helpArticles } from '@/data/help-articles';
 
 export default function HelpCenter() {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const categories: HelpCategory[] = [
-    {
-      id: 'getting-started',
-      title: 'Getting Started',
-      description: 'Learn the basics and get up and running',
-      icon: Rocket,
-      articles: [
-        {
-          id: '1',
-          title: 'Creating Your First Estimate with Mervin AI',
-          category: 'getting-started',
-          description: 'Step-by-step guide to creating professional estimates',
-          icon: FileText
-        },
-        {
-          id: '2',
-          title: 'Setting Up Your Company Profile',
-          category: 'getting-started',
-          description: 'Complete your profile for professional documents',
-          icon: Settings
-        },
-        {
-          id: '3',
-          title: 'Understanding Your Dashboard',
-          category: 'getting-started',
-          description: 'Navigate your workspace like a pro',
-          icon: BookOpen
-        },
-      ]
-    },
-    {
-      id: 'features',
-      title: 'Features & Tools',
-      description: 'Master all the powerful features',
-      icon: Zap,
-      articles: [
-        {
-          id: '4',
-          title: 'Using AI Smart Estimates',
-          category: 'features',
-          description: 'Generate accurate estimates with AI assistance',
-          icon: Zap
-        },
-        {
-          id: '5',
-          title: 'Creating Legal Contracts',
-          category: 'features',
-          description: 'Generate state-compliant contracts automatically',
-          icon: FileText
-        },
-        {
-          id: '6',
-          title: 'Property Verification Tool',
-          category: 'features',
-          description: 'Verify property details before starting work',
-          icon: HelpCircle
-        },
-      ]
-    },
-    {
-      id: 'billing',
-      title: 'Billing & Subscription',
-      description: 'Manage your account and payments',
-      icon: CreditCard,
-      articles: [
-        {
-          id: '7',
-          title: 'Understanding Subscription Plans',
-          category: 'billing',
-          description: 'Choose the right plan for your business',
-          icon: CreditCard
-        },
-        {
-          id: '8',
-          title: 'Managing Payment Methods',
-          category: 'billing',
-          description: 'Update your billing information',
-          icon: CreditCard
-        },
-        {
-          id: '9',
-          title: 'Upgrading or Downgrading Your Plan',
-          category: 'billing',
-          description: 'Change your subscription anytime',
-          icon: CreditCard
-        },
-      ]
-    },
-    {
-      id: 'troubleshooting',
-      title: 'Troubleshooting',
-      description: 'Solutions to common issues',
-      icon: HelpCircle,
-      articles: [
-        {
-          id: '10',
-          title: 'PDF Generation Issues',
-          category: 'troubleshooting',
-          description: 'Resolve problems with document generation',
-          icon: FileText
-        },
-        {
-          id: '11',
-          title: 'Login & Authentication Problems',
-          category: 'troubleshooting',
-          description: 'Get back into your account',
-          icon: Settings
-        },
-        {
-          id: '12',
-          title: 'Email Delivery Issues',
-          category: 'troubleshooting',
-          description: 'Troubleshoot email sending problems',
-          icon: MessageSquare
-        },
-      ]
-    },
-  ];
-
-  const popularArticles = categories.flatMap(cat => cat.articles).slice(0, 6);
-
+  const categories = helpCategories;
+  const popularArticlesData = helpArticles.slice(0, 6);
+  
   const filteredCategories = searchQuery.trim()
-    ? categories.map(cat => ({
+    ? helpCategories.map(cat => ({
         ...cat,
         articles: cat.articles.filter(
           article =>
@@ -165,7 +26,7 @@ export default function HelpCenter() {
             article.description.toLowerCase().includes(searchQuery.toLowerCase())
         )
       })).filter(cat => cat.articles.length > 0)
-    : categories;
+    : helpCategories;
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8">
@@ -216,28 +77,29 @@ export default function HelpCenter() {
         <div>
           <h2 className="text-2xl font-bold mb-4">Popular Articles</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {popularArticles.map((article) => {
+            {popularArticlesData.map((article) => {
               const Icon = article.icon;
               return (
-                <Card 
-                  key={article.id} 
-                  className="hover:shadow-lg transition-shadow cursor-pointer"
-                  data-testid={`card-article-${article.id}`}
-                >
-                  <CardHeader>
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                        <Icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <Link key={article.id} href={`/support/help-center/article/${article.id}`}>
+                  <Card 
+                    className="hover:shadow-lg transition-shadow cursor-pointer h-full"
+                    data-testid={`card-article-${article.id}`}
+                  >
+                    <CardHeader>
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                          <Icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div className="flex-1">
+                          <CardTitle className="text-base">{article.title}</CardTitle>
+                          <CardDescription className="text-sm mt-1">
+                            {article.description}
+                          </CardDescription>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <CardTitle className="text-base">{article.title}</CardTitle>
-                        <CardDescription className="text-sm mt-1">
-                          {article.description}
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
+                    </CardHeader>
+                  </Card>
+                </Link>
               );
             })}
           </div>
@@ -269,20 +131,21 @@ export default function HelpCenter() {
                     {category.articles.map((article) => {
                       const ArticleIcon = article.icon;
                       return (
-                        <div
-                          key={article.id}
-                          data-testid={`article-${article.id}`}
-                          className="flex items-start gap-3 p-3 rounded-lg hover:bg-accent transition-colors cursor-pointer"
-                        >
-                          <ArticleIcon className="h-5 w-5 text-muted-foreground mt-0.5" />
-                          <div className="flex-1">
-                            <h4 className="font-medium text-sm">{article.title}</h4>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {article.description}
-                            </p>
+                        <Link key={article.id} href={`/support/help-center/article/${article.id}`}>
+                          <div
+                            data-testid={`article-${article.id}`}
+                            className="flex items-start gap-3 p-3 rounded-lg hover:bg-accent transition-colors cursor-pointer"
+                          >
+                            <ArticleIcon className="h-5 w-5 text-muted-foreground mt-0.5" />
+                            <div className="flex-1">
+                              <h4 className="font-medium text-sm">{article.title}</h4>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {article.description}
+                              </p>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           </div>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        </div>
+                        </Link>
                       );
                     })}
                   </div>
@@ -311,3 +174,6 @@ export default function HelpCenter() {
     </div>
   );
 }
+        {
+          id: '1',
+          title: 'Creating Your First Estimate with Mervin AI',

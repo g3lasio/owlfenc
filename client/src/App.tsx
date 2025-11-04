@@ -61,6 +61,7 @@ import ContractSignature from './pages/ContractSignature';
 import SharedEstimate from './pages/SharedEstimate';
 import WebAuthnPopup from './pages/WebAuthnPopup';
 import HelpCenter from './pages/help/HelpCenter';
+import HelpArticle from './pages/help/HelpArticle';
 import GetSupport from './pages/help/GetSupport';
 import MyTickets from './pages/help/MyTickets';
 
@@ -231,6 +232,9 @@ function MainAppRouter() {
               </Route>
 
               {/* Help & Support Routes */}
+              <Route path="/support/help-center/article/:id">
+                {() => <ProtectedRoute component={HelpArticle} />}
+              </Route>
               <Route path="/support/help-center">
                 {() => <ProtectedRoute component={HelpCenter} />}
               </Route>
