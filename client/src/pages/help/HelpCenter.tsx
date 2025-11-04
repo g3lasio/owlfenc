@@ -174,6 +174,3 @@ export default function HelpCenter() {
     </div>
   );
 }
-        {
-          id: '1',
-          title: 'Creating Your First Estimate with Mervin AI',
