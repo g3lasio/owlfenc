@@ -69,7 +69,7 @@ import {
 } from "@/components/ui/dialog";
 import PhoneAuth from "@/components/auth/PhoneAuth";
 import { multiFactor } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, uploadFile } from "@/lib/firebase";
 import {
   Alert,
   AlertDescription,
@@ -122,6 +122,8 @@ export default function Profile() {
 
   const [newSpecialty, setNewSpecialty] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
   const [activeDocumentSection, setActiveDocumentSection] = useState<
     string | null
   >(null);
@@ -409,20 +411,8 @@ export default function Profile() {
 
       reader.readAsDataURL(file);
     } else {
-      // Para otros documentos, usar URL temporal
-      const fileUrl = URL.createObjectURL(file);
-      setCompanyInfo((prev) => ({
-        ...prev,
-        documents: {
-          ...prev.documents,
-          [type]: fileUrl,
-        },
-      }));
-
-      toast({
-        title: "Archivo cargado",
-        description: `${file.name} ha sido cargado correctamente.`,
-      });
+      // Para otros documentos, subir a Firebase Storage
+      handleDocumentUpload(file, type);
     }
   };
 
@@ -520,6 +510,131 @@ export default function Profile() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ===== PROFILE PHOTO UPLOAD HANDLER =====
+  const handleProfilePhotoUpload = async (file: File) => {
+    if (!file) return;
+
+    // Validar que el usuario esté autenticado
+    if (!currentUser?.uid) {
+      toast({
+        title: "Autenticación requerida",
+        description: "Debes iniciar sesión para subir una foto de perfil",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar tamaño del archivo (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Archivo muy grande",
+        description: "La foto de perfil debe ser menor a 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar tipo de archivo
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Formato inválido",
+        description: "Solo se permiten archivos de imagen",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      console.log("📸 [PROFILE-PHOTO] Subiendo foto de perfil a Firebase Storage...");
+      
+      // Subir archivo a Firebase Storage en la carpeta profile-photos
+      const userId = currentUser.uid;
+      const photoURL = await uploadFile(file, `profile-photos/${userId}`);
+      
+      console.log("✅ [PROFILE-PHOTO] Foto subida exitosamente:", photoURL);
+      
+      // Actualizar el estado con la URL permanente
+      setCompanyInfo((prev) => ({
+        ...prev,
+        profilePhoto: photoURL,
+      }));
+
+      toast({
+        title: "Foto subida",
+        description: "Tu foto de perfil se ha subido correctamente. No olvides hacer clic en 'Save Changes'.",
+      });
+    } catch (error) {
+      console.error("❌ [PROFILE-PHOTO] Error subiendo foto:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo subir la foto de perfil. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  // ===== DOCUMENT UPLOAD HANDLER =====
+  const handleDocumentUpload = async (file: File, documentType: string) => {
+    if (!file) return;
+
+    // Validar que el usuario esté autenticado
+    if (!currentUser?.uid) {
+      toast({
+        title: "Autenticación requerida",
+        description: "Debes iniciar sesión para subir documentos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar tamaño del archivo (máximo 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "Archivo muy grande",
+        description: "El documento debe ser menor a 10MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingDocument(true);
+    try {
+      console.log(`📄 [DOCUMENT-UPLOAD] Subiendo documento ${documentType} a Firebase Storage...`);
+      
+      // Subir archivo a Firebase Storage en la carpeta documents con nombre único
+      const userId = currentUser.uid;
+      const documentURL = await uploadFile(file, `documents/${userId}`);
+      
+      console.log(`✅ [DOCUMENT-UPLOAD] Documento ${documentType} subido exitosamente:`, documentURL);
+      
+      // Actualizar el estado con la URL permanente
+      setCompanyInfo((prev) => ({
+        ...prev,
+        documents: {
+          ...prev.documents,
+          [documentType]: documentURL,
+        },
+      }));
+
+      toast({
+        title: "Documento subido",
+        description: `${file.name} se ha subido correctamente. No olvides hacer clic en 'Save Changes'.`,
+      });
+    } catch (error) {
+      console.error(`❌ [DOCUMENT-UPLOAD] Error subiendo documento ${documentType}:`, error);
+      toast({
+        title: "Error",
+        description: "No se pudo subir el documento. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingDocument(false);
     }
   };
 
@@ -917,21 +1032,22 @@ export default function Profile() {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    const imageUrl = URL.createObjectURL(file);
-                    setCompanyInfo((prev) => ({
-                      ...prev,
-                      profilePhoto: imageUrl,
-                    }));
+                    handleProfilePhotoUpload(file);
                   }
                 }}
                 className="hidden"
                 id="profile-photo-input"
+                disabled={uploadingPhoto}
               />
               <label
                 htmlFor="profile-photo-input"
-                className="cursor-pointer group relative block w-24 h-24 rounded-full border-2 border-cyan-400/30 hover:border-cyan-400 transition-colors"
+                className={`cursor-pointer group relative block w-24 h-24 rounded-full border-2 border-cyan-400/30 hover:border-cyan-400 transition-colors ${uploadingPhoto ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                {companyInfo.profilePhoto ? (
+                {uploadingPhoto ? (
+                  <div className="w-full h-full bg-gray-800 flex items-center justify-center rounded-full">
+                    <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+                  </div>
+                ) : companyInfo.profilePhoto ? (
                   <img
                     src={companyInfo.profilePhoto}
                     alt="Profile"
