@@ -51,6 +51,23 @@ This AI-powered platform automates legal document and permit management for cont
   - **Error Handling**: Implementado logging comprehensivo y manejo robusto de errores Axios con timeout de 60s
   - **Data Consistency**: Agregado `firebaseUserId` a invoices collection para consistencia con estimates
   - **Test IDs**: Agregados data-testid a botones principales para testing automatizado
+  - **PRIMO CHAMBEADOR PRICING FIX (NOV 2025)**: Corrección crítica de precios del plan gratuito "Primo Chambeador":
+    - **Problema detectado**: Precio anual mostraba $310 cuando debería ser gratis
+    - **Root cause**: Inconsistencia en scripts de setup PostgreSQL y Firebase
+    - **Corrección aplicada**:
+      - Actualizado `server/scripts/setupSubscriptionPlans.ts`: yearly_price 31000 → 0
+      - Actualizado `server/scripts/setupFirebaseSubscriptionPlans.ts`: yearly_price 290 → 0
+      - Ejecutado UPDATE directo en PostgreSQL: `yearly_price = 0` para plan ID 5
+      - Features ajustadas a coincidircon `shared/permissions-config.ts`
+    - **Verificación**: Plan ahora 100% gratuito tanto mensual como anual en toda la arquitectura
+    - **Consistencia**: Alineado con permissions-config.ts como fuente de verdad
+  - **Invoice Summary Redesign**: Resumen de factura completamente rediseñado con:
+    - Gradientes de color por categoría (azul/verde/naranja)
+    - Contraste mejorado con texto blanco bold
+    - Tarjetas financieras con bordes brillantes
+    - Título "Resumen de Factura" prominente y visible
+    - Badge de estado con colores sólidos (verde/amarillo/rojo)
+    - Información de términos de pago agregada
   - **Estimate Selection UX Enhancement**: Sistema mejorado de selección de estimados con:
     - Búsqueda en tiempo real por cliente y tipo de proyecto
     - Visualización compacta inicial de 4 estimados máximo

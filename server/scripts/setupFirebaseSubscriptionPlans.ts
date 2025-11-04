@@ -35,22 +35,22 @@ async function setupFirebaseSubscriptionPlans() {
       updatedAt: new Date()
     });
 
-    // Plan 2: Primo Chambeador ($29/mes)
+    // Plan 2: Primo Chambeador (GRATIS - Plan Permanente)
     await setDoc(doc(plansCollection, '2'), {
       id: 2,
       name: 'Primo Chambeador',
       code: 'PRIMO_CHAMBEADOR',
-      price: 29,
-      yearly_price: 290,
-      description: 'Plan profesional para contratistas activos',
+      price: 0,
+      yearly_price: 0,
+      description: 'Plan gratuito permanente',
       motto: 'Todo lo que necesitas para crecer',
       features: {
-        basicEstimates: 50,
-        aiEstimates: 20,
-        contracts: 25,
-        propertyVerifications: 15,
-        permitAdvisor: 10,
-        projects: 30
+        basicEstimates: 5,
+        aiEstimates: 1,
+        contracts: 0,
+        propertyVerifications: 0,
+        permitAdvisor: 0,
+        projects: 0
       },
       isActive: true,
       is_active: true,
@@ -83,7 +83,7 @@ async function setupFirebaseSubscriptionPlans() {
 
     console.log('✅ Planes de suscripción configurados exitosamente en Firebase:');
     console.log('   - Free Trial: Límites básicos por 7 días');
-    console.log('   - Primo Chambeador: $29/mes con límites generosos');
+    console.log('   - Primo Chambeador: GRATIS plan permanente');
     console.log('   - Master Contractor: $99/mes ILIMITADO');
 
   } catch (error) {

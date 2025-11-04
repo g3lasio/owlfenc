@@ -31,21 +31,21 @@ async function setupSubscriptionPlans() {
       is_active: true
     });
 
-    // Plan 2: Primo Chambeador ($29/mes)
+    // Plan 2: Primo Chambeador (GRATIS - Plan Permanente)
     await db.insert(subscriptionPlans).values({
       name: 'Primo Chambeador',
       code: 'PRIMO_CHAMBEADOR', 
-      price: 2900, // $29.00 en centavos
-      yearly_price: 31000, // $310/año (descuento)
-      description: 'Plan profesional para contratistas activos',
+      price: 0, // GRATIS (plan permanente gratuito)
+      yearly_price: 0, // GRATIS también en plan anual
+      description: 'Plan gratuito permanente',
       motto: 'Todo lo que necesitas para crecer',
       features: {
-        basicEstimates: 50,       // 50 estimados básicos
-        aiEstimates: 20,          // 20 estimados con IA
-        contracts: 25,            // 25 contratos
-        propertyVerifications: 15, // 15 verificaciones
-        permitAdvisor: 10,        // 10 consultas asesor permisos
-        projects: 30              // 30 proyectos
+        basicEstimates: 5,        // 5 estimados básicos con marca de agua
+        aiEstimates: 1,           // 1 estimado con IA con marca de agua
+        contracts: 0,             // Sin acceso a contratos
+        propertyVerifications: 0, // Sin verificaciones
+        permitAdvisor: 0,         // Sin asesor permisos
+        projects: 0               // Sin proyectos
       },
       is_active: true
     });
@@ -71,7 +71,7 @@ async function setupSubscriptionPlans() {
 
     console.log('✅ Planes de suscripción configurados exitosamente:');
     console.log('   - Free Trial: Límites básicos por 7 días');
-    console.log('   - Primo Chambeador: $29/mes con límites generosos');
+    console.log('   - Primo Chambeador: GRATIS plan permanente');
     console.log('   - Master Contractor: $99/mes ILIMITADO');
 
   } catch (error) {
