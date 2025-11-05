@@ -2406,3 +2406,18 @@ export const helpCategories: HelpCategory[] = [
     articles: helpArticles.filter(a => a.category === 'troubleshooting')
   }
 ];
+
+export function getArticleById(id: string): HelpArticle | undefined {
+  return helpArticles.find(article => article.id === id);
+}
+
+export function getRelatedArticles(articleId: string): HelpArticle[] {
+  const article = getArticleById(articleId);
+  if (!article || !article.relatedArticles) {
+    return [];
+  }
+  
+  return article.relatedArticles
+    .map(id => getArticleById(id))
+    .filter((a): a is HelpArticle => a !== undefined);
+}
