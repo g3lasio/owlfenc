@@ -67,7 +67,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import PhoneAuth from "@/components/auth/PhoneAuth";
+import PhoneAuthMFA from "@/components/auth/PhoneAuthMFA";
 import { multiFactor } from "firebase/auth";
 import { auth, uploadFile } from "@/lib/firebase";
 import {
@@ -2065,18 +2065,10 @@ export default function Profile() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <PhoneAuth />
-                        
-                        <div className="mt-4 text-right">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={handleCancelEnrollment}
-                            className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
+                        <PhoneAuthMFA 
+                          onSuccess={handleEnrollmentSuccess}
+                          onCancel={handleCancelEnrollment}
+                        />
                       </CardContent>
                     </Card>
                   )}
