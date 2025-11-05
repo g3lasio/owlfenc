@@ -19,7 +19,8 @@ import {
 import { ConversationEngine } from "../mervin-ai/core/ConversationEngine";
 import { SmartActionSystem } from "../components/mervin/SmartActionSystem";
 import { useMervinAgent } from "../mervin-v2/hooks/useMervinAgent";
-import { StreamingProgress } from "../components/mervin/StreamingProgress";
+import { ThinkingIndicator } from "../components/mervin/ThinkingIndicator";
+import { MessageContent } from "../components/mervin/MessageContent";
 import { SmartContextPanel } from "../components/mervin/SmartContextPanel";
 import { AgentCapabilitiesBadge } from "../components/mervin/AgentCapabilitiesBadge";
 import { DynamicActionSuggestions } from "../components/mervin/DynamicActionSuggestions";
@@ -747,14 +748,6 @@ export default function Mervin() {
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto px-3 py-4 md:p-4 space-y-4 pb-28 md:pb-24">
-        {/* Streaming Progress Indicator */}
-        {(isLoading || mervinAgent.streamingUpdates.length > 0) && (
-          <StreamingProgress 
-            updates={mervinAgent.streamingUpdates}
-            isActive={isLoading}
-          />
-        )}
-
         {/* Smart Context Panel */}
         {(activeEndpoints.length > 0 || currentAIModel) && (
           <SmartContextPanel
@@ -795,7 +788,11 @@ export default function Mervin() {
                 </div>
               )}
               
-              <div className="whitespace-pre-wrap">{message.content}</div>
+              <MessageContent 
+                content={message.content}
+                sender={message.sender}
+                enableTyping={!message.state}
+              />
               
               {message.taskResult && (
                 <div className="mt-3 p-2 bg-green-900/30 border border-green-700/50 rounded text-green-200 text-sm">
@@ -821,28 +818,8 @@ export default function Mervin() {
         ))}
         
         {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-gray-800 text-gray-200 px-5 py-4 md:px-4 md:py-2 rounded-2xl md:rounded-lg max-w-[280px] sm:max-w-sm md:max-w-md shadow-lg">
-              <div className="flex items-center space-x-3 md:space-x-2">
-                <div className="w-8 h-8 md:w-6 md:h-6">
-                  <img
-                    src="https://i.postimg.cc/W4nKDvTL/logo-mervin.png"
-                    alt="Mervin AI"
-                    className="w-8 h-8 md:w-6 md:h-6 animate-pulse"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-cyan-400 font-medium text-base md:text-sm">
-                    Procesando
-                  </span>
-                  <div className="flex">
-                    <span className="animate-pulse text-cyan-400">.</span>
-                    <span className="animate-pulse text-cyan-400 delay-200">.</span>
-                    <span className="animate-pulse text-cyan-400 delay-500">.</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="flex justify-start px-2">
+            <ThinkingIndicator />
           </div>
         )}
         
