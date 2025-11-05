@@ -67,9 +67,17 @@ Tiempo de ejecución: ${taskResult.executionTime}ms
 Pasos completados: ${taskResult.stepsCompleted?.join(', ')}
 
 Genera un mensaje profesional informando al usuario del éxito.
+
+IMPORTANTE - URLs CLICKABLES:
+- Si el resultado contiene URLs (shareableUrl, url, pdfUrl, link, etc.), debes incluirlas EN TEXTO COMPLETO como enlaces clickables
+- Escribe las URLs completas sin acortar: https://ejemplo.com/ruta/completa
+- Asegúrate que las URLs estén en su propia línea o claramente separadas del texto
+- Ejemplo: "Puedes revisar tu estimado aquí: https://chyrris.com/s/ABC123"
+
 Incluye:
 - Confirmación clara
-- Datos importantes (IDs, totales, enlaces, etc.)
+- Datos importantes (IDs, totales)
+- URLs COMPLETAS Y CLICKABLES si existen en el resultado
 - Próximos pasos si aplica
 - Ofrecimiento de ayuda adicional`
       : `You just completed this task:
@@ -80,9 +88,17 @@ Execution time: ${taskResult.executionTime}ms
 Steps completed: ${taskResult.stepsCompleted?.join(', ')}
 
 Generate a professional message informing the user of success.
+
+IMPORTANT - CLICKABLE URLs:
+- If the result contains URLs (shareableUrl, url, pdfUrl, link, etc.), you MUST include them IN FULL TEXT as clickable links
+- Write complete URLs without shortening: https://example.com/full/path
+- Make sure URLs are on their own line or clearly separated from text
+- Example: "You can review your estimate here: https://chyrris.com/s/ABC123"
+
 Include:
 - Clear confirmation
-- Important data (IDs, totals, links, etc.)
+- Important data (IDs, totals)
+- COMPLETE AND CLICKABLE URLs if they exist in the result
 - Next steps if applicable
 - Offer of additional help`;
 
