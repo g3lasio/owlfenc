@@ -25,6 +25,7 @@ import { AgentCapabilitiesBadge } from "../components/mervin/AgentCapabilitiesBa
 import { DynamicActionSuggestions } from "../components/mervin/DynamicActionSuggestions";
 import { WebResearchIndicator } from "../components/mervin/WebResearchIndicator";
 import { SystemStatusBar } from "../components/mervin/SystemStatusBar";
+import { FuturisticThinking } from "../components/mervin/FuturisticThinking";
 
 // Complete types for agent functionality
 type MessageSender = "user" | "assistant";
@@ -36,6 +37,7 @@ type Message = {
   state?: MessageState;
   action?: string;
   taskResult?: any;
+  timestamp?: Date;
 };
 
 type AgentTask = "estimates" | "contracts" | "permits" | "properties" | "analytics" | "chat";
@@ -49,6 +51,31 @@ interface AgentResponse {
 }
 
 // Action buttons removed - now handled by SmartActionSystem
+
+// Helper function to format message timestamp
+function formatMessageTime(timestamp?: Date): string {
+  if (!timestamp) return '';
+  
+  const now = new Date();
+  const msgDate = new Date(timestamp);
+  const isToday = now.toDateString() === msgDate.toDateString();
+  
+  const timeStr = msgDate.toLocaleTimeString('es-MX', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: true 
+  });
+  
+  if (isToday) {
+    return timeStr;
+  } else {
+    const dateStr = msgDate.toLocaleDateString('es-MX', { 
+      month: 'short', 
+      day: 'numeric' 
+    });
+    return `${dateStr}, ${timeStr}`;
+  }
+}
 
 export default function Mervin() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -151,7 +178,8 @@ export default function Mervin() {
             return [...filtered, {
               id: "assistant-" + Date.now(),
               content: lastMervinMessage.content,
-              sender: "assistant" as MessageSender
+              sender: "assistant" as MessageSender,
+              timestamp: lastMervinMessage.timestamp || new Date()
             }];
           });
           
@@ -225,6 +253,7 @@ export default function Mervin() {
           id: "welcome",
           content: welcomeContent,
           sender: "assistant",
+          timestamp: new Date()
         };
         setMessages([welcomeMessage]);
       }
@@ -258,6 +287,7 @@ export default function Mervin() {
       id: "user-" + Date.now(),
       content: inputValue,
       sender: "user",
+      timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -279,7 +309,8 @@ export default function Mervin() {
       id: "thinking-" + Date.now(),
       content: "Analizando tu solicitud...",
       sender: "assistant",
-      state: "thinking"
+      state: "thinking",
+      timestamp: new Date()
     };
     setMessages(prev => [...prev, thinkingMessage]);
 
@@ -295,7 +326,8 @@ export default function Mervin() {
           id: "processing-" + Date.now(),
           content: "🤖 **Mervin AI V2 Activo**\n\nProcesando tu solicitud con inteligencia híbrida...\n\n*ChatGPT-4o + Claude Sonnet 4 trabajando en tu proyecto...*",
           sender: "assistant",
-          state: "analyzing"
+          state: "analyzing",
+          timestamp: new Date()
         };
         setMessages(prev => [...prev, processingMessage]);
         
@@ -322,7 +354,8 @@ export default function Mervin() {
         const assistantMessage: Message = {
           id: "assistant-" + Date.now(),
           content: randomResponse,
-          sender: "assistant"
+          sender: "assistant",
+          timestamp: new Date()
         };
         setMessages(prev => [...prev, assistantMessage]);
       } else {
@@ -332,6 +365,7 @@ export default function Mervin() {
           id: "assistant-" + Date.now(),
           content: "⚠️ El servicio de Mervin V2 no está disponible en este momento. Por favor intenta de nuevo más tarde.",
           sender: "assistant",
+          timestamp: new Date()
         };
         setMessages(prev => [...prev, assistantMessage]);
       }
@@ -344,6 +378,7 @@ export default function Mervin() {
         id: "assistant-" + Date.now(),
         content: "¡Órale compadre! Se me trabó el sistema, pero no te preocupes. Dame un momento y vuelve a intentarlo. Aquí ando para lo que necesites.",
         sender: "assistant",
+        timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
       
@@ -438,7 +473,8 @@ export default function Mervin() {
       id: "action-" + Date.now(),
       content: `${contextMsg}\n\n🚀 **Activando ${action.toUpperCase()}**\n\nInicializando agente autónomo para ${action}...`,
       sender: "assistant",
-      state: "analyzing"
+      state: "analyzing",
+      timestamp: new Date()
     };
     setMessages(prev => [...prev, actionMessage]);
     
@@ -458,6 +494,7 @@ export default function Mervin() {
           id: "guidance-" + Date.now(),
           content: `Para usar ${action}, activa el modo Agent arriba y háblame sobre lo que necesitas, primo.`,
           sender: "assistant",
+          timestamp: new Date()
         };
         setMessages(prev => [...prev, guidanceMessage]);
       }
@@ -467,6 +504,7 @@ export default function Mervin() {
         id: "error-" + Date.now(),
         content: `¡Órale! Hubo un problemita con ${action}. Dime qué necesitas hacer y te ayudo de otra forma, compadre.`,
         sender: "assistant",
+        timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
     }
@@ -618,25 +656,31 @@ export default function Mervin() {
                     : "bg-gray-800 text-gray-200 shadow-lg"
               }`}
             >
-              {message.state === "thinking" && (
-                <div className="flex items-center space-x-3 mb-3">
-                  <Brain className="w-5 h-5 md:w-4 md:h-4 text-purple-400 animate-pulse" />
-                  <span className="text-purple-400 text-base md:text-sm font-medium">Analizando...</span>
+              {(message.state === "thinking" || message.state === "analyzing") && (
+                <div className="mb-2">
+                  <FuturisticThinking state={message.state} />
                 </div>
               )}
-              {message.state === "analyzing" && (
-                <div className="flex items-center space-x-3 mb-3">
-                  <Zap className="w-5 h-5 md:w-4 md:h-4 text-cyan-400 animate-pulse" />
-                  <span className="text-cyan-400 text-base md:text-sm font-medium">Agente Activo</span>
-                </div>
-              )}
+              
               <div className="whitespace-pre-wrap">{message.content}</div>
+              
               {message.taskResult && (
                 <div className="mt-3 p-2 bg-green-900/30 border border-green-700/50 rounded text-green-200 text-sm">
                   <strong>✅ Tarea Completada</strong>
                   <div className="mt-1 text-xs text-green-300">
                     Resultado procesado por el agente autónomo
                   </div>
+                </div>
+              )}
+              
+              {/* Timestamp */}
+              {message.timestamp && (
+                <div className={`mt-2 text-xs ${
+                  message.sender === "user" 
+                    ? "text-cyan-200/70" 
+                    : "text-gray-400"
+                }`}>
+                  {formatMessageTime(message.timestamp)}
                 </div>
               )}
             </div>
