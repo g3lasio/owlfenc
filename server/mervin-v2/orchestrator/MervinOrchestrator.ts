@@ -112,7 +112,7 @@ export class MervinOrchestrator {
       request.conversationHistory
     );
 
-    this.progress?.sendComplete('✅ Respuesta lista');
+    this.progress?.sendComplete(response);
 
     return {
       type: 'CONVERSATION',
