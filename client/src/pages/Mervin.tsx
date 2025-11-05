@@ -15,6 +15,8 @@ import {
   Sparkles,
   Lock,
   Cpu,
+  Copy,
+  Check,
 } from "lucide-react";
 import { ConversationEngine } from "../mervin-ai/core/ConversationEngine";
 import { SmartActionSystem } from "../components/mervin/SmartActionSystem";
@@ -100,6 +102,7 @@ export default function Mervin() {
   const [webSearchQuery, setWebSearchQuery] = useState<string | undefined>(undefined);
   const [suggestionContext, setSuggestionContext] = useState<'initial' | 'estimate' | 'contract' | 'permit' | 'property' | 'general'>('initial');
   const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const conversationEngineRef = useRef<ConversationEngine | null>(null);
   const { toast } = useToast();
   const { currentUser } = useAuth();
@@ -616,6 +619,30 @@ export default function Mervin() {
     }
   };
   
+  const handleCopyMessage = async (messageId: string, content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedMessageId(messageId);
+      
+      toast({
+        title: "✓ Copiado",
+        description: "Mensaje copiado al portapapeles",
+      });
+      
+      // Reset after 2 seconds
+      setTimeout(() => {
+        setCopiedMessageId(null);
+      }, 2000);
+    } catch (error) {
+      console.error('❌ Error copying message:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo copiar el mensaje',
+        variant: 'destructive',
+      });
+    }
+  };
+  
   // Auto-save conversation every 3 messages (more frequent)
   useEffect(() => {
     if (messages.length > 0 && messages.length % 3 === 0) {
@@ -758,37 +785,55 @@ export default function Mervin() {
               message.sender === "user" ? "justify-end" : "justify-start"
             }`}
           >
-            <div
-              className={`max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg px-4 py-3 rounded-2xl md:rounded-lg text-base md:text-sm leading-relaxed ${
-                message.sender === "user"
-                  ? "bg-cyan-600 text-white shadow-lg"
-                  : "bg-gray-800 text-gray-200 shadow-lg"
-              }`}
-            >
-              <MessageContent 
-                content={message.content}
-                sender={message.sender}
-                enableTyping={!message.state}
-              />
-              
-              {message.taskResult && (
-                <div className="mt-3 p-2 bg-green-900/30 border border-green-700/50 rounded text-green-200 text-sm">
-                  <strong>✅ Tarea Completada</strong>
-                  <div className="mt-1 text-xs text-green-300">
-                    Resultado procesado por el agente autónomo
+            <div className="relative group">
+              <div
+                className={`max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg px-4 py-3 rounded-2xl md:rounded-lg text-base md:text-sm leading-relaxed ${
+                  message.sender === "user"
+                    ? "bg-cyan-600 text-white shadow-lg"
+                    : "bg-gray-800 text-gray-200 shadow-lg"
+                }`}
+              >
+                <MessageContent 
+                  content={message.content}
+                  sender={message.sender}
+                  enableTyping={!message.state}
+                />
+                
+                {message.taskResult && (
+                  <div className="mt-3 p-2 bg-green-900/30 border border-green-700/50 rounded text-green-200 text-sm">
+                    <strong>✅ Tarea Completada</strong>
+                    <div className="mt-1 text-xs text-green-300">
+                      Resultado procesado por el agente autónomo
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+                
+                {/* Timestamp */}
+                {message.timestamp && (
+                  <div className={`mt-2 text-xs ${
+                    message.sender === "user" 
+                      ? "text-cyan-200/70" 
+                      : "text-gray-400"
+                  }`}>
+                    {formatMessageTime(message.timestamp)}
+                  </div>
+                )}
+              </div>
               
-              {/* Timestamp */}
-              {message.timestamp && (
-                <div className={`mt-2 text-xs ${
-                  message.sender === "user" 
-                    ? "text-cyan-200/70" 
-                    : "text-gray-400"
-                }`}>
-                  {formatMessageTime(message.timestamp)}
-                </div>
+              {/* Copy Button - Only for assistant messages */}
+              {message.sender === "assistant" && (
+                <button
+                  onClick={() => handleCopyMessage(message.id, message.content)}
+                  className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-700 hover:bg-gray-600 text-gray-300 p-1.5 rounded-lg shadow-lg"
+                  title="Copiar mensaje"
+                  data-testid={`button-copy-${message.id}`}
+                >
+                  {copiedMessageId === message.id ? (
+                    <Check className="w-3.5 h-3.5 text-green-400" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5" />
+                  )}
+                </button>
               )}
             </div>
           </div>
