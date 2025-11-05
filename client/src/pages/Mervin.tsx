@@ -528,7 +528,20 @@ export default function Mervin() {
       {/* Header with Model Selector */}
       <div className="px-4 py-3 md:p-4 border-b border-cyan-900/30 bg-black/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl md:text-2xl font-bold text-cyan-400 truncate">Mervin AI</h1>
+          {/* Spacer for alignment */}
+          <div className="w-[100px] md:w-[150px]"></div>
+          
+          {/* Centered Logo and Title */}
+          <div className="flex items-center gap-3 justify-center flex-1">
+            <img
+              src="https://i.postimg.cc/W4nKDvTL/logo-mervin.png"
+              alt="Mervin AI"
+              className="w-8 h-8 md:w-10 md:h-10"
+            />
+            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+              Mervin AI
+            </h1>
+          </div>
           
           {/* Model Selector */}
           <div className="flex items-center gap-2">{/* Model Selector */}
@@ -596,11 +609,6 @@ export default function Mervin() {
 
       {/* Onboarding Instructions - DISABLED (ONBOARDING REMOVED) */}
 
-      {/* Agent Capabilities Badge */}
-      <div className="px-4 py-2">
-        <AgentCapabilitiesBadge mode={selectedModel} />
-      </div>
-
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto px-3 py-4 md:p-4 space-y-4 pb-28 md:pb-24">
         {/* Streaming Progress Indicator */}
@@ -626,17 +634,6 @@ export default function Mervin() {
             isSearching={isWebSearching}
             resultsFound={webSearchResults}
             query={webSearchQuery}
-          />
-        )}
-
-        {/* Dynamic Action Suggestions */}
-        {!isLoading && messages.length > 0 && (
-          <DynamicActionSuggestions
-            context={suggestionContext}
-            onSuggestionClick={(prompt) => {
-              setInputValue(prompt);
-              handleSendMessage();
-            }}
           />
         )}
 
