@@ -19,6 +19,12 @@ import {
 import { ConversationEngine } from "../mervin-ai/core/ConversationEngine";
 import { SmartActionSystem } from "../components/mervin/SmartActionSystem";
 import { useMervinAgent } from "../mervin-v2/hooks/useMervinAgent";
+import { StreamingProgress } from "../components/mervin/StreamingProgress";
+import { SmartContextPanel } from "../components/mervin/SmartContextPanel";
+import { AgentCapabilitiesBadge } from "../components/mervin/AgentCapabilitiesBadge";
+import { DynamicActionSuggestions } from "../components/mervin/DynamicActionSuggestions";
+import { WebResearchIndicator } from "../components/mervin/WebResearchIndicator";
+import { SystemStatusBar } from "../components/mervin/SystemStatusBar";
 
 // Complete types for agent functionality
 type MessageSender = "user" | "assistant";
@@ -50,12 +56,18 @@ export default function Mervin() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState<"legacy" | "agent">("agent");
   const [showModelSelector, setShowModelSelector] = useState(false);
-  const [showAgentFunctions, setShowAgentFunctions] = useState(false);
   const [currentTask, setCurrentTask] = useState<AgentTask | null>(null);
-  const [isProcessingTask, setIsProcessingTask] = useState(false);
   const [isOnboardingMode, setIsOnboardingMode] = useState(false);
   const [showOnboardingProgress, setShowOnboardingProgress] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // V2 UI States
+  const [activeEndpoints, setActiveEndpoints] = useState<string[]>([]);
+  const [currentAIModel, setCurrentAIModel] = useState<'ChatGPT-4o' | 'Claude Sonnet 4' | null>(null);
+  const [isWebSearching, setIsWebSearching] = useState(false);
+  const [webSearchResults, setWebSearchResults] = useState<number | undefined>(undefined);
+  const [webSearchQuery, setWebSearchQuery] = useState<string | undefined>(undefined);
+  const [suggestionContext, setSuggestionContext] = useState<'initial' | 'estimate' | 'contract' | 'permit' | 'property' | 'general'>('initial');
   const conversationEngineRef = useRef<ConversationEngine | null>(null);
   const { toast } = useToast();
   const { currentUser } = useAuth();
@@ -69,8 +81,52 @@ export default function Mervin() {
   // Initialize Mervin V2 Agent (only if user has access and is in agent mode)
   const mervinAgent = useMervinAgent({
     userId: currentUser?.uid || 'guest',
-    enableStreaming: false, // Start with JSON mode for simplicity
-    language: 'es'
+    enableStreaming: true, // ✅ Streaming activado
+    language: 'es',
+    onStreamUpdate: (update) => {
+      console.log('📡 [STREAM-UPDATE]:', update);
+      
+      // Detectar endpoints activos
+      const content = update.content.toLowerCase();
+      if (content.includes('estimate') || content.includes('estimado')) {
+        setActiveEndpoints(prev => Array.from(new Set([...prev, 'estimate'])));
+        setSuggestionContext('estimate');
+      }
+      if (content.includes('contract') || content.includes('contrato')) {
+        setActiveEndpoints(prev => Array.from(new Set([...prev, 'contract'])));
+        setSuggestionContext('contract');
+      }
+      if (content.includes('permit') || content.includes('permiso')) {
+        setActiveEndpoints(prev => Array.from(new Set([...prev, 'permit'])));
+        setSuggestionContext('permit');
+      }
+      if (content.includes('property') || content.includes('propiedad')) {
+        setActiveEndpoints(prev => Array.from(new Set([...prev, 'property'])));
+        setSuggestionContext('property');
+      }
+      
+      // Detectar web research
+      if (content.includes('investigando') || content.includes('buscando') || content.includes('web search')) {
+        setIsWebSearching(true);
+        setActiveEndpoints(prev => Array.from(new Set([...prev, 'research'])));
+        setWebSearchQuery(content.split('buscando')[1]?.split('.')[0] || 'información relevante');
+      }
+      
+      if (update.type === 'complete' && isWebSearching) {
+        setIsWebSearching(false);
+        const match = content.match(/(\d+)\s+resultados?/i);
+        if (match) {
+          setWebSearchResults(parseInt(match[1]));
+        }
+      }
+      
+      // Detectar modelo AI en uso
+      if (content.includes('chatgpt') || content.includes('gpt-4o')) {
+        setCurrentAIModel('ChatGPT-4o');
+      } else if (content.includes('claude') || content.includes('sonnet')) {
+        setCurrentAIModel('Claude Sonnet 4');
+      }
+    }
   });
 
   // React to mervinAgent messages updates (fix asynchronous state issue)
@@ -98,8 +154,14 @@ export default function Mervin() {
               sender: "assistant" as MessageSender
             }];
           });
+          
+          // Limpiar estados al completar
           setIsLoading(false);
-          setIsProcessingTask(false);
+          
+          // Reset web search indicators después de 3 segundos
+          setTimeout(() => {
+            setIsWebSearching(false);
+          }, 3000);
         }
       }
     }
@@ -201,6 +263,15 @@ export default function Mervin() {
     setMessages(prev => [...prev, userMessage]);
     const currentInput = inputValue;
     setInputValue("");
+    
+    // Reset all context states for fresh task
+    setActiveEndpoints([]);
+    setCurrentAIModel(null);
+    setIsWebSearching(false);
+    setWebSearchResults(undefined);
+    setWebSearchQuery(undefined);
+    setSuggestionContext('general');
+    
     setIsLoading(true);
 
     // Add thinking indicator
@@ -283,7 +354,6 @@ export default function Mervin() {
       });
     } finally {
       setIsLoading(false);
-      setIsProcessingTask(false);
     }
   };
 
@@ -339,6 +409,14 @@ export default function Mervin() {
   const handleAction = async (action: string, source: 'slash' | 'smart' | 'fab' | 'button' = 'button') => {
     console.log(`🎯 [SMART-ACTION] ${action} triggered from ${source}`);
     
+    // Reset all context states for fresh task
+    setActiveEndpoints([]);
+    setCurrentAIModel(null);
+    setIsWebSearching(false);
+    setWebSearchResults(undefined);
+    setWebSearchQuery(undefined);
+    setSuggestionContext('general');
+    
     // Add contextual message based on source
     let contextMsg = '';
     switch(source) {
@@ -355,7 +433,6 @@ export default function Mervin() {
         contextMsg = '🚀 Función activada';
     }
     setCurrentTask(action as AgentTask);
-    setIsProcessingTask(true);
     
     const actionMessage: Message = {
       id: "action-" + Date.now(),
@@ -392,8 +469,6 @@ export default function Mervin() {
         sender: "assistant",
       };
       setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsProcessingTask(false);
     }
   };
   
@@ -417,85 +492,8 @@ export default function Mervin() {
         <div className="flex items-center justify-between">
           <h1 className="text-xl md:text-2xl font-bold text-cyan-400 truncate">Mervin AI</h1>
           
-          {/* Model Selector and Agent Functions */}
-          <div className="flex items-center gap-2">
-            {/* Agent Functions Button - Only visible in Agent Mode */}
-            {selectedModel === "agent" && canUseAgentMode && (
-              <div className="relative">
-                <Button
-                  variant="outline"
-                  size="default"
-                  className="bg-gradient-to-r from-purple-800/50 to-cyan-800/50 text-cyan-300 border-cyan-500/30 hover:from-purple-700/60 hover:to-cyan-700/60 min-h-[44px] min-w-[44px] group transition-all duration-300"
-                  onClick={() => setShowAgentFunctions(!showAgentFunctions)}
-                >
-                  <Sparkles className="w-5 h-5 md:w-4 md:h-4 group-hover:animate-pulse" />
-                  <span className="sr-only">Agent Functions</span>
-                </Button>
-                
-                {showAgentFunctions && (
-                  <div className="absolute top-full right-0 mt-2 bg-gray-800/95 backdrop-blur-sm border border-cyan-500/30 rounded-lg shadow-xl z-50 min-w-[200px] animate-in slide-in-from-top-2 duration-200">
-                    <div className="p-2 space-y-1">
-                      <div className="flex items-center space-x-2 px-3 py-2 text-cyan-300 text-sm border-b border-gray-700">
-                        <Cpu className="w-4 h-4" />
-                        <span>Agent Functions</span>
-                      </div>
-                      <button
-                        className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-700/50 rounded transition-colors text-cyan-300"
-                        onClick={() => {
-                          handleAction('estimates', 'button');
-                          setShowAgentFunctions(false);
-                        }}
-                      >
-                        <Paperclip className="w-4 h-4" />
-                        <span className="text-sm">Generate Estimates</span>
-                      </button>
-                      <button
-                        className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-700/50 rounded transition-colors text-cyan-300"
-                        onClick={() => {
-                          handleAction('contracts', 'button');
-                          setShowAgentFunctions(false);
-                        }}
-                      >
-                        <Send className="w-4 h-4" />
-                        <span className="text-sm">Create Contracts</span>
-                      </button>
-                      <button
-                        className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-700/50 rounded transition-colors text-cyan-300"
-                        onClick={() => {
-                          handleAction('permits', 'button');
-                          setShowAgentFunctions(false);
-                        }}
-                      >
-                        <Brain className="w-4 h-4" />
-                        <span className="text-sm">Permit Advisor</span>
-                      </button>
-                      <button
-                        className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-700/50 rounded transition-colors text-cyan-300"
-                        onClick={() => {
-                          handleAction('properties', 'button');
-                          setShowAgentFunctions(false);
-                        }}
-                      >
-                        <GraduationCap className="w-4 h-4" />
-                        <span className="text-sm">Verify Properties</span>
-                      </button>
-                      <button
-                        className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-700/50 rounded transition-colors text-cyan-300"
-                        onClick={() => {
-                          handleAction('analytics', 'button');
-                          setShowAgentFunctions(false);
-                        }}
-                      >
-                        <Zap className="w-4 h-4" />
-                        <span className="text-sm">View Analytics</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Model Selector */}
+          {/* Model Selector */}
+          <div className="flex items-center gap-2">{/* Model Selector */}
             <div className="relative">
               <Button
                 variant="outline"
@@ -560,8 +558,50 @@ export default function Mervin() {
 
       {/* Onboarding Instructions - DISABLED (ONBOARDING REMOVED) */}
 
+      {/* Agent Capabilities Badge */}
+      <div className="px-4 py-2">
+        <AgentCapabilitiesBadge mode={selectedModel} />
+      </div>
+
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto px-3 py-4 md:p-4 space-y-4 pb-28 md:pb-24">
+        {/* Streaming Progress Indicator */}
+        {(isLoading || mervinAgent.streamingUpdates.length > 0) && (
+          <StreamingProgress 
+            updates={mervinAgent.streamingUpdates}
+            isActive={isLoading}
+          />
+        )}
+
+        {/* Smart Context Panel */}
+        {(activeEndpoints.length > 0 || currentAIModel) && (
+          <SmartContextPanel
+            activeEndpoints={activeEndpoints}
+            currentModel={currentAIModel}
+            isProcessing={isLoading}
+          />
+        )}
+
+        {/* Web Research Indicator */}
+        {(isWebSearching || webSearchResults !== undefined) && (
+          <WebResearchIndicator
+            isSearching={isWebSearching}
+            resultsFound={webSearchResults}
+            query={webSearchQuery}
+          />
+        )}
+
+        {/* Dynamic Action Suggestions */}
+        {!isLoading && messages.length > 0 && (
+          <DynamicActionSuggestions
+            context={suggestionContext}
+            onSuggestionClick={(prompt) => {
+              setInputValue(prompt);
+              handleSendMessage();
+            }}
+          />
+        )}
+
         {messages.map((message) => (
           <div
             key={message.id}
@@ -603,7 +643,7 @@ export default function Mervin() {
           </div>
         ))}
         
-        {(isLoading || isProcessingTask) && (
+        {isLoading && (
           <div className="flex justify-start">
             <div className="bg-gray-800 text-gray-200 px-5 py-4 md:px-4 md:py-2 rounded-2xl md:rounded-lg max-w-[280px] sm:max-w-sm md:max-w-md shadow-lg">
               <div className="flex items-center space-x-3 md:space-x-2">
@@ -616,7 +656,7 @@ export default function Mervin() {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-cyan-400 font-medium text-base md:text-sm">
-                    {isProcessingTask ? "Agente Trabajando" : "Procesando"}
+                    Procesando
                   </span>
                   <div className="flex">
                     <span className="animate-pulse text-cyan-400">.</span>
@@ -687,7 +727,8 @@ export default function Mervin() {
                 variant="default"
                 className="rounded-full bg-cyan-600 hover:bg-cyan-700 min-h-[48px] min-w-[48px] md:min-h-[40px] md:min-w-[40px] flex-shrink-0"
                 onClick={handleSendMessage}
-                disabled={inputValue.trim() === "" || isLoading || isProcessingTask}
+                disabled={inputValue.trim() === "" || isLoading}
+                data-testid="button-send-message"
               >
                 <Send className="h-5 w-5 md:h-4 md:w-4" />
               </Button>
@@ -702,6 +743,12 @@ export default function Mervin() {
           </div>
         </div>
       </div>
+
+      {/* System Status Bar */}
+      <SystemStatusBar 
+        isHealthy={mervinAgent.isHealthy}
+        version={mervinAgent.systemStatus?.version}
+      />
     </div>
   );
 }
